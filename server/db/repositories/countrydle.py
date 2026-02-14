@@ -148,8 +148,17 @@ class CountrydleRepository:
             )
             .outerjoin(up, User.id == up.user_id)
             .outerjoin(cs, User.id == cs.user_id)
+            .where(
+                and_(
+                    User.username.not_like('test_%'),
+                    User.username.not_like('pytest_%'),
+                    User.username.not_like('guess_c_%'),
+                    User.username.not_like('ask_q_%')
+                )
+            )
             .group_by(
                 User.id,
+
                 User.username,
                 up.points,
                 up.streak,
