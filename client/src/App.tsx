@@ -7,6 +7,9 @@ import RegisterPage from './pages/RegisterPage';
 import GamePage from './pages/GamePage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
 import { useAuthStore } from './stores/authStore';
 import { useEffect } from 'react';
 
@@ -67,6 +70,9 @@ function App() {
           <Route path="game" element={<GamePage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="profile/:username" element={<ProfilePage />} />
+          <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="terms" element={<TermsOfServicePage />} />
+          <Route path="cookie-policy" element={<CookiePolicyPage />} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

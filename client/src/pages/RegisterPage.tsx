@@ -80,6 +80,13 @@ export default function RegisterPage() {
           </button>
         </form>
 
+        <p className="mt-4 text-center text-xs text-zinc-600">
+          By signing up, you agree to our{' '}
+          <Link to="/terms" className="underline hover:text-zinc-400 transition-colors">Terms of Service</Link>
+          {' '}and{' '}
+          <Link to="/privacy-policy" className="underline hover:text-zinc-400 transition-colors">Privacy Policy</Link>.
+        </p>
+
         <p className="mt-6 text-center text-sm text-zinc-500">
           Already have an account?{' '}
           <Link to="/login" className="text-blue-500 hover:text-blue-400">
