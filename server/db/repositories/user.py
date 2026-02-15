@@ -105,13 +105,14 @@ class UserRepository:
             raise HTTPException(status_code=400, detail="Email already taken!")
 
         new_user = User(
-            username=token_info["email"], email=token_info["email"], verified=True
+            username=None, email=token_info["email"], verified=True
         )
         self.session.add(new_user)
         await self.session.commit()
         await self.session.refresh(new_user)
 
         return new_user
+
 
     async def verify_user_email(self, email: str):
         result = await self.session.execute(select(User).where(User.email == email))
@@ -180,7 +181,7 @@ class UserRepository:
             raise HTTPException(status_code=400, detail="Username already taken!")
 
         new_update = AccountUpdate(
-            user_id=user_id, username=user.username, email=user.email
+            user_id=user_id, username=user.username or "New User", email=user.email
         )
 
         user.verified = user.email == user_update.email
@@ -195,6 +196,7 @@ class UserRepository:
         await self.session.refresh(new_update)
 
         return user
+
 
     async def change_password(self, user_id: int, password: str) -> User:
         user = await self.get(user_id)

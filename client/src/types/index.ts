@@ -1,10 +1,11 @@
 export interface User {
   id: number;
-  username: string;
+  username: string | null;
   email: string;
   verified: boolean;
   avatar_url?: string;
 }
+
 
 export interface Country {
   id: number;

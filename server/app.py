@@ -81,7 +81,8 @@ async def login(
     #         detail="User's email is not verified! Verify your email before login!",
     #     )
 
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.email})
+
 
     response.set_cookie(
         key="access_token",
@@ -117,7 +118,8 @@ async def google_signin(
             fm_noreply.send_message, message, template_name="google_login_alert.html"
         )
 
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.email})
+
 
     response.set_cookie(
         key="access_token",

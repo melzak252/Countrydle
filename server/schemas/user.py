@@ -29,6 +29,7 @@ class UserUpdate(BaseModel):
     email: EmailStr
 
 
+
 class UserLogin(BaseModel):
     username: str
     password: str
@@ -46,8 +47,9 @@ class DevUser(BaseModel):
 
 class UserDisplay(BaseModel):
     id: int
-    username: str
+    username: str | None
     email: EmailStr
+
 
     class Config:
         from_attributes = True

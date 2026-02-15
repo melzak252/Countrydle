@@ -28,8 +28,13 @@ export const authService = {
   googleLogin: async (credential: string) => {
     const response = await api.post('/google-signin', { credential });
     return response.data;
+  },
+  updateProfile: async (data: { username: string; email?: string }) => {
+    const response = await api.post('/users/update', data);
+    return response.data;
   }
 };
+
 
 export const gameService = {
   getLeaderboard: async (): Promise<any[]> => {

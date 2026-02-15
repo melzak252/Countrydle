@@ -47,14 +47,15 @@ async def change_username(
 
     if not updated_user.email:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username cannot be empty!"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email cannot be empty!"
         )
 
-    if len(updated_user.email) > 30:
+    if len(updated_user.email) > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username cannot be longer than 30 characters!",
+            detail="Email cannot be longer than 100 characters!",
         )
+
 
     if last_update is not None:
         raise HTTPException(
@@ -80,7 +81,8 @@ async def change_username(
             "message": "Account updated successfully! You will be logged out!",
         }
 
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.email})
+
 
     response.set_cookie(
         key="access_token",

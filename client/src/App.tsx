@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import GamePage from './pages/GamePage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import SetupProfilePage from './pages/SetupProfilePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
@@ -70,6 +71,7 @@ function App() {
           <Route path="game" element={<GamePage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="profile/:username" element={<ProfilePage />} />
+          <Route path="setup-profile" element={<SetupProfilePage />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="terms" element={<TermsOfServicePage />} />
           <Route path="cookie-policy" element={<CookiePolicyPage />} />
