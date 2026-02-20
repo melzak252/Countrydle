@@ -30,7 +30,7 @@ from game_logic import GameConfig, GameRules, GameState
 
 router = APIRouter(prefix="/wojewodztwodle")
 
-WOJEWODZTWDLE_CONFIG = GameConfig(max_questions=10, max_guesses=3)
+WOJEWODZTWDLE_CONFIG = GameConfig(max_questions=5, max_guesses=2)
 game_rules = GameRules(WOJEWODZTWDLE_CONFIG)
 
 
