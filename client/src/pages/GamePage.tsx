@@ -56,26 +56,6 @@ export default function GamePage() {
         <p className="text-zinc-400">Date: {useGameStore.getState().dailyDate}</p>
       </div>
 
-      {/* Collapsible Map Section */}
-      <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
-        <button 
-          onClick={() => setIsMapOpen(!isMapOpen)}
-          className="w-full p-4 flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <MapIcon size={20} className="text-blue-500" />
-            <span className="font-bold text-lg">World Map</span>
-          </div>
-          {isMapOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        
-        {isMapOpen && (
-          <div className="p-0 animate-in fade-in slide-in-from-top-4 duration-300">
-             <MapBox correctCountryName={correctCountry?.name} />
-          </div>
-        )}
-      </div>
-
       <GameInstructions 
         gameName="Countrydle"
         examples={[
@@ -85,6 +65,9 @@ export default function GamePage() {
           "Is it a member of the G7?"
         ]}
       />
+
+      {/* Collapsible Map Section */}
+      <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Column: Inputs & History (8 cols) */}
