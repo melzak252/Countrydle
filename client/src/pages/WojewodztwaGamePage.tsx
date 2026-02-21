@@ -120,7 +120,7 @@ export default function WojewodztwaGamePage() {
                   <h3 className="text-xl font-bold">Historia Pytań</h3>
                   <span className="text-sm text-zinc-500">{questions.length} zadanych pytań</span>
                </div>
-               <History questions={questions} />
+               <History questions={questions} isGameOver={gameState.is_game_over} />
             </div>
         </div>
 

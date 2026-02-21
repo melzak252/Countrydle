@@ -2,14 +2,13 @@ import type { Question } from '../types';
 import { Check, X, HelpCircle, Info, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
-import { useGameStore } from '../stores/gameStore';
 
 interface HistoryProps {
   questions: Question[];
+  isGameOver?: boolean;
 }
 
-export default function History({ questions }: HistoryProps) {
-  const { gameState } = useGameStore();
+export default function History({ questions, isGameOver = false }: HistoryProps) {
   // Sort questions by ID descending (newest first)
   const sortedQuestions = [...questions].sort((a, b) => b.id - a.id);
 
@@ -64,7 +63,7 @@ export default function History({ questions }: HistoryProps) {
             
             <div className="flex-1">
               <p className="font-medium text-lg">{q.original_question}</p>
-              {q.explanation && gameState?.is_game_over && (
+              {q.explanation && isGameOver && (
                  <div className="hidden group-hover:block absolute top-full left-0 mt-2 p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 shadow-xl z-20 w-full max-w-md">
                     <div className="absolute -top-2 left-8 w-4 h-4 bg-zinc-800 border-t border-l border-zinc-700 transform rotate-45"></div>
                     {q.explanation}
@@ -72,7 +71,7 @@ export default function History({ questions }: HistoryProps) {
               )}
             </div>
             
-            {q.explanation && gameState?.is_game_over && (
+            {q.explanation && isGameOver && (
                 <div className="text-zinc-500 hover:text-blue-400 cursor-help transition-colors" title="Hover for explanation">
                     <Info size={18} />
                 </div>

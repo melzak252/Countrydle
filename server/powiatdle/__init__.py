@@ -23,6 +23,7 @@ from schemas.powiatdle import (
     PowiatQuestionBase,
     PowiatQuestionCreate,
     PowiatQuestionDisplay,
+    DayPowiatDisplay,
 )
 from users.utils import get_current_user
 import powiatdle.utils as putils
@@ -41,6 +42,11 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won
     )
+
+
+@router.get("/history", response_model=List[DayPowiatDisplay])
+async def get_history(session: AsyncSession = Depends(get_db)):
+    return await PowiatdleDayRepository(session).get_history()
 
 
 @router.get("/state", response_model=Union[PowiatdleStateResponse, PowiatdleEndStateResponse])
@@ -79,6 +85,13 @@ async def get_state(
         questions=questions,
         powiat=None
     )
+
+
+from schemas.countrydle import LeaderboardEntry
+
+@router.get("/leaderboard", response_model=List[LeaderboardEntry])
+async def get_leaderboard(session: AsyncSession = Depends(get_db)):
+    return await PowiatdleStateRepository(session).get_leaderboard()
 
 
 @router.get("/powiaty", response_model=List[PowiatDisplay])

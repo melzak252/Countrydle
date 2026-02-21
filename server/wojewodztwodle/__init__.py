@@ -23,6 +23,7 @@ from schemas.wojewodztwodle import (
     WojewodztwoQuestionBase,
     WojewodztwoQuestionCreate,
     WojewodztwoQuestionDisplay,
+    DayWojewodztwoDisplay,
 )
 from users.utils import get_current_user
 import wojewodztwodle.utils as wutils
@@ -41,6 +42,11 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won
     )
+
+
+@router.get("/history", response_model=List[DayWojewodztwoDisplay])
+async def get_history(session: AsyncSession = Depends(get_db)):
+    return await WojewodztwodleDayRepository(session).get_history()
 
 
 @router.get("/state", response_model=Union[WojewodztwodleStateResponse, WojewodztwodleEndStateResponse])
@@ -79,6 +85,13 @@ async def get_state(
         questions=questions,
         wojewodztwo=None
     )
+
+
+from schemas.countrydle import LeaderboardEntry
+
+@router.get("/leaderboard", response_model=List[LeaderboardEntry])
+async def get_leaderboard(session: AsyncSession = Depends(get_db)):
+    return await WojewodztwodleStateRepository(session).get_leaderboard()
 
 
 @router.get("/wojewodztwa", response_model=List[WojewodztwoDisplay])

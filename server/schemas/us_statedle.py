@@ -94,3 +94,12 @@ class USStatedleStateResponse(BaseModel):
 
 class USStatedleEndStateResponse(USStatedleStateResponse):
     us_state: USStateDisplay = Field(...)
+
+
+class DayUSStateDisplay(BaseModel):
+    id: int
+    us_state: USStateDisplay | None
+    date: date
+
+    model_config = ConfigDict(from_attributes=True)
+

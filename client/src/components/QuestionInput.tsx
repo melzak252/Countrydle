@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 
 interface QuestionInputProps {
   onAsk: (question: string) => Promise<void>;
@@ -37,7 +37,11 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
           disabled={!question.trim() || isLoading || remainingQuestions <= 0}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
         >
-          <Send size={20} />
+          {isLoading ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : (
+            <Send size={20} />
+          )}
         </button>
       </div>
     </form>

@@ -118,7 +118,7 @@ export default function GamePage() {
                   <h3 className="text-xl font-bold">Question History</h3>
                   <span className="text-sm text-zinc-500">{questions.length} questions asked</span>
                </div>
-               <History questions={questions} />
+               <History questions={questions} isGameOver={gameState.is_game_over} />
             </div>
         </div>
 

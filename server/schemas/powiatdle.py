@@ -93,3 +93,12 @@ class PowiatdleStateResponse(BaseModel):
 
 class PowiatdleEndStateResponse(PowiatdleStateResponse):
     powiat: PowiatDisplay
+
+
+class DayPowiatDisplay(BaseModel):
+    id: int
+    powiat: PowiatDisplay | None
+    date: date
+
+    model_config = ConfigDict(from_attributes=True)
+

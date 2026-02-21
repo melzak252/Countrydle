@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { gameService, authService } from '../services/api';
-import { Loader2, User, Trophy, Target, Edit2, Check, X } from 'lucide-react';
+import { Loader2, Trophy, Target, Edit2, Check, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from 'react-hot-toast';
+import { cn } from '../lib/utils';
 
 export default function ProfilePage() {
   const { username } = useParams();
   const { user: currentUser, setUser } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'countrydle' | 'powiatdle' | 'us_statedle' | 'wojewodztwodle'>('countrydle');
   
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState('');
@@ -20,7 +22,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (username) {
       setLoading(true);
-      gameService.getUserStats(username)
+      gameService.getUserProfileStats(username)
         .then(data => {
           setStats(data);
           setNewUsername(data.user.username);
@@ -70,8 +72,10 @@ export default function ProfilePage() {
 
   if (!stats) return <div className="text-center p-20 text-red-500">User not found</div>;
 
+  const currentStats = stats[activeTab];
+
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto px-4 pb-20">
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 mb-8 flex flex-col md:flex-row items-center gap-8 shadow-xl">
         <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-500 to-teal-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg shrink-0">
           {stats.user.username ? stats.user.username.substring(0, 2).toUpperCase() : '??'}
@@ -123,63 +127,73 @@ export default function ProfilePage() {
             )}
             <p className="text-zinc-400 text-sm mt-1">Member since {new Date(stats.user.created_at).toLocaleDateString()}</p>
         </div>
-        
-        <div className="flex justify-center md:justify-end gap-8">
-            <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-500">{stats.points}</div>
-                <div className="text-xs text-zinc-500 uppercase tracking-wider">Points</div>
-            </div>
-            <div className="text-center">
-                <div className="text-3xl font-bold text-green-500">{stats.wins}</div>
-                <div className="text-xs text-zinc-500 uppercase tracking-wider">Wins</div>
-            </div>
-            <div className="text-center">
-                <div className="text-3xl font-bold text-orange-500">{stats.streak}</div>
-                <div className="text-xs text-zinc-500 uppercase tracking-wider">Streak</div>
-            </div>
-        </div>
       </div>
 
+      {/* Game Tabs */}
+      <div className="flex overflow-x-auto gap-2 mb-6 pb-2">
+        {[
+          { id: 'countrydle', label: 'Countries' },
+          { id: 'powiatdle', label: 'Powiaty' },
+          { id: 'us_statedle', label: 'US States' },
+          { id: 'wojewodztwodle', label: 'Województwa' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap",
+              activeTab === tab.id 
+                ? "bg-blue-600 text-white" 
+                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center gap-4">
             <div className="p-3 bg-blue-500/20 text-blue-500 rounded-lg">
-                <Target size={24} />
+                <Trophy size={24} />
             </div>
             <div>
-                <div className="text-2xl font-bold">{stats.guesses_made > 0 ? Math.round((stats.guesses_correct / stats.guesses_made) * 100) : 0}%</div>
-                <div className="text-sm text-zinc-500">Guess Accuracy</div>
+                <div className="text-2xl font-bold">{currentStats.points}</div>
+                <div className="text-sm text-zinc-500">Total Points</div>
             </div>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center gap-4">
-            <div className="p-3 bg-teal-500/20 text-teal-500 rounded-lg">
-                <User size={24} />
+            <div className="p-3 bg-green-500/20 text-green-500 rounded-lg">
+                <Check size={24} />
             </div>
             <div>
-                <div className="text-2xl font-bold">{stats.guesses_made}</div>
-                <div className="text-sm text-zinc-500">Total Guesses</div>
+                <div className="text-2xl font-bold">{currentStats.wins}</div>
+                <div className="text-sm text-zinc-500">Total Wins</div>
             </div>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center gap-4">
             <div className="p-3 bg-purple-500/20 text-purple-500 rounded-lg">
-                <Trophy size={24} />
+                <Target size={24} />
             </div>
             <div>
-                <div className="text-2xl font-bold">{stats.questions_asked}</div>
-                <div className="text-sm text-zinc-500">Questions Asked</div>
+                <div className="text-2xl font-bold">{currentStats.games_played}</div>
+                <div className="text-sm text-zinc-500">Games Played</div>
             </div>
         </div>
       </div>
 
-      <h3 className="text-xl font-bold mb-4">Recent Games</h3>
+      <h3 className="text-xl font-bold mb-4">Recent Games ({activeTab})</h3>
       <div className="space-y-4">
-        {stats.history && stats.history.length > 0 ? (
-            stats.history.map((game: any, index: number) => (
+        {currentStats.history && currentStats.history.length > 0 ? (
+            currentStats.history.map((game: any, index: number) => (
                 <div key={index} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex justify-between items-center">
                     <div>
-                        <div className="font-bold">{game.day.date}</div>
+                        <div className="font-bold">{game.date}</div>
                         <div className="text-sm text-zinc-400">
-                             {game.won ? 'Won' : 'Lost'} with {game.guesses_made} guesses
+                             {game.won ? 'Won' : 'Lost'} - {game.target_name}
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-1">
+                            {game.attempts} attempts
                         </div>
                     </div>
                     <div className={`text-xl font-bold ${game.won ? 'text-green-500' : 'text-red-500'}`}>

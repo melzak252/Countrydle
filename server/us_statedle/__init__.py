@@ -23,6 +23,7 @@ from schemas.us_statedle import (
     USStateQuestionBase,
     USStateQuestionCreate,
     USStateQuestionDisplay,
+    DayUSStateDisplay,
 )
 from users.utils import get_current_user
 import us_statedle.utils as uutils
@@ -41,6 +42,11 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won
     )
+
+
+@router.get("/history", response_model=List[DayUSStateDisplay])
+async def get_history(session: AsyncSession = Depends(get_db)):
+    return await USStatedleDayRepository(session).get_history()
 
 
 @router.get("/state", response_model=Union[USStatedleStateResponse, USStatedleEndStateResponse])
@@ -79,6 +85,13 @@ async def get_state(
         questions=questions,
         us_state=None
     )
+
+
+from schemas.countrydle import LeaderboardEntry
+
+@router.get("/leaderboard", response_model=List[LeaderboardEntry])
+async def get_leaderboard(session: AsyncSession = Depends(get_db)):
+    return await USStatedleStateRepository(session).get_leaderboard()
 
 
 @router.get("/states", response_model=List[USStateDisplay])

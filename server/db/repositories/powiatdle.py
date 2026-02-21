@@ -1,10 +1,13 @@
 from typing import List, Optional
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, cast, Integer, desc
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.powiat import Powiat
 from db.models.powiatdle import PowiatdleDay, PowiatdleState, PowiatdleGuess, PowiatdleQuestion
 from db.models.user import User
 from schemas.powiatdle import PowiatGuessCreate, PowiatQuestionCreate
+from schemas.countrydle import LeaderboardEntry
+from schemas.statistics import GameStatistics, GameHistoryEntry
 
 
 class PowiatRepository:
@@ -49,6 +52,16 @@ class PowiatdleDayRepository:
         await self.session.refresh(new_day)
         return new_day
 
+    async def get_history(self) -> List[PowiatdleDay]:
+        from datetime import date
+        result = await self.session.execute(
+            select(PowiatdleDay)
+            .options(joinedload(PowiatdleDay.powiat))
+            .where(PowiatdleDay.date < date.today())
+            .order_by(PowiatdleDay.date.desc())
+        )
+        return result.scalars().all()
+
 
 class PowiatdleStateRepository:
     def __init__(self, session: AsyncSession):
@@ -77,6 +90,86 @@ class PowiatdleStateRepository:
         await self.session.commit()
         await self.session.refresh(state)
         return state
+
+    async def get_leaderboard(self) -> List[LeaderboardEntry]:
+        stmt = (
+            select(
+                User.id,
+                User.username,
+                func.coalesce(func.sum(PowiatdleState.points), 0).label("points"),
+                func.coalesce(func.sum(cast(PowiatdleState.won, Integer)), 0).label("wins"),
+            )
+            .join(User, User.id == PowiatdleState.user_id)
+            .where(
+                and_(
+                    User.username.not_like('test_%'),
+                    User.username.not_like('pytest_%'),
+                    User.username.not_like('guess_c_%'),
+                    User.username.not_like('ask_q_%')
+                )
+            )
+            .group_by(User.id, User.username)
+            .order_by(desc("points"), desc("wins"))
+        )
+        
+        result = await self.session.execute(stmt)
+        
+        return [
+            LeaderboardEntry(
+                id=row.id,
+                username=row.username,
+                points=row.points,
+                wins=row.wins,
+                streak=0 # Streak not implemented yet for sub-games
+            )
+            for row in result.all()
+        ]
+
+    async def get_user_statistics(self, user: User) -> GameStatistics:
+        # Calculate total points and wins
+        stmt = (
+            select(
+                func.coalesce(func.sum(PowiatdleState.points), 0).label("points"),
+                func.coalesce(func.sum(cast(PowiatdleState.won, Integer)), 0).label("wins"),
+                func.count(PowiatdleState.id).label("games_played")
+            )
+            .where(PowiatdleState.user_id == user.id)
+        )
+        result = await self.session.execute(stmt)
+        row = result.first()
+        
+        points = row.points if row else 0
+        wins = row.wins if row else 0
+        games_played = row.games_played if row else 0
+
+        # Get history
+        history_stmt = (
+            select(PowiatdleState)
+            .options(joinedload(PowiatdleState.day).joinedload(PowiatdleDay.powiat))
+            .where(and_(PowiatdleState.user_id == user.id, PowiatdleState.is_game_over == True))
+            .order_by(PowiatdleState.id.desc())
+        )
+        history_result = await self.session.execute(history_stmt)
+        history_states = history_result.scalars().all()
+
+        history_entries = [
+            GameHistoryEntry(
+                date=str(state.day.date),
+                won=state.won,
+                points=state.points,
+                attempts=state.guesses_made,
+                target_name=state.day.powiat.nazwa
+            )
+            for state in history_states
+        ]
+
+        return GameStatistics(
+            points=points,
+            wins=wins,
+            games_played=games_played,
+            streak=0, # TODO: Implement streak
+            history=history_entries
+        )
 
 
 class PowiatdleGuessRepository:

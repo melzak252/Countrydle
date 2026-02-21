@@ -7,6 +7,11 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.repositories.user import UserRepository
+from db.repositories.countrydle import CountrydleRepository
+from db.repositories.powiatdle import PowiatdleStateRepository
+from db.repositories.us_statedle import USStatedleStateRepository
+from db.repositories.wojewodztwodle import WojewodztwodleStateRepository
+from schemas.statistics import UserProfileStatistics
 
 from .utils import create_access_token, get_current_user, send_verification_email
 
@@ -19,6 +24,29 @@ async def read_users_me(
     user: User = Depends(get_current_user), session: AsyncSession = Depends(get_db)
 ):
     return user
+
+
+@router.get("/{username}/stats", response_model=UserProfileStatistics)
+async def get_user_stats_by_username(
+    username: str,
+    session: AsyncSession = Depends(get_db)
+):
+    user = await UserRepository(session).get_user(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    countrydle_stats = await CountrydleRepository(session).get_game_statistics(user)
+    powiatdle_stats = await PowiatdleStateRepository(session).get_user_statistics(user)
+    us_statedle_stats = await USStatedleStateRepository(session).get_user_statistics(user)
+    wojewodztwodle_stats = await WojewodztwodleStateRepository(session).get_user_statistics(user)
+    
+    return UserProfileStatistics(
+        user=user,
+        countrydle=countrydle_stats,
+        powiatdle=powiatdle_stats,
+        us_statedle=us_statedle_stats,
+        wojewodztwodle=wojewodztwodle_stats
+    )
 
 
 @router.post("/update")

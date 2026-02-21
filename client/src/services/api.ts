@@ -45,6 +45,10 @@ export const gameService = {
     const response = await api.get(`/countrydle/statistics/users/${username}`);
     return response.data;
   },
+  getUserProfileStats: async (username: string): Promise<any> => {
+    const response = await api.get(`/users/${username}/stats`);
+    return response.data;
+  },
   getState: async (): Promise<GameResponse> => {
     const response = await api.get('/countrydle/state');
     return response.data;
@@ -59,6 +63,10 @@ export const gameService = {
   },
   makeGuess: async (guess: string, country_id?: number): Promise<Guess> => {
     const response = await api.post('/countrydle/guess', { guess, country_id });
+    return response.data;
+  },
+  getHistory: async (): Promise<any> => {
+    const response = await api.get('/countrydle/statistics/history');
     return response.data;
   },
 };
@@ -80,6 +88,14 @@ export const powiatService = {
     const response = await api.post('/powiatdle/guess', { guess, powiat_id });
     return response.data;
   },
+  getLeaderboard: async (): Promise<any[]> => {
+    const response = await api.get('/powiatdle/leaderboard');
+    return response.data;
+  },
+  getHistory: async (): Promise<any[]> => {
+    const response = await api.get('/powiatdle/history');
+    return response.data;
+  },
 };
 
 export const usStateService = {
@@ -97,6 +113,14 @@ export const usStateService = {
   },
   makeGuess: async (guess: string, us_state_id?: number): Promise<any> => {
     const response = await api.post('/us_statedle/guess', { guess, us_state_id });
+    return response.data;
+  },
+  getLeaderboard: async (): Promise<any[]> => {
+    const response = await api.get('/us_statedle/leaderboard');
+    return response.data;
+  },
+  getHistory: async (): Promise<any[]> => {
+    const response = await api.get('/us_statedle/history');
     return response.data;
   },
 };
@@ -118,6 +142,21 @@ export const wojewodztwoService = {
     const response = await api.post('/wojewodztwodle/guess', { guess, wojewodztwo_id });
     return response.data;
   },
+  getLeaderboard: async (): Promise<any[]> => {
+    const response = await api.get('/wojewodztwodle/leaderboard');
+    return response.data;
+  },
+  getHistory: async (): Promise<any[]> => {
+    const response = await api.get('/wojewodztwodle/history');
+    return response.data;
+  },
+};
+
+export const timeService = {
+  getServerTime: async (): Promise<{ server_time: string; next_game_at: string }> => {
+    const response = await api.get('/time');
+    return response.data;
+  }
 };
 
 export default api;

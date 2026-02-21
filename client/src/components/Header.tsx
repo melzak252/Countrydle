@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import CountdownTimer from './CountdownTimer';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -13,6 +14,8 @@ export default function Header() {
         </Link>
 
         <nav className="flex items-center gap-6 text-sm md:text-base">
+          <CountdownTimer />
+          
           <div className="relative group">
             <button className="flex items-center gap-1 hover:text-blue-400 transition-colors py-2">
               Games <ChevronDown size={16} />
@@ -26,6 +29,7 @@ export default function Header() {
           </div>
           
           <Link to="/leaderboard" className="hidden sm:block hover:text-blue-400 transition-colors">Leaderboard</Link>
+          <Link to="/archive" className="hidden sm:block hover:text-blue-400 transition-colors">Archive</Link>
           
           {isAuthenticated ? (
             <div className="flex items-center gap-4">

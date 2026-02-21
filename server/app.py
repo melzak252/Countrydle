@@ -70,6 +70,33 @@ async def root():
     return {"message": "Welcome to the Game API!"}
 
 
+@app.get("/time")
+async def get_server_time():
+    """Returns the current server time and the time until the next midnight (UTC)"""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    tomorrow = now + datetime.timedelta(days=1)
+    next_midnight = datetime.datetime(
+        year=tomorrow.year,
+        month=tomorrow.month,
+        day=tomorrow.day,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+        tzinfo=datetime.timezone.utc
+    )
+    
+    # If the server uses local time for date.today(), we should probably use local time here too.
+    # However, standard practice is usually UTC. 
+    # Let's check if date.today() is timezone aware. It usually returns local date.
+    # If the server is running in UTC (which it likely is in Docker), then UTC is correct.
+    
+    return {
+        "server_time": now.isoformat(),
+        "next_game_at": next_midnight.isoformat()
+    }
+
+
 @app.post("/login", response_model=UserDisplay)
 async def login(
     response: Response,

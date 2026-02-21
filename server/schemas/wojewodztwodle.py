@@ -93,3 +93,12 @@ class WojewodztwodleStateResponse(BaseModel):
 
 class WojewodztwodleEndStateResponse(WojewodztwodleStateResponse):
     wojewodztwo: WojewodztwoDisplay
+
+
+class DayWojewodztwoDisplay(BaseModel):
+    id: int
+    wojewodztwo: WojewodztwoDisplay | None
+    date: date
+
+    model_config = ConfigDict(from_attributes=True)
+

@@ -12,6 +12,7 @@ from db.models import CountrydleGuess
 from db.repositories.user import UserRepository
 from db.models.user import UserPoints
 from schemas.countrydle import LeaderboardEntry, UserStatistics
+from schemas.statistics import GameStatistics, GameHistoryEntry
 from db.models.question import CountrydleQuestion
 from db.repositories.question import CountrydleQuestionsRepository
 from db.repositories.guess import CountrydleGuessRepository
@@ -229,6 +230,54 @@ class CountrydleRepository:
         )
 
         return profile
+
+    async def get_game_statistics(self, user: User) -> GameStatistics:
+        up = await UserRepository(self.session).get_user_points(user.id)
+        
+        # Calculate wins and games played
+        stmt = (
+            select(
+                func.coalesce(func.sum(cast(CountrydleState.won, Integer)), 0).label("wins"),
+                func.count(CountrydleState.id).label("games_played")
+            )
+            .where(CountrydleState.user_id == user.id)
+        )
+        result = await self.session.execute(stmt)
+        row = result.first()
+        
+        wins = row.wins if row else 0
+        games_played = row.games_played if row else 0
+        points = up.points if up else 0
+        streak = up.streak if up else 0
+
+        # Get history
+        history_stmt = (
+            select(CountrydleState)
+            .options(joinedload(CountrydleState.day).joinedload(CountrydleDay.country))
+            .where(and_(CountrydleState.user_id == user.id, CountrydleState.is_game_over == True))
+            .order_by(CountrydleState.id.desc())
+        )
+        history_result = await self.session.execute(history_stmt)
+        history_states = history_result.scalars().all()
+
+        history_entries = [
+            GameHistoryEntry(
+                date=str(state.day.date),
+                won=state.won,
+                points=state.points,
+                attempts=state.guesses_made,
+                target_name=state.day.country.name
+            )
+            for state in history_states
+        ]
+
+        return GameStatistics(
+            points=points,
+            wins=wins,
+            games_played=games_played,
+            streak=streak,
+            history=history_entries
+        )
 
 
 
