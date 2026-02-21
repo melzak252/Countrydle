@@ -7,6 +7,7 @@ from .wojewodztwodle import WojewodztwodleDay, WojewodztwodleState, Wojewodztwod
 from .us_state import USState
 from .us_statedle import USStatedleDay, USStatedleState, USStatedleGuess, USStatedleQuestion
 from .question import CountrydleQuestion
+from .fragment import CountryFragment, PowiatFragment, WojewodztwoFragment, USStateFragment
 
 from .user import User, Permission, UserPermission, AccountUpdate, UserPoints
 from .guess import CountrydleGuess

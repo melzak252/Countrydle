@@ -64,10 +64,33 @@ export default function USStatesGamePage() {
           "Was it one of the original 13 colonies?",
           "Does it have a population over 10 million?"
         ]}
+        scoring={{
+          maxPoints: 100,
+          details: [
+            "100 points for guessing the state correctly"
+          ]
+        }}
       />
 
       {/* Collapsible Map Section */}
       <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+        <button 
+          onClick={() => setIsMapOpen(!isMapOpen)}
+          className="w-full p-4 flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <MapIcon size={20} className="text-blue-500" />
+            <span className="font-bold text-lg">US Map</span>
+          </div>
+          {isMapOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </button>
+        
+        {isMapOpen && (
+          <div className="p-0 animate-in fade-in slide-in-from-top-4 duration-300">
+             <USStatesMap correctStateName={correctState?.name} />
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">

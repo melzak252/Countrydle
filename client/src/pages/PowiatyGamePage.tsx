@@ -68,10 +68,35 @@ export default function PowiatyGamePage() {
           "Czy jest to miasto na prawach powiatu?",
           "Czy liczba ludności przekracza 100 tysięcy?"
         ]}
+        scoring={{
+          maxPoints: 100,
+          details: [
+            "100 punktów za poprawne odgadnięcie powiatu"
+          ]
+        }}
       />
 
       {/* Collapsible Map Section */}
       <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+        <button 
+          onClick={() => setIsMapOpen(!isMapOpen)}
+          className="w-full p-4 flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <MapIcon size={20} className="text-red-500" />
+            <span className="font-bold text-lg">Mapa Polski (Powiaty)</span>
+          </div>
+          {isMapOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </button>
+        
+        {isMapOpen && (
+          <div className="p-0 animate-in fade-in slide-in-from-top-4 duration-300">
+             <PowiatyMap 
+                correctPowiatName={correctPowiat?.name}
+             />
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Column: Inputs & History (8 cols) */}

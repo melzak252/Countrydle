@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { Info, HelpCircle, ChevronDown, ChevronUp, Languages } from 'lucide-react';
+import { Info, HelpCircle, ChevronDown, ChevronUp, Languages, Trophy } from 'lucide-react';
 
 interface GameInstructionsProps {
   gameName: string;
   examples: string[];
   isPolish?: boolean;
+  scoring?: {
+    maxPoints: number;
+    details: string[];
+  };
 }
 
-const GameInstructions = ({ gameName, examples, isPolish }: GameInstructionsProps) => {
+const GameInstructions = ({ gameName, examples, isPolish, scoring }: GameInstructionsProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -27,7 +31,7 @@ const GameInstructions = ({ gameName, examples, isPolish }: GameInstructionsProp
       
       {isOpen && (
         <div className="p-6 border-t border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <p className="text-zinc-300 leading-relaxed text-sm md:text-base">
               {isPolish 
                 ? `Witaj w ${gameName}! Gra jest obecnie w fazie rozwoju, więc przepraszamy za ewentualne błędy AI w odpowiedziach. Staramy się stale ulepszać jakość rozgrywki.`
@@ -42,6 +46,28 @@ const GameInstructions = ({ gameName, examples, isPolish }: GameInstructionsProp
                   : "You can ask questions in any language (e.g., English, Polish, German) - the AI will understand your intent!"}
               </p>
             </div>
+
+            {scoring && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-yellow-500 text-xs md:text-sm font-semibold uppercase tracking-wider">
+                  <Trophy size={16} />
+                  {isPolish ? 'Punktacja:' : 'Scoring:'}
+                </div>
+                <div className="bg-zinc-800/30 border border-zinc-700/30 rounded-xl p-4">
+                  <div className="text-2xl font-bold text-white mb-2">
+                    {isPolish ? 'Do ' : 'Up to '}{scoring.maxPoints} {isPolish ? 'punktów' : 'points'}
+                  </div>
+                  <ul className="space-y-1">
+                    {scoring.details.map((detail, index) => (
+                      <li key={index} className="text-zinc-400 text-sm flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-zinc-600" />
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3 pt-2">
               <div className="flex items-center gap-2 text-zinc-400 text-xs md:text-sm font-semibold uppercase tracking-wider">

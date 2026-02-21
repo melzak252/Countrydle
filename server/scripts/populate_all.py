@@ -10,7 +10,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
 from db import AsyncSessionLocal
-import qdrant
 
 # Import from sibling scripts
 try:
@@ -26,11 +25,8 @@ except ImportError:
     from scripts.populate_us_states import populate_us_states
 
 async def main():
-    print("Starting full database population...")
+    print("Starting full database population (Postgres only)...")
     async with AsyncSessionLocal() as session:
-        # Initialize Qdrant collections first
-        await qdrant.init_qdrant(session)
-        
         try:
             print("Populating countries...")
             await populate_countries(session)
@@ -39,7 +35,7 @@ async def main():
             print("Populating powiaty...")
             await populate_powiaty(session)
             print("Powiaty populated.")
-
+ 
             print("Populating wojewodztwa...")
             await populate_wojewodztwa(session)
             print("Wojewodztwa populated.")
@@ -51,7 +47,8 @@ async def main():
             print("Full database population completed successfully.")
         except Exception as e:
             print(f"An error occurred during population: {e}")
-            # raise e
+            import traceback
+            traceback.print_exc()
 
 if __name__ == "__main__":
     asyncio.run(main())

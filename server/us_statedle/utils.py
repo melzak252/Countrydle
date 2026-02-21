@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import USState, USStatedleDay, User
 from qdrant.utils import get_fragments_matching_question
-from qdrant import COLLECTION_NAME
 from schemas.us_statedle import USStateQuestionCreate, USStateQuestionEnhanced
 from db.repositories.us_state import USStateRepository
 

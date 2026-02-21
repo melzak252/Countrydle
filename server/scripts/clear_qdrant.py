@@ -13,14 +13,17 @@ load_dotenv(
 
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "countries")
 
 
 def clear_qdrant():
     print(f"Connecting to Qdrant at {QDRANT_HOST}:{QDRANT_PORT}...")
     client = qdrant_client.QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=60)
 
-    collections = ["powiaty"]
+    collections = [
+        "countries", "powiaty", "wojewodztwa", "us_states",
+        "countries_questions", "powiaty_questions", "wojewodztwa_questions", "us_states_questions",
+        "questions"
+    ]
 
     for collection in collections:
         try:

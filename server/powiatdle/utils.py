@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Powiat, PowiatdleDay, User
 from qdrant.utils import get_fragments_matching_question
-from qdrant import COLLECTION_NAME
 from schemas.powiatdle import PowiatQuestionCreate, PowiatQuestionEnhanced
 from db.repositories.powiatdle import PowiatRepository
 

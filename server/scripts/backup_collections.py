@@ -11,13 +11,12 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "countries")
 
 def create_backups():
     print(f"Connecting to Qdrant at {QDRANT_HOST}:{QDRANT_PORT}...")
     client = qdrant_client.QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
     
-    collections = ["questions", COLLECTION_NAME]
+    collections = ["countries", "powiaty", "wojewodztwa", "us_states", "questions"]
     
     for collection in collections:
         try:
