@@ -50,6 +50,15 @@ class CountrydleRepository:
 
         return result.scalars().first()
 
+    async def get_today_country_sync(self) -> CountrydleDay | None:
+        # This is for debugging purposes if needed, but we should use async
+        result = await self.session.execute(
+            select(CountrydleDay)
+            .where(CountrydleDay.date == date.today())
+            .order_by(CountrydleDay.id.desc())
+        )
+        return result.scalars().first()
+
     async def get_last_added_day_country(self) -> CountrydleDay | None:
         result = await self.session.execute(
             select(CountrydleDay).order_by(CountrydleDay.date.desc())

@@ -11,6 +11,11 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -31,11 +36,14 @@ services:
   backend:
     container_name: server
     build: ./server
+    command: uvicorn app:app --host 0.0.0.0 --port 8080 --reload
     ports:
       - "8080:8080"
     depends_on:
-      - db
-      - qdrant
+      db:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
@@ -53,6 +61,7 @@ services:
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     volumes:
+      - ./server:/usr/src/app
       - ./data:/usr/src/app/data
 
   frontend:

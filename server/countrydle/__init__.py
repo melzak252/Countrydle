@@ -18,6 +18,7 @@ from schemas.countrydle import (
     QuestionDisplay,
 )
 from schemas.country import CountryDisplay
+from schemas.user import UserDisplay
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -95,6 +96,9 @@ async def get_state(
     session: AsyncSession = Depends(get_db),
 ):
     day_country = await CountrydleRepository(session).get_today_country()
+    if not day_country:
+        day_country = await CountrydleRepository(session).generate_new_day_country()
+
     state = await CountrydleStateRepository(session).get_state(user, day_country)
 
     if state and state.is_game_over:
@@ -120,7 +124,7 @@ async def get_state(
             country=None,
         )
 
-    questions = [
+    questions_display = [
         (
             QuestionDisplay.model_validate(question)
             if question.valid
@@ -136,7 +140,7 @@ async def get_state(
         date=str(day_country.date),
         state=response_state,
         guesses=guesses,
-        questions=questions,
+        questions=questions_display,
         country=None,
     )
 

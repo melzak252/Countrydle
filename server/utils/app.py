@@ -19,11 +19,13 @@ async def init_models(engine: AsyncEngine):
     from alembic import command
 
     alembic_cfg = Config("alembic.ini")
-    # We need to set the sqlalchemy.url in the config object because it might be different in env
-    db_url = os.getenv("DATABASE_URL").replace("+asyncpg", "")
-    alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        db_url = db_url.replace("+asyncpg", "")
+        alembic_cfg.set_main_option("sqlalchemy.url", db_url)
     
     try:
+        # Run in a thread to avoid blocking the event loop
         await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
         logging.info("Database migrations applied successfully.")
     except Exception as e:
@@ -42,17 +44,13 @@ async def lifespan(app: FastAPI):
             await ucrud.add_base_permissions(session)
             await init_qdrant(session)
 
-
-        await utils.generate_day_countries()
-        await utils.check_streaks()
-
         yield
     except ConnectionRefusedError:
         logging.error("Exiting application due to database connection failure.")
         await asyncio.sleep(10)
         raise
     except Exception as e:
-        logging.error("Exiting application due to error.")
+        logging.error(f"Exiting application due to error: {e}", exc_info=True)
         raise e
     finally:
         try:
