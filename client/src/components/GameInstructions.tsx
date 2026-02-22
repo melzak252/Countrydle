@@ -39,6 +39,15 @@ const GameInstructions = ({ gameName, examples, isPolish, scoring }: GameInstruc
             </p>
 
             <div className="flex items-start gap-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+              <Info size={18} className="text-blue-400 shrink-0 mt-0.5" />
+              <p className="text-zinc-400 text-sm italic">
+                {isPolish
+                  ? `Bot posiada wiedzę wyłącznie na podstawie artykułów z Wikipedii (np. dla Polski jest to wyłącznie treść strony https://pl.wikipedia.org/wiki/Polska i analogicznie dla innych krajów/powiatów/województw/stanów).`
+                  : `The bot only has knowledge based on Wikipedia articles (e.g., for Poland, it only knows the content of https://en.wikipedia.org/wiki/Poland and similarly for other entities).`}
+              </p>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
               <Languages size={18} className="text-blue-400 shrink-0 mt-0.5" />
               <p className="text-zinc-400 text-sm italic">
                 {isPolish
