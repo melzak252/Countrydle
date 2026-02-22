@@ -34,7 +34,9 @@ from users.utils import (
     create_access_token,
     send_verification_email,
     verify_email_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
 )
+
 from utils.email import fm_noreply
 
 app = FastAPI(lifespan=lifespan)
@@ -118,6 +120,7 @@ async def login(
 
     access_token = create_access_token(data={"sub": user.email})
 
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     response.set_cookie(
         key="access_token",
@@ -126,9 +129,12 @@ async def login(
         secure=False,  # Set to False for local development (HTTP)
         samesite="lax",
         path="/",
+        expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
     return user
+
 
 
 @app.post("/google-signin", response_model=UserDisplay)
@@ -155,6 +161,7 @@ async def google_signin(
 
     access_token = create_access_token(data={"sub": user.email})
 
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     response.set_cookie(
         key="access_token",
@@ -163,8 +170,11 @@ async def google_signin(
         secure=False,  # Set to False for local development (HTTP)
         samesite="lax",
         path="/",
+        expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     return user
+
 
 
 @app.post("/logout", status_code=status.HTTP_200_OK)

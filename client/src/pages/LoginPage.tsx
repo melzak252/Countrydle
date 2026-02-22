@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { toast } from 'react-hot-toast';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -13,7 +14,19 @@ export default function LoginPage() {
   const { login } = useAuthStore();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const sessionExpired = localStorage.getItem('session_expired');
+    if (sessionExpired === 'true') {
+      toast.error('Your session has expired. Please log in again.', {
+        duration: 5000,
+        icon: '🔒',
+      });
+      localStorage.removeItem('session_expired');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
     setLoading(true);
     setError(null);

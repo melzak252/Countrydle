@@ -8,7 +8,23 @@ const api = axios.create({
   withCredentials: true, // Important for cookies
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear local storage and redirect to login
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        localStorage.setItem('session_expired', 'true');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authService = {
+
   login: async (formData: FormData) => {
     const response = await api.post('/login', formData);
     return response.data;

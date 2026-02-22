@@ -6,7 +6,8 @@ from fastapi_mail import MessageSchema
 from db import get_db
 from db.models import User
 from db.repositories.user import UserRepository
-from fastapi import BackgroundTasks, Cookie, Depends, HTTPException, status
+from fastapi import BackgroundTasks, Cookie, Depends, HTTPException, status, Response
+
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError
@@ -69,7 +70,7 @@ def verify_email_token(token: str):
 
 
 async def get_current_user(
-    access_token: str = Cookie(None), session: AsyncSession = Depends(get_db)
+    response: Response, access_token: str = Cookie(None), session: AsyncSession = Depends(get_db)
 ) -> User:
     print(f"DEBUG: get_current_user called. Token: {access_token}")
     if access_token is None:
@@ -91,7 +92,26 @@ async def get_current_user(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Refresh the token and cookie
+    new_access_token = create_access_token(data={"sub": user.email})
+    
+    # Calculate expiration time for the cookie
+    expiration = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    response.set_cookie(
+        key="access_token",
+        value=new_access_token,
+        httponly=True,
+        secure=False,  # Set to False for local development (HTTP)
+        samesite="lax",
+        path="/",
+        expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+
     return user
+
 
 
 async def send_verification_email(
