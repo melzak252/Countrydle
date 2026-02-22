@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Timer } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { timeService } from '../services/api';
 
 export default function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState('');
   const [nextGameTime, setNextGameTime] = useState<Date | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Fetch server time to synchronize
@@ -58,7 +60,7 @@ export default function CountdownTimer() {
   if (!timeLeft) return null;
 
   return (
-    <div className="hidden lg:flex items-center gap-2 text-zinc-400 font-mono text-sm bg-zinc-800/50 px-3 py-1.5 rounded-md border border-zinc-700/50" title="Time until next daily puzzle">
+    <div className="hidden lg:flex items-center gap-2 text-zinc-400 font-mono text-sm bg-zinc-800/50 px-3 py-1.5 rounded-md border border-zinc-700/50" title={t('countdown.title')}>
       <Timer size={14} />
       <span className="text-zinc-200 font-bold">{timeLeft}</span>
     </div>

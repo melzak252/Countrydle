@@ -1,7 +1,127 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "February 15, 2026"; // Current date
+  const { i18n } = useTranslation();
+  const isPolish = (i18n.resolvedLanguage ?? i18n.language) === 'pl';
+
+  const content = isPolish
+    ? {
+        title: 'Polityka Prywatnosci',
+        lastUpdatedLabel: 'Ostatnia aktualizacja',
+        lastUpdated: '15 lutego 2026',
+        sections: [
+          {
+            heading: '1. Wprowadzenie',
+            body: 'W Countrydle traktujemy prywatnosc powaznie. Ten dokument wyjasnia, jakie dane zbieramy, jak je wykorzystujemy i komu je udostepniamy.',
+          },
+          {
+            heading: '2. Jakie dane zbieramy',
+            body: 'Podczas rejestracji i korzystania z serwisu mozemy zbierac dane osobowe i techniczne.',
+            list: [
+              'adres e-mail i podstawowe dane konta (w tym dane Google Login),',
+              'adres IP, typ przegladarki i system operacyjny,',
+              'aktywnosc w grze (wyniki, liczba rozegranych gier, historia).',
+            ],
+          },
+          {
+            heading: '3. Cookies i podobne technologie',
+            body: 'Uzywamy cookies do utrzymania sesji logowania, poprawy dzialania serwisu oraz analizy ruchu.',
+          },
+          {
+            heading: '4. Google AdSense i reklamy',
+            body: 'Korzystamy z Google AdSense. Google i partnerzy moga uzywac cookies do personalizacji reklam.',
+            list: [
+              'Ustawienia reklam Google: https://www.google.com/settings/ads',
+              'Informacje o rezygnacji z reklam behawioralnych: https://www.aboutads.info',
+            ],
+            highlighted: true,
+          },
+          {
+            heading: '5. Jak wykorzystujemy dane',
+            body: 'Dane wykorzystujemy do obslugi konta, dzialania gry, analizy jakosci uslugi oraz rozwijania nowych funkcji.',
+          },
+          {
+            heading: '6. Udostepnianie danych',
+            body: 'Nie sprzedajemy danych osobowych. Dane moga byc udostepniane zaufanym dostawcom uslug (hosting, analityka), Google (logowanie/reklamy) oraz organom, gdy wymagaja tego przepisy.',
+          },
+          {
+            heading: '7. Retencja i prawa uzytkownika',
+            body: 'Przechowujemy dane tak dlugo, jak konto jest aktywne. Masz prawo dostepu, sprostowania i usuniecia danych. W UE przysluguja Ci prawa wynikajace z RODO.',
+          },
+          {
+            heading: '8. Bezpieczenstwo',
+            body: 'Stosujemy standardowe srodki bezpieczenstwa, ale zadna metoda przesylania i przechowywania danych nie daje 100% gwarancji.',
+          },
+          {
+            heading: '9. Prywatnosc dzieci',
+            body: 'Serwis nie jest przeznaczony dla dzieci ponizej 13 lat. W przypadku wykrycia takich danych usuwamy je niezwlocznie.',
+          },
+          {
+            heading: '10. Kontakt',
+            body: 'W pytaniach dotyczacych prywatnosci napisz do nas:',
+            footer: 'Email: support@jmelzacki.com lub melzacki.jakub@gmail.com',
+          },
+        ],
+      }
+    : {
+        title: 'Privacy Policy',
+        lastUpdatedLabel: 'Last updated',
+        lastUpdated: 'February 15, 2026',
+        sections: [
+          {
+            heading: '1. Introduction',
+            body: 'At Countrydle, we take privacy seriously. This policy explains what data we collect, how we use it, and when we share it.',
+          },
+          {
+            heading: '2. Information We Collect',
+            body: 'When you register and use the service, we may collect personal and technical data.',
+            list: [
+              'email address and account details (including Google Login data),',
+              'IP address, browser type, and operating system,',
+              'game activity (scores, played games, and history).',
+            ],
+          },
+          {
+            heading: '3. Cookies and Similar Technologies',
+            body: 'We use cookies to keep your session active, improve service performance, and analyze traffic.',
+          },
+          {
+            heading: '4. Google AdSense and Advertising',
+            body: 'We use Google AdSense. Google and partners may use cookies for ad personalization.',
+            list: [
+              'Google Ads settings: https://www.google.com/settings/ads',
+              'Ad choice and opt-out info: https://www.aboutads.info',
+            ],
+            highlighted: true,
+          },
+          {
+            heading: '5. How We Use Your Data',
+            body: 'We use data for account management, game functionality, service quality analysis, and feature development.',
+          },
+          {
+            heading: '6. Sharing Information',
+            body: 'We do not sell personal data. We may share data with trusted service providers (hosting/analytics), Google (login/ads), or authorities where legally required.',
+          },
+          {
+            heading: '7. Retention and User Rights',
+            body: 'We retain data while your account is active. You may request access, correction, or deletion. If you are in the EU, GDPR rights also apply.',
+          },
+          {
+            heading: '8. Security',
+            body: 'We apply industry-standard safeguards, but no data transmission or storage method is fully secure.',
+          },
+          {
+            heading: '9. Children\'s Privacy',
+            body: 'The service is not intended for children under 13. If such data is discovered, it will be removed promptly.',
+          },
+          {
+            heading: '10. Contact Us',
+            body: 'For privacy-related questions, contact us at:',
+            footer: 'Email: support@jmelzacki.com or melzacki.jakub@gmail.com',
+          },
+        ],
+      };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -12,113 +132,39 @@ export default function PrivacyPolicyPage() {
         className="space-y-6"
       >
         <h1 className="text-4xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
-          Privacy Policy
+          {content.title}
         </h1>
-        
+
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 shadow-xl">
-          <p className="mb-6 text-zinc-400 italic text-sm text-right">Last updated: {lastUpdated}</p>
-          
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">1. Introduction</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              At JMelzacki, we take your privacy seriously. This Privacy Policy explains how we collect, use, and share your personal information when you visit our website <strong>Countrydle</strong> and play the game. By using the Website or playing the Game, you agree to the collection and use of your personal information as described in this policy.
-            </p>
-          </section>
+          <p className="mb-6 text-zinc-400 italic text-sm text-right">
+            {content.lastUpdatedLabel}: {content.lastUpdated}
+          </p>
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">2. Information We Collect</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">a. Personal Information</h3>
-                <p className="text-zinc-300">When you register on our Website or log in using Google, we collect the following personal information:</p>
-                <ul className="list-disc list-inside mt-2 text-zinc-300 space-y-1 ml-4">
-                  <li><strong>Email Address:</strong> Used to create and manage your account.</li>
-                  <li><strong>Google Profile Information:</strong> If you log in using Google, we may access your Google account’s basic information, such as your email address and name.</li>
+          {content.sections.map((section, index) => (
+            <section
+              key={section.heading}
+              className={section.highlighted
+                ? 'mb-8 border-l-4 border-blue-500 pl-6 py-2 bg-blue-500/5 rounded-r-lg'
+                : index === content.sections.length - 1
+                  ? 'mb-8 border-t border-zinc-800 pt-8'
+                  : 'mb-8'}
+            >
+              <h2 className="text-2xl font-semibold mb-4 text-white">{section.heading}</h2>
+              <p className="text-zinc-300 leading-relaxed">{section.body}</p>
+              {section.list && (
+                <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4 mt-4">
+                  {section.list.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
                 </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">b. Non-Personal Information</h3>
-                <p className="text-zinc-300">We may collect non-personal information automatically when you use the Website, including:</p>
-                <ul className="list-disc list-inside mt-2 text-zinc-300 space-y-1 ml-4">
-                  <li>IP Address</li>
-                  <li>Browser type and version</li>
-                  <li>Operating system</li>
-                  <li>Game activity (e.g., how many times you have played, performance in the game)</li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">c. Cookies and Similar Technologies</h3>
-                <p className="text-zinc-300">
-                  We use cookies to enhance your experience on the Website and manage sessions. Cookies are small text files stored on your device that allow us to maintain your login session and analyze usage.
+              )}
+              {section.footer && (
+                <p className="text-zinc-300 leading-relaxed mt-2">
+                  <strong>{section.footer}</strong>
                 </p>
-              </div>
-            </div>
-          </section>
-
-          <section className="mb-8 border-l-4 border-blue-500 pl-6 py-2 bg-blue-500/5 rounded-r-lg">
-            <h2 className="text-2xl font-semibold mb-4 text-white">3. Google AdSense and Advertising</h2>
-            <p className="text-zinc-300 leading-relaxed mb-4">
-              We use <strong>Google AdSense</strong> to serve advertisements on our website.
-            </p>
-            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4">
-              <li>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to our website or other websites.</li>
-              <li>Google's use of advertising cookies enables it and its partners to serve ads to our users based on their visit to our site and/or other sites on the Internet.</li>
-              <li>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline transition-colors">Google Ads Settings</a>.</li>
-              <li>Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline transition-colors">www.aboutads.info</a>.</li>
-            </ul>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">4. How We Use Your Information</h2>
-            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4">
-              <li><strong>Account Management:</strong> To create and manage your account, including authentication and login using Google.</li>
-              <li><strong>Game Functionality:</strong> To enable you to play the game and keep track of your daily participation and guesses.</li>
-              <li><strong>Improving the Website:</strong> To analyze usage and improve the performance of our website.</li>
-              <li><strong>Communication:</strong> To send you notifications related to your account or the Game.</li>
-              <li><strong>Internal Analysis:</strong> We may use anonymized data for internal purposes such as machine learning and research to improve game performance and develop new features.</li>
-            </ul>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">5. Sharing Your Information</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              We will not sell or rent your personal information to third parties. However, we may share your information with trusted service providers (such as hosting or analytics), with Google to facilitate login and ads, or if required by law.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">6. Data Retention and Rights</h2>
-            <p className="text-zinc-300 leading-relaxed mb-4">
-              We retain your personal information for as long as your account is active. You have the right to access, rectify, or erase your data. 
-            </p>
-            <p className="text-zinc-300 leading-relaxed">
-              If you are in the EU (GDPR jurisdiction), you have specific rights regarding data portability and withdrawing consent. To exercise these rights, please contact us at <strong>support@jmelzacki.com</strong>.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">7. Security</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              We use industry-standard measures to protect your information, including encryption. However, no method of transmission or storage is 100% secure.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">8. Children's Privacy</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              Our Website is not intended for children under 13. If we discover a child under 13 has provided personal information, we will delete it immediately.
-            </p>
-          </section>
-
-          <section className="mb-8 border-t border-zinc-800 pt-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">9. Contact Us</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              If you have any questions about this Privacy Policy, please contact us at:<br />
-              Email: <strong>support@jmelzacki.com</strong> or <strong>melzacki.jakub@gmail.com</strong>
-            </p>
-          </section>
+              )}
+            </section>
+          ))}
         </div>
       </motion.div>
     </div>

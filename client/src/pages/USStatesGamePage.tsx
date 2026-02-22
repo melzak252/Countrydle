@@ -59,7 +59,7 @@ export default function USStatesGamePage() {
       </div>
 
       <GameInstructions 
-        gameName="US States Game"
+        gameName={t('usStatesPage.title')}
         examples={t('usStatesPage.examples', { returnObjects: true }) as string[]}
         scoring={{
           maxPoints: 2500,

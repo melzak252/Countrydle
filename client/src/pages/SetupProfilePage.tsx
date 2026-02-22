@@ -4,12 +4,14 @@ import { authService } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function SetupProfilePage() {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ export default function SetupProfilePage() {
         username: username.trim(),
         email: user.email
       });
-      toast.success('Username set successfully!');
+      toast.success(t('setupProfile.success'));
       
       if (user) {
         setUser({ ...user, username: username.trim() });
@@ -29,7 +31,7 @@ export default function SetupProfilePage() {
       
       navigate('/game');
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to set username.');
+      toast.error(err.response?.data?.detail || t('setupProfile.error'));
     } finally {
       setLoading(false);
     }
@@ -44,17 +46,17 @@ export default function SetupProfilePage() {
           </div>
         </div>
         
-        <h2 className="text-2xl font-bold mb-2 text-center">Welcome to Countrydle!</h2>
-        <p className="text-zinc-400 text-center mb-8">Please choose a nickname to get started.</p>
+        <h2 className="text-2xl font-bold mb-2 text-center">{t('setupProfile.title')}</h2>
+        <p className="text-zinc-400 text-center mb-8">{t('setupProfile.subtitle')}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Nickname</label>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">{t('setupProfile.nickname')}</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your nickname"
+              placeholder={t('setupProfile.nicknamePlaceholder')}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors"
               required
               minLength={3}
@@ -68,7 +70,7 @@ export default function SetupProfilePage() {
             disabled={loading || !username.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Start Playing'}
+            {loading ? <Loader2 className="animate-spin" size={20} /> : t('setupProfile.startPlaying')}
           </button>
         </form>
       </div>

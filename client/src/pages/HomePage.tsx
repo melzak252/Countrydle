@@ -9,48 +9,50 @@ import {
   Flag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const games = [
-  {
-    id: 'world',
-    title: 'Countrydle',
-    description: 'Guess the mystery country from across the globe.',
-    path: '/game',
-    icon: <Globe size={32} className="text-blue-500" />,
-    color: 'from-blue-600 to-teal-600',
-    hoverColor: 'group-hover:text-blue-400'
-  },
-  {
-    id: 'us-states',
-    title: 'US Statedle',
-    description: 'Test your knowledge of the 50 United States.',
-    path: '/us-states',
-    icon: <MapIcon size={32} className="text-indigo-500" />,
-    color: 'from-indigo-600 to-purple-600',
-    hoverColor: 'group-hover:text-indigo-400'
-  },
-  {
-    id: 'powiaty',
-    title: 'Powiatdle',
-    description: 'Polish counties (powiaty) challenge for experts.',
-    path: '/powiaty',
-    icon: <MapPin size={32} className="text-red-500" />,
-    color: 'from-red-600 to-orange-600',
-    hoverColor: 'group-hover:text-red-400'
-  },
-  {
-    id: 'wojewodztwa',
-    title: 'Województwdle',
-    description: 'Can you identify the 16 Polish provinces?',
-    path: '/wojewodztwa',
-    icon: <Flag size={32} className="text-green-500" />,
-    color: 'from-green-600 to-emerald-600',
-    hoverColor: 'group-hover:text-green-400'
-  }
-];
+import { useTranslation } from 'react-i18next';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const games = [
+    {
+      id: 'world',
+      title: 'Countrydle',
+      description: t('home.games.worldDescription'),
+      path: '/game',
+      icon: <Globe size={32} className="text-blue-500" />,
+      color: 'from-blue-600 to-teal-600',
+      hoverColor: 'group-hover:text-blue-400'
+    },
+    {
+      id: 'us-states',
+      title: 'US Statedle',
+      description: t('home.games.usStatesDescription'),
+      path: '/us-states',
+      icon: <MapIcon size={32} className="text-indigo-500" />,
+      color: 'from-indigo-600 to-purple-600',
+      hoverColor: 'group-hover:text-indigo-400'
+    },
+    {
+      id: 'powiaty',
+      title: 'Powiatdle',
+      description: t('home.games.powiatyDescription'),
+      path: '/powiaty',
+      icon: <MapPin size={32} className="text-red-500" />,
+      color: 'from-red-600 to-orange-600',
+      hoverColor: 'group-hover:text-red-400'
+    },
+    {
+      id: 'wojewodztwa',
+      title: 'Wojewodztwdle',
+      description: t('home.games.wojewodztwaDescription'),
+      path: '/wojewodztwa',
+      icon: <Flag size={32} className="text-green-500" />,
+      color: 'from-green-600 to-emerald-600',
+      hoverColor: 'group-hover:text-green-400'
+    }
+  ];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -77,10 +79,10 @@ export default function HomePage() {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-blue-500 via-teal-400 to-green-500 text-transparent bg-clip-text">
-            Explore the World
+            {t('home.heroTitle')}
           </h1>
           <p className="text-xl text-zinc-400 max-w-2xl mx-auto mb-10">
-            The ultimate geography guessing game. Ask questions, analyze facts, and pinpoint the daily location.
+            {t('home.heroSubtitle')}
           </p>
         </motion.div>
       </section>
@@ -88,7 +90,7 @@ export default function HomePage() {
       {/* How It Works Section */}
       <section className="mb-24">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">How to Play?</h2>
+          <h2 className="text-3xl font-bold mb-4">{t('home.howToPlayTitle')}</h2>
           <div className="w-20 h-1.5 bg-blue-500 mx-auto rounded-full"></div>
         </div>
 
@@ -97,24 +99,24 @@ export default function HomePage() {
             <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <MessageSquare className="text-blue-500" size={32} />
             </div>
-            <h3 className="text-xl font-bold mb-3">1. Ask YES/NO Questions</h3>
-            <p className="text-zinc-400">Ask any Yes/No question to narrow down the possibilities. Is it landlocked? Is it in the Northern Hemisphere?</p>
+            <h3 className="text-xl font-bold mb-3">{t('home.step1Title')}</h3>
+            <p className="text-zinc-400">{t('home.step1Text')}</p>
           </div>
 
           <div className="p-8 bg-zinc-900/50 border border-zinc-800 rounded-3xl text-center">
             <div className="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <Search className="text-teal-500" size={32} />
             </div>
-            <h3 className="text-xl font-bold mb-3">2. Guess for Points</h3>
-            <p className="text-zinc-400">Make your guess! The faster you find the daily mystery location, the more points you earn for your profile.</p>
+            <h3 className="text-xl font-bold mb-3">{t('home.step2Title')}</h3>
+            <p className="text-zinc-400">{t('home.step2Text')}</p>
           </div>
 
           <div className="p-8 bg-zinc-900/50 border border-zinc-800 rounded-3xl text-center">
             <div className="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <Trophy className="text-yellow-500" size={32} />
             </div>
-            <h3 className="text-xl font-bold mb-3">3. See Explanations</h3>
-            <p className="text-zinc-400">Once the game is over, you'll see detailed explanations for why each question was answered the way it was.</p>
+            <h3 className="text-xl font-bold mb-3">{t('home.step3Title')}</h3>
+            <p className="text-zinc-400">{t('home.step3Text')}</p>
           </div>
         </div>
       </section>
@@ -122,8 +124,8 @@ export default function HomePage() {
       {/* Game Tiles Section */}
       <section>
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Choose Your Map</h2>
-          <p className="text-zinc-500">Pick a territory and start your challenge.</p>
+          <h2 className="text-3xl font-bold mb-4">{t('home.chooseMapTitle')}</h2>
+          <p className="text-zinc-500">{t('home.chooseMapText')}</p>
         </div>
 
         <motion.div 
@@ -151,7 +153,7 @@ export default function HomePage() {
                 {game.description}
               </p>
               <div className={`mt-auto w-full py-3 rounded-xl bg-gradient-to-r ${game.color} text-center font-bold shadow-lg opacity-90 group-hover:opacity-100 transition-opacity`}>
-                Play Now
+                {t('home.playNow')}
               </div>
             </motion.div>
           ))}
@@ -168,11 +170,11 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div>
             <div className="text-4xl font-black mb-2">250+</div>
-            <div className="text-zinc-500 uppercase tracking-widest text-xs font-bold">Countries & States</div>
+            <div className="text-zinc-500 uppercase tracking-widest text-xs font-bold">{t('home.statsCountries')}</div>
           </div>
           <div>
-            <div className="text-4xl font-black mb-2">Daily</div>
-            <div className="text-zinc-500 uppercase tracking-widest text-xs font-bold">New Challenges</div>
+            <div className="text-4xl font-black mb-2">{t('home.statsDaily')}</div>
+            <div className="text-zinc-500 uppercase tracking-widest text-xs font-bold">{t('home.statsChallenges')}</div>
           </div>
         </div>
       </motion.div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
 import { Loader2, Medal, Globe, Map, Flag, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 
 type GameType = 'country' | 'powiat' | 'us_state' | 'wojewodztwo';
@@ -10,6 +11,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [gameType, setGameType] = useState<GameType>('country');
+  const { t } = useTranslation();
 
   useEffect(() => {
     setLoading(true);
@@ -31,17 +33,17 @@ export default function LeaderboardPage() {
   }, [gameType]);
 
   const tabs = [
-    { id: 'country', label: 'Countries', icon: Globe },
+    { id: 'country', label: t('tabs.countries'), icon: Globe },
     { id: 'powiat', label: 'Powiaty', icon: Map },
-    { id: 'us_state', label: 'US States', icon: Flag },
-    { id: 'wojewodztwo', label: 'Województwa', icon: MapPin },
+    { id: 'us_state', label: t('tabs.usStates'), icon: Flag },
+    { id: 'wojewodztwo', label: t('tabs.wojewodztwa'), icon: MapPin },
   ];
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-center gap-3 mb-8">
         <Medal className="text-yellow-500" size={40} />
-        <h2 className="text-3xl font-bold">Leaderboard</h2>
+        <h2 className="text-3xl font-bold">{t('leaderboard.title')}</h2>
       </div>
 
       <div className="flex justify-center gap-2 mb-8 flex-wrap">
@@ -70,9 +72,9 @@ export default function LeaderboardPage() {
             <thead className="bg-zinc-800/50 text-zinc-400 border-b border-zinc-800">
               <tr>
                 <th className="px-6 py-4 font-medium w-16 text-center">#</th>
-                <th className="px-6 py-4 font-medium">Player</th>
-                <th className="px-6 py-4 font-medium text-right">Points</th>
-                <th className="px-6 py-4 font-medium text-right">Wins</th>
+                <th className="px-6 py-4 font-medium">{t('leaderboard.player')}</th>
+                <th className="px-6 py-4 font-medium text-right">{t('leaderboard.points')}</th>
+                <th className="px-6 py-4 font-medium text-right">{t('leaderboard.wins')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
@@ -101,9 +103,9 @@ export default function LeaderboardPage() {
             </tbody>
           </table>
           {leaderboard.length === 0 && (
-            <div className="p-8 text-center text-zinc-500">
-              No entries yet. Be the first!
-            </div>
+              <div className="p-8 text-center text-zinc-500">
+              {t('leaderboard.empty')}
+             </div>
           )}
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
 import { Loader2, Calendar, Globe, Map, Flag, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 
 type GameType = 'country' | 'powiat' | 'us_state' | 'wojewodztwo';
@@ -9,6 +10,7 @@ export default function ArchivePage() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [gameType, setGameType] = useState<GameType>('country');
+  const { t } = useTranslation();
 
   useEffect(() => {
     setLoading(true);
@@ -33,10 +35,10 @@ export default function ArchivePage() {
   }, [gameType]);
 
   const tabs = [
-    { id: 'country', label: 'Countries', icon: Globe },
+    { id: 'country', label: t('tabs.countries'), icon: Globe },
     { id: 'powiat', label: 'Powiaty', icon: Map },
-    { id: 'us_state', label: 'US States', icon: Flag },
-    { id: 'wojewodztwo', label: 'Województwa', icon: MapPin },
+    { id: 'us_state', label: t('tabs.usStates'), icon: Flag },
+    { id: 'wojewodztwo', label: t('tabs.wojewodztwa'), icon: MapPin },
   ];
 
   const getEntityName = (entry: any) => {
@@ -44,14 +46,14 @@ export default function ArchivePage() {
       if (gameType === 'powiat') return entry.powiat?.nazwa;
       if (gameType === 'us_state') return entry.us_state?.name;
       if (gameType === 'wojewodztwo') return entry.wojewodztwo?.nazwa;
-      return 'Unknown';
+      return t('archive.unknown');
   };
 
   return (
     <div className="max-w-2xl mx-auto pb-20 px-4">
       <div className="flex items-center justify-center gap-3 mb-8">
         <Calendar className="text-blue-500" size={40} />
-        <h2 className="text-3xl font-bold">Past Answers</h2>
+        <h2 className="text-3xl font-bold">{t('archive.title')}</h2>
       </div>
 
       <div className="flex justify-center gap-2 mb-8 flex-wrap">
@@ -79,8 +81,8 @@ export default function ArchivePage() {
           <table className="w-full text-left">
             <thead className="bg-zinc-800/50 text-zinc-400 border-b border-zinc-800">
               <tr>
-                <th className="px-6 py-4 font-medium">Date</th>
-                <th className="px-6 py-4 font-medium text-right">Answer</th>
+                 <th className="px-6 py-4 font-medium">{t('archive.date')}</th>
+                 <th className="px-6 py-4 font-medium text-right">{t('archive.answer')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
@@ -97,9 +99,9 @@ export default function ArchivePage() {
             </tbody>
           </table>
           {history.length === 0 && (
-            <div className="p-8 text-center text-zinc-500">
-              No past games recorded yet.
-            </div>
+              <div className="p-8 text-center text-zinc-500">
+               {t('archive.empty')}
+             </div>
           )}
         </div>
       )}
