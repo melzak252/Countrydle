@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 interface QuestionInputProps {
   onAsk: (question: string) => Promise<void>;
@@ -11,7 +10,6 @@ interface QuestionInputProps {
 
 export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder }: QuestionInputProps) {
   const [question, setQuestion] = useState('');
-  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +19,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
     setQuestion('');
   };
 
-  const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
+  const defaultPlaceholder = `Ask a yes/no question (e.g., "Is it in Europe?") - ${remainingQuestions} left`;
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto mb-8">

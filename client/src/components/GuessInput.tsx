@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { CountryDisplay } from '../types';
 import { Search } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 interface GuessInputProps {
   countries: CountryDisplay[];
@@ -14,7 +13,6 @@ interface GuessInputProps {
 export default function GuessInput({ countries, onGuess, isLoading, remainingGuesses, placeholder }: GuessInputProps) {
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const { t } = useTranslation();
 
   const filteredCountries = useMemo(() => {
     if (!query || !countries) return [];
@@ -32,7 +30,7 @@ export default function GuessInput({ countries, onGuess, isLoading, remainingGue
     setShowSuggestions(false);
   };
 
-  const defaultPlaceholder = t('inputs.guessPlaceholder', { count: remainingGuesses });
+  const defaultPlaceholder = `Guess the country... (${remainingGuesses} left)`;
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-12 relative">
