@@ -78,66 +78,33 @@ async def sync_from_postgres(session: AsyncSession, collection_name: str):
         print(f"Error checking counts for {collection_name}: {e}")
         return
 
-    print(
-        f"Fetching {pg_count} fragments from Postgres for collection '{collection_name}'..."
-    )
-    points = []
-    if collection_name == "countries":
-        res = await session.execute(select(CountryFragment))
+    # Sync in batches to avoid memory issues and connection resets
+    batch_size = 100
+    for offset in range(0, pg_count, batch_size):
+        print(f"Fetching fragments {offset} to {offset + batch_size} from Postgres for collection '{collection_name}'...")
+        points = []
+        
+        stmt = select(model).order_by(model.id).offset(offset).limit(batch_size)
+        res = await session.execute(stmt)
         fragments = res.scalars().all()
+        
         for f in fragments:
-            points.append(
-                PointStruct(
-                    id=int(f.id),
-                    vector=list(f.embedding),
-                    payload={"country_id": f.country_id, "fragment_text": f.text},
-                )
-            )
-    elif collection_name == "powiaty":
-        res = await session.execute(select(PowiatFragment))
-        fragments = res.scalars().all()
-        for f in fragments:
-            points.append(
-                PointStruct(
-                    id=int(f.id),
-                    vector=list(f.embedding),
-                    payload={"powiat_id": f.powiat_id, "fragment_text": f.text},
-                )
-            )
-    elif collection_name == "wojewodztwa":
-        res = await session.execute(select(WojewodztwoFragment))
-        fragments = res.scalars().all()
-        for f in fragments:
-            points.append(
-                PointStruct(
-                    id=int(f.id),
-                    vector=list(f.embedding),
-                    payload={
-                        "wojewodztwo_id": f.wojewodztwo_id,
-                        "fragment_text": f.text,
-                    },
-                )
-            )
-    elif collection_name == "us_states":
-        res = await session.execute(select(USStateFragment))
-        fragments = res.scalars().all()
-        for f in fragments:
-            points.append(
-                PointStruct(
-                    id=int(f.id),
-                    vector=list(f.embedding),
-                    payload={"us_state_id": f.us_state_id, "fragment_text": f.text},
-                )
-            )
+            payload = {"fragment_text": f.text}
+            if collection_name == "countries": payload["country_id"] = f.country_id
+            elif collection_name == "powiaty": payload["powiat_id"] = f.powiat_id
+            elif collection_name == "wojewodztwa": payload["wojewodztwo_id"] = f.wojewodztwo_id
+            elif collection_name == "us_states": payload["us_state_id"] = f.us_state_id
+            
+            points.append(PointStruct(
+                id=int(f.id), 
+                vector=list(f.embedding), 
+                payload=payload
+            ))
 
-    if points:
-        print(
-            f"Starting upsert of {len(points)} points to collection '{collection_name}'..."
-        )
-        upsert_in_batches(client, collection_name, points, batch_size=200)
-        print(f"Successfully synced {len(points)} points to {collection_name}")
-    else:
-        print(f"No points to sync for collection '{collection_name}'.")
+        if points:
+            upsert_in_batches(client, collection_name, points, batch_size=batch_size)
+    
+    print(f"Successfully finished syncing collection {collection_name}")
 
 
 async def init_qdrant(session: AsyncSession):
