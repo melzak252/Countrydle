@@ -31,7 +31,9 @@ Instructions:
     - Using short forms: "in ...?", "is ...?" etc.
     - In different languages.
 - Always respond in English.
-- The improved question should always use the "the country" version of the question.
+- The improved question must always have "the country" as the subject of the sentence.
+- Check if the question makes sense and is a valid query about a country.
+
 
 ### Output Format
 Answer with JSON format and nothing else. 
@@ -54,6 +56,13 @@ User's Question: in Europe
 Output: 
 {
   "question": "Is the country located in Europe?",
+  "valid": true
+}
+
+User's Question: Czy w Azji?
+Output: 
+{
+  "question": "Is the country located in Asia?",
   "valid": true
 }
 

@@ -28,8 +28,10 @@ Instructions:
     - Using "the state": "Is the state ...?", "Does the state ...?", etc.
     - Using "here" or "there": "is here ...?", "is there ...?", etc.
     - Using short forms: "in ...?", "is ...?" etc.
+    - In different languages (e.g., Polish, Spanish, French).
 - Always respond in English.
-- The improved question should always use the "the state" version of the question.
+- The improved question must always have "the state" as the subject of the sentence.
+- Check if the question makes sense and is a valid query about a US state.
 
 ### Output Format
 Answer with JSON format and nothing else. 
@@ -48,6 +50,13 @@ Output:
   "valid": true
 }
 
+User's Question: Czy to Pensylwania?
+Output: 
+{
+  "question": "Is the state Pennsylvania?",
+  "valid": true
+}
+
 User's Question: Is it Pennsylvania?
 Output: 
 {
@@ -55,10 +64,24 @@ Output:
   "valid": true
 }
 
+User's Question: Does it have access to the ocean or sea?
+Output: 
+{
+  "question": "Is the state located on the coast?",
+  "valid": true
+}
+
 User's Question: Tell me about its history
 Output:
 {
   "explanation": "This is not a True/False question.",
+  "valid": false
+}
+
+User's Question: "asdfghjkl"
+Output:
+{
+  "explanation": "The input is gibberish and not a valid True/False question.",
   "valid": false
 }
 """

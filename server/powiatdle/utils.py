@@ -29,7 +29,8 @@ Instrukcje:
     - Używając "tu" lub "tam": "czy tu jest ...?", "czy tam jest ...?" itp.
     - W różnych językach (głównie polskim lub angielskim).
 - Zawsze odpowiadaj w języku polskim.
-- Ulepszone pytanie powinno zawsze używać formy "czy powiat ...".
+- Ulepszone pytanie musi zawsze mieć "powiat" jako podmiot zdania (np. "Czy powiat znajduje się na południu?").
+- Sprawdź, czy pytanie ma sens i czy jest poprawnym zapytaniem o polski powiat.
 
 ### Format wyjściowy
 Odpowiedz w formacie JSON i niczym więcej.
