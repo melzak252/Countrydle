@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
 
   const tabs = [
     { id: 'country', label: t('tabs.countries'), icon: Globe },
-    { id: 'powiat', label: 'Powiaty', icon: Map },
+    { id: 'powiat', label: t('tabs.powiaty'), icon: Map },
     { id: 'us_state', label: t('tabs.usStates'), icon: Flag },
     { id: 'wojewodztwo', label: t('tabs.wojewodztwa'), icon: MapPin },
   ];

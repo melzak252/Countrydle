@@ -167,6 +167,7 @@ const resources = {
       },
       tabs: {
         countries: 'Countries',
+        powiaty: 'Powiaty',
         usStates: 'US States',
         wojewodztwa: 'Wojewodztwa',
       },
@@ -440,6 +441,7 @@ const resources = {
       },
       tabs: {
         countries: 'Kraje',
+        powiaty: 'Powiaty',
         usStates: 'Stany USA',
         wojewodztwa: 'Wojewodztwa',
       },

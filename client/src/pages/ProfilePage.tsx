@@ -77,7 +77,7 @@ export default function ProfilePage() {
   const currentStats = stats[activeTab];
   const modeLabels = {
     countrydle: t('tabs.countries'),
-    powiatdle: 'Powiaty',
+    powiatdle: t('tabs.powiaty'),
     us_statedle: t('tabs.usStates'),
     wojewodztwodle: t('tabs.wojewodztwa'),
   };
@@ -141,7 +141,7 @@ export default function ProfilePage() {
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2">
         {[
           { id: 'countrydle', label: t('tabs.countries') },
-          { id: 'powiatdle', label: 'Powiaty' },
+          { id: 'powiatdle', label: t('tabs.powiaty') },
           { id: 'us_statedle', label: t('tabs.usStates') },
           { id: 'wojewodztwodle', label: t('tabs.wojewodztwa') }
         ].map((tab) => (
