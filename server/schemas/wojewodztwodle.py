@@ -51,9 +51,8 @@ class WojewodztwoQuestionBase(BaseModel):
     question: str = Field(max_length=100)
 
 
-
 class WojewodztwoQuestionCreate(BaseModel):
-    user_id: int
+    user_id: Optional[int]
     day_id: int
     original_question: str
     question: Optional[str]
@@ -101,4 +100,3 @@ class DayWojewodztwoDisplay(BaseModel):
     date: date
 
     model_config = ConfigDict(from_attributes=True)
-

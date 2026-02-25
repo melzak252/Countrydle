@@ -98,7 +98,7 @@ Wyjście:
 async def ask_question(
     question: PowiatQuestionEnhanced,
     day_powiat: PowiatdleDay,
-    user: User,
+    user: User | None,
     session: AsyncSession,
 ) -> PowiatQuestionCreate:
 
@@ -160,7 +160,7 @@ Odpowiedz w formacie JSON i niczym więcej. Użyj określonego formatu:
         raise
 
     question_create = PowiatQuestionCreate(
-        user_id=user.id,
+        user_id=user.id if user else None,
         day_id=day_powiat.id,
         original_question=question.original_question,
         valid=question.valid,

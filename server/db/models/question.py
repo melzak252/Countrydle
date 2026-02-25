@@ -21,7 +21,7 @@ class CountrydleQuestion(Base):
     __tablename__ = "countrydle_questions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     day_id = Column(Integer, ForeignKey("countrydle_days.id"))
     context = Column(String)
     original_question = Column(String, nullable=False)

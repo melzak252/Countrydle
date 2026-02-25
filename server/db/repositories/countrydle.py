@@ -22,7 +22,6 @@ MAX_QUESTIONS = 10
 
 
 class CountrydleRepository:
-
     def __init__(self, session: AsyncSession):
         self.session = session
 
@@ -160,15 +159,14 @@ class CountrydleRepository:
             .outerjoin(cs, User.id == cs.user_id)
             .where(
                 and_(
-                    User.username.not_like('test_%'),
-                    User.username.not_like('pytest_%'),
-                    User.username.not_like('guess_c_%'),
-                    User.username.not_like('ask_q_%')
+                    User.username.not_like("test_%"),
+                    User.username.not_like("pytest_%"),
+                    User.username.not_like("guess_c_%"),
+                    User.username.not_like("ask_q_%"),
                 )
             )
             .group_by(
                 User.id,
-
                 User.username,
                 up.points,
                 up.streak,
@@ -203,11 +201,11 @@ class CountrydleRepository:
             ).where(CountrydleState.user_id == user.id)
         )
         wins = result.scalar() or 0
-        
+
         q_stats = await CountrydleQuestionsRepository(
             self.session
         ).get_user_question_statistics(user)
-        
+
         questions_asked = q_stats[0] if q_stats else 0
         corr_quest = q_stats[1] if q_stats else 0
         incorr_questions = q_stats[2] if q_stats else 0
@@ -215,7 +213,7 @@ class CountrydleRepository:
         g_stats = await CountrydleGuessRepository(
             self.session
         ).get_user_guess_statistics(user)
-        
+
         guesses_made = g_stats[0] if g_stats else 0
         guesses_correct = g_stats[1] if g_stats else 0
         guesses_incorrect = g_stats[2] if g_stats else 0
@@ -242,18 +240,17 @@ class CountrydleRepository:
 
     async def get_game_statistics(self, user: User) -> GameStatistics:
         up = await UserRepository(self.session).get_user_points(user.id)
-        
+
         # Calculate wins and games played
-        stmt = (
-            select(
-                func.coalesce(func.sum(cast(CountrydleState.won, Integer)), 0).label("wins"),
-                func.count(CountrydleState.id).label("games_played")
-            )
-            .where(CountrydleState.user_id == user.id)
-        )
+        stmt = select(
+            func.coalesce(func.sum(cast(CountrydleState.won, Integer)), 0).label(
+                "wins"
+            ),
+            func.count(CountrydleState.id).label("games_played"),
+        ).where(CountrydleState.user_id == user.id)
         result = await self.session.execute(stmt)
         row = result.first()
-        
+
         wins = row.wins if row else 0
         games_played = row.games_played if row else 0
         points = up.points if up else 0
@@ -263,7 +260,12 @@ class CountrydleRepository:
         history_stmt = (
             select(CountrydleState)
             .options(joinedload(CountrydleState.day).joinedload(CountrydleDay.country))
-            .where(and_(CountrydleState.user_id == user.id, CountrydleState.is_game_over == True))
+            .where(
+                and_(
+                    CountrydleState.user_id == user.id,
+                    CountrydleState.is_game_over == True,
+                )
+            )
             .order_by(CountrydleState.id.desc())
         )
         history_result = await self.session.execute(history_stmt)
@@ -275,7 +277,7 @@ class CountrydleRepository:
                 won=state.won,
                 points=state.points,
                 attempts=state.guesses_made,
-                target_name=state.day.country.name if state.day.date < date.today() else "???"
+                target_name=state.day.country.name if state.won else "???",
             )
             for state in history_states
         ]
@@ -285,9 +287,8 @@ class CountrydleRepository:
             wins=wins,
             games_played=games_played,
             streak=streak,
-            history=history_entries
+            history=history_entries,
         )
-
 
 
 class CountrydleStateRepository:
@@ -307,7 +308,9 @@ class CountrydleStateRepository:
 
         return question_points + guess_points
 
-    async def guess_made(self, state: CountrydleState, guess: CountrydleGuess) -> CountrydleState:
+    async def guess_made(
+        self, state: CountrydleState, guess: CountrydleGuess
+    ) -> CountrydleState:
         state.guesses_made += 1
         state.remaining_guesses -= 1
 
@@ -332,7 +335,11 @@ class CountrydleStateRepository:
         return state
 
     async def get_player_countrydle_state(
-        self, user: User, day: CountrydleDay, max_questions: int = 10, max_guesses: int = 3
+        self,
+        user: User,
+        day: CountrydleDay,
+        max_questions: int = 10,
+        max_guesses: int = 3,
     ) -> CountrydleState:
         result = await self.session.execute(
             select(CountrydleState)
@@ -343,7 +350,9 @@ class CountrydleStateRepository:
         state = result.scalars().first()
 
         if state is None:
-            return await self.add_countrydle_state(user, day, max_questions, max_guesses)
+            return await self.add_countrydle_state(
+                user, day, max_questions, max_guesses
+            )
 
         return state
 
@@ -403,7 +412,13 @@ class CountrydleStateRepository:
 
         return new_entry
 
-    async def get_state(self, user: User, day: CountrydleDay, max_questions: int = 10, max_guesses: int = 3) -> CountrydleState:
+    async def get_state(
+        self,
+        user: User,
+        day: CountrydleDay,
+        max_questions: int = 10,
+        max_guesses: int = 3,
+    ) -> CountrydleState:
         result = await self.session.execute(
             select(CountrydleState)
             .where(CountrydleState.user_id == user.id, CountrydleState.day_id == day.id)
@@ -413,7 +428,9 @@ class CountrydleStateRepository:
         state = result.scalars().first()
 
         if state is None:
-            return await self.add_countrydle_state(user, day, max_questions, max_guesses)
+            return await self.add_countrydle_state(
+                user, day, max_questions, max_guesses
+            )
 
         return state
 

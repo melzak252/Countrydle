@@ -16,7 +16,7 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
   const { gameState } = useUSStatesGameStore();
 
   useEffect(() => {
-    if (gameState?.is_game_over && correctName && geoJsonData) {
+    if (gameState?.won && correctName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
         f.properties.name.toUpperCase() === correctName.toUpperCase()
       );
@@ -29,7 +29,7 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
         }
       }
     }
-  }, [gameState?.is_game_over, correctName, geoJsonData, map]);
+  }, [gameState?.won, correctName, geoJsonData, map]);
 
   return null;
 }
@@ -71,7 +71,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       return getStyleFromState(
           feature, 
           selectedEntityNames, 
-          gameState?.is_game_over ? correctEntity?.name : undefined
+          gameState?.won ? correctEntity?.name : undefined
       );
   }
 
@@ -84,17 +84,17 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
                  const newStyle = getStyleFromState(
                      feature, 
                      selectedEntityNames, 
-                     gameState?.is_game_over ? correctStateName || correctEntity?.name : undefined
-                 );
+                      gameState?.won ? correctStateName || correctEntity?.name : undefined
+                  );
                  layer.setStyle(newStyle);
                  
-                 if (gameState?.is_game_over && (correctStateName || correctEntity?.name) && (feature.properties.name.toUpperCase() === (correctStateName || correctEntity?.name).toUpperCase())) {
-                     layer.bringToFront();
-                 }
+                  if (gameState?.won && (correctStateName || correctEntity?.name) && (feature.properties.name.toUpperCase() === (correctStateName || correctEntity?.name).toUpperCase())) {
+                      layer.bringToFront();
+                  }
              }
         });
     }
-  }, [selectedEntityNames, gameState?.is_game_over, correctStateName]);
+  }, [selectedEntityNames, gameState?.won, correctStateName]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.name;
@@ -118,7 +118,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
         const style = getStyleFromState(
             feature, 
             currentSelected, 
-            gameState?.is_game_over ? correctEntity?.name : undefined
+            gameState?.won ? correctEntity?.name : undefined
         );
         l.setStyle(style);
       }
@@ -167,7 +167,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
           <RotateCcw size={16} />
         </button>
         
-        {gameState?.is_game_over && (
+        {gameState?.won && (
           <button
             onClick={handleZoomToCorrect}
             className="bg-green-600 text-white p-2 rounded shadow-md hover:bg-green-700 transition-colors border border-green-500 w-8 h-8 flex items-center justify-center cursor-pointer"

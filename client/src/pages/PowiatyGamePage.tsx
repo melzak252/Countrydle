@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 import { usePowiatyGameStore } from '../stores/gameStore';
-import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from 'react-router-dom';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
@@ -24,25 +22,14 @@ export default function PowiatyGamePage() {
     makeGuess
   } = usePowiatyGameStore();
 
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, isAuthLoading, navigate]);
+    fetchGameState();
+    fetchPowiaty();
+  }, [fetchGameState, fetchPowiaty]);
 
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchGameState();
-      fetchPowiaty();
-    }
-  }, [isAuthenticated, fetchGameState, fetchPowiaty]);
-
-  if (isAuthLoading || (!gameState && isLoading)) {
+  if (!gameState && isLoading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <Loader2 className="animate-spin text-blue-500" size={48} />
@@ -97,7 +84,7 @@ export default function PowiatyGamePage() {
 
             <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
                 <PowiatyMap 
-                    correctPowiatName={correctPowiat?.name}
+                    correctPowiatName={gameState.won ? correctPowiat?.nazwa : undefined}
                     className="h-full"
                 />
             </div>
@@ -113,7 +100,7 @@ export default function PowiatyGamePage() {
                     ? t('powiatyPage.wonMessage')
                     : t('powiatyPage.lostMessage')}
                 </p>
-                 {(correctPowiat || guesses.find(g => g.answer)?.guess) && (
+                 {gameState.won && (correctPowiat || guesses.find(g => g.answer)?.guess) && (
                     <p className="text-base">{t('powiatyPage.answer')} <span className="font-bold">{correctPowiat?.nazwa || guesses.find(g => g.answer)?.guess}</span></p>
                  )}
               </div>
@@ -229,4 +216,3 @@ export default function PowiatyGamePage() {
     </div>
   );
 }
-

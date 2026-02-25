@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Wojewodztwo, WojewodztwodleDay, User
 from qdrant.utils import get_fragments_matching_question
-from schemas.wojewodztwodle import WojewodztwoQuestionCreate, WojewodztwoQuestionEnhanced
+from schemas.wojewodztwodle import (
+    WojewodztwoQuestionCreate,
+    WojewodztwoQuestionEnhanced,
+)
 from db.repositories.wojewodztwo import WojewodztwoRepository
 
 
@@ -98,15 +101,21 @@ Wyjście:
 async def ask_question(
     question: WojewodztwoQuestionEnhanced,
     day_wojewodztwo: WojewodztwodleDay,
-    user: User,
+    user: User | None,
     session: AsyncSession,
 ) -> WojewodztwoQuestionCreate:
 
     fragments, question_vector = await get_fragments_matching_question(
-        question.question, "wojewodztwo_id", day_wojewodztwo.wojewodztwo_id, "wojewodztwa", session
+        question.question,
+        "wojewodztwo_id",
+        day_wojewodztwo.wojewodztwo_id,
+        "wojewodztwa",
+        session,
     )
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
-    wojewodztwo: Wojewodztwo = await WojewodztwoRepository(session).get(day_wojewodztwo.wojewodztwo_id)
+    wojewodztwo: Wojewodztwo = await WojewodztwoRepository(session).get(
+        day_wojewodztwo.wojewodztwo_id
+    )
 
     system_prompt = f"""
 Jesteś asystentem AI w grze, w której gracze próbują odgadnąć polskie województwo, zadając pytania Tak/Nie.
@@ -160,7 +169,7 @@ Odpowiedz w formacie JSON i niczym więcej. Użyj określonego formatu:
         raise
 
     question_create = WojewodztwoQuestionCreate(
-        user_id=user.id,
+        user_id=user.id if user else None,
         day_id=day_wojewodztwo.id,
         original_question=question.original_question,
         valid=question.valid,

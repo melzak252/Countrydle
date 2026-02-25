@@ -11,7 +11,6 @@ class QuestionBase(BaseModel):
     question: str = Field(max_length=100)
 
 
-
 class QuestionEnhanced(BaseModel):
     original_question: str
     question: str | None
@@ -23,7 +22,7 @@ class QuestionEnhanced(BaseModel):
 
 class QuestionCreate(QuestionEnhanced):
     answer: bool | None
-    user_id: int
+    user_id: int | None
     day_id: int
     context: str | None
 
@@ -36,7 +35,7 @@ class QuestionDisplay(BaseModel):
     question: str | None
     valid: bool
     answer: bool | None
-    user_id: int
+    user_id: int | None
     day_id: int
     asked_at: datetime
 
@@ -54,7 +53,7 @@ class InvalidQuestionDisplay(BaseModel):
     original_question: str
     valid: bool
     answer: bool | None
-    user_id: int
+    user_id: int | None
     day_id: int
     asked_at: datetime
 

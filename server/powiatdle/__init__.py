@@ -25,7 +25,7 @@ from schemas.powiatdle import (
     PowiatQuestionDisplay,
     DayPowiatDisplay,
 )
-from users.utils import get_current_user
+from users.utils import get_current_or_guest_user, is_guest_user
 import powiatdle.utils as putils
 from game_logic import GameConfig, GameRules, GameState
 
@@ -53,7 +53,7 @@ async def get_history(session: AsyncSession = Depends(get_db)):
     "/state", response_model=Union[PowiatdleStateResponse, PowiatdleEndStateResponse]
 )
 async def get_state(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
@@ -64,10 +64,10 @@ async def get_state(
 
     if state is None:
         state = await PowiatdleStateRepository(session).create_state(
-            user, 
+            user,
             day_powiat,
             max_questions=POWIATDLE_CONFIG.max_questions,
-            max_guesses=POWIATDLE_CONFIG.max_guesses
+            max_guesses=POWIATDLE_CONFIG.max_guesses,
         )
 
     guesses = await PowiatdleGuessRepository(session).get_user_day_guesses(
@@ -77,7 +77,7 @@ async def get_state(
         user, day_powiat
     )
 
-    if state.is_game_over:
+    if state.is_game_over and state.won:
         powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
         return PowiatdleEndStateResponse(
             user=user,
@@ -116,7 +116,7 @@ async def get_powiaty(
 @router.post("/question", response_model=PowiatQuestionDisplay)
 async def ask_question(
     question: PowiatQuestionBase,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
@@ -134,7 +134,7 @@ async def ask_question(
     enh_question = await putils.enhance_question(question.question)
     if not enh_question.valid:
         question_create = PowiatQuestionCreate(
-            user_id=user.id,
+            user_id=None if is_guest_user(user) else user.id,
             day_id=day_powiat.id,
             original_question=enh_question.original_question,
             valid=enh_question.valid,
@@ -158,7 +158,10 @@ async def ask_question(
         return new_quest
 
     question_create, question_vector = await putils.ask_question(
-        enh_question, day_powiat, user, session
+        enh_question,
+        day_powiat,
+        None if is_guest_user(user) else user,
+        session,
     )
 
     new_quest = await PowiatdleQuestionRepository(session).create_question(
@@ -187,7 +190,7 @@ async def ask_question(
 @router.post("/guess", response_model=PowiatGuessDisplay)
 async def make_guess(
     guess: PowiatGuessBase,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()

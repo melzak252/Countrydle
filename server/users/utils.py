@@ -1,5 +1,6 @@
 import os
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 from fastapi_mail import MessageSchema
 
@@ -17,6 +18,9 @@ from utils.email import fm, fm_noreply
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+GUEST_COOKIE_NAME = "guest_id"
+GUEST_EMAIL_DOMAIN = "guest.local"
+GUEST_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -70,23 +74,15 @@ def verify_email_token(token: str):
 
 
 async def get_current_user(
-    response: Response, access_token: str = Cookie(None), session: AsyncSession = Depends(get_db)
+    response: Response,
+    access_token: str = Cookie(None),
+    session: AsyncSession = Depends(get_db),
 ) -> User:
-    print(f"DEBUG: get_current_user called. Token: {access_token}")
-    if access_token is None:
-        print("DEBUG: Token is None")
-
-    try:
-        email = verify_access_token(access_token)
-        print(f"DEBUG: Token verified. Email: {email}")
-    except Exception as e:
-        print(f"DEBUG: verify_access_token failed: {e}")
-        raise
+    email = verify_access_token(access_token)
 
     user = await UserRepository(session).get_by_email(email)
 
     if not user:
-        print("DEBUG: User not found in DB")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -95,10 +91,10 @@ async def get_current_user(
 
     # Refresh the token and cookie
     new_access_token = create_access_token(data={"sub": user.email})
-    
+
     # Calculate expiration time for the cookie
     expiration = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     response.set_cookie(
         key="access_token",
         value=new_access_token,
@@ -107,11 +103,66 @@ async def get_current_user(
         samesite="lax",
         path="/",
         expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
     return user
 
+
+def is_guest_user(user: User | None) -> bool:
+    if not user:
+        return False
+
+    return user.email.endswith(f"@{GUEST_EMAIL_DOMAIN}")
+
+
+async def _get_or_create_guest_user(session: AsyncSession, guest_id: str) -> User:
+    guest_email = f"guest_{guest_id}@{GUEST_EMAIL_DOMAIN}"
+    user_repository = UserRepository(session)
+    guest_user = await user_repository.get_by_email(guest_email)
+    if guest_user:
+        return guest_user
+
+    guest_user = User(
+        username=f"guest_{guest_id[:12]}",
+        email=guest_email,
+        verified=True,
+    )
+    session.add(guest_user)
+    await session.commit()
+    await session.refresh(guest_user)
+    return guest_user
+
+
+async def get_current_or_guest_user(
+    response: Response,
+    access_token: str = Cookie(None),
+    guest_id: str = Cookie(None, alias=GUEST_COOKIE_NAME),
+    session: AsyncSession = Depends(get_db),
+) -> User:
+    if access_token:
+        try:
+            return await get_current_user(
+                response=response,
+                access_token=access_token,
+                session=session,
+            )
+        except HTTPException:
+            pass
+
+    if not guest_id:
+        guest_id = uuid4().hex
+        response.set_cookie(
+            key=GUEST_COOKIE_NAME,
+            value=guest_id,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            path="/",
+            max_age=GUEST_COOKIE_MAX_AGE_SECONDS,
+        )
+
+    return await _get_or_create_guest_user(session, guest_id)
 
 
 async def send_verification_email(
