@@ -10,6 +10,7 @@ node_modules
 
 data/
 postgres_data*/
+postgres_test_data/
 qdrant_data/
 backups/
 

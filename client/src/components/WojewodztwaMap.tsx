@@ -16,7 +16,7 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
   const { gameState } = useWojewodztwaGameStore();
 
   useEffect(() => {
-    if (gameState?.is_game_over && correctName && geoJsonData) {
+    if (gameState?.won && correctName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
         f.properties.nazwa.toUpperCase() === correctName.toUpperCase()
       );
@@ -29,7 +29,7 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
         }
       }
     }
-  }, [gameState?.is_game_over, correctName, geoJsonData, map]);
+  }, [gameState?.won, correctName, geoJsonData, map]);
 
   return null;
 }
@@ -71,7 +71,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
       return getStyleFromState(
           feature, 
           selectedEntityNames, 
-          gameState?.is_game_over ? correctEntity?.nazwa : undefined
+          gameState?.won ? correctEntity?.nazwa : undefined
       );
   }
 
@@ -84,17 +84,17 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
                  const newStyle = getStyleFromState(
                      feature, 
                      selectedEntityNames, 
-                     gameState?.is_game_over ? correctWojewodztwoName || correctEntity?.nazwa : undefined
-                 );
+                      gameState?.won ? correctWojewodztwoName || correctEntity?.nazwa : undefined
+                  );
                  layer.setStyle(newStyle);
                  
-                 if (gameState?.is_game_over && (correctWojewodztwoName || correctEntity?.nazwa) && (feature.properties.nazwa.toUpperCase() === (correctWojewodztwoName || correctEntity?.nazwa).toUpperCase())) {
-                     layer.bringToFront();
-                 }
+                  if (gameState?.won && (correctWojewodztwoName || correctEntity?.nazwa) && (feature.properties.nazwa.toUpperCase() === (correctWojewodztwoName || correctEntity?.nazwa).toUpperCase())) {
+                      layer.bringToFront();
+                  }
              }
         });
     }
-  }, [selectedEntityNames, gameState?.is_game_over, correctWojewodztwoName]);
+  }, [selectedEntityNames, gameState?.won, correctWojewodztwoName]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.nazwa;
@@ -118,7 +118,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
         const style = getStyleFromState(
             feature, 
             currentSelected, 
-            gameState?.is_game_over ? correctEntity?.nazwa : undefined
+            gameState?.won ? correctEntity?.nazwa : undefined
         );
         l.setStyle(style);
       }
@@ -130,7 +130,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
   };
 
   const handleZoomToCorrect = () => {
-    const targetName = correctWojewodztwoName || correctEntity?.name;
+    const targetName = correctWojewodztwoName || correctEntity?.nazwa;
     
     if (map && targetName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
@@ -167,7 +167,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
           <RotateCcw size={16} />
         </button>
         
-        {gameState?.is_game_over && (
+        {gameState?.won && (
           <button
             onClick={handleZoomToCorrect}
             className="bg-green-600 text-white p-2 rounded shadow-md hover:bg-green-700 transition-colors border border-green-500 w-8 h-8 flex items-center justify-center cursor-pointer"

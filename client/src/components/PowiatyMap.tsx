@@ -16,7 +16,7 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
   const { gameState } = usePowiatyGameStore();
 
   useEffect(() => {
-    if (gameState?.is_game_over && correctName && geoJsonData) {
+    if (gameState?.won && correctName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
         f.properties.nazwa.toUpperCase() === correctName.toUpperCase()
       );
@@ -29,7 +29,7 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
         }
       }
     }
-  }, [gameState?.is_game_over, correctName, geoJsonData, map]);
+  }, [gameState?.won, correctName, geoJsonData, map]);
 
   return null;
 }
@@ -71,7 +71,7 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
       return getStyleFromState(
           feature, 
           selectedEntityNames, 
-          gameState?.is_game_over ? correctEntity?.nazwa : undefined
+          gameState?.won ? correctEntity?.nazwa : undefined
       );
   }
 
@@ -84,17 +84,17 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
                  const newStyle = getStyleFromState(
                      feature, 
                      selectedPowiaty, 
-                     gameState?.is_game_over ? correctPowiatName || correctEntity?.nazwa : undefined
-                 );
+                      gameState?.won ? correctPowiatName || correctEntity?.nazwa : undefined
+                  );
                  layer.setStyle(newStyle);
                  
-                 if (gameState?.is_game_over && (correctPowiatName || correctEntity?.nazwa) && (feature.properties.nazwa.toUpperCase() === (correctPowiatName || correctEntity?.nazwa ).toUpperCase())) {
-                     layer.bringToFront();
-                 }
+                  if (gameState?.won && (correctPowiatName || correctEntity?.nazwa) && (feature.properties.nazwa.toUpperCase() === (correctPowiatName || correctEntity?.nazwa ).toUpperCase())) {
+                      layer.bringToFront();
+                  }
              }
         });
     }
-  }, [selectedPowiaty, gameState?.is_game_over, correctPowiatName]);
+  }, [selectedPowiaty, gameState?.won, correctPowiatName]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.nazwa;
@@ -118,7 +118,7 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
         const style = getStyleFromState(
             feature, 
             currentSelected, 
-            gameState?.is_game_over ? correctEntity?.nazwa : undefined
+            gameState?.won ? correctEntity?.nazwa : undefined
         );
         l.setStyle(style);
       }
@@ -168,7 +168,7 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
           <RotateCcw size={16} />
         </button>
         
-        {gameState?.is_game_over && (
+        {gameState?.won && (
           <button
             onClick={handleZoomToCorrect}
             className="bg-green-600 text-white p-2 rounded shadow-md hover:bg-green-700 transition-colors border border-green-500 w-8 h-8 flex items-center justify-center cursor-pointer"

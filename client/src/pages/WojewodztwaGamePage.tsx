@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 import { useWojewodztwaGameStore } from '../stores/gameStore';
-import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from 'react-router-dom';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
@@ -24,25 +22,14 @@ export default function WojewodztwaGamePage() {
     makeGuess
   } = useWojewodztwaGameStore();
 
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, isAuthLoading, navigate]);
+    fetchGameState();
+    fetchWojewodztwa();
+  }, [fetchGameState, fetchWojewodztwa]);
 
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchGameState();
-      fetchWojewodztwa();
-    }
-  }, [isAuthenticated, fetchGameState, fetchWojewodztwa]);
-
-  if (isAuthLoading || (!gameState && isLoading)) {
+  if (!gameState && isLoading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <Loader2 className="animate-spin text-blue-500" size={48} />
@@ -96,7 +83,7 @@ export default function WojewodztwaGamePage() {
             {/* Map */}
 
             <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
-                <WojewodztwaMap correctWojewodztwoName={correctWojewodztwo?.nazwa} className="h-full" />
+                <WojewodztwaMap correctWojewodztwoName={gameState.won ? correctWojewodztwo?.nazwa : undefined} className="h-full" />
             </div>
 
             {/* Game Over State */}
@@ -110,7 +97,7 @@ export default function WojewodztwaGamePage() {
                     ? t('wojewodztwaPage.wonMessage')
                     : t('wojewodztwaPage.lostMessage')}
                 </p>
-                 {(correctWojewodztwo || guesses.find(g => g.answer)?.guess) && (
+                 {gameState.won && (correctWojewodztwo || guesses.find(g => g.answer)?.guess) && (
                     <p className="text-base">{t('wojewodztwaPage.answer')} <span className="font-bold">{correctWojewodztwo?.nazwa || guesses.find(g => g.answer)?.guess}</span></p>
                  )}
               </div>
@@ -226,4 +213,3 @@ export default function WojewodztwaGamePage() {
     </div>
   );
 }
-

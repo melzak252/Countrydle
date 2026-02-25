@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../stores/gameStore';
-import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from 'react-router-dom';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
@@ -23,25 +21,14 @@ export default function GamePage() {
     askQuestion, 
     makeGuess 
   } = useGameStore();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, isAuthLoading, navigate]);
+    fetchGameState();
+    fetchCountries();
+  }, [fetchGameState, fetchCountries]);
 
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchGameState();
-      fetchCountries();
-    }
-  }, [isAuthenticated, fetchGameState, fetchCountries]);
-
-  if (isAuthLoading || (!gameState && isLoading)) {
+  if (!gameState && isLoading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <Loader2 className="animate-spin text-blue-500" size={48} />
@@ -91,7 +78,7 @@ export default function GamePage() {
         <div className="w-full lg:w-3/4 flex flex-col p-3 md:p-4 gap-4 lg:overflow-y-auto custom-scrollbar">
             {/* Map */}
             <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
-                <MapBox correctCountryName={correctCountry?.name} className="h-full" />
+                <MapBox correctCountryName={gameState.won ? correctCountry?.name : undefined} className="h-full" />
             </div>
 
             {/* Game Over Message */}
@@ -105,7 +92,7 @@ export default function GamePage() {
                     ? t('gamePage.wonMessage')
                     : t('gamePage.lostMessage')}
                 </p>
-                 {(correctCountry || guesses.find(g => g.answer)?.guess) && (
+                 {gameState.won && (correctCountry || guesses.find(g => g.answer)?.guess) && (
                     <p className="text-sm md:text-base">{t('gamePage.answer')} <span className="font-bold">{correctCountry?.name || guesses.find(g => g.answer)?.guess}</span></p>
                  )}
               </div>
@@ -221,4 +208,3 @@ export default function GamePage() {
     </div>
   );
 }
-

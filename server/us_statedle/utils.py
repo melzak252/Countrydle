@@ -120,7 +120,7 @@ Output:
 async def ask_question(
     question: USStateQuestionEnhanced,
     day_state: USStatedleDay,
-    user: User,
+    user: User | None,
     session: AsyncSession,
 ) -> USStateQuestionCreate:
 
@@ -181,7 +181,7 @@ Answer with JSON format and nothing else. Use the specific format:
         raise
 
     question_create = USStateQuestionCreate(
-        user_id=user.id,
+        user_id=user.id if user else None,
         day_id=day_state.id,
         original_question=question.original_question,
         valid=question.valid,

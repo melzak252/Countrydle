@@ -25,7 +25,7 @@ from schemas.us_statedle import (
     USStateQuestionDisplay,
     DayUSStateDisplay,
 )
-from users.utils import get_current_user
+from users.utils import get_current_or_guest_user, is_guest_user
 import us_statedle.utils as uutils
 from game_logic import GameConfig, GameRules, GameState
 
@@ -40,7 +40,7 @@ def db_state_to_game_state(db_state) -> GameState:
         questions_used=USSTATEDLE_CONFIG.max_questions - db_state.remaining_questions,
         guesses_used=USSTATEDLE_CONFIG.max_guesses - db_state.remaining_guesses,
         is_won=db_state.won,
-        is_lost=db_state.is_game_over and not db_state.won
+        is_lost=db_state.is_game_over and not db_state.won,
     )
 
 
@@ -49,9 +49,11 @@ async def get_history(session: AsyncSession = Depends(get_db)):
     return await USStatedleDayRepository(session).get_history()
 
 
-@router.get("/state", response_model=Union[USStatedleStateResponse, USStatedleEndStateResponse])
+@router.get(
+    "/state", response_model=Union[USStatedleStateResponse, USStatedleEndStateResponse]
+)
 async def get_state(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
@@ -59,19 +61,23 @@ async def get_state(
         day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
 
     state = await USStatedleStateRepository(session).get_state(user, day_state)
-    
+
     if state is None:
         state = await USStatedleStateRepository(session).create_state(
-            user, 
+            user,
             day_state,
             max_questions=USSTATEDLE_CONFIG.max_questions,
-            max_guesses=USSTATEDLE_CONFIG.max_guesses
+            max_guesses=USSTATEDLE_CONFIG.max_guesses,
         )
 
-    guesses = await USStatedleGuessRepository(session).get_user_day_guesses(user, day_state)
-    questions = await USStatedleQuestionRepository(session).get_user_day_questions(user, day_state)
+    guesses = await USStatedleGuessRepository(session).get_user_day_guesses(
+        user, day_state
+    )
+    questions = await USStatedleQuestionRepository(session).get_user_day_questions(
+        user, day_state
+    )
 
-    if state.is_game_over:
+    if state.is_game_over and state.won:
         us_state = await USStateRepository(session).get(day_state.us_state_id)
         return USStatedleEndStateResponse(
             user=user,
@@ -79,7 +85,7 @@ async def get_state(
             state=USStatedleStateSchema.model_validate(state),
             guesses=guesses,
             questions=questions,
-            us_state=us_state
+            us_state=us_state,
         )
 
     return USStatedleStateResponse(
@@ -88,11 +94,12 @@ async def get_state(
         state=USStatedleStateSchema.model_validate(state),
         guesses=guesses,
         questions=questions,
-        us_state=None
+        us_state=None,
     )
 
 
 from schemas.countrydle import LeaderboardEntry
+
 
 @router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(session: AsyncSession = Depends(get_db)):
@@ -109,7 +116,7 @@ async def get_us_states(
 @router.post("/question", response_model=USStateQuestionDisplay)
 async def ask_question(
     question: USStateQuestionBase,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
@@ -119,14 +126,15 @@ async def ask_question(
     if not game_rules.can_ask_question(current_game_state):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No more questions left or game over!"
+            detail="No more questions left or game over!",
         )
 
     from qdrant.utils import add_question_to_qdrant
+
     enh_question = await uutils.enhance_question(question.question)
     if not enh_question.valid:
         question_create = USStateQuestionCreate(
-            user_id=user.id,
+            user_id=None if is_guest_user(user) else user.id,
             day_id=day_state.id,
             original_question=enh_question.original_question,
             valid=enh_question.valid,
@@ -135,19 +143,30 @@ async def ask_question(
             explanation=enh_question.explanation,
             context=None,
         )
-        new_quest = await USStatedleQuestionRepository(session).create_question(question_create)
+        new_quest = await USStatedleQuestionRepository(session).create_question(
+            question_create
+        )
 
         # Update state
         new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
+        state.remaining_questions = (
+            USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
+        )
         state.questions_asked += 1
         await USStatedleStateRepository(session).update_state(state)
 
         return new_quest
 
-    question_create, question_vector = await uutils.ask_question(enh_question, day_state, user, session)
-    
-    new_quest = await USStatedleQuestionRepository(session).create_question(question_create)
+    question_create, question_vector = await uutils.ask_question(
+        enh_question,
+        day_state,
+        None if is_guest_user(user) else user,
+        session,
+    )
+
+    new_quest = await USStatedleQuestionRepository(session).create_question(
+        question_create
+    )
 
     await add_question_to_qdrant(
         new_quest,
@@ -159,7 +178,9 @@ async def ask_question(
 
     # Update state
     new_game_state = game_rules.process_question(current_game_state)
-    state.remaining_questions = USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
+    state.remaining_questions = (
+        USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
+    )
     state.questions_asked += 1
     await USStatedleStateRepository(session).update_state(state)
 
@@ -169,7 +190,7 @@ async def ask_question(
 @router.post("/guess", response_model=USStateGuessDisplay)
 async def make_guess(
     guess: USStateGuessBase,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
@@ -179,33 +200,35 @@ async def make_guess(
     if not game_rules.can_make_guess(current_game_state):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No more guesses left or game over!"
+            detail="No more guesses left or game over!",
         )
 
     is_correct = False
     if guess.us_state_id:
-        is_correct = (guess.us_state_id == day_state.us_state_id)
-    
+        is_correct = guess.us_state_id == day_state.us_state_id
+
     guess_create = USStateGuessCreate(
         guess=guess.guess,
         us_state_id=guess.us_state_id,
         day_id=day_state.id,
         user_id=user.id,
-        answer=is_correct
+        answer=is_correct,
     )
-    
+
     new_guess = await USStatedleGuessRepository(session).add_guess(guess_create)
 
     # Update state
     new_game_state = game_rules.process_guess(current_game_state, is_correct)
-    state.remaining_guesses = USSTATEDLE_CONFIG.max_guesses - new_game_state.guesses_used
+    state.remaining_guesses = (
+        USSTATEDLE_CONFIG.max_guesses - new_game_state.guesses_used
+    )
     state.guesses_made += 1
     state.won = new_game_state.is_won
     state.is_game_over = new_game_state.is_game_over
-    
+
     if state.won:
         state.points = await USStatedleStateRepository(session).calc_points(state)
-        
+
     await USStatedleStateRepository(session).update_state(state)
 
     return new_guess

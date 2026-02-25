@@ -3,7 +3,12 @@ from sqlalchemy import select, func, and_, cast, Integer, desc
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.powiat import Powiat
-from db.models.powiatdle import PowiatdleDay, PowiatdleState, PowiatdleGuess, PowiatdleQuestion
+from db.models.powiatdle import (
+    PowiatdleDay,
+    PowiatdleState,
+    PowiatdleGuess,
+    PowiatdleQuestion,
+)
 from db.models.user import User
 from schemas.powiatdle import PowiatGuessCreate, PowiatQuestionCreate
 from schemas.countrydle import LeaderboardEntry
@@ -19,7 +24,9 @@ class PowiatRepository:
         return list(result.scalars().all())
 
     async def get(self, powiat_id: int) -> Optional[Powiat]:
-        result = await self.session.execute(select(Powiat).where(Powiat.id == powiat_id))
+        result = await self.session.execute(
+            select(Powiat).where(Powiat.id == powiat_id)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_name(self, nazwa: str) -> Optional[Powiat]:
@@ -40,9 +47,11 @@ class PowiatdleDayRepository:
 
     async def generate_new_day_powiat(self) -> PowiatdleDay:
         # Get a random powiat
-        result = await self.session.execute(select(Powiat).order_by(func.random()).limit(1))
+        result = await self.session.execute(
+            select(Powiat).order_by(func.random()).limit(1)
+        )
         powiat = result.scalar_one_or_none()
-        
+
         if not powiat:
             raise Exception("No powiaty found in database!")
 
@@ -54,6 +63,7 @@ class PowiatdleDayRepository:
 
     async def get_history(self) -> List[PowiatdleDay]:
         from datetime import date
+
         result = await self.session.execute(
             select(PowiatdleDay)
             .options(joinedload(PowiatdleDay.powiat))
@@ -67,23 +77,28 @@ class PowiatdleStateRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_state(self, user: User, day: PowiatdleDay) -> Optional[PowiatdleState]:
+    async def get_state(
+        self, user: User, day: PowiatdleDay
+    ) -> Optional[PowiatdleState]:
         result = await self.session.execute(
             select(PowiatdleState).where(
-                and_(
-                    PowiatdleState.user_id == user.id,
-                    PowiatdleState.day_id == day.id
-                )
+                and_(PowiatdleState.user_id == user.id, PowiatdleState.day_id == day.id)
             )
         )
         return result.scalar_one_or_none()
 
-    async def create_state(self, user: User, day: PowiatdleDay, max_questions: int = 15, max_guesses: int = 3) -> PowiatdleState:
+    async def create_state(
+        self,
+        user: User,
+        day: PowiatdleDay,
+        max_questions: int = 15,
+        max_guesses: int = 3,
+    ) -> PowiatdleState:
         new_state = PowiatdleState(
-            user_id=user.id, 
+            user_id=user.id,
             day_id=day.id,
             remaining_questions=max_questions,
-            remaining_guesses=max_guesses
+            remaining_guesses=max_guesses,
         )
         self.session.add(new_state)
         await self.session.commit()
@@ -109,47 +124,46 @@ class PowiatdleStateRepository:
                 User.id,
                 User.username,
                 func.coalesce(func.sum(PowiatdleState.points), 0).label("points"),
-                func.coalesce(func.sum(cast(PowiatdleState.won, Integer)), 0).label("wins"),
+                func.coalesce(func.sum(cast(PowiatdleState.won, Integer)), 0).label(
+                    "wins"
+                ),
             )
             .join(User, User.id == PowiatdleState.user_id)
             .where(
                 and_(
-                    User.username.not_like('test_%'),
-                    User.username.not_like('pytest_%'),
-                    User.username.not_like('guess_c_%'),
-                    User.username.not_like('ask_q_%')
+                    User.username.not_like("test_%"),
+                    User.username.not_like("pytest_%"),
+                    User.username.not_like("guess_c_%"),
+                    User.username.not_like("ask_q_%"),
                 )
             )
             .group_by(User.id, User.username)
             .order_by(desc("points"), desc("wins"))
         )
-        
+
         result = await self.session.execute(stmt)
-        
+
         return [
             LeaderboardEntry(
                 id=row.id,
                 username=row.username,
                 points=row.points,
                 wins=row.wins,
-                streak=0 # Streak not implemented yet for sub-games
+                streak=0,  # Streak not implemented yet for sub-games
             )
             for row in result.all()
         ]
 
     async def get_user_statistics(self, user: User) -> GameStatistics:
         # Calculate total points and wins
-        stmt = (
-            select(
-                func.coalesce(func.sum(PowiatdleState.points), 0).label("points"),
-                func.coalesce(func.sum(cast(PowiatdleState.won, Integer)), 0).label("wins"),
-                func.count(PowiatdleState.id).label("games_played")
-            )
-            .where(PowiatdleState.user_id == user.id)
-        )
+        stmt = select(
+            func.coalesce(func.sum(PowiatdleState.points), 0).label("points"),
+            func.coalesce(func.sum(cast(PowiatdleState.won, Integer)), 0).label("wins"),
+            func.count(PowiatdleState.id).label("games_played"),
+        ).where(PowiatdleState.user_id == user.id)
         result = await self.session.execute(stmt)
         row = result.first()
-        
+
         points = row.points if row else 0
         wins = row.wins if row else 0
         games_played = row.games_played if row else 0
@@ -158,20 +172,26 @@ class PowiatdleStateRepository:
         history_stmt = (
             select(PowiatdleState)
             .options(joinedload(PowiatdleState.day).joinedload(PowiatdleDay.powiat))
-            .where(and_(PowiatdleState.user_id == user.id, PowiatdleState.is_game_over == True))
+            .where(
+                and_(
+                    PowiatdleState.user_id == user.id,
+                    PowiatdleState.is_game_over == True,
+                )
+            )
             .order_by(PowiatdleState.id.desc())
         )
         history_result = await self.session.execute(history_stmt)
         history_states = history_result.scalars().all()
 
         from datetime import date
+
         history_entries = [
             GameHistoryEntry(
                 date=str(state.day.date),
                 won=state.won,
                 points=state.points,
                 attempts=state.guesses_made,
-                target_name=state.day.powiat.nazwa if state.day.date < date.today() else "???"
+                target_name=state.day.powiat.nazwa if state.won else "???",
             )
             for state in history_states
         ]
@@ -180,8 +200,8 @@ class PowiatdleStateRepository:
             points=points,
             wins=wins,
             games_played=games_played,
-            streak=0, # TODO: Implement streak
-            history=history_entries
+            streak=0,  # TODO: Implement streak
+            history=history_entries,
         )
 
 
@@ -196,14 +216,15 @@ class PowiatdleGuessRepository:
         await self.session.refresh(new_guess)
         return new_guess
 
-    async def get_user_day_guesses(self, user: User, day: PowiatdleDay) -> List[PowiatdleGuess]:
+    async def get_user_day_guesses(
+        self, user: User, day: PowiatdleDay
+    ) -> List[PowiatdleGuess]:
         result = await self.session.execute(
-            select(PowiatdleGuess).where(
-                and_(
-                    PowiatdleGuess.user_id == user.id,
-                    PowiatdleGuess.day_id == day.id
-                )
-            ).order_by(PowiatdleGuess.guessed_at.asc())
+            select(PowiatdleGuess)
+            .where(
+                and_(PowiatdleGuess.user_id == user.id, PowiatdleGuess.day_id == day.id)
+            )
+            .order_by(PowiatdleGuess.guessed_at.asc())
         )
         return list(result.scalars().all())
 
@@ -212,20 +233,26 @@ class PowiatdleQuestionRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_question(self, question_create: PowiatQuestionCreate) -> PowiatdleQuestion:
+    async def create_question(
+        self, question_create: PowiatQuestionCreate
+    ) -> PowiatdleQuestion:
         new_question = PowiatdleQuestion(**question_create.model_dump())
         self.session.add(new_question)
         await self.session.commit()
         await self.session.refresh(new_question)
         return new_question
 
-    async def get_user_day_questions(self, user: User, day: PowiatdleDay) -> List[PowiatdleQuestion]:
+    async def get_user_day_questions(
+        self, user: User, day: PowiatdleDay
+    ) -> List[PowiatdleQuestion]:
         result = await self.session.execute(
-            select(PowiatdleQuestion).where(
+            select(PowiatdleQuestion)
+            .where(
                 and_(
                     PowiatdleQuestion.user_id == user.id,
-                    PowiatdleQuestion.day_id == day.id
+                    PowiatdleQuestion.day_id == day.id,
                 )
-            ).order_by(PowiatdleQuestion.asked_at.asc())
+            )
+            .order_by(PowiatdleQuestion.asked_at.asc())
         )
         return list(result.scalars().all())

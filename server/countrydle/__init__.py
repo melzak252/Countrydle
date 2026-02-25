@@ -31,7 +31,7 @@ from db.repositories.question import (
 )
 from qdrant.utils import add_question_to_qdrant
 from db.repositories.country import CountryRepository
-from users.utils import get_current_user
+from users.utils import get_current_or_guest_user, is_guest_user
 
 import countrydle.utils as gutils
 from game_logic import GameConfig, GameRules, GameState
@@ -59,15 +59,15 @@ def db_state_to_game_state(db_state) -> GameState:
 
 @router.get("/end/state", response_model=CountrydleEndStateResponse)
 async def get_end_state(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_country = await CountrydleRepository(session).get_today_country()
     state = await CountrydleStateRepository(session).get_state(
-        user, 
+        user,
         day_country,
         max_questions=COUNTRYDLE_CONFIG.max_questions,
-        max_guesses=COUNTRYDLE_CONFIG.max_guesses
+        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
     guesses = await CountrydleGuessRepository(session).get_user_day_guesses(
         user, day_country
@@ -76,10 +76,10 @@ async def get_end_state(
         user, day_country
     )
 
-    if not state.is_game_over:
+    if not state.is_game_over or not state.won:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The player is still playing the game!",
+            detail="The target country is only available after winning.",
         )
 
     country = await CountryRepository(session).get(day_country.country_id)
@@ -97,7 +97,7 @@ async def get_end_state(
     "/state", response_model=Union[CountrydleStateResponse, CountrydleEndStateResponse]
 )
 async def get_state(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_country = await CountrydleRepository(session).get_today_country()
@@ -105,13 +105,13 @@ async def get_state(
         day_country = await CountrydleRepository(session).generate_new_day_country()
 
     state = await CountrydleStateRepository(session).get_state(
-        user, 
+        user,
         day_country,
         max_questions=COUNTRYDLE_CONFIG.max_questions,
-        max_guesses=COUNTRYDLE_CONFIG.max_guesses
+        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
 
-    if state and state.is_game_over:
+    if state and state.is_game_over and state.won:
         return await get_end_state(user, session)
 
     guesses = await CountrydleGuessRepository(session).get_user_day_guesses(
@@ -123,10 +123,10 @@ async def get_state(
 
     if state is None:
         new_state = await CountrydleStateRepository(session).add_countrydle_state(
-            user, 
+            user,
             day_country,
             max_questions=COUNTRYDLE_CONFIG.max_questions,
-            max_guesses=COUNTRYDLE_CONFIG.max_guesses
+            max_guesses=COUNTRYDLE_CONFIG.max_guesses,
         )
         return CountrydleStateResponse(
             user=user,
@@ -168,7 +168,7 @@ async def get_countries(
 @router.post("/question", response_model=Union[QuestionDisplay, InvalidQuestionDisplay])
 async def ask_question(
     question: QuestionBase,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
@@ -176,10 +176,10 @@ async def ask_question(
         daily_country = await CountrydleRepository(session).generate_new_day_country()
 
     state = await CountrydleStateRepository(session).get_player_countrydle_state(
-        user, 
+        user,
         daily_country,
         max_questions=COUNTRYDLE_CONFIG.max_questions,
-        max_guesses=COUNTRYDLE_CONFIG.max_guesses
+        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
 
     # Use Game Logic
@@ -194,7 +194,7 @@ async def ask_question(
     enh_question = await gutils.enhance_question(question.question)
     if not enh_question.valid:
         question_create = QuestionCreate(
-            user_id=user.id,
+            user_id=None if is_guest_user(user) else user.id,
             day_id=daily_country.id,
             original_question=enh_question.original_question,
             valid=enh_question.valid,
@@ -224,7 +224,7 @@ async def ask_question(
     question_create, question_vector = await gutils.ask_question(
         question=enh_question,
         day_country=daily_country,
-        user=user,
+        user=None if is_guest_user(user) else user,
         session=session,
     )
 
@@ -258,7 +258,7 @@ async def ask_question(
 @router.post("/guess", response_model=GuessDisplay)
 async def make_guess(
     guess: GuessBase,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
@@ -266,10 +266,10 @@ async def make_guess(
         daily_country = await CountrydleRepository(session).generate_new_day_country()
 
     state = await CountrydleStateRepository(session).get_player_countrydle_state(
-        user, 
+        user,
         daily_country,
         max_questions=COUNTRYDLE_CONFIG.max_questions,
-        max_guesses=COUNTRYDLE_CONFIG.max_guesses
+        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
 
     # Use Game Logic

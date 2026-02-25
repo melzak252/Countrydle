@@ -52,9 +52,8 @@ class USStateQuestionBase(BaseModel):
     question: str = Field(max_length=100)
 
 
-
 class USStateQuestionCreate(BaseModel):
-    user_id: int
+    user_id: Optional[int]
     day_id: int
     original_question: str
     question: Optional[str]
@@ -102,4 +101,3 @@ class DayUSStateDisplay(BaseModel):
     date: date
 
     model_config = ConfigDict(from_attributes=True)
-

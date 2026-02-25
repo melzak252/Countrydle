@@ -27,7 +27,7 @@ class USStatedleState(Base):
     __tablename__ = "us_statedle_states"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     day_id = Column(Integer, ForeignKey("us_statedle_days.id"))
     remaining_questions = Column(Integer, nullable=False, default=8)
     remaining_guesses = Column(Integer, nullable=False, default=3)

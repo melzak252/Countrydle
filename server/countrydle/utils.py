@@ -126,7 +126,7 @@ User's Question: "asdfghjkl"
 async def ask_question(
     question: QuestionEnhanced,
     day_country: CountrydleDay,
-    user: User,
+    user: User | None,
     session: AsyncSession,
 ) -> QuestionCreate:
 
@@ -220,7 +220,7 @@ Country: Japan. Question: Has the country hosted the 2025 World Expo?
         raise
 
     question_create = QuestionCreate(
-        user_id=user.id,
+        user_id=user.id if user else None,
         day_id=day_country.id,
         original_question=question.original_question,
         valid=question.valid,
