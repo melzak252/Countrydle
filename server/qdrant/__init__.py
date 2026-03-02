@@ -103,6 +103,9 @@ async def sync_from_postgres(session: AsyncSession, collection_name: str):
 
         if points:
             upsert_in_batches(client, collection_name, points, batch_size=batch_size)
+            
+        # Clear the session cache to prevent memory leaks
+        session.expunge_all()
     
     print(f"Successfully finished syncing collection {collection_name}")
 

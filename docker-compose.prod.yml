@@ -8,7 +8,7 @@ volumes:
 
 services:
   db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg14
     container_name: database
     restart: always
     deploy:
