@@ -1,8 +1,9 @@
 import os
 from typing import List, Dict, Any
-from langchain_neo4j import Neo4jGraph
+from langchain_community.graphs import Neo4jGraph
 from langchain_openai import ChatOpenAI
 from langchain_community.chains.graph_qa.cypher import GraphCypherQAChain
+from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,7 +35,8 @@ class GraphRAGManager:
         """
         node_label = GAME_NODE_LABELS.get(game_key, "RootEntity")
         
-        entity_filter_prompt = f"""
+        # Use a regular string and .format() or just manual replacement to avoid brace hell
+        entity_filter_template = """
         You are an expert at generating Neo4j Cypher queries for the Countrydle game suite.
         The user is asking a question about a specific entity named '{entity_name}' in the '{game_key}' game.
         
@@ -42,25 +44,33 @@ class GraphRAGManager:
         1. You MUST only query nodes with the label '{node_label}'.
         2. You MUST only query nodes and relationships where the 'entity' property is EXACTLY '{entity_name}'.
         3. Every MATCH clause should include a filter for the entity property.
+        4. Use the 'original_id' property of nodes to match names/values (e.g., n.original_id = 'Central Europe').
         
         Example:
         MATCH (n:{node_label} {{entity: '{entity_name}'}})-[r {{entity: '{entity_name}'}}]->(m:{node_label} {{entity: '{entity_name}'}})
-        WHERE n.name CONTAINS 'Population'
-        RETURN m.name
+        WHERE m.original_id CONTAINS 'Warsaw'
+        RETURN m.original_id
         
         Schema:
-        {{schema}}
+        {schema}
         
-        Question: {{question}}
+        Question: {question}
         Cypher Query:
-        """
+        """.replace("{entity_name}", entity_name).replace("{game_key}", game_key).replace("{node_label}", node_label)
+        
+        prompt = PromptTemplate(
+            template=entity_filter_template,
+            input_variables=["schema", "question"]
+        )
+        
+        print(f"Schema for {game_key}: {self.graph.schema}")
         
         return GraphCypherQAChain.from_llm(
             llm=self.llm,
             graph=self.graph,
             verbose=True,
             allow_dangerous_requests=True,
-            cypher_prompt=entity_filter_prompt
+            cypher_prompt=prompt
         )
 
     def query_graph(self, question: str, entity_name: str, game_key: str) -> str:
