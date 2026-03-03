@@ -11,7 +11,6 @@ from langchain_neo4j import Neo4jGraph
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from tqdm.asyncio import tqdm
 
 # Silence Pydantic serialization warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
@@ -68,14 +67,14 @@ async def check_entity_exists(entity_name: str, game_label: str) -> bool:
     result = await asyncio.to_thread(graph.query, query, {"name": entity_name, "game": game_label})
     return result[0]['exists'] if result else False
 
-async def process_entity(file_path: str, entity_name: str, game_label: str, node_label: str, semaphore: asyncio.Semaphore, pbar=None):
+async def process_entity(file_path: str, entity_name: str, game_label: str, node_label: str, semaphore: asyncio.Semaphore):
     async with semaphore:
         # Check if already exists
         if await check_entity_exists(entity_name, game_label):
-            if pbar:
-                pbar.update(1)
+            print(f"  Skipping {entity_name} (already exists in Neo4j)")
             return
 
+        print(f"  Processing {entity_name}...")
         try:
             loader = UnstructuredMarkdownLoader(file_path)
             raw_docs = await asyncio.to_thread(loader.load)
@@ -118,12 +117,9 @@ async def process_entity(file_path: str, entity_name: str, game_label: str, node
                 """
                 await asyncio.to_thread(graph.query, link_query, {"entity": entity_name, "game": game_label})
             
+            print(f"  Finished {entity_name}.")
         except Exception as e:
-            # Use tqdm.write to avoid breaking the progress bar
-            tqdm.write(f"\nError processing {entity_name}: {e}")
-        finally:
-            if pbar:
-                pbar.update(1)
+            print(f"  Error processing {entity_name}: {e}")
 
 async def process_game(game_key: str, semaphore: asyncio.Semaphore):
     config = GAME_CONFIG[game_key]
@@ -139,15 +135,13 @@ async def process_game(game_key: str, semaphore: asyncio.Semaphore):
 
     files = [f for f in os.listdir(directory_path) if f.endswith(".md")]
     
-    with tqdm(total=len(files), desc=f"Processing {game_label}", unit="entity") as pbar:
-        tasks = []
-        for filename in files:
-            file_path = os.path.join(directory_path, filename)
-            entity_name = filename.replace(".md", "").replace("_", " ")
-            tasks.append(process_entity(file_path, entity_name, game_label, node_label, semaphore, pbar))
+    tasks = []
+    for filename in files:
+        file_path = os.path.join(directory_path, filename)
+        entity_name = filename.replace(".md", "").replace("_", " ")
+        tasks.append(process_entity(file_path, entity_name, game_label, node_label, semaphore))
 
-        await asyncio.gather(*tasks)
-    
+    await asyncio.gather(*tasks)
     export_to_json(game_key)
 
 async def main():
@@ -179,16 +173,14 @@ async def main():
             node_label = config["node_label"]
             
             print(f"\n--- Populating GraphRAG for specific {game_label} entities ---")
-            with tqdm(total=len(args.entities), desc=f"Processing {game_label}", unit="entity") as pbar:
-                tasks = []
-                for entity in args.entities:
-                    file_path = os.path.join(directory_path, f"{entity}.md")
-                    if os.path.exists(file_path):
-                        tasks.append(process_entity(file_path, entity, game_label, node_label, semaphore, pbar))
-                    else:
-                        tqdm.write(f"\nFile {file_path} not found.")
-                        pbar.update(1)
-                await asyncio.gather(*tasks)
+            tasks = []
+            for entity in args.entities:
+                file_path = os.path.join(directory_path, f"{entity}.md")
+                if os.path.exists(file_path):
+                    tasks.append(process_entity(file_path, entity, game_label, node_label, semaphore))
+                else:
+                    print(f"File {file_path} not found.")
+            await asyncio.gather(*tasks)
             export_to_json(args.game)
         else:
             await process_game(args.game, semaphore)
