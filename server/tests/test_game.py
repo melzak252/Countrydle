@@ -233,7 +233,7 @@ async def test_make_guess_correct_mocked(async_client):
 
 @pytest.mark.anyio
 async def test_ask_question_too_long(auth_client):
-    long_question = "a" * 51
+    long_question = "a" * 101
     question_data = {"question": long_question}
     response = await auth_client.post("/countrydle/question", json=question_data)
     assert response.status_code == 422  # Unprocessable Entity for validation error

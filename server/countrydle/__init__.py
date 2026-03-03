@@ -31,7 +31,7 @@ from db.repositories.question import (
 )
 from qdrant.utils import add_question_to_qdrant
 from db.repositories.country import CountryRepository
-from users.utils import get_current_or_guest_user, is_guest_user
+from users.utils import get_current_or_guest_user
 
 import countrydle.utils as gutils
 from game_logic import GameConfig, GameRules, GameState
@@ -76,10 +76,10 @@ async def get_end_state(
         user, day_country
     )
 
-    if not state.is_game_over or not state.won:
+    if not state.is_game_over:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The target country is only available after winning.",
+            detail="The target country is only available after the game is over.",
         )
 
     country = await CountryRepository(session).get(day_country.country_id)
@@ -97,12 +97,29 @@ async def get_end_state(
     "/state", response_model=Union[CountrydleStateResponse, CountrydleEndStateResponse]
 )
 async def get_state(
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_country = await CountrydleRepository(session).get_today_country()
     if not day_country:
         day_country = await CountrydleRepository(session).generate_new_day_country()
+
+    if user is None:
+        return CountrydleStateResponse(
+            user=None,
+            date=str(day_country.date),
+            state=CountrydleStateSchema(
+                remaining_questions=COUNTRYDLE_CONFIG.max_questions,
+                remaining_guesses=COUNTRYDLE_CONFIG.max_guesses,
+                questions_asked=0,
+                guesses_made=0,
+                is_game_over=False,
+                won=False,
+            ),
+            guesses=[],
+            questions=[],
+            country=None,
+        )
 
     state = await CountrydleStateRepository(session).get_state(
         user,
@@ -111,7 +128,7 @@ async def get_state(
         max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
 
-    if state and state.is_game_over and state.won:
+    if state and state.is_game_over:
         return await get_end_state(user, session)
 
     guesses = await CountrydleGuessRepository(session).get_user_day_guesses(
@@ -168,12 +185,51 @@ async def get_countries(
 @router.post("/question", response_model=Union[QuestionDisplay, InvalidQuestionDisplay])
 async def ask_question(
     question: QuestionBase,
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()
+
+    if user is None:
+        enh_question = await gutils.enhance_question(question.question)
+        if not enh_question.valid:
+            question_create = QuestionCreate(
+                user_id=None,
+                day_id=daily_country.id,
+                original_question=enh_question.original_question,
+                valid=enh_question.valid,
+                question=enh_question.question,
+                answer=None,
+                explanation=enh_question.explanation,
+                context=None,
+            )
+            new_quest = await CountrydleQuestionsRepository(session).create_question(
+                question_create
+            )
+            return InvalidQuestionDisplay.model_validate(new_quest)
+
+        question_create, question_vector = await gutils.ask_question(
+            question=enh_question,
+            day_country=daily_country,
+            user=None,
+            session=session,
+        )
+
+        new_quest = await CountrydleQuestionsRepository(session).create_question(
+            question_create
+        )
+
+        await add_question_to_qdrant(
+            new_quest,
+            question_vector,
+            filter_key="country_id",
+            filter_value=daily_country.country_id,
+            collection_name="countries_questions",
+        )
+
+        return QuestionDisplay.model_validate(new_quest)
 
     state = await CountrydleStateRepository(session).get_player_countrydle_state(
         user,
@@ -194,7 +250,7 @@ async def ask_question(
     enh_question = await gutils.enhance_question(question.question)
     if not enh_question.valid:
         question_create = QuestionCreate(
-            user_id=None if is_guest_user(user) else user.id,
+            user_id=user.id,
             day_id=daily_country.id,
             original_question=enh_question.original_question,
             valid=enh_question.valid,
@@ -224,7 +280,7 @@ async def ask_question(
     question_create, question_vector = await gutils.ask_question(
         question=enh_question,
         day_country=daily_country,
-        user=None if is_guest_user(user) else user,
+        user=user,
         session=session,
     )
 
@@ -258,12 +314,26 @@ async def ask_question(
 @router.post("/guess", response_model=GuessDisplay)
 async def make_guess(
     guess: GuessBase,
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()
+
+    if user is None:
+        is_correct = False
+        if guess.country_id is not None:
+            is_correct = guess.country_id == daily_country.country_id
+            
+        from datetime import datetime
+        return GuessDisplay(
+            id=0,
+            guess=guess.guess,
+            country_id=guess.country_id,
+            answer=is_correct,
+            guessed_at=datetime.now()
+        )
 
     state = await CountrydleStateRepository(session).get_player_countrydle_state(
         user,

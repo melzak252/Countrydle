@@ -11,6 +11,7 @@ interface GameData {
   dailyDate: string | null;
   selectedEntityNames: string[];
   isLoading: boolean;
+  isGuest: boolean;
   error: string | null;
 }
 
@@ -23,6 +24,8 @@ interface GameActions {
   toggleEntitySelection: (name: string) => void;
   clearSelection: () => void;
 }
+
+const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
 
 // Factory to create stores for different game types
 const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewodztwa') => {
@@ -42,19 +45,40 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
     dailyDate: null,
     selectedEntityNames: [],
     isLoading: false,
+    isGuest: false,
     error: null,
 
     fetchGameState: async () => {
       set({ isLoading: true, error: null });
       try {
         const data = await service.getState(); 
+        const isGuest = data.user === null;
+        
+        let gameState = data.state;
+        let questions = data.questions;
+        let guesses = data.guesses;
+        let correctEntity = data.country || data.powiat || data.us_state || data.wojewodztwo || null;
+
+        if (isGuest && data.date) {
+          const localData = localStorage.getItem(getLocalStateKey(gameType, data.date));
+          if (localData) {
+            const parsed = JSON.parse(localData);
+            gameState = parsed.state;
+            questions = parsed.questions;
+            guesses = parsed.guesses;
+            if (parsed.correctEntity) {
+              correctEntity = parsed.correctEntity;
+            }
+          }
+        }
         
         set({
-          gameState: data.state,
-          questions: data.questions,
-          guesses: data.guesses,
+          gameState,
+          questions,
+          guesses,
           dailyDate: data.date,
-          correctEntity: data.country || data.powiat || data.us_state || data.wojewodztwo || null,
+          isGuest,
+          correctEntity,
           isLoading: false,
         });
       } catch (e: any) {
@@ -80,8 +104,33 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
     askQuestion: async (questionText: string) => {
       set({ isLoading: true, error: null });
       try {
-        await service.askQuestion(questionText);
-        await get().fetchGameState();
+        const question = await service.askQuestion(questionText);
+        
+        const { isGuest, dailyDate, gameState, questions, guesses, correctEntity } = get();
+        
+        if (isGuest && dailyDate && gameState) {
+          const newQuestions = [...questions, question];
+          const newGameState = {
+            ...gameState,
+            remaining_questions: gameState.remaining_questions - 1,
+            questions_asked: gameState.questions_asked + 1,
+          };
+          
+          localStorage.setItem(getLocalStateKey(gameType, dailyDate), JSON.stringify({
+            state: newGameState,
+            questions: newQuestions,
+            guesses,
+            correctEntity
+          }));
+          
+          set({
+            questions: newQuestions,
+            gameState: newGameState,
+            isLoading: false
+          });
+        } else {
+          await get().fetchGameState();
+        }
       } catch (e: any) {
          console.error(e);
          if (e.response?.status === 400 && e.response?.data?.detail?.includes("over")) {
@@ -95,8 +144,46 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
     makeGuess: async (guessText: string, entityId?: number) => {
       set({ isLoading: true, error: null });
       try {
-        await service.makeGuess(guessText, entityId);
-        await get().fetchGameState();
+        const guess = await service.makeGuess(guessText, entityId);
+        
+        const { isGuest, dailyDate, gameState, questions, guesses, entities } = get();
+
+        if (isGuest && dailyDate && gameState) {
+          const newGuesses = [...guesses, guess];
+          const isCorrect = guess.answer;
+          const newGameState = {
+            ...gameState,
+            remaining_guesses: gameState.remaining_guesses - 1,
+            guesses_made: gameState.guesses_made + 1,
+            won: isCorrect || false,
+            is_game_over: isCorrect || gameState.remaining_guesses <= 1
+          };
+
+          let correctEntity = get().correctEntity;
+          if (isCorrect && entityId) {
+            correctEntity = entities.find(e => e.id === entityId) || null;
+          }
+
+          localStorage.setItem(getLocalStateKey(gameType, dailyDate), JSON.stringify({
+            state: newGameState,
+            questions,
+            guesses: newGuesses,
+            correctEntity
+          }));
+
+          set({
+            guesses: newGuesses,
+            gameState: newGameState,
+            correctEntity,
+            isLoading: false
+          });
+
+          if (newGameState.is_game_over) {
+            await get().fetchGameState(); // To get the correct entity from backend
+          }
+        } else {
+          await get().fetchGameState();
+        }
       } catch (e: any) {
           console.error(e);
           if (e.response?.status === 400 && e.response?.data?.detail?.includes("over")) {

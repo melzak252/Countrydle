@@ -19,7 +19,8 @@ export default function WojewodztwaGamePage() {
     fetchGameState, 
     fetchEntities: fetchWojewodztwa, 
     askQuestion, 
-    makeGuess
+    makeGuess,
+    isGuest
   } = useWojewodztwaGameStore();
 
   const { t } = useTranslation();
@@ -44,9 +45,16 @@ export default function WojewodztwaGamePage() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 lg:static flex items-center justify-between px-3 md:px-4 py-2 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm shrink-0">
          <div className="flex items-center gap-2 md:gap-4">
-            <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 to-white text-transparent bg-clip-text">
-              {t('wojewodztwaPage.title')}
-            </h2>
+            <div className="flex flex-col">
+                <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 to-white text-transparent bg-clip-text">
+                {t('wojewodztwaPage.title')}
+                </h2>
+                {isGuest && (
+                    <span className="text-[10px] text-amber-500 font-medium uppercase tracking-tighter leading-none">
+                        {t('gamePage.guestMode', 'Guest Mode - Progress saved locally')}
+                    </span>
+                )}
+            </div>
             <div className="h-4 w-px bg-zinc-700"></div>
             <p className="text-xs text-zinc-400">{useWojewodztwaGameStore.getState().dailyDate}</p>
          </div>

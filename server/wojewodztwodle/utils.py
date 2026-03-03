@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Wojewodztwo, WojewodztwodleDay, User
 from qdrant.utils import get_fragments_matching_question
+import qdrant
 from schemas.wojewodztwodle import (
     WojewodztwoQuestionCreate,
     WojewodztwoQuestionEnhanced,
@@ -111,6 +112,7 @@ async def ask_question(
         day_wojewodztwo.wojewodztwo_id,
         "wojewodztwa",
         session,
+        limit=qdrant.WOJEWODZTWDLE_CONTEXT_LIMIT
     )
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
     wojewodztwo: Wojewodztwo = await WojewodztwoRepository(session).get(

@@ -122,7 +122,7 @@ class CountrydleEndStateSchema(BaseModel):
 
 
 class CountrydleStateResponse(BaseModel):
-    user: UserDisplay
+    user: UserDisplay | None = None
     date: str
     state: CountrydleStateSchema
     questions: List[QuestionDisplay | InvalidQuestionDisplay] = []

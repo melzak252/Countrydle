@@ -45,12 +45,15 @@ export interface GameState {
 }
 
 export interface GameResponse {
-  user: User;
+  user: User | null;
   date: string;
   state: GameState;
   questions: Question[];
   guesses: Guess[];
-  country?: Country; // Only present in end state
+  country?: Country;
+  powiat?: any;
+  us_state?: any;
+  wojewodztwo?: any;
 }
 
 export interface CountryDisplay {

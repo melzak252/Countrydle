@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Country, CountrydleDay, User
 from qdrant.utils import get_fragments_matching_question
+import qdrant
 from schemas.country import DayCountryDisplay
 from schemas.countrydle import QuestionCreate, QuestionEnhanced
 from db.repositories.country import CountryRepository
@@ -131,7 +132,7 @@ async def ask_question(
 ) -> QuestionCreate:
 
     fragments, question_vector = await get_fragments_matching_question(
-        question.question, "country_id", day_country.country_id, "countries", session
+        question.question, "country_id", day_country.country_id, "countries", session, limit=qdrant.COUNTRYDLE_CONTEXT_LIMIT
     )
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
     country: Country = await CountryRepository(session).get(day_country.country_id)

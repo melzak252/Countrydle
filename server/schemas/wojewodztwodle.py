@@ -82,7 +82,7 @@ class WojewodztwoQuestionEnhanced(BaseModel):
 
 
 class WojewodztwodleStateResponse(BaseModel):
-    user: UserDisplay
+    user: UserDisplay | None = None
     date: str
     state: WojewodztwodleStateSchema
     guesses: List[WojewodztwoGuessDisplay]

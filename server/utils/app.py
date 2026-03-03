@@ -25,11 +25,12 @@ async def init_models(engine: AsyncEngine):
         alembic_cfg.set_main_option("sqlalchemy.url", db_url)
     
     try:
+        print("Starting database migrations...", flush=True)
         # Run in a thread to avoid blocking the event loop
         await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
-        logging.info("Database migrations applied successfully.")
+        print("Database migrations applied successfully.", flush=True)
     except Exception as e:
-        logging.error(f"Error applying migrations: {e}")
+        print(f"Error applying migrations: {e}", flush=True)
         raise e
 
 

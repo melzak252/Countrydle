@@ -25,7 +25,7 @@ from schemas.us_statedle import (
     USStateQuestionDisplay,
     DayUSStateDisplay,
 )
-from users.utils import get_current_or_guest_user, is_guest_user
+from users.utils import get_current_or_guest_user
 import us_statedle.utils as uutils
 from game_logic import GameConfig, GameRules, GameState
 
@@ -53,12 +53,33 @@ async def get_history(session: AsyncSession = Depends(get_db)):
     "/state", response_model=Union[USStatedleStateResponse, USStatedleEndStateResponse]
 )
 async def get_state(
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     if not day_state:
         day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
+
+    if user is None:
+        return USStatedleStateResponse(
+            user=None,
+            date=str(day_state.date),
+            state=USStatedleStateSchema(
+                id=0,
+                user_id=0,
+                day_id=day_state.id,
+                remaining_questions=USSTATEDLE_CONFIG.max_questions,
+                remaining_guesses=USSTATEDLE_CONFIG.max_guesses,
+                questions_asked=0,
+                guesses_made=0,
+                is_game_over=False,
+                won=False,
+                points=0,
+            ),
+            guesses=[],
+            questions=[],
+            us_state=None,
+        )
 
     state = await USStatedleStateRepository(session).get_state(user, day_state)
 
@@ -77,7 +98,7 @@ async def get_state(
         user, day_state
     )
 
-    if state.is_game_over and state.won:
+    if state.is_game_over:
         us_state = await USStateRepository(session).get(day_state.us_state_id)
         return USStatedleEndStateResponse(
             user=user,
@@ -116,10 +137,52 @@ async def get_us_states(
 @router.post("/question", response_model=USStateQuestionDisplay)
 async def ask_question(
     question: USStateQuestionBase,
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
+    
+    from qdrant.utils import add_question_to_qdrant
+
+    if user is None:
+        enh_question = await uutils.enhance_question(question.question)
+        if not enh_question.valid:
+            question_create = USStateQuestionCreate(
+                user_id=None,
+                day_id=day_state.id,
+                original_question=enh_question.original_question,
+                valid=enh_question.valid,
+                question=enh_question.question,
+                answer=None,
+                explanation=enh_question.explanation,
+                context=None,
+            )
+            new_quest = await USStatedleQuestionRepository(session).create_question(
+                question_create
+            )
+            return new_quest
+
+        question_create, question_vector = await uutils.ask_question(
+            enh_question,
+            day_state,
+            None,
+            session,
+        )
+
+        new_quest = await USStatedleQuestionRepository(session).create_question(
+            question_create
+        )
+
+        await add_question_to_qdrant(
+            new_quest,
+            question_vector,
+            filter_key="us_state_id",
+            filter_value=day_state.us_state_id,
+            collection_name="us_states_questions",
+        )
+
+        return new_quest
+
     state = await USStatedleStateRepository(session).get_state(user, day_state)
 
     current_game_state = db_state_to_game_state(state)
@@ -129,12 +192,10 @@ async def ask_question(
             detail="No more questions left or game over!",
         )
 
-    from qdrant.utils import add_question_to_qdrant
-
     enh_question = await uutils.enhance_question(question.question)
     if not enh_question.valid:
         question_create = USStateQuestionCreate(
-            user_id=None if is_guest_user(user) else user.id,
+            user_id=user.id,
             day_id=day_state.id,
             original_question=enh_question.original_question,
             valid=enh_question.valid,
@@ -160,7 +221,7 @@ async def ask_question(
     question_create, question_vector = await uutils.ask_question(
         enh_question,
         day_state,
-        None if is_guest_user(user) else user,
+        user,
         session,
     )
 
@@ -190,10 +251,25 @@ async def ask_question(
 @router.post("/guess", response_model=USStateGuessDisplay)
 async def make_guess(
     guess: USStateGuessBase,
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
+    
+    if user is None:
+        is_correct = False
+        if guess.us_state_id:
+            is_correct = guess.us_state_id == day_state.us_state_id
+            
+        from datetime import datetime
+        return USStateGuessDisplay(
+            id=0,
+            guess=guess.guess,
+            us_state_id=guess.us_state_id,
+            answer=is_correct,
+            guessed_at=datetime.now()
+        )
+
     state = await USStatedleStateRepository(session).get_state(user, day_state)
 
     current_game_state = db_state_to_game_state(state)

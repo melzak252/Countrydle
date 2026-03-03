@@ -19,7 +19,8 @@ export default function USStatesGamePage() {
     fetchGameState, 
     fetchEntities: fetchStates, 
     askQuestion, 
-    makeGuess 
+    makeGuess,
+    isGuest
   } = useUSStatesGameStore();
   const { t } = useTranslation();
 
@@ -43,7 +44,14 @@ export default function USStatesGamePage() {
       {/* Top Bar */}
       <div className="sticky top-0 z-30 lg:static flex items-center justify-between px-3 md:px-4 py-2 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm shrink-0">
          <div className="flex items-center gap-2 md:gap-4">
-            <h2 className="text-lg md:text-xl font-bold truncate">{t('usStatesPage.title')}</h2>
+            <div className="flex flex-col">
+                <h2 className="text-lg md:text-xl font-bold truncate">{t('usStatesPage.title')}</h2>
+                {isGuest && (
+                    <span className="text-[10px] text-amber-500 font-medium uppercase tracking-tighter leading-none">
+                        {t('gamePage.guestMode', 'Guest Mode - Progress saved locally')}
+                    </span>
+                )}
+            </div>
             <div className="hidden md:block h-4 w-px bg-zinc-700"></div>
             <p className="hidden md:block text-xs text-zinc-400">{useUSStatesGameStore.getState().dailyDate}</p>
          </div>

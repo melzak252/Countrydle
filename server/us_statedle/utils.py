@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import USState, USStatedleDay, User
 from qdrant.utils import get_fragments_matching_question
+import qdrant
 from schemas.us_statedle import USStateQuestionCreate, USStateQuestionEnhanced
 from db.repositories.us_state import USStateRepository
 
@@ -125,7 +126,7 @@ async def ask_question(
 ) -> USStateQuestionCreate:
 
     fragments, question_vector = await get_fragments_matching_question(
-        question.question, "us_state_id", day_state.us_state_id, "us_states", session
+        question.question, "us_state_id", day_state.us_state_id, "us_states", session, limit=qdrant.US_STATEDLE_CONTEXT_LIMIT
     )
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
     state: USState = await USStateRepository(session).get(day_state.us_state_id)

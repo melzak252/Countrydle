@@ -83,7 +83,7 @@ class USStateQuestionEnhanced(BaseModel):
 
 
 class USStatedleStateResponse(BaseModel):
-    user: UserDisplay
+    user: UserDisplay | None = None
     date: str
     state: USStatedleStateSchema
     guesses: List[USStateGuessDisplay]

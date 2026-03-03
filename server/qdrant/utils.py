@@ -29,8 +29,12 @@ class Fragment:
 
 
 def split_document(content: str) -> List[Document]:
+    # Use RecursiveCharacterTextSplitter to split the document into fragments per 300 tokens
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=150, length_function=len
+        chunk_size=1000,
+        chunk_overlap=150,
+        length_function=len,
+        separators=["\n\n", "\n", " ", ""],
     )
 
     fragments = text_splitter.create_documents([content])
@@ -76,7 +80,12 @@ def search_matches(
 
 
 async def get_fragments_matching_question(
-    question: str, filter_key: str, filter_value: int, collection_name: str, session: AsyncSession
+    question: str,
+    filter_key: str,
+    filter_value: int,
+    collection_name: str,
+    session: AsyncSession,
+    limit: int = 3,
 ) -> Tuple[list[Fragment], List[float]]:
     query = question
     query_vector = get_embedding(query, qdrant.EMBEDDING_MODEL)
@@ -86,19 +95,47 @@ async def get_fragments_matching_question(
         query_vector=query_vector,
         filter_key=filter_key,
         filter_value=filter_value,
+        limit=limit,
     )
-    
-    fragments = []
+
+    if not points:
+        return [], query_vector
+
+    # Collect all IDs to fetch (original and next)
+    ids_to_fetch = set()
     for point in points:
-        text = point.payload.get("fragment_text")
-        if text:
-            fragments.append(Fragment(text=text))
+        point_id = int(point.id)
+        ids_to_fetch.add(point_id)
+        ids_to_fetch.add(point_id + 1)
+
+    # Fetch all these points from Qdrant
+    all_points = get_points(qdrant.client, collection_name, list(ids_to_fetch))
+
+    # Filter points to ensure they belong to the same entity and are valid
+    valid_points = []
+    for p in all_points:
+        if p.payload and p.payload.get(filter_key) == filter_value:
+            valid_points.append(p)
+
+    # Sort by ID to maintain document order
+    valid_points.sort(key=lambda x: int(x.id))
+
+    fragments = []
+    for point in valid_points:
+        if point.payload:
+            text = point.payload.get("fragment_text")
+            if text:
+                fragments.append(Fragment(text=text))
 
     return fragments, query_vector
 
 
 async def add_question_to_qdrant(
-    question: Any, vector: List[float], filter_key: str, filter_value: int, collection_name: str = "questions"
+    question: Any,
+    vector: List[float],
+    filter_key: str,
+    filter_value: int,
+    collection_name: str = "questions",
 ):
     print(f"Adding question ID {question.id} to collection '{collection_name}'...")
     point = PointStruct(
@@ -126,26 +163,34 @@ def upsert_in_batches(
     Upserts points into Qdrant in batches with retry logic.
     """
     total_points = len(points)
-    print(f"Starting upsert of {total_points} points into collection '{collection_name}' in batches of {batch_size}...")
-    
+    print(
+        f"Starting upsert of {total_points} points into collection '{collection_name}' in batches of {batch_size}..."
+    )
+
     for i in range(0, total_points, batch_size):
         batch = points[i : i + batch_size]
         current_batch_num = i // batch_size + 1
         total_batches = (total_points + batch_size - 1) // batch_size
-        
+
         for attempt in range(max_retries):
             try:
                 client.upsert(collection_name=collection_name, points=batch)
-                print(f"Successfully upserted batch {current_batch_num}/{total_batches} ({len(batch)} points) into '{collection_name}'.")
+                print(
+                    f"Successfully upserted batch {current_batch_num}/{total_batches} ({len(batch)} points) into '{collection_name}'."
+                )
                 break  # Success, move to next batch
             except Exception as e:
                 print(
                     f"Upsert failed for batch {current_batch_num}/{total_batches} (attempt {attempt + 1}/{max_retries}): {e}"
                 )
                 if attempt == max_retries - 1:
-                    print(f"Failed to upsert batch starting at index {i} after {max_retries} attempts.")
+                    print(
+                        f"Failed to upsert batch starting at index {i} after {max_retries} attempts."
+                    )
                     # Optionally raise the exception if you want to stop the whole process
                     # raise e
                 time.sleep(1)  # Wait a bit before retrying
-    
-    print(f"Completed upsert of {total_points} points into collection '{collection_name}'.")
+
+    print(
+        f"Completed upsert of {total_points} points into collection '{collection_name}'."
+    )

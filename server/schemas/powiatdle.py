@@ -82,7 +82,7 @@ class PowiatQuestionEnhanced(BaseModel):
 
 
 class PowiatdleStateResponse(BaseModel):
-    user: UserDisplay
+    user: UserDisplay | None = None
     date: str
     state: PowiatdleStateSchema
     guesses: List[PowiatGuessDisplay]
