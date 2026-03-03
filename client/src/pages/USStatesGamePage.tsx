@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useUSStatesGameStore } from '../stores/gameStore';
+import { useAuthStore } from '../stores/authStore';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
@@ -20,14 +21,22 @@ export default function USStatesGamePage() {
     fetchEntities: fetchStates, 
     askQuestion, 
     makeGuess,
+    syncGuestData,
     isGuest
   } = useUSStatesGameStore();
+  const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
   useEffect(() => {
     fetchGameState();
     fetchStates();
-  }, [fetchGameState, fetchStates]);
+
+    const handleLogin = () => {
+      syncGuestData();
+    };
+    window.addEventListener('auth-login', handleLogin);
+    return () => window.removeEventListener('auth-login', handleLogin);
+  }, [fetchGameState, fetchStates, syncGuestData]);
 
   if (!gameState && isLoading) {
     return (
@@ -86,7 +95,7 @@ export default function USStatesGamePage() {
         <div className="w-full lg:w-3/4 flex flex-col p-3 md:p-4 gap-4 lg:overflow-y-auto custom-scrollbar">
             {/* Map */}
             <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
-                <USStatesMap correctStateName={gameState.won ? correctState?.name : undefined} className="h-full" />
+                <USStatesMap correctStateName={gameState.is_game_over ? correctState?.name : undefined} className="h-full" />
             </div>
 
             {/* Game Over Message */}

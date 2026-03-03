@@ -90,6 +90,10 @@ export const gameService = {
     const response = await api.get('/countrydle/statistics/history');
     return response.data;
   },
+  syncGuestData: async (data: any): Promise<GameResponse> => {
+    const response = await api.post('/countrydle/sync', data);
+    return response.data;
+  },
 };
 
 export const powiatService = {
@@ -115,6 +119,10 @@ export const powiatService = {
   },
   getHistory: async (): Promise<any[]> => {
     const response = await api.get('/powiatdle/history');
+    return response.data;
+  },
+  syncGuestData: async (data: any): Promise<any> => {
+    const response = await api.post('/powiatdle/sync', data);
     return response.data;
   },
 };
@@ -144,6 +152,10 @@ export const usStateService = {
     const response = await api.get('/us_statedle/history');
     return response.data;
   },
+  syncGuestData: async (data: any): Promise<any> => {
+    const response = await api.post('/us_statedle/sync', data);
+    return response.data;
+  },
 };
 
 export const wojewodztwoService = {
@@ -169,6 +181,10 @@ export const wojewodztwoService = {
   },
   getHistory: async (): Promise<any[]> => {
     const response = await api.get('/wojewodztwodle/history');
+    return response.data;
+  },
+  syncGuestData: async (data: any): Promise<any> => {
+    const response = await api.post('/wojewodztwodle/sync', data);
     return response.data;
   },
 };

@@ -100,3 +100,10 @@ class DayWojewodztwoDisplay(BaseModel):
     date: date
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class WojewodztwodleSyncSchema(BaseModel):
+    state: WojewodztwodleStateSchema
+    questions: List[int]
+    guesses: List[WojewodztwoGuessBase]
+    date: str

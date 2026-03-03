@@ -101,3 +101,10 @@ class DayUSStateDisplay(BaseModel):
     date: date
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class USStatedleSyncSchema(BaseModel):
+    state: USStatedleStateSchema
+    questions: List[int]
+    guesses: List[USStateGuessBase]
+    date: str

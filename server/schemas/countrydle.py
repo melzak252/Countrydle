@@ -146,6 +146,13 @@ class CountrydleHistory(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CountrydleSyncSchema(BaseModel):
+    state: CountrydleStateSchema
+    questions: List[int]  # IDs of questions asked as guest
+    guesses: List[GuessBase]
+    date: str
+
+
 class LeaderboardEntry(BaseModel):
     id: int
     username: str

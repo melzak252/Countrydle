@@ -100,3 +100,10 @@ class DayPowiatDisplay(BaseModel):
     date: date
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PowiatdleSyncSchema(BaseModel):
+    state: PowiatdleStateSchema
+    questions: List[int]
+    guesses: List[PowiatGuessBase]
+    date: str

@@ -24,8 +24,9 @@ from schemas.powiatdle import (
     PowiatQuestionCreate,
     PowiatQuestionDisplay,
     DayPowiatDisplay,
+    PowiatdleSyncSchema,
 )
-from users.utils import get_current_or_guest_user
+from users.utils import get_current_or_guest_user, get_current_user
 import powiatdle.utils as putils
 from game_logic import GameConfig, GameRules, GameState
 
@@ -42,6 +43,77 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+
+@router.post("/sync", response_model=PowiatdleStateResponse)
+async def sync_guest_data(
+    sync_data: PowiatdleSyncSchema,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    from datetime import datetime
+    from sqlalchemy import update
+    
+    try:
+        game_date = datetime.strptime(sync_data.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+        
+    day_powiat = await PowiatdleDayRepository(session).get_day_powiat_by_date(game_date)
+    if not day_powiat:
+        raise HTTPException(status_code=404, detail="Game for this date not found.")
+
+    state = await PowiatdleStateRepository(session).get_state(user, day_powiat)
+    if state is None:
+        state = await PowiatdleStateRepository(session).create_state(
+            user,
+            day_powiat,
+            max_questions=POWIATDLE_CONFIG.max_questions,
+            max_guesses=POWIATDLE_CONFIG.max_guesses,
+        )
+    
+    if state.questions_asked > 0 or state.guesses_made > 0:
+        return await get_state(user, session)
+
+    if sync_data.questions:
+        from db.models import PowiatdleQuestion
+        await session.execute(
+            update(PowiatdleQuestion)
+            .where(
+                PowiatdleQuestion.id.in_(sync_data.questions), 
+                PowiatdleQuestion.user_id == None,
+                PowiatdleQuestion.day_id == day_powiat.id
+            )
+            .values(user_id=user.id)
+        )
+
+    for guess in sync_data.guesses:
+        is_correct = False
+        if guess.powiat_id:
+            is_correct = guess.powiat_id == day_powiat.powiat_id
+            
+        guess_create = PowiatGuessCreate(
+            guess=guess.guess,
+            powiat_id=guess.powiat_id,
+            day_id=day_powiat.id,
+            user_id=user.id,
+            answer=is_correct,
+        )
+        await PowiatdleGuessRepository(session).add_guess(guess_create)
+
+    state.remaining_questions = sync_data.state.remaining_questions
+    state.remaining_guesses = sync_data.state.remaining_guesses
+    state.questions_asked = sync_data.state.questions_asked
+    state.guesses_made = sync_data.state.guesses_made
+    state.is_game_over = sync_data.state.is_game_over
+    state.won = sync_data.state.won
+    
+    if state.won:
+        state.points = await PowiatdleStateRepository(session).calc_points(state)
+        
+    await PowiatdleStateRepository(session).update_state(state)
+    
+    return await get_state(user, session)
 
 
 @router.get("/history", response_model=List[DayPowiatDisplay])

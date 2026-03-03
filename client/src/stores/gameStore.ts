@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { GameState, Question, Guess } from '../types';
 import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
+import { useAuthStore } from './authStore';
 
 interface GameData {
   gameState: GameState | null;
@@ -20,6 +21,7 @@ interface GameActions {
   fetchEntities: () => Promise<void>;
   askQuestion: (questionText: string) => Promise<void>;
   makeGuess: (guessText: string, entityId?: number) => Promise<void>;
+  syncGuestData: () => Promise<void>;
   resetGame: () => void;
   toggleEntitySelection: (name: string) => void;
   clearSelection: () => void;
@@ -27,9 +29,16 @@ interface GameActions {
 
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
 
+const guessMapping: any = {
+    country: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    powiaty: (g: any) => ({ guess: g.guess, powiat_id: g.powiat_id }),
+    us_states: (g: any) => ({ guess: g.guess, us_state_id: g.us_state_id }),
+    wojewodztwa: (g: any) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id })
+};
+
 // Factory to create stores for different game types
 const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewodztwa') => {
-  const service = {
+  const service: any = {
     country: gameService,
     powiaty: powiatService,
     us_states: usStateService,
@@ -52,24 +61,77 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
       set({ isLoading: true, error: null });
       try {
         const data = await service.getState(); 
-        const isGuest = data.user === null;
         
+        // Check if the server's idea of the user matches our client's idea
+        const clientUser = useAuthStore.getState().user;
+        // If client says we are guest, we ARE guest, regardless of what server says (stale cookie protection)
+        const isActuallyGuest = data.user === null || clientUser === null;
+        
+        const localKey = getLocalStateKey(gameType, data.date);
+        const localData = localStorage.getItem(localKey);
+
+        // If we are logged in and have guest data, sync it FIRST
+        if (!isActuallyGuest && data.date && localData && service.syncGuestData) {
+            const parsed = JSON.parse(localData);
+            if (parsed.questions.length > 0 || parsed.guesses.length > 0) {
+                try {
+                    await service.syncGuestData({
+                        state: parsed.state,
+                        questions: parsed.questions.map((q: any) => q.id),
+                        guesses: parsed.guesses.map(guessMapping[gameType]),
+                        date: data.date
+                    });
+                    localStorage.removeItem(localKey);
+                    // Fetch the state again to get the merged data
+                    const syncedData = await service.getState();
+                    set({
+                        gameState: syncedData.state,
+                        questions: syncedData.questions,
+                        guesses: syncedData.guesses,
+                        dailyDate: syncedData.date,
+                        isGuest: false,
+                        correctEntity: syncedData.country || syncedData.powiat || syncedData.us_state || syncedData.wojewodztwo || null,
+                        isLoading: false,
+                    });
+                    return;
+                } catch (syncError) {
+                    console.error(`[${gameType}] Failed to sync guest data during fetchGameState:`, syncError);
+                }
+            } else {
+                localStorage.removeItem(localKey);
+            }
+        }
+
+        // Normal flow (guest or already synced user)
         let gameState = data.state;
         let questions = data.questions;
         let guesses = data.guesses;
         let correctEntity = data.country || data.powiat || data.us_state || data.wojewodztwo || null;
 
-        if (isGuest && data.date) {
-          const localData = localStorage.getItem(getLocalStateKey(gameType, data.date));
-          if (localData) {
-            const parsed = JSON.parse(localData);
-            gameState = parsed.state;
-            questions = parsed.questions;
-            guesses = parsed.guesses;
-            if (parsed.correctEntity) {
-              correctEntity = parsed.correctEntity;
+        if (isActuallyGuest) {
+            // If we are guest, we ignore server's questions/guesses (they might belong to a stale session)
+            // and load from local storage instead.
+            gameState = {
+                remaining_questions: 10, // Default values, will be overwritten by localData if exists
+                remaining_guesses: 3,
+                questions_asked: 0,
+                guesses_made: 0,
+                is_game_over: false,
+                won: false,
+            } as any;
+            questions = [];
+            guesses = [];
+            correctEntity = null;
+
+            if (data.date && localData) {
+                const parsed = JSON.parse(localData);
+                gameState = parsed.state;
+                questions = parsed.questions;
+                guesses = parsed.guesses;
+                if (parsed.correctEntity) {
+                    correctEntity = parsed.correctEntity;
+                }
             }
-          }
         }
         
         set({
@@ -77,7 +139,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
           questions,
           guesses,
           dailyDate: data.date,
-          isGuest,
+          isGuest: isActuallyGuest,
           correctEntity,
           isLoading: false,
         });
@@ -194,12 +256,45 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
       }
     },
     
+    syncGuestData: async () => {
+        try {
+            const data = await service.getState();
+            const isActuallyGuest = data.user === null;
+            
+            if (isActuallyGuest || !data.date) {
+                return;
+            }
+
+            const localKey = getLocalStateKey(gameType, data.date);
+            const localData = localStorage.getItem(localKey);
+            
+            if (localData && service.syncGuestData) {
+                const parsed = JSON.parse(localData);
+                if (parsed.questions.length > 0 || parsed.guesses.length > 0) {
+                    await service.syncGuestData({
+                        state: parsed.state,
+                        questions: parsed.questions.map((q: any) => q.id),
+                        guesses: parsed.guesses.map(guessMapping[gameType]),
+                        date: data.date
+                    });
+                    localStorage.removeItem(localKey);
+                    await get().fetchGameState();
+                } else {
+                    localStorage.removeItem(localKey);
+                }
+            }
+        } catch (e) {
+            console.error(`[${gameType}] Failed to sync guest data:`, e);
+        }
+    },
+
     resetGame: () => set({ 
         gameState: null, 
         questions: [], 
         guesses: [], 
         selectedEntityNames: [], 
         correctEntity: null, 
+        isGuest: false,
         error: null 
     }),
     

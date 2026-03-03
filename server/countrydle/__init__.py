@@ -8,6 +8,7 @@ from schemas.countrydle import (
     CountrydleEndStateSchema,
     CountrydleStateResponse,
     CountrydleStateSchema,
+    CountrydleSyncSchema,
     FullUserHistory,
     GuessBase,
     GuessCreate,
@@ -21,6 +22,7 @@ from schemas.country import CountryDisplay
 from schemas.user import UserDisplay
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
 from db.repositories.guess import (
@@ -31,7 +33,7 @@ from db.repositories.question import (
 )
 from qdrant.utils import add_question_to_qdrant
 from db.repositories.country import CountryRepository
-from users.utils import get_current_or_guest_user
+from users.utils import get_current_or_guest_user, get_current_user
 
 import countrydle.utils as gutils
 from game_logic import GameConfig, GameRules, GameState
@@ -55,6 +57,86 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+
+@router.post("/sync", response_model=CountrydleStateResponse)
+async def sync_guest_data(
+    sync_data: CountrydleSyncSchema,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    from datetime import datetime
+    
+    # 1. Get the day country
+    try:
+        game_date = datetime.strptime(sync_data.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+        
+    day_country = await CountrydleRepository(session).get_day_country_by_date(game_date)
+    if not day_country:
+        raise HTTPException(status_code=404, detail="Game for this date not found.")
+
+    # 2. Get or create user state
+    state = await CountrydleStateRepository(session).get_state(
+        user,
+        day_country,
+        max_questions=COUNTRYDLE_CONFIG.max_questions,
+        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
+    )
+    
+    # BEST SOLUTION: Prioritize Server State
+    # If the user already has any progress on the server (at least 1 question or guess),
+    # we ignore the guest sync to prevent merging conflicts or exceeding game limits.
+    if state.questions_asked > 0 or state.guesses_made > 0:
+        return await get_state(user, session)
+
+    # 3. Update questions - only claim those that belong to this day and have no user assigned
+    if sync_data.questions:
+        from db.models import CountrydleQuestion
+        await session.execute(
+            update(CountrydleQuestion)
+            .where(
+                CountrydleQuestion.id.in_(sync_data.questions), 
+                CountrydleQuestion.user_id == None,
+                CountrydleQuestion.day_id == day_country.id
+            )
+            .values(user_id=user.id)
+        )
+
+    # 4. Create guesses
+    for guess in sync_data.guesses:
+        is_correct = False
+        if guess.country_id is not None:
+            is_correct = guess.country_id == day_country.country_id
+            
+        guess_create = GuessCreate(
+            guess=guess.guess,
+            country_id=guess.country_id,
+            day_id=day_country.id,
+            user_id=user.id,
+            answer=is_correct,
+        )
+        await CountrydleGuessRepository(session).add_guess(guess_create)
+
+    # 5. Update state
+    state.remaining_questions = sync_data.state.remaining_questions
+    state.remaining_guesses = sync_data.state.remaining_guesses
+    state.questions_asked = sync_data.state.questions_asked
+    state.guesses_made = sync_data.state.guesses_made
+    state.is_game_over = sync_data.state.is_game_over
+    state.won = sync_data.state.won
+    
+    if state.won:
+        state.points = await CountrydleStateRepository(session).calc_points(state)
+        
+    if state.is_game_over:
+        from db.repositories.user import UserRepository
+        await UserRepository(session).update_points(user.id, state)
+
+    await CountrydleStateRepository(session).update_countrydle_state(state)
+    
+    return await get_state(user, session)
 
 
 @router.get("/end/state", response_model=CountrydleEndStateResponse)

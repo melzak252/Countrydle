@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { LogOut, User as UserIcon, ChevronDown, Menu, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +9,15 @@ import LanguageSelector from './LanguageSelector';
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const handleLogout = async () => {
+    setIsMenuOpen(false);
+    await logout();
+  };
 
   return (
     <header className="bg-zinc-900 border-b border-zinc-800 text-white sticky top-0 z-[1001]">
@@ -51,7 +57,7 @@ export default function Header() {
                 <span className="font-medium">{user?.username}</span>
               </Link>
               <button 
-                onClick={() => logout()}
+                onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm"
               >
                 <LogOut size={16} />
@@ -121,7 +127,7 @@ export default function Header() {
               {isAuthenticated ? (
                 <button 
                   onClick={() => {
-                    logout();
+                    handleLogout();
                     setIsMenuOpen(false);
                   }}
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-red-400"

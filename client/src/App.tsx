@@ -16,10 +16,11 @@ import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import ArchivePage from './pages/ArchivePage';
 import { useAuthStore } from './stores/authStore';
+import { useCountryGameStore, usePowiatyGameStore, useUSStatesGameStore, useWojewodztwaGameStore } from './stores/gameStore';
 import { useEffect } from 'react';
 
 function App() {
-  const { setUser } = useAuthStore();
+  const { setUser, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -29,6 +30,38 @@ function App() {
         setUser(null);
     }
   }, [setUser]);
+
+  // Global sync trigger when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      const timer = setTimeout(() => {
+        useCountryGameStore.getState().syncGuestData();
+        usePowiatyGameStore.getState().syncGuestData();
+        useUSStatesGameStore.getState().syncGuestData();
+        useWojewodztwaGameStore.getState().syncGuestData();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated]);
+
+  // Global reset trigger when user logs out
+  useEffect(() => {
+    const handleLogout = () => {
+      useCountryGameStore.getState().resetGame();
+      usePowiatyGameStore.getState().resetGame();
+      useUSStatesGameStore.getState().resetGame();
+      useWojewodztwaGameStore.getState().resetGame();
+      
+      // After reset, fetch guest state (if any)
+      useCountryGameStore.getState().fetchGameState();
+      usePowiatyGameStore.getState().fetchGameState();
+      useUSStatesGameStore.getState().fetchGameState();
+      useWojewodztwaGameStore.getState().fetchGameState();
+    };
+
+    window.addEventListener('auth-logout', handleLogout);
+    return () => window.removeEventListener('auth-logout', handleLogout);
+  }, []);
 
   return (
     <BrowserRouter>

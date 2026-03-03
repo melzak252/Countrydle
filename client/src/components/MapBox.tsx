@@ -51,7 +51,7 @@ function MapControls({ correctCountryName, geoJsonData, map }: MapControlsProps)
           <RotateCcw size={16} />
        </button>
        
-       {gameState?.won && (
+       {gameState?.is_game_over && (
          <button
             onClick={(e) => {
                 e.preventDefault();
@@ -72,7 +72,7 @@ function MapController({ correctCountryName, geoJsonData }: { correctCountryName
   const { gameState } = useGameStore();
 
   useEffect(() => {
-    if (gameState?.won && correctCountryName && geoJsonData) {
+    if (gameState?.is_game_over && correctCountryName && geoJsonData) {
       // Find the feature for the correct country
       const correctFeature = geoJsonData.features.find((f: any) => 
         f.properties.SOVEREIGNT.toUpperCase() === correctCountryName.toUpperCase()
@@ -86,7 +86,7 @@ function MapController({ correctCountryName, geoJsonData }: { correctCountryName
         }
       }
     }
-  }, [gameState?.won, correctCountryName, geoJsonData, map]);
+  }, [gameState?.is_game_over, correctCountryName, geoJsonData, map]);
 
   return null;
 }
@@ -136,18 +136,18 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
              const feature = layer.feature;
              if (feature) {
                  const { gameState, correctEntity } = useGameStore.getState();
-                 const newStyle = getStyleFromState(
+                  const newStyle = getStyleFromState(
                      feature, 
                      selectedEntityNames, 
-                      gameState?.won ? correctCountryName || correctEntity?.name : undefined
-                 );
-                 layer.setStyle(newStyle);
-                 
-                 // If game over and correct country, bring to front
-                 const countryName = feature.properties.SOVEREIGNT.toUpperCase();
-                  if (gameState?.won && correctCountryName && (countryName === correctCountryName.toUpperCase())) {
-                      layer.bringToFront();
-                  }
+                      gameState?.is_game_over ? correctCountryName || correctEntity?.name : undefined
+                  );
+                  layer.setStyle(newStyle);
+                  
+                  // If game over and correct country, bring to front
+                  const countryName = feature.properties.SOVEREIGNT.toUpperCase();
+                   if (gameState?.is_game_over && correctCountryName && (countryName === correctCountryName.toUpperCase())) {
+                       layer.bringToFront();
+                   }
              }
         });
     }
@@ -178,7 +178,7 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
         const style = getStyleFromState(
             feature, 
             currentSelected, 
-            gameState?.won ? correctEntity?.name : undefined
+            gameState?.is_game_over ? correctEntity?.name : undefined
         );
         l.setStyle(style);
       }

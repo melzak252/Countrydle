@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { usePowiatyGameStore } from '../stores/gameStore';
+import { useAuthStore } from '../stores/authStore';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
@@ -20,15 +21,23 @@ export default function PowiatyGamePage() {
     fetchEntities: fetchPowiaty, 
     askQuestion, 
     makeGuess,
+    syncGuestData,
     isGuest
   } = usePowiatyGameStore();
+  const { isAuthenticated } = useAuthStore();
 
   const { t } = useTranslation();
 
   useEffect(() => {
     fetchGameState();
     fetchPowiaty();
-  }, [fetchGameState, fetchPowiaty]);
+
+    const handleLogin = () => {
+      syncGuestData();
+    };
+    window.addEventListener('auth-login', handleLogin);
+    return () => window.removeEventListener('auth-login', handleLogin);
+  }, [fetchGameState, fetchPowiaty, syncGuestData]);
 
   if (!gameState && isLoading) {
     return (
@@ -89,10 +98,9 @@ export default function PowiatyGamePage() {
         {/* Left Column: Map & Inputs */}
         <div className="w-full lg:w-3/4 flex flex-col p-3 md:p-4 gap-4 lg:overflow-y-auto custom-scrollbar">
             {/* Map */}
-
             <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
                 <PowiatyMap 
-                    correctPowiatName={gameState.won ? correctPowiat?.nazwa : undefined}
+                    correctPowiatName={gameState.is_game_over ? correctPowiat?.nazwa : undefined}
                     className="h-full"
                 />
             </div>

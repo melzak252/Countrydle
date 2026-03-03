@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../stores/gameStore';
+import { useAuthStore } from '../stores/authStore';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
@@ -20,14 +21,23 @@ export default function GamePage() {
     fetchEntities: fetchCountries, 
     askQuestion, 
     makeGuess,
+    syncGuestData,
     isGuest
   } = useGameStore();
+  const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
   useEffect(() => {
     fetchGameState();
     fetchCountries();
-  }, [fetchGameState, fetchCountries]);
+    
+    // Listen for login events to trigger sync if we're already on the game page
+    const handleLogin = () => {
+      syncGuestData();
+    };
+    window.addEventListener('auth-login', handleLogin);
+    return () => window.removeEventListener('auth-login', handleLogin);
+  }, [fetchGameState, fetchCountries, syncGuestData]);
 
   if (!gameState && isLoading) {
     return (
@@ -86,7 +96,7 @@ export default function GamePage() {
         <div className="w-full lg:w-3/4 flex flex-col p-3 md:p-4 gap-4 lg:overflow-y-auto custom-scrollbar">
             {/* Map */}
             <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
-                <MapBox correctCountryName={gameState.won ? correctCountry?.name : undefined} className="h-full" />
+                <MapBox correctCountryName={gameState.is_game_over ? correctCountry?.name : undefined} className="h-full" />
             </div>
 
             {/* Game Over Message */}
