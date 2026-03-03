@@ -1,1 +1,1 @@
-JMelzacki © 2024 by Jakub Melzacki is licensed under CC BY-NC-ND 4.0. 
+[JMelzacki](https://jmelzacki.com) © 2024 by [Jakub Melzacki](https://www.linkedin.com/in/jmelzacki/) is licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/?ref=chooser-v1). 
