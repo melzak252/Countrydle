@@ -108,7 +108,7 @@ export default function GamePage() {
                     ? t('gamePage.wonMessage')
                     : t('gamePage.lostMessage')}
                 </p>
-                 {gameState.won && (correctCountry || guesses.find(g => g.answer)?.guess) && (
+                 {gameState.is_game_over && (correctCountry || guesses.find(g => g.answer)?.guess) && (
                     <p className="text-sm md:text-base">{t('gamePage.answer')} <span className="font-bold">{correctCountry?.name || guesses.find(g => g.answer)?.guess}</span></p>
                  )}
               </div>

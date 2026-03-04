@@ -111,7 +111,7 @@ export default function WojewodztwaGamePage() {
                     ? t('wojewodztwaPage.wonMessage')
                     : t('wojewodztwaPage.lostMessage')}
                 </p>
-                 {gameState.won && (correctWojewodztwo || guesses.find(g => g.answer)?.guess) && (
+                 {gameState.is_game_over && (correctWojewodztwo || guesses.find(g => g.answer)?.guess) && (
                     <p className="text-base">{t('wojewodztwaPage.answer')} <span className="font-bold">{correctWojewodztwo?.nazwa || guesses.find(g => g.answer)?.guess}</span></p>
                  )}
               </div>

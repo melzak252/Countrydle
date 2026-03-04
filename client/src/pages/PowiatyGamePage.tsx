@@ -114,7 +114,7 @@ export default function PowiatyGamePage() {
                     ? t('powiatyPage.wonMessage')
                     : t('powiatyPage.lostMessage')}
                 </p>
-                 {gameState.won && (correctPowiat || guesses.find(g => g.answer)?.guess) && (
+                 {gameState.is_game_over && (correctPowiat || guesses.find(g => g.answer)?.guess) && (
                     <p className="text-base">{t('powiatyPage.answer')} <span className="font-bold">{correctPowiat?.nazwa || guesses.find(g => g.answer)?.guess}</span></p>
                  )}
               </div>

@@ -121,7 +121,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             } as any;
             questions = [];
             guesses = [];
-            correctEntity = null;
+            // correctEntity is already set from data.country || ... at line 109
 
             if (data.date && localData) {
                 const parsed = JSON.parse(localData);
@@ -130,6 +130,17 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                 guesses = parsed.guesses;
                 if (parsed.correctEntity) {
                     correctEntity = parsed.correctEntity;
+                }
+            }
+            
+            // If the game is over and we have the correct entity from server but not in local storage, save it
+            if (gameState.is_game_over && correctEntity && data.date && localData) {
+                const parsed = JSON.parse(localData);
+                if (!parsed.correctEntity) {
+                    localStorage.setItem(getLocalStateKey(gameType, data.date), JSON.stringify({
+                        ...parsed,
+                        correctEntity
+                    }));
                 }
             }
         }
