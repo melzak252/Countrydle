@@ -41,10 +41,9 @@ from utils.email import fm_noreply
 
 app = FastAPI(lifespan=lifespan)
 
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.0.1"
 
 app.add_middleware(
-
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
@@ -54,6 +53,7 @@ app.add_middleware(
         "http://127.0.0.1:80",
         "http://127.0.0.1",
     ],
+    allow_origin_regex="https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

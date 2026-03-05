@@ -116,6 +116,23 @@ async def sync_from_postgres(session: AsyncSession, collection_name: str):
 
 async def init_qdrant(session: AsyncSession):
     print("Initializing Qdrant collections...")
+    
+    # Wait for Qdrant to be ready
+    max_retries = 10
+    retry_delay = 5
+    for i in range(max_retries):
+        try:
+            client.get_collections()
+            print("Successfully connected to Qdrant.")
+            break
+        except Exception as e:
+            if i < max_retries - 1:
+                print(f"Failed to connect to Qdrant (attempt {i+1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+            else:
+                print(f"Failed to connect to Qdrant after {max_retries} attempts. Exiting.")
+                raise e
+
     for name in COLLECTIONS.values():
         print("Checking collection:", name)
         if not client.collection_exists(name):

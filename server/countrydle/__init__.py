@@ -393,6 +393,31 @@ async def ask_question(
     return QuestionDisplay.model_validate(new_quest)
 
 
+@router.get("/reveal", response_model=CountryDisplay)
+async def reveal_country(
+    user: User | None = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
+):
+    day_country = await CountrydleRepository(session).get_today_country()
+    if not day_country:
+        raise HTTPException(status_code=404, detail="No game today")
+        
+    if user is not None:
+        state = await CountrydleStateRepository(session).get_state(
+            user,
+            day_country,
+            max_questions=COUNTRYDLE_CONFIG.max_questions,
+            max_guesses=COUNTRYDLE_CONFIG.max_guesses,
+        )
+        if state and not state.is_game_over:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal country before game is over.",
+            )
+            
+    country = await CountryRepository(session).get(day_country.country_id)
+    return country
+
 @router.post("/guess", response_model=GuessDisplay)
 async def make_guess(
     guess: GuessBase,

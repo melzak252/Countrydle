@@ -120,7 +120,7 @@ User's Question: "asdfghjkl"
         original_question=question,
         valid=answer_dict["valid"],
         question=answer_dict.get("question", None),
-        explanation=answer_dict.get("explanation", None),
+        explanation=answer_dict.get("explanation") or ("No explanation provided." if not answer_dict["valid"] else None),
     )
 
 
@@ -226,8 +226,8 @@ Country: Japan. Question: Has the country hosted the 2025 World Expo?
         original_question=question.original_question,
         valid=question.valid,
         question=question.question,
-        answer=answer_dict["answer"],
-        explanation=answer_dict["explanation"],
+        answer=answer_dict.get("answer"),
+        explanation=answer_dict.get("explanation") or "No explanation provided.",
         context=context,
     )
 

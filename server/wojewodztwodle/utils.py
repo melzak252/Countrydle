@@ -95,7 +95,7 @@ Wyjście:
         original_question=question,
         valid=answer_dict["valid"],
         question=answer_dict.get("question", None),
-        explanation=answer_dict.get("explanation", None),
+        explanation=answer_dict.get("explanation") or ("Brak wyjaśnienia." if not answer_dict["valid"] else None),
     )
 
 
@@ -176,8 +176,8 @@ Odpowiedz w formacie JSON i niczym więcej. Użyj określonego formatu:
         original_question=question.original_question,
         valid=question.valid,
         question=question.question,
-        answer=answer_dict["answer"],
-        explanation=answer_dict["explanation"],
+        answer=answer_dict.get("answer"),
+        explanation=answer_dict.get("explanation") or "Brak wyjaśnienia.",
         context=context,
     )
 

@@ -145,7 +145,7 @@ async def add_question_to_qdrant(
             filter_key: filter_value,
             "question_text": question.question,
             "answer": question.answer,
-            "explonation": question.explanation,
+            "explanation": question.explanation,
         },
     )
     qdrant.client.upsert(collection_name=collection_name, points=[point])

@@ -69,6 +69,7 @@ const resources = {
         yourGuesses: 'Your Guesses',
         correct: 'Correct',
         incorrect: 'Incorrect',
+        makeAGuess: 'Make your first guess to see it here!',
         examples: [
           'Is it in Europe?',
           'Does it have access to the sea?',
@@ -343,6 +344,7 @@ const resources = {
         yourGuesses: 'Twoje strzaly',
         correct: 'Poprawnie',
         incorrect: 'Blednie',
+        makeAGuess: 'Oddaj swoj pierwszy strzal, aby go tutaj zobaczyc!',
         examples: [
           'Czy lezy w Europie?',
           'Czy ma dostep do morza?',

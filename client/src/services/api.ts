@@ -94,6 +94,10 @@ export const gameService = {
     const response = await api.post('/countrydle/sync', data);
     return response.data;
   },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get('/countrydle/reveal');
+    return response.data;
+  },
 };
 
 export const powiatService = {
@@ -123,6 +127,10 @@ export const powiatService = {
   },
   syncGuestData: async (data: any): Promise<any> => {
     const response = await api.post('/powiatdle/sync', data);
+    return response.data;
+  },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/powiatdle/reveal');
     return response.data;
   },
 };
@@ -156,6 +164,10 @@ export const usStateService = {
     const response = await api.post('/us_statedle/sync', data);
     return response.data;
   },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/us_statedle/reveal');
+    return response.data;
+  },
 };
 
 export const wojewodztwoService = {
@@ -185,6 +197,10 @@ export const wojewodztwoService = {
   },
   syncGuestData: async (data: any): Promise<any> => {
     const response = await api.post('/wojewodztwodle/sync', data);
+    return response.data;
+  },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/wojewodztwodle/reveal');
     return response.data;
   },
 };

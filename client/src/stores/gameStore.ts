@@ -235,6 +235,12 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
           let correctEntity = get().correctEntity;
           if (isCorrect && entityId) {
             correctEntity = entities.find(e => e.id === entityId) || null;
+          } else if (newGameState.is_game_over && service.reveal) {
+            try {
+              correctEntity = await service.reveal();
+            } catch (e) {
+              console.error("Failed to reveal correct entity", e);
+            }
           }
 
           localStorage.setItem(getLocalStateKey(gameType, dailyDate), JSON.stringify({
@@ -251,9 +257,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             isLoading: false
           });
 
-          if (newGameState.is_game_over) {
-            await get().fetchGameState(); // To get the correct entity from backend
-          }
+          // We don't need to fetchGameState here anymore because we already revealed the entity
         } else {
           await get().fetchGameState();
         }
@@ -269,14 +273,14 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
     
     syncGuestData: async () => {
         try {
-            const data = await service.getState();
-            const isActuallyGuest = data.user === null;
+            const clientUser = useAuthStore.getState().user;
+            const { dailyDate } = get();
             
-            if (isActuallyGuest || !data.date) {
+            if (!clientUser || !dailyDate) {
                 return;
             }
 
-            const localKey = getLocalStateKey(gameType, data.date);
+            const localKey = getLocalStateKey(gameType, dailyDate);
             const localData = localStorage.getItem(localKey);
             
             if (localData && service.syncGuestData) {
@@ -286,7 +290,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                         state: parsed.state,
                         questions: parsed.questions.map((q: any) => q.id),
                         guesses: parsed.guesses.map(guessMapping[gameType]),
-                        date: data.date
+                        date: dailyDate
                     });
                     localStorage.removeItem(localKey);
                     await get().fetchGameState();

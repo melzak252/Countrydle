@@ -324,6 +324,26 @@ async def ask_question(
     return new_quest
 
 
+@router.get("/reveal", response_model=WojewodztwoDisplay)
+async def reveal_wojewodztwo(
+    user: User | None = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
+):
+    day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
+    if not day_state:
+        raise HTTPException(status_code=404, detail="No game today")
+        
+    if user is not None:
+        state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
+        if state and not state.is_game_over:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal wojewodztwo before game is over.",
+            )
+            
+    wojewodztwo = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
+    return wojewodztwo
+
 @router.post("/guess", response_model=WojewodztwoGuessDisplay)
 async def make_guess(
     guess: WojewodztwoGuessBase,

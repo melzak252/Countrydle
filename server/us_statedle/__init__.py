@@ -320,6 +320,26 @@ async def ask_question(
     return new_quest
 
 
+@router.get("/reveal", response_model=USStateDisplay)
+async def reveal_us_state(
+    user: User | None = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
+):
+    day_state = await USStatedleDayRepository(session).get_today_us_state()
+    if not day_state:
+        raise HTTPException(status_code=404, detail="No game today")
+        
+    if user is not None:
+        state = await USStatedleStateRepository(session).get_state(user, day_state)
+        if state and not state.is_game_over:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal state before game is over.",
+            )
+            
+    us_state = await USStateRepository(session).get(day_state.us_state_id)
+    return us_state
+
 @router.post("/guess", response_model=USStateGuessDisplay)
 async def make_guess(
     guess: USStateGuessBase,
