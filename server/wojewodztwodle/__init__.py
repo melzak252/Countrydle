@@ -230,9 +230,10 @@ async def ask_question(
                 valid=enh_question.valid,
                 question=enh_question.question,
                 answer=None,
-                explanation=enh_question.explanation,
+                explanation=enh_question.explanation or "Brak wyjaśnienia.",
                 context=None,
             )
+
             new_quest = await WojewodztwodleQuestionRepository(session).create_question(
                 question_create
             )
@@ -249,13 +250,15 @@ async def ask_question(
             question_create
         )
 
-        await add_question_to_qdrant(
-            new_quest,
-            question_vector,
-            filter_key="wojewodztwo_id",
-            filter_value=day_state.wojewodztwo_id,
-            collection_name="wojewodztwa_questions",
-        )
+        if question_vector:
+            await add_question_to_qdrant(
+                new_quest,
+                question_vector,
+                filter_key="wojewodztwo_id",
+                filter_value=day_state.wojewodztwo_id,
+                collection_name="wojewodztwa_questions",
+            )
+
 
         return new_quest
 

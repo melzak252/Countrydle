@@ -230,11 +230,16 @@ class WojewodztwodleQuestionRepository:
     async def create_question(
         self, question_create: WojewodztwoQuestionCreate
     ) -> WojewodztwodleQuestion:
-        new_question = WojewodztwodleQuestion(**question_create.model_dump())
+        data = question_create.model_dump()
+        # Remove fields that are not in the DB model
+        data.pop("intent", None)
+        data.pop("required_info", None)
+        new_question = WojewodztwodleQuestion(**data)
         self.session.add(new_question)
         await self.session.commit()
         await self.session.refresh(new_question)
         return new_question
+
 
     async def get_user_day_questions(
         self, user: User, day: WojewodztwodleDay

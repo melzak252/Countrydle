@@ -226,13 +226,36 @@ async def ask_question(
                 valid=enh_question.valid,
                 question=enh_question.question,
                 answer=None,
-                explanation=enh_question.explanation,
+                explanation=enh_question.explanation or "No explanation provided.",
                 context=None,
             )
             new_quest = await USStatedleQuestionRepository(session).create_question(
                 question_create
             )
             return new_quest
+
+        question_create, question_vector = await uutils.ask_question(
+            enh_question,
+            day_state,
+            None,
+            session,
+        )
+
+        new_quest = await USStatedleQuestionRepository(session).create_question(
+            question_create
+        )
+
+        if question_vector:
+            await add_question_to_qdrant(
+                new_quest,
+                question_vector,
+                filter_key="us_state_id",
+                filter_value=day_state.us_state_id,
+                collection_name="us_states_questions",
+            )
+
+        return new_quest
+
 
         question_create, question_vector = await uutils.ask_question(
             enh_question,

@@ -18,9 +18,14 @@ class CountrydleQuestionsRepository:
         return result.scalars().first()
 
     async def create_question(self, quesiton: QuestionCreate) -> CountrydleQuestion:
-        new_entry = CountrydleQuestion(**quesiton.model_dump())
+        data = quesiton.model_dump()
+        # Remove fields that are not in the DB model
+        data.pop("intent", None)
+        data.pop("required_info", None)
+        new_entry = CountrydleQuestion(**data)
 
         self.session.add(new_entry)
+
 
         try:
             await self.session.commit()  # Commit the transaction

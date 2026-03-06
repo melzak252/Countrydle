@@ -226,9 +226,10 @@ async def ask_question(
                 valid=enh_question.valid,
                 question=enh_question.question,
                 answer=None,
-                explanation=enh_question.explanation,
+                explanation=enh_question.explanation or "Brak wyjaśnienia.",
                 context=None,
             )
+
             new_quest = await PowiatdleQuestionRepository(session).create_question(
                 question_create
             )
@@ -245,13 +246,15 @@ async def ask_question(
             question_create
         )
 
-        await add_question_to_qdrant(
-            new_quest,
-            question_vector,
-            filter_key="powiat_id",
-            filter_value=day_powiat.powiat_id,
-            collection_name="powiaty_questions",
-        )
+        if question_vector:
+            await add_question_to_qdrant(
+                new_quest,
+                question_vector,
+                filter_key="powiat_id",
+                filter_value=day_powiat.powiat_id,
+                collection_name="powiaty_questions",
+            )
+
 
         return new_quest
 

@@ -104,10 +104,14 @@ async def get_fragments_matching_question(
     # Collect all IDs to fetch (original, previous and next)
     ids_to_fetch = set()
     for point in points:
-        point_id = int(point.id)
-        ids_to_fetch.add(point_id)
-        ids_to_fetch.add(point_id - 1)
-        ids_to_fetch.add(point_id + 1)
+        try:
+            point_id = int(point.id)
+            ids_to_fetch.add(point_id)
+            ids_to_fetch.add(point_id - 1)
+            ids_to_fetch.add(point_id + 1)
+        except (ValueError, TypeError):
+            # If ID is not an integer (e.g., UUID), we can only fetch the point itself
+            ids_to_fetch.add(point.id)
 
     # Fetch all these points from Qdrant
     all_points = get_points(qdrant.client, collection_name, list(ids_to_fetch))
@@ -118,8 +122,13 @@ async def get_fragments_matching_question(
         if p.payload and p.payload.get(filter_key) == filter_value:
             valid_points.append(p)
 
-    # Sort by ID to maintain document order
-    valid_points.sort(key=lambda x: int(x.id))
+    # Sort by ID to maintain document order (only if they are integers)
+    try:
+        valid_points.sort(key=lambda x: int(x.id))
+    except (ValueError, TypeError):
+        # If they are UUIDs, sorting might not make sense in terms of document order,
+        # but we keep them as is or sort by string value
+        valid_points.sort(key=lambda x: str(x.id))
 
     fragments = []
     for point in valid_points:

@@ -74,8 +74,11 @@ class USStateQuestionDisplay(BaseModel):
     answer: Optional[bool]
     explanation: str
     asked_at: datetime
+    user_id: Optional[int] = None
+    day_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 class USStateQuestionEnhanced(BaseModel):
