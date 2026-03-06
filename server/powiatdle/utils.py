@@ -95,7 +95,7 @@ async def ask_question(
     day_powiat: PowiatdleDay,
     user: User | None,
     session: AsyncSession,
-) -> PowiatQuestionCreate:
+) -> Tuple[PowiatQuestionCreate, List[float]]:
 
     fragments, question_vector = await get_fragments_matching_question(
         question.question, "powiat_id", day_powiat.powiat_id, "powiaty", session, limit=qdrant.POWIATDLE_CONTEXT_LIMIT

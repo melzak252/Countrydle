@@ -117,7 +117,8 @@ async def ask_question(
     day_state: USStatedleDay,
     user: User | None,
     session: AsyncSession,
-) -> USStateQuestionCreate:
+) -> Tuple[USStateQuestionCreate, List[float]]:
+
 
     fragments, question_vector = await get_fragments_matching_question(
         question.question, "us_state_id", day_state.us_state_id, "us_states", session, limit=qdrant.US_STATEDLE_CONTEXT_LIMIT

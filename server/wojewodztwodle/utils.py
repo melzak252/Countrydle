@@ -98,7 +98,7 @@ async def ask_question(
     day_wojewodztwo: WojewodztwodleDay,
     user: User | None,
     session: AsyncSession,
-) -> WojewodztwoQuestionCreate:
+) -> Tuple[WojewodztwoQuestionCreate, List[float]]:
 
     fragments, question_vector = await get_fragments_matching_question(
         question.question,

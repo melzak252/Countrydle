@@ -350,6 +350,8 @@ async def reveal_us_state(
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     if not day_state:
+        day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
+    if not day_state:
         raise HTTPException(status_code=404, detail="No game today")
         
     if user is not None:

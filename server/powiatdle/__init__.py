@@ -330,6 +330,8 @@ async def reveal_powiat(
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
     if not day_powiat:
+        day_powiat = await PowiatdleDayRepository(session).generate_new_day_powiat()
+    if not day_powiat:
         raise HTTPException(status_code=404, detail="No game today")
         
     if user is not None:

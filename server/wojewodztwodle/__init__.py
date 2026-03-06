@@ -334,6 +334,8 @@ async def reveal_wojewodztwo(
 ):
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
     if not day_state:
+        day_state = await WojewodztwodleDayRepository(session).generate_new_day_wojewodztwo()
+    if not day_state:
         raise HTTPException(status_code=404, detail="No game today")
         
     if user is not None:
