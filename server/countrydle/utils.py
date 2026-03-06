@@ -9,9 +9,11 @@ import qdrant
 from schemas.country import DayCountryDisplay
 from schemas.countrydle import QuestionCreate, QuestionEnhanced
 from db.repositories.country import CountryRepository
+from graphrag.engine import graph_rag_engine
 
 
 async def enhance_question(question: str) -> QuestionEnhanced:
+
     system_prompt = """
 You are an AI assistant for a game where players guess a country by asking True/False questions. 
 Your task is to:
@@ -232,6 +234,61 @@ Country: Japan. Question: Has the country hosted the 2025 World Expo?
     )
 
     return question_create, question_vector
+
+
+async def ask_question_graphrag(
+    question_text: str,
+    day_country: CountrydleDay,
+    user: User | None,
+    session: AsyncSession,
+) -> QuestionCreate:
+    """
+    New GraphRAG flow:
+    1. Enhance and Plan
+    2. Extract context from KuzuDB
+    3. Ask LLM with context
+    """
+    country: Country = await CountryRepository(session).get(day_country.country_id)
+    
+    # 1. Enhance and Plan
+    plan = await graph_rag_engine.enhance_and_plan(question_text)
+    
+    if not plan.get("valid", False):
+        return QuestionCreate(
+            user_id=user.id if user else None,
+            day_id=day_country.id,
+            original_question=question_text,
+            valid=False,
+            question=None,
+            answer=None,
+            explanation=plan.get("explanation", "Invalid question."),
+            context=None,
+        ), None
+
+    # 2. Extract context from KuzuDB
+    context = await graph_rag_engine.extract_context(plan, country.name)
+    
+    # 3. Ask LLM with context
+    answer, explanation = await graph_rag_engine.ask_with_graph_context(
+        plan.get("basic_terms", question_text),
+        context,
+        country.name
+    )
+    
+    question_create = QuestionCreate(
+        user_id=user.id if user else None,
+        day_id=day_country.id,
+        original_question=question_text,
+        valid=True,
+        question=plan.get("basic_terms"),
+        answer=answer,
+        explanation=explanation,
+        context=context,
+    )
+    
+    # We return None for vector because we are moving away from Qdrant
+    return question_create, None
+
 
 
 async def give_guess(
