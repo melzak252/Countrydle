@@ -27,10 +27,55 @@ const PortalTooltip = ({ children, content, position = 'top', className }: Porta
       let left = rect.left + rect.width / 2;
 
       if (position === 'top') {
-         top = rect.top - 10;
+         top = rect.top;
       } else {
-         top = rect.bottom + 10;
+         top = rect.bottom;
       }
+      
+      setCoords({ top, left });
+    }
+  };
+
+  useEffect(() => {
+     if(isVisible) {
+         updatePosition();
+         // Use capture phase for scroll to catch it from any element
+         window.addEventListener('scroll', updatePosition, true);
+         window.addEventListener('resize', updatePosition);
+     }
+     return () => {
+         window.removeEventListener('scroll', updatePosition, true);
+         window.removeEventListener('resize', updatePosition);
+     }
+  }, [isVisible]);
+
+  return (
+    <div 
+        ref={triggerRef}
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className={cn("relative w-full block", className)}
+    >
+      {children}
+      {isVisible && createPortal(
+        <div 
+            className={cn("fixed z-[9999] pointer-events-none", className)}
+            style={{ 
+                top: coords.top, 
+                left: coords.left,
+                transform: `translate(-50%, ${position === 'top' ? 'calc(-100% - 10px)' : '10px'})` 
+            }}
+        >
+            {content}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+      
+      left = left + window.scrollX;
       
       setCoords({ top, left });
     }
@@ -143,7 +188,7 @@ export default function History({ questions, isGameOver = false }: HistoryProps)
               <PortalTooltip 
                 key={q.id}
                 position="top"
-                className="w-full"
+                className="w-full block"
                 content={
                   <div className="bg-zinc-900 border-2 border-amber-500/50 rounded-xl text-sm text-white shadow-2xl p-4 w-[280px] md:w-72 text-center animate-in fade-in zoom-in-95 duration-200 flex flex-col items-center">
                       <div className="flex items-center justify-center gap-2 mb-2 text-amber-500 font-bold text-base">
@@ -169,7 +214,7 @@ export default function History({ questions, isGameOver = false }: HistoryProps)
               <PortalTooltip
                 key={q.id}
                 position="bottom"
-                className="w-full"
+                className="w-full block"
                 content={
                   <div className="mt-2 p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 shadow-xl max-w-sm md:max-w-md animate-in fade-in zoom-in-95 duration-200 relative">
                       <div className="absolute -top-2 left-1/2 w-4 h-4 bg-zinc-800 border-t border-l border-zinc-700 transform rotate-45 -translate-x-1/2"></div>
