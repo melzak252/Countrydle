@@ -19,21 +19,21 @@ def extract_data_from_md(content, entity_type):
     Extract:
     1. Basic properties: capital, population (INT64), area (DOUBLE).
     2. Neighbors: A list of names of other {entity_type}s that border this one.
-    3. Concepts: A list of related entities like:
-       - Continents, Regions
-       - Organizations (EU, NATO, G7, UN, etc.)
-       - Currencies (Official and used)
-       - Languages (Official and spoken)
-       - Religions
-       - Climates
-       - Major Rivers, Lakes, Mountains
-       - Famous Landmarks
-       - Historical Events/Periods
+    3. Concepts: A comprehensive list of identifying features and relationships. 
+       Look for EVERYTHING that could be used to distinguish or group this {entity_type} with others:
+       - Geographic: Continents, Regions, Sub-regions, Time Zones, Climate Zones.
+       - Physical: Shared Rivers, Lakes, Seas, Oceans, Mountain Ranges, Deserts.
+       - Political: Organizations (UN, EU, NATO, G7, ASEAN, AU, etc.), Trading Blocs, Government Type.
+       - Cultural: Official Languages, Common Languages, Major Religions, Ethnic Groups.
+       - Economic: Currencies, Major Exports, Income Level (World Bank).
+       - Infrastructure: Driving Side (Left/Right), Calling Code, Internet TLD.
+       - Historical: Former Empires, Colonial History, Independence Year.
+       - Landmarks: World Heritage Sites, Famous Natural or Man-made Landmarks.
        
        For each concept, provide:
-       - name: The name of the concept (e.g., "Europe", "Euro", "English", "Amazon River").
-       - category: The category (e.g., "Continent", "Currency", "Language", "River", "Mountain").
-       - relationship: How it relates (e.g., "Located In", "Uses Currency", "Official Language", "Flows Through", "Highest Point").
+       - name: The specific name (e.g., "UTC+1", "Atlantic Ocean", "Roman Catholicism", "Right-hand traffic").
+       - category: The broad category (e.g., "Time Zone", "Ocean", "Religion", "Driving Side").
+       - relationship: A descriptive verb phrase (e.g., "Located In", "Borders", "Practices", "Drives On", "Member Of").
 
     Output format: JSON
     {{
