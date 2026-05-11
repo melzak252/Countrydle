@@ -48,7 +48,7 @@ app = FastAPI(lifespan=lifespan)
 logger = logging.getLogger("countrydle")
 logging.basicConfig(level=logging.INFO)
 
-SERVER_VERSION = "1.1.3"
+SERVER_VERSION = "1.1.4"
 
 app.add_middleware(
     CORSMiddleware,
