@@ -873,8 +873,8 @@ def execute_local_plan(
         if answer is None:
             return None
         relations = sorted(plan_relations(plan)) or ["local_plan"]
-        explanation = planner_explanation or "Question answered from the local Countrydle knowledge base."
-        explanation = f"{explanation} The result was checked locally in SQLite for {country['app_country_name']}."
+        explanation = planner_explanation or "The question matches known Countrydle facts."
+        explanation = f"{explanation} The answer follows from the known facts about {country['app_country_name']}."
         return LocalAnswer(
             question=improved_question,
             answer=answer,

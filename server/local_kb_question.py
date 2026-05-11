@@ -190,7 +190,11 @@ def get_relation_value(conn: sqlite3.Connection, config: LocalModeConfig, row: s
     return None
 
 
-def resolve_ref(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, node: Any) -> Any:
+def resolve_ref(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, node: Any, item_value: str | None = None) -> Any:
+    if isinstance(node, dict) and set(node.keys()) == {"value"}:
+        return node.get("value")
+    if isinstance(node, dict) and node.get("entity") == "item":
+        return item_value
     if isinstance(node, dict) and node.get("entity") == config.target_entity:
         return get_relation_value(conn, config, row, node.get("relation", ""))
     return node
@@ -220,14 +224,49 @@ def is_self_reference(value: Any, row: sqlite3.Row, config: LocalModeConfig) -> 
     }
 
 
-def evaluate(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, node: dict[str, Any]) -> bool | None:
+def evaluate(
+    conn: sqlite3.Connection,
+    config: LocalModeConfig,
+    row: sqlite3.Row,
+    node: dict[str, Any],
+    item_value: str | None = None,
+) -> bool | None:
     op = node.get("operator")
     if op in {"and", "or"}:
-        values = [evaluate(conn, config, row, c) for c in node.get("conditions", [])]
-        return all(v is True for v in values) if op == "and" else any(v is True for v in values)
+        values = [evaluate(conn, config, row, c, item_value) for c in node.get("conditions", [])]
+        if not values:
+            return None
+        if op == "or":
+            if any(v is True for v in values):
+                return True
+            if any(v is None for v in values):
+                return None
+            return False
+        if any(v is False for v in values):
+            return False
+        if any(v is None for v in values):
+            return None
+        return True
     if op == "not":
-        value = evaluate(conn, config, row, node.get("condition", {}))
+        value = evaluate(conn, config, row, node.get("condition", {}), item_value)
         return None if value is None else not value
+    if op in {"any", "all"}:
+        items = resolve_ref(conn, config, row, node.get("items", {}))
+        condition = node.get("condition")
+        if not isinstance(items, list) or condition is None:
+            return None
+        values = [evaluate(conn, config, row, condition, str(item)) for item in items]
+        if op == "any":
+            if any(v is True for v in values):
+                return True
+            if any(v is None for v in values):
+                return None
+            return False
+        if any(v is False for v in values):
+            return False
+        if any(v is None for v in values):
+            return None
+        return True
 
     left_node = node.get("left")
     right_node = node.get("right", node.get("value"))
@@ -254,8 +293,10 @@ def evaluate(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row
             if coast in {"great lakes", "wielkie jeziora"}:
                 return any(norm(w).startswith("lake ") for w in waters)
 
-    left = resolve_ref(conn, config, row, left_node)
-    right = resolve_ref(conn, config, row, right_node)
+    left = resolve_ref(conn, config, row, left_node, item_value)
+    right = resolve_ref(conn, config, row, right_node, item_value)
+    if left is None or (op != "has_space" and right is None):
+        return None
 
     # Game rule inherited from the old prompts: if the user asks whether the
     # hidden entity borders/neighbors itself, answer true. We do not store
@@ -274,12 +315,14 @@ def evaluate(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row
         return norm(right) in norm(left)
     if op == "equals":
         return norm(left) == norm(right)
-    if op in {"greater_than", "less_than"}:
+    if op in {"greater_than", "less_than", "west_of", "east_of", "north_of", "south_of"}:
         try:
             lnum, rnum = float(left), float(right)
         except (TypeError, ValueError):
             return None
-        return lnum > rnum if op == "greater_than" else lnum < rnum
+        if op in {"greater_than", "east_of", "north_of"}:
+            return lnum > rnum
+        return lnum < rnum
 
     txt = text_value(left)
     n_txt = norm(txt)
@@ -339,8 +382,9 @@ def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) 
         return None
     relations = collect_relations(plan.plan)
     explanation = (
-        f"{plan.explanation or 'Pytanie zostało sprawdzone lokalnie.'} "
-        f"Wynik sprawdzono lokalnie w bazie SQLite dla relacji: {', '.join(relations) or 'brak'}.")
+        f"{plan.explanation or 'Pytanie pasuje do znanych faktów w tej grze.'} "
+        "Odpowiedź wynika z dostępnych faktów o ukrytym obiekcie."
+    )
     return LocalAnswer(
         question=plan.improved_question or plan.original_question,
         answer=answer,

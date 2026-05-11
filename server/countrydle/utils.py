@@ -146,7 +146,7 @@ def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> Q
         question=plan.improved_question or original_question,
         intent=plan.explanation,
         required_info=plan.fallback_reason
-        or "Information not available in local SQLite relations; use Qdrant context.",
+        or "More context is needed to answer this question confidently.",
         explanation=plan.explanation if not plan.valid else None,
     )
 
