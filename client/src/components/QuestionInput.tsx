@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionInputProps {
   onAsk: (question: string) => Promise<void>;
@@ -9,7 +10,22 @@ interface QuestionInputProps {
 }
 
 export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder }: QuestionInputProps) {
+  const { t } = useTranslation();
   const [question, setQuestion] = useState('');
+  const [showSlowMessage, setShowSlowMessage] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowSlowMessage(false);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setShowSlowMessage(true);
+    }, 1500);
+
+    return () => window.clearTimeout(timeout);
+  }, [isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +63,12 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
         </button>
       </div>
+      {showSlowMessage && (
+        <div className="mt-2 flex items-center justify-center gap-2 text-xs text-amber-300/90">
+          <Loader2 size={13} className="animate-spin" />
+          <span>{t('inputs.slowQuestionMessage')}</span>
+        </div>
+      )}
     </form>
   );
 }

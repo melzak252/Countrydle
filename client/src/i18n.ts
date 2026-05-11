@@ -43,9 +43,11 @@ const resources = {
         welcome:
           'Welcome to {{gameName}}! This game is currently in development, so we apologize for any potential AI mistakes in the answers. We are constantly working to improve the experience.',
         wikipedia:
-          'The bot only has knowledge based on Wikipedia articles (e.g., for Poland, it only knows the content of https://en.wikipedia.org/wiki/Poland and similarly for other entities).',
+          'Most common questions are checked against local fact databases. If a question needs extra context, the AI may verify it using prepared knowledge fragments.',
         askAnyLanguage:
           'You can ask questions in any language (e.g., English, Polish, German) - the AI will understand your intent!',
+        reliableInfo:
+          'Questions usually work best for location and regions, borders or neighbours, sea and water access, population and area comparisons, names, capitals or seats, administrative membership, and common geographic labels such as coasts, mountains, rivers or historical regions. Very historical, political or cultural questions may need extra verification.',
         scoring: 'Scoring:',
         upToPoints: 'Up to {{maxPoints}} points',
         examples: 'Example questions:',
@@ -271,6 +273,7 @@ const resources = {
       inputs: {
         questionPlaceholder: 'Ask a yes/no question (e.g., "Is it in Europe?") - {{count}} left',
         guessPlaceholder: 'Guess the country... ({{count}} left)',
+        slowQuestionMessage: 'I need a moment to check additional information...',
       },
       countdown: {
         title: 'Time until next daily puzzle',
@@ -317,9 +320,11 @@ const resources = {
         welcome:
           'Witaj w {{gameName}}! Gra jest obecnie w fazie rozwoju, wiec przepraszamy za ewentualne bledy AI w odpowiedziach. Stale pracujemy nad poprawa rozgrywki.',
         wikipedia:
-          'Bot posiada wiedze wylacznie na podstawie artykulow Wikipedii (np. dla Polski opiera sie na tresci strony https://pl.wikipedia.org/wiki/Polska i analogicznie dla innych bytow).',
+          'Najczestsze pytania sa sprawdzane w lokalnych bazach faktow. Jesli pytanie wymaga dodatkowego kontekstu, AI moze zweryfikowac je na podstawie przygotowanych fragmentow wiedzy.',
         askAnyLanguage:
           'Mozesz zadawac pytania w dowolnym jezyku (np. po polsku, angielsku, niemiecku) - AI zrozumie Twoj zamiar!',
+        reliableInfo:
+          'Najmniej problemow powinno byc z pytaniami o polozenie i regiony, granice lub sasiadow, dostep do morza i wod, porownania ludnosci oraz powierzchni, nazwy, stolice lub siedziby, przynaleznosc administracyjna oraz typowe etykiety geograficzne, np. wybrzeza, gory, rzeki albo regiony historyczne. Bardzo historyczne, polityczne lub kulturowe pytania moga wymagac dodatkowej weryfikacji.',
         scoring: 'Punktacja:',
         upToPoints: 'Do {{maxPoints}} punktow',
         examples: 'Przykladowe pytania:',
@@ -545,6 +550,7 @@ const resources = {
       inputs: {
         questionPlaceholder: 'Zadaj pytanie tak/nie (np. "Czy lezy w Europie?") - zostalo {{count}}',
         guessPlaceholder: 'Zgadnij kraj... (zostalo {{count}})',
+        slowQuestionMessage: 'Potrzebuje jeszcze chwile — sprawdzam dodatkowe informacje...',
       },
       countdown: {
         title: 'Czas do nastepnej dziennej zagadki',

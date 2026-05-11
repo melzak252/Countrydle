@@ -38,12 +38,26 @@ game_rules = GameRules(WOJEWODZTWDLE_CONFIG)
 
 def db_state_to_game_state(db_state) -> GameState:
     return GameState(
-        questions_used=WOJEWODZTWDLE_CONFIG.max_questions
-        - db_state.remaining_questions,
-        guesses_used=WOJEWODZTWDLE_CONFIG.max_guesses - db_state.remaining_guesses,
+        questions_used=db_state.questions_asked,
+        guesses_used=db_state.guesses_made,
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+
+async def normalize_state_limits(state, session: AsyncSession):
+    expected_questions = max(
+        0, WOJEWODZTWDLE_CONFIG.max_questions - state.questions_asked
+    )
+    expected_guesses = max(0, WOJEWODZTWDLE_CONFIG.max_guesses - state.guesses_made)
+    if (
+        state.remaining_questions != expected_questions
+        or state.remaining_guesses != expected_guesses
+    ):
+        state.remaining_questions = expected_questions
+        state.remaining_guesses = expected_guesses
+        await WojewodztwodleStateRepository(session).update_state(state)
+    return state
 
 
 @router.post("/sync", response_model=WojewodztwodleStateResponse)
@@ -167,6 +181,8 @@ async def get_state(
             max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
         )
 
+    state = await normalize_state_limits(state, session)
+
     guesses = await WojewodztwodleGuessRepository(session).get_user_day_guesses(
         user, day_state
     )
@@ -238,30 +254,22 @@ async def ask_question(
     from qdrant.utils import add_question_to_qdrant
 
     if user is None:
-        enh_question = await wutils.enhance_question(question.question)
-        if not enh_question.valid:
-            question_create = WojewodztwoQuestionCreate(
-                user_id=None,
-                day_id=day_state.id,
-                original_question=enh_question.original_question,
-                valid=enh_question.valid,
-                question=enh_question.question,
-                answer=None,
-                explanation=enh_question.explanation or "Brak wyjaśnienia.",
-                context=None,
-            )
-
-            new_quest = await WojewodztwodleQuestionRepository(session).create_question(
-                question_create
-            )
-            return new_quest
-
-        question_create, question_vector = await wutils.ask_question(
-            enh_question,
-            day_state,
-            None,
-            session,
+        question_create, planned_question = await wutils.analyze_and_answer_locally(
+            question.question, day_state, None, session
         )
+
+        if question_create is None:
+            enh_question = wutils.question_enhanced_from_plan(
+                question.question, planned_question
+            )
+            question_create, question_vector = await wutils.ask_question(
+                enh_question,
+                day_state,
+                None,
+                session,
+            )
+        else:
+            question_vector = None
 
         new_quest = await WojewodztwodleQuestionRepository(session).create_question(
             question_create
@@ -288,50 +296,33 @@ async def ask_question(
             detail="No more questions left or game over!",
         )
 
-    enh_question = await wutils.enhance_question(question.question)
-    if not enh_question.valid:
-        question_create = WojewodztwoQuestionCreate(
-            user_id=user.id,
-            day_id=day_state.id,
-            original_question=enh_question.original_question,
-            valid=enh_question.valid,
-            question=enh_question.question,
-            answer=None,
-            explanation=enh_question.explanation,
-            context=None,
-        )
-        new_quest = await WojewodztwodleQuestionRepository(session).create_question(
-            question_create
-        )
-
-        # Update state
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = (
-            WOJEWODZTWDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        await WojewodztwodleStateRepository(session).update_state(state)
-
-        return new_quest
-
-    question_create, question_vector = await wutils.ask_question(
-        enh_question,
-        day_state,
-        user,
-        session,
+    question_create, planned_question = await wutils.analyze_and_answer_locally(
+        question.question, day_state, user, session
     )
+
+    if question_create is None:
+        enh_question = wutils.question_enhanced_from_plan(question.question, planned_question)
+        question_create, question_vector = await wutils.ask_question(
+            enh_question,
+            day_state,
+            user,
+            session,
+        )
+    else:
+        question_vector = None
 
     new_quest = await WojewodztwodleQuestionRepository(session).create_question(
         question_create
     )
 
-    await add_question_to_qdrant(
-        new_quest,
-        question_vector,
-        filter_key="wojewodztwo_id",
-        filter_value=day_state.wojewodztwo_id,
-        collection_name="wojewodztwa_questions",
-    )
+    if question_vector:
+        await add_question_to_qdrant(
+            new_quest,
+            question_vector,
+            filter_key="wojewodztwo_id",
+            filter_value=day_state.wojewodztwo_id,
+            collection_name="wojewodztwa_questions",
+        )
 
     # Update state
     new_game_state = game_rules.process_question(current_game_state)

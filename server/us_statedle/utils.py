@@ -10,6 +10,103 @@ from qdrant.utils import get_fragments_matching_question
 import qdrant
 from schemas.us_statedle import USStateQuestionCreate, USStateQuestionEnhanced
 from db.repositories.us_state import USStateRepository
+from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
+
+
+LOCAL_CONFIG = LocalModeConfig(
+    mode_name="USStatedle",
+    entity_label="US state",
+    target_entity="target_state",
+    db_path=ROOT_DIR / "data" / "us_state_facts.sqlite",
+    table="us_states",
+    name_column="name",
+    scalar_relations={
+        "name": "name",
+        "region": "region",
+        "division": "division",
+        "is_coastal": "is_coastal",
+        "population": "population",
+        "area": "area_sq_mi",
+        "latitude": "latitude",
+        "longitude": "longitude",
+        "admission_year": "admission_year",
+        "admission_order": "admission_order",
+        "nickname": "nickname",
+        "civil_war_side": "civil_war_side",
+    },
+    list_relations={
+        "borders_state": ("us_state_borders_states", "border_state_name"),
+        "borders_country": ("us_state_borders_countries", "country_name"),
+        "water_access": ("us_state_water_access", "water_body"),
+        "major_rivers": ("us_state_major_rivers", "river_name"),
+        "mountain_ranges": ("us_state_mountain_ranges", "range_name"),
+        "major_highways": ("us_state_major_highways", "highway_name"),
+        "regional_labels": ("us_state_regional_labels", "label"),
+    },
+    supported_relations=[
+        "name", "region", "division", "regional_labels", "borders_state", "borders_country", "water_access",
+        "is_coastal", "population", "area", "latitude", "longitude", "major_rivers",
+        "mountain_ranges", "admission_year", "admission_order", "nickname", "major_highways",
+        "civil_war_side",
+    ],
+    language="English or Polish",
+    fk_column="state_id",
+    mode_notes=(
+        "- For broad labels such as East Coast, West Coast, Gulf Coast, Great Lakes, "
+        "Pacific Northwest, Southwest, Great Plains, Appalachia, Deep South, Rust Belt, "
+        "Mid-Atlantic or Upper Midwest, prefer relation regional_labels.\n"
+        "- Census region and division are scalar official categories; informal/coastal/"
+        "cultural regions should use regional_labels.\n"
+        "- For direct water-body questions, use water_access."
+    ),
+)
+
+
+def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> USStateQuestionEnhanced:
+    return USStateQuestionEnhanced(
+        original_question=original_question,
+        valid=plan.valid,
+        question=plan.improved_question,
+        intent=plan.explanation,
+        required_info=", ".join(sorted(set(plan.plan and []))) if False else plan.fallback_reason,
+        explanation=plan.explanation if not plan.valid else None,
+    )
+
+
+async def analyze_and_answer_locally(question: str, day_state: USStatedleDay, user: User | None, session: AsyncSession):
+    state: USState = await USStateRepository(session).get(day_state.us_state_id)
+    plan = analyze_question(question, LOCAL_CONFIG)
+    if not plan.valid:
+        return USStateQuestionCreate(
+            user_id=user.id if user else None,
+            day_id=day_state.id,
+            original_question=question,
+            question=plan.improved_question,
+            valid=False,
+            answer=None,
+            explanation=plan.explanation or plan.fallback_reason or "Invalid question.",
+            context="local_planner:invalid",
+            intent=plan.explanation,
+            required_info=plan.fallback_reason,
+        ), plan
+    try:
+        answer = execute_plan(LOCAL_CONFIG, state.name, plan)
+    except Exception:
+        return None, plan
+    if answer is None:
+        return None, plan
+    return USStateQuestionCreate(
+        user_id=user.id if user else None,
+        day_id=day_state.id,
+        original_question=question,
+        question=answer.question,
+        valid=True,
+        answer=answer.answer,
+        explanation=answer.explanation,
+        context="local_kb:" + ",".join(answer.relations),
+        intent=plan.explanation,
+        required_info=", ".join(answer.relations),
+    ), plan
 
 
 async def enhance_question(question: str) -> USStateQuestionEnhanced:

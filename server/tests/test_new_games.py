@@ -52,7 +52,7 @@ async def test_us_statedle_state(async_client, mock_user_override):
         mock_state.id = 1
         mock_state.user_id = 1
         mock_state.day_id = 1
-        mock_state.remaining_questions = 10
+        mock_state.remaining_questions = 8
         mock_state.remaining_guesses = 3
         mock_state.questions_asked = 0
         mock_state.guesses_made = 0
@@ -67,7 +67,7 @@ async def test_us_statedle_state(async_client, mock_user_override):
         response = await async_client.get("/us_statedle/state")
         assert response.status_code == 200
         data = response.json()
-        assert data["state"]["remaining_questions"] == 10
+        assert data["state"]["remaining_questions"] == 8
         assert data["state"]["remaining_guesses"] == 3
 
 
@@ -103,8 +103,8 @@ async def test_wojewodztwodle_state(async_client, mock_user_override):
         mock_state.id = 1
         mock_state.user_id = 1
         mock_state.day_id = 1
-        mock_state.remaining_questions = 10
-        mock_state.remaining_guesses = 3
+        mock_state.remaining_questions = 5
+        mock_state.remaining_guesses = 2
         mock_state.questions_asked = 0
         mock_state.guesses_made = 0
         mock_state.is_game_over = False
@@ -118,8 +118,8 @@ async def test_wojewodztwodle_state(async_client, mock_user_override):
         response = await async_client.get("/wojewodztwodle/state")
         assert response.status_code == 200
         data = response.json()
-        assert data["state"]["remaining_questions"] == 10
-        assert data["state"]["remaining_guesses"] == 3
+        assert data["state"]["remaining_questions"] == 5
+        assert data["state"]["remaining_guesses"] == 2
 
 
 @pytest.mark.anyio

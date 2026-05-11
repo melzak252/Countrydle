@@ -1,0 +1,116 @@
+Rzeki europejskie z bazy Countrydle.
+Lista powstala z country_major_rivers dla panstw z regionem Europe,
+po odfiltrowaniu oczywistych rzek azjatyckich z panstw transkontynentalnych.
+Liczba unikalnych rzek: 111
+
+Alzette
+Attert
+Ausa
+Binachka Morava
+Black Drin
+Bodrog
+Bosna
+Bug
+Bîc
+Clerve
+Danube
+Daugava
+Dnieper
+Dniester
+Douro
+Drava
+Drin
+Drina
+Dunajec
+Ebro
+Elbe
+Garonne
+Gauja
+Gran Valira
+Great Morava
+Guadalquivir
+Guadiana
+Gudenå
+Hornád
+Hron
+Humber
+Ibar
+Inn
+Ipeľ
+Iskar
+Jägala
+Júcar
+Kasari
+Keila
+Klarälven-Göta älv
+Kolpa
+Kupa
+Laborec
+Latorica
+Lielupe
+Loire
+Marecchia
+Maritsa
+Meuse
+Minho
+Morava
+Moselle
+Mura
+Myjava
+Neman
+Nemunas
+Neretva
+Nitra
+Odense
+Oder
+Ondava
+Orava
+Our
+Pedieos
+Pedja
+Po
+Pripyat
+Prut
+Pärnu
+Põltsamaa
+Pčinja
+Rhine
+Rhône
+Rioni
+River Shannon
+Răut
+Salaca
+Samina
+Sana
+Sauer
+Sava
+Segura
+Seine
+Severn
+Seversky Donets
+Skjern
+Slaná
+Southern Bug
+Struma
+Suså
+Tagus
+Thames
+Ticino
+Tisza
+Turia
+Una
+Vardar
+Venta
+Vidå
+Vistula
+Vjosë
+Vltava
+Volga
+Vrbas
+Váh
+Võhandu
+Warta
+White Drin
+Wiltz
+Zeta
+Čierna voda

@@ -1,12 +1,19 @@
 import axios from 'axios';
 import type { CountryDisplay, GameResponse, Question, Guess } from '../types';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // Important for cookies
+});
+
+api.interceptors.request.use((config) => {
+  if (localStorage.getItem('user')) {
+    config.headers['X-Client-Authenticated'] = 'true';
+  }
+  return config;
 });
 
 api.interceptors.response.use(

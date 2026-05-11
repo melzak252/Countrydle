@@ -10,6 +10,93 @@ from qdrant.utils import get_fragments_matching_question
 import qdrant
 from schemas.powiatdle import PowiatQuestionCreate, PowiatQuestionEnhanced
 from db.repositories.powiatdle import PowiatRepository
+from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
+
+
+LOCAL_CONFIG = LocalModeConfig(
+    mode_name="Powiatdle",
+    entity_label="polski powiat lub miasto na prawach powiatu",
+    target_entity="target_powiat",
+    db_path=ROOT_DIR / "data" / "powiat_facts.sqlite",
+    table="powiats",
+    name_column="name",
+    scalar_relations={
+        "name": "name", "voivodeship": "voivodeship", "is_city_county": "is_city_county", "seat": "seat",
+        "population": "population", "area": "area_km2", "population_density": "population_density",
+        "urbanization": "urbanization_percent", "gmina_count": "gmina_count",
+        "urban_gmina_count": "urban_gmina_count", "rural_gmina_count": "rural_gmina_count",
+        "urban_rural_gmina_count": "urban_rural_gmina_count",
+    },
+    list_relations={
+        "borders_powiat": ("powiat_borders_powiats", "border_powiat_name"),
+        "borders_voivodeship": ("powiat_borders_voivodeships", "voivodeship"),
+        "borders_country": ("powiat_borders_countries", "country_name"),
+        "registration_plates": ("powiat_registration_plates", "plate_code"),
+        "major_rivers": ("powiat_major_rivers", "river_name"),
+        "major_roads": ("powiat_major_roads", "road_name"),
+        "landform_regions": ("powiat_landform_regions", "region_name"),
+        "regional_labels": ("powiat_landform_regions", "region_name"),
+    },
+    supported_relations=[
+        "name", "voivodeship", "is_city_county", "seat", "borders_powiat", "borders_voivodeship",
+        "borders_country", "population", "area", "population_density", "urbanization", "registration_plates",
+        "gmina_count", "urban_gmina_count", "rural_gmina_count", "urban_rural_gmina_count",
+        "major_rivers", "major_roads", "landform_regions", "regional_labels",
+    ],
+    mode_notes=(
+        "Use regional_labels for broad, historical, cultural, or physical-geography regions "
+        "of a powiat, such as Mazowsze, Podlasie, Kujawy, Małopolska, Śląsk, Kaszuby, "
+        "Roztocze, Polesie, or named mountain/upland/lowland/lake-district regions. "
+        "The relation is list-valued, so use contains/exists rather than equals."
+    ),
+)
+
+
+def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> PowiatQuestionEnhanced:
+    return PowiatQuestionEnhanced(
+        original_question=original_question,
+        valid=plan.valid,
+        question=plan.improved_question,
+        intent=plan.explanation,
+        required_info=plan.fallback_reason,
+        explanation=plan.explanation if not plan.valid else None,
+    )
+
+
+async def analyze_and_answer_locally(question: str, day_powiat: PowiatdleDay, user: User | None, session: AsyncSession):
+    powiat: Powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
+    plan = analyze_question(question, LOCAL_CONFIG)
+    if not plan.valid:
+        return PowiatQuestionCreate(
+            user_id=user.id if user else None,
+            day_id=day_powiat.id,
+            original_question=question,
+            question=plan.improved_question,
+            valid=False,
+            answer=None,
+            explanation=plan.explanation or plan.fallback_reason or "Niepoprawne pytanie.",
+            context="local_planner:invalid",
+            intent=plan.explanation,
+            required_info=plan.fallback_reason,
+        ), plan
+    try:
+        answer = execute_plan(LOCAL_CONFIG, powiat.nazwa, plan)
+    except Exception:
+        return None, plan
+    if answer is None:
+        return None, plan
+    return PowiatQuestionCreate(
+        user_id=user.id if user else None,
+        day_id=day_powiat.id,
+        original_question=question,
+        question=answer.question,
+        valid=True,
+        answer=answer.answer,
+        explanation=answer.explanation,
+        context="local_kb:" + ",".join(answer.relations),
+        intent=plan.explanation,
+        required_info=", ".join(answer.relations),
+    ), plan
 
 
 async def enhance_question(question: str) -> PowiatQuestionEnhanced:

@@ -1,0 +1,114 @@
+Relacje dla lokalnego SQLite trybu US Statedle
+==============================================
+
+Cel: osobna baza `data/us_state_facts.sqlite`, używana przez Gemini validator/planner
+do szybkiego odpowiadania na pytania o stany USA. Planner zwraca bezpieczny JSON plan,
+a executor sprawdza dane w SQLite. Jeżeli relacja nie jest obsługiwana albo brakuje
+danych, backend przechodzi do fallbacku Gemini + Qdrant.
+
+Relacje MVP
+-----------
+
+1. `name`
+   - Operacje tekstowe na nazwie stanu, bez dodatkowych tabel.
+   - Przykłady: czy zaczyna się na M, czy zawiera "New", czy ma dwa słowa.
+
+2. `region`
+   - Główny region Census: Northeast, Midwest, South, West.
+   - Przykłady: czy jest na południu, czy leży na Zachodzie.
+
+3. `division`
+   - Dokładniejszy Census division: New England, Middle Atlantic, East North Central,
+     West North Central, South Atlantic, East South Central, West South Central,
+     Mountain, Pacific.
+   - Przykłady: czy jest w Nowej Anglii, czy jest w Mountain states.
+
+4. `borders_state`
+   - Sąsiednie stany USA.
+   - Przykłady: czy graniczy z Kalifornią, czy graniczy ze stanem z regionu South.
+
+4a. `regional_labels`
+   - Lista regionów/subregionów/etykiet, do których należy stan.
+   - Zawiera m.in. Census region/division oraz popularne etykiety typu East Coast,
+     West Coast, Gulf Coast, Great Lakes, Pacific Northwest, Southwest, Great Plains,
+     Appalachia, Deep South, Rust Belt, Mid-Atlantic, Upper Midwest.
+   - Przykłady: czy jest na East Coast, czy leży w Appalachach, czy należy do Great Lakes.
+
+5. `borders_country`
+   - Granice międzynarodowe: Canada, Mexico.
+   - Przykłady: czy graniczy z Kanadą, czy graniczy z Meksykiem.
+
+6. `water_access`
+   - Główne bezpośrednie akweny: Atlantic Ocean, Pacific Ocean, Gulf of Mexico,
+     oraz konkretne Great Lakes: Lake Superior, Lake Michigan, Lake Huron,
+     Lake Erie, Lake Ontario.
+   - Nie trzymamy małych zatok/portów/straits jako podstawowej relacji.
+
+7. `is_coastal`
+   - Boolean wyliczany z głównych ocean/gulf water_access.
+   - Great Lakes mogą być osobno w `water_access`, ale nie muszą oznaczać oceanicznego coast.
+
+8. `population`
+   - Populacja stanu.
+   - Przykłady: czy ma więcej ludności niż Ohio, czy ma ponad 10 mln mieszkańców.
+
+9. `area`
+   - Powierzchnia stanu.
+   - Przykłady: czy jest większy niż Texas, czy należy do największych stanów.
+
+10. `coordinates`
+    - Środek stanu albo przybliżone centroid latitude/longitude.
+    - Przykłady: czy jest na zachód od Texasu, czy jest bardziej na północ niż Florida.
+
+11. `major_rivers`
+    - Główne rzeki przepływające przez stan albo tworzące granicę.
+    - Przykłady: czy przepływa Mississippi, Colorado River, Missouri River.
+
+12. `mountain_ranges`
+    - Główne pasma/góry: Rocky Mountains, Appalachian Mountains, Sierra Nevada,
+      Cascade Range, Coast Ranges, Ozarks, Adirondacks itd.
+    - Przykłady: czy są tam Góry Skaliste, czy leży w Appalachach.
+
+13. `admission_year`
+    - Rok przyjęcia do Unii jako stan.
+    - Przykłady: czy został stanem w XIX wieku, czy dołączył po 1900 roku.
+
+14. `admission_order`
+    - Kolejność przyjęcia do Unii: Delaware=1, Hawaii=50.
+    - Przykłady: czy był jednym z pierwszych 13 stanów, czy jest młodszy niż Texas.
+
+15. `nickname`
+    - Przydomek stanu, np. Golden State, Lone Star State.
+    - Relacja specyficzna, ale łatwa i charakterystyczna dla US states.
+
+16. `major_highways`
+    - Główne drogi/autostrady przechodzące przez stan: I-5, I-10, I-35, I-70,
+      I-80, I-90, I-95, US 66 / Route 66 itd.
+    - Przykłady: czy przechodzi przez niego I-95, czy leży na Route 66.
+
+17. `civil_war_side`
+    - Po której stronie był stan w czasie wojny secesyjnej.
+    - Wartości: Union, Confederacy, Border state, Territory / not a state yet.
+    - Przykłady: czy był po stronie Konfederacji, czy był stanem granicznym,
+      czy nie był jeszcze wtedy stanem.
+
+Źródła danych
+-------------
+
+- Statyczne listy: region, division, regional_labels, borders_state, borders_country, major_highways.
+- Infobox/Wikipedia markdown: population, area, admission_year, admission_order,
+  nickname, czasem coordinates.
+- Statyczne dane historyczne: civil_war_side.
+- Gemini z sekcji Geography: water_access, major_rivers, mountain_ranges.
+- `is_coastal` wyliczamy z `water_access`.
+
+Operatory globalne
+------------------
+
+Tak jak dla Countrydle planner powinien obsługiwać:
+
+- logiczne: `and`, `or`, `not`, `any`, `all`
+- listy/skalary: `contains`, `equals`, `exists`
+- porównania: `greater_than`, `less_than`, `north_of`, `south_of`, `east_of`, `west_of`
+- nazwa: `starts_with`, `ends_with`, `contains_text`, `has_space`,
+  `word_count_*`, `char_count_*`

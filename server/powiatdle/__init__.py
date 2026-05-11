@@ -38,11 +38,24 @@ game_rules = GameRules(POWIATDLE_CONFIG)
 
 def db_state_to_game_state(db_state) -> GameState:
     return GameState(
-        questions_used=POWIATDLE_CONFIG.max_questions - db_state.remaining_questions,
-        guesses_used=POWIATDLE_CONFIG.max_guesses - db_state.remaining_guesses,
+        questions_used=db_state.questions_asked,
+        guesses_used=db_state.guesses_made,
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+
+async def normalize_state_limits(state, session: AsyncSession):
+    expected_questions = max(0, POWIATDLE_CONFIG.max_questions - state.questions_asked)
+    expected_guesses = max(0, POWIATDLE_CONFIG.max_guesses - state.guesses_made)
+    if (
+        state.remaining_questions != expected_questions
+        or state.remaining_guesses != expected_guesses
+    ):
+        state.remaining_questions = expected_questions
+        state.remaining_guesses = expected_guesses
+        await PowiatdleStateRepository(session).update_state(state)
+    return state
 
 
 @router.post("/sync", response_model=PowiatdleStateResponse)
@@ -163,6 +176,8 @@ async def get_state(
             max_guesses=POWIATDLE_CONFIG.max_guesses,
         )
 
+    state = await normalize_state_limits(state, session)
+
     guesses = await PowiatdleGuessRepository(session).get_user_day_guesses(
         user, day_powiat
     )
@@ -230,30 +245,22 @@ async def ask_question(
     from qdrant.utils import add_question_to_qdrant
 
     if user is None:
-        enh_question = await putils.enhance_question(question.question)
-        if not enh_question.valid:
-            question_create = PowiatQuestionCreate(
-                user_id=None,
-                day_id=day_powiat.id,
-                original_question=enh_question.original_question,
-                valid=enh_question.valid,
-                question=enh_question.question,
-                answer=None,
-                explanation=enh_question.explanation or "Brak wyjaśnienia.",
-                context=None,
-            )
-
-            new_quest = await PowiatdleQuestionRepository(session).create_question(
-                question_create
-            )
-            return new_quest
-
-        question_create, question_vector = await putils.ask_question(
-            enh_question,
-            day_powiat,
-            None,
-            session,
+        question_create, planned_question = await putils.analyze_and_answer_locally(
+            question.question, day_powiat, None, session
         )
+
+        if question_create is None:
+            enh_question = putils.question_enhanced_from_plan(
+                question.question, planned_question
+            )
+            question_create, question_vector = await putils.ask_question(
+                enh_question,
+                day_powiat,
+                None,
+                session,
+            )
+        else:
+            question_vector = None
 
         new_quest = await PowiatdleQuestionRepository(session).create_question(
             question_create
@@ -280,50 +287,33 @@ async def ask_question(
             detail="No more questions left or game over!",
         )
 
-    enh_question = await putils.enhance_question(question.question)
-    if not enh_question.valid:
-        question_create = PowiatQuestionCreate(
-            user_id=user.id,
-            day_id=day_powiat.id,
-            original_question=enh_question.original_question,
-            valid=enh_question.valid,
-            question=enh_question.question,
-            answer=None,
-            explanation=enh_question.explanation,
-            context=None,
-        )
-        new_quest = await PowiatdleQuestionRepository(session).create_question(
-            question_create
-        )
-
-        # Update state
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = (
-            POWIATDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        await PowiatdleStateRepository(session).update_state(state)
-
-        return new_quest
-
-    question_create, question_vector = await putils.ask_question(
-        enh_question,
-        day_powiat,
-        user,
-        session,
+    question_create, planned_question = await putils.analyze_and_answer_locally(
+        question.question, day_powiat, user, session
     )
+
+    if question_create is None:
+        enh_question = putils.question_enhanced_from_plan(question.question, planned_question)
+        question_create, question_vector = await putils.ask_question(
+            enh_question,
+            day_powiat,
+            user,
+            session,
+        )
+    else:
+        question_vector = None
 
     new_quest = await PowiatdleQuestionRepository(session).create_question(
         question_create
     )
 
-    await add_question_to_qdrant(
-        new_quest,
-        question_vector,
-        filter_key="powiat_id",
-        filter_value=day_powiat.powiat_id,
-        collection_name="powiaty_questions",
-    )
+    if question_vector:
+        await add_question_to_qdrant(
+            new_quest,
+            question_vector,
+            filter_key="powiat_id",
+            filter_value=day_powiat.powiat_id,
+            collection_name="powiaty_questions",
+        )
 
     # Update state
     new_game_state = game_rules.process_question(current_game_state)
