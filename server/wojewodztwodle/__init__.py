@@ -238,30 +238,22 @@ async def ask_question(
     from qdrant.utils import add_question_to_qdrant
 
     if user is None:
-        enh_question = await wutils.enhance_question(question.question)
-        if not enh_question.valid:
-            question_create = WojewodztwoQuestionCreate(
-                user_id=None,
-                day_id=day_state.id,
-                original_question=enh_question.original_question,
-                valid=enh_question.valid,
-                question=enh_question.question,
-                answer=None,
-                explanation=enh_question.explanation or "Brak wyjaśnienia.",
-                context=None,
-            )
-
-            new_quest = await WojewodztwodleQuestionRepository(session).create_question(
-                question_create
-            )
-            return new_quest
-
-        question_create, question_vector = await wutils.ask_question(
-            enh_question,
-            day_state,
-            None,
-            session,
+        question_create, planned_question = await wutils.analyze_and_answer_locally(
+            question.question, day_state, None, session
         )
+
+        if question_create is None:
+            enh_question = wutils.question_enhanced_from_plan(
+                question.question, planned_question
+            )
+            question_create, question_vector = await wutils.ask_question(
+                enh_question,
+                day_state,
+                None,
+                session,
+            )
+        else:
+            question_vector = None
 
         new_quest = await WojewodztwodleQuestionRepository(session).create_question(
             question_create
@@ -288,50 +280,33 @@ async def ask_question(
             detail="No more questions left or game over!",
         )
 
-    enh_question = await wutils.enhance_question(question.question)
-    if not enh_question.valid:
-        question_create = WojewodztwoQuestionCreate(
-            user_id=user.id,
-            day_id=day_state.id,
-            original_question=enh_question.original_question,
-            valid=enh_question.valid,
-            question=enh_question.question,
-            answer=None,
-            explanation=enh_question.explanation,
-            context=None,
-        )
-        new_quest = await WojewodztwodleQuestionRepository(session).create_question(
-            question_create
-        )
-
-        # Update state
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = (
-            WOJEWODZTWDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        await WojewodztwodleStateRepository(session).update_state(state)
-
-        return new_quest
-
-    question_create, question_vector = await wutils.ask_question(
-        enh_question,
-        day_state,
-        user,
-        session,
+    question_create, planned_question = await wutils.analyze_and_answer_locally(
+        question.question, day_state, user, session
     )
+
+    if question_create is None:
+        enh_question = wutils.question_enhanced_from_plan(question.question, planned_question)
+        question_create, question_vector = await wutils.ask_question(
+            enh_question,
+            day_state,
+            user,
+            session,
+        )
+    else:
+        question_vector = None
 
     new_quest = await WojewodztwodleQuestionRepository(session).create_question(
         question_create
     )
 
-    await add_question_to_qdrant(
-        new_quest,
-        question_vector,
-        filter_key="wojewodztwo_id",
-        filter_value=day_state.wojewodztwo_id,
-        collection_name="wojewodztwa_questions",
-    )
+    if question_vector:
+        await add_question_to_qdrant(
+            new_quest,
+            question_vector,
+            filter_key="wojewodztwo_id",
+            filter_value=day_state.wojewodztwo_id,
+            collection_name="wojewodztwa_questions",
+        )
 
     # Update state
     new_game_state = game_rules.process_question(current_game_state)

@@ -284,7 +284,21 @@ async def ask_question(
         daily_country = await CountrydleRepository(session).generate_new_day_country()
 
     if user is None:
-        enh_question = await gutils.enhance_question(question.question)
+        local_question_create, planned_question = await gutils.analyze_and_answer_locally(
+            original_question=question.question,
+            day_country=daily_country,
+            user=None,
+            session=session,
+        )
+        if local_question_create is not None:
+            new_quest = await CountrydleQuestionsRepository(session).create_question(
+                local_question_create
+            )
+            if not local_question_create.valid:
+                return InvalidQuestionDisplay.model_validate(new_quest)
+            return FullQuestionDisplay.model_validate(new_quest)
+
+        enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
         if not enh_question.valid:
             question_create = QuestionCreate(
                 user_id=None,
@@ -341,7 +355,33 @@ async def ask_question(
             detail="User has no more questions left or game is over!",
         )
 
-    enh_question = await gutils.enhance_question(question.question)
+    local_question_create, planned_question = await gutils.analyze_and_answer_locally(
+        original_question=question.question,
+        day_country=daily_country,
+        user=user,
+        session=session,
+    )
+    if local_question_create is not None:
+        new_quest = await CountrydleQuestionsRepository(session).create_question(
+            local_question_create
+        )
+
+        try:
+            new_game_state = game_rules.process_question(current_game_state)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        state.remaining_questions = (
+            COUNTRYDLE_CONFIG.max_questions - new_game_state.questions_used
+        )
+        state.questions_asked += 1
+        state = await CountrydleStateRepository(session).update_countrydle_state(state)
+
+        if not local_question_create.valid:
+            return InvalidQuestionDisplay.model_validate(new_quest)
+        return FullQuestionDisplay.model_validate(new_quest)
+
+    enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
     if not enh_question.valid:
         question_create = QuestionCreate(
             user_id=user.id,

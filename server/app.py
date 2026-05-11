@@ -2,6 +2,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import logging
+import time
+import traceback
+
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_mail import MessageSchema
@@ -41,6 +45,9 @@ from utils.email import fm_noreply
 
 app = FastAPI(lifespan=lifespan)
 
+logger = logging.getLogger("countrydle")
+logging.basicConfig(level=logging.INFO)
+
 SERVER_VERSION = "1.1.3"
 
 app.add_middleware(
@@ -58,6 +65,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_question_requests_and_errors(request: Request, call_next):
+    """Log enough detail to debug local /question failures in Docker logs."""
+    started_at = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        elapsed_ms = (time.perf_counter() - started_at) * 1000
+        logger.error(
+            "Unhandled error: %s %s after %.1fms: %s",
+            request.method,
+            request.url.path,
+            elapsed_ms,
+            repr(exc),
+        )
+        logger.error("%s", traceback.format_exc())
+        raise
+
+    if request.url.path.endswith("/question") or response.status_code >= 500:
+        elapsed_ms = (time.perf_counter() - started_at) * 1000
+        logger.info(
+            "Request: %s %s -> %s in %.1fms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed_ms,
+        )
+    return response
 
 templates = Jinja2Templates(directory="templates")
 

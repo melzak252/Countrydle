@@ -68,6 +68,9 @@ async def test_guest_ask_question(async_client: AsyncClient):
         patch(
             "countrydle.utils.enhance_question", new_callable=AsyncMock
         ) as mock_enhance,
+        patch(
+            "countrydle.utils.analyze_and_answer_locally", new_callable=AsyncMock
+        ) as mock_local_analyze,
         patch("countrydle.utils.ask_question", new_callable=AsyncMock) as mock_ask,
         patch(
             "countrydle.add_question_to_qdrant", new_callable=AsyncMock
@@ -89,6 +92,19 @@ async def test_guest_ask_question(async_client: AsyncClient):
         mock_enhance.return_value.original_question = "Is it in Europe?"
         mock_enhance.return_value.question = "Is the country located in Europe?"
         mock_enhance.return_value.explanation = "Explanation"
+        from countrydle.local_planner import QuestionPlan
+        mock_local_analyze.return_value = (
+            None,
+            QuestionPlan(
+                original_question="Is it in Europe?",
+                valid=True,
+                supported=False,
+                improved_question="Is the country located in Europe?",
+                explanation="Explanation",
+                plan=None,
+                fallback_reason="Test fallback.",
+            ),
+        )
 
         # Mock Ask
         from schemas.countrydle import QuestionCreate
@@ -116,6 +132,12 @@ async def test_guest_ask_question(async_client: AsyncClient):
         mock_question_db_obj.day_id = 1
         mock_question_db_obj.asked_at = datetime.now()
         mock_question_db_obj.explanation = "Explanation"
+        mock_question_db_obj.context = "Context"
+        mock_question_db_obj.user = None
+        mock_question_db_obj.country = MagicMock()
+        mock_question_db_obj.country.id = 100
+        mock_question_db_obj.country.name = "Poland"
+        mock_question_db_obj.country.official_name = "Republic of Poland"
         mock_create_question.return_value = mock_question_db_obj
 
         question_data = {"question": "Is it in Europe?"}

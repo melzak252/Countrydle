@@ -1,0 +1,88 @@
+Plan relacji do lokalnego knowledge graph dla Countrydle
+=========================================================
+
+Cel:
+- jeśli pytanie użytkownika dotyczy jednej z relacji poniżej i mamy dane w lokalnej bazie,
+  odpowiadamy szybko lokalnie;
+- jeśli nie mamy takiej relacji albo pytanie nie da się do niej zmapować,
+  używamy starej metody OpenAI + Qdrant.
+
+Proponowane najważniejsze relacje do sprawdzenia
+-----------------------------------------------------
+
+1. continent
+   - Czy kraj jest w Europie/Azji/Afryce/Ameryce Północnej/Ameryce Południowej/Oceanii?
+   - Przykład: "Czy jest w Europie?"
+
+2. subregion
+   - Czy kraj leży w konkretnym regionie, np. Europa Środkowa, Skandynawia, Bliski Wschód?
+   - Przykład: "Czy jest w Skandynawii?"
+
+3. borders_country
+   - Czy kraj graniczy z konkretnym państwem?
+   - Przykład: "Czy graniczy z Niemcami?"
+
+4. water_access
+   - Czy kraj ma dostęp do morza/oceanu albo konkretnego głównego akwenu?
+   - Dla każdego kraju zapisujemy listę głównych akwenów, do których ma bezpośredni dostęp.
+   - Na razie nie zapisujemy zatok, lagun, portów, kanałów ani hierarchii akwenów.
+   - Przykłady: Morze Bałtyckie, Morze Północne, Morze Adriatyckie, Ocean Atlantycki.
+   - Przykłady pytań:
+     - "Czy ma dostęp do morza?"
+     - "Czy ma bezpośredni dostęp do Bałtyku?"
+   - Te dane uzupełnimy później, bo REST Countries nie podaje konkretnych akwenów.
+
+5. is_island
+   - Czy kraj jest wyspą / państwem wyspiarskim?
+   - Przykład: "Czy to wyspa?"
+
+6. capital
+   - Czy stolicą kraju jest konkretne miasto?
+   - Przykład: "Czy stolicą jest Warszawa?"
+
+7. currency
+   - Czy kraj używa konkretnej waluty?
+   - Przykład: "Czy walutą jest euro?"
+
+8. official_language
+   - Czy w kraju językiem urzędowym jest konkretny język?
+   - Przykład: "Czy mówi się tam po hiszpańsku?"
+
+9. membership
+   - Czy kraj należy do konkretnej organizacji / wspólnoty?
+   - Przykłady: UE, NATO, ONZ, Schengen, OECD, G7, G20.
+   - Przykład: "Czy jest w Unii Europejskiej?"
+
+10. population
+    - Czy kraj ma populację większą/mniejszą niż dana liczba albo inny kraj?
+    - Przykład: "Czy ma więcej niż 10 milionów mieszkańców?"
+
+11. area
+    - Czy kraj ma powierzchnię większą/mniejszą niż dana liczba albo inny kraj?
+    - Przykład: "Czy jest większy od Polski?"
+
+12. coordinates
+    - Czy kraj znajduje się na konkretnych współrzędnych / w określonym zakresie szerokości lub długości geograficznej?
+    - Przykłady: szerokość geograficzna, długość geograficzna, położenie bardziej na północ/południe/wschód/zachód niż inny kraj.
+    - Przykład: "Czy leży na północ od równika?"
+
+13. major_rivers
+    - Czy przez kraj przepływa konkretna duża rzeka?
+    - Przykład: "Czy przepływa przez niego Dunaj?"
+    - Te dane uzupełnimy później, bo REST Countries nie podaje rzek.
+
+14. driving_side
+    - Po której stronie drogi jeździ się w kraju?
+    - Przykład: "Czy jeździ się tam po lewej stronie?"
+
+
+Uwagi do dalszej edycji
+----------------------
+
+- Trzeba zdecydować, które relacje są obowiązkowe w MVP.
+- Dla każdej relacji trzeba ustalić:
+  1. nazwę techniczną relacji,
+  2. przykładowe pytania użytkowników,
+  3. format danych w SQLite,
+  4. sposób generowania odpowiedzi true/false/null,
+  5. kiedy robić fallback do starej metody.

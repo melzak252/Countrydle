@@ -1,5 +1,4 @@
 import pytest
-from httpx import AsyncClient
 from unittest.mock import patch, AsyncMock
 
 
@@ -247,9 +246,12 @@ async def test_ask_question_too_long(auth_client):
         patch(
             "countrydle.utils.enhance_question", new_callable=AsyncMock
         ) as mock_enhance,
+        patch(
+            "countrydle.utils.analyze_and_answer_locally", new_callable=AsyncMock
+        ) as mock_local_analyze,
         patch("countrydle.utils.ask_question", new_callable=AsyncMock) as mock_ask,
         patch(
-            "countrydle.__init__.add_question_to_qdrant", new_callable=AsyncMock
+            "countrydle.add_question_to_qdrant", new_callable=AsyncMock
         ) as mock_add_qdrant,
         patch(
             "db.repositories.question.CountrydleQuestionsRepository.create_question",
@@ -262,7 +264,21 @@ async def test_ask_question_too_long(auth_client):
         mock_enhance.return_value.question = "Is the country located in Europe?"
         mock_enhance.return_value.explanation = "Explanation"
 
-        from schemas.countrydle import QuestionCreate, QuestionDisplay
+        from countrydle.local_planner import QuestionPlan
+        mock_local_analyze.return_value = (
+            None,
+            QuestionPlan(
+                original_question="Is it in Europe?",
+                valid=True,
+                supported=False,
+                improved_question="Is the country located in Europe?",
+                explanation="Explanation",
+                plan=None,
+                fallback_reason="Test fallback.",
+            ),
+        )
+
+        from schemas.countrydle import QuestionCreate
         from datetime import datetime
 
         mock_q_create = QuestionCreate(
@@ -290,6 +306,16 @@ async def test_ask_question_too_long(auth_client):
         mock_question_db_obj.day_id = 1
         mock_question_db_obj.asked_at = datetime.now()
         mock_question_db_obj.explanation = "Explanation"
+        mock_question_db_obj.context = "Context"
+        mock_question_db_obj.user = MagicMock()
+        mock_question_db_obj.user.id = 1
+        mock_question_db_obj.user.username = "pytest_user"
+        mock_question_db_obj.user.email = "pytest@example.com"
+        mock_question_db_obj.user.is_admin = False
+        mock_question_db_obj.country = MagicMock()
+        mock_question_db_obj.country.id = 100
+        mock_question_db_obj.country.name = "Poland"
+        mock_question_db_obj.country.official_name = "Republic of Poland"
 
         mock_create_question.return_value = mock_question_db_obj
 

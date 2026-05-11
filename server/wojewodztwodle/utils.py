@@ -13,6 +13,92 @@ from schemas.wojewodztwodle import (
     WojewodztwoQuestionEnhanced,
 )
 from db.repositories.wojewodztwo import WojewodztwoRepository
+from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
+
+
+LOCAL_CONFIG = LocalModeConfig(
+    mode_name="Wojewodztwodle",
+    entity_label="polskie województwo",
+    target_entity="target_voivodeship",
+    db_path=ROOT_DIR / "data" / "voivodeship_facts.sqlite",
+    table="voivodeships",
+    name_column="name",
+    scalar_relations={
+        "name": "name", "seat": "seat", "macroregion": "macroregion", "is_coastal": "is_coastal",
+        "population": "population", "area": "area_km2", "latitude": "latitude", "longitude": "longitude",
+        "urbanization": "urbanization_percent", "powiat_count": "powiat_count", "city_count": "city_count",
+        "city_count_with_powiat_rights": "city_count_with_powiat_rights",
+    },
+    list_relations={
+        "borders_voivodeship": ("voivodeship_borders_voivodeships", "border_voivodeship_name"),
+        "borders_country": ("voivodeship_borders_countries", "country_name"),
+        "water_access": ("voivodeship_water_access", "water_body"),
+        "major_rivers": ("voivodeship_major_rivers", "river_name"),
+        "mountain_ranges": ("voivodeship_mountain_ranges", "range_name"),
+        "historical_region": ("voivodeship_historical_regions", "region_name"),
+        "landform_regions": ("voivodeship_landform_regions", "region_name"),
+        "regional_labels": ("voivodeship_regional_labels", "label"),
+    },
+    supported_relations=[
+        "name", "seat", "macroregion", "borders_voivodeship", "borders_country", "water_access",
+        "is_coastal", "population", "area", "latitude", "longitude", "major_rivers", "mountain_ranges",
+        "historical_region", "urbanization", "powiat_count", "city_count", "city_count_with_powiat_rights",
+        "landform_regions", "regional_labels",
+    ],
+    mode_notes=(
+        "For informal location labels such as 'zachodnia Polska', 'wschodnia Polska', "
+        "'północna Polska', 'południowa Polska', 'centralna Polska', 'nadmorska Polska', "
+        "or historical/common areas such as Śląsk, Małopolska, Pomorze, Mazury, Podlasie, "
+        "prefer relation regional_labels. Use macroregion only for exact broad macroregion wording."
+    ),
+)
+
+
+def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> WojewodztwoQuestionEnhanced:
+    return WojewodztwoQuestionEnhanced(
+        original_question=original_question,
+        valid=plan.valid,
+        question=plan.improved_question,
+        intent=plan.explanation,
+        required_info=plan.fallback_reason,
+        explanation=plan.explanation if not plan.valid else None,
+    )
+
+
+async def analyze_and_answer_locally(question: str, day_wojewodztwo: WojewodztwodleDay, user: User | None, session: AsyncSession):
+    wojewodztwo: Wojewodztwo = await WojewodztwoRepository(session).get(day_wojewodztwo.wojewodztwo_id)
+    plan = analyze_question(question, LOCAL_CONFIG)
+    if not plan.valid:
+        return WojewodztwoQuestionCreate(
+            user_id=user.id if user else None,
+            day_id=day_wojewodztwo.id,
+            original_question=question,
+            question=plan.improved_question,
+            valid=False,
+            answer=None,
+            explanation=plan.explanation or plan.fallback_reason or "Niepoprawne pytanie.",
+            context="local_planner:invalid",
+            intent=plan.explanation,
+            required_info=plan.fallback_reason,
+        ), plan
+    try:
+        answer = execute_plan(LOCAL_CONFIG, wojewodztwo.nazwa, plan)
+    except Exception:
+        return None, plan
+    if answer is None:
+        return None, plan
+    return WojewodztwoQuestionCreate(
+        user_id=user.id if user else None,
+        day_id=day_wojewodztwo.id,
+        original_question=question,
+        question=answer.question,
+        valid=True,
+        answer=answer.answer,
+        explanation=answer.explanation,
+        context="local_kb:" + ",".join(answer.relations),
+        intent=plan.explanation,
+        required_info=", ".join(answer.relations),
+    ), plan
 
 
 async def enhance_question(question: str) -> WojewodztwoQuestionEnhanced:

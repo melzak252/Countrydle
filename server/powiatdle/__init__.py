@@ -230,30 +230,22 @@ async def ask_question(
     from qdrant.utils import add_question_to_qdrant
 
     if user is None:
-        enh_question = await putils.enhance_question(question.question)
-        if not enh_question.valid:
-            question_create = PowiatQuestionCreate(
-                user_id=None,
-                day_id=day_powiat.id,
-                original_question=enh_question.original_question,
-                valid=enh_question.valid,
-                question=enh_question.question,
-                answer=None,
-                explanation=enh_question.explanation or "Brak wyjaśnienia.",
-                context=None,
-            )
-
-            new_quest = await PowiatdleQuestionRepository(session).create_question(
-                question_create
-            )
-            return new_quest
-
-        question_create, question_vector = await putils.ask_question(
-            enh_question,
-            day_powiat,
-            None,
-            session,
+        question_create, planned_question = await putils.analyze_and_answer_locally(
+            question.question, day_powiat, None, session
         )
+
+        if question_create is None:
+            enh_question = putils.question_enhanced_from_plan(
+                question.question, planned_question
+            )
+            question_create, question_vector = await putils.ask_question(
+                enh_question,
+                day_powiat,
+                None,
+                session,
+            )
+        else:
+            question_vector = None
 
         new_quest = await PowiatdleQuestionRepository(session).create_question(
             question_create
@@ -280,50 +272,33 @@ async def ask_question(
             detail="No more questions left or game over!",
         )
 
-    enh_question = await putils.enhance_question(question.question)
-    if not enh_question.valid:
-        question_create = PowiatQuestionCreate(
-            user_id=user.id,
-            day_id=day_powiat.id,
-            original_question=enh_question.original_question,
-            valid=enh_question.valid,
-            question=enh_question.question,
-            answer=None,
-            explanation=enh_question.explanation,
-            context=None,
-        )
-        new_quest = await PowiatdleQuestionRepository(session).create_question(
-            question_create
-        )
-
-        # Update state
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = (
-            POWIATDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        await PowiatdleStateRepository(session).update_state(state)
-
-        return new_quest
-
-    question_create, question_vector = await putils.ask_question(
-        enh_question,
-        day_powiat,
-        user,
-        session,
+    question_create, planned_question = await putils.analyze_and_answer_locally(
+        question.question, day_powiat, user, session
     )
+
+    if question_create is None:
+        enh_question = putils.question_enhanced_from_plan(question.question, planned_question)
+        question_create, question_vector = await putils.ask_question(
+            enh_question,
+            day_powiat,
+            user,
+            session,
+        )
+    else:
+        question_vector = None
 
     new_quest = await PowiatdleQuestionRepository(session).create_question(
         question_create
     )
 
-    await add_question_to_qdrant(
-        new_quest,
-        question_vector,
-        filter_key="powiat_id",
-        filter_value=day_powiat.powiat_id,
-        collection_name="powiaty_questions",
-    )
+    if question_vector:
+        await add_question_to_qdrant(
+            new_quest,
+            question_vector,
+            filter_key="powiat_id",
+            filter_value=day_powiat.powiat_id,
+            collection_name="powiaty_questions",
+        )
 
     # Update state
     new_game_state = game_rules.process_question(current_game_state)

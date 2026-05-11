@@ -7,7 +7,7 @@ from fastapi_mail import MessageSchema
 from db import get_db
 from db.models import User
 from db.repositories.user import UserRepository
-from fastapi import BackgroundTasks, Cookie, Depends, HTTPException, status, Response
+from fastapi import BackgroundTasks, Cookie, Depends, HTTPException, Request, status, Response
 
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -17,7 +17,7 @@ from utils.email import fm, fm_noreply
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
@@ -117,10 +117,13 @@ async def get_admin_user(
 
 
 async def get_current_or_guest_user(
+    request: Request,
     response: Response,
     access_token: str = Cookie(None),
     session: AsyncSession = Depends(get_db),
 ) -> User | None:
+    client_thinks_authenticated = request.headers.get("x-client-authenticated", "").lower() == "true"
+
     if access_token:
         try:
             return await get_current_user(
@@ -128,8 +131,17 @@ async def get_current_or_guest_user(
                 access_token=access_token,
                 session=session,
             )
-        except HTTPException:
+        except HTTPException as exc:
+            if client_thinks_authenticated:
+                raise exc
             pass
+
+    if client_thinks_authenticated:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired or missing. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return None
 

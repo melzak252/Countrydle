@@ -43,7 +43,7 @@ const resources = {
         welcome:
           'Welcome to {{gameName}}! This game is currently in development, so we apologize for any potential AI mistakes in the answers. We are constantly working to improve the experience.',
         wikipedia:
-          'The bot only has knowledge based on Wikipedia articles (e.g., for Poland, it only knows the content of https://en.wikipedia.org/wiki/Poland and similarly for other entities).',
+          'Most common questions are checked against local fact databases. If a question needs extra context, the AI may verify it using prepared knowledge fragments.',
         askAnyLanguage:
           'You can ask questions in any language (e.g., English, Polish, German) - the AI will understand your intent!',
         scoring: 'Scoring:',
@@ -271,6 +271,7 @@ const resources = {
       inputs: {
         questionPlaceholder: 'Ask a yes/no question (e.g., "Is it in Europe?") - {{count}} left',
         guessPlaceholder: 'Guess the country... ({{count}} left)',
+        slowQuestionMessage: 'I need a moment to check additional information...',
       },
       countdown: {
         title: 'Time until next daily puzzle',
@@ -317,7 +318,7 @@ const resources = {
         welcome:
           'Witaj w {{gameName}}! Gra jest obecnie w fazie rozwoju, wiec przepraszamy za ewentualne bledy AI w odpowiedziach. Stale pracujemy nad poprawa rozgrywki.',
         wikipedia:
-          'Bot posiada wiedze wylacznie na podstawie artykulow Wikipedii (np. dla Polski opiera sie na tresci strony https://pl.wikipedia.org/wiki/Polska i analogicznie dla innych bytow).',
+          'Najczestsze pytania sa sprawdzane w lokalnych bazach faktow. Jesli pytanie wymaga dodatkowego kontekstu, AI moze zweryfikowac je na podstawie przygotowanych fragmentow wiedzy.',
         askAnyLanguage:
           'Mozesz zadawac pytania w dowolnym jezyku (np. po polsku, angielsku, niemiecku) - AI zrozumie Twoj zamiar!',
         scoring: 'Punktacja:',
@@ -545,6 +546,7 @@ const resources = {
       inputs: {
         questionPlaceholder: 'Zadaj pytanie tak/nie (np. "Czy lezy w Europie?") - zostalo {{count}}',
         guessPlaceholder: 'Zgadnij kraj... (zostalo {{count}})',
+        slowQuestionMessage: 'Potrzebuje jeszcze chwile — sprawdzam dodatkowe informacje...',
       },
       countdown: {
         title: 'Czas do nastepnej dziennej zagadki',

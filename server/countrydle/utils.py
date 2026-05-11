@@ -1,7 +1,8 @@
 import os
 import json
 from typing import List, Tuple
-from openai import OpenAI
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,61 @@ import qdrant
 from schemas.country import DayCountryDisplay
 from schemas.countrydle import QuestionCreate, QuestionEnhanced
 from db.repositories.country import CountryRepository
+from countrydle.local_answering import execute_local_plan
+from countrydle.local_planner import QuestionPlan, analyze_question_for_local_plan
+
+
+GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
+
+
+def gemini_json(system_prompt: str, user_prompt: str, max_output_tokens: int = 1024) -> dict:
+    """Call Gemini and return a strict JSON object.
+
+    Used for the Countrydle fallback pipeline so we can move away from OpenAI
+    while keeping the old two-step enhance/answer architecture as fallback.
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+
+    model = (
+        os.getenv("GEMINI_QUIZ_MODEL")
+        or os.getenv("LOCAL_QUESTION_MODEL")
+        or os.getenv("GEMINI_MODEL")
+        or GEMINI_DEFAULT_MODEL
+    )
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0,
+            "maxOutputTokens": max_output_tokens,
+            "responseMimeType": "application/json",
+        },
+    }
+    request = Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=60) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Gemini HTTP error {exc.code}: {body[:500]}") from exc
+
+    answer = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
+    try:
+        parsed = json.loads(answer)
+    except json.JSONDecodeError:
+        print(answer)
+        raise
+    if not isinstance(parsed, dict):
+        raise ValueError("Gemini returned JSON that is not an object")
+    return parsed
 
 
 async def enhance_question(question: str) -> QuestionEnhanced:
@@ -69,28 +125,7 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
     question_prompt = f"""User's Question: {question}"""
 
-    prompts = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question_prompt},
-    ]
-    model = os.getenv("QUIZ_MODEL")
-
-    client = OpenAI()
-    response = client.chat.completions.create(
-        model=model,
-        messages=prompts,
-        response_format={"type": "json_object"},
-        temperature=0.0,
-        seed=42,
-    )
-
-    answer = response.choices[0].message.content
-
-    try:
-        answer_dict: dict = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
+    answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768)
 
     return QuestionEnhanced(
         original_question=question,
@@ -101,6 +136,69 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
         explanation=answer_dict.get("explanation")
         or ("No explanation provided." if not answer_dict["valid"] else None),
     )
+
+
+def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> QuestionEnhanced:
+    """Reuse the single local analyzer/planner output as the fallback enhanced question."""
+    return QuestionEnhanced(
+        original_question=original_question,
+        valid=plan.valid,
+        question=plan.improved_question or original_question,
+        intent=plan.explanation,
+        required_info=plan.fallback_reason
+        or "Information not available in local SQLite relations; use Qdrant context.",
+        explanation=plan.explanation if not plan.valid else None,
+    )
+
+
+async def analyze_and_answer_locally(
+    original_question: str,
+    day_country: CountrydleDay,
+    user: User | None,
+    session: AsyncSession,
+) -> tuple[QuestionCreate | None, QuestionPlan]:
+    """Run one Gemini validator/planner call and answer locally when possible."""
+    country: Country = await CountryRepository(session).get(day_country.country_id)
+    planned_question = analyze_question_for_local_plan(original_question)
+
+    if not planned_question.valid:
+        return QuestionCreate(
+            user_id=user.id if user else None,
+            day_id=day_country.id,
+            original_question=original_question,
+            valid=False,
+            question=planned_question.improved_question,
+            answer=None,
+            explanation=planned_question.explanation or "This is not a valid yes/no country question.",
+            intent="Gemini question analyzer validation failed",
+            required_info=None,
+            context="local_planner:invalid",
+        ), planned_question
+
+    if not planned_question.supported or not planned_question.plan:
+        return None, planned_question
+
+    local_answer = execute_local_plan(
+        planned_question.plan,
+        country.name,
+        planned_question.improved_question or original_question,
+        planned_question.explanation,
+    )
+    if local_answer is None:
+        return None, planned_question
+
+    return QuestionCreate(
+        user_id=user.id if user else None,
+        day_id=day_country.id,
+        original_question=original_question,
+        valid=True,
+        question=local_answer.question,
+        answer=local_answer.answer,
+        explanation=local_answer.explanation,
+        intent=f"Local KB relation: {local_answer.relation}",
+        required_info=local_answer.relation,
+        context=f"local_kb:{local_answer.relation}",
+    ), planned_question
 
 
 async def ask_question(
@@ -154,28 +252,7 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
     question_prompt = f"""User's Original Question: {question.original_question}
 Simplified Question: {question.question}"""
 
-    prompts = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question_prompt},
-    ]
-    model = os.getenv("QUIZ_MODEL")
-
-    client = OpenAI()
-    response = client.chat.completions.create(
-        model=model,
-        messages=prompts,
-        response_format={"type": "json_object"},
-        temperature=0.0,
-        seed=42,
-    )
-
-    answer = response.choices[0].message.content
-
-    try:
-        answer_dict = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
+    answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768)
 
     question_create = QuestionCreate(
         user_id=user.id if user else None,
@@ -189,6 +266,26 @@ Simplified Question: {question.question}"""
     )
 
     return question_create, question_vector
+
+
+async def ask_question_locally(
+    original_question: str,
+    day_country: CountrydleDay,
+    user: User | None,
+    session: AsyncSession,
+) -> QuestionCreate | None:
+    """Try to answer a Countrydle question from the local SQLite KB.
+
+    Returns None when the question cannot be mapped confidently to a local
+    relation, so callers can fall back to the existing OpenAI + Qdrant flow.
+    """
+    local_question, _planned_question = await analyze_and_answer_locally(
+        original_question=original_question,
+        day_country=day_country,
+        user=user,
+        session=session,
+    )
+    return local_question
 
 
 async def give_guess(
@@ -250,27 +347,6 @@ async def give_guess(
 
     guess_prompt = f"Guess: {guess}"
 
-    prompts = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": guess_prompt},
-    ]
-    model = os.getenv("QUIZ_MODEL")
-
-    client = OpenAI()
-    response = client.chat.completions.create(
-        model=model,
-        messages=prompts,
-        response_format={"type": "json_object"},
-        temperature=0.0,
-        seed=42,
-    )
-
-    answer = response.choices[0].message.content
-
-    try:
-        answer_dict = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
+    answer_dict = gemini_json(system_prompt, guess_prompt, max_output_tokens=128)
 
     return answer_dict
