@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS countries (
     longitude REAL,
     is_island INTEGER,
     driving_side TEXT,
+    government_type TEXT,
+    dominant_religion TEXT,
     source TEXT NOT NULL DEFAULT 'restcountries',
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

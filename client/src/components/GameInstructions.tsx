@@ -74,6 +74,13 @@ const GameInstructions = ({ gameName, examples, scoring }: GameInstructionsProps
               </p>
             </div>
 
+            <div className="flex items-start gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+              <HelpCircle size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+              <p className="text-zinc-400 text-sm">
+                {t('instructions.reliableInfo')}
+              </p>
+            </div>
+
             {scoring && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-yellow-500 text-xs md:text-sm font-semibold uppercase tracking-wider">

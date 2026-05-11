@@ -149,6 +149,48 @@ def test_direct_local_matcher_answers_new_regional_labels(country, question):
     assert answer.relation == "subregion"
 
 
+@pytest.mark.parametrize(
+    ("country", "question", "relation"),
+    [
+        ("Poland", "Is the country Catholic?", "dominant_religion"),
+        ("Turkey", "Is the dominant religion Islam?", "dominant_religion"),
+        ("Japan", "Is the country religiously mixed?", "dominant_religion"),
+        ("Israel", "Is the country Jewish?", "dominant_religion"),
+        ("Greece", "Is the country Orthodox?", "dominant_religion"),
+        ("Saudi Arabia", "Is the country an absolute monarchy?", "government_type"),
+        ("Poland", "Is the country a parliamentary republic?", "government_type"),
+        ("United Kingdom", "Is the country a monarchy?", "government_type"),
+    ],
+)
+def test_direct_local_matcher_answers_religion_and_government(country, question, relation):
+    facts = LocalCountryFacts(db_path=DB_PATH)
+
+    answer = facts.try_answer(question, country)
+
+    assert answer is not None
+    assert answer.answer is True
+    assert answer.relation == relation
+
+
+@pytest.mark.parametrize(
+    ("country", "relation", "value", "expected"),
+    [
+        ("Poland", "dominant_religion", "Catholic", True),
+        ("Poland", "dominant_religion", "Islam", False),
+        ("Japan", "dominant_religion", "Mixed", True),
+        ("Turkey", "government_type", "Republic", True),
+        ("Saudi Arabia", "government_type", "Republic", False),
+        ("United Kingdom", "government_type", "Monarchy", True),
+    ],
+)
+def test_religion_and_government_plan_relations(country, relation, value, expected):
+    answer = local_answer(scalar_plan("equals", relation, value), country)
+
+    assert answer is not None
+    assert answer.answer is expected
+    assert answer.relation == relation
+
+
 def test_continent_or_plan_handles_transcontinental_questions():
     plan = {
         "operator": "or",

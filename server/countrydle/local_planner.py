@@ -38,6 +38,8 @@ SUPPORTED_RELATIONS = [
     "coordinates",
     "major_rivers",
     "driving_side",
+    "dominant_religion",
+    "government_type",
 ]
 
 
@@ -94,6 +96,18 @@ Important rules:
   with China.coordinates.longitude.
 - If a question can be answered only with unsupported facts, set supported=false
   and plan=null, but keep valid=true if it is a proper yes/no question.
+- Use official_language for official, co-official, and otherwise legally
+  recognized official country languages.
+- Use dominant_religion for the country's grouped dominant religion category.
+  Allowed values are: Catholic, Orthodox, Protestant, Christianity, Islam,
+  Judaism, Buddhism, Hinduism, Folk/Traditional religions, No religion, Mixed,
+  Other. Use Mixed when the question asks whether the country is religiously mixed.
+- Use government_type for broad government-form questions. Stored values are
+  grouped categories: Republic, Monarchy, Communist state, Theocracy,
+  Military junta, Transitional government, Other. Normalize detailed forms such
+  as parliamentary republic, presidential republic, federal republic, or
+  democracy to Republic; constitutional monarchy, absolute monarchy, kingdom,
+  emirate, or sultanate to Monarchy. Prefer equals with these grouped values.
 - If the question is not a yes/no question, set valid=false and supported=false.
 - Do not invent unsupported relation names.
 - Self-bordering rule: if the user asks whether the hidden country borders or

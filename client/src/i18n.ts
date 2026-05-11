@@ -46,6 +46,8 @@ const resources = {
           'Most common questions are checked against local fact databases. If a question needs extra context, the AI may verify it using prepared knowledge fragments.',
         askAnyLanguage:
           'You can ask questions in any language (e.g., English, Polish, German) - the AI will understand your intent!',
+        reliableInfo:
+          'Questions usually work best for location and regions, borders or neighbours, sea and water access, population and area comparisons, names, capitals or seats, administrative membership, and common geographic labels such as coasts, mountains, rivers or historical regions. Very historical, political or cultural questions may need extra verification.',
         scoring: 'Scoring:',
         upToPoints: 'Up to {{maxPoints}} points',
         examples: 'Example questions:',
@@ -321,6 +323,8 @@ const resources = {
           'Najczestsze pytania sa sprawdzane w lokalnych bazach faktow. Jesli pytanie wymaga dodatkowego kontekstu, AI moze zweryfikowac je na podstawie przygotowanych fragmentow wiedzy.',
         askAnyLanguage:
           'Mozesz zadawac pytania w dowolnym jezyku (np. po polsku, angielsku, niemiecku) - AI zrozumie Twoj zamiar!',
+        reliableInfo:
+          'Najmniej problemow powinno byc z pytaniami o polozenie i regiony, granice lub sasiadow, dostep do morza i wod, porownania ludnosci oraz powierzchni, nazwy, stolice lub siedziby, przynaleznosc administracyjna oraz typowe etykiety geograficzne, np. wybrzeza, gory, rzeki albo regiony historyczne. Bardzo historyczne, polityczne lub kulturowe pytania moga wymagac dodatkowej weryfikacji.',
         scoring: 'Punktacja:',
         upToPoints: 'Do {{maxPoints}} punktow',
         examples: 'Przykladowe pytania:',

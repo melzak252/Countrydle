@@ -124,6 +124,54 @@ ORG_ALIASES = {
 }
 
 
+RELIGION_ALIASES = {
+    "catholic": "Catholic",
+    "roman catholic": "Catholic",
+    "orthodox": "Orthodox",
+    "protestant": "Protestant",
+    "christian": "Christianity",
+    "christianity": "Christianity",
+    "islam": "Islam",
+    "muslim": "Islam",
+    "judaism": "Judaism",
+    "jewish": "Judaism",
+    "buddhism": "Buddhism",
+    "buddhist": "Buddhism",
+    "hinduism": "Hinduism",
+    "hindu": "Hinduism",
+    "folk religion": "Folk/Traditional religions",
+    "traditional religion": "Folk/Traditional religions",
+    "no religion": "No religion",
+    "atheist": "No religion",
+    "atheism": "No religion",
+    "mixed": "Mixed",
+}
+
+
+GOVERNMENT_TYPE_ALIASES = {
+    "republic": "Republic",
+    "parliamentary republic": "Republic",
+    "presidential republic": "Republic",
+    "federal republic": "Republic",
+    "democracy": "Republic",
+    "parliamentary democracy": "Republic",
+    "federation": "Republic",
+    "federal": "Republic",
+    "monarchy": "Monarchy",
+    "constitutional monarchy": "Monarchy",
+    "absolute monarchy": "Monarchy",
+    "kingdom": "Monarchy",
+    "emirate": "Monarchy",
+    "sultanate": "Monarchy",
+    "theocracy": "Theocracy",
+    "communist": "Communist state",
+    "communist state": "Communist state",
+    "military junta": "Military junta",
+    "junta": "Military junta",
+    "transitional": "Transitional government",
+}
+
+
 CONTINENT_ALIASES = {
     "europa": "Europe",
     "europie": "Europe",
@@ -264,6 +312,8 @@ class LocalCountryFacts:
                 self._answer_capital,
                 self._answer_currency,
                 self._answer_language,
+                self._answer_dominant_religion,
+                self._answer_government_type,
                 self._answer_membership,
                 self._answer_population_or_area,
                 self._answer_coordinates,
@@ -432,7 +482,7 @@ class LocalCountryFacts:
         )
 
     def _answer_language(self, conn, country, original, q):
-        if not any(word in q for word in ("language", "jezyk", "speak", "mowi", "official language")):
+        if not any(word in q for word in ("language", "jezyk", "speak", "mowi", "official language", "co-official", "coofficial")):
             return None
         langs = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id=?", (country["id"],))]
         all_langs = [r[0] for r in conn.execute("SELECT DISTINCT language_name FROM country_languages")]
@@ -445,6 +495,40 @@ class LocalCountryFacts:
             answer=answer,
             explanation=f"Official languages for {country['app_country_name']}: {', '.join(langs)}.",
             relation="official_language",
+        )
+
+    def _answer_dominant_religion(self, conn, country, original, q):
+        if not any(word in q for word in ("religion", "religious", "catholic", "orthodox", "protestant", "christian", "islam", "muslim", "jewish", "judaism", "buddhist", "buddhism", "hindu", "atheist")):
+            return None
+        target = first_mentioned_value(q, RELIGION_ALIASES.values(), RELIGION_ALIASES)
+        if not target:
+            return None
+        religion = country["dominant_religion"]
+        if not religion:
+            return None
+        answer = normalize(religion) == normalize(target)
+        return LocalAnswer(
+            question=f"Is the country's dominant religion {target}?",
+            answer=answer,
+            explanation=f"The dominant religion category for {country['app_country_name']} is {religion}.",
+            relation="dominant_religion",
+        )
+
+    def _answer_government_type(self, conn, country, original, q):
+        if not any(word in q for word in ("government", "republic", "monarchy", "democracy", "federal", "theocracy", "communist", "dictatorship")):
+            return None
+        government_type = country["government_type"]
+        if not government_type:
+            return None
+        target = first_mentioned_value(q, GOVERNMENT_TYPE_ALIASES.values(), GOVERNMENT_TYPE_ALIASES)
+        if not target:
+            return None
+        answer = normalize(government_type) == normalize(target)
+        return LocalAnswer(
+            question=f"Is the country's government type {target}?",
+            answer=answer,
+            explanation=f"The government type for {country['app_country_name']} is {government_type}.",
+            relation="government_type",
         )
 
     def _answer_membership(self, conn, country, original, q):
@@ -585,6 +669,8 @@ SCALAR_RELATION_FIELDS = {
     "area_km2": "area_km2",
     "is_island": "is_island",
     "driving_side": "driving_side",
+    "government_type": "government_type",
+    "dominant_religion": "dominant_religion",
     "coordinates.latitude": "latitude",
     "coordinates.longitude": "longitude",
     "latitude": "latitude",

@@ -78,6 +78,19 @@ COUNTRY_ADDITIONAL_SUBREGIONS = {
     "Portugal": {"Iberia", "Iberian Peninsula"},
 }
 
+COUNTRY_ADDITIONAL_OFFICIAL_LANGUAGES = {
+    "MKD": [("sqi", "Albanian")],
+}
+
+COUNTRY_GOVERNMENT_TYPE_OVERRIDES = {
+    "Palestine": "Republic",
+}
+
+COUNTRY_DOMINANT_RELIGION_OVERRIDES = {
+    "Palestine": "Islam",
+    "Saint Kitts and Nevis": "Protestant",
+}
+
 OECD_MEMBERS = {
     "AUS", "AUT", "BEL", "CAN", "CHL", "COL", "CRI", "CZE", "DNK", "EST",
     "FIN", "FRA", "DEU", "GRC", "HUN", "ISL", "IRL", "ISR", "ITA", "JPN",
@@ -164,6 +177,58 @@ FACTBOOK_MEMBERSHIP_EXCLUDED_QUALIFIERS = {
 # below, because the Factbook organization field can include stale entries
 # (for example the United Kingdom still appears with EU in the source).
 STATIC_MEMBERSHIP_ORGANIZATIONS = {"EU", "NATO", "Schengen", "OECD", "G7", "G20"}
+
+RELIGION_GROUP_PATTERNS = [
+    ("No religion", ("no religion", "none", "unaffiliated", "atheist", "agnostic", "nonreligious")),
+    ("Catholic", ("catholic",)),
+    ("Orthodox", ("orthodox",)),
+    (
+        "Protestant",
+        (
+            "protestant",
+            "evangelical",
+            "anglican",
+            "baptist",
+            "lutheran",
+            "methodist",
+            "pentecostal",
+            "presbyterian",
+            "reformed",
+            "adventist",
+        ),
+    ),
+    ("Islam", ("muslim", "islam", "sunni", "shia", "shi'a", "ibadi")),
+    ("Judaism", ("jewish", "judaism")),
+    ("Buddhism", ("buddhist", "buddhism")),
+    ("Hinduism", ("hindu", "hinduism")),
+    ("Folk/Traditional religions", ("folk", "traditional", "animist", "indigenous")),
+    ("Christianity", ("christian", "apostolic", "mormon", "jehovah", "latter day saint")),
+]
+
+RELIGION_ALIASES = {
+    "islam": "Islam",
+    "muslim": "Islam",
+    "catholic": "Catholic",
+    "roman catholic": "Catholic",
+    "orthodox": "Orthodox",
+    "protestant": "Protestant",
+    "christian": "Christianity",
+    "christianity": "Christianity",
+    "jewish": "Judaism",
+    "judaism": "Judaism",
+    "buddhist": "Buddhism",
+    "buddhism": "Buddhism",
+    "hindu": "Hinduism",
+    "hinduism": "Hinduism",
+    "atheist": "No religion",
+    "atheism": "No religion",
+    "no religion": "No religion",
+    "unaffiliated": "No religion",
+    "mixed": "Mixed",
+}
+
+MIXED_RELIGION_MIN_SHARE = 35.0
+MIXED_RELIGION_CLOSE_MARGIN = 15.0
 
 # REST Countries sometimes returns borders with dependent territories or
 # disputed territories instead of the sovereign country we want to use in the
@@ -309,6 +374,84 @@ def parse_factbook_memberships(profile: dict | None) -> list[str]:
     return sorted(set(memberships))
 
 
+def group_government_type(raw_text: str | None) -> str | None:
+    if not raw_text:
+        return None
+    text = html.unescape(raw_text).casefold()
+    if any(word in text for word in ("communist", "communist party", "marxist")):
+        return "Communist state"
+    if any(word in text for word in ("theocracy", "ecclesiastical")):
+        return "Theocracy"
+    if any(word in text for word in ("military junta", "military regime")):
+        return "Military junta"
+    if any(word in text for word in ("monarchy", "emirate", "sultanate", "commonwealth realm", "kingdom")):
+        return "Monarchy"
+    if any(word in text for word in ("republic", "federation", "parliamentary democracy", "presidential", "semi-presidential")):
+        return "Republic"
+    if "transitional" in text:
+        return "Transitional government"
+    return "Other"
+
+
+def parse_factbook_government_type(profile: dict | None) -> str | None:
+    if not profile:
+        return None
+    text = ((profile.get("Government") or {}).get("Government type") or {}).get("text")
+    return group_government_type(text)
+
+
+def religion_group(raw_label: str) -> str | None:
+    original = html.unescape(raw_label).casefold()
+    label = re.sub(r"\([^)]*\)", " ", original)
+    label = re.sub(r"[^a-z0-9' ]+", " ", label)
+    label = re.sub(r"\s+", " ", label).strip()
+    searchable = f"{label} {original}"
+    if not label or label in {"other", "unspecified", "not stated", "refused to answer"}:
+        return None
+    for group, patterns in RELIGION_GROUP_PATTERNS:
+        if any(pattern in searchable for pattern in patterns):
+            return group
+    return "Other"
+
+
+def parse_factbook_dominant_religion(profile: dict | None) -> str | None:
+    if not profile:
+        return None
+    text = ((profile.get("People and Society") or {}).get("Religions") or {}).get("text") or ""
+    if not text:
+        return None
+
+    scores: dict[str, float] = {}
+    for match in re.finditer(r"([^,;:]+?)\s+(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?%", html.unescape(text)):
+        label, percent_text, range_end_text = match.groups()
+        group = religion_group(label)
+        if not group:
+            continue
+        percent = float(percent_text)
+        if range_end_text:
+            percent = (percent + float(range_end_text)) / 2
+        scores[group] = scores.get(group, 0.0) + percent
+
+    if not scores:
+        lowered = text.casefold()
+        for alias, group in RELIGION_ALIASES.items():
+            if alias in lowered:
+                return group
+        return None
+
+    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    top_group, top_score = ranked[0]
+    if top_group == "Other":
+        leading_context = html.unescape(text).split("%", 1)[0]
+        contextual_group = religion_group(leading_context)
+        if contextual_group and contextual_group != "Other":
+            top_group = contextual_group
+    second_score = ranked[1][1] if len(ranked) > 1 else 0.0
+    if top_score < MIXED_RELIGION_MIN_SHARE or (top_score < 50.0 and top_score - second_score < MIXED_RELIGION_CLOSE_MARGIN):
+        return "Mixed"
+    return top_group
+
+
 def init_db(output: Path) -> sqlite3.Connection:
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists():
@@ -331,13 +474,22 @@ def insert_country(
     latlng = country.get("latlng") or [None, None]
     car = country.get("car") or {}
     cca3 = country.get("cca3")
+    government_type = COUNTRY_GOVERNMENT_TYPE_OVERRIDES.get(
+        app_name,
+        parse_factbook_government_type(factbook_profile),
+    )
+    dominant_religion = COUNTRY_DOMINANT_RELIGION_OVERRIDES.get(
+        app_name,
+        parse_factbook_dominant_religion(factbook_profile),
+    )
 
     cursor = connection.execute(
         """
         INSERT INTO countries (
             app_country_name, official_name, cca2, cca3, region, subregion, capital,
-            population, area_km2, latitude, longitude, is_island, driving_side
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            population, area_km2, latitude, longitude, is_island, driving_side,
+            government_type, dominant_religion
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             app_name,
@@ -353,6 +505,8 @@ def insert_country(
             latlng[1] if len(latlng) > 1 else None,
             1 if country.get("landlocked") is False and not country.get("borders") else 0,
             car.get("side"),
+            government_type,
+            dominant_religion,
         ),
     )
     country_id = cursor.lastrowid
@@ -405,6 +559,15 @@ def insert_country(
         )
 
     for code, language in (country.get("languages") or {}).items():
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO country_languages(country_id, language_code, language_name)
+            VALUES (?, ?, ?)
+            """,
+            (country_id, code, language),
+        )
+
+    for code, language in COUNTRY_ADDITIONAL_OFFICIAL_LANGUAGES.get(cca3, []):
         connection.execute(
             """
             INSERT OR IGNORE INTO country_languages(country_id, language_code, language_name)

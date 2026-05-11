@@ -38,12 +38,26 @@ game_rules = GameRules(WOJEWODZTWDLE_CONFIG)
 
 def db_state_to_game_state(db_state) -> GameState:
     return GameState(
-        questions_used=WOJEWODZTWDLE_CONFIG.max_questions
-        - db_state.remaining_questions,
-        guesses_used=WOJEWODZTWDLE_CONFIG.max_guesses - db_state.remaining_guesses,
+        questions_used=db_state.questions_asked,
+        guesses_used=db_state.guesses_made,
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+
+async def normalize_state_limits(state, session: AsyncSession):
+    expected_questions = max(
+        0, WOJEWODZTWDLE_CONFIG.max_questions - state.questions_asked
+    )
+    expected_guesses = max(0, WOJEWODZTWDLE_CONFIG.max_guesses - state.guesses_made)
+    if (
+        state.remaining_questions != expected_questions
+        or state.remaining_guesses != expected_guesses
+    ):
+        state.remaining_questions = expected_questions
+        state.remaining_guesses = expected_guesses
+        await WojewodztwodleStateRepository(session).update_state(state)
+    return state
 
 
 @router.post("/sync", response_model=WojewodztwodleStateResponse)
@@ -166,6 +180,8 @@ async def get_state(
             max_questions=WOJEWODZTWDLE_CONFIG.max_questions,
             max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
         )
+
+    state = await normalize_state_limits(state, session)
 
     guesses = await WojewodztwodleGuessRepository(session).get_user_day_guesses(
         user, day_state

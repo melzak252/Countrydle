@@ -29,6 +29,42 @@ interface GameActions {
 
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
 
+const gameLimits = {
+    country: { maxQuestions: 10, maxGuesses: 3 },
+    powiaty: { maxQuestions: 15, maxGuesses: 3 },
+    us_states: { maxQuestions: 8, maxGuesses: 3 },
+    wojewodztwa: { maxQuestions: 5, maxGuesses: 2 },
+} as const;
+
+const createGuestGameState = (gameType: keyof typeof gameLimits) => ({
+    remaining_questions: gameLimits[gameType].maxQuestions,
+    remaining_guesses: gameLimits[gameType].maxGuesses,
+    questions_asked: 0,
+    guesses_made: 0,
+    is_game_over: false,
+    won: false,
+});
+
+const normalizeGameState = (
+    gameType: keyof typeof gameLimits,
+    state: any,
+    questions: Question[],
+    guesses: Guess[]
+) => {
+    const limits = gameLimits[gameType];
+    const questionsAsked = questions.length || state?.questions_asked || 0;
+    const guessesMade = guesses.length || state?.guesses_made || 0;
+
+    return {
+        ...createGuestGameState(gameType),
+        ...state,
+        questions_asked: questionsAsked,
+        guesses_made: guessesMade,
+        remaining_questions: Math.max(0, limits.maxQuestions - questionsAsked),
+        remaining_guesses: Math.max(0, limits.maxGuesses - guessesMade),
+    };
+};
+
 const guessMapping: any = {
     country: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
     powiaty: (g: any) => ({ guess: g.guess, powiat_id: g.powiat_id }),
@@ -80,7 +116,12 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                     localStorage.removeItem(localKey);
                     
                     await service.syncGuestData({
-                        state: parsed.state,
+                        state: normalizeGameState(
+                            gameType,
+                            parsed.state,
+                            parsed.questions,
+                            parsed.guesses
+                        ),
                         questions: parsed.questions.map((q: any) => q.id),
                         guesses: parsed.guesses.map(guessMapping[gameType]),
                         date: data.date
@@ -113,31 +154,35 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
         let guesses = data.guesses;
         let correctEntity = data.country || data.powiat || data.us_state || data.wojewodztwo || null;
 
+        gameState = normalizeGameState(gameType, gameState, questions, guesses) as any;
+
         if (isActuallyGuest) {
             // If we are guest, we ignore server's questions/guesses (they might belong to a stale session)
             // and load from local storage instead.
-            gameState = {
-                remaining_questions: 10, // Default values, will be overwritten by localData if exists
-                remaining_guesses: 3,
-                questions_asked: 0,
-                guesses_made: 0,
-                is_game_over: false,
-                won: false,
-            } as any;
+            gameState = createGuestGameState(gameType) as any;
             questions = [];
             guesses = [];
             // correctEntity is already set from data.country || ... at line 109
 
             if (data.date && localData) {
                 const parsed = JSON.parse(localData);
-                gameState = parsed.state;
-                questions = parsed.questions;
-                guesses = parsed.guesses;
+                questions = parsed.questions || [];
+                guesses = parsed.guesses || [];
+                gameState = normalizeGameState(gameType, parsed.state, questions, guesses) as any;
                 if (parsed.correctEntity) {
                     correctEntity = parsed.correctEntity;
                 }
+
+                // Persist the migrated state so old 10/3 guest entries do not stay in localStorage.
+                localStorage.setItem(localKey, JSON.stringify({
+                    ...parsed,
+                    state: gameState,
+                    questions,
+                    guesses,
+                    correctEntity: parsed.correctEntity || correctEntity,
+                }));
             }
-            
+             
             // If the game is over and we have the correct entity from server but not in local storage, save it
             if (gameState.is_game_over && correctEntity && data.date && localData) {
                 const parsed = JSON.parse(localData);
@@ -295,7 +340,12 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                     localStorage.removeItem(localKey);
                     
                     await service.syncGuestData({
-                        state: parsed.state,
+                        state: normalizeGameState(
+                            gameType,
+                            parsed.state,
+                            parsed.questions,
+                            parsed.guesses
+                        ),
                         questions: parsed.questions.map((q: any) => q.id),
                         guesses: parsed.guesses.map(guessMapping[gameType]),
                         date: dailyDate
