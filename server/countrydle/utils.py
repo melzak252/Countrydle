@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from typing import List, Tuple
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -51,12 +52,21 @@ def gemini_json(system_prompt: str, user_prompt: str, max_output_tokens: int = 1
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    try:
-        with urlopen(request, timeout=60) as response:
-            data = json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Gemini HTTP error {exc.code}: {body[:500]}") from exc
+    retryable_statuses = {429, 500, 502, 503, 504}
+    last_error: RuntimeError | None = None
+    for attempt in range(3):
+        try:
+            with urlopen(request, timeout=60) as response:
+                data = json.loads(response.read().decode("utf-8"))
+                break
+        except HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            last_error = RuntimeError(f"Gemini HTTP error {exc.code}: {body[:500]}")
+            if exc.code not in retryable_statuses or attempt == 2:
+                raise last_error from exc
+            time.sleep(2**attempt)
+    else:
+        raise last_error or RuntimeError("Gemini request failed")
 
     answer = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
     try:

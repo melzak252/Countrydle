@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -235,12 +235,19 @@ async def get_wojewodztwa(
     return await WojewodztwoRepository(session).get_all()
 
 
-@router.get("/admin/questions", response_model=List[WojewodztwoQuestionDisplay])
+@router.get("/admin/questions")
 async def get_admin_questions(
+    limit: int | None = Query(None, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    return await WojewodztwodleQuestionRepository(session).get_all_questions()
+    repository = WojewodztwodleQuestionRepository(session)
+    if limit is None:
+        return await repository.get_all_questions()
+    items = await repository.get_all_questions(limit=limit, offset=offset)
+    total = await repository.count_questions()
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @router.post("/question", response_model=WojewodztwoQuestionDisplay)

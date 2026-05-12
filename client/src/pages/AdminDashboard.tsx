@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../services/api';
-import { Search, Calendar, User as UserIcon, Globe, Flag } from 'lucide-react';
+import { Search, Calendar, User as UserIcon, Globe, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type GameType = 'countrydle' | 'powiatdle' | 'us_statedle' | 'wojewodztwodle';
 
 export default function AdminDashboard() {
   const [gameType, setGameType] = useState<GameType>('countrydle');
   const [questions, setQuestions] = useState<any[]>([]);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [userFilter, setUserFilter] = useState('');
@@ -15,33 +18,43 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchQuestions();
+  }, [gameType, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
   }, [gameType]);
 
   const fetchQuestions = async () => {
     setIsLoading(true);
     try {
-      let data: any[] = [];
+      let data = { items: [] as any[], total: 0, limit: pageSize, offset: (page - 1) * pageSize };
+      const offset = (page - 1) * pageSize;
       switch (gameType) {
         case 'countrydle':
-          data = await adminService.getCountrydleQuestions();
+          data = await adminService.getCountrydleQuestions(pageSize, offset);
           break;
         case 'powiatdle':
-          data = await adminService.getPowiatdleQuestions();
+          data = await adminService.getPowiatdleQuestions(pageSize, offset);
           break;
         case 'us_statedle':
-          data = await adminService.getUSStatedleQuestions();
+          data = await adminService.getUSStatedleQuestions(pageSize, offset);
           break;
         case 'wojewodztwodle':
-          data = await adminService.getWojewodztwodleQuestions();
+          data = await adminService.getWojewodztwodleQuestions(pageSize, offset);
           break;
       }
-      setQuestions(data);
+      setQuestions(data.items);
+      setTotalQuestions(data.total);
     } catch (error) {
       console.error('Failed to fetch questions:', error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(totalQuestions / pageSize));
+  const pageStart = totalQuestions === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(page * pageSize, totalQuestions);
 
   const filteredQuestions = useMemo(() => {
     return questions.filter((q) => {
@@ -144,8 +157,44 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="text-zinc-400 text-sm mb-2">
-            Showing {filteredQuestions.length} of {questions.length} questions
+          <div className="flex flex-col md:flex-row justify-between gap-3 text-zinc-400 text-sm mb-2">
+            <div>
+              Showing {filteredQuestions.length} filtered questions on this page ({pageStart}-{pageEnd} of {totalQuestions})
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Rows:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {[25, 50, 100, 200].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1}
+                className="p-1 rounded-md bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="min-w-20 text-center text-zinc-300">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                disabled={page >= totalPages}
+                className="p-1 rounded-md bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Next page"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
           
           {filteredQuestions.map((q) => (
@@ -211,6 +260,28 @@ export default function AdminDashboard() {
           {filteredQuestions.length === 0 && (
             <div className="text-center py-20 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
               <p className="text-zinc-500">No questions found matching your filters.</p>
+            </div>
+          )}
+
+          {totalQuestions > 0 && (
+            <div className="flex justify-center items-center gap-3 pt-4">
+              <button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1}
+                className="px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-zinc-400">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                disabled={page >= totalPages}
+                className="px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

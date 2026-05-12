@@ -42,13 +42,12 @@ from users.utils import (
 )
 
 from utils.email import fm_noreply
+from version import SERVER_VERSION
 
 app = FastAPI(lifespan=lifespan)
 
 logger = logging.getLogger("countrydle")
 logging.basicConfig(level=logging.INFO)
-
-SERVER_VERSION = "1.1.4"
 
 app.add_middleware(
     CORSMiddleware,

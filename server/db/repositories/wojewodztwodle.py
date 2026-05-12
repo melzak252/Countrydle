@@ -308,8 +308,10 @@ class WojewodztwodleQuestionRepository:
         )
         return list(result.scalars().all())
 
-    async def get_all_questions(self) -> List[WojewodztwodleQuestion]:
-        result = await self.session.execute(
+    async def get_all_questions(
+        self, limit: int | None = None, offset: int = 0
+    ) -> List[WojewodztwodleQuestion]:
+        query = (
             select(WojewodztwodleQuestion)
             .options(
                 joinedload(WojewodztwodleQuestion.user),
@@ -317,4 +319,13 @@ class WojewodztwodleQuestionRepository:
             )
             .order_by(WojewodztwodleQuestion.asked_at.desc())
         )
+        if limit is not None:
+            query = query.limit(limit).offset(offset)
+        result = await self.session.execute(
+            query
+        )
         return list(result.scalars().all())
+
+    async def count_questions(self) -> int:
+        result = await self.session.execute(select(func.count(WojewodztwodleQuestion.id)))
+        return int(result.scalar_one())

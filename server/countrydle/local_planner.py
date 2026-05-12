@@ -24,8 +24,7 @@ DEFAULT_MODEL = "gemini-2.5-flash-lite"
 SUPPORTED_RELATIONS = [
     "name",
     "continent",
-    "region",
-    "subregion",
+    "geographic_area",
     "borders_country",
     "water_access",
     "is_island",
@@ -140,12 +139,14 @@ Super-region rules:
 - Eurasia is not a stored continent value. Represent it as Europe OR Asia.
 - The Americas is not a stored continent value. Represent it as North America OR South America.
 - Do not use literal values "Eurasia" or "Americas" with the continent relation.
-- The "region" relation is list-valued. Use contains/exists, not equals. Stored
-  broad values include "Africa", "Americas", "Asia", "Europe", and "Oceania".
-- The "subregion" relation is list-valued. Use contains/exists, not equals. Use
-  exact English labels when the user asks for a more specific area, for example
-  "Southern Africa", "Western Asia", "Central Europe", "South-Eastern Asia",
-  "Baltic states", "Balkans", "Iberia", "Iberian Peninsula", or "Mediterranean".
+- The "geographic_area" relation combines broad regions and specific subregions.
+  Use it for user-facing area questions such as "in Europe", "in the Americas",
+  "in the Caribbean", "in Central Europe", "in the Balkans", or "in the Middle East".
+  It is list-valued; use contains/exists, not equals. Broad stored values include
+  "Africa", "Americas", "Asia", "Europe", and "Oceania". Specific stored values
+  include examples such as "Caribbean", "Southern Africa", "Western Asia",
+  "Central Europe", "South-Eastern Asia", "Baltic states", "Balkans", "Iberia",
+  "Iberian Peninsula", and "Mediterranean".
 
 Reference format:
 {{"entity":"target_country", "relation":"name"}}

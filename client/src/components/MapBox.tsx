@@ -96,6 +96,11 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
   const [map, setMap] = useState<L.Map | null>(null);
   const { selectedEntityNames, toggleEntitySelection, gameState } = useGameStore();
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+
+  const isCorrectCountryFeature = (feature: any, currentCorrectName?: string) => {
+    if (!feature?.properties || !currentCorrectName) return false;
+    return feature.properties.SOVEREIGNT.toUpperCase() === currentCorrectName.toUpperCase();
+  };
   
   useEffect(() => {
     fetch('/countries_50m.geojson')
@@ -108,11 +113,7 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
     if (!feature || !feature.properties) return {};
 
     const countryName = feature.properties.SOVEREIGNT.toUpperCase();
-    
-    let isCorrect = false;
-    if (currentCorrectName) {
-        isCorrect = countryName === currentCorrectName.toUpperCase();
-    }
+    const isCorrect = isCorrectCountryFeature(feature, currentCorrectName);
     const isSelected = currentSelectedNames.includes(countryName);
 
     return {
@@ -151,7 +152,7 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
              }
         });
     }
-  }, [selectedEntityNames, gameState?.won, correctCountryName]);
+  }, [selectedEntityNames, gameState?.is_game_over, correctCountryName]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const countryName = feature.properties?.SOVEREIGNT;
@@ -159,7 +160,15 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
     // Bind click handler
     layer.on({
       click: () => {
-        // Allow selection regardless of game state
+        const { gameState: currentGameState, correctEntity } = useGameStore.getState();
+        const currentCorrectName = correctCountryName || correctEntity?.name;
+
+        // Once the answer is revealed, the correct country must stay green.
+        // Clicking it should not toggle it into the red "selected" state.
+        if (currentGameState?.is_game_over && isCorrectCountryFeature(feature, currentCorrectName)) {
+          return;
+        }
+
         toggleEntitySelection(countryName.toUpperCase());
       },
       mouseover: (e) => {
@@ -173,12 +182,12 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
       mouseout: (e) => {
         const l = e.target;
         // Reset to computed style using direct store access
-        const { selectedEntityNames: currentSelected, correctEntity } = useGameStore.getState();
+        const { selectedEntityNames: currentSelected, gameState: currentGameState, correctEntity } = useGameStore.getState();
         
         const style = getStyleFromState(
             feature, 
             currentSelected, 
-            gameState?.is_game_over ? correctEntity?.name : undefined
+            currentGameState?.is_game_over ? correctCountryName || correctEntity?.name : undefined
         );
         l.setStyle(style);
       }

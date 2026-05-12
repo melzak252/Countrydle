@@ -1,11 +1,54 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app import app
+import csv
 import os
+from pathlib import Path
 from types import SimpleNamespace
 
 # Use the existing database for tests (or a separate test DB if configured)
 DATABASE_URL = os.getenv("DATABASE_URL")
+DEFAULT_COUNTRYDLE_EVAL_CSV = Path(__file__).resolve().parents[1] / "test_reports" / "countrydle_pipeline_eval.csv"
+
+
+def pytest_configure(config):
+    config._countrydle_eval_rows = []
+
+
+def pytest_sessionfinish(session, exitstatus):
+    rows = getattr(session.config, "_countrydle_eval_rows", [])
+    if not rows:
+        return
+
+    output_path = Path(os.getenv("COUNTRYDLE_EVAL_CSV", DEFAULT_COUNTRYDLE_EVAL_CSV))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "question",
+        "country",
+        "expected_answer",
+        "pipeline_answer",
+        "is_correct",
+        "evaluation_mode",
+        "answering_executed",
+        "source",
+        "went_further",
+        "enhanced_question",
+        "relation",
+        "explanation",
+    ]
+
+    with output_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+@pytest.fixture
+def record_countrydle_eval(request):
+    def _record(**row):
+        request.config._countrydle_eval_rows.append(row)
+
+    return _record
 
 @pytest.fixture(scope="session")
 def anyio_backend():
@@ -34,7 +77,7 @@ def make_test_user(
 
 
 @pytest.fixture(autouse=True)
-def mock_common_database_repositories(monkeypatch):
+def mock_common_database_repositories(monkeypatch, request):
     """Keep endpoint tests hermetic when PostgreSQL is not running locally.
 
     Most API tests patch their domain repositories directly. Auth endpoints and
@@ -42,6 +85,8 @@ def mock_common_database_repositories(monkeypatch):
     the suite fail on machines without the Docker `db` host. These defaults are
     intentionally small and can still be overridden by per-test patches.
     """
+    if request.node.get_closest_marker("real_database"):
+        return
 
     async def register_user(self, user):
         return make_test_user(username=user.username, email=user.email)

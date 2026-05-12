@@ -77,7 +77,7 @@ def test_country_subregion_contains_expected_labels(country, subregion):
 
     assert answer is not None
     assert answer.answer is True
-    assert answer.relation == "subregion"
+    assert answer.relation == "geographic_area"
 
 
 @pytest.mark.parametrize(
@@ -112,7 +112,7 @@ def test_country_region_contains_expected_broad_regions(country, region):
 
     assert answer is not None
     assert answer.answer is True
-    assert answer.relation == "region"
+    assert answer.relation == "geographic_area"
 
 
 def test_oceania_and_polynesia_current_game_country_coverage():
@@ -146,7 +146,27 @@ def test_direct_local_matcher_answers_new_regional_labels(country, question):
 
     assert answer is not None
     assert answer.answer is True
-    assert answer.relation == "subregion"
+    assert answer.relation == "geographic_area"
+
+
+def test_direct_local_matcher_answers_grenada_caribbean_typo_question():
+    facts = LocalCountryFacts(db_path=DB_PATH)
+
+    answer = facts.try_answer("Is it Caribean country?", "Grenada")
+
+    assert answer is not None
+    assert answer.answer is True
+    assert answer.relation == "geographic_area"
+
+
+def test_planner_region_plan_for_caribbean_is_treated_as_geographic_area():
+    plan = contains_plan("region", "Caribbean")
+
+    answer = local_answer(plan, "Grenada")
+
+    assert answer is not None
+    assert answer.answer is True
+    assert answer.relation == "geographic_area"
 
 
 @pytest.mark.parametrize(

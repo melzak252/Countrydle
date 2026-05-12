@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.user import ProfileDisplay, UserDisplay
 from schemas.country import CountryCount, CountryDisplay, DayCountryDisplay
+from version import SERVER_VERSION
 
 
 class QuestionBase(BaseModel):
@@ -28,6 +29,7 @@ class QuestionCreate(QuestionEnhanced):
     user_id: int | None
     day_id: int
     context: str | None
+    server_version: str | None = SERVER_VERSION
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -60,8 +60,10 @@ class CountrydleQuestionsRepository:
         print(row)
         return row
 
-    async def get_all_questions(self) -> List[CountrydleQuestion]:
-        result = await self.session.execute(
+    async def get_all_questions(
+        self, limit: int | None = None, offset: int = 0
+    ) -> List[CountrydleQuestion]:
+        query = (
             select(CountrydleQuestion)
             .options(
                 joinedload(CountrydleQuestion.user),
@@ -69,4 +71,13 @@ class CountrydleQuestionsRepository:
             )
             .order_by(CountrydleQuestion.asked_at.desc())
         )
+        if limit is not None:
+            query = query.limit(limit).offset(offset)
+        result = await self.session.execute(
+            query
+        )
         return list(result.scalars().all())
+
+    async def count_questions(self) -> int:
+        result = await self.session.execute(select(func.count(CountrydleQuestion.id)))
+        return int(result.scalar_one())

@@ -22,7 +22,7 @@ from schemas.country import CountryDisplay
 from schemas.user import UserDisplay
 from schemas.countrydle import FullQuestionDisplay
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
@@ -265,12 +265,19 @@ async def get_countries(
     return await CountryRepository(session).get_all_countries()
 
 
-@router.get("/admin/questions", response_model=list[FullQuestionDisplay])
+@router.get("/admin/questions")
 async def get_admin_questions(
+    limit: int | None = Query(None, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    return await CountrydleQuestionsRepository(session).get_all_questions()
+    repository = CountrydleQuestionsRepository(session)
+    if limit is None:
+        return await repository.get_all_questions()
+    items = await repository.get_all_questions(limit=limit, offset=offset)
+    total = await repository.count_questions()
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])

@@ -207,22 +207,36 @@ export const wojewodztwoService = {
   },
 };
 
+export type AdminQuestionsResponse = {
+  items: any[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+const normalizeAdminQuestionsResponse = (data: any, limit: number, offset: number): AdminQuestionsResponse => {
+  if (Array.isArray(data)) {
+    return { items: data, total: data.length, limit, offset };
+  }
+  return data;
+};
+
 export const adminService = {
-  getCountrydleQuestions: async (): Promise<any[]> => {
-    const response = await api.get('/countrydle/admin/questions');
-    return response.data;
+  getCountrydleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {
+    const response = await api.get('/countrydle/admin/questions', { params: { limit, offset } });
+    return normalizeAdminQuestionsResponse(response.data, limit, offset);
   },
-  getPowiatdleQuestions: async (): Promise<any[]> => {
-    const response = await api.get('/powiatdle/admin/questions');
-    return response.data;
+  getPowiatdleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {
+    const response = await api.get('/powiatdle/admin/questions', { params: { limit, offset } });
+    return normalizeAdminQuestionsResponse(response.data, limit, offset);
   },
-  getUSStatedleQuestions: async (): Promise<any[]> => {
-    const response = await api.get('/us_statedle/admin/questions');
-    return response.data;
+  getUSStatedleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {
+    const response = await api.get('/us_statedle/admin/questions', { params: { limit, offset } });
+    return normalizeAdminQuestionsResponse(response.data, limit, offset);
   },
-  getWojewodztwodleQuestions: async (): Promise<any[]> => {
-    const response = await api.get('/wojewodztwodle/admin/questions');
-    return response.data;
+  getWojewodztwodleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {
+    const response = await api.get('/wojewodztwodle/admin/questions', { params: { limit, offset } });
+    return normalizeAdminQuestionsResponse(response.data, limit, offset);
   },
 };
 

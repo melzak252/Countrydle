@@ -220,6 +220,7 @@ SUBREGION_ALIASES = {
     "south eastern asia": "South-Eastern Asia",
     "south-eastern asia": "South-Eastern Asia",
     "central asia": "Central Asia",
+    "caribean": "Caribbean",
     "caribbean": "Caribbean",
     "central america": "Central America",
     "north america": "North America",
@@ -241,6 +242,12 @@ SUBREGION_ALIASES = {
     "micronesia": "Micronesia",
     "polynesia": "Polynesia",
     "australia and new zealand": "Australia and New Zealand",
+}
+
+
+GEOGRAPHIC_AREA_ALIASES = {
+    **SUBREGION_ALIASES,
+    **REGION_ALIASES,
 }
 
 
@@ -267,7 +274,7 @@ def first_mentioned_value(
     aliases: dict[str, str] | None = None,
 ) -> str | None:
     aliases = aliases or {}
-    for alias, canonical in aliases.items():
+    for alias, canonical in sorted(aliases.items(), key=lambda item: len(item[0]), reverse=True):
         if contains_phrase(normalized_question, alias):
             return canonical
     candidates = sorted(set(values), key=len, reverse=True)
@@ -304,6 +311,7 @@ class LocalCountryFacts:
 
             handlers = (
                 self._answer_border,
+                self._answer_geographic_area,
                 self._answer_subregion,
                 self._answer_continent,
                 self._answer_region,
@@ -377,6 +385,29 @@ class LocalCountryFacts:
             answer=answer,
             explanation=f"{country['app_country_name']} is listed under these continents: {', '.join(sorted(continents))}.",
             relation="continent",
+        )
+
+    def _answer_geographic_area(self, conn, country, original, q):
+        region_values = [r[0] for r in conn.execute("SELECT DISTINCT region_name FROM country_regions")]
+        subregion_values = [r[0] for r in conn.execute("SELECT DISTINCT subregion_name FROM country_subregions")]
+        target = first_mentioned_value(q, [*region_values, *subregion_values], GEOGRAPHIC_AREA_ALIASES)
+        if not target:
+            return None
+        country_regions = {
+            r[0]
+            for r in conn.execute("SELECT region_name FROM country_regions WHERE country_id=?", (country["id"],))
+        }
+        country_subregions = {
+            r[0]
+            for r in conn.execute("SELECT subregion_name FROM country_subregions WHERE country_id=?", (country["id"],))
+        }
+        country_areas = country_regions | country_subregions
+        answer = any(normalize(area) == normalize(target) for area in country_areas)
+        return LocalAnswer(
+            question=f"Is the country in {target}?",
+            answer=answer,
+            explanation=f"Geographic areas for {country['app_country_name']}: {', '.join(sorted(country_areas))}.",
+            relation="geographic_area",
         )
 
     def _answer_region(self, conn, country, original, q):
@@ -682,6 +713,7 @@ LIST_RELATION_QUERIES = {
     "continent": "SELECT continent FROM country_continents WHERE country_id=?",
     "region": "SELECT region_name FROM country_regions WHERE country_id=?",
     "subregion": "SELECT subregion_name FROM country_subregions WHERE country_id=?",
+    "geographic_area": "SELECT region_name FROM country_regions WHERE country_id=? UNION SELECT subregion_name FROM country_subregions WHERE country_id=?",
     "borders_country": "SELECT border_country_name FROM country_borders WHERE country_id=?",
     "water_access": "SELECT water_body FROM country_water_access WHERE country_id=?",
     "currency": "SELECT currency_name FROM country_currencies WHERE country_id=? UNION SELECT currency_code FROM country_currencies WHERE country_id=? AND currency_code IS NOT NULL",
@@ -741,7 +773,7 @@ def resolve_ref(
         return entity[SCALAR_RELATION_FIELDS[relation]]
     if relation in LIST_RELATION_QUERIES:
         query = LIST_RELATION_QUERIES[relation]
-        params = (entity["id"], entity["id"]) if relation == "currency" else (entity["id"],)
+        params = (entity["id"], entity["id"]) if relation in {"currency", "geographic_area"} else (entity["id"],)
         return [row[0] for row in conn.execute(query, params) if row[0] is not None]
     return None
 
@@ -942,6 +974,52 @@ def plan_relations(node: dict | None) -> set[str]:
     return found
 
 
+def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) -> dict | None:
+    """Treat region and subregion planner output as one geographic-area layer."""
+    if not isinstance(node, dict):
+        return node
+
+    normalized = dict(node)
+
+    for key in ("left", "right", "items"):
+        ref = normalized.get(key)
+        if isinstance(ref, dict):
+            normalized[key] = dict(ref)
+            if ref.get("relation") in {"region", "subregion"}:
+                normalized[key]["relation"] = "geographic_area"
+
+    left = normalized.get("left")
+    right = normalized.get("right")
+    if (
+        isinstance(left, dict)
+        and left.get("relation") == "geographic_area"
+        and isinstance(right, dict)
+        and isinstance(right.get("value"), str)
+    ):
+        value = right["value"]
+        area_values = {
+            r[0]
+            for r in conn.execute("SELECT DISTINCT region_name FROM country_regions")
+        } | {
+            r[0]
+            for r in conn.execute("SELECT DISTINCT subregion_name FROM country_subregions")
+        }
+        canonical_area = first_mentioned_value(normalize(value), area_values, GEOGRAPHIC_AREA_ALIASES)
+        if canonical_area:
+            right["value"] = canonical_area
+
+    if isinstance(normalized.get("condition"), dict):
+        normalized["condition"] = normalize_geographic_area_plan(conn, normalized["condition"])
+    if isinstance(normalized.get("conditions"), list):
+        normalized["conditions"] = [
+            normalize_geographic_area_plan(conn, condition)
+            if isinstance(condition, dict)
+            else condition
+            for condition in normalized["conditions"]
+        ]
+    return normalized
+
+
 def execute_local_plan(
     plan: dict,
     country_name: str,
@@ -955,6 +1033,7 @@ def execute_local_plan(
         country = find_country(conn, country_name)
         if country is None:
             return None
+        plan = normalize_geographic_area_plan(conn, plan) or plan
         answer = evaluate_plan_node(conn, plan, country)
         if answer is None:
             return None

@@ -29,6 +29,7 @@ class CountrydleQuestion(Base):
     valid = Column(Boolean, nullable=False)
     answer = Column(Boolean)
     explanation = Column(String, nullable=False)
+    server_version = Column(String, nullable=True)
     asked_at = Column(DateTime, default=func.now())
 
     user = relationship("User", back_populates="countrydle_questions")
