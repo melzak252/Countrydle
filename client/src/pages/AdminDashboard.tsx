@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { adminService } from '../services/api';
-import { Search, Calendar, User as UserIcon, Globe, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { adminService, gameService, powiatService, usStateService, wojewodztwoService, type CountryFactsResponse, type CountryFactChangeLogEntry } from '../services/api';
+import { Search, Calendar, User as UserIcon, Globe, Flag, ChevronLeft, ChevronRight, Database, Plus, Trash2, Save } from 'lucide-react';
 
 type GameType = 'countrydle' | 'powiatdle' | 'us_statedle' | 'wojewodztwodle';
+type AdminTab = 'questions' | 'countryFacts';
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<AdminTab>('questions');
   const [gameType, setGameType] = useState<GameType>('countrydle');
   const [questions, setQuestions] = useState<any[]>([]);
   const [totalQuestions, setTotalQuestions] = useState(0);
@@ -15,10 +17,41 @@ export default function AdminDashboard() {
   const [userFilter, setUserFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [targetFilter, setTargetFilter] = useState('');
+  const [countries, setCountries] = useState<any[]>([]);
+  const [factGameType, setFactGameType] = useState<GameType>('countrydle');
+  const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
+  const [countryFacts, setCountryFacts] = useState<CountryFactsResponse | null>(null);
+  const [factInputs, setFactInputs] = useState<Record<string, any>>({});
+  const [newListValues, setNewListValues] = useState<Record<string, string>>({});
+  const [factError, setFactError] = useState<string | null>(null);
+  const [isFactsLoading, setIsFactsLoading] = useState(false);
+  const [changeLog, setChangeLog] = useState<CountryFactChangeLogEntry[]>([]);
+
+  const apiErrorMessage = (error: any, fallback: string) => {
+    const detail = error?.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) return detail.map((item) => item.msg || JSON.stringify(item)).join(', ');
+    return error?.message || fallback;
+  };
 
   useEffect(() => {
-    fetchQuestions();
-  }, [gameType, page, pageSize]);
+    if (activeTab === 'questions') {
+      fetchQuestions();
+    }
+  }, [activeTab, gameType, page, pageSize]);
+
+  useEffect(() => {
+    if (activeTab === 'countryFacts') {
+      fetchCountryFactEditorData();
+    }
+  }, [activeTab, factGameType]);
+
+  useEffect(() => {
+    if (activeTab === 'countryFacts' && selectedCountryId) {
+      const country = countries.find((item) => item.id === selectedCountryId);
+      fetchCountryFacts(country?.name || selectedCountryId);
+    }
+  }, [activeTab, selectedCountryId, countries]);
 
   useEffect(() => {
     setPage(1);
@@ -49,6 +82,96 @@ export default function AdminDashboard() {
       console.error('Failed to fetch questions:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCountryFactEditorData = async () => {
+    try {
+      setFactError(null);
+      let entities: any[] = [];
+      if (factGameType === 'countrydle') {
+        entities = await gameService.getCountries();
+      } else if (factGameType === 'powiatdle') {
+        entities = (await powiatService.getPowiaty()).map((item: any) => ({ id: item.id, name: item.nazwa || item.name }));
+      } else if (factGameType === 'us_statedle') {
+        entities = await usStateService.getStates();
+      } else {
+        entities = (await wojewodztwoService.getWojewodztwa()).map((item: any) => ({ id: item.id, name: item.nazwa || item.name }));
+      }
+      setCountries(entities);
+      try {
+        setChangeLog(await adminService.getCountryFactChangeLog(25, 0));
+      } catch (logError) {
+        console.warn('Failed to fetch SQLite fact change log:', logError);
+        setChangeLog([]);
+      }
+      if (entities.length > 0) {
+        setSelectedCountryId(entities[0].id);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch Countrydle facts editor data:', error);
+      setFactError(apiErrorMessage(error, 'Failed to load SQLite facts editor data.'));
+    }
+  };
+
+  const fetchCountryFacts = async (countryIdOrName: number | string) => {
+    setIsFactsLoading(true);
+    try {
+      setFactError(null);
+      const facts = await adminService.getCountryFacts(countryIdOrName, factGameType);
+      setCountryFacts(facts);
+      setSelectedCountryId((current) => current ?? facts.country.id);
+      setFactInputs(Object.fromEntries(facts.scalar_facts.map((fact) => [fact.relation, fact.value ?? ''])));
+    } catch (error: any) {
+      console.error('Failed to fetch country facts:', error);
+      setFactError(apiErrorMessage(error, 'Failed to load SQLite facts.'));
+    } finally {
+      setIsFactsLoading(false);
+    }
+  };
+
+  const refreshChangeLog = async () => {
+    try {
+      setChangeLog(await adminService.getCountryFactChangeLog(25, 0));
+    } catch (error) {
+      console.error('Failed to refresh change log:', error);
+    }
+  };
+
+  const saveScalarFact = async (relation: string) => {
+    if (!countryFacts?.country.id) return;
+    try {
+      setFactError(null);
+      const facts = await adminService.updateCountryScalarFact(countryFacts.entity?.id || countryFacts.country.id, relation, factInputs[relation], undefined, factGameType);
+      setCountryFacts(facts);
+      await refreshChangeLog();
+    } catch (error: any) {
+      setFactError(apiErrorMessage(error, 'Failed to save scalar fact.'));
+    }
+  };
+
+  const addListValue = async (relation: string) => {
+    if (!countryFacts?.country.id || !newListValues[relation]?.trim()) return;
+    try {
+      setFactError(null);
+      const facts = await adminService.addCountryListFact(countryFacts.entity?.id || countryFacts.country.id, relation, newListValues[relation].trim(), {}, undefined, factGameType);
+      setCountryFacts(facts);
+      setNewListValues((current) => ({ ...current, [relation]: '' }));
+      await refreshChangeLog();
+    } catch (error: any) {
+      setFactError(apiErrorMessage(error, 'Failed to add list value.'));
+    }
+  };
+
+  const deleteListValue = async (relation: string, value: string) => {
+    if (!countryFacts?.country.id) return;
+    try {
+      setFactError(null);
+      const facts = await adminService.deleteCountryListFact(countryFacts.entity?.id || countryFacts.country.id, relation, value, undefined, factGameType);
+      setCountryFacts(facts);
+      await refreshChangeLog();
+    } catch (error: any) {
+      setFactError(apiErrorMessage(error, 'Failed to delete list value.'));
     }
   };
 
@@ -90,23 +213,45 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
         
-        <div className="flex bg-zinc-800 p-1 rounded-lg">
-          {(['countrydle', 'powiatdle', 'us_statedle', 'wojewodztwodle'] as GameType[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => setGameType(type)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                gameType === type 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
-              }`}
-            >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </button>
-          ))}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex bg-zinc-800 p-1 rounded-lg">
+            {(['questions', 'countryFacts'] as AdminTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? 'bg-blue-600 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
+                }`}
+              >
+                {tab === 'questions' ? 'Questions' : 'Country SQLite facts'}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === 'questions' && (
+            <div className="flex bg-zinc-800 p-1 rounded-lg">
+              {(['countrydle', 'powiatdle', 'us_statedle', 'wojewodztwodle'] as GameType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setGameType(type)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    gameType === type 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
+                  }`}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
+      {activeTab === 'questions' && (
+        <>
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="relative">
@@ -284,6 +429,157 @@ export default function AdminDashboard() {
               </button>
             </div>
           )}
+        </div>
+      )}
+        </>
+      )}
+
+      {activeTab === 'countryFacts' && (
+        <div className="space-y-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Database size={20} /> SQLite knowledge editor
+                </h2>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Edits are written directly to the selected local SQLite KB and logged in PostgreSQL with your admin user.
+                </p>
+              </div>
+              <div className="flex flex-col md:flex-row gap-2">
+                <select
+                  value={factGameType}
+                  onChange={(event) => {
+                    setFactGameType(event.target.value as GameType);
+                    setSelectedCountryId(null);
+                    setCountryFacts(null);
+                  }}
+                  className="bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white min-w-48 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {(['countrydle', 'powiatdle', 'us_statedle', 'wojewodztwodle'] as GameType[]).map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedCountryId ?? ''}
+                  onChange={(event) => setSelectedCountryId(Number(event.target.value))}
+                  className="bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white min-w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {countries.map((country) => (
+                    <option key={country.id} value={country.id}>{country.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {factError && (
+              <div className="mb-4 rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 text-red-300 text-sm">
+                {factError}
+              </div>
+            )}
+
+            {isFactsLoading || !countryFacts ? (
+              <div className="flex justify-center py-16">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3">
+                    Scalar facts for {countryFacts.entity?.name || countryFacts.country.name}
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {countryFacts.scalar_facts.map((fact) => (
+                      <div key={fact.relation} className="bg-zinc-950 border border-zinc-800 rounded-lg p-3">
+                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
+                          {fact.relation} <span className="font-normal normal-case">({fact.value_type})</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            value={factInputs[fact.relation] ?? ''}
+                            onChange={(event) => setFactInputs((current) => ({ ...current, [fact.relation]: event.target.value }))}
+                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => saveScalarFact(fact.relation)}
+                            className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-500"
+                            aria-label={`Save ${fact.relation}`}
+                          >
+                            <Save size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3">List facts</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {countryFacts.list_facts.map((fact) => (
+                      <div key={fact.relation} className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+                        <h4 className="text-sm font-bold text-zinc-300 mb-3">{fact.relation}</h4>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {fact.values.map((item) => (
+                            <span key={item.value} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-800 text-zinc-200 text-sm">
+                              {item.value}
+                              <button
+                                onClick={() => deleteListValue(fact.relation, item.value)}
+                                className="text-zinc-500 hover:text-red-400"
+                                aria-label={`Delete ${item.value}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </span>
+                          ))}
+                          {fact.values.length === 0 && <span className="text-sm text-zinc-500">No values yet</span>}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            placeholder={`Add ${fact.relation} value...`}
+                            value={newListValues[fact.relation] ?? ''}
+                            onChange={(event) => setNewListValues((current) => ({ ...current, [fact.relation]: event.target.value }))}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') addListValue(fact.relation);
+                            }}
+                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => addListValue(fact.relation)}
+                            className="px-3 py-2 rounded-md bg-green-700 text-white hover:bg-green-600"
+                            aria-label={`Add ${fact.relation}`}
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Recent SQLite fact changes</h3>
+            <div className="space-y-2">
+              {changeLog.map((entry) => (
+                <div key={entry.id} className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm text-zinc-300">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span>
+                      <b>{entry.operation}</b> {entry.relation} for <b>{entry.entity_name || entry.country_name}</b>
+                      <span className="ml-2 text-zinc-500">({entry.game_type || 'countrydle'})</span>
+                    </span>
+                    <span className="text-zinc-500">{formatDate(entry.created_at)} · {entry.user?.username || 'admin'}</span>
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-1 font-mono">
+                    {entry.sqlite_table}.{entry.sqlite_column}: {entry.old_value ?? '∅'} → {entry.new_value ?? '∅'}
+                  </div>
+                </div>
+              ))}
+              {changeLog.length === 0 && <p className="text-zinc-500 text-sm">No changes logged yet.</p>}
+            </div>
+          </div>
         </div>
       )}
     </div>

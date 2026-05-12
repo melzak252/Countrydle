@@ -214,6 +214,40 @@ export type AdminQuestionsResponse = {
   offset: number;
 };
 
+export type CountryFactsResponse = {
+  game_type?: string | null;
+  entity?: { id: number; name: string } | null;
+  country: { id: number; name: string; official_name?: string | null };
+  scalar_facts: Array<{ relation: string; column: string; value_type: string; value: any }>;
+  list_facts: Array<{
+    relation: string;
+    table: string;
+    value_column: string;
+    metadata_columns: string[];
+    values: Array<{ value: string; metadata: Record<string, any> }>;
+  }>;
+};
+
+export type CountryFactChangeLogEntry = {
+  id: number;
+  user_id: number | null;
+  game_type?: string;
+  entity_id?: number | null;
+  entity_name?: string | null;
+  country_id: number;
+  country_name: string;
+  relation: string;
+  operation: string;
+  old_value: string | null;
+  new_value: string | null;
+  sqlite_table: string;
+  sqlite_column: string;
+  note: string | null;
+  server_version: string | null;
+  created_at: string;
+  user?: { username?: string | null; email?: string | null } | null;
+};
+
 const normalizeAdminQuestionsResponse = (data: any, limit: number, offset: number): AdminQuestionsResponse => {
   if (Array.isArray(data)) {
     return { items: data, total: data.length, limit, offset };
@@ -237,6 +271,29 @@ export const adminService = {
   getWojewodztwodleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {
     const response = await api.get('/wojewodztwodle/admin/questions', { params: { limit, offset } });
     return normalizeAdminQuestionsResponse(response.data, limit, offset);
+  },
+  getCountryFacts: async (countryIdOrName: number | string, gameType = 'countrydle'): Promise<CountryFactsResponse> => {
+    const params = typeof countryIdOrName === 'number'
+      ? { game_type: gameType, entity_id: countryIdOrName, country_id: countryIdOrName }
+      : { game_type: gameType, entity_name: countryIdOrName, country_name: countryIdOrName };
+    const response = await api.get('/countrydle/admin/country-facts', { params });
+    return response.data;
+  },
+  updateCountryScalarFact: async (countryId: number, relation: string, value: any, note?: string, gameType = 'countrydle'): Promise<CountryFactsResponse> => {
+    const response = await api.patch('/countrydle/admin/country-facts/scalar', { game_type: gameType, entity_id: countryId, country_id: countryId, relation, value, note });
+    return response.data;
+  },
+  addCountryListFact: async (countryId: number, relation: string, value: string, metadata: Record<string, any> = {}, note?: string, gameType = 'countrydle'): Promise<CountryFactsResponse> => {
+    const response = await api.post('/countrydle/admin/country-facts/list-values', { game_type: gameType, entity_id: countryId, country_id: countryId, relation, value, metadata, note });
+    return response.data;
+  },
+  deleteCountryListFact: async (countryId: number, relation: string, value: string, note?: string, gameType = 'countrydle'): Promise<CountryFactsResponse> => {
+    const response = await api.delete('/countrydle/admin/country-facts/list-values', { data: { game_type: gameType, entity_id: countryId, country_id: countryId, relation, value, note } });
+    return response.data;
+  },
+  getCountryFactChangeLog: async (limit = 50, offset = 0): Promise<CountryFactChangeLogEntry[]> => {
+    const response = await api.get('/countrydle/admin/country-facts/change-log', { params: { limit, offset } });
+    return response.data;
   },
 };
 

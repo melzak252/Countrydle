@@ -35,6 +35,7 @@ class User(Base):
     # Relationships
     points = relationship("UserPoints", uselist=False, back_populates="user")
     countrydle_questions = relationship("CountrydleQuestion", back_populates="user")
+    country_fact_change_logs = relationship("CountryFactChangeLog", back_populates="user")
     permissions = relationship(
         "Permission", secondary="user_permissions", viewonly=True
     )
