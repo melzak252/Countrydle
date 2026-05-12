@@ -32,12 +32,35 @@ from db.repositories.guess import (
 from db.repositories.question import (
     CountrydleQuestionsRepository,
 )
+from db.repositories.country_fact_change_log import CountryFactChangeLogRepository
 from qdrant.utils import add_question_to_qdrant
 from db.repositories.country import CountryRepository
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
+from schemas.country_facts import (
+    CountryFactChangeLogDisplay,
+    CountryFactsResponse,
+    ListFactCreate,
+    ListFactDelete,
+    ScalarFactUpdate,
+)
+from countrydle.fact_editor import (
+    add_list_fact,
+    add_local_list_fact,
+    delete_list_fact,
+    delete_local_list_fact,
+    get_country_facts,
+    get_country_facts_by_name,
+    get_local_facts,
+    get_local_relation_storage,
+    get_relation_storage,
+    update_local_scalar_fact,
+    update_scalar_fact,
+)
+from version import SERVER_VERSION
 
 import countrydle.utils as gutils
 from game_logic import GameConfig, GameRules, GameState
+import json
 
 load_dotenv()
 
@@ -278,6 +301,286 @@ async def get_admin_questions(
     items = await repository.get_all_questions(limit=limit, offset=offset)
     total = await repository.count_questions()
     return {"items": items, "total": total, "limit": limit, "offset": offset}
+
+
+def _json_value(value) -> str | None:
+    if value is None:
+        return None
+    return json.dumps(value, ensure_ascii=False)
+
+
+async def _log_country_fact_change(
+    *,
+    session: AsyncSession,
+    admin: User,
+    country_id: int,
+    relation: str,
+    operation: str,
+    old_value,
+    new_value,
+    sqlite_table: str,
+    sqlite_column: str,
+    note: str | None,
+):
+    facts = get_country_facts(country_id)
+    await CountryFactChangeLogRepository(session).create(
+        user_id=admin.id,
+        game_type="countrydle",
+        entity_id=country_id,
+        entity_name=facts["country"]["name"],
+        country_id=country_id,
+        country_name=facts["country"]["name"],
+        relation=relation,
+        operation=operation,
+        old_value=_json_value(old_value),
+        new_value=_json_value(new_value),
+        sqlite_table=sqlite_table,
+        sqlite_column=sqlite_column,
+        note=note,
+        server_version=SERVER_VERSION,
+    )
+
+
+async def _log_local_fact_change(
+    *,
+    session: AsyncSession,
+    admin: User,
+    game_type: str,
+    entity_id: int,
+    relation: str,
+    operation: str,
+    old_value,
+    new_value,
+    sqlite_table: str,
+    sqlite_column: str,
+    note: str | None,
+):
+    facts = get_local_facts(game_type, entity_id=entity_id)
+    entity_name = facts["entity"]["name"]
+    await CountryFactChangeLogRepository(session).create(
+        user_id=admin.id,
+        game_type=game_type,
+        entity_id=entity_id,
+        entity_name=entity_name,
+        country_id=entity_id,
+        country_name=entity_name,
+        relation=relation,
+        operation=operation,
+        old_value=_json_value(old_value),
+        new_value=_json_value(new_value),
+        sqlite_table=sqlite_table,
+        sqlite_column=sqlite_column,
+        note=note,
+        server_version=SERVER_VERSION,
+    )
+
+
+@router.get("/admin/country-facts", response_model=CountryFactsResponse)
+async def get_admin_country_facts(
+    game_type: str = Query("countrydle"),
+    entity_id: int | None = Query(None, ge=1),
+    entity_name: str | None = Query(None, min_length=1),
+    country_id: int | None = Query(None, ge=1),
+    country_name: str | None = Query(None, min_length=1),
+    admin: User = Depends(get_admin_user),
+):
+    try:
+        if game_type != "countrydle":
+            return get_local_facts(game_type, entity_id=entity_id or country_id, entity_name=entity_name or country_name)
+        if country_name:
+            return get_country_facts_by_name(country_name)
+        if country_id is None:
+            raise HTTPException(status_code=400, detail="country_id or country_name is required")
+        return get_country_facts(country_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.patch("/admin/country-facts/scalar", response_model=CountryFactsResponse)
+async def update_admin_country_scalar_fact(
+    payload: ScalarFactUpdate,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        if payload.game_type != "countrydle":
+            target_id = payload.entity_id or payload.country_id
+            if target_id is None:
+                raise HTTPException(status_code=400, detail="entity_id or country_id is required")
+            old_value, new_value, operation = update_local_scalar_fact(
+                payload.game_type,
+                target_id,
+                payload.relation,
+                payload.value,
+            )
+            sqlite_table, sqlite_column = get_local_relation_storage(payload.game_type, payload.relation, list_relation=False)
+            await _log_local_fact_change(
+                session=session,
+                admin=admin,
+                game_type=payload.game_type,
+                entity_id=target_id,
+                relation=payload.relation,
+                operation=operation,
+                old_value=old_value,
+                new_value=new_value,
+                sqlite_table=sqlite_table,
+                sqlite_column=sqlite_column,
+                note=payload.note,
+            )
+            return get_local_facts(payload.game_type, entity_id=target_id)
+        if payload.country_id is None:
+            raise HTTPException(status_code=400, detail="country_id is required")
+        old_value, new_value, operation = update_scalar_fact(
+            payload.country_id,
+            payload.relation,
+            payload.value,
+        )
+        sqlite_table, sqlite_column = get_relation_storage(payload.relation, list_relation=False)
+        await _log_country_fact_change(
+            session=session,
+            admin=admin,
+            country_id=payload.country_id,
+            relation=payload.relation,
+            operation=operation,
+            old_value=old_value,
+            new_value=new_value,
+            sqlite_table=sqlite_table,
+            sqlite_column=sqlite_column,
+            note=payload.note,
+        )
+        return get_country_facts(payload.country_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/admin/country-facts/list-values", response_model=CountryFactsResponse)
+async def add_admin_country_list_fact(
+    payload: ListFactCreate,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        if payload.game_type != "countrydle":
+            target_id = payload.entity_id or payload.country_id
+            if target_id is None:
+                raise HTTPException(status_code=400, detail="entity_id or country_id is required")
+            old_value, new_value, operation = add_local_list_fact(
+                payload.game_type,
+                target_id,
+                payload.relation,
+                payload.value,
+                payload.metadata,
+            )
+            sqlite_table, sqlite_column = get_local_relation_storage(payload.game_type, payload.relation, list_relation=True)
+            await _log_local_fact_change(
+                session=session,
+                admin=admin,
+                game_type=payload.game_type,
+                entity_id=target_id,
+                relation=payload.relation,
+                operation=operation,
+                old_value=old_value,
+                new_value=new_value,
+                sqlite_table=sqlite_table,
+                sqlite_column=sqlite_column,
+                note=payload.note,
+            )
+            return get_local_facts(payload.game_type, entity_id=target_id)
+        if payload.country_id is None:
+            raise HTTPException(status_code=400, detail="country_id is required")
+        old_value, new_value, operation = add_list_fact(
+            payload.country_id,
+            payload.relation,
+            payload.value,
+            payload.metadata,
+        )
+        sqlite_table, sqlite_column = get_relation_storage(payload.relation, list_relation=True)
+        await _log_country_fact_change(
+            session=session,
+            admin=admin,
+            country_id=payload.country_id,
+            relation=payload.relation,
+            operation=operation,
+            old_value=old_value,
+            new_value=new_value,
+            sqlite_table=sqlite_table,
+            sqlite_column=sqlite_column,
+            note=payload.note,
+        )
+        return get_country_facts(payload.country_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.delete("/admin/country-facts/list-values", response_model=CountryFactsResponse)
+async def delete_admin_country_list_fact(
+    payload: ListFactDelete,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        if payload.game_type != "countrydle":
+            target_id = payload.entity_id or payload.country_id
+            if target_id is None:
+                raise HTTPException(status_code=400, detail="entity_id or country_id is required")
+            old_value, new_value, operation = delete_local_list_fact(
+                payload.game_type,
+                target_id,
+                payload.relation,
+                payload.value,
+            )
+            sqlite_table, sqlite_column = get_local_relation_storage(payload.game_type, payload.relation, list_relation=True)
+            await _log_local_fact_change(
+                session=session,
+                admin=admin,
+                game_type=payload.game_type,
+                entity_id=target_id,
+                relation=payload.relation,
+                operation=operation,
+                old_value=old_value,
+                new_value=new_value,
+                sqlite_table=sqlite_table,
+                sqlite_column=sqlite_column,
+                note=payload.note,
+            )
+            return get_local_facts(payload.game_type, entity_id=target_id)
+        if payload.country_id is None:
+            raise HTTPException(status_code=400, detail="country_id is required")
+        old_value, new_value, operation = delete_list_fact(
+            payload.country_id,
+            payload.relation,
+            payload.value,
+        )
+        sqlite_table, sqlite_column = get_relation_storage(payload.relation, list_relation=True)
+        await _log_country_fact_change(
+            session=session,
+            admin=admin,
+            country_id=payload.country_id,
+            relation=payload.relation,
+            operation=operation,
+            old_value=old_value,
+            new_value=new_value,
+            sqlite_table=sqlite_table,
+            sqlite_column=sqlite_column,
+            note=payload.note,
+        )
+        return get_country_facts(payload.country_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/admin/country-facts/change-log", response_model=list[CountryFactChangeLogDisplay])
+async def get_admin_country_fact_change_log(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    return await CountryFactChangeLogRepository(session).get_recent(limit=limit, offset=offset)
 
 
 @router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])
