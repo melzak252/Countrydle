@@ -114,12 +114,13 @@ Do NOT answer the question. Only create the plan.
 Self-neighbor rule:
 - If the user asks whether the hidden {config.entity_label} borders/neighbors itself
   (Polish: "sąsiaduje z samym sobą"), this is a valid supported question.
-- Create a contains plan on the relevant borders_* relation with the right/value as
+- Create a contains_exact plan on the relevant borders_* relation with the right/value as
   the hidden entity name reference, e.g. {{"entity":"{config.target_entity}","relation":"name"}}.
 - The executor treats this special self-border/self-neighbor case as true.
 
 Allowed operators:
-- contains: list/scalar contains value
+- contains / contains_exact: exact list membership or exact scalar match
+- contains_partial: substring match, preserving the old broad contains behavior
 - equals: scalar equals value
 - greater_than, less_than: numeric comparison
 - exists: relation has any value / boolean is true
@@ -133,7 +134,7 @@ Reference format examples:
 {{"entity":"{config.target_entity}","relation":"name"}}
 
 Plan examples:
-{{"operator":"contains","left":{{"entity":"{config.target_entity}","relation":"voivodeship"}},"value":"małopolskie"}}
+{{"operator":"contains_exact","left":{{"entity":"{config.target_entity}","relation":"voivodeship"}},"value":"małopolskie"}}
 {{"operator":"greater_than","left":{{"entity":"{config.target_entity}","relation":"population"}},"right":100000}}
 {{"operator":"starts_with","left":{{"entity":"{config.target_entity}","relation":"name"}},"value":"K"}}
 
@@ -301,7 +302,7 @@ def evaluate(
     # Game rule inherited from the old prompts: if the user asks whether the
     # hidden entity borders/neighbors itself, answer true. We do not store
     # self-edges in SQLite border tables, so handle it explicitly for all modes.
-    if op in {"contains", "equals"} and isinstance(left_node, dict):
+    if op in {"contains", "contains_exact", "equals"} and isinstance(left_node, dict):
         relation = str(left_node.get("relation") or "")
         if relation.startswith("borders_") and is_self_reference(right, row, config):
             return True
@@ -309,7 +310,11 @@ def evaluate(
         if isinstance(left, list):
             return len(left) > 0
         return bool(left)
-    if op == "contains":
+    if op in {"contains", "contains_exact"}:
+        if isinstance(left, list):
+            return any(norm(v) == norm(right) for v in left)
+        return norm(left) == norm(right)
+    if op == "contains_partial":
         if isinstance(left, list):
             return any(norm(v) == norm(right) or norm(right) in norm(v) for v in left)
         return norm(right) in norm(left)

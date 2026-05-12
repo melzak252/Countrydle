@@ -50,6 +50,10 @@ def contains(config: LocalModeConfig, relation: str, value: str) -> dict:
     return {"operator": "contains", "left": left(config, relation), "value": value}
 
 
+def contains_partial(config: LocalModeConfig, relation: str, value: str) -> dict:
+    return {"operator": "contains_partial", "left": left(config, relation), "value": value}
+
+
 def equals(config: LocalModeConfig, relation: str, value) -> dict:
     return {"operator": "equals", "left": left(config, relation), "right": {"value": value}}
 
@@ -153,6 +157,32 @@ def test_voivodeship_numeric_boolean_and_negative_cases():
     assert answer(VOIVODESHIP_CONFIG, "Mazowieckie", scalar(VOIVODESHIP_CONFIG, "greater_than", "population", 5_000_000)).answer is True
     assert answer(VOIVODESHIP_CONFIG, "Opolskie", scalar(VOIVODESHIP_CONFIG, "less_than", "area", 10_000)).answer is True
     assert answer(VOIVODESHIP_CONFIG, "Pomorskie", contains(VOIVODESHIP_CONFIG, "borders_country", "Słowacja")).answer is False
+
+
+def test_voivodeship_lodzkie_does_not_border_pomorskie_question():
+    plan = question_plan(contains(VOIVODESHIP_CONFIG, "borders_voivodeship", "Pomorskie"))
+    plan = QuestionPlan(
+        original_question="Czy graniczy z woj. pomorskim?",
+        valid=plan.valid,
+        supported=plan.supported,
+        improved_question="Czy województwo graniczy z województwem pomorskim?",
+        explanation="Użytkownik chce sprawdzić, czy docelowe województwo sąsiaduje z województwem pomorskim.",
+        plan=plan.plan,
+    )
+
+    result = execute_plan(VOIVODESHIP_CONFIG, "Łódzkie", plan)
+
+    assert result is not None
+    assert result.answer is False
+    assert "borders_voivodeship" in result.relations
+
+
+def test_voivodeship_partial_contains_keeps_old_substring_behavior():
+    result = answer(VOIVODESHIP_CONFIG, "Łódzkie", contains_partial(VOIVODESHIP_CONFIG, "borders_voivodeship", "Pomorskie"))
+
+    assert result is not None
+    assert result.answer is True
+    assert "borders_voivodeship" in result.relations
 
 
 def test_generic_boolean_any_all_and_self_neighbor_semantics():
