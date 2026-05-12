@@ -1,4 +1,5 @@
-__pychache__/
+__pycache__/
+.pytest_cache/
 
 .env
 venv
@@ -13,6 +14,7 @@ postgres_data*/
 postgres_test_data/
 qdrant_data/
 backups/
+server/test_reports/
 
 docker-compose_dev.yml
 
