@@ -117,6 +117,13 @@ async def get_version():
     return {"version": SERVER_VERSION}
 
 
+@app.get("/cache-stats")
+async def get_cache_stats():
+    """Returns runtime statistics for the in-memory question plan cache."""
+    from utils.plan_cache import plan_cache
+    return plan_cache.stats()
+
+
 
 @app.get("/time")
 async def get_server_time():
