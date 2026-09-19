@@ -126,7 +126,7 @@ FACTBOOK_NAME_ALIASES = {
     "Cape Verde": "Cabo Verde",
     "Czech Republic": "Czechia",
     "Democratic Republic of the Congo": "Congo, Democratic Republic of the",
-    "Gambia The": "The Gambia",
+    "Gambia": "The Gambia",
     "Republic of the Congo": "Congo, Republic of the",
     "Ivory Coast": "Côte d'Ivoire",
     "Myanmar": "Burma",
