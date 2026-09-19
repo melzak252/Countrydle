@@ -39,8 +39,10 @@ SUPPORTED_RELATIONS = [
     "driving_side",
     "dominant_religion",
     "government_type",
+    "flag_color",
+    "flag_symbol",
+    "historical_union",
 ]
-
 
 @dataclass(frozen=True)
 class QuestionPlan:
@@ -148,6 +150,18 @@ Super-region rules:
   "Central Europe", "South-Eastern Asia", "Baltic states", "Balkans", "Iberia",
   "Iberian Peninsula", and "Mediterranean".
 
+
+Flag and historical union rules:
+- Use "flag_color" for questions about colors on the national flag. Allowed values:
+  "red", "white", "blue", "green", "yellow", "black", "orange".
+  Use contains (e.g. {{"operator": "contains", "left": {{"entity": "target_country", "relation": "flag_color"}}, "right": {{"value": "red"}}}}).
+- Use "flag_symbol" for questions about symbols or designs on the flag. Allowed values:
+  "star", "stars", "cross", "crescent", "sun", "stripes", "circle", "eagle", "coat_of_arms".
+  Use contains (e.g. {{"operator": "contains", "left": {{"entity": "target_country", "relation": "flag_symbol"}}, "right": {{"value": "star"}}}}).
+- Use "historical_union" for questions about dissolved historical states, former empires, or former unions.
+  Allowed values: "USSR", "Yugoslavia", "Czechoslovakia", "Gran Colombia", "Austro-Hungarian Empire",
+  "Warsaw Pact", "British Empire", "Spanish Empire", "French Empire", "Portuguese Empire", "Ottoman Empire".
+  Use contains (e.g. {{"operator": "contains", "left": {{"entity": "target_country", "relation": "historical_union"}}, "right": {{"value": "USSR"}}}}).
 Reference format:
 {{"entity":"target_country", "relation":"name"}}
 {{"entity":"target_country", "relation":"population"}}

@@ -110,7 +110,7 @@ def mock_common_database_repositories(monkeypatch, request):
     async def get_today_country(self):
         return SimpleNamespace(id=1, country_id=100, date=None)
 
-    async def generate_new_day_country(self):
+    async def generate_new_day_country(self, *args, **kwargs):
         return SimpleNamespace(id=1, country_id=100, date=None)
 
     async def get_player_countrydle_state(self, user, daily_country, max_questions, max_guesses):

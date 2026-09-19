@@ -45,15 +45,25 @@ class PowiatdleDayRepository:
         )
         return result.scalar_one_or_none()
 
-    async def generate_new_day_powiat(self) -> PowiatdleDay:
-        # Get a random powiat
-        result = await self.session.execute(
-            select(Powiat).order_by(func.random()).limit(1)
+    async def generate_new_day_powiat(self, cooldown_days: int = 90) -> PowiatdleDay:
+        import random
+        recent_subq = (
+            select(PowiatdleDay.powiat_id)
+            .where(PowiatdleDay.powiat_id.isnot(None))
+            .order_by(PowiatdleDay.id.desc())
+            .limit(cooldown_days)
         )
-        powiat = result.scalar_one_or_none()
+        recent_ids = set((await self.session.execute(recent_subq)).scalars().all())
 
-        if not powiat:
+        all_powiaty = (await self.session.execute(select(Powiat))).scalars().all()
+        if not all_powiaty:
             raise Exception("No powiaty found in database!")
+
+        eligible = [p for p in all_powiaty if p.id not in recent_ids]
+        if not eligible:
+            eligible = all_powiaty
+
+        powiat = random.choice(eligible)
 
         new_day = PowiatdleDay(powiat_id=powiat.id)
         self.session.add(new_day)

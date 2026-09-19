@@ -130,6 +130,62 @@ VALUE_ALIASES = {
     "francuski": "French",
     "hiszpanski": "Spanish",
     "arabski": "Arabic",
+    "czerwony": "red",
+    "czerwona": "red",
+    "czerwone": "red",
+    "czerwonym": "red",
+    "bialy": "white",
+    "biały": "white",
+    "biale": "white",
+    "białe": "white",
+    "biel": "white",
+    "niebieski": "blue",
+    "niebieska": "blue",
+    "niebieskie": "blue",
+    "błękitny": "blue",
+    "blekitny": "blue",
+    "zielony": "green",
+    "zielona": "green",
+    "zielone": "green",
+    "żółty": "yellow",
+    "zolty": "yellow",
+    "żółta": "yellow",
+    "zolta": "yellow",
+    "czarny": "black",
+    "czarna": "black",
+    "czarne": "black",
+    "pomarańczowy": "orange",
+    "pomaranczowy": "orange",
+    "gwiazda": "star",
+    "gwiazdy": "star",
+    "gwiazdę": "star",
+    "gwiazde": "star",
+    "krzyż": "cross",
+    "krzyz": "cross",
+    "półksiężyc": "crescent",
+    "polksiezyc": "crescent",
+    "słońce": "sun",
+    "slonce": "sun",
+    "pasy": "stripes",
+    "paski": "stripes",
+    "orzeł": "eagle",
+    "orzel": "eagle",
+    "godło": "coat_of_arms",
+    "godlo": "coat_of_arms",
+    "koło": "circle",
+    "kolo": "circle",
+    "zsrr": "USSR",
+    "zwiazek radziecki": "USSR",
+    "związek radziecki": "USSR",
+    "jugoslawia": "Yugoslavia",
+    "jugosławia": "Yugoslavia",
+    "czechoslowacja": "Czechoslovakia",
+    "czechosłowacja": "Czechoslovakia",
+    "wielka kolumbia": "Gran Colombia",
+    "uklad warszawski": "Warsaw Pact",
+    "układ warszawski": "Warsaw Pact",
+    "imperium brytyjskie": "British Empire",
+    "kolonia brytyjska": "British Empire",
 }
 
 
@@ -761,10 +817,12 @@ LIST_RELATION_QUERIES = {
     "water_access": "SELECT water_body FROM country_water_access WHERE country_id=?",
     "currency": "SELECT currency_name FROM country_currencies WHERE country_id=? UNION SELECT currency_code FROM country_currencies WHERE country_id=? AND currency_code IS NOT NULL",
     "official_language": "SELECT language_name FROM country_languages WHERE country_id=?",
-    "membership": "SELECT organization FROM country_memberships WHERE country_id=?",
+    "membership": "SELECT organization FROM country_memberships WHERE country_id=? UNION SELECT union_name FROM country_historical_unions WHERE country_id=?",
     "major_rivers": "SELECT river_name FROM country_major_rivers WHERE country_id=?",
+    "flag_color": "SELECT color FROM country_flag_colors WHERE country_id=?",
+    "flag_symbol": "SELECT symbol FROM country_flag_symbols WHERE country_id=?",
+    "historical_union": "SELECT union_name FROM country_historical_unions WHERE country_id=?",
 }
-
 
 def find_country(conn: sqlite3.Connection, name: str) -> sqlite3.Row | None:
     if name == "target_country" or name == "item":
@@ -1074,6 +1132,107 @@ def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) 
         ]
     return normalized
 
+def generate_factual_explanation(
+    conn: sqlite3.Connection,
+    country: sqlite3.Row,
+    plan: dict,
+    answer: bool,
+    improved_question: str,
+    planner_explanation: str | None = None,
+) -> str:
+    name = country["app_country_name"]
+    q_lower = improved_question.lower()
+    words = set(re.findall(r"\w+", q_lower))
+    is_polish = any(c in q_lower for c in "ąćęłńóśźż") or bool(
+        words & {"czy", "ten", "kraj", "państwo", "panstwo", "ma", "jest", "leży", "lezy", "graniczy", "fladze", "w"}
+    )
+    rel = None
+    target_val = None
+    left = plan.get("left")
+    right = plan.get("right")
+    if isinstance(left, dict) and "relation" in left:
+        rel = left["relation"]
+    if isinstance(right, dict) and "value" in right:
+        target_val = right["value"]
+    elif isinstance(right, (str, int, float)):
+        target_val = right
+
+    if rel == "borders_country" and target_val:
+        borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
+        if answer:
+            return f"{name} graniczy z: {target_val}." if is_polish else f"{name} shares a land border with {target_val}."
+        else:
+            b_str = ", ".join(sorted(set(borders))) if borders else ("brak (kraj wyspiarski)" if is_polish else "none (island nation)")
+            return f"{name} nie graniczy z: {target_val}. Lądowi sąsiedzi to: {b_str}." if is_polish else f"{name} does not border {target_val}. Its land borders are: {b_str}."
+
+    if rel == "water_access":
+        waters = [r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))]
+        if answer:
+            w_str = ", ".join(sorted(set(waters)))
+            return f"{name} ma dostęp do morza/oceanu: {w_str}." if is_polish else f"{name} has direct coastline access to: {w_str}."
+        else:
+            return f"{name} jest krajem śródlądowym i nie ma bezpośredniego dostępu do morza." if is_polish else f"{name} is completely landlocked with no direct coastline."
+
+    if rel == "is_island":
+        if answer:
+            return f"{name} jest krajem wyspiarskim." if is_polish else f"{name} is an island nation."
+        else:
+            return f"{name} leży na kontynencie i nie jest wyspą." if is_polish else f"{name} is a continental country, not an island."
+
+    if rel == "continent":
+        conts = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))]
+        c_str = ", ".join(conts)
+        if answer:
+            return f"{name} leży na kontynencie: {c_str}." if is_polish else f"{name} is located in {c_str}."
+        else:
+            return f"{name} nie leży w: {target_val or 'tym regionie'}. Prawidłowy kontynent: {c_str}." if is_polish else f"{name} is not located in {target_val or 'that continent'}; it is in {c_str}."
+
+    if rel == "flag_color" and target_val:
+        colors = [r[0] for r in conn.execute("SELECT color FROM country_flag_colors WHERE country_id=?", (country["id"],))]
+        c_str = ", ".join(colors)
+        if answer:
+            return f"Tak, flaga {name} zawiera kolor {target_val}. Wszystkie kolory: {c_str}." if is_polish else f"Yes, the flag of {name} includes the color {target_val}. Flag colors: {c_str}."
+        else:
+            return f"Nie, flaga {name} nie zawiera koloru {target_val}. Kolory na fladze: {c_str}." if is_polish else f"No, the flag of {name} does not include {target_val}. Flag colors: {c_str}."
+
+    if rel == "flag_symbol" and target_val:
+        symbols = [r[0] for r in conn.execute("SELECT symbol FROM country_flag_symbols WHERE country_id=?", (country["id"],))]
+        s_str = ", ".join(symbols) if symbols else ("brak (proste pasy/kolory)" if is_polish else "none (plain stripes/colors)")
+        if answer:
+            return f"Tak, na fladze {name} znajduje się symbol: {target_val}." if is_polish else f"Yes, the flag of {name} features: {target_val}."
+        else:
+            return f"Nie, na fladze {name} nie ma symbolu {target_val}. Symbole na fladze: {s_str}." if is_polish else f"No, the flag of {name} does not feature {target_val}. Elements on flag: {s_str}."
+
+    if rel in ("historical_union", "membership") and target_val:
+        if answer:
+            return f"Tak, {name} historycznie wchodziło w skład: {target_val}." if is_polish else f"Yes, {name} was historically part of {target_val}."
+        else:
+            return f"Nie, {name} nie wchodziło w skład: {target_val}." if is_polish else f"No, {name} was not part of {target_val}."
+
+    if rel == "driving_side":
+        side_pl = "lewostronny" if country["driving_side"] == "left" else "prawostronny"
+        side_en = "left" if country["driving_side"] == "left" else "right"
+        return f"W {name} obowiązuje ruch {side_pl}." if is_polish else f"Traffic in {name} drives on the {side_en} side."
+
+    if rel == "capital":
+        return f"Stolicą {name} jest {country['capital']}." if is_polish else f"The capital of {name} is {country['capital']}."
+
+    if rel == "population":
+        pop = country["population"]
+        return f"{name} liczy około {pop:,} mieszkańców." if is_polish else f"{name} has a population of approximately {pop:,}."
+
+    if rel == "dominant_religion":
+        relig = country["dominant_religion"]
+        return f"Dominującą religią w {name} jest: {relig}." if is_polish else f"The dominant religion in {name} is {relig}."
+
+    if rel == "government_type":
+        gov = country["government_type"]
+        return f"Ustrojem politycznym {name} jest: {gov}." if is_polish else f"The government type of {name} is {gov}."
+
+    if is_polish:
+        return f"Odpowiedź {'TAK' if answer else 'NIE'} wynika z faktów geograficznych o państwie: {name}."
+    return f"The answer is {'YES' if answer else 'NO'} based on verified geographical facts about {name}."
+
 
 def execute_local_plan(
     plan: dict,
@@ -1093,8 +1252,9 @@ def execute_local_plan(
         if answer is None:
             return None
         relations = sorted(plan_relations(plan)) or ["local_plan"]
-        explanation = planner_explanation or "The question matches known Countrydle facts."
-        explanation = f"{explanation} The answer follows from the known facts about {country['app_country_name']}."
+        explanation = generate_factual_explanation(
+            conn, country, plan, answer, improved_question, planner_explanation
+        )
         return LocalAnswer(
             question=improved_question,
             answer=answer,

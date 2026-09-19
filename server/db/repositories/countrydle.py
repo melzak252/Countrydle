@@ -96,14 +96,25 @@ class CountrydleRepository:
         return new_entry
 
     async def generate_new_day_country(
-        self, day_date: date | None = None
+        self, day_date: date | None = None, cooldown_days: int = 60
     ) -> CountrydleDay:
-        countries = await CountryRepository(self.session).get_all_countries()
-        if not countries:
+        recent_subq = (
+            select(CountrydleDay.country_id)
+            .where(CountrydleDay.country_id.isnot(None))
+            .order_by(CountrydleDay.date.desc())
+            .limit(cooldown_days)
+        )
+        recent_ids = set((await self.session.execute(recent_subq)).scalars().all())
+
+        all_countries = await CountryRepository(self.session).get_all_countries()
+        if not all_countries:
             raise ValueError("No countries in database!")
 
-        country = random.choice(countries)
+        eligible = [c for c in all_countries if c.id not in recent_ids]
+        if not eligible:
+            eligible = all_countries
 
+        country = random.choice(eligible)
         if not day_date:
             new_country = await self.create_day_country(country)
         else:
