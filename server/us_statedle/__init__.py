@@ -248,6 +248,32 @@ async def ask_question(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    try:
+        return await _do_ask_question(question, user, session)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        import logging, traceback
+        logging.getLogger("countrydle").error("Handled error in us_statedle ask_question: %s\n%s", exc, traceback.format_exc())
+        from datetime import datetime
+        return USStateQuestionDisplay(
+            id=0,
+            original_question=question.question,
+            question=question.question,
+            valid=False,
+            answer=None,
+            explanation="Could not verify this question right now. Your turn was not deducted.",
+            asked_at=datetime.now(),
+            user_id=user.id if user else None,
+            day_id=0,
+        )
+
+
+async def _do_ask_question(
+    question: USStateQuestionBase,
+    user: User | None,
+    session: AsyncSession,
+):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     
     from qdrant.utils import add_question_to_qdrant
