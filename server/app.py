@@ -30,6 +30,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,14 +76,34 @@ async def log_question_requests_and_errors(request: Request, call_next):
     except Exception as exc:
         elapsed_ms = (time.perf_counter() - started_at) * 1000
         logger.error(
-            "Unhandled error: %s %s after %.1fms: %s",
+            "Unhandled error on %s %s after %.1fms: %s",
             request.method,
             request.url.path,
             elapsed_ms,
             repr(exc),
         )
         logger.error("%s", traceback.format_exc())
-        raise
+
+        # For question-asking endpoints, NEVER crash the game with a 500!
+        if request.url.path.endswith("/question"):
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "id": 0,
+                    "original_question": "",
+                    "question": "Question could not be verified.",
+                    "valid": False,
+                    "answer": None,
+                    "explanation": "Unable to verify this question right now. Your turn was not deducted.",
+                    "context": "error:handled",
+                    "user": None,
+                },
+            )
+
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred. Please try again."},
+        )
 
     if request.url.path.endswith("/question") or response.status_code >= 500:
         elapsed_ms = (time.perf_counter() - started_at) * 1000
@@ -94,6 +115,29 @@ async def log_question_requests_and_errors(request: Request, call_next):
             elapsed_ms,
         )
     return response
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error("Global exception caught on %s %s: %s", request.method, request.url.path, repr(exc))
+    logger.error("%s", traceback.format_exc())
+    if request.url.path.endswith("/question"):
+        return JSONResponse(
+            status_code=200,
+            content={
+                "id": 0,
+                "original_question": "",
+                "question": "Question could not be verified.",
+                "valid": False,
+                "answer": None,
+                "explanation": "Unable to verify this question right now. Your turn was not deducted.",
+                "context": "error:handled",
+                "user": None,
+            },
+        )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred. Please try again."},
+    )
 
 templates = Jinja2Templates(directory="templates")
 
