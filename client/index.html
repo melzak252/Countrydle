@@ -4,10 +4,99 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Countrydle - Guess the Country</title>
+    <title>Countrydle - Daily Geography Deduction Game</title>
+    <meta name="description" content="Countrydle is a daily geography deduction game inspired by Wordle and 20 Questions. Deduce the mystery country, US state, Polish voivodeship, or county by asking natural-language yes/no questions." />
+    <meta name="keywords" content="geography game, countrydle, guess the country, daily geography puzzle, wordle geography, globle, worldle, us states game, polish geography, powiaty, wojewodztwa" />
+    <meta name="author" content="Jakub Melzacki" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://jmelzacki.com" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://jmelzacki.com/" />
+    <meta property="og:title" content="Countrydle - Daily Geography Deduction Game" />
+    <meta property="og:description" content="Deduce the mystery country, US state, Polish voivodeship, or county by asking smart yes/no questions. Play daily challenges with interactive maps." />
+    <meta property="og:image" content="https://jmelzacki.com/favicon.ico" />
+    <meta property="og:site_name" content="Countrydle" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Countrydle - Daily Geography Deduction Game" />
+    <meta name="twitter:description" content="Test your geography skills with Countrydle! Ask yes/no questions and use deductive reasoning to find the daily secret location." />
+
+    <!-- Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Countrydle",
+      "url": "https://jmelzacki.com",
+      "description": "Daily geography deduction puzzle game where players identify secret countries, US states, or Polish regions by asking questions.",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "All",
+      "inLanguage": ["en", "pl"],
+      "author": {
+        "@type": "Person",
+        "name": "Jakub Melzacki",
+        "url": "https://jmelzacki.com/about"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Crawlable content fallback for search engines and web crawlers -->
+    <noscript>
+      <div style="max-width: 800px; margin: 0 auto; padding: 2rem; font-family: sans-serif; line-height: 1.6;">
+        <h1>Countrydle — The Daily Geography Deduction Game</h1>
+        <p>
+          Welcome to <strong>Countrydle</strong>, an educational daily geography game that merges the deduction mechanics of <em>20 Questions</em> with the daily puzzle format of <em>Wordle</em> and <em>Globle</em>. Every day at midnight UTC, a new secret location is chosen for each of our four distinct challenges:
+        </p>
+
+        <h2>Our Four Game Modes</h2>
+        <ul>
+          <li><strong>World Countries (Countrydle)</strong>: Deduce one of 195 sovereign nations across all seven continents. Ask about hemispheres, land borders, coastlines, capital cities, populations, driving sides, and national flag colors within a 10-question budget.</li>
+          <li><strong>Polish Voivodeships (Województwodle)</strong>: Explore Poland's 16 administrative voivodeships. Ask about neighboring voivodeships, foreign borders, historical regions like Silesia and Lesser Poland, and Baltic Sea access.</li>
+          <li><strong>Polish Counties (Powiatdle)</strong>: Test your regional mastery across 380 Polish powiaty. Use vehicle registration plates (e.g., KR, WZ, PO), major expressways, river basins, and administrative seats to narrow down the target.</li>
+          <li><strong>US States (US Statedle)</strong>: Guess the daily American state among all 50 states. Deduce using US Census divisions, regional tags like the Rust Belt or Gulf Coast, major rivers, and statehood admission orders.</li>
+        </ul>
+
+        <h2>How to Play &amp; Deduction Strategy</h2>
+        <p>
+          1. <strong>Start Broad</strong>: Eliminate whole hemispheres and continents first by asking questions like <em>"Is it in the Southern Hemisphere?"</em> or <em>"Is it located in Africa?"</em>.
+        </p>
+        <p>
+          2. <strong>Test Natural Boundaries</strong>: Check coastal status with questions such as <em>"Does the country have access to the sea?"</em> or <em>"Is it completely landlocked?"</em>.
+        </p>
+        <p>
+          3. <strong>Trace Borders &amp; Physical Features</strong>: Ask about neighboring nations and major rivers (e.g., <em>"Does it border Germany?"</em> or <em>"Does the Danube river flow through it?"</em>).
+        </p>
+        <p>
+          4. <strong>Submit Your Guess</strong>: Once you have narrowed down your candidates, submit your guess. You have up to 3 guesses per game to find the target.
+        </p>
+
+        <h2>Educational Value &amp; Data Transparency</h2>
+        <p>
+          Countrydle is built as an open educational resource to make geographic literacy engaging and interactive for students, educators, and puzzle enthusiasts. All geographic coordinates, population statistics, and land border mappings are cross-referenced with public datasets from Natural Earth, OpenStreetMap, the Central Statistical Office of Poland (GUS), and the United States Census Bureau.
+        </p>
+
+        <h2>Important Links</h2>
+        <p>
+          <a href="/about">About Us &amp; Mission</a> |
+          <a href="/faq">Frequently Asked Questions</a> |
+          <a href="/contact">Contact &amp; Support</a> |
+          <a href="/privacy-policy">Privacy Policy</a> |
+          <a href="/terms">Terms of Service</a>
+        </p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
