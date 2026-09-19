@@ -9,7 +9,8 @@ from us_statedle.utils import LOCAL_CONFIG as US_STATE_RUNTIME_CONFIG
 from wojewodztwodle.utils import LOCAL_CONFIG as VOIVODESHIP_RUNTIME_CONFIG
 
 
-DATA_DIR = pathlib.Path(__file__).resolve().parents[2] / "data"
+_TEST_DIR = pathlib.Path(__file__).resolve().parent
+DATA_DIR = _TEST_DIR.parent / "data" if (_TEST_DIR.parent / "data").exists() else _TEST_DIR.parents[1] / "data"
 REQUIRED_DBS = [
     DATA_DIR / "us_state_facts.sqlite",
     DATA_DIR / "powiat_facts.sqlite",

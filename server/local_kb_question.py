@@ -296,7 +296,7 @@ def evaluate(
 
     left = resolve_ref(conn, config, row, left_node, item_value)
     right = resolve_ref(conn, config, row, right_node, item_value)
-    if left is None or (op != "has_space" and right is None):
+    if left is None or (op not in {"has_space", "exists"} and right is None):
         return None
 
     # Game rule inherited from the old prompts: if the user asks whether the

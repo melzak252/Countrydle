@@ -9,6 +9,7 @@ venv
 
 node_modules
 
+data
 data/
 postgres_data*/
 postgres_test_data/

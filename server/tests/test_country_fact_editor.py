@@ -27,7 +27,9 @@ def contains_plan(relation: str, value: str) -> dict:
 
 @pytest.fixture
 def editable_country_db(tmp_path):
-    source = pytest.importorskip("pathlib").Path(__file__).resolve().parents[2] / "data" / "country_facts.sqlite"
+    test_dir = pytest.importorskip("pathlib").Path(__file__).resolve().parent
+    data_dir = test_dir.parent / "data" if (test_dir.parent / "data").exists() else test_dir.parents[1] / "data"
+    source = data_dir / "country_facts.sqlite"
     if not source.exists():
         pytest.skip("Countrydle local SQLite KB is missing")
     target = tmp_path / "country_facts.sqlite"
@@ -95,7 +97,9 @@ def test_country_fact_editor_adds_and_deletes_list_value_used_by_answerer(editab
 
 
 def test_generic_fact_editor_updates_non_country_mode(tmp_path, monkeypatch):
-    source = pytest.importorskip("pathlib").Path(__file__).resolve().parents[2] / "data" / "us_state_facts.sqlite"
+    test_dir = pytest.importorskip("pathlib").Path(__file__).resolve().parent
+    data_dir = test_dir.parent / "data" if (test_dir.parent / "data").exists() else test_dir.parents[1] / "data"
+    source = data_dir / "us_state_facts.sqlite"
     if not source.exists():
         pytest.skip("US state local SQLite KB is missing")
     target = tmp_path / "us_state_facts.sqlite"

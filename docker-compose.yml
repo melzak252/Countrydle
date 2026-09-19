@@ -12,7 +12,7 @@ services:
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -69,6 +69,7 @@ services:
       - GEMINI_PROJECT_NUMBER=${GEMINI_PROJECT_NUMBER}
       - LOCAL_QUESTION_MODEL=${LOCAL_QUESTION_MODEL:-gemini-2.5-flash-lite}
       - GEMINI_QUESTION_MODEL=${GEMINI_QUESTION_MODEL:-gemini-2.5-flash-lite}
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./server:/usr/src/app
       - ./data:/usr/src/app/data

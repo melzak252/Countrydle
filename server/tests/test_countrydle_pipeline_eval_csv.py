@@ -12,7 +12,9 @@ from db.repositories.country import CountryRepository
 from schemas.countrydle import QuestionEnhanced
 
 
-DB_PATH = pathlib.Path(__file__).resolve().parents[2] / "data" / "country_facts.sqlite"
+_TEST_DIR = pathlib.Path(__file__).resolve().parent
+_DATA_DIR = _TEST_DIR.parent / "data" if (_TEST_DIR.parent / "data").exists() else _TEST_DIR.parents[1] / "data"
+DB_PATH = _DATA_DIR / "country_facts.sqlite"
 
 
 pytestmark = pytest.mark.skipif(not DB_PATH.exists(), reason="Countrydle local SQLite KB is missing")
