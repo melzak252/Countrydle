@@ -80,7 +80,7 @@ export default function GamePage() {
                 gameName="Countrydle"
                 examples={t('gamePage.examples', { returnObjects: true }) as string[]}
                 scoring={{
-                maxPoints: 2000,
+                maxPoints: 3300,
                 details: t('gamePage.scoringDetails', { returnObjects: true }) as string[]
                 }}
             />

@@ -29,7 +29,7 @@ class PowiatdleStateSchema(BaseModel):
 class PowiatGuessBase(BaseModel):
     guess: str
     powiat_id: Optional[int] = None
-
+    elapsed_seconds: Optional[int] = None
 
 class PowiatGuessCreate(PowiatGuessBase):
     user_id: int

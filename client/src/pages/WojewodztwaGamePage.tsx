@@ -83,7 +83,7 @@ export default function WojewodztwaGamePage() {
                 gameName={t('wojewodztwaPage.title')}
                 examples={t('wojewodztwaPage.examples', { returnObjects: true }) as string[]}
                 scoring={{
-                maxPoints: 450,
+                maxPoints: 3300,
                 details: t('wojewodztwaPage.scoringDetails', { returnObjects: true }) as string[]
                 }}
             />

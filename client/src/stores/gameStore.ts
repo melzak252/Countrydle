@@ -15,6 +15,7 @@ interface GameData {
   isLoading: boolean;
   isGuest: boolean;
   error: string | null;
+  gameStartTime: number | null;
 }
 
 interface GameActions {
@@ -93,7 +94,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
     isLoading: false,
     isGuest: false,
     error: null,
-
+    gameStartTime: null,
     fetchGameState: async () => {
       set({ isLoading: true, error: null });
       try {
@@ -196,6 +197,9 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             }
         }
         
+        const currentStartTime = get().gameStartTime;
+        const newStartTime = currentStartTime || (!gameState?.is_game_over ? Date.now() : null);
+
         set({
           gameState,
           questions,
@@ -204,6 +208,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
           isGuest: isActuallyGuest,
           correctEntity,
           isLoading: false,
+          gameStartTime: newStartTime,
         });
       } catch (e: any) {
         console.error(e);
@@ -273,12 +278,17 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
     makeGuess: async (guessText: string, entityId?: number) => {
       set({ isLoading: true, error: null });
       try {
-        const guess = await service.makeGuess(guessText, entityId);
+        const elapsed_seconds = get().gameStartTime
+          ? Math.max(1, Math.round((Date.now() - (get().gameStartTime as number)) / 1000))
+          : undefined;
+
+        const guess = await service.makeGuess(guessText, entityId, elapsed_seconds);
         
         const { isGuest, dailyDate, gameState, questions, guesses, entities } = get();
 
         if (isGuest && dailyDate && gameState) {
-          const newGuesses = [...guesses, guess];
+          const guessWithElapsed = { ...guess, elapsed_seconds };
+          const newGuesses = [...guesses, guessWithElapsed];
           const isCorrect = guess.answer;
           const newGameState = {
             ...gameState,

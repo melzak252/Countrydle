@@ -30,7 +30,7 @@ class USStatedleStateSchema(BaseModel):
 class USStateGuessBase(BaseModel):
     guess: str
     us_state_id: Optional[int] = None
-
+    elapsed_seconds: Optional[int] = None
 
 class USStateGuessCreate(USStateGuessBase):
     user_id: int

@@ -368,14 +368,27 @@ class CountrydleStateRepository:
 
         return result.scalars().first()
 
-    async def calc_points(self, state: CountrydleState) -> int:
-        question_points = state.remaining_questions * 100
-        guess_points = 100 * (((state.remaining_guesses + 1) ** 2) + 1)
-
-        return question_points + guess_points
+    async def calc_points(
+        self,
+        state: CountrydleState,
+        elapsed_seconds: int | None = None,
+        streak: int = 0,
+    ) -> int:
+        from game_logic import calculate_points, COUNTRYDLE_CONFIG
+        return calculate_points(
+            config=COUNTRYDLE_CONFIG,
+            won=state.won,
+            questions_used=state.questions_asked,
+            guesses_used=state.guesses_made,
+            elapsed_seconds=elapsed_seconds,
+            streak=streak,
+        )
 
     async def guess_made(
-        self, state: CountrydleState, guess: CountrydleGuess
+        self,
+        state: CountrydleState,
+        guess: CountrydleGuess,
+        elapsed_seconds: int | None = None,
     ) -> CountrydleState:
         state.guesses_made += 1
         state.remaining_guesses -= 1
@@ -390,7 +403,11 @@ class CountrydleStateRepository:
 
         points = 0
         if state.won:
-            points = await self.calc_points(state)
+            user_points = await UserRepository(self.session).get_user_points(state.user_id)
+            current_streak = ((user_points.streak if user_points else 0) + 1)
+            points = await self.calc_points(
+                state, elapsed_seconds=elapsed_seconds, streak=current_streak
+            )
             state.points = points
 
         if state.is_game_over:

@@ -105,12 +105,42 @@ class WojewodztwodleStateRepository:
         await self.session.refresh(state)
         return state
 
-    async def calc_points(self, state: WojewodztwodleState) -> int:
-        # Wojewodztwa are easy (16 options), so lower rewards
-        question_points = state.remaining_questions * 50
-        guess_points = 100 * (state.remaining_guesses + 1)
-        return question_points + guess_points
+    async def get_current_streak(self, user_id: int) -> int:
+        stmt = (
+            select(WojewodztwodleState)
+            .where(
+                and_(
+                    WojewodztwodleState.user_id == user_id,
+                    WojewodztwodleState.is_game_over == True,
+                )
+            )
+            .order_by(WojewodztwodleState.id.desc())
+        )
+        res = await self.session.execute(stmt)
+        states = res.scalars().all()
+        streak = 0
+        for s in states:
+            if s.won:
+                streak += 1
+            else:
+                break
+        return streak
 
+    async def calc_points(
+        self,
+        state: WojewodztwodleState,
+        elapsed_seconds: int | None = None,
+        streak: int = 0,
+    ) -> int:
+        from game_logic import calculate_points, WOJEWODZTWDLE_CONFIG
+        return calculate_points(
+            config=WOJEWODZTWDLE_CONFIG,
+            won=state.won,
+            questions_used=state.questions_asked,
+            guesses_used=state.guesses_made,
+            elapsed_seconds=elapsed_seconds,
+            streak=streak,
+        )
     async def get_leaderboard(self, type: str = "monthly") -> List[LeaderboardEntry]:
         if type == "monthly":
             from datetime import date
@@ -247,11 +277,18 @@ class WojewodztwodleStateRepository:
             for state in history_states
         ]
 
+        current_streak = 0
+        for s in history_states:
+            if s.won:
+                current_streak += 1
+            else:
+                break
+
         return GameStatistics(
             points=points,
             wins=wins,
             games_played=games_played,
-            streak=0,  # TODO: Implement streak
+            streak=current_streak,
             history=history_entries,
         )
 

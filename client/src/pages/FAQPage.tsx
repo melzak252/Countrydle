@@ -34,7 +34,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'scoring-and-limits',
     category: 'gameplay',
     question: 'How does scoring work and what happens when I run out of guesses?',
-    answer: 'Points are awarded based on speed and deduction efficiency: fewer questions and guesses used result in higher scores (up to 2,000 points per daily win). If you exhaust your guesses or question budget, the game concludes and reveals the secret entity along with an educational breakdown of your deduction trajectory.'
+    answer: 'Points are awarded dynamically across five performance factors: 1) Base win bonus (+500 pts), 2) Question efficiency (up to +1,500 pts rewarding bold deductions with fewer questions asked), 3) Guess efficiency (up to +500 pts for 1st-try accuracy), 4) Speed bonus (up to +300 pts for fast solves under 5 minutes), and 5) Daily streak bonus (+50 pts/day up to +500 pts). Total scores range up to ~3,300+ points. If you exhaust your guesses or questions, the game ends and reveals the secret entity.'
   },
 
   // Category 2: Modes & Archive
@@ -48,7 +48,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'play-past-games',
     category: 'modes',
     question: 'Can I play previous daily puzzles?',
-    answer: 'Yes! Navigate to the Archive page in the header menu to browse and replay any past daily game across all four modes. Archive games allow you to practice your deduction strategies at your own pace.'
+    answer: 'You can view the full history and solutions of past daily puzzles by visiting the Archive page in the header menu. It lists previous dates and answers across all four game modes so you can check what you missed.'
   },
 
   // Category 3: Knowledge Base & Truth
@@ -88,7 +88,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'streaks-and-profile',
     category: 'account',
     question: 'How do daily streaks and leaderboards work?',
-    answer: 'Registered players earn streak points by completing daily challenges consecutively. Your profile tracks your overall win rate, total points, and current streak, placing you on monthly and all-time global leaderboards.'
+    answer: 'Registered players earn points and daily streaks for every solved puzzle. Your profile tracks your total points, total wins, games played, and active win streak, ranking you on monthly and average-performance global leaderboards.'
   }
 ];
 
