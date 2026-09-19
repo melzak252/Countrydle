@@ -148,3 +148,59 @@ async def test_guest_ask_question(async_client: AsyncClient):
         assert data["valid"] is True
         assert data["user_id"] is None
         assert data["answer"] is True
+
+@pytest.mark.anyio
+async def test_guest_reveal_rejected_before_game_over(async_client: AsyncClient):
+    async_client.cookies.clear()
+    with patch(
+        "db.repositories.countrydle.CountrydleRepository.get_today_country",
+        new_callable=AsyncMock,
+    ) as mock_get_today:
+        mock_day = MagicMock()
+        mock_day.id = 1
+        mock_day.country_id = 100
+        mock_get_today.return_value = mock_day
+
+        response = await async_client.get("/countrydle/reveal")
+        assert response.status_code == 400
+        assert "Cannot reveal country before game is over" in response.json()["detail"]
+
+
+@pytest.mark.anyio
+async def test_guest_reveal_allowed_after_game_over(async_client: AsyncClient):
+    async_client.cookies.clear()
+    with (
+        patch(
+            "db.repositories.countrydle.CountrydleRepository.get_today_country",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            new_callable=AsyncMock,
+        ) as mock_get_country,
+    ):
+        mock_day = MagicMock()
+        mock_day.id = 1
+        mock_day.country_id = 100
+        mock_get_today.return_value = mock_day
+
+        mock_country = MagicMock()
+        mock_country.id = 100
+        mock_country.name = "Poland"
+        mock_country.official_name = "Republic of Poland"
+        mock_get_country.return_value = mock_country
+
+        # Make 3 incorrect guesses to reach game over
+        for _ in range(3):
+            guess_res = await async_client.post(
+                "/countrydle/guess",
+                json={"guess": "Germany", "country_id": 99},
+            )
+            assert guess_res.status_code == 200
+
+        # Now reveal must succeed
+        reveal_res = await async_client.get("/countrydle/reveal")
+        assert reveal_res.status_code == 200
+        data = reveal_res.json()
+        assert data["id"] == 100
+        assert data["name"] == "Poland"

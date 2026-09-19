@@ -22,7 +22,8 @@ from schemas.country import CountryDisplay
 from schemas.user import UserDisplay
 from schemas.countrydle import FullQuestionDisplay
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
+from utils.guest_session import create_guest_game_token, read_guest_game_token
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
@@ -675,6 +676,8 @@ async def ask_question(
         new_quest = await CountrydleQuestionsRepository(session).create_question(
             local_question_create
         )
+        if not local_question_create.valid:
+            return InvalidQuestionDisplay.model_validate(new_quest)
 
         try:
             new_game_state = game_rules.process_question(current_game_state)
@@ -687,8 +690,6 @@ async def ask_question(
         state.questions_asked += 1
         state = await CountrydleStateRepository(session).update_countrydle_state(state)
 
-        if not local_question_create.valid:
-            return InvalidQuestionDisplay.model_validate(new_quest)
         return FullQuestionDisplay.model_validate(new_quest)
 
     enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
@@ -706,18 +707,6 @@ async def ask_question(
         new_quest = await CountrydleQuestionsRepository(session).create_question(
             question_create
         )
-
-        # Update Logic State
-        try:
-            new_game_state = game_rules.process_question(current_game_state)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
-        state.remaining_questions = (
-            COUNTRYDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        state = await CountrydleStateRepository(session).update_countrydle_state(state)
 
         return InvalidQuestionDisplay.model_validate(new_quest)
 
@@ -757,6 +746,7 @@ async def ask_question(
 
 @router.get("/reveal", response_model=CountryDisplay)
 async def reveal_country(
+    request: Request,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -776,6 +766,14 @@ async def reveal_country(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal country before game is over.",
             )
+    else:
+        cookie = request.cookies.get("guest_countrydle")
+        guest_state = read_guest_game_token(cookie, "countrydle", day_country.id)
+        if not guest_state["is_game_over"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal country before game is over.",
+            )
             
     country = await CountryRepository(session).get(day_country.country_id)
     return country
@@ -783,6 +781,8 @@ async def reveal_country(
 @router.post("/guess", response_model=GuessDisplay)
 async def make_guess(
     guess: GuessBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -795,6 +795,14 @@ async def make_guess(
         if guess.country_id is not None:
             is_correct = guess.country_id == daily_country.country_id
             
+        cookie = request.cookies.get("guest_countrydle")
+        guest_state = read_guest_game_token(cookie, "countrydle", daily_country.id)
+        guesses_count = guest_state["guesses_count"] + 1
+        won = is_correct
+        is_game_over = is_correct or (guesses_count >= COUNTRYDLE_CONFIG.max_guesses)
+        token = create_guest_game_token("countrydle", daily_country.id, guesses_count, is_game_over, won)
+        response.set_cookie("guest_countrydle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
         from datetime import datetime
         return GuessDisplay(
             id=0,
@@ -803,7 +811,6 @@ async def make_guess(
             answer=is_correct,
             guessed_at=datetime.now()
         )
-
     state = await CountrydleStateRepository(session).get_player_countrydle_state(
         user,
         daily_country,

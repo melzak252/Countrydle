@@ -1,6 +1,7 @@
 from typing import Union, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
+from utils.guest_session import create_guest_game_token, read_guest_game_token
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -322,19 +323,20 @@ async def ask_question(
             collection_name="powiaty_questions",
         )
 
-    # Update state
-    new_game_state = game_rules.process_question(current_game_state)
-    state.remaining_questions = (
-        POWIATDLE_CONFIG.max_questions - new_game_state.questions_used
-    )
-    state.questions_asked += 1
-    await PowiatdleStateRepository(session).update_state(state)
+    if question_create.valid:
+        new_game_state = game_rules.process_question(current_game_state)
+        state.remaining_questions = (
+            POWIATDLE_CONFIG.max_questions - new_game_state.questions_used
+        )
+        state.questions_asked += 1
+        await PowiatdleStateRepository(session).update_state(state)
 
     return new_quest
 
 
 @router.get("/reveal", response_model=PowiatDisplay)
 async def reveal_powiat(
+    request: Request,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -351,6 +353,14 @@ async def reveal_powiat(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal powiat before game is over.",
             )
+    else:
+        cookie = request.cookies.get("guest_powiatdle")
+        guest_state = read_guest_game_token(cookie, "powiatdle", day_powiat.id)
+        if not guest_state["is_game_over"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal powiat before game is over.",
+            )
             
     powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
     return powiat
@@ -358,6 +368,8 @@ async def reveal_powiat(
 @router.post("/guess", response_model=PowiatGuessDisplay)
 async def make_guess(
     guess: PowiatGuessBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -368,6 +380,14 @@ async def make_guess(
         if guess.powiat_id:
             is_correct = guess.powiat_id == day_powiat.powiat_id
             
+        cookie = request.cookies.get("guest_powiatdle")
+        guest_state = read_guest_game_token(cookie, "powiatdle", day_powiat.id)
+        guesses_count = guest_state["guesses_count"] + 1
+        won = is_correct
+        is_game_over = is_correct or (guesses_count >= POWIATDLE_CONFIG.max_guesses)
+        token = create_guest_game_token("powiatdle", day_powiat.id, guesses_count, is_game_over, won)
+        response.set_cookie("guest_powiatdle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
         from datetime import datetime
         return PowiatGuessDisplay(
             id=0,

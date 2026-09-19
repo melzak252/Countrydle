@@ -1,6 +1,7 @@
 from typing import Union, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
+from utils.guest_session import create_guest_game_token, read_guest_game_token
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -322,18 +323,19 @@ async def ask_question(
         )
 
     # Update state
-    new_game_state = game_rules.process_question(current_game_state)
-    state.remaining_questions = (
-        USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
-    )
-    state.questions_asked += 1
-    await USStatedleStateRepository(session).update_state(state)
-
+    if question_create.valid:
+        new_game_state = game_rules.process_question(current_game_state)
+        state.remaining_questions = (
+            USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
+        )
+        state.questions_asked += 1
+        await USStatedleStateRepository(session).update_state(state)
     return new_quest
 
 
 @router.get("/reveal", response_model=USStateDisplay)
 async def reveal_us_state(
+    request: Request,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -350,6 +352,14 @@ async def reveal_us_state(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal state before game is over.",
             )
+    else:
+        cookie = request.cookies.get("guest_us_statedle")
+        guest_state = read_guest_game_token(cookie, "us_statedle", day_state.id)
+        if not guest_state["is_game_over"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal state before game is over.",
+            )
             
     us_state = await USStateRepository(session).get(day_state.us_state_id)
     return us_state
@@ -357,6 +367,8 @@ async def reveal_us_state(
 @router.post("/guess", response_model=USStateGuessDisplay)
 async def make_guess(
     guess: USStateGuessBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -367,6 +379,14 @@ async def make_guess(
         if guess.us_state_id:
             is_correct = guess.us_state_id == day_state.us_state_id
             
+        cookie = request.cookies.get("guest_us_statedle")
+        guest_state = read_guest_game_token(cookie, "us_statedle", day_state.id)
+        guesses_count = guest_state["guesses_count"] + 1
+        won = is_correct
+        is_game_over = is_correct or (guesses_count >= USSTATEDLE_CONFIG.max_guesses)
+        token = create_guest_game_token("us_statedle", day_state.id, guesses_count, is_game_over, won)
+        response.set_cookie("guest_us_statedle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
         from datetime import datetime
         return USStateGuessDisplay(
             id=0,
@@ -375,7 +395,6 @@ async def make_guess(
             answer=is_correct,
             guessed_at=datetime.now()
         )
-
     state = await USStatedleStateRepository(session).get_state(user, day_state)
 
     current_game_state = db_state_to_game_state(state)

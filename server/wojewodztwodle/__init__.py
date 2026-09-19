@@ -1,6 +1,7 @@
 from typing import Union, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
+from utils.guest_session import create_guest_game_token, read_guest_game_token
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -331,19 +332,20 @@ async def ask_question(
             collection_name="wojewodztwa_questions",
         )
 
-    # Update state
-    new_game_state = game_rules.process_question(current_game_state)
-    state.remaining_questions = (
-        WOJEWODZTWDLE_CONFIG.max_questions - new_game_state.questions_used
-    )
-    state.questions_asked += 1
-    await WojewodztwodleStateRepository(session).update_state(state)
+    if question_create.valid:
+        new_game_state = game_rules.process_question(current_game_state)
+        state.remaining_questions = (
+            WOJEWODZTWDLE_CONFIG.max_questions - new_game_state.questions_used
+        )
+        state.questions_asked += 1
+        await WojewodztwodleStateRepository(session).update_state(state)
 
     return new_quest
 
 
 @router.get("/reveal", response_model=WojewodztwoDisplay)
 async def reveal_wojewodztwo(
+    request: Request,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -360,6 +362,14 @@ async def reveal_wojewodztwo(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal wojewodztwo before game is over.",
             )
+    else:
+        cookie = request.cookies.get("guest_wojewodztwodle")
+        guest_state = read_guest_game_token(cookie, "wojewodztwodle", day_state.id)
+        if not guest_state["is_game_over"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reveal wojewodztwo before game is over.",
+            )
             
     wojewodztwo = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
     return wojewodztwo
@@ -367,6 +377,8 @@ async def reveal_wojewodztwo(
 @router.post("/guess", response_model=WojewodztwoGuessDisplay)
 async def make_guess(
     guess: WojewodztwoGuessBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -377,6 +389,14 @@ async def make_guess(
         if guess.wojewodztwo_id:
             is_correct = guess.wojewodztwo_id == day_state.wojewodztwo_id
             
+        cookie = request.cookies.get("guest_wojewodztwodle")
+        guest_state = read_guest_game_token(cookie, "wojewodztwodle", day_state.id)
+        guesses_count = guest_state["guesses_count"] + 1
+        won = is_correct
+        is_game_over = is_correct or (guesses_count >= WOJEWODZTWDLE_CONFIG.max_guesses)
+        token = create_guest_game_token("wojewodztwodle", day_state.id, guesses_count, is_game_over, won)
+        response.set_cookie("guest_wojewodztwodle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
         from datetime import datetime
         return WojewodztwoGuessDisplay(
             id=0,
