@@ -26,15 +26,25 @@ class USStatedleDayRepository:
         )
         return result.scalar_one_or_none()
 
-    async def generate_new_day_us_state(self) -> USStatedleDay:
-        # Get a random us_state
-        result = await self.session.execute(
-            select(USState).order_by(func.random()).limit(1)
+    async def generate_new_day_us_state(self, cooldown_days: int = 25) -> USStatedleDay:
+        import random
+        recent_subq = (
+            select(USStatedleDay.us_state_id)
+            .where(USStatedleDay.us_state_id.isnot(None))
+            .order_by(USStatedleDay.id.desc())
+            .limit(cooldown_days)
         )
-        us_state = result.scalar_one_or_none()
+        recent_ids = set((await self.session.execute(recent_subq)).scalars().all())
 
-        if not us_state:
+        all_states = (await self.session.execute(select(USState))).scalars().all()
+        if not all_states:
             raise Exception("No US states found in database!")
+
+        eligible = [s for s in all_states if s.id not in recent_ids]
+        if not eligible:
+            eligible = all_states
+
+        us_state = random.choice(eligible)
 
         new_day = USStatedleDay(us_state_id=us_state.id)
         self.session.add(new_day)

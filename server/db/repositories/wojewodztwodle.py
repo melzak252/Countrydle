@@ -26,15 +26,25 @@ class WojewodztwodleDayRepository:
         )
         return result.scalar_one_or_none()
 
-    async def generate_new_day_wojewodztwo(self) -> WojewodztwodleDay:
-        # Get a random wojewodztwo
-        result = await self.session.execute(
-            select(Wojewodztwo).order_by(func.random()).limit(1)
+    async def generate_new_day_wojewodztwo(self, cooldown_days: int = 10) -> WojewodztwodleDay:
+        import random
+        recent_subq = (
+            select(WojewodztwodleDay.wojewodztwo_id)
+            .where(WojewodztwodleDay.wojewodztwo_id.isnot(None))
+            .order_by(WojewodztwodleDay.id.desc())
+            .limit(cooldown_days)
         )
-        wojewodztwo = result.scalar_one_or_none()
+        recent_ids = set((await self.session.execute(recent_subq)).scalars().all())
 
-        if not wojewodztwo:
+        all_voivodeships = (await self.session.execute(select(Wojewodztwo))).scalars().all()
+        if not all_voivodeships:
             raise Exception("No wojewodztwa found in database!")
+
+        eligible = [w for w in all_voivodeships if w.id not in recent_ids]
+        if not eligible:
+            eligible = all_voivodeships
+
+        wojewodztwo = random.choice(eligible)
 
         new_day = WojewodztwodleDay(wojewodztwo_id=wojewodztwo.id)
         self.session.add(new_day)

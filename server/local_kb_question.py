@@ -381,6 +381,52 @@ def collect_relations(node: Any) -> list[str]:
             found.update(collect_relations(value))
     return sorted(found)
 
+def generate_mode_explanation(
+    config: LocalModeConfig,
+    row: sqlite3.Row,
+    plan: QuestionPlan,
+    answer: bool,
+    conn: sqlite3.Connection,
+) -> str:
+    name = row[config.name_column]
+    node = plan.plan or {}
+    left = node.get("left", {}) if isinstance(node, dict) else {}
+    rel = left.get("relation") if isinstance(left, dict) else None
+    val = node.get("value") or node.get("right") if isinstance(node, dict) else None
+
+    if config.language == "Polish":
+        if rel == "is_coastal":
+            return f"Województwo {name} ma bezpośredni dostęp do Morza Bałtyckiego." if answer else f"Województwo {name} nie ma dostępu do morza (jest województwem śródlądowym)."
+        if rel == "borders_voivodeship" and val:
+            borders = [r[0] for r in conn.execute("SELECT border_voivodeship_name FROM voivodeship_borders_voivodeships WHERE voivodeship_id=?", (row["id"],))]
+            return f"Województwo {name} graniczy z: {val}." if answer else f"Województwo {name} nie graniczy z {val}. Graniczy z: {', '.join(borders)}."
+        if rel == "borders_country" and val:
+            borders = [r[0] for r in conn.execute("SELECT country_name FROM voivodeship_borders_countries WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
+            return f"{name} graniczy z obcym państwem: {val}." if answer else f"{name} nie graniczy z {val}."
+        if rel == "seat":
+            return f"Siedzibą {name} jest {row['seat']}."
+        if rel == "macroregion":
+            return f"{name} leży w makroregionie: {row['macroregion']}."
+        if rel == "registration_plates" and val:
+            plates = [r[0] for r in conn.execute("SELECT plate_code FROM powiat_registration_plates WHERE powiat_id=?", (row["id"],))]
+            return f"Wyróżnik tablic powiatu {name} to: {val}. Wszystkie kody: {', '.join(plates)}." if answer else f"Powiat {name} nie ma wyróżnika {val}. Tablice to: {', '.join(plates)}."
+        if rel == "voivodeship":
+            return f"Powiat {name} leży w województwie {row['voivodeship']}."
+        if rel == "is_city_county":
+            return f"{name} jest miastem na prawach powiatu." if answer else f"{name} jest powiatem ziemskim."
+        return f"Odpowiedź {'TAK' if answer else 'NIE'} wynika ze sprawdzonych faktów o: {name}."
+    else:
+        if rel == "is_coastal":
+            return f"{name} is a coastal state with ocean/gulf coastline." if answer else f"{name} is an inland state with no ocean coastline."
+        if rel == "borders_state" and val:
+            borders = [r[0] for r in conn.execute("SELECT border_state_name FROM us_state_borders_states WHERE state_id=?", (row["id"],))]
+            return f"{name} borders {val}." if answer else f"{name} does not border {val}. Bordering states: {', '.join(borders)}."
+        if rel in ("region", "division"):
+            return f"{name} is located in the {row['region']} region ({row['division']} division)."
+        if rel == "admission_year":
+            return f"{name} was admitted to the Union in {row['admission_year']} (state #{row['admission_order']})."
+        return f"The answer is {'YES' if answer else 'NO'} based on verified facts about {name}."
+
 
 def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) -> LocalAnswer | None:
     if not plan.valid or not plan.supported or not plan.plan:
@@ -394,10 +440,7 @@ def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) 
     if answer is None:
         return None
     relations = collect_relations(plan.plan)
-    explanation = (
-        f"{plan.explanation or 'Pytanie pasuje do znanych faktów w tej grze.'} "
-        "Odpowiedź wynika z dostępnych faktów o ukrytym obiekcie."
-    )
+    explanation = generate_mode_explanation(config, row, plan, answer, conn)
     return LocalAnswer(
         question=plan.improved_question or plan.original_question,
         answer=answer,
