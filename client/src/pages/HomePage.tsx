@@ -160,6 +160,85 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* Editorial Guide: The Art of Geographic Deduction */}
+      <section className="mt-28 space-y-12">
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-5xl font-black text-white">
+            The Art of Geographic Deduction
+          </h2>
+          <p className="text-zinc-400 text-base md:text-lg leading-relaxed">
+            Countrydle combines the daily anticipation of Wordle with the analytical rigor of 20 Questions. Instead of guessing blindly, use systematic spatial triangulation to isolate any secret territory.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
+            <div className="text-blue-400 font-bold text-sm uppercase tracking-wider">Step 1 • Macro Triangulation</div>
+            <h3 className="text-2xl font-bold text-white">Eliminate Hemispheres &amp; Continents</h3>
+            <p className="text-zinc-300 leading-relaxed text-sm">
+              Begin by cutting the search space in half. Asking whether the mystery country lies in the <em>Northern Hemisphere</em> immediately eliminates 32 sovereign nations in the south. Follow up with broad continental and regional checks like <em>"Is it in Europe?"</em> or <em>"Is it in Asia?"</em> to lock in your global quadrant.
+            </p>
+          </div>
+
+          <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
+            <div className="text-teal-400 font-bold text-sm uppercase tracking-wider">Step 2 • Physical Boundaries</div>
+            <h3 className="text-2xl font-bold text-white">Coastline &amp; Island Classification</h3>
+            <p className="text-zinc-300 leading-relaxed text-sm">
+              Maritime geography provides decisive clues. Inquire whether the target <em>has access to the sea</em> or is an <em>island nation</em>. There are 44 landlocked countries in the world; identifying a landlocked nation immediately rules out thousands of kilometers of global coastline.
+            </p>
+          </div>
+
+          <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
+            <div className="text-indigo-400 font-bold text-sm uppercase tracking-wider">Step 3 • Border Topology</div>
+            <h3 className="text-2xl font-bold text-white">Neighbor &amp; Frontier Mapping</h3>
+            <p className="text-zinc-300 leading-relaxed text-sm">
+              Once you have narrowed down a geographic cluster, test direct shared borders with pivotal hub countries (e.g., <em>"Does it border Germany?"</em> in Europe, <em>"Does it border Brazil?"</em> in South America, or <em>"Does it border DRC?"</em> in Central Africa). Each border confirmation pins the target to a small cluster of adjacent states.
+            </p>
+          </div>
+
+          <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
+            <div className="text-yellow-400 font-bold text-sm uppercase tracking-wider">Step 4 • Demographics &amp; Flags</div>
+            <h3 className="text-2xl font-bold text-white">Cultural &amp; Visual Signatures</h3>
+            <p className="text-zinc-300 leading-relaxed text-sm">
+              When choosing between 2–3 final candidates, leverage demographic and visual attributes: driving side (left vs right), population thresholds (e.g. <em>"Is population over 20M?"</em>), official language families, or national flag colors (e.g., <em>"Does the flag contain green?"</em>).
+            </p>
+          </div>
+        </div>
+
+        {/* Deep Dive on Modes */}
+        <div className="p-10 bg-zinc-900/60 border border-zinc-800 rounded-3xl space-y-8">
+          <div className="space-y-2">
+            <h3 className="text-2xl md:text-3xl font-bold text-white">Deep Regional Mastery Across 4 Modes</h3>
+            <p className="text-zinc-400 text-sm">
+              Countrydle is not limited to world maps. Explore our specialized regional challenges:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+            <div className="space-y-2">
+              <h4 className="font-bold text-white text-base">Poland: Voivodeships &amp; Counties</h4>
+              <p className="text-zinc-400 leading-relaxed">
+                Discover Poland through 16 administrative voivodeships and 380 local powiaty. Deduce locations using territorial registration plate codes (e.g. KR, WZ), major river basins like the Vistula and Oder, and historical regions such as Silesia, Mazovia, and Pomerania.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-white text-base">United States: 50 States</h4>
+              <p className="text-zinc-400 leading-relaxed">
+                Test your American geography across all 50 US states. Use US Census regional boundaries (New England, Mountain, Pacific), Great Lakes coastlines, major highway corridors, and admission order to pinpoint the secret state.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-white text-base">Global Sovereign Nations</h4>
+              <p className="text-zinc-400 leading-relaxed">
+                Challenge yourself daily with 195 sovereign nations across all seven continents. With verified SQLite fact tables, questions are answered with zero AI hallucinations and high factual fidelity.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer-like Stats section */}
       <motion.div 
         initial={{ opacity: 0 }}

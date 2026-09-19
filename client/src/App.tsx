@@ -16,6 +16,9 @@ import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import ArchivePage from './pages/ArchivePage';
 import AdminDashboard from './pages/AdminDashboard';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import FAQPage from './pages/FAQPage';
 import { useAuthStore } from './stores/authStore';
 import { useCountryGameStore, usePowiatyGameStore, useUSStatesGameStore, useWojewodztwaGameStore } from './stores/gameStore';
 import { useEffect } from 'react';
@@ -88,6 +91,9 @@ function App() {
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="terms" element={<TermsOfServicePage />} />
           <Route path="cookie-policy" element={<CookiePolicyPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="contact" element={<ContactPage />} />
+          <Route path="faq" element={<FAQPage />} />
           <Route path="admin" element={user?.is_admin ? <AdminDashboard /> : <Navigate to="/" replace />} />
           
           {/* Fallback */}
