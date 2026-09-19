@@ -58,6 +58,39 @@ POLISH_COUNTRY_ALIASES = {
     "uk": "United Kingdom",
 }
 
+COUNTRY_NAME_SYNONYMS = {
+    "drc": "Democratic Republic of the Congo",
+    "the drc": "Democratic Republic of the Congo",
+    "dr congo": "Democratic Republic of the Congo",
+    "democratic republic of congo": "Democratic Republic of the Congo",
+    "demokratyczna republika konga": "Democratic Republic of the Congo",
+    "drk": "Democratic Republic of the Congo",
+    "congo brazzaville": "Republic of the Congo",
+    "congo republic": "Republic of the Congo",
+    "republic of the congo": "Republic of the Congo",
+    "republika konga": "Republic of the Congo",
+    "czechia": "Czech Republic",
+    "czech republic": "Czech Republic",
+    "timor-leste": "East Timor",
+    "timor leste": "East Timor",
+    "east timor": "East Timor",
+    "gambia": "Gambia The",
+    "the gambia": "Gambia The",
+    "gambia the": "Gambia The",
+    "usa": "United States",
+    "us": "United States",
+    "united states of america": "United States",
+    "uk": "United Kingdom",
+    "uae": "United Arab Emirates",
+    "car": "Central African Republic",
+}
+
+
+def canonical_country_name(name: Any) -> str:
+    clean = normalize(str(name or ""))
+    mapped = COUNTRY_NAME_SYNONYMS.get(clean, clean)
+    return normalize(mapped)
+
 
 VALUE_ALIASES = {
     "baltyk": "Baltic Sea",
@@ -336,19 +369,29 @@ class LocalCountryFacts:
 
     def _target_country(self, conn: sqlite3.Connection, q: str) -> str | None:
         names = [r[0] for r in conn.execute("SELECT app_country_name FROM countries")]
-        return first_mentioned_value(q, names, POLISH_COUNTRY_ALIASES)
-
+        combined_aliases = {**POLISH_COUNTRY_ALIASES, **COUNTRY_NAME_SYNONYMS}
+        return first_mentioned_value(q, names, combined_aliases)
     def _answer_border(self, conn, country, original, q):
         if not any(word in q for word in ("border", "borders", "neighbor", "neighbour", "granic", "sasiad")):
             return None
         target = self._target_country(conn, q)
         if not target:
             return None
-        if target == country["app_country_name"]:
+        if target == country["app_country_name"] or canonical_country_name(target) == canonical_country_name(country["app_country_name"]):
             answer = True
         else:
-            borders = {r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))}
-            answer = target in borders
+            borders = {
+                canonical_country_name(r[0])
+                for r in conn.execute(
+                    """
+                    SELECT border_country_name FROM country_borders WHERE country_id=?
+                    UNION
+                    SELECT c.app_country_name FROM country_borders cb JOIN countries c ON cb.border_cca3 = c.cca3 WHERE cb.country_id=?
+                    """,
+                    (country["id"], country["id"]),
+                )
+            }
+            answer = canonical_country_name(target) in borders
         return LocalAnswer(
             question=f"Does the country border {target}?",
             answer=answer,
@@ -714,7 +757,7 @@ LIST_RELATION_QUERIES = {
     "region": "SELECT region_name FROM country_regions WHERE country_id=?",
     "subregion": "SELECT subregion_name FROM country_subregions WHERE country_id=?",
     "geographic_area": "SELECT region_name FROM country_regions WHERE country_id=? UNION SELECT subregion_name FROM country_subregions WHERE country_id=?",
-    "borders_country": "SELECT border_country_name FROM country_borders WHERE country_id=?",
+    "borders_country": "SELECT border_country_name FROM country_borders WHERE country_id=? UNION SELECT c.app_country_name FROM country_borders cb JOIN countries c ON cb.border_cca3 = c.cca3 WHERE cb.country_id=?",
     "water_access": "SELECT water_body FROM country_water_access WHERE country_id=?",
     "currency": "SELECT currency_name FROM country_currencies WHERE country_id=? UNION SELECT currency_code FROM country_currencies WHERE country_id=? AND currency_code IS NOT NULL",
     "official_language": "SELECT language_name FROM country_languages WHERE country_id=?",
@@ -730,12 +773,17 @@ def find_country(conn: sqlite3.Connection, name: str) -> sqlite3.Row | None:
     if direct:
         return direct
     wanted = normalize(name)
-    for row in conn.execute("SELECT * FROM countries"):
-        if normalize(row["app_country_name"]) == wanted:
-            return row
-    alias = POLISH_COUNTRY_ALIASES.get(wanted)
+    alias = COUNTRY_NAME_SYNONYMS.get(wanted) or POLISH_COUNTRY_ALIASES.get(wanted)
     if alias:
-        return conn.execute("SELECT * FROM countries WHERE app_country_name=?", (alias,)).fetchone()
+        direct = conn.execute("SELECT * FROM countries WHERE app_country_name=?", (alias,)).fetchone()
+        if direct:
+            return direct
+    official = conn.execute("SELECT * FROM countries WHERE official_name=? COLLATE NOCASE", (name,)).fetchone()
+    if official:
+        return official
+    for row in conn.execute("SELECT * FROM countries"):
+        if normalize(row["app_country_name"]) == wanted or normalize(row["official_name"] or "") == wanted:
+            return row
     return None
 
 
@@ -773,7 +821,7 @@ def resolve_ref(
         return entity[SCALAR_RELATION_FIELDS[relation]]
     if relation in LIST_RELATION_QUERIES:
         query = LIST_RELATION_QUERIES[relation]
-        params = (entity["id"], entity["id"]) if relation in {"currency", "geographic_area"} else (entity["id"],)
+        params = (entity["id"],) * query.count("?")
         return [row[0] for row in conn.execute(query, params) if row[0] is not None]
     return None
 
@@ -891,8 +939,15 @@ def evaluate_plan_node(
             if not isinstance(left, list):
                 return None
             right_norm = normalize_value(right)
+            relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
+            if relation == "borders_country":
+                r_canon = canonical_country_name(right_norm)
+                return any(canonical_country_name(normalize_value(value)) == r_canon for value in left)
             return any(normalize_value(value) == right_norm for value in left)
         if operator == "equals":
+            relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
+            if relation in {"name", "borders_country"}:
+                return canonical_country_name(left) == canonical_country_name(right)
             return normalize_value(left) == normalize_value(right)
         if operator in {"starts_with", "ends_with", "contains_text", "has_space"}:
             left_text = normalize(text_value(left) or "")
