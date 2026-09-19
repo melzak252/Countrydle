@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { GameState, Question, Guess } from '../types';
 import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
 import { useAuthStore } from './authStore';
+import toast from 'react-hot-toast';
 
 interface GameData {
   gameState: GameState | null;
@@ -229,6 +230,11 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
       try {
         const question = await service.askQuestion(questionText);
         
+        if (question && question.valid === false) {
+          toast.error(question.explanation || 'Please ask a valid yes/no question.');
+          set({ isLoading: false });
+          return;
+        }
         const { isGuest, dailyDate, gameState, questions, guesses, correctEntity } = get();
         
         if (isGuest && dailyDate && gameState) {
