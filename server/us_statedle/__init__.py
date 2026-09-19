@@ -258,15 +258,28 @@ async def ask_question(
         )
 
         if question_create is None:
-            enh_question = uutils.question_enhanced_from_plan(
-                question.question, planned_question
-            )
-            question_create, question_vector = await uutils.ask_question(
-                enh_question,
-                day_state,
-                None,
-                session,
-            )
+            try:
+                enh_question = uutils.question_enhanced_from_plan(
+                    question.question, planned_question
+                )
+                question_create, question_vector = await uutils.ask_question(
+                    enh_question,
+                    day_state,
+                    None,
+                    session,
+                )
+            except Exception:
+                question_create = USStateQuestionCreate(
+                    user_id=None,
+                    day_id=day_state.id,
+                    original_question=question.question,
+                    question=planned_question.improved_question or question.question,
+                    valid=False,
+                    answer=None,
+                    explanation="Unable to answer this question with available knowledge.",
+                    context="error:unsupported",
+                )
+                question_vector = None
         else:
             question_vector = None
 
@@ -299,13 +312,26 @@ async def ask_question(
     )
 
     if question_create is None:
-        enh_question = uutils.question_enhanced_from_plan(question.question, planned_question)
-        question_create, question_vector = await uutils.ask_question(
-            enh_question,
-            day_state,
-            user,
-            session,
-        )
+        try:
+            enh_question = uutils.question_enhanced_from_plan(question.question, planned_question)
+            question_create, question_vector = await uutils.ask_question(
+                enh_question,
+                day_state,
+                user,
+                session,
+            )
+        except Exception:
+            question_create = USStateQuestionCreate(
+                user_id=user.id,
+                day_id=day_state.id,
+                original_question=question.question,
+                question=planned_question.improved_question or question.question,
+                valid=False,
+                answer=None,
+                explanation="Unable to answer this question with available knowledge.",
+                context="error:unsupported",
+            )
+            question_vector = None
     else:
         question_vector = None
 

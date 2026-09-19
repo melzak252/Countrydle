@@ -140,10 +140,11 @@ Reference format examples:
 {{"entity":"{config.target_entity}","relation":"name"}}
 
 Plan examples:
-{{"operator":"contains_exact","left":{{"entity":"{config.target_entity}","relation":"voivodeship"}},"value":"małopolskie"}}
-{{"operator":"greater_than","left":{{"entity":"{config.target_entity}","relation":"population"}},"right":100000}}
-{{"operator":"starts_with","left":{{"entity":"{config.target_entity}","relation":"name"}},"value":"K"}}
-
+{{"operator":"contains_exact","left":{{"entity":"target_state","relation":"borders_state"}},"value":"Utah"}}
+{{"operator":"contains_exact","left":{{"entity":"target_voivodeship","relation":"borders_voivodeship"}},"value":"małopolskie"}}
+{{"operator":"contains_exact","left":{{"entity":"target_powiat","relation":"borders_country"}},"value":"Czechy"}}
+{{"operator":"greater_than","left":{{"entity":"target_country","relation":"population"}},"right":100000}}
+{{"operator":"starts_with","left":{{"entity":"target_country","relation":"name"}},"value":"K"}}
 Return STRICT JSON only:
 {{
   "valid": true,
@@ -256,6 +257,16 @@ def evaluate(
         if any(v is None for v in values):
             return None
         return True
+    if op in config.list_relations or (isinstance(op, str) and op.startswith("borders_")):
+        rel_name = op if op in config.list_relations else ("borders_state" if "state" in op else ("borders_country" if "country" in op else ("borders_voivodeship" if "voivodeship" in op else "borders_powiat")))
+        rel_items = get_relation_value(conn, config, row, rel_name)
+        if isinstance(rel_items, list):
+            right_node = node.get("right", node.get("value"))
+            right_val = norm(right_node if not isinstance(right_node, dict) else (right_node.get("value") or right_node.get("entity")))
+            if is_self_reference(right_val, row, config):
+                return True
+            return any(norm(v) == right_val for v in rel_items)
+
     if op == "not":
         value = evaluate(conn, config, row, node.get("condition", {}), item_value)
         return None if value is None else not value
@@ -390,8 +401,11 @@ def generate_mode_explanation(
 ) -> str:
     name = row[config.name_column]
     node = plan.plan or {}
+    op = node.get("operator") if isinstance(node, dict) else None
     left = node.get("left", {}) if isinstance(node, dict) else {}
     rel = left.get("relation") if isinstance(left, dict) else None
+    if not rel and isinstance(op, str) and (op in config.list_relations or op.startswith("borders_")):
+        rel = op
     val = node.get("value") or node.get("right") if isinstance(node, dict) else None
 
     if config.language == "Polish":
