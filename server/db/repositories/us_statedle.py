@@ -104,13 +104,44 @@ class USStatedleStateRepository:
         await self.session.refresh(state)
         return state
 
-    async def calc_points(self, state: USStatedleState) -> int:
-        # US States are medium (50 options)
-        question_points = state.remaining_questions * 100
-        guess_points = 150 * (((state.remaining_guesses + 1) ** 2) + 1)
-        difficulty_bonus = 200
-        return question_points + guess_points + difficulty_bonus
+    async def get_current_streak(self, user_id: int) -> int:
+        stmt = (
+            select(USStatedleState)
+            .where(
+                and_(
+                    USStatedleState.user_id == user_id,
+                    USStatedleState.is_game_over == True,
+                )
+            )
+            .order_by(USStatedleState.id.desc())
+        )
+        res = await self.session.execute(stmt)
+        states = res.scalars().all()
+        streak = 0
+        for s in states:
+            if s.won:
+                streak += 1
+            else:
+                break
+        return streak
 
+    async def calc_points(
+        self,
+        state: USStatedleState,
+        elapsed_seconds: int | None = None,
+        streak: int = 0,
+    ) -> int:
+        from game_logic import calculate_points, USSTATEDLE_CONFIG
+        base = calculate_points(
+            config=USSTATEDLE_CONFIG,
+            won=state.won,
+            questions_used=state.questions_asked,
+            guesses_used=state.guesses_made,
+            elapsed_seconds=elapsed_seconds,
+            streak=streak,
+        )
+        # US States medium bonus (+200 for 50 states)
+        return (base + 200) if state.won else 0
     async def get_leaderboard(self, type: str = "monthly") -> List[LeaderboardEntry]:
         if type == "monthly":
             from datetime import date
@@ -243,11 +274,18 @@ class USStatedleStateRepository:
             for state in history_states
         ]
 
+        current_streak = 0
+        for s in history_states:
+            if s.won:
+                current_streak += 1
+            else:
+                break
+
         return GameStatistics(
             points=points,
             wins=wins,
             games_played=games_played,
-            streak=0,  # TODO: Implement streak
+            streak=current_streak,
             history=history_entries,
         )
 

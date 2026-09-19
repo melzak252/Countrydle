@@ -79,7 +79,7 @@ export default function USStatesGamePage() {
                 gameName="US States Game"
                 examples={t('usStatesPage.examples', { returnObjects: true }) as string[]}
                 scoring={{
-                maxPoints: 2500,
+                maxPoints: 3500,
                 details: t('usStatesPage.scoringDetails', { returnObjects: true }) as string[]
                 }}
             />

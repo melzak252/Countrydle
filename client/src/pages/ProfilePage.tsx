@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { gameService, authService } from '../services/api';
-import { Loader2, Trophy, Target, Edit2, Check, X } from 'lucide-react';
+import { Loader2, Trophy, Target, Edit2, Check, X, Flame } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -160,32 +160,41 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center gap-4">
-            <div className="p-3 bg-blue-500/20 text-blue-500 rounded-lg">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <div className="bg-zinc-900 border border-zinc-800 p-4 md:p-6 rounded-xl flex items-center gap-3 md:gap-4">
+            <div className="p-3 bg-blue-500/20 text-blue-500 rounded-lg shrink-0">
                 <Trophy size={24} />
             </div>
             <div>
-                <div className="text-2xl font-bold">{currentStats.points}</div>
-                <div className="text-sm text-zinc-500">{t('profile.totalPoints')}</div>
+                <div className="text-xl md:text-2xl font-bold">{currentStats.points}</div>
+                <div className="text-xs md:text-sm text-zinc-500">{t('profile.totalPoints')}</div>
             </div>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center gap-4">
-            <div className="p-3 bg-green-500/20 text-green-500 rounded-lg">
+        <div className="bg-zinc-900 border border-zinc-800 p-4 md:p-6 rounded-xl flex items-center gap-3 md:gap-4">
+            <div className="p-3 bg-green-500/20 text-green-500 rounded-lg shrink-0">
                 <Check size={24} />
             </div>
             <div>
-                <div className="text-2xl font-bold">{currentStats.wins}</div>
-                <div className="text-sm text-zinc-500">{t('profile.totalWins')}</div>
+                <div className="text-xl md:text-2xl font-bold">{currentStats.wins}</div>
+                <div className="text-xs md:text-sm text-zinc-500">{t('profile.totalWins')}</div>
             </div>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex items-center gap-4">
-            <div className="p-3 bg-purple-500/20 text-purple-500 rounded-lg">
+        <div className="bg-zinc-900 border border-zinc-800 p-4 md:p-6 rounded-xl flex items-center gap-3 md:gap-4">
+            <div className="p-3 bg-purple-500/20 text-purple-500 rounded-lg shrink-0">
                 <Target size={24} />
             </div>
             <div>
-                <div className="text-2xl font-bold">{currentStats.games_played}</div>
-                <div className="text-sm text-zinc-500">{t('profile.gamesPlayed')}</div>
+                <div className="text-xl md:text-2xl font-bold">{currentStats.games_played}</div>
+                <div className="text-xs md:text-sm text-zinc-500">{t('profile.gamesPlayed')}</div>
+            </div>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 p-4 md:p-6 rounded-xl flex items-center gap-3 md:gap-4">
+            <div className="p-3 bg-amber-500/20 text-amber-500 rounded-lg shrink-0">
+                <Flame size={24} />
+            </div>
+            <div>
+                <div className="text-xl md:text-2xl font-bold">{currentStats.streak || 0}</div>
+                <div className="text-xs md:text-sm text-zinc-500">{t('profile.streak')}</div>
             </div>
         </div>
       </div>

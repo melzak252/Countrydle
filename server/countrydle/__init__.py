@@ -153,12 +153,21 @@ async def sync_guest_data(
     state.won = sync_data.state.won
     
     if state.won:
-        state.points = await CountrydleStateRepository(session).calc_points(state)
+        from db.repositories.user import UserRepository
+        user_points = await UserRepository(session).get_user_points(user.id)
+        current_streak = ((user_points.streak if user_points else 0) + 1)
+        elapsed = None
+        for g in sync_data.guesses:
+            if g.elapsed_seconds is not None:
+                elapsed = g.elapsed_seconds
+                break
+        state.points = await CountrydleStateRepository(session).calc_points(
+            state, elapsed_seconds=elapsed, streak=current_streak
+        )
         
     if state.is_game_over:
         from db.repositories.user import UserRepository
         await UserRepository(session).update_points(user.id, state)
-
     await CountrydleStateRepository(session).update_countrydle_state(state)
     
     return await get_state(user, session)
@@ -871,6 +880,8 @@ async def make_guess(
     new_guess = await CountrydleGuessRepository(session).add_guess(guess_create)
 
     # Update State using Repository logic (handles points, game over, etc.)
-    await CountrydleStateRepository(session).guess_made(state, new_guess)
+    await CountrydleStateRepository(session).guess_made(
+        state, new_guess, elapsed_seconds=guess.elapsed_seconds
+    )
 
     return GuessDisplay.model_validate(new_guess)

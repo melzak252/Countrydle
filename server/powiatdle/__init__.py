@@ -123,8 +123,15 @@ async def sync_guest_data(
     state.won = sync_data.state.won
     
     if state.won:
-        state.points = await PowiatdleStateRepository(session).calc_points(state)
-        
+        streak = (await PowiatdleStateRepository(session).get_current_streak(user.id)) + 1
+        elapsed = None
+        for g in sync_data.guesses:
+            if g.elapsed_seconds is not None:
+                elapsed = g.elapsed_seconds
+                break
+        state.points = await PowiatdleStateRepository(session).calc_points(
+            state, elapsed_seconds=elapsed, streak=streak
+        )
     await PowiatdleStateRepository(session).update_state(state)
     
     return await get_state(user, session)
@@ -454,8 +461,10 @@ async def make_guess(
     state.is_game_over = new_game_state.is_game_over
 
     if state.won:
-        state.points = await PowiatdleStateRepository(session).calc_points(state)
-
+        streak = (await PowiatdleStateRepository(session).get_current_streak(user.id)) + 1
+        state.points = await PowiatdleStateRepository(session).calc_points(
+            state, elapsed_seconds=guess.elapsed_seconds, streak=streak
+        )
     await PowiatdleStateRepository(session).update_state(state)
 
     return new_guess

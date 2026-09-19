@@ -29,7 +29,7 @@ class WojewodztwodleStateSchema(BaseModel):
 class WojewodztwoGuessBase(BaseModel):
     guess: str
     wojewodztwo_id: Optional[int] = None
-
+    elapsed_seconds: Optional[int] = None
 
 class WojewodztwoGuessCreate(WojewodztwoGuessBase):
     user_id: int

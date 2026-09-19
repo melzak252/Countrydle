@@ -84,8 +84,8 @@ export const gameService = {
     const response = await api.post('/countrydle/question', { question });
     return response.data;
   },
-  makeGuess: async (guess: string, country_id?: number): Promise<Guess> => {
-    const response = await api.post('/countrydle/guess', { guess, country_id });
+  makeGuess: async (guess: string, country_id?: number, elapsed_seconds?: number): Promise<Guess> => {
+    const response = await api.post('/countrydle/guess', { guess, country_id, elapsed_seconds });
     return response.data;
   },
   getHistory: async (): Promise<any> => {
@@ -115,8 +115,8 @@ export const powiatService = {
     const response = await api.post('/powiatdle/question', { question });
     return response.data;
   },
-  makeGuess: async (guess: string, powiat_id?: number): Promise<any> => {
-    const response = await api.post('/powiatdle/guess', { guess, powiat_id });
+  makeGuess: async (guess: string, powiat_id?: number, elapsed_seconds?: number): Promise<any> => {
+    const response = await api.post('/powiatdle/guess', { guess, powiat_id, elapsed_seconds });
     return response.data;
   },
   getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {
@@ -150,8 +150,8 @@ export const usStateService = {
     const response = await api.post('/us_statedle/question', { question });
     return response.data;
   },
-  makeGuess: async (guess: string, us_state_id?: number): Promise<any> => {
-    const response = await api.post('/us_statedle/guess', { guess, us_state_id });
+  makeGuess: async (guess: string, us_state_id?: number, elapsed_seconds?: number): Promise<any> => {
+    const response = await api.post('/us_statedle/guess', { guess, us_state_id, elapsed_seconds });
     return response.data;
   },
   getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {
@@ -185,8 +185,8 @@ export const wojewodztwoService = {
     const response = await api.post('/wojewodztwodle/question', { question });
     return response.data;
   },
-  makeGuess: async (guess: string, wojewodztwo_id?: number): Promise<any> => {
-    const response = await api.post('/wojewodztwodle/guess', { guess, wojewodztwo_id });
+  makeGuess: async (guess: string, wojewodztwo_id?: number, elapsed_seconds?: number): Promise<any> => {
+    const response = await api.post('/wojewodztwodle/guess', { guess, wojewodztwo_id, elapsed_seconds });
     return response.data;
   },
   getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {

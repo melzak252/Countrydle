@@ -74,7 +74,7 @@ class InvalidQuestionDisplay(BaseModel):
 class GuessBase(BaseModel):
     guess: str
     country_id: int | None = None
-
+    elapsed_seconds: int | None = None
 
 class GuessCreate(GuessBase):
     day_id: int

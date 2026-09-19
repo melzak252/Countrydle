@@ -38,6 +38,7 @@ async def test_sync_guest_data_success(async_client: AsyncClient, mock_user, moc
         patch("db.repositories.countrydle.CountrydleStateRepository.update_countrydle_state", new_callable=AsyncMock) as mock_update_state,
         patch("db.repositories.guess.CountrydleGuessRepository.add_guess", new_callable=AsyncMock) as mock_add_guess,
         patch("db.repositories.countrydle.CountrydleStateRepository.calc_points", new_callable=AsyncMock) as mock_calc_points,
+        patch("db.repositories.user.UserRepository.get_user_points", new_callable=AsyncMock) as mock_get_user_points,
         patch("db.repositories.user.UserRepository.update_points", new_callable=AsyncMock) as mock_update_points,
         patch("sqlalchemy.ext.asyncio.AsyncSession.execute", new_callable=AsyncMock) as mock_execute,
         patch("countrydle.get_state", new_callable=AsyncMock) as mock_get_final_state
@@ -53,6 +54,7 @@ async def test_sync_guest_data_success(async_client: AsyncClient, mock_user, moc
         mock_get_state.return_value = initial_state
         
         mock_calc_points.return_value = 500
+        mock_get_user_points.return_value = None
         
         # Final state response mock
         from schemas.countrydle import CountrydleStateResponse, CountrydleStateSchema

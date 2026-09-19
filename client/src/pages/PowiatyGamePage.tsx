@@ -83,7 +83,7 @@ export default function PowiatyGamePage() {
                 gameName={t('powiatyPage.title')}
                 examples={t('powiatyPage.examples', { returnObjects: true }) as string[]}
                 scoring={{
-                maxPoints: 4750,
+                maxPoints: 3800,
                 details: t('powiatyPage.scoringDetails', { returnObjects: true }) as string[]
                 }}
             />

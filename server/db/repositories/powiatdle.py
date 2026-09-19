@@ -121,13 +121,44 @@ class PowiatdleStateRepository:
         await self.session.refresh(state)
         return state
 
-    async def calc_points(self, state: PowiatdleState) -> int:
-        # Powiaty are hard (380 options), so higher rewards
-        question_points = state.remaining_questions * 150
-        guess_points = 200 * (((state.remaining_guesses + 1) ** 2) + 1)
-        difficulty_bonus = 500
-        return question_points + guess_points + difficulty_bonus
+    async def get_current_streak(self, user_id: int) -> int:
+        stmt = (
+            select(PowiatdleState)
+            .where(
+                and_(
+                    PowiatdleState.user_id == user_id,
+                    PowiatdleState.is_game_over == True,
+                )
+            )
+            .order_by(PowiatdleState.id.desc())
+        )
+        res = await self.session.execute(stmt)
+        states = res.scalars().all()
+        streak = 0
+        for s in states:
+            if s.won:
+                streak += 1
+            else:
+                break
+        return streak
 
+    async def calc_points(
+        self,
+        state: PowiatdleState,
+        elapsed_seconds: int | None = None,
+        streak: int = 0,
+    ) -> int:
+        from game_logic import calculate_points, POWIATDLE_CONFIG
+        base = calculate_points(
+            config=POWIATDLE_CONFIG,
+            won=state.won,
+            questions_used=state.questions_asked,
+            guesses_used=state.guesses_made,
+            elapsed_seconds=elapsed_seconds,
+            streak=streak,
+        )
+        # Powiaty difficulty bonus (+500 for solving one of 380 counties)
+        return (base + 500) if state.won else 0
     async def get_leaderboard(self, type: str = "monthly") -> List[LeaderboardEntry]:
         if type == "monthly":
             from datetime import date
@@ -258,11 +289,18 @@ class PowiatdleStateRepository:
             for state in history_states
         ]
 
+        current_streak = 0
+        for s in history_states:
+            if s.won:
+                current_streak += 1
+            else:
+                break
+
         return GameStatistics(
             points=points,
             wins=wins,
             games_played=games_played,
-            streak=0,  # TODO: Implement streak
+            streak=current_streak,
             history=history_entries,
         )
 
