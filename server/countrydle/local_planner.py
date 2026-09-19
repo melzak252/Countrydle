@@ -283,6 +283,12 @@ User question: {question}
 
 
 def analyze_question_for_local_plan(question: str) -> QuestionPlan:
+    from utils.plan_cache import plan_cache
+
+    cached = plan_cache.get("countrydle", question)
+    if cached is not None:
+        return cached
+
     load_dotenv_if_present()
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -340,7 +346,7 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
             fallback_reason="Gemini planner returned invalid JSON.",
         )
 
-    return QuestionPlan(
+    plan = QuestionPlan(
         original_question=question,
         valid=bool(parsed.get("valid")),
         supported=bool(parsed.get("supported")),
@@ -349,3 +355,5 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
         plan=parsed.get("plan"),
         fallback_reason=parsed.get("fallback_reason"),
     )
+    plan_cache.set("countrydle", question, plan)
+    return plan

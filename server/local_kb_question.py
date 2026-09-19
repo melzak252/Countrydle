@@ -88,6 +88,12 @@ def gemini_json(prompt: str, max_output_tokens: int = 1024) -> dict[str, Any]:
 
 
 def analyze_question(question: str, config: LocalModeConfig) -> QuestionPlan:
+    from utils.plan_cache import plan_cache
+
+    cached = plan_cache.get(config.mode_name, question)
+    if cached is not None:
+        return cached
+
     relations = "\n".join(f"- {r}" for r in config.supported_relations)
     prompt = f"""
 You are a validator and planner for a yes/no guessing game.
@@ -157,7 +163,7 @@ Unsupported format:
 User question: {question}
 """.strip()
     data = gemini_json(prompt)
-    return QuestionPlan(
+    plan = QuestionPlan(
         original_question=question,
         valid=bool(data.get("valid")),
         supported=bool(data.get("supported")),
@@ -166,6 +172,8 @@ User question: {question}
         plan=data.get("plan"),
         fallback_reason=data.get("fallback_reason"),
     )
+    plan_cache.set(config.mode_name, question, plan)
+    return plan
 
 
 def norm(value: Any) -> str:
