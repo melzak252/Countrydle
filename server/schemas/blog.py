@@ -13,6 +13,7 @@ class BlogPostSummary(BaseModel):
     reading_time_minutes: int
     summary: str
     country_name: str
+    country_code: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

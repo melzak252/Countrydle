@@ -100,30 +100,47 @@ export default function BlogPostPage() {
           </button>
         </div>
 
-        {/* Article Header */}
-        <header className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-zinc-400">
-            <span className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-300 font-bold uppercase tracking-wider">
-              {post.country_name}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Calendar size={13} />
-              {post.date}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={13} />
-              {post.reading_time_minutes} {t('blog.minRead', 'min read')}
-            </span>
+        {/* Article Header with Flag Hero Background */}
+        <header className="relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-3xl p-8 md:p-10 shadow-2xl space-y-4">
+          {post.country_code && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none scale-105 filter saturate-150"
+              style={{ backgroundImage: `url(https://flagcdn.com/w1280/${post.country_code.toLowerCase()}.png)` }}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-900/60 pointer-events-none" />
+
+          <div className="relative z-10 space-y-4">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-zinc-400">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/20 text-blue-300 font-bold uppercase tracking-wider">
+                {post.country_code && (
+                  <img
+                    src={`https://flagcdn.com/w40/${post.country_code.toLowerCase()}.png`}
+                    className="w-5 h-3.5 object-cover rounded-sm shadow-sm border border-white/20"
+                    alt={post.country_name}
+                  />
+                )}
+                <span>{post.country_name}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Calendar size={13} />
+                {post.date}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <Clock size={13} />
+                {post.reading_time_minutes} {t('blog.minRead', 'min read')}
+              </span>
+            </div>
+
+            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight">
+              {post.title}
+            </h1>
+
+            <p className="text-zinc-300 text-base md:text-lg leading-relaxed">
+              {post.subtitle}
+            </p>
           </div>
-
-          <h1 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight">
-            {post.title}
-          </h1>
-
-          <p className="text-zinc-300 text-base md:text-lg leading-relaxed">
-            {post.subtitle}
-          </p>
         </header>
 
         {/* Daily Player Statistics */}

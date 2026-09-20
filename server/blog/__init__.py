@@ -10,6 +10,7 @@ from db.repositories.blog import BlogRepository
 from db.repositories.countrydle import CountrydleRepository
 from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary
 from utils.blog_generator import create_daily_blog_post
+from utils.country_codes import get_country_code
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ async def list_blog_posts(
             reading_time_minutes=p.reading_time_minutes,
             summary=p.summary,
             country_name=p.country.name if p.country else "Unknown",
+            country_code=get_country_code(p.country.name if p.country else ""),
             created_at=p.created_at or datetime.now(),
         )
         for p in posts
@@ -70,6 +72,7 @@ async def get_latest_blog_post(session: AsyncSession = Depends(get_db)):
         deduction_masterclass=post.deduction_masterclass,
         content_markdown=post.content_markdown,
         country_name=post.country.name if post.country else "Unknown",
+        country_code=get_country_code(post.country.name if post.country else ""),
         country=post.country,
         player_stats=stats,
         created_at=post.created_at or datetime.now(),
@@ -112,6 +115,7 @@ async def get_blog_post(slug_or_date: str, session: AsyncSession = Depends(get_d
         deduction_masterclass=post.deduction_masterclass,
         content_markdown=post.content_markdown,
         country_name=post.country.name if post.country else "Unknown",
+        country_code=get_country_code(post.country.name if post.country else ""),
         country=post.country,
         player_stats=stats,
         created_at=post.created_at or datetime.now(),
