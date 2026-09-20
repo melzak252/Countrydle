@@ -73,6 +73,15 @@ const resources = {
         noPosts: 'No daily blog posts found matching your search.',
         latestBadge: 'Yesterday\'s Solution',
       },
+      share: {
+        solvedTitle: 'Daily Challenge Solved!',
+        gameOverTitle: 'Challenge Ended',
+        copied: 'Result copied to clipboard!',
+        shareBtn: 'Share Result',
+        copiedBtn: 'Copied!',
+        copyBtn: 'Copy Card',
+        readBlogCta: 'Read Wikipedia trivia & deduction breakdown on our Daily Blog',
+      },
       cookie: {
         title: 'We use cookies',
         message:
@@ -396,6 +405,15 @@ const resources = {
         deductionStrategy: 'Mistrzowska Ścieżka Dedukcji',
         noPosts: 'Nie znaleziono wpisów pasujących do wyszukiwania.',
         latestBadge: 'Wczorajsze Rozwiązanie',
+      },
+      share: {
+        solvedTitle: 'Wyzwanie Rozwiązane!',
+        gameOverTitle: 'Koniec Gry',
+        copied: 'Wynik skopiowany do schowka!',
+        shareBtn: 'Udostępnij',
+        copiedBtn: 'Skopiowano!',
+        copyBtn: 'Kopiuj kartę',
+        readBlogCta: 'Przeczytaj ciekawostki z Wikipedii i analizę na naszym Blogu',
       },
       cookie: {
         title: 'Uzywamy cookies',
