@@ -1229,10 +1229,66 @@ def generate_factual_explanation(
         gov = country["government_type"]
         return f"Ustrojem politycznym {name} jest: {gov}." if is_polish else f"The government type of {name} is {gov}."
 
+    # Handle starts_with single letter questions
+    if rel == "name" and plan.get("operator") == "starts_with" and target_val:
+        first_letter = name[0].upper()
+        val_u = str(target_val).upper()
+        if answer:
+            return f"Nazwa {name} zaczyna się na literę '{val_u}'." if is_polish else f"The name {name} starts with the letter '{val_u}'."
+        else:
+            return f"Nazwa {name} zaczyna się na literę '{first_letter}', a nie '{val_u}'." if is_polish else f"The name {name} starts with the letter '{first_letter}', not '{val_u}'."
+
+    # Handle OR of starts_with (letter ranges)
+    if plan.get("operator") == "or":
+        conds = plan.get("conditions", [])
+        if conds and all(isinstance(c, dict) and c.get("operator") == "starts_with" for c in conds):
+            letters = [str(c.get("right", {}).get("value") or "").strip().upper() for c in conds if isinstance(c.get("right"), dict)]
+            first_letter = name[0].upper()
+            if len(letters) > 1:
+                letters_sorted = sorted(set(letters))
+                first_let = letters_sorted[0]
+                last_let = letters_sorted[-1]
+                range_str = f"{first_let}–{last_let}" if len(letters_sorted) > 2 else ", ".join(letters_sorted)
+                if answer:
+                    return f"Nazwa {name} zaczyna się na literę '{first_letter}' (w przedziale {range_str})." if is_polish else f"The name {name} starts with '{first_letter}' (within the range {range_str})."
+                else:
+                    return f"Nazwa {name} zaczyna się na literę '{first_letter}' (poza przedziałem {range_str})." if is_polish else f"The name {name} starts with '{first_letter}' (outside the range {range_str})."
+
     if is_polish:
         return f"Odpowiedź {'TAK' if answer else 'NIE'} wynika z faktów geograficznych o państwie: {name}."
     return f"The answer is {'YES' if answer else 'NO'} based on verified geographical facts about {name}."
 
+
+def normalize_letter_range_plan(plan: dict) -> dict:
+    if not isinstance(plan, dict):
+        return plan
+
+    op = plan.get("operator")
+    conditions = plan.get("conditions")
+
+    if isinstance(conditions, list):
+        plan["conditions"] = [normalize_letter_range_plan(c) for c in conditions]
+
+    # Detect impossible AND of starts_with conditions:
+    # e.g. AND [ starts_with(A), OR [ starts_with(B)... ] ]
+    if op == "and" and isinstance(conditions, list) and len(conditions) == 2:
+        c1, c2 = conditions[0], conditions[1]
+        sw_node = None
+        or_node = None
+        if c1.get("operator") == "starts_with" and c2.get("operator") == "or":
+            sw_node, or_node = c1, c2
+        elif c2.get("operator") == "starts_with" and c1.get("operator") == "or":
+            sw_node, or_node = c2, c1
+
+        if sw_node and or_node:
+            sub_conds = or_node.get("conditions", [])
+            if sub_conds and all(isinstance(sc, dict) and sc.get("operator") == "starts_with" for sc in sub_conds):
+                return {
+                    "operator": "or",
+                    "conditions": [sw_node] + sub_conds,
+                }
+
+    return plan
 
 def execute_local_plan(
     plan: dict,
@@ -1248,6 +1304,7 @@ def execute_local_plan(
         if country is None:
             return None
         plan = normalize_geographic_area_plan(conn, plan) or plan
+        plan = normalize_letter_range_plan(plan) or plan
         answer = evaluate_plan_node(conn, plan, country)
         if answer is None:
             return None

@@ -410,6 +410,29 @@ def test_every_simple_operator_is_evaluated_locally():
         assert answer.answer is expected, (operator, relation, country)
 
 
+def test_letter_range_normalization_and_answering():
+    contradictory_and_plan = {
+        "operator": "and",
+        "conditions": [
+            {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "A"}},
+            {
+                "operator": "or",
+                "conditions": [
+                    {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "B"}},
+                    {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "M"}},
+                ]
+            }
+        ]
+    }
+    ans = local_answer(contradictory_and_plan, "Antigua and Barbuda")
+    assert ans is not None
+    assert ans.answer is True
+    assert "starts with 'A'" in ans.explanation
+
+    ans_poland = local_answer(contradictory_and_plan, "Poland")
+    assert ans_poland is not None
+    assert ans_poland.answer is False
+
 def test_nested_boolean_not_any_and_all_operators():
     not_in_eu = {
         "operator": "not",

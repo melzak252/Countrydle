@@ -151,6 +151,11 @@ Super-region rules:
   "Iberian Peninsula", and "Mediterranean".
 
 
+Alphabet and Letter Range rules:
+- When the user asks if the country name starts with a letter within an alphabet range (e.g. "from A to M", "between N and Z", "first half of the alphabet"):
+  Use operator "or" with "starts_with" for EACH letter in the range (inclusive).
+  NEVER combine single-letter starts_with conditions with "and".
+
 Flag and historical union rules:
 - Use "flag_color" for questions about colors on the national flag. Allowed values:
   "red", "white", "blue", "green", "yellow", "black", "orange".
@@ -288,6 +293,33 @@ User: Czy państwo zaczyna się na literę M?
     "operator": "starts_with",
     "left": {{"entity": "target_country", "relation": "name"}},
     "right": {{"value": "M"}}
+  }},
+  "fallback_reason": null
+}}
+
+User: Czy nazwa tego kraju zaczyna się na literę w przedziale od A do M?
+{{
+  "valid": true,
+  "supported": true,
+  "improved_question": "Does the country name start with a letter between A and M (inclusive)?",
+  "explanation": "The user wants to check whether the hidden country's name begins with a letter from A through M.",
+  "plan": {{
+    "operator": "or",
+    "conditions": [
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "A"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "B"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "C"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "D"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "E"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "F"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "G"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "H"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "I"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "J"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "K"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "L"}}}},
+      {{"operator": "starts_with", "left": {{"entity": "target_country", "relation": "name"}}, "right": {{"value": "M"}}}}
+    ]
   }},
   "fallback_reason": null
 }}
