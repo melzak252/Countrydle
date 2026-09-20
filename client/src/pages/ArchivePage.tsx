@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
-import { Loader2, Calendar, Globe, Map, Flag, MapPin } from 'lucide-react';
+import { Loader2, Calendar, Globe, Map, Flag, MapPin, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 
@@ -92,7 +93,18 @@ export default function ArchivePage() {
                     {entry.date}
                   </td>
                   <td className="px-6 py-4 text-right font-bold text-white">
-                    {getEntityName(entry)}
+                    {gameType === 'country' ? (
+                      <Link
+                        to={`/blog/${entry.date}`}
+                        className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors group"
+                        title="Read Wikipedia trivia and daily recap"
+                      >
+                        <span>{getEntityName(entry)}</span>
+                        <ArrowRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    ) : (
+                      getEntityName(entry)
+                    )}
                   </td>
                 </tr>
               ))}

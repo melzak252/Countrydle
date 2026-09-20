@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Globe, 
   Trophy, 
@@ -6,7 +6,9 @@ import {
   Search, 
   MapPin, 
   Map as MapIcon,
-  Flag
+  Flag,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -298,6 +300,34 @@ export default function HomePage() {
             <p className="text-zinc-400 text-xs leading-relaxed">
               +50 pts per consecutive day played, scaling up to a 500 pt bonus for a 10-day streak.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Daily Blog Featurette */}
+      <section className="mt-28">
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-950/40 via-zinc-900 to-teal-950/30 border border-blue-500/30 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-4 max-w-2xl text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider">
+              <BookOpen size={14} />
+              Educational Recaps
+            </div>
+            <h3 className="text-2xl md:text-4xl font-black text-white leading-tight">
+              Missed yesterday's mystery country? Read the daily recap!
+            </h3>
+            <p className="text-zinc-300 text-sm md:text-base leading-relaxed">
+              Every day at midnight UTC, we reveal yesterday's solution with 3 fascinating Wikipedia curiosities, optimal deduction walkthroughs, and community solve statistics.
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <Link
+              to="/blog"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl shadow-blue-500/25 transition-all text-sm md:text-base hover:scale-105"
+            >
+              <span>Explore Daily Blog</span>
+              <ArrowRight size={18} />
+            </Link>
           </div>
         </div>
       </section>
