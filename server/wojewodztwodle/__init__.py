@@ -416,11 +416,11 @@ async def make_guess(
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
+    if not day_state:
+        day_state = await WojewodztwodleDayRepository(session).generate_new_day_wojewodztwo()
     
-    target_wojewodztwo = day_state.wojewodztwo
-    if not target_wojewodztwo and day_state.wojewodztwo_id:
-        from db.repositories.wojewodztwo import WojewodztwoRepository
-        target_wojewodztwo = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
+    from db.repositories.wojewodztwo import WojewodztwoRepository
+    target_wojewodztwo = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
 
     is_correct = False
     if guess.wojewodztwo_id:

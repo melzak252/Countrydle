@@ -432,11 +432,11 @@ async def make_guess(
     session: AsyncSession = Depends(get_db),
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
+    if not day_state:
+        day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
     
-    target_state = day_state.us_state
-    if not target_state and day_state.us_state_id:
-        from db.repositories.us_state import USStateRepository
-        target_state = await USStateRepository(session).get(day_state.us_state_id)
+    from db.repositories.us_state import USStateRepository
+    target_state = await USStateRepository(session).get(day_state.us_state_id)
 
     is_correct = False
     if guess.us_state_id:

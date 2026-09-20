@@ -407,12 +407,11 @@ async def make_guess(
     session: AsyncSession = Depends(get_db),
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
-    
-    target_powiat = day_powiat.powiat
-    if not target_powiat and day_powiat.powiat_id:
-        from db.repositories.powiat import PowiatRepository
-        target_powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
+    if not day_powiat:
+        day_powiat = await PowiatdleDayRepository(session).generate_new_day_powiat()
 
+    from db.repositories.powiatdle import PowiatRepository
+    target_powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
     is_correct = False
     if guess.powiat_id:
         is_correct = guess.powiat_id == day_powiat.powiat_id

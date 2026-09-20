@@ -824,9 +824,7 @@ async def make_guess(
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()
-    target_country = daily_country.country
-    if not target_country and daily_country.country_id:
-        target_country = await CountryRepository(session).get(daily_country.country_id)
+    target_country = await CountryRepository(session).get(daily_country.country_id)
 
     # Check if guess is correct (by ID or by case-insensitive name match)
     is_correct = False
