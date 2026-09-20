@@ -300,7 +300,7 @@ class WojewodztwodleGuessRepository:
     async def add_guess(
         self, guess_create: WojewodztwoGuessCreate
     ) -> WojewodztwodleGuess:
-        new_guess = WojewodztwodleGuess(**guess_create.model_dump())
+        new_guess = WojewodztwodleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
         self.session.add(new_guess)
         await self.session.commit()
         await self.session.refresh(new_guess)

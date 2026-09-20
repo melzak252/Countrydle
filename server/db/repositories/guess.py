@@ -18,8 +18,7 @@ class CountrydleGuessRepository:
         return result.scalars().first()
 
     async def add_guess(self, guess: GuessCreate) -> CountrydleGuess:
-        new_entry = CountrydleGuess(**guess.model_dump(exclude={"country_id"}))
-
+        new_entry = CountrydleGuess(**guess.model_dump(exclude={"country_id", "elapsed_seconds"}))
         self.session.add(new_entry)
 
         try:

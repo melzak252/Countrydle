@@ -310,7 +310,7 @@ class PowiatdleGuessRepository:
         self.session = session
 
     async def add_guess(self, guess_create: PowiatGuessCreate) -> PowiatdleGuess:
-        new_guess = PowiatdleGuess(**guess_create.model_dump())
+        new_guess = PowiatdleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
         self.session.add(new_guess)
         await self.session.commit()
         await self.session.refresh(new_guess)
