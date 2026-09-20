@@ -7,6 +7,7 @@ import PowiatyMap from '../components/PowiatyMap';
 import GameInstructions from '../components/GameInstructions';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import ShareResultCard from '../components/ShareResultCard';
 
 export default function PowiatyGamePage() {
   const { 
@@ -21,7 +22,8 @@ export default function PowiatyGamePage() {
     askQuestion, 
     makeGuess,
     syncGuestData,
-    isGuest
+    isGuest,
+    dailyDate,
   } = usePowiatyGameStore();
 
   const { t } = useTranslation();
@@ -103,21 +105,20 @@ export default function PowiatyGamePage() {
                 />
             </div>
 
-            {/* Game Over State */}
+            {/* Game Over State & Share Result Card */}
             {gameState.is_game_over && (
-              <div className={`text-center p-4 rounded-xl ${gameState.won ? 'bg-green-900/20 border border-green-500/50' : 'bg-red-900/20 border border-red-500/50'} animate-in fade-in zoom-in-95 duration-300`}>
-                <h2 className="text-2xl font-bold mb-2">
-                  {gameState.won ? t('powiatyPage.won') : t('powiatyPage.gameOver')}
-                </h2>
-                <p className="text-sm mb-2 opacity-90">
-                  {gameState.won 
-                    ? t('powiatyPage.wonMessage')
-                    : t('powiatyPage.lostMessage')}
-                </p>
-                 {gameState.is_game_over && (correctPowiat || guesses.find(g => g.answer)?.guess) && (
-                    <p className="text-base">{t('powiatyPage.answer')} <span className="font-bold">{correctPowiat?.nazwa || guesses.find(g => g.answer)?.guess}</span></p>
-                 )}
-              </div>
+              <ShareResultCard
+                gameName="Powiatdle"
+                gamePath="/powiaty"
+                date={dailyDate}
+                won={gameState.won}
+                points={gameState.points}
+                questionsAsked={gameState.questions_asked}
+                maxQuestions={15}
+                guessesMade={gameState.guesses_made}
+                maxGuesses={3}
+                targetName={correctPowiat?.nazwa || guesses.find(g => g.answer)?.guess}
+              />
             )}
 
             {/* Input Section - Only for Mobile now */}

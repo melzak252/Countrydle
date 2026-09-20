@@ -7,6 +7,7 @@ import WojewodztwaMap from '../components/WojewodztwaMap';
 import GameInstructions from '../components/GameInstructions';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import ShareResultCard from '../components/ShareResultCard';
 
 export default function WojewodztwaGamePage() {
   const { 
@@ -21,7 +22,8 @@ export default function WojewodztwaGamePage() {
     askQuestion, 
     makeGuess,
     syncGuestData,
-    isGuest
+    isGuest,
+    dailyDate,
   } = useWojewodztwaGameStore();
 
   const { t } = useTranslation();
@@ -100,21 +102,20 @@ export default function WojewodztwaGamePage() {
                 <WojewodztwaMap correctWojewodztwoName={gameState.is_game_over ? correctWojewodztwo?.nazwa : undefined} className="h-full" />
             </div>
 
-            {/* Game Over State */}
+            {/* Game Over State & Share Result Card */}
             {gameState.is_game_over && (
-              <div className={`text-center p-4 rounded-xl ${gameState.won ? 'bg-green-900/20 border border-green-500/50' : 'bg-red-900/20 border border-red-500/50'} animate-in fade-in zoom-in-95 duration-300`}>
-                <h2 className="text-2xl font-bold mb-2">
-                  {gameState.won ? t('wojewodztwaPage.won') : t('wojewodztwaPage.gameOver')}
-                </h2>
-                <p className="text-sm mb-2 opacity-90">
-                  {gameState.won 
-                    ? t('wojewodztwaPage.wonMessage')
-                    : t('wojewodztwaPage.lostMessage')}
-                </p>
-                 {gameState.is_game_over && (correctWojewodztwo || guesses.find(g => g.answer)?.guess) && (
-                    <p className="text-base">{t('wojewodztwaPage.answer')} <span className="font-bold">{correctWojewodztwo?.nazwa || guesses.find(g => g.answer)?.guess}</span></p>
-                 )}
-              </div>
+              <ShareResultCard
+                gameName="Województwodle"
+                gamePath="/wojewodztwa"
+                date={dailyDate}
+                won={gameState.won}
+                points={gameState.points}
+                questionsAsked={gameState.questions_asked}
+                maxQuestions={5}
+                guessesMade={gameState.guesses_made}
+                maxGuesses={2}
+                targetName={correctWojewodztwo?.nazwa || guesses.find(g => g.answer)?.guess}
+              />
             )}
 
             {/* Input Section - Only for Mobile now */}

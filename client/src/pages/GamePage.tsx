@@ -7,6 +7,7 @@ import MapBox from '../components/MapBox';
 import GameInstructions from '../components/GameInstructions';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import ShareResultCard from '../components/ShareResultCard';
 
 export default function GamePage() {
   const { 
@@ -21,7 +22,8 @@ export default function GamePage() {
     askQuestion, 
     makeGuess,
     syncGuestData,
-    isGuest
+    isGuest,
+    dailyDate,
   } = useGameStore();
   const { t } = useTranslation();
 
@@ -98,20 +100,20 @@ export default function GamePage() {
             </div>
 
             {/* Game Over Message */}
+            {/* Game Over Message & Share Result Card */}
             {gameState.is_game_over && (
-              <div className={`text-center p-4 rounded-xl ${gameState.won ? 'bg-green-900/20 border border-green-500/50' : 'bg-red-900/20 border border-red-500/50'} animate-in fade-in zoom-in-95 duration-300`}>
-                <h2 className="text-xl md:text-2xl font-bold mb-2">
-                  {gameState.won ? t('gamePage.won') : t('gamePage.gameOver')}
-                </h2>
-                <p className="text-sm md:text-base mb-2 opacity-90">
-                  {gameState.won 
-                    ? t('gamePage.wonMessage')
-                    : t('gamePage.lostMessage')}
-                </p>
-                 {gameState.is_game_over && (correctCountry || guesses.find(g => g.answer)?.guess) && (
-                    <p className="text-sm md:text-base">{t('gamePage.answer')} <span className="font-bold">{correctCountry?.name || guesses.find(g => g.answer)?.guess}</span></p>
-                 )}
-              </div>
+              <ShareResultCard
+                gameName="Countrydle"
+                gamePath="/game"
+                date={dailyDate}
+                won={gameState.won}
+                points={gameState.points}
+                questionsAsked={gameState.questions_asked}
+                maxQuestions={10}
+                guessesMade={gameState.guesses_made}
+                maxGuesses={3}
+                targetName={correctCountry?.name || guesses.find(g => g.answer)?.guess}
+              />
             )}
 
             {/* Input Section - Only for Mobile now */}
