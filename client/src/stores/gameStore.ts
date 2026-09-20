@@ -299,8 +299,23 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
           };
 
           let correctEntity = get().correctEntity;
-          if (isCorrect && entityId) {
-            correctEntity = entities.find(e => e.id === entityId) || null;
+          if (isCorrect) {
+            if (entityId) {
+              correctEntity = entities.find(e => e.id === entityId) || null;
+            }
+            if (!correctEntity) {
+              const q = guessText.trim().toLowerCase();
+              correctEntity = entities.find(e => (e.name || (e as any).nazwa || '').toLowerCase() === q) || null;
+            }
+            const maxQ = gameLimits[gameType].maxQuestions;
+            const maxG = gameLimits[gameType].maxGuesses;
+            const qRatio = Math.max(0, (maxQ - newGameState.questions_asked) / maxQ);
+            const qBonus = Math.round(1500 * Math.pow(qRatio, 1.5));
+            const gRatio = Math.max(0, (maxG - newGameState.guesses_made + 1) / maxG);
+            const gBonus = Math.round(500 * gRatio);
+            const speedBonus = elapsed_seconds !== undefined ? Math.max(0, Math.min(300, 300 - elapsed_seconds)) : 0;
+            const difficultyBonus = gameType === 'powiaty' ? 500 : gameType === 'us_states' ? 200 : 0;
+            newGameState.points = 500 + qBonus + gBonus + speedBonus + 50 + difficultyBonus;
           } else if (newGameState.is_game_over && service.reveal) {
             try {
               correctEntity = await service.reveal();

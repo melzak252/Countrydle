@@ -417,11 +417,20 @@ async def make_guess(
 ):
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
     
+    target_wojewodztwo = day_state.wojewodztwo
+    if not target_wojewodztwo and day_state.wojewodztwo_id:
+        from db.repositories.wojewodztwo import WojewodztwoRepository
+        target_wojewodztwo = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
+
+    is_correct = False
+    if guess.wojewodztwo_id:
+        is_correct = guess.wojewodztwo_id == day_state.wojewodztwo_id
+    if not is_correct and guess.guess and target_wojewodztwo:
+        is_correct = guess.guess.strip().lower() == target_wojewodztwo.nazwa.strip().lower()
+        if is_correct:
+            guess.wojewodztwo_id = day_state.wojewodztwo_id
+
     if user is None:
-        is_correct = False
-        if guess.wojewodztwo_id:
-            is_correct = guess.wojewodztwo_id == day_state.wojewodztwo_id
-            
         cookie = request.cookies.get("guest_wojewodztwodle")
         guest_state = read_guest_game_token(cookie, "wojewodztwodle", day_state.id)
         guesses_count = guest_state["guesses_count"] + 1
@@ -447,11 +456,6 @@ async def make_guess(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No more guesses left or game over!",
         )
-
-    is_correct = False
-    if guess.wojewodztwo_id:
-        is_correct = guess.wojewodztwo_id == day_state.wojewodztwo_id
-
     guess_create = WojewodztwoGuessCreate(
         guess=guess.guess,
         wojewodztwo_id=guess.wojewodztwo_id,

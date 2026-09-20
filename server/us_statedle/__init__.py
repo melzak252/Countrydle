@@ -433,11 +433,20 @@ async def make_guess(
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     
+    target_state = day_state.us_state
+    if not target_state and day_state.us_state_id:
+        from db.repositories.us_state import USStateRepository
+        target_state = await USStateRepository(session).get(day_state.us_state_id)
+
+    is_correct = False
+    if guess.us_state_id:
+        is_correct = guess.us_state_id == day_state.us_state_id
+    if not is_correct and guess.guess and target_state:
+        is_correct = guess.guess.strip().lower() == target_state.name.strip().lower()
+        if is_correct:
+            guess.us_state_id = day_state.us_state_id
+
     if user is None:
-        is_correct = False
-        if guess.us_state_id:
-            is_correct = guess.us_state_id == day_state.us_state_id
-            
         cookie = request.cookies.get("guest_us_statedle")
         guest_state = read_guest_game_token(cookie, "us_statedle", day_state.id)
         guesses_count = guest_state["guesses_count"] + 1
@@ -462,11 +471,6 @@ async def make_guess(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No more guesses left or game over!",
         )
-
-    is_correct = False
-    if guess.us_state_id:
-        is_correct = guess.us_state_id == day_state.us_state_id
-
     guess_create = USStateGuessCreate(
         guess=guess.guess,
         us_state_id=guess.us_state_id,

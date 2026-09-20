@@ -824,12 +824,23 @@ async def make_guess(
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()
+    target_country = daily_country.country
+    if not target_country and daily_country.country_id:
+        target_country = await CountryRepository(session).get(daily_country.country_id)
+
+    # Check if guess is correct (by ID or by case-insensitive name match)
+    is_correct = False
+    if guess.country_id is not None and guess.country_id > 0:
+        is_correct = guess.country_id == daily_country.country_id
+    if not is_correct and guess.guess and target_country:
+        guessed_clean = guess.guess.strip().lower()
+        target_clean = target_country.name.strip().lower()
+        official_clean = (target_country.official_name or "").strip().lower()
+        is_correct = (guessed_clean == target_clean) or (guessed_clean == official_clean)
+        if is_correct:
+            guess.country_id = daily_country.country_id
 
     if user is None:
-        is_correct = False
-        if guess.country_id is not None:
-            is_correct = guess.country_id == daily_country.country_id
-            
         cookie = request.cookies.get("guest_countrydle")
         guest_state = read_guest_game_token(cookie, "countrydle", daily_country.id)
         guesses_count = guest_state["guesses_count"] + 1
@@ -861,12 +872,6 @@ async def make_guess(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User has no more guesses left or game is over!",
         )
-
-    # Check if guess is correct
-    is_correct = False
-
-    if guess.country_id is not None:
-        is_correct = guess.country_id == daily_country.country_id
 
     # Create Guess entry
     guess_create = GuessCreate(

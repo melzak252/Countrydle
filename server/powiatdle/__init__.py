@@ -408,11 +408,20 @@ async def make_guess(
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
     
+    target_powiat = day_powiat.powiat
+    if not target_powiat and day_powiat.powiat_id:
+        from db.repositories.powiat import PowiatRepository
+        target_powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
+
+    is_correct = False
+    if guess.powiat_id:
+        is_correct = guess.powiat_id == day_powiat.powiat_id
+    if not is_correct and guess.guess and target_powiat:
+        is_correct = guess.guess.strip().lower() == target_powiat.nazwa.strip().lower()
+        if is_correct:
+            guess.powiat_id = day_powiat.powiat_id
+
     if user is None:
-        is_correct = False
-        if guess.powiat_id:
-            is_correct = guess.powiat_id == day_powiat.powiat_id
-            
         cookie = request.cookies.get("guest_powiatdle")
         guest_state = read_guest_game_token(cookie, "powiatdle", day_powiat.id)
         guesses_count = guest_state["guesses_count"] + 1
@@ -438,10 +447,6 @@ async def make_guess(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No more guesses left or game over!",
         )
-
-    is_correct = False
-    if guess.powiat_id:
-        is_correct = guess.powiat_id == day_powiat.powiat_id
 
     guess_create = PowiatGuessCreate(
         guess=guess.guess,
