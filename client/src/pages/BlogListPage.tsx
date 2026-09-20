@@ -97,11 +97,11 @@ export default function BlogListPage() {
                 {/* Ambient Flag Background with Vignette Gradient */}
                 {featuredPost.country_code && (
                   <div
-                    className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none scale-105 filter saturate-150 transition-all duration-700 group-hover:scale-110 group-hover:opacity-25"
+                    className="absolute inset-0 bg-cover bg-right md:bg-center opacity-35 pointer-events-none scale-105 filter saturate-125 transition-all duration-700 group-hover:scale-110 group-hover:opacity-50"
                     style={{ backgroundImage: `url(https://flagcdn.com/w1280/${featuredPost.country_code.toLowerCase()}.png)` }}
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-blue-950/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/75 to-transparent pointer-events-none" />
 
                 <div className="relative z-10">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -167,12 +167,12 @@ export default function BlogListPage() {
                     {/* Flag Ambient Background with Smooth Zoom on Hover */}
                     {post.country_code && (
                       <div
-                        className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-30 transition-all duration-500 scale-100 group-hover:scale-110 pointer-events-none filter saturate-150"
+                        className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-50 transition-all duration-500 scale-100 group-hover:scale-110 pointer-events-none filter saturate-125"
                         style={{ backgroundImage: `url(https://flagcdn.com/w640/${post.country_code.toLowerCase()}.png)` }}
                       />
                     )}
                     {/* Vignette Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/90 to-zinc-900/75 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-zinc-950/20 pointer-events-none" />
 
                     {/* Card Content */}
                     <div className="relative z-10 space-y-3">

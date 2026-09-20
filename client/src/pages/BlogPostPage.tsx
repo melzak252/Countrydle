@@ -104,11 +104,11 @@ export default function BlogPostPage() {
         <header className="relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-3xl p-8 md:p-10 shadow-2xl space-y-4">
           {post.country_code && (
             <div 
-              className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none scale-105 filter saturate-150"
+              className="absolute inset-0 bg-cover bg-right md:bg-center opacity-35 pointer-events-none scale-105 filter saturate-125"
               style={{ backgroundImage: `url(https://flagcdn.com/w1280/${post.country_code.toLowerCase()}.png)` }}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-900/60 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/75 to-transparent pointer-events-none" />
 
           <div className="relative z-10 space-y-4">
             <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-zinc-400">
