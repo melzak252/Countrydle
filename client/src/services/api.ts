@@ -273,6 +273,20 @@ const normalizeAdminQuestionsResponse = (data: any, limit: number, offset: numbe
 };
 
 export const adminService = {
+  getOverview: async () => {
+    const response = await api.get('/admin/overview');
+    return response.data;
+  },
+  getUsers: async (page = 1, limit = 25, search?: string) => {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    if (search && search.trim()) params.append('search', search.trim());
+    const response = await api.get(`/admin/users?${params.toString()}`);
+    return response.data;
+  },
+  getLiveFeed: async () => {
+    const response = await api.get('/admin/live-feed');
+    return response.data;
+  },
   getCountrydleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {
     const response = await api.get('/countrydle/admin/questions', { params: { limit, offset } });
     return normalizeAdminQuestionsResponse(response.data, limit, offset);
