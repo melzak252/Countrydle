@@ -11,8 +11,13 @@ import {
   Play, 
   Share2, 
   Check, 
-  Loader2
+  Loader2,
+  Users,
+  CheckCircle2,
+  HelpCircle,
+  Target
 } from 'lucide-react';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { blogService } from '../services/api';
@@ -121,6 +126,70 @@ export default function BlogPostPage() {
           </p>
         </header>
 
+        {/* Daily Player Statistics */}
+        {post.player_stats && post.player_stats.total_players > 0 && (
+          <div className="bg-gradient-to-r from-blue-950/40 via-zinc-900 to-teal-950/30 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-3">
+            <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-wider">
+              <Users size={16} />
+              {t('blog.playerScoreboard', "Yesterday's Player Scoreboard")}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs md:text-sm">
+              <div className="space-y-1">
+                <div className="text-zinc-500 flex items-center gap-1.5">
+                  <Users size={13} className="text-zinc-400" />
+                  <span>Challengers Tried</span>
+                </div>
+                <div className="text-xl md:text-2xl font-black text-white">
+                  {post.player_stats.total_players}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-zinc-500 flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-green-400" />
+                  <span>Solved</span>
+                </div>
+                <div className="text-xl md:text-2xl font-black text-green-400 flex items-baseline gap-2">
+                  <span>{post.player_stats.winners_count}</span>
+                  <span className="text-xs font-normal text-zinc-400">
+                    ({post.player_stats.win_rate_pct}%)
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-zinc-500 flex items-center gap-1.5">
+                  <HelpCircle size={13} className="text-yellow-400" />
+                  <span>Questions Asked</span>
+                </div>
+                <div className="text-xl md:text-2xl font-black text-white flex items-baseline gap-2">
+                  <span>{post.player_stats.total_questions}</span>
+                  {post.player_stats.avg_questions_won > 0 && (
+                    <span className="text-xs font-normal text-zinc-400">
+                      (avg {post.player_stats.avg_questions_won})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-zinc-500 flex items-center gap-1.5">
+                  <Target size={13} className="text-teal-400" />
+                  <span>Guesses Made</span>
+                </div>
+                <div className="text-xl md:text-2xl font-black text-white flex items-baseline gap-2">
+                  <span>{post.player_stats.total_guesses}</span>
+                  {post.player_stats.avg_guesses_won > 0 && (
+                    <span className="text-xs font-normal text-zinc-400">
+                      (avg {post.player_stats.avg_guesses_won})
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Fast Facts Card */}
         {post.fast_facts && (
           <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl space-y-4">
@@ -165,10 +234,8 @@ export default function BlogPostPage() {
         )}
 
         {/* Main Article Content (Markdown) */}
-        <article className="prose prose-invert prose-zinc max-w-none text-zinc-300 leading-relaxed space-y-6 text-sm md:text-base border-y border-zinc-800/80 py-8">
-          <div className="whitespace-pre-line leading-relaxed">
-            {post.content_markdown}
-          </div>
+        <article className="max-w-none text-zinc-300 leading-relaxed space-y-4 border-y border-zinc-800/80 py-8">
+          <MarkdownRenderer content={post.content_markdown} />
         </article>
 
         {/* Deduction Masterclass Callout */}

@@ -55,6 +55,7 @@ async def get_latest_blog_post(session: AsyncSession = Depends(get_db)):
             detail="No blog posts available yet.",
         )
 
+    stats = await repo.get_day_player_stats(post.date)
     return BlogPostDisplay(
         id=post.id,
         date=post.date,
@@ -70,6 +71,7 @@ async def get_latest_blog_post(session: AsyncSession = Depends(get_db)):
         content_markdown=post.content_markdown,
         country_name=post.country.name if post.country else "Unknown",
         country=post.country,
+        player_stats=stats,
         created_at=post.created_at or datetime.now(),
     )
 
@@ -95,6 +97,7 @@ async def get_blog_post(slug_or_date: str, session: AsyncSession = Depends(get_d
             detail=f"Blog post '{slug_or_date}' not found.",
         )
 
+    stats = await repo.get_day_player_stats(post.date)
     return BlogPostDisplay(
         id=post.id,
         date=post.date,
@@ -110,6 +113,7 @@ async def get_blog_post(slug_or_date: str, session: AsyncSession = Depends(get_d
         content_markdown=post.content_markdown,
         country_name=post.country.name if post.country else "Unknown",
         country=post.country,
+        player_stats=stats,
         created_at=post.created_at or datetime.now(),
     )
 

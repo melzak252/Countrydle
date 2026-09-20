@@ -25,7 +25,7 @@ class BlogPostDisplay(BlogPostSummary):
     deduction_masterclass: Optional[Dict[str, Any]] = None
     content_markdown: str
     country: Optional[CountryDisplay] = None
-
+    player_stats: Optional[Dict[str, Any]] = None
     model_config = ConfigDict(from_attributes=True)
 
 
