@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Globe, Database, Compass, Award, ShieldCheck, Heart } from 'lucide-react';
+import { Globe, Database, Compass, Award, ShieldCheck, Heart, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function AboutPage() {
@@ -95,6 +95,50 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
+
+        {/* Dynamic Competitive Scoring */}
+        <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-6 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-yellow-500/10 text-yellow-400">
+              <Trophy size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">{t('about.scoringTitle', 'Dynamic Competitive Scoring')}</h2>
+              <p className="text-zinc-400 text-xs">{t('about.scoringSubtitle', 'Reward skill, speed, and daily consistency')}</p>
+            </div>
+          </div>
+
+          <p className="text-zinc-300 leading-relaxed text-sm">
+            Unlike static games where scores cluster identically, Countrydle features an exponential 5-factor scoring engine designed for true player differentiation:
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-zinc-300">
+            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
+              <div className="text-yellow-400 font-bold">1. Base Win Floor (+500 pts)</div>
+              <p className="text-xs text-zinc-400">Guaranteed points for any successfully solved daily puzzle.</p>
+            </div>
+            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
+              <div className="text-purple-400 font-bold">2. Question Efficiency (Up to +1,500 pts)</div>
+              <p className="text-xs text-zinc-400">Exponential curve that rewards bold deduction with minimal questions used.</p>
+            </div>
+            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
+              <div className="text-green-400 font-bold">3. Guess Precision (Up to +500 pts)</div>
+              <p className="text-xs text-zinc-400">+500 pts for a 1st-try guess win, scaled down on subsequent attempts.</p>
+            </div>
+            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
+              <div className="text-amber-400 font-bold">4. Speed Bonus (Up to +300 pts)</div>
+              <p className="text-xs text-zinc-400">Decays over 5 minutes, breaking leaderboard ties down to the exact second.</p>
+            </div>
+            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
+              <div className="text-red-400 font-bold">5. Daily Streak Bonus (Up to +500 pts)</div>
+              <p className="text-xs text-zinc-400">+50 pts per consecutive day solved, up to a 10-day cap (+500 pts).</p>
+            </div>
+            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
+              <div className="text-blue-400 font-bold">Category Bonuses</div>
+              <p className="text-xs text-zinc-400">+500 pts difficulty bonus for Powiaty (380 counties); +200 pts for US States.</p>
+            </div>
+          </div>
+        </div>
 
         {/* Data Provenance & Authority (E-E-A-T) */}
         <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-6 shadow-xl">

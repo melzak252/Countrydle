@@ -239,6 +239,69 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Scoring Engine Breakdown: Maximize Your Rank */}
+      <section className="mt-28 space-y-8">
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
+            <Trophy size={14} />
+            Competitive Scoring System
+          </div>
+          <h2 className="text-3xl md:text-5xl font-black text-white">
+            How Points &amp; Rankings Work
+          </h2>
+          <p className="text-zinc-400 text-base md:text-lg leading-relaxed">
+            Every daily puzzle scores your performance dynamically across five distinct factors. Deduce boldly, solve quickly, and maintain daily streaks to top the global leaderboards.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="text-blue-400 font-bold text-xs uppercase tracking-wider">Floor</div>
+            <div className="text-2xl font-black text-white">+500 pts</div>
+            <h4 className="font-bold text-white text-sm">Base Win</h4>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              Guaranteed baseline reward for correctly solving today's mystery location.
+            </p>
+          </div>
+
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="text-purple-400 font-bold text-xs uppercase tracking-wider">Skill Multiplier</div>
+            <div className="text-2xl font-black text-purple-400">Up to +1,500 pts</div>
+            <h4 className="font-bold text-white text-sm">Question Efficiency</h4>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              Exponential curve heavily rewarding bold deductions with minimal questions used.
+            </p>
+          </div>
+
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="text-green-400 font-bold text-xs uppercase tracking-wider">Accuracy</div>
+            <div className="text-2xl font-black text-green-400">Up to +500 pts</div>
+            <h4 className="font-bold text-white text-sm">Guess Precision</h4>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              500 pts for 1st-try guess wins, scaling down on 2nd (+333) and 3rd (+167) attempts.
+            </p>
+          </div>
+
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="text-amber-400 font-bold text-xs uppercase tracking-wider">Speed Decays</div>
+            <div className="text-2xl font-black text-amber-400">Up to +300 pts</div>
+            <h4 className="font-bold text-white text-sm">Speed Bonus</h4>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              Decays by 1 pt/sec over 5 minutes. Breaks leaderboard ties down to the exact second.
+            </p>
+          </div>
+
+          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-3">
+            <div className="text-red-400 font-bold text-xs uppercase tracking-wider">Habit Loop</div>
+            <div className="text-2xl font-black text-red-400">Up to +500 pts</div>
+            <h4 className="font-bold text-white text-sm">Daily Streak</h4>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              +50 pts per consecutive day played, scaling up to a 500 pt bonus for a 10-day streak.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Footer-like Stats section */}
       <motion.div 
         initial={{ opacity: 0 }}
