@@ -25,6 +25,8 @@ const resources = {
         signUp: 'Sign Up',
         about: 'About',
         faq: 'FAQ',
+        more: 'More',
+        contact: 'Contact',
       },
       footer: {
         rights: 'All rights reserved.',
@@ -347,6 +349,8 @@ const resources = {
         signUp: 'Zarejestruj',
         about: 'O nas',
         faq: 'FAQ',
+        more: 'Więcej',
+        contact: 'Kontakt',
       },
       footer: {
         rights: 'Wszelkie prawa zastrzezone.',
