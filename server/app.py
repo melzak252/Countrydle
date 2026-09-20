@@ -17,6 +17,7 @@ from countrydle import router as countrydle_router
 from powiatdle import router as powiatdle_router
 from us_statedle import router as us_statedle_router
 from wojewodztwodle import router as wojewodztwodle_router
+from blog import router as blog_router
 from db import get_db
 
 from db.repositories.user import UserRepository
@@ -148,6 +149,7 @@ app.include_router(countrydle_router, tags=["countrydle"])
 app.include_router(powiatdle_router, tags=["powiatdle"])
 app.include_router(us_statedle_router, tags=["us_statedle"])
 app.include_router(wojewodztwodle_router, tags=["wojewodztwodle"])
+app.include_router(blog_router)
 
 
 

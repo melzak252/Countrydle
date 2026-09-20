@@ -57,6 +57,31 @@ async def generate_day_countries():
             await c_repo.generate_new_day_country(day_date)
 
 
+async def generate_yesterday_blog_post():
+    from db.repositories.blog import BlogRepository
+    from utils.blog_generator import create_daily_blog_post
+
+    yesterday = date.today() - timedelta(days=1)
+    async with AsyncSessionLocal() as session:
+        repo = BlogRepository(session)
+        existing = await repo.get_by_date(yesterday)
+        if existing:
+            logging.info(f"Blog post for {yesterday} already exists.")
+            return
+
+        day_country = await CountrydleRepository(session).get_day_country_by_date(yesterday)
+        if not day_country or not day_country.country:
+            logging.warning(f"No CountrydleDay found for {yesterday} to generate blog post.")
+            return
+
+        try:
+            post = await create_daily_blog_post(session, day_country.country, yesterday)
+            await repo.create(post)
+            logging.info(f"Successfully generated daily blog post for {yesterday} ({day_country.country.name}).")
+        except Exception as e:
+            logging.error(f"Error generating daily blog post for {yesterday}: {e}", exc_info=True)
+
 scheduler = AsyncIOScheduler()
 scheduler.add_job(generate_day_countries, CronTrigger(hour=0, minute=0))
 scheduler.add_job(check_streaks, CronTrigger(hour=0, minute=0))
+scheduler.add_job(generate_yesterday_blog_post, CronTrigger(hour=0, minute=5))

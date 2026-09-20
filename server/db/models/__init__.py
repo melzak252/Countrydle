@@ -13,3 +13,4 @@ from .fragment import CountryFragment, PowiatFragment, WojewodztwoFragment, USSt
 from .user import User, Permission, UserPermission, AccountUpdate, UserPoints
 from .guess import CountrydleGuess
 from .email import SentEmail
+from .blog import DailyBlogPost
