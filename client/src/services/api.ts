@@ -207,6 +207,23 @@ export const wojewodztwoService = {
   },
 };
 
+export const blogService = {
+  getPosts: async (page = 1, limit = 12, search?: string) => {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    if (search && search.trim()) params.append('search', search.trim());
+    const response = await api.get(`/blog?${params.toString()}`);
+    return response.data;
+  },
+  getPostBySlug: async (slugOrDate: string) => {
+    const response = await api.get(`/blog/${slugOrDate}`);
+    return response.data;
+  },
+  getLatestPost: async () => {
+    const response = await api.get('/blog/latest');
+    return response.data;
+  },
+};
+
 export type AdminQuestionsResponse = {
   items: any[];
   total: number;

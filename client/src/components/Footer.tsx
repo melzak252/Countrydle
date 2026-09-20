@@ -10,6 +10,7 @@ export default function Footer() {
       <div className="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs md:text-sm">
         <Link to="/about" className="hover:text-zinc-300 transition-colors">{t('footer.about', 'About')}</Link>
         <Link to="/faq" className="hover:text-zinc-300 transition-colors">{t('footer.faq', 'FAQ')}</Link>
+        <Link to="/blog" className="hover:text-zinc-300 transition-colors">{t('footer.blog', 'Blog')}</Link>
         <Link to="/contact" className="hover:text-zinc-300 transition-colors">{t('footer.contact', 'Contact')}</Link>
         <span className="text-zinc-700 hidden sm:inline">•</span>
         <Link to="/privacy-policy" className="hover:text-zinc-300 transition-colors">{t('footer.privacyPolicy')}</Link>

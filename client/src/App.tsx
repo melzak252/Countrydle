@@ -19,6 +19,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
+import BlogListPage from './pages/BlogListPage';
+import BlogPostPage from './pages/BlogPostPage';
 import { useAuthStore } from './stores/authStore';
 import { useCountryGameStore, usePowiatyGameStore, useUSStatesGameStore, useWojewodztwaGameStore } from './stores/gameStore';
 import { useEffect } from 'react';
@@ -94,6 +96,8 @@ function App() {
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="faq" element={<FAQPage />} />
+          <Route path="blog" element={<BlogListPage />} />
+          <Route path="blog/:slug" element={<BlogPostPage />} />
           <Route path="admin" element={user?.is_admin ? <AdminDashboard /> : <Navigate to="/" replace />} />
           
           {/* Fallback */}

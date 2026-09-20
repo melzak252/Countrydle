@@ -44,6 +44,7 @@ export default function Header() {
           
           <Link to="/leaderboard" className="hover:text-blue-400 transition-colors">{t('header.leaderboard')}</Link>
           <Link to="/archive" className="hover:text-blue-400 transition-colors">{t('header.archive')}</Link>
+          <Link to="/blog" className="hover:text-blue-400 transition-colors">{t('header.blog', 'Blog')}</Link>
           <Link to="/about" className="hover:text-blue-400 transition-colors">{t('header.about', 'About')}</Link>
           <Link to="/faq" className="hover:text-blue-400 transition-colors">{t('header.faq', 'FAQ')}</Link>
           
@@ -128,6 +129,7 @@ export default function Header() {
             <div className="flex flex-col space-y-2">
               <Link to="/leaderboard" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 hover:bg-zinc-800 rounded-lg transition-colors">{t('header.leaderboard')}</Link>
               <Link to="/archive" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 hover:bg-zinc-800 rounded-lg transition-colors">{t('header.archive')}</Link>
+              <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 hover:bg-zinc-800 rounded-lg transition-colors">{t('header.blog', 'Blog')}</Link>
               <Link to="/about" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 hover:bg-zinc-800 rounded-lg transition-colors">{t('header.about', 'About')}</Link>
               <Link to="/faq" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 hover:bg-zinc-800 rounded-lg transition-colors">{t('header.faq', 'FAQ')}</Link>
               {user?.is_admin && (
