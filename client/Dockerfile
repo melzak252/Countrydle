@@ -1,15 +1,15 @@
 # Stage 1: Build the React application
-FROM node:20-alpine as build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 # Build args
-ARG VITE_API_URL
+ARG VITE_API_URL=/api
 ARG VITE_RYBBIT_SCRIPT_URL
 ARG VITE_RYBBIT_SITE_ID
 ARG VITE_GOOGLE_ADSENSE_ID
