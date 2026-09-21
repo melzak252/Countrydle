@@ -98,7 +98,7 @@ python scripts/populate_all.py
 
 ## Answer Reports
 
-Players can report a saved question result from its history card in any game mode. A report requires a comment of 1–2,000 characters after trimming whitespace; reporting does not change the answer, score, or remaining turns.
+After a game ends (win or loss), players can report a saved question result from its history card in any game mode. Reporting controls are hidden while the game is in progress. A report requires a comment of 1–2,000 characters after trimming whitespace; reporting does not change the answer, score, or remaining turns.
 
 - `POST /answer-reports` accepts `mode`, `question_id`, `comment`, and an optional `report_token`. Modes are `countrydle`, `us_statedle`, `powiatdle`, and `wojewodztwodle`. Success returns only `{ "id": ... }`, never the hidden target or diagnostic context.
 - Question responses include a signed `report_token` for guests. The token is bound to the mode and saved question ID and remains usable after guest progress is synced to an account. An authenticated question owner can also report without a token. Older guest histories without a token cannot be reported; synthetic unsaved error responses are not reportable.

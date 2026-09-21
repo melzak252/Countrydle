@@ -61,7 +61,7 @@ export default function History({ questions, mode, isGameOver = false }: History
                 </div>
               </details>
             ) : content}
-            {q.id > 0 && <AnswerReportForm key={`${mode}-${q.id}`} mode={mode} questionId={q.id} reportToken={q.report_token} />}
+            {isGameOver && q.id > 0 && <AnswerReportForm key={`${mode}-${q.id}`} mode={mode} questionId={q.id} reportToken={q.report_token} />}
           </li>
         );
       })}
