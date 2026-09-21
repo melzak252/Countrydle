@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CountryDisplay, GameResponse, Question, Guess } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess } from '../types';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -272,7 +272,39 @@ const normalizeAdminQuestionsResponse = (data: any, limit: number, offset: numbe
   return data;
 };
 
+export const reportService = {
+  submit: async (
+    mode: AnswerReportMode,
+    questionId: number,
+    comment: string,
+    reportToken?: string | null,
+  ): Promise<{ id: number }> => {
+    const response = await api.post<{ id: number }>('/answer-reports', {
+      mode,
+      question_id: questionId,
+      comment,
+      report_token: reportToken,
+    });
+    return response.data;
+  },
+};
+
 export const adminService = {
+  getAnswerReports: async (
+    status: AnswerReportStatus,
+    page: number,
+    limit = 25,
+    mode?: AnswerReportMode,
+  ): Promise<{ items: AnswerReport[]; total: number }> => {
+    const response = await api.get<{ items: AnswerReport[]; total: number }>('/admin/answer-reports', {
+      params: { status, page, limit, mode },
+    });
+    return response.data;
+  },
+  reviewAnswerReport: async (id: number, reviewed: boolean): Promise<AnswerReport> => {
+    const response = await api.patch<AnswerReport>(`/admin/answer-reports/${id}`, { reviewed });
+    return response.data;
+  },
   getOverview: async () => {
     const response = await api.get('/admin/overview');
     return response.data;

@@ -1,13 +1,15 @@
-import type { Question } from '../types';
+import type { AnswerReportMode, Question } from '../types';
 import { Check, X, HelpCircle, ChevronDown, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import AnswerReportForm from './AnswerReportForm';
 
 interface HistoryProps {
   questions: Question[];
+  mode: AnswerReportMode;
   isGameOver?: boolean;
 }
 
-export default function History({ questions, isGameOver = false }: HistoryProps) {
+export default function History({ questions, mode, isGameOver = false }: HistoryProps) {
   const { t } = useTranslation();
   
   const sortedQuestions = [...questions].sort((a, b) => b.id - a.id);
@@ -59,6 +61,7 @@ export default function History({ questions, isGameOver = false }: HistoryProps)
                 </div>
               </details>
             ) : content}
+            {q.id > 0 && <AnswerReportForm key={`${mode}-${q.id}`} mode={mode} questionId={q.id} reportToken={q.report_token} />}
           </li>
         );
       })}

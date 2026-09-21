@@ -96,6 +96,20 @@ python scripts/populate_all.py
 
 ---
 
+## Answer Reports
+
+Players can report a saved question result from its history card in any game mode. A report requires a comment of 1–2,000 characters after trimming whitespace; reporting does not change the answer, score, or remaining turns.
+
+- `POST /answer-reports` accepts `mode`, `question_id`, `comment`, and an optional `report_token`. Modes are `countrydle`, `us_statedle`, `powiatdle`, and `wojewodztwodle`. Success returns only `{ "id": ... }`, never the hidden target or diagnostic context.
+- Question responses include a signed `report_token` for guests. The token is bound to the mode and saved question ID and remains usable after guest progress is synced to an account. An authenticated question owner can also report without a token. Older guest histories without a token cannot be reported; synthetic unsaved error responses are not reportable.
+- The server snapshots the original and interpreted question, validity, answer, explanation, retrieval context, game date, target, and recorded server version from the database. Clients cannot supply or override this context.
+- Each saved question can have one report. Repeat or concurrent submissions return `409`; inaccessible or missing questions return `404`.
+- Admin's **Reports** tab lists reports with status/mode filters and pagination. `GET /admin/answer-reports` supports `status=open|reviewed|all`, optional `mode`, `page`, and `limit` (maximum 100). `PATCH /admin/answer-reports/{id}` accepts `{ "reviewed": true }` to mark reviewed or `false` to reopen. Both endpoints require admin authentication.
+
+The `answer_reports` table is created by Alembic revision `4c9f2a1b8d60`, applied through the existing startup migration process. Report tokens use `SECRET_KEY`; keep it stable across replicas. Rotating it invalidates previously issued guest report tokens.
+
+---
+
 ## 🛠 How to Add a New Game
 
 To add a new game mode (e.g., "Cities"), follow these steps:

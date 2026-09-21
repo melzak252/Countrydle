@@ -25,6 +25,32 @@ export interface Question {
   day_id: number;
   asked_at: string;
   explanation?: string;
+  report_token?: string | null;
+}
+
+export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
+export type AnswerReportStatus = 'open' | 'reviewed' | 'all';
+
+export interface AnswerReport {
+  id: number;
+  mode: AnswerReportMode;
+  question_id: number;
+  comment: string;
+  created_at: string;
+  reviewed_at: string | null;
+  reporter_username: string | null;
+  details: {
+    original_question: string;
+    question: string | null;
+    valid: boolean;
+    answer: boolean | null;
+    explanation: string;
+    context: string | null;
+    day_id: number;
+    game_date: string;
+    target_name: string;
+    server_version: string | null;
+  };
 }
 
 export interface Guess {

@@ -150,7 +150,7 @@ export default function GamePage() {
               <h2 className="text-sm font-medium text-sand-100">{t('gamePage.history')}</h2>
               <span className="font-mono text-xs text-zinc-500">{questions.length.toString().padStart(2, '0')}</span>
             </div>
-            <History questions={questions} isGameOver={gameState.is_game_over} />
+            <History mode="countrydle" questions={questions} isGameOver={gameState.is_game_over} />
           </section>
         </aside>
       </div>

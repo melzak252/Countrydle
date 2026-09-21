@@ -14,3 +14,4 @@ from .user import User, Permission, UserPermission, AccountUpdate, UserPoints
 from .guess import CountrydleGuess
 from .email import SentEmail
 from .blog import DailyBlogPost
+from .answer_report import AnswerReport
