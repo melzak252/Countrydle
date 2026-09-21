@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import type { GameState, Question, Guess } from '../types';
 import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
 import { useAuthStore } from './authStore';
+import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHistory';
+import type { GuestGameType } from '../lib/guestHistory';
 import toast from 'react-hot-toast';
 
 interface GameData {
@@ -30,6 +32,52 @@ interface GameActions {
 }
 
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
+
+interface GuestSnapshot {
+  state: Partial<GameState>;
+  questions: Question[];
+  guesses: Guess[];
+  correctEntity?: unknown;
+}
+
+const readGuestSnapshot = (key: string): GuestSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed.state || typeof parsed.state !== 'object'
+      || !Array.isArray(parsed.questions) || !Array.isArray(parsed.guesses)
+      || !parsed.questions.every((q: unknown) => q !== null && typeof q === 'object')
+      || !parsed.guesses.every((g: unknown) => g !== null && typeof g === 'object')) return null;
+    const state = parsed.state;
+    for (const field of ['questions_asked', 'guesses_made', 'remaining_questions', 'remaining_guesses']) {
+      if (state[field] !== undefined && (!Number.isInteger(state[field]) || state[field] < 0)) return null;
+    }
+    if (typeof state.is_game_over !== 'boolean' || typeof state.won !== 'boolean') return null;
+    return parsed as GuestSnapshot;
+  } catch {
+    return null;
+  }
+};
+
+const saveGuestSnapshot = (key: string, snapshot: GuestSnapshot): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(snapshot));
+  } catch {
+    // A blocked or full browser store must not discard an in-memory move.
+    notifyGuestHistoryChanged();
+  }
+};
+
+const removeGuestSnapshot = (key: string): boolean => {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    notifyGuestHistoryChanged();
+    return false;
+  }
+};
 
 const gameLimits = {
     country: { maxQuestions: 10, maxGuesses: 3 },
@@ -75,7 +123,7 @@ const guessMapping: any = {
 };
 
 // Factory to create stores for different game types
-const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewodztwa') => {
+const createGameStore = (gameType: GuestGameType) => {
   const service: any = {
     country: gameService,
     powiaty: powiatService,
@@ -106,16 +154,19 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
         const isActuallyGuest = data.user === null || clientUser === null;
         
         const localKey = getLocalStateKey(gameType, data.date);
-        const localData = localStorage.getItem(localKey);
+        const localData = readGuestSnapshot(localKey);
+        if (localData && data.date) {
+            recordGuestCompletion(gameType, data.date, localData.state, data.date);
+        }
 
         // If we are logged in and have guest data, sync it FIRST
         if (!isActuallyGuest && data.date && localData && service.syncGuestData) {
-            const parsed = JSON.parse(localData);
+            const parsed = localData;
             if (parsed.questions.length > 0 || parsed.guesses.length > 0) {
                 try {
                     // Clear local storage BEFORE calling sync to prevent race conditions
                     // if fetchGameState is called again while sync is in progress
-                    localStorage.removeItem(localKey);
+                    if (!removeGuestSnapshot(localKey)) throw new Error('Guest snapshot could not be cleared for sync');
                     
                     await service.syncGuestData({
                         state: normalizeGameState(
@@ -146,7 +197,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                     // If sync failed, we might want to restore localData, but usually it's safer to just let it be
                 }
             } else {
-                localStorage.removeItem(localKey);
+                removeGuestSnapshot(localKey);
             }
         }
 
@@ -167,7 +218,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             // correctEntity is already set from data.country || ... at line 109
 
             if (data.date && localData) {
-                const parsed = JSON.parse(localData);
+                const parsed = localData;
                 questions = parsed.questions || [];
                 guesses = parsed.guesses || [];
                 gameState = normalizeGameState(gameType, parsed.state, questions, guesses) as any;
@@ -176,24 +227,13 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                 }
 
                 // Persist the migrated state so old 10/3 guest entries do not stay in localStorage.
-                localStorage.setItem(localKey, JSON.stringify({
+                saveGuestSnapshot(localKey, {
                     ...parsed,
                     state: gameState,
                     questions,
                     guesses,
                     correctEntity: parsed.correctEntity || correctEntity,
-                }));
-            }
-             
-            // If the game is over and we have the correct entity from server but not in local storage, save it
-            if (gameState.is_game_over && correctEntity && data.date && localData) {
-                const parsed = JSON.parse(localData);
-                if (!parsed.correctEntity) {
-                    localStorage.setItem(getLocalStateKey(gameType, data.date), JSON.stringify({
-                        ...parsed,
-                        correctEntity
-                    }));
-                }
+                });
             }
         }
         
@@ -250,12 +290,12 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             questions_asked: gameState.questions_asked + 1,
           };
           
-          localStorage.setItem(getLocalStateKey(gameType, dailyDate), JSON.stringify({
+          saveGuestSnapshot(getLocalStateKey(gameType, dailyDate), {
             state: newGameState,
             questions: newQuestions,
             guesses,
             correctEntity
-          }));
+          });
           
           set({
             questions: newQuestions,
@@ -324,12 +364,13 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             }
           }
 
-          localStorage.setItem(getLocalStateKey(gameType, dailyDate), JSON.stringify({
+          saveGuestSnapshot(getLocalStateKey(gameType, dailyDate), {
             state: newGameState,
             questions,
             guesses: newGuesses,
             correctEntity
-          }));
+          });
+          recordGuestCompletion(gameType, dailyDate, newGameState, dailyDate);
 
           set({
             guesses: newGuesses,
@@ -362,13 +403,14 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
             }
 
             const localKey = getLocalStateKey(gameType, dailyDate);
-            const localData = localStorage.getItem(localKey);
+            const localData = readGuestSnapshot(localKey);
             
             if (localData && service.syncGuestData) {
-                const parsed = JSON.parse(localData);
+                const parsed = localData;
+                recordGuestCompletion(gameType, dailyDate, parsed.state, dailyDate);
                 if (parsed.questions.length > 0 || parsed.guesses.length > 0) {
                     // Clear local storage BEFORE calling sync to prevent double sync
-                    localStorage.removeItem(localKey);
+                    if (!removeGuestSnapshot(localKey)) return;
                     
                     await service.syncGuestData({
                         state: normalizeGameState(
@@ -383,7 +425,7 @@ const createGameStore = (gameType: 'country' | 'powiaty' | 'us_states' | 'wojewo
                     });
                     await get().fetchGameState();
                 } else {
-                    localStorage.removeItem(localKey);
+                    removeGuestSnapshot(localKey);
                 }
             }
         } catch (e) {

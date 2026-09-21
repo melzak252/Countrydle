@@ -9,6 +9,7 @@ import { RotateCcw, Check } from 'lucide-react';
 interface MapBoxProps {
   correctCountryName?: string;
   className?: string;
+  onCountryCode?: (code: string | undefined) => void;
 }
 
 interface MapControlsProps {
@@ -91,7 +92,7 @@ function MapController({ correctCountryName, geoJsonData }: { correctCountryName
   return null;
 }
 
-export default function MapBox({ correctCountryName, className }: MapBoxProps) {
+export default function MapBox({ correctCountryName, className, onCountryCode }: MapBoxProps) {
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const { selectedEntityNames, toggleEntitySelection, gameState } = useGameStore();
@@ -108,6 +109,19 @@ export default function MapBox({ correctCountryName, className }: MapBoxProps) {
       .then(data => setGeoJsonData(data))
       .catch(err => console.error('Failed to load map data', err));
   }, []);
+
+  useEffect(() => {
+    if (!onCountryCode) return;
+    const name = correctCountryName?.toLowerCase();
+    const feature = geoJsonData?.features.find((item: Feature) => {
+      const properties = item.properties;
+      return name && [properties?.ADMIN, properties?.NAME_LONG, properties?.NAME_EN]
+        .some(value => typeof value === 'string' && value.toLowerCase() === name);
+    });
+    const code = [feature?.properties?.ISO_A2, feature?.properties?.WB_A2]
+      .find(value => typeof value === 'string' && /^[a-z]{2}$/i.test(value));
+    onCountryCode(code);
+  }, [correctCountryName, geoJsonData, onCountryCode]);
 
   const getStyleFromState = (feature: any, currentSelectedNames: string[], currentCorrectName?: string): PathOptions => {
     if (!feature || !feature.properties) return {};

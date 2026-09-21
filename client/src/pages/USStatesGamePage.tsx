@@ -8,6 +8,8 @@ import GameInstructions from '../components/GameInstructions';
 import { Check, Loader2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
+import GuestProgress from '../components/GuestProgress';
+import { useDailyDate } from '../hooks/useDailyClock';
 
 export default function USStatesGamePage() {
   const {
@@ -26,6 +28,7 @@ export default function USStatesGamePage() {
     dailyDate,
   } = useUSStatesGameStore();
   const { t } = useTranslation();
+  const today = useDailyDate();
   
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function USStatesGamePage() {
             <span className="text-zinc-400">{dailyDate}</span>
           </p>
           <h1 className="text-xl font-semibold tracking-tight text-sand-100 sm:text-2xl">{t('usStatesPage.title')}</h1>
-          {isGuest && <p className="mt-1 text-xs text-zinc-400">{'Guest · progress saved locally'}</p>}
+          {isGuest && <p className="mt-1 text-xs text-zinc-400">Guest · no account needed</p>}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <dl className="flex divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900">
@@ -101,6 +104,8 @@ export default function USStatesGamePage() {
               guessesMade={gameState.guesses_made}
               maxGuesses={3}
               targetName={correctState?.name || guesses.find(g => g.answer)?.guess}
+              isGuest={isGuest}
+              discovery={questions.find(q => q.valid && q.explanation)?.explanation}
             />
           ) : (
             <div className="space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
@@ -125,6 +130,7 @@ export default function USStatesGamePage() {
               </div>
             </div>
           )}
+          {isGuest && <GuestProgress gameType="us_states" today={today} />}
         </section>
 
         <aside className="min-w-0 rounded-sm border border-white/10 bg-obsidian-900" aria-label={'Deduction notebook'}>

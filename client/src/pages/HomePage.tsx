@@ -1,15 +1,42 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowRight, BookOpen, Flag, Globe, Map, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import GuestProgress from '../components/GuestProgress';
+import { useDailyDate } from '../hooks/useDailyClock';
+import { useAuthStore } from '../stores/authStore';
+import { useCountryGameStore } from '../stores/gameStore';
 
 export default function HomePage() {
   const { t } = useTranslation();
+  const today = useDailyDate();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
+  const { gameState, dailyDate, isGuest, isLoading, error, fetchGameState } = useCountryGameStore();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) void fetchGameState();
+  }, [authLoading, isAuthenticated, today, fetchGameState]);
+
+  const guest = !authLoading && !isAuthenticated;
+  const currentGuestState = guest && isGuest && dailyDate === today && !isLoading && !error
+    ? gameState
+    : null;
+  const hasStarted = currentGuestState && (currentGuestState.questions_asked > 0 || currentGuestState.guesses_made > 0);
+  const playLabel = currentGuestState?.is_game_over
+    ? 'View today’s result'
+    : hasStarted ? 'Continue today’s country' : 'Play today’s country';
+  const progressNote = currentGuestState?.is_game_over
+    ? 'Today’s country puzzle is complete. Your result is ready.'
+    : hasStarted
+      ? `${currentGuestState.remaining_questions} questions and ${currentGuestState.remaining_guesses} guesses remaining today.`
+      : null;
   const copy = {
     eyebrow: 'The daily geography puzzle',
     title: 'A whole world.',
     titleEnd: 'One hidden place.',
-    intro: 'Ask yes-or-no questions. Connect the clues and find the place on the map before your guesses run out.',
-    choose: 'Choose your map',
+    intro: 'Find today’s hidden country with yes-or-no questions. You have 10 questions and 3 guesses. No sign-up needed.',
+    choose: 'Explore other maps',
     atlas: 'An atlas of deduction',
     diagram: 'Latitude and longitude',
     modes: 'Four maps. Four challenges.',
@@ -58,9 +85,16 @@ export default function HomePage() {
             <span className="mt-2 block font-serif font-normal italic text-sand-200">{copy.titleEnd}</span>
           </h1>
           <p className="mt-6 max-w-lg text-base leading-relaxed text-slate-400 md:text-lg">{copy.intro}</p>
-          <a href="#maps" className="mt-8 inline-flex min-h-12 items-center gap-5 rounded-sm bg-emerald-400 px-5 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
-            {copy.choose}<ArrowDown size={16} aria-hidden="true" />
-          </a>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link to="/game" className="inline-flex min-h-12 items-center gap-5 rounded-sm bg-emerald-400 px-5 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
+              {playLabel}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <a href="#maps" className="inline-flex min-h-12 items-center gap-3 rounded-sm text-sm font-medium text-sand-200 transition-colors hover:text-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
+              {copy.choose}<ArrowDown size={16} aria-hidden="true" />
+            </a>
+          </div>
+          {progressNote && <p role="status" className="mt-3 text-sm text-emerald-400">{progressNote}</p>}
+          {guest && error && <p role="status" className="mt-3 text-xs text-slate-400">We couldn’t check today’s progress. Open the puzzle to try again.</p>}
         </div>
 
         <figure className="mx-auto hidden w-full max-w-sm md:block">
@@ -79,6 +113,12 @@ export default function HomePage() {
           </figcaption>
         </figure>
       </section>
+
+      {guest && (
+        <div className="pt-8">
+          <GuestProgress gameType="country" today={today} />
+        </div>
+      )}
 
       <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 py-10 md:py-14">
         <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">

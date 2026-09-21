@@ -45,6 +45,9 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
       <div className="relative">
         <input
           id={inputId}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}

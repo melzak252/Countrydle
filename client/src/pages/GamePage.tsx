@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
@@ -8,6 +8,8 @@ import GameInstructions from '../components/GameInstructions';
 import { Check, Loader2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
+import GuestProgress from '../components/GuestProgress';
+import { useDailyDate } from '../hooks/useDailyClock';
 
 export default function GamePage() {
   const {
@@ -26,6 +28,8 @@ export default function GamePage() {
     dailyDate,
   } = useGameStore();
   const { t } = useTranslation();
+  const today = useDailyDate();
+  const [revealedFlag, setRevealedFlag] = useState<string | undefined>();
   
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function GamePage() {
             <span className="text-zinc-400">{dailyDate}</span>
           </p>
           <h1 className="text-xl font-semibold tracking-tight text-sand-100 sm:text-2xl">{t('gamePage.title')}</h1>
-          {isGuest && <p className="mt-1 text-xs text-zinc-400">{'Guest · progress saved locally'}</p>}
+          {isGuest && <p className="mt-1 text-xs text-zinc-400">Guest · no account needed</p>}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <dl className="flex divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900">
@@ -85,7 +89,7 @@ export default function GamePage() {
               <span className="text-emerald-400">{gameState.is_game_over ? ('Result') : ('Search area')}</span>
             </div>
             <div className="relative h-[310px] sm:h-[420px] lg:h-[460px]">
-              <MapBox correctCountryName={gameState.is_game_over ? correctCountry?.name : undefined} className="h-full" />
+              <MapBox correctCountryName={gameState.is_game_over ? correctCountry?.name : undefined} onCountryCode={setRevealedFlag} className="h-full" />
             </div>
           </div>
 
@@ -101,11 +105,17 @@ export default function GamePage() {
               guessesMade={gameState.guesses_made}
               maxGuesses={3}
               targetName={correctCountry?.name || guesses.find(g => g.answer)?.guess}
+              isGuest={isGuest}
+              targetCountryCode={correctCountry?.iso2 || revealedFlag}
+              discovery={questions.find(q => q.valid && q.explanation)?.explanation}
             />
           ) : (
             <div className="space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
               <div>
                 <h2 className="mb-2 text-sm font-medium text-sand-100">{'Ask a yes-or-no question'}</h2>
+                {isGuest && questions.length === 0 && guesses.length === 0 && (
+                  <p className="mb-3 text-sm leading-6 text-zinc-400">Ask yes-or-no questions to narrow down the mystery country. Start broad, then follow the clues.</p>
+                )}
                 <QuestionInput
                   onAsk={askQuestion}
                   isLoading={isLoading}
@@ -125,6 +135,7 @@ export default function GamePage() {
               </div>
             </div>
           )}
+          {isGuest && <GuestProgress gameType="country" today={today} />}
         </section>
 
         <aside className="min-w-0 rounded-sm border border-white/10 bg-obsidian-900" aria-label={'Deduction notebook'}>
