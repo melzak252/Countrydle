@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from schemas.user import ProfileDisplay, UserDisplay
 from schemas.country import CountryCount, CountryDisplay, DayCountryDisplay
 from version import SERVER_VERSION
+from schemas.answer_report import ReportableQuestion
 
 
 class QuestionBase(BaseModel):
@@ -34,7 +35,8 @@ class QuestionCreate(QuestionEnhanced):
     model_config = ConfigDict(from_attributes=True)
 
 
-class QuestionDisplay(BaseModel):
+class QuestionDisplay(ReportableQuestion):
+    report_mode = "countrydle"
     id: int
     original_question: str
     question: str | None
@@ -56,7 +58,8 @@ class FullQuestionDisplay(QuestionDisplay):
     model_config = ConfigDict(from_attributes=True)
 
 
-class InvalidQuestionDisplay(BaseModel):
+class InvalidQuestionDisplay(ReportableQuestion):
+    report_mode = "countrydle"
     id: int
     original_question: str
     valid: bool

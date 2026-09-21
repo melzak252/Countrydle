@@ -2,6 +2,7 @@ from datetime import date, datetime
 from typing import List, Optional, Union
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from schemas.user import UserDisplay
+from schemas.answer_report import ReportableQuestion
 
 
 class USStateDisplay(BaseModel):
@@ -65,7 +66,8 @@ class USStateQuestionCreate(BaseModel):
     required_info: Optional[str] = None
 
 
-class USStateQuestionDisplay(BaseModel):
+class USStateQuestionDisplay(ReportableQuestion):
+    report_mode = "us_statedle"
 
     id: int
     original_question: str
