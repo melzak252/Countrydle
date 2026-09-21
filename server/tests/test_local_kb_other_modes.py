@@ -96,6 +96,16 @@ def test_us_state_numeric_text_and_derived_coast_checks():
     assert answer(US_STATE_CONFIG, "New York", contains(US_STATE_CONFIG, "region", "East Coast")).answer is True
     assert answer(US_STATE_CONFIG, "Michigan", contains(US_STATE_CONFIG, "water_access", "Great Lakes")).answer is True
     assert answer(US_STATE_CONFIG, "California", contains(US_STATE_CONFIG, "region", "East Coast")).answer is False
+    # Coordinate comparisons
+    west_74_plan = scalar(US_STATE_CONFIG, "west_of", "longitude", -74.0)
+    res_nh = answer(US_STATE_CONFIG, "New Hampshire", west_74_plan)
+    assert res_nh is not None
+    assert res_nh.answer is False
+    assert "east of 74.0° W" in res_nh.explanation
+
+    res_cal = answer(US_STATE_CONFIG, "California", west_74_plan)
+    assert res_cal is not None
+    assert res_cal.answer is True
 
 
 @pytest.mark.parametrize(

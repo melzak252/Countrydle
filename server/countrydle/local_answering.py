@@ -1001,6 +1001,19 @@ def evaluate_plan_node(
             if relation == "borders_country":
                 r_canon = canonical_country_name(right_norm)
                 return any(canonical_country_name(normalize_value(value)) == r_canon for value in left)
+            if relation == "geographic_area":
+                if right_norm in {"northwestern africa", "northwest africa", "polnocno zachodnia afryka", "polnocno zachodniej afryce"}:
+                    nw_areas = {"northern africa", "western africa", "west africa", "maghreb"}
+                    return any(normalize_value(val) in nw_areas for val in left)
+                if right_norm in {"northeastern africa", "northeast africa", "polnocno wschodnia afryka", "polnocno wschodniej afryce"}:
+                    ne_areas = {"northern africa", "eastern africa", "east africa", "horn of africa"}
+                    return any(normalize_value(val) in ne_areas for val in left)
+                if right_norm in {"southwestern africa", "southwest africa", "poludniowo zachodnia afryka"}:
+                    sw_areas = {"southern africa", "western africa", "middle africa"}
+                    return any(normalize_value(val) in sw_areas for val in left)
+                if right_norm in {"southeastern africa", "southeast africa", "poludniowo wschodnia afryka"}:
+                    se_areas = {"southern africa", "eastern africa", "east africa"}
+                    return any(normalize_value(val) in se_areas for val in left)
             return any(normalize_value(value) == right_norm for value in left)
         if operator == "equals":
             relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
@@ -1119,8 +1132,16 @@ def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) 
         }
         canonical_area = first_mentioned_value(normalize(value), area_values, GEOGRAPHIC_AREA_ALIASES)
         if canonical_area:
-            right["value"] = canonical_area
-
+            direction_words = {
+                "north", "northern", "northwest", "northwestern", "northeast", "northeastern",
+                "south", "southern", "southwest", "southwestern", "southeast", "southeastern",
+                "east", "eastern", "west", "western", "central"
+            }
+            val_words = set(normalize(value).split())
+            if canonical_area in {"Africa", "Europe", "Asia", "Americas", "Oceania"} and (val_words & direction_words):
+                pass
+            else:
+                right["value"] = canonical_area
     if isinstance(normalized.get("condition"), dict):
         normalized["condition"] = normalize_geographic_area_plan(conn, normalized["condition"])
     if isinstance(normalized.get("conditions"), list):
@@ -1186,6 +1207,16 @@ def generate_factual_explanation(
             return f"{name} leży na kontynencie: {c_str}." if is_polish else f"{name} is located in {c_str}."
         else:
             return f"{name} nie leży w: {target_val or 'tym regionie'}. Prawidłowy kontynent: {c_str}." if is_polish else f"{name} is not located in {target_val or 'that continent'}; it is in {c_str}."
+
+    if rel in ("geographic_area", "region", "subregion") and target_val:
+        subregs = [r[0] for r in conn.execute("SELECT subregion_name FROM country_subregions WHERE country_id=?", (country["id"],))]
+        regs = [r[0] for r in conn.execute("SELECT region_name FROM country_regions WHERE country_id=?", (country["id"],))]
+        all_areas = sorted(set(subregs + regs))
+        areas_str = ", ".join(all_areas)
+        if answer:
+            return f"Tak, {name} leży w regionie: {target_val}." if is_polish else f"Yes, {name} is located in {target_val}."
+        else:
+            return f"Nie, {name} nie leży w: {target_val}. Regiony geograficzne tego kraju to: {areas_str}." if is_polish else f"No, {name} is not located in {target_val}. Its geographic regions are: {areas_str}."
 
     if rel == "flag_color" and target_val:
         colors = [r[0] for r in conn.execute("SELECT color FROM country_flag_colors WHERE country_id=?", (country["id"],))]

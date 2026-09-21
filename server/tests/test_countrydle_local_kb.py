@@ -433,6 +433,24 @@ def test_letter_range_normalization_and_answering():
     assert ans_poland is not None
     assert ans_poland.answer is False
 
+
+def test_directional_african_quadrants():
+    nw_plan = {
+        "operator": "contains",
+        "left": {"entity": "target_country", "relation": "geographic_area"},
+        "right": {"value": "Northwestern Africa"},
+    }
+    # Kenya is in East Africa, NOT Northwestern Africa
+    ans_kenya = local_answer(nw_plan, "Kenya")
+    assert ans_kenya is not None
+    assert ans_kenya.answer is False
+    assert "East Africa" in ans_kenya.explanation
+
+    # Morocco is in Northwestern Africa
+    ans_morocco = local_answer(nw_plan, "Morocco")
+    assert ans_morocco is not None
+    assert ans_morocco.answer is True
+
 def test_nested_boolean_not_any_and_all_operators():
     not_in_eu = {
         "operator": "not",

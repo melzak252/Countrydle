@@ -22,10 +22,11 @@ import {
   XCircle, 
   Clock, 
   ShieldCheck, 
-  Flame,
-  FileText,
-  Plus,
-  Trash2
+  Flame, 
+  FileText, 
+  Plus, 
+  Trash2, 
+  Sparkles
 } from 'lucide-react';
 
 type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts';
@@ -132,16 +133,16 @@ export default function AdminDashboard() {
       setFactEntities(list);
       if (list.length > 0) {
         setSelectedEntityId(list[0].id);
-        fetchEntityFacts(list[0].id);
+        fetchEntityFacts(list[0].name || list[0].id);
       }
     } catch (err: any) {
       setFactError(err.message || 'Failed to load entities');
     }
   };
 
-  const fetchEntityFacts = async (id: number) => {
+  const fetchEntityFacts = async (idOrName: number | string) => {
     try {
-      const facts = await adminService.getCountryFacts(id, factMode);
+      const facts = await adminService.getCountryFacts(idOrName, factMode);
       setEntityFacts(facts);
       setFactInputs(Object.fromEntries((facts.scalar_facts || []).map((f) => [f.relation, f.value ?? ''])));
     } catch (err: any) {
@@ -437,8 +438,16 @@ export default function AdminDashboard() {
                     <span className="font-semibold text-emerald-300">{q.username}</span>
                     <span>{q.asked_at ? new Date(q.asked_at).toLocaleTimeString('en-US') : ''}</span>
                   </div>
-                  <div className="font-medium text-sand-100 text-sm">
-                    "{q.question}"
+                  <div className="space-y-1">
+                    <div className="font-medium text-sand-100 text-sm">
+                      "{q.original_question || q.question}"
+                    </div>
+                    {q.improved_question && q.original_question && q.improved_question !== q.original_question && (
+                      <div className="text-[11px] text-emerald-300 font-mono bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-sm flex items-center gap-1.5">
+                        <Sparkles size={11} className="text-emerald-400 shrink-0" />
+                        <span>AI: "{q.improved_question}"</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 pt-1">
                     {q.valid ? (
@@ -659,7 +668,17 @@ export default function AdminDashboard() {
                 {filteredQuestions.map((q) => (
                   <tr key={q.id} className="hover:bg-white/[0.03] transition-colors">
                     <td className="px-5 py-3.5 font-semibold text-emerald-300">{q.user?.username || 'Guest'}</td>
-                    <td className="px-5 py-3.5 font-medium text-sand-100 max-w-xs">{q.original_question || q.question}</td>
+                    <td className="px-5 py-3.5 space-y-1.5 max-w-sm">
+                      <div className="font-medium text-sand-100 text-sm">
+                        "{q.original_question || q.question}"
+                      </div>
+                      {q.question && q.original_question && q.question !== q.original_question && (
+                        <div className="text-[11px] text-emerald-300 font-mono bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-sm flex items-center gap-1.5">
+                          <Sparkles size={11} className="text-emerald-400 shrink-0" />
+                          <span>AI: "{q.question}"</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5">
                       {q.valid ? (
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
@@ -739,7 +758,8 @@ export default function AdminDashboard() {
                 onChange={(e) => {
                   const id = Number(e.target.value);
                   setSelectedEntityId(id);
-                  fetchEntityFacts(id);
+                  const selected = factEntities.find((item) => item.id === id);
+                  fetchEntityFacts(selected?.name || id);
                 }}
                 className="w-full bg-obsidian-900 border border-white/10 text-sand-100 rounded-sm px-3 py-2 text-xs focus:outline-none focus:border-emerald-400"
               >
