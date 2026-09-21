@@ -5,43 +5,42 @@ import History from '../components/History';
 import GuessInput from '../components/GuessInput';
 import USStatesMap from '../components/USStatesMap';
 import GameInstructions from '../components/GameInstructions';
-import { Loader2 } from 'lucide-react';
+import { Check, Loader2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
 
 export default function USStatesGamePage() {
-  const { 
-    gameState, 
-    questions, 
-    guesses, 
-    entities: states, 
+  const {
+    gameState,
+    questions,
+    guesses,
+    entities: states,
     correctEntity: correctState,
-    isLoading, 
-    fetchGameState, 
-    fetchEntities: fetchStates, 
-    askQuestion, 
+    isLoading,
+    fetchGameState,
+    fetchEntities: fetchStates,
+    askQuestion,
     makeGuess,
     syncGuestData,
     isGuest,
     dailyDate,
   } = useUSStatesGameStore();
   const { t } = useTranslation();
+  
 
   useEffect(() => {
     fetchGameState();
     fetchStates();
-
-    const handleLogin = () => {
-      syncGuestData();
-    };
+    const handleLogin = () => { syncGuestData(); };
     window.addEventListener('auth-login', handleLogin);
     return () => window.removeEventListener('auth-login', handleLogin);
   }, [fetchGameState, fetchStates, syncGuestData]);
 
   if (!gameState && isLoading) {
     return (
-      <div className="flex justify-center items-center h-[60vh]">
-        <Loader2 className="animate-spin text-blue-500" size={48} />
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+        <Loader2 className="animate-spin" size={24} aria-hidden="true" />
+        <span className="text-sm">{'Loading the puzzle…'}</span>
       </div>
     );
   }
@@ -49,178 +48,111 @@ export default function USStatesGamePage() {
   if (!gameState) return null;
 
   return (
-    <div className="flex flex-col max-w-[1920px] mx-auto lg:h-[calc(100vh-65px)] lg:overflow-hidden">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 lg:static flex items-center justify-between px-3 md:px-4 py-2 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm shrink-0">
-         <div className="flex items-center gap-2 md:gap-4">
-            <div className="flex flex-col">
-                <h2 className="text-lg md:text-xl font-bold truncate">{t('usStatesPage.title')}</h2>
-                {isGuest && (
-                    <span className="text-[10px] text-amber-500 font-medium uppercase tracking-tighter leading-none">
-                        {t('gamePage.guestMode', 'Guest Mode - Progress saved locally')}
-                    </span>
-                )}
+    <div className="mx-auto w-full max-w-7xl">
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <div>
+          <p className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+            <span>{'Daily fieldwork'}</span>
+            <span className="text-zinc-400">{dailyDate}</span>
+          </p>
+          <h1 className="text-xl font-semibold tracking-tight text-sand-100 sm:text-2xl">{t('usStatesPage.title')}</h1>
+          {isGuest && <p className="mt-1 text-xs text-zinc-400">{'Guest · progress saved locally'}</p>}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <dl className="flex divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900">
+            <div className="px-3 py-2">
+              <dt className="text-[10px] uppercase tracking-wider text-zinc-400">{t('gamePage.questionsLeft')}</dt>
+              <dd className="mt-0.5 font-mono text-lg text-sand-100">{gameState.remaining_questions}<span className="text-xs text-zinc-500"> / 8</span></dd>
             </div>
-            <div className="hidden md:block h-4 w-px bg-zinc-700"></div>
-            <p className="hidden md:block text-xs text-zinc-400">{useUSStatesGameStore.getState().dailyDate}</p>
-         </div>
-         
-         <div className="flex items-center gap-2 md:gap-4">
-            <div className="flex gap-2">
-                <div className="flex flex-col md:flex-row items-center md:gap-2 px-2 md:px-3 py-1 bg-zinc-800 rounded-lg border border-zinc-700">
-                    <span className="text-blue-500 font-bold text-sm md:text-base">{gameState.remaining_questions}</span>
-                    <span className="text-[8px] md:text-[10px] text-zinc-400 uppercase tracking-wider hidden md:inline">{t('gamePage.questionsLeft')}</span>
-                </div>
-                <div className="flex flex-col md:flex-row items-center md:gap-2 px-2 md:px-3 py-1 bg-zinc-800 rounded-lg border border-zinc-700">
-                    <span className="text-teal-500 font-bold text-sm md:text-base">{gameState.remaining_guesses}</span>
-                    <span className="text-[8px] md:text-[10px] text-zinc-400 uppercase tracking-wider hidden md:inline">{t('gamePage.guessesLeft')}</span>
-                </div>
+            <div className="px-3 py-2">
+              <dt className="text-[10px] uppercase tracking-wider text-zinc-400">{t('gamePage.guessesLeft')}</dt>
+              <dd className="mt-0.5 font-mono text-lg text-emerald-400">{gameState.remaining_guesses}<span className="text-xs text-zinc-500"> / 3</span></dd>
             </div>
+          </dl>
+          <GameInstructions
+            gameName={t('usStatesPage.title')}
+            examples={t('usStatesPage.examples', { returnObjects: true }) as string[]}
+            scoring={{ maxPoints: 3500, details: t('usStatesPage.scoringDetails', { returnObjects: true }) as string[] }}
+          />
+        </div>
+      </header>
 
-            <GameInstructions 
-                gameName="US States Game"
-                examples={t('usStatesPage.examples', { returnObjects: true }) as string[]}
-                scoring={{
-                maxPoints: 3500,
-                details: t('usStatesPage.scoringDetails', { returnObjects: true }) as string[]
-                }}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.48fr)]">
+        <section className="min-w-0 space-y-5" aria-label={'Map and deduction'}>
+          <div className="overflow-hidden rounded-sm border border-white/10 bg-obsidian-900">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+              <span>Atlas / US Statedle</span>
+              <span className="text-emerald-400">{gameState.is_game_over ? ('Result') : ('Search area')}</span>
+            </div>
+            <div className="relative h-[310px] sm:h-[420px] lg:h-[460px]">
+              <USStatesMap correctStateName={gameState.is_game_over ? correctState?.name : undefined} className="h-full" />
+            </div>
+          </div>
+
+          {gameState.is_game_over ? (
+            <ShareResultCard
+              gameName="US Statedle"
+              gamePath="/us-states"
+              date={dailyDate}
+              won={gameState.won}
+              points={gameState.points}
+              questionsAsked={gameState.questions_asked}
+              maxQuestions={8}
+              guessesMade={gameState.guesses_made}
+              maxGuesses={3}
+              targetName={correctState?.name || guesses.find(g => g.answer)?.guess}
             />
-         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col lg:flex-row flex-1 lg:min-h-0">
-        
-        {/* Left Column: Map & Inputs */}
-        <div className="w-full lg:w-3/4 flex flex-col p-3 md:p-4 gap-4 lg:overflow-y-auto custom-scrollbar">
-            {/* Map */}
-            <div className="h-[300px] md:h-[400px] lg:flex-1 lg:mb-16 min-h-[300px] shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative shadow-lg">
-                <USStatesMap correctStateName={gameState.is_game_over ? correctState?.name : undefined} className="h-full" />
+          ) : (
+            <div className="space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
+              <div>
+                <h2 className="mb-2 text-sm font-medium text-sand-100">{'Ask a yes-or-no question'}</h2>
+                <QuestionInput
+                  onAsk={askQuestion}
+                  isLoading={isLoading}
+                  remainingQuestions={gameState.remaining_questions}
+                  placeholder={t('usStatesPage.askPlaceholder', { count: gameState.remaining_questions })}
+                />
+              </div>
+              <div className="border-t border-white/10 pt-4">
+                <h2 className="mb-2 text-sm font-medium text-sand-100">{'Name the location'}</h2>
+                <GuessInput
+                  countries={states}
+                  onGuess={async (id, name) => makeGuess(name, id)}
+                  isLoading={isLoading}
+                  remainingGuesses={gameState.remaining_guesses}
+                  placeholder={t('usStatesPage.guessPlaceholder', { count: gameState.remaining_guesses })}
+                />
+              </div>
             </div>
+          )}
+        </section>
 
-            {/* Game Over Message */}
-            {/* Game Over Message & Share Result Card */}
-            {gameState.is_game_over && (
-              <ShareResultCard
-                gameName="US Statedle"
-                gamePath="/us-states"
-                date={dailyDate}
-                won={gameState.won}
-                points={gameState.points}
-                questionsAsked={gameState.questions_asked}
-                maxQuestions={8}
-                guessesMade={gameState.guesses_made}
-                maxGuesses={3}
-                targetName={correctState?.name || guesses.find(g => g.answer)?.guess}
-              />
-            )}
-
-            {/* Input Section - Only for Mobile now */}
-            {!gameState.is_game_over && (
-                <div className="lg:hidden space-y-3 md:space-y-4 max-w-3xl mx-auto w-full">
-                    <GuessInput 
-                        countries={states} 
-                        onGuess={async (id, name) => makeGuess(name, id)} 
-                        isLoading={isLoading} 
-                        remainingGuesses={gameState.remaining_guesses} 
-                        placeholder={t('usStatesPage.guessPlaceholder', { count: gameState.remaining_guesses })}
-                    />
-
-                    <QuestionInput 
-                        onAsk={askQuestion} 
-                        isLoading={isLoading} 
-                        remainingQuestions={gameState.remaining_questions} 
-                        placeholder={t('usStatesPage.askPlaceholder', { count: gameState.remaining_questions })}
-                    />
-                </div>
-            )}
-
-            {/* Recent Guesses (Mobile Only or Compact) */}
-            {guesses.length > 0 && (
-                <div className="lg:hidden bg-zinc-900/50 border border-zinc-800 rounded-xl p-3">
-                    <h3 className="font-bold text-zinc-400 uppercase tracking-wider mb-2 text-xs">{t('gamePage.yourGuesses')}</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {guesses.map((g) => (
-                            <div key={g.id} className={`flex items-center gap-2 px-2 py-1 rounded-md border ${g.answer ? 'bg-green-900/10 border-green-500/30 text-green-400' : 'bg-red-900/10 border-red-500/30 text-red-400'} text-xs`}>
-                                <span className="font-medium">{g.guess}</span>
-                                {g.answer ? <span className="font-bold">✓</span> : <span className="font-bold">✗</span>}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div>
-
-        {/* Right Column: History & Desktop Guesses */}
-        <div className="w-full lg:w-1/4 flex flex-col bg-zinc-950/30 lg:border-l border-zinc-800 min-h-[400px]">
-            
-            {/* Guesses Section */}
-            <div className="hidden lg:flex flex-col border-b border-zinc-800 bg-zinc-900/20 max-h-[40%] min-h-[150px]">
-                <div className="p-3 md:p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/30 sticky top-0 z-10">
-                    <h3 className="font-bold text-zinc-200 text-sm md:text-base">{t('gamePage.yourGuesses')}</h3>
-                    <span className="text-xs text-zinc-500 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">{guesses.length}</span>
-                </div>
-                
-                <div className="flex flex-col flex-1">
-                    {!gameState.is_game_over && (
-                        <div className="p-4 pb-2 border-b border-zinc-800/50">
-                            <GuessInput 
-                                countries={states} 
-                                onGuess={async (id, name) => makeGuess(name, id)} 
-                                isLoading={isLoading} 
-                                remainingGuesses={gameState.remaining_guesses} 
-                                placeholder={t('usStatesPage.guessPlaceholder', { count: gameState.remaining_guesses })}
-                                className="mb-0"
-                            />
-                        </div>
-                    )}
-                    
-                    <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
-                        {guesses.length > 0 ? (
-                            <div className="space-y-2">
-                                {guesses.map((g) => (
-                                    <div key={g.id} className={`p-3 rounded-xl border flex items-center gap-3 shadow-sm transition-all ${g.answer ? 'bg-zinc-900 border-green-500/30' : 'bg-zinc-900 border-red-500/30'}`}>
-                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${g.answer ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                            {g.answer ? <span className="font-bold">✓</span> : <span className="font-bold">✗</span>}
-                                        </div>
-                                        <span className="font-medium text-sm md:text-base flex-1 truncate">{g.guess}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center text-zinc-500 text-sm py-4">
-                                {t('gamePage.makeAGuess')}
-                            </div>
-                        )}
-                    </div>
-                </div>
+        <aside className="min-w-0 rounded-sm border border-white/10 bg-obsidian-900" aria-label={'Deduction notebook'}>
+          <section className="border-b border-white/10 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-medium text-sand-100">{t('gamePage.yourGuesses')}</h2>
+              <span className="font-mono text-xs text-zinc-500">{guesses.length.toString().padStart(2, '0')}</span>
             </div>
-
-            {/* History Section */}
-            <div className="flex flex-col flex-1 min-h-0">
-                <div className="p-3 md:p-4 border-b border-zinc-800 flex flex-col gap-3 bg-zinc-900/30 sticky top-0 z-10">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-zinc-200 text-sm md:text-base">{t('gamePage.history')}</h3>
-                        <span className="text-xs text-zinc-500 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">{t('gamePage.questionsAsked', { count: questions.length })}</span>
-                    </div>
-                    
-                    {!gameState.is_game_over && (
-                        <div className="hidden lg:block w-full">
-                             <QuestionInput 
-                                onAsk={askQuestion} 
-                                isLoading={isLoading} 
-                                remainingQuestions={gameState.remaining_questions} 
-                                placeholder={t('usStatesPage.askPlaceholder', { count: gameState.remaining_questions })}
-                            />
-                        </div>
-                    )}
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar">
-                    <History questions={questions} isGameOver={gameState.is_game_over} />
-                </div>
+            {guesses.length > 0 ? (
+              <ul className="space-y-2">
+                {guesses.map(g => (
+                  <li key={g.id} className="flex items-center gap-3 border-l-2 border-white/10 bg-obsidian-950 px-3 py-2.5">
+                    {g.answer ? <Check size={16} className="shrink-0 text-emerald-400" aria-hidden="true" /> : <X size={16} className="shrink-0 text-rose-400" aria-hidden="true" />}
+                    <span className="sr-only">{t(g.answer ? 'gamePage.correct' : 'gamePage.incorrect')}: </span>
+                    <span className="break-words text-sm text-zinc-200">{g.guess}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm leading-relaxed text-zinc-500">{t('gamePage.makeAGuess')}</p>}
+          </section>
+          <section className="p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-medium text-sand-100">{t('gamePage.history')}</h2>
+              <span className="font-mono text-xs text-zinc-500">{questions.length.toString().padStart(2, '0')}</span>
             </div>
-        </div>
+            <History questions={questions} isGameOver={gameState.is_game_over} />
+          </section>
+        </aside>
       </div>
     </div>
   );

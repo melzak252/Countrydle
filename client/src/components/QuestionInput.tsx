@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,8 @@ interface QuestionInputProps {
 
 export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder }: QuestionInputProps) {
   const { t } = useTranslation();
+  const inputId = useId();
+  
   const [question, setQuestion] = useState('');
   const [showSlowMessage, setShowSlowMessage] = useState(false);
 
@@ -29,42 +31,45 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question.trim() || isLoading) return;
+    if (!question.trim() || isLoading || remainingQuestions <= 0) return;
     
     await onAsk(question);
     setQuestion('');
   };
 
-  const defaultPlaceholder = `Ask a yes/no question (e.g., "Is it in Europe?") - ${remainingQuestions} left`;
+  const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
+    <form onSubmit={handleSubmit} className="w-full">
+      <label htmlFor={inputId} className="sr-only">{'Yes-or-no question'}</label>
       <div className="relative">
         <input
+          id={inputId}
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder={placeholder || defaultPlaceholder}
           maxLength={100}
-          className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-3 py-2 md:px-4 md:py-3 pr-10 md:pr-12 text-sm md:text-base focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-3 pr-14 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40"
           disabled={isLoading || remainingQuestions <= 0}
         />
         <button
           type="submit"
+          aria-label={'Ask question'}
           disabled={!question.trim() || isLoading || remainingQuestions <= 0}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+          className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-sm text-emerald-400 transition-colors hover:bg-emerald-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
         >
 
           {isLoading ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
           ) : (
-            <Send size={16} />
+            <Send size={16} aria-hidden="true" />
           )}
 
         </button>
       </div>
       {showSlowMessage && (
-        <div className="mt-2 flex items-center justify-center gap-2 text-xs text-amber-300/90">
+        <div role="status" className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
           <Loader2 size={13} className="animate-spin" />
           <span>{t('inputs.slowQuestionMessage')}</span>
         </div>

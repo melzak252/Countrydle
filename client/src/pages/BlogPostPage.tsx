@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -54,8 +53,8 @@ export default function BlogPostPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="animate-spin text-blue-500" size={48} />
+      <div role="status" aria-label={'Loading article'} className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="animate-spin text-emerald-400" size={32} />
       </div>
     );
   }
@@ -63,9 +62,9 @@ export default function BlogPostPage() {
   if (!post) {
     return (
       <div className="max-w-2xl mx-auto py-20 px-4 text-center space-y-4">
-        <h2 className="text-2xl font-bold text-white">Post Not Found</h2>
-        <p className="text-zinc-400">The requested article could not be loaded.</p>
-        <Link to="/blog" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300">
+        <h2 className="font-serif text-3xl text-sand-100">{'Post not found'}</h2>
+        <p className="text-zinc-400">{'The requested article could not be loaded.'}</p>
+        <Link to="/blog" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300">
           <ArrowLeft size={16} />
           {t('blog.backToBlog', 'Back to All Posts')}
         </Link>
@@ -74,232 +73,169 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-10"
-      >
-        {/* Navigation Back & Share */}
-        <div className="flex justify-between items-center text-sm">
-          <Link
-            to="/blog"
-            className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={16} />
-            <span>{t('blog.backToBlog', 'Back to All Posts')}</span>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 md:py-12">
+      <div className="space-y-10 md:space-y-12">
+        <nav aria-label={'Article navigation'} className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5 text-sm">
+          <Link to="/blog" className="inline-flex items-center gap-2 text-zinc-400 transition-colors hover:text-sand-100">
+            <span>{t('blog.backToBlog', '← Back to All Posts')}</span>
           </Link>
-
           <button
+            type="button"
             onClick={handleShare}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors text-xs font-medium"
+            className="inline-flex items-center gap-2 rounded-md border border-white/15 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:border-emerald-400/40 hover:text-emerald-300"
           >
-            {copied ? <Check size={14} className="text-green-400" /> : <Share2 size={14} />}
-            <span>{copied ? 'Copied' : 'Share'}</span>
+            {copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+            <span>{copied ? ('Copied') : ('Share')}</span>
           </button>
-        </div>
+        </nav>
 
-        {/* Article Header with Flag Hero Background */}
-        <header className="relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-3xl p-8 md:p-10 shadow-2xl space-y-4">
-          {post.country_code && (
-            <div 
-              className="absolute inset-0 bg-cover bg-right md:bg-center opacity-35 pointer-events-none scale-105 filter saturate-125"
-              style={{ backgroundImage: `url(https://flagcdn.com/w1280/${post.country_code.toLowerCase()}.png)` }}
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/75 to-transparent pointer-events-none" />
-
-          <div className="relative z-10 space-y-4">
-            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-zinc-400">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/20 text-blue-300 font-bold uppercase tracking-wider">
-                {post.country_code && (
-                  <img
-                    src={`https://flagcdn.com/w40/${post.country_code.toLowerCase()}.png`}
-                    className="w-5 h-3.5 object-cover rounded-sm shadow-sm border border-white/20"
-                    alt={post.country_name}
-                  />
-                )}
-                <span>{post.country_name}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar size={13} />
-                {post.date}
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={13} />
-                {post.reading_time_minutes} {t('blog.minRead', 'min read')}
-              </span>
+        <header className="grid gap-8 md:grid-cols-[1fr_240px] md:items-center md:gap-12">
+          <div>
+            <p className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">{post.country_name}</p>
+            <h1 className="font-serif text-4xl leading-[1.12] tracking-tight text-sand-100 sm:text-5xl md:text-[3.25rem]">{post.title}</h1>
+            {post.subtitle && <p className="mt-5 text-base leading-7 text-zinc-400 md:text-lg md:leading-8">{post.subtitle}</p>}
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-500">
+              <span className="inline-flex items-center gap-1.5"><Calendar size={13} />{post.date}</span>
+              <span className="inline-flex items-center gap-1.5"><Clock size={13} />{post.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
             </div>
-
-            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight">
-              {post.title}
-            </h1>
-
-            <p className="text-zinc-300 text-base md:text-lg leading-relaxed">
-              {post.subtitle}
-            </p>
           </div>
+          {post.country_code && (
+            <figure className="flex flex-col items-center justify-center rounded-md border border-white/10 bg-obsidian-900 px-6 py-8">
+              <img
+                src={`https://flagcdn.com/w640/${post.country_code.toLowerCase()}.png`}
+                className="max-h-44 w-full max-w-xs object-contain"
+                alt={post.country_name}
+              />
+              <figcaption className="mt-5 text-xs tracking-wide text-zinc-400">{post.country_name}</figcaption>
+            </figure>
+          )}
         </header>
 
-        {/* Daily Player Statistics */}
         {post.player_stats && post.player_stats.total_players > 0 && (
-          <div className="bg-gradient-to-r from-blue-950/40 via-zinc-900 to-teal-950/30 border border-blue-500/20 rounded-2xl p-6 shadow-xl space-y-3">
-            <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-wider">
-              <Users size={16} />
-              {t('blog.playerScoreboard', "Yesterday's Player Scoreboard")}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs md:text-sm">
-              <div className="space-y-1">
-                <div className="text-zinc-500 flex items-center gap-1.5">
-                  <Users size={13} className="text-zinc-400" />
-                  <span>Challengers Tried</span>
+          <section className="rounded-lg border border-white/10 bg-obsidian-900 p-5 sm:p-7">
+            <h2 className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+              <Users size={15} />
+              {"Yesterday's player scoreboard"}
+            </h2>
+            <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-4">
+              <div>
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
+                  <Users size={13} />
+                  <span>{'Challengers'}</span>
                 </div>
-                <div className="text-xl md:text-2xl font-black text-white">
-                  {post.player_stats.total_players}
-                </div>
+                <div className="font-mono text-2xl text-sand-100">{post.player_stats.total_players}</div>
               </div>
-
-              <div className="space-y-1">
-                <div className="text-zinc-500 flex items-center gap-1.5">
-                  <CheckCircle2 size={13} className="text-green-400" />
-                  <span>Solved</span>
+              <div>
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
+                  <CheckCircle2 size={13} />
+                  <span>{'Solved'}</span>
                 </div>
-                <div className="text-xl md:text-2xl font-black text-green-400 flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-2 font-mono text-2xl text-emerald-400">
                   <span>{post.player_stats.winners_count}</span>
-                  <span className="text-xs font-normal text-zinc-400">
-                    ({post.player_stats.win_rate_pct}%)
-                  </span>
+                  <span className="text-xs text-zinc-400">({post.player_stats.win_rate_pct}%)</span>
                 </div>
               </div>
-
-              <div className="space-y-1">
-                <div className="text-zinc-500 flex items-center gap-1.5">
-                  <HelpCircle size={13} className="text-yellow-400" />
-                  <span>Questions Asked</span>
+              <div>
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
+                  <HelpCircle size={13} />
+                  <span>{'Questions asked'}</span>
                 </div>
-                <div className="text-xl md:text-2xl font-black text-white flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-2 font-mono text-2xl text-sand-100">
                   <span>{post.player_stats.total_questions}</span>
                   {post.player_stats.avg_questions_won > 0 && (
-                    <span className="text-xs font-normal text-zinc-400">
-                      (avg {post.player_stats.avg_questions_won})
-                    </span>
+                    <span className="text-xs text-zinc-400">({'avg'} {post.player_stats.avg_questions_won})</span>
                   )}
                 </div>
               </div>
-
-              <div className="space-y-1">
-                <div className="text-zinc-500 flex items-center gap-1.5">
-                  <Target size={13} className="text-teal-400" />
-                  <span>Guesses Made</span>
+              <div>
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
+                  <Target size={13} />
+                  <span>{'Guesses made'}</span>
                 </div>
-                <div className="text-xl md:text-2xl font-black text-white flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-2 font-mono text-2xl text-sand-100">
                   <span>{post.player_stats.total_guesses}</span>
                   {post.player_stats.avg_guesses_won > 0 && (
-                    <span className="text-xs font-normal text-zinc-400">
-                      (avg {post.player_stats.avg_guesses_won})
-                    </span>
+                    <span className="text-xs text-zinc-400">({'avg'} {post.player_stats.avg_guesses_won})</span>
                   )}
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Fast Facts Card */}
         {post.fast_facts && (
-          <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl space-y-4">
-            <div className="flex items-center gap-2 text-teal-400 font-bold text-xs uppercase tracking-wider">
-              <Globe size={16} />
+          <section className="border-y border-white/10 py-7">
+            <h2 className="mb-5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-400">
+              <Globe size={15} />
               {t('blog.fastFacts', 'Fast Facts')}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs md:text-sm">
+            </h2>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
               {Object.entries(post.fast_facts).map(([key, val]) => (
-                <div key={key} className="space-y-1">
-                  <div className="text-zinc-500 capitalize">{key.replace(/_/g, ' ')}</div>
-                  <div className="text-white font-semibold">{String(val)}</div>
+                <div key={key} className="min-w-0">
+                  <dt className="mb-1 text-xs capitalize text-zinc-500">{key.replace(/_/g, ' ')}</dt>
+                  <dd className="break-words text-sm leading-6 text-sand-100">{String(val)}</dd>
                 </div>
               ))}
-            </div>
-          </div>
+            </dl>
+          </section>
         )}
 
-        {/* Curated Wikipedia Fun Facts */}
         {post.fun_facts && post.fun_facts.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 text-yellow-400 font-bold text-xs uppercase tracking-wider">
-              <Sparkles size={16} />
+          <section>
+            <h2 className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-400">
+              <Sparkles size={15} />
               {t('blog.funFacts', 'Wikipedia Curiosities & Fun Facts')}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {post.fun_facts.map((fact: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="p-5 bg-gradient-to-b from-zinc-900 to-zinc-900/80 border border-zinc-800 rounded-2xl space-y-2"
-                >
-                  <div className="text-yellow-400 font-bold text-sm">
-                    {fact.title}
-                  </div>
-                  <p className="text-zinc-300 text-xs leading-relaxed">
-                    {fact.description}
-                  </p>
+            </h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {post.fun_facts.map((fact: { title: string; description: string }, idx: number) => (
+                <div key={idx} className="border-l border-white/15 pl-5">
+                  <span aria-hidden="true" className="font-mono text-xs text-zinc-500">{String(idx + 1).padStart(2, '0')}</span>
+                  <h3 className="mb-3 mt-2 font-serif text-xl leading-snug text-sand-100">{fact.title}</h3>
+                  <p className="text-sm leading-7 text-zinc-400">{fact.description}</p>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* Main Article Content (Markdown) */}
-        <article className="max-w-none text-zinc-300 leading-relaxed space-y-4 border-y border-zinc-800/80 py-8">
+        <article className="mx-auto max-w-[70ch] border-y border-white/10 py-8 text-zinc-300 md:py-12">
           <MarkdownRenderer content={post.content_markdown} />
         </article>
 
-        {/* Deduction Masterclass Callout */}
         {post.deduction_masterclass && (
-          <section className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
-            <div className="flex items-center gap-2 text-purple-400 font-bold text-xs uppercase tracking-wider">
-              <Compass size={16} />
+          <section className="rounded-lg border border-white/10 bg-obsidian-900 p-6 sm:p-8">
+            <h2 className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-400">
+              <Compass size={15} />
               {t('blog.deductionStrategy', 'Optimal Deduction Masterclass')}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-              <div className="space-y-1">
-                <div className="text-zinc-400 font-bold text-xs uppercase">Step 1 • Quadrant Elimination</div>
-                <p className="text-zinc-300 text-xs leading-relaxed">{post.deduction_masterclass.step_1}</p>
+            </h2>
+            <div className="grid grid-cols-1 gap-7 md:grid-cols-3">
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-sand-100">{'01 / Quadrant elimination'}</h3>
+                <p className="text-sm leading-7 text-zinc-400">{post.deduction_masterclass.step_1}</p>
               </div>
-              <div className="space-y-1">
-                <div className="text-zinc-400 font-bold text-xs uppercase">Step 2 • Boundary Isolation</div>
-                <p className="text-zinc-300 text-xs leading-relaxed">{post.deduction_masterclass.step_2}</p>
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-sand-100">{'02 / Boundary isolation'}</h3>
+                <p className="text-sm leading-7 text-zinc-400">{post.deduction_masterclass.step_2}</p>
               </div>
-              <div className="space-y-1">
-                <div className="text-purple-400 font-bold text-xs uppercase">Winning Clue</div>
-                <p className="text-zinc-300 text-xs leading-relaxed">{post.deduction_masterclass.winning_clue}</p>
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-emerald-400">{'03 / Winning clue'}</h3>
+                <p className="text-sm leading-7 text-zinc-400">{post.deduction_masterclass.winning_clue}</p>
               </div>
             </div>
           </section>
         )}
 
-        {/* Call to Action: Play Today */}
-        <div className="p-8 md:p-12 bg-gradient-to-r from-blue-900/40 via-teal-900/30 to-zinc-900 border border-blue-500/30 rounded-3xl text-center space-y-6 shadow-2xl">
-          <div className="space-y-2 max-w-xl mx-auto">
-            <h3 className="text-2xl md:text-3xl font-black text-white">
-              Ready to test your geography skills?
-            </h3>
-            <p className="text-zinc-300 text-sm">
-              Today's mystery country is live now. Can you deduce it in fewer than 4 questions and claim the top of the leaderboard?
-            </p>
+        <section className="flex flex-col items-start justify-between gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
+          <div className="max-w-lg">
+            <h2 className="font-serif text-2xl text-sand-100 md:text-3xl">{'Today’s challenge'}</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">{'Return to the map and solve today’s country challenge.'}</p>
           </div>
-          <div>
-            <Link
-              to="/game"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-500 hover:to-teal-400 text-white font-black rounded-2xl shadow-xl shadow-blue-500/25 transition-all text-base hover:scale-105"
-            >
-              <Play size={18} />
-              <span>{t('blog.playToday', "Play Today's Countrydle Challenge")}</span>
-            </Link>
-          </div>
-        </div>
-      </motion.div>
+          <Link to="/game" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-emerald-400 px-5 py-3.5 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 sm:max-w-xs">
+            <Play size={16} className="shrink-0" />
+            <span>{t('blog.playToday', "Play Today's Countrydle Challenge")}</span>
+          </Link>
+        </section>
+      </div>
     </div>
   );
 }

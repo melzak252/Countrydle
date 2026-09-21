@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Search, 
@@ -8,8 +7,7 @@ import {
   Clock, 
   ArrowRight, 
   Globe, 
-  Loader2, 
-  Sparkles
+  Loader2
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { blogService } from '../services/api';
@@ -47,195 +45,146 @@ export default function BlogListPage() {
   const regularPosts = featuredPost ? posts.slice(1) : posts;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12 md:py-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-12"
-      >
-        {/* Hero Header */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs md:text-sm font-semibold uppercase tracking-wider">
-            <BookOpen size={16} />
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-16">
+      <div className="space-y-10 md:space-y-14">
+        <header className="border-b border-white/10 pb-8 md:pb-10">
+          <div className="mb-5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">
+            <BookOpen size={15} />
             {t('blog.badge', 'Daily Country Recaps & Trivia')}
           </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-teal-300 to-green-400 text-transparent bg-clip-text">
-            {t('blog.title', 'Countrydle Daily Blog')}
-          </h1>
-          <p className="text-zinc-400 text-base md:text-lg leading-relaxed">
-            {t('blog.subtitle', 'Explore yesterday\'s mystery country, fascinating Wikipedia curiosities, and optimal deduction breakdowns.')}
-          </p>
-
-          {/* Search bar */}
-          <div className="pt-4 max-w-lg mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('blog.searchPlaceholder', 'Search countries, facts, or keywords...')}
-              className="w-full pl-11 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors text-sm"
-            />
+          <div className="grid gap-7 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:gap-16">
+            <div>
+              <h1 className="max-w-2xl font-serif text-4xl leading-[1.1] tracking-tight text-sand-100 sm:text-5xl md:text-6xl">
+                {t('blog.title', 'Countrydle Daily Blog')}
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-400">
+                {t('blog.subtitle', 'Explore yesterday\'s mystery country, fascinating Wikipedia curiosities, and optimal deduction breakdowns.')}
+              </p>
+            </div>
+            <div>
+              <label htmlFor="journal-search" className="mb-3 block text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+                {'Search the journal'}
+              </label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                <input
+                  id="journal-search"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('blog.searchPlaceholder', 'Search countries, facts, or keywords...')}
+                  className="w-full rounded-md border border-white/15 bg-obsidian-900 py-3.5 pl-11 pr-4 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* Loading State */}
         {loading ? (
-          <div className="flex justify-center p-20">
-            <Loader2 className="animate-spin text-blue-500" size={48} />
+          <div role="status" aria-label={'Loading articles'} className="flex justify-center py-24">
+            <Loader2 className="animate-spin text-emerald-400" size={32} />
           </div>
         ) : (
           <>
-            {/* Featured Post (Yesterday's Country) */}
             {featuredPost && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="relative overflow-hidden bg-zinc-900 border border-blue-500/30 rounded-3xl p-8 md:p-12 shadow-2xl group"
-              >
-                {/* Ambient Flag Background with Vignette Gradient */}
-                {featuredPost.country_code && (
-                  <div
-                    className="absolute inset-0 bg-cover bg-right md:bg-center opacity-35 pointer-events-none scale-105 filter saturate-125 transition-all duration-700 group-hover:scale-110 group-hover:opacity-50"
-                    style={{ backgroundImage: `url(https://flagcdn.com/w1280/${featuredPost.country_code.toLowerCase()}.png)` }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/75 to-transparent pointer-events-none" />
-
-                <div className="relative z-10">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider">
-                      <Sparkles size={14} />
+              <article className="grid overflow-hidden rounded-lg border border-white/10 bg-obsidian-900 md:grid-cols-2">
+                <Link
+                  to={`/blog/${featuredPost.slug}`}
+                  aria-label={featuredPost.title}
+                  className="flex min-h-56 items-center justify-center border-b border-white/10 bg-obsidian-950 p-8 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 md:min-h-80 md:border-b-0 md:border-r md:p-12"
+                >
+                  {featuredPost.country_code ? (
+                    <img
+                      src={`https://flagcdn.com/w640/${featuredPost.country_code.toLowerCase()}.png`}
+                      alt={featuredPost.country_name}
+                      className="max-h-64 w-full max-w-sm object-contain"
+                    />
+                  ) : (
+                    <Globe size={80} strokeWidth={1} className="text-zinc-600" />
+                  )}
+                </Link>
+                <div className="flex flex-col justify-center p-6 sm:p-8 md:p-10">
+                  <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+                    <span className="font-medium uppercase tracking-[0.14em] text-emerald-400">
                       {t('blog.latestBadge', "Yesterday's Solution")}
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-zinc-400 font-mono">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar size={14} />
-                        {featuredPost.date}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock size={14} />
-                        {featuredPost.reading_time_minutes} {t('blog.minRead', 'min read')}
-                      </span>
-                    </div>
+                    </span>
+                    <span className="text-zinc-500">/</span>
+                    <span className="text-zinc-400">{featuredPost.country_name}</span>
                   </div>
-
-                  <div className="space-y-4 max-w-3xl">
-                    <div className="flex items-center gap-2 text-teal-400 font-bold tracking-wider text-sm uppercase">
-                      {featuredPost.country_code && (
-                        <img
-                          src={`https://flagcdn.com/w80/${featuredPost.country_code.toLowerCase()}.png`}
-                          className="w-7 h-4.5 object-cover rounded shadow border border-white/20"
-                          alt={featuredPost.country_name}
-                        />
-                      )}
-                      <span>Featured Destination: {featuredPost.country_name}</span>
-                    </div>
-                    <h2 className="text-2xl md:text-4xl font-black text-white hover:text-blue-300 transition-colors">
-                      <Link to={`/blog/${featuredPost.slug}`}>
-                        {featuredPost.title}
-                      </Link>
-                    </h2>
-                    <p className="text-zinc-300 text-sm md:text-base leading-relaxed">
-                      {featuredPost.summary}
-                    </p>
-                    <div className="pt-2">
-                      <Link
-                        to={`/blog/${featuredPost.slug}`}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 text-sm"
-                      >
-                        <span>{t('blog.readArticle', 'Read Full Post')}</span>
-                        <ArrowRight size={16} />
-                      </Link>
-                    </div>
+                  <h2 className="font-serif text-3xl leading-tight tracking-tight text-sand-100 lg:text-4xl">
+                    <Link to={`/blog/${featuredPost.slug}`} className="transition-colors hover:text-emerald-300">
+                      {featuredPost.title}
+                    </Link>
+                  </h2>
+                  <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
+                  <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-500">
+                    <span className="inline-flex items-center gap-1.5"><Calendar size={13} />{featuredPost.date}</span>
+                    <span className="inline-flex items-center gap-1.5"><Clock size={13} />{featuredPost.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
                   </div>
+                  <Link
+                    to={`/blog/${featuredPost.slug}`}
+                    className="mt-7 inline-flex w-fit items-center gap-3 border-b border-emerald-400/40 pb-1 text-sm font-medium text-emerald-400 transition-colors hover:border-emerald-300 hover:text-emerald-300"
+                  >
+                    {t('blog.readArticle', 'Read Full Post')}
+                    <ArrowRight size={16} />
+                  </Link>
                 </div>
-              </motion.div>
+              </article>
             )}
 
-            {/* Posts Grid */}
             {regularPosts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {regularPosts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="relative overflow-hidden bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-6 flex flex-col justify-between transition-all hover:-translate-y-1.5 shadow-xl group"
-                  >
-                    {/* Flag Ambient Background with Smooth Zoom on Hover */}
-                    {post.country_code && (
-                      <div
-                        className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-50 transition-all duration-500 scale-100 group-hover:scale-110 pointer-events-none filter saturate-125"
-                        style={{ backgroundImage: `url(https://flagcdn.com/w640/${post.country_code.toLowerCase()}.png)` }}
-                      />
-                    )}
-                    {/* Vignette Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-zinc-950/20 pointer-events-none" />
-
-                    {/* Card Content */}
-                    <div className="relative z-10 space-y-3">
-                      <div className="flex justify-between items-center text-xs text-zinc-400">
-                        <span className="flex items-center gap-1 font-mono">
-                          <Calendar size={12} />
-                          {post.date}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} />
-                          {post.reading_time_minutes} {t('blog.minRead', 'min')}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {post.country_code && (
+              <section>
+                <div className="mb-6 flex items-center gap-4">
+                  <h2 className="shrink-0 text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">
+                    {search ? ('Search results') : ('Earlier entries')}
+                  </h2>
+                  <div className="h-px flex-1 bg-white/10" />
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {regularPosts.map((post) => (
+                    <article key={post.id} className="group flex flex-col overflow-hidden rounded-lg border border-white/10 bg-obsidian-900 transition-colors hover:border-white/25">
+                      <Link to={`/blog/${post.slug}`} aria-label={post.title} className="flex h-48 items-center justify-center border-b border-white/10 bg-obsidian-950 p-7 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+                        {post.country_code ? (
                           <img
-                            src={`https://flagcdn.com/w40/${post.country_code.toLowerCase()}.png`}
-                            className="w-5 h-3.5 object-cover rounded-sm shadow-sm border border-white/20"
+                            src={`https://flagcdn.com/w320/${post.country_code.toLowerCase()}.png`}
                             alt={post.country_name}
+                            loading="lazy"
+                            className="max-h-full w-full max-w-56 object-contain"
                           />
+                        ) : (
+                          <Globe size={56} strokeWidth={1} className="text-zinc-600" />
                         )}
-                        <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
-                          {post.country_name}
-                        </span>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-white leading-snug line-clamp-2 group-hover:text-blue-300 transition-colors">
-                        <Link to={`/blog/${post.slug}`}>
-                          {post.title}
-                        </Link>
-                      </h3>
-
-                      <p className="text-zinc-400 text-xs line-clamp-3 leading-relaxed">
-                        {post.summary}
-                      </p>
-                    </div>
-
-                    <div className="relative z-10 pt-6 border-t border-zinc-800/80 mt-6 flex justify-between items-center">
-                      <Link
-                        to={`/blog/${post.slug}`}
-                        className="text-xs font-bold text-blue-400 group-hover:text-blue-300 flex items-center gap-1.5 transition-colors"
-                      >
-                        <span>{t('blog.readArticle', 'Read Post')}</span>
-                        <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                       </Link>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      <div className="flex flex-1 flex-col p-6">
+                        <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-400">{post.country_name}</p>
+                        <h3 className="font-serif text-2xl leading-snug text-sand-100">
+                          <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
+                        </h3>
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400">{post.summary}</p>
+                        <div className="mb-5 mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-zinc-500">
+                          <span>{post.date}</span>
+                          <span>{post.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
+                        </div>
+                        <Link to={`/blog/${post.slug}`} className="mt-auto flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">
+                          {t('blog.readArticle', 'Read Full Post')}
+                          <ArrowRight size={15} />
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
             ) : (
               !featuredPost && (
-                <div className="text-center py-16 bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8">
-                  <Globe size={48} className="mx-auto text-zinc-600 mb-4" />
-                  <p className="text-zinc-400 text-base">
-                    {t('blog.noPosts', 'No daily blog posts found matching your search.')}
-                  </p>
+                <div className="rounded-lg border border-white/10 bg-obsidian-900 px-6 py-20 text-center">
+                  <Globe size={36} strokeWidth={1} className="mx-auto mb-4 text-zinc-600" />
+                  <p className="text-base text-zinc-400">{t('blog.noPosts', 'No daily blog posts found matching your search.')}</p>
                 </div>
               )
             )}
           </>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

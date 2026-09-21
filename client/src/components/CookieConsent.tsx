@@ -40,14 +40,14 @@ export default function CookieConsent() {
           className={cn(
             "fixed bottom-4 left-4 right-4 z-50",
             "md:left-auto md:right-4 md:max-w-md",
-            "p-6 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl"
+            "p-6 bg-obsidian-900 border border-sand-200/20 shadow-xl"
           )}
         >
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
-                <Cookie className="h-6 w-6 text-yellow-500" />
-                <h3 className="text-lg font-semibold text-white">
+                <Cookie className="h-5 w-5 text-sand-400" />
+                <h3 className="text-lg font-semibold text-sand-100">
                   {t('cookie.title')}
                 </h3>
               </div>
@@ -65,7 +65,7 @@ export default function CookieConsent() {
                 i18nKey="cookie.message"
                 values={{ policy: t('cookie.policy') }}
                 components={{
-                  policyLink: <Link to="/cookie-policy" className="text-blue-400 hover:underline" />,
+                  policyLink: <Link to="/cookie-policy" className="text-emerald-300 underline underline-offset-4" />,
                 }}
               />
             </p>

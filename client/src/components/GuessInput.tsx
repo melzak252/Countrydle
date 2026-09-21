@@ -1,6 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useId } from 'react';
 import type { CountryDisplay } from '../types';
 import { Search, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface GuessInputProps {
   countries: CountryDisplay[];
@@ -11,6 +12,14 @@ interface GuessInputProps {
   className?: string;
 }
 
+function normalizeName(value: string) {
+  return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
+}
+
+function displayName(country: CountryDisplay & { nazwa?: string }) {
+  return country.name || country.nazwa || '';
+}
+
 export default function GuessInput({
   countries,
   onGuess,
@@ -19,11 +28,16 @@ export default function GuessInput({
   placeholder,
   className,
 }: GuessInputProps) {
+  const { t } = useTranslation();
+  
+  const inputId = useId();
+  const listId = `${inputId}-suggestions`;
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const disabled = isLoading || remainingGuesses <= 0;
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -34,102 +48,112 @@ export default function GuessInput({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredCountries = useMemo(() => {
-    if (!query.trim() || !countries) return [];
-    const q = query.trim().toLowerCase();
-    return countries
-      .filter((c) => {
-        const name = c.name || (c as any).nazwa || '';
-        return name.toLowerCase().includes(q);
-      })
-      .slice(0, 6);
-  }, [countries, query]);
+  const searchableCountries = useMemo(() => countries.map(country => ({
+    country,
+    name: normalizeName(displayName(country)),
+  })), [countries]);
+  const normalizedQuery = normalizeName(query);
+  const filteredCountries = useMemo(() => normalizedQuery
+    ? searchableCountries.filter(item => item.name.includes(normalizedQuery)).slice(0, 6)
+    : [], [searchableCountries, normalizedQuery]);
+  const suggestionsVisible = showSuggestions && !disabled && filteredCountries.length > 0;
 
-  const handleSelect = (country: any) => {
-    onGuess(country.id, country.name || country.nazwa);
+  const handleSelect = (country: CountryDisplay) => {
+    if (disabled) return;
+    onGuess(country.id, displayName(country));
     setQuery('');
     setShowSuggestions(false);
+    setActiveIndex(-1);
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!query.trim() || isLoading || remainingGuesses <= 0) return;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim() || disabled) return;
 
-    // 1. Try exact match (case-insensitive)
-    const q = query.trim().toLowerCase();
-    const exactMatch = countries?.find((c) => {
-      const name = (c.name || (c as any).nazwa || '').toLowerCase();
-      return name === q;
-    });
-
-    if (exactMatch) {
-      handleSelect(exactMatch);
+    const selected = suggestionsVisible && activeIndex >= 0 ? filteredCountries[activeIndex] : undefined;
+    const match = selected || searchableCountries.find(item => item.name === normalizedQuery) || filteredCountries[0];
+    if (match) {
+      handleSelect(match.country);
       return;
     }
 
-    // 2. If suggestions are visible, take the top suggestion
-    if (filteredCountries.length > 0) {
-      handleSelect(filteredCountries[0]);
-      return;
-    }
-
-    // 3. Fallback: submit with id 0 and raw query
+    // Preserve free-text submissions when no known location matches.
     onGuess(0, query.trim());
     setQuery('');
     setShowSuggestions(false);
+    setActiveIndex(-1);
   };
-
-  const defaultPlaceholder = `Guess the location... (${remainingGuesses} left)`;
 
   return (
     <div
       ref={containerRef}
-      className={`w-full max-w-2xl mx-auto relative ${className || 'mb-6 md:mb-12'}`}
+      className={`relative w-full ${className || ''}`}
+      onBlur={e => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setShowSuggestions(false);
+      }}
     >
       <form onSubmit={handleSubmit} className="relative flex items-center">
+        <label htmlFor={inputId} className="sr-only">{'Search for a location'}</label>
         <input
+          id={inputId}
           type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={suggestionsVisible}
+          aria-controls={suggestionsVisible ? listId : undefined}
+          aria-activedescendant={suggestionsVisible && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
+          autoComplete="off"
           value={query}
-          onChange={(e) => {
+          onChange={e => {
             setQuery(e.target.value);
             setShowSuggestions(true);
+            setActiveIndex(-1);
           }}
           onFocus={() => setShowSuggestions(true)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+          onKeyDown={e => {
+            if (e.key === 'Escape') {
+              setShowSuggestions(false);
+              setActiveIndex(-1);
+            } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && filteredCountries.length > 0) {
               e.preventDefault();
-              handleSubmit();
+              setShowSuggestions(true);
+              setActiveIndex(index => e.key === 'ArrowDown'
+                ? (index + 1) % filteredCountries.length
+                : (index <= 0 ? filteredCountries.length - 1 : index - 1));
             }
           }}
-          placeholder={placeholder || defaultPlaceholder}
-          className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-3 py-2 md:px-4 md:py-3 pl-9 md:pl-10 pr-24 text-sm md:text-base focus:outline-none focus:border-green-500 transition-colors disabled:opacity-50 text-white"
-          disabled={isLoading || remainingGuesses <= 0}
+          placeholder={placeholder || t('inputs.guessPlaceholder', { count: remainingGuesses })}
+          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-10 pr-28 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40"
+          disabled={disabled}
         />
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4 md:w-5 md:h-5 pointer-events-none" />
-
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
         <button
           type="submit"
-          disabled={!query.trim() || isLoading || remainingGuesses <= 0}
-          className="absolute right-1.5 md:right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 md:px-4 md:py-2 bg-green-600 hover:bg-green-500 disabled:opacity-30 disabled:hover:bg-green-600 text-white font-bold text-xs md:text-sm rounded-lg transition-all flex items-center gap-1 shadow-sm"
+          disabled={!query.trim() || disabled}
+          className="absolute right-1 top-1/2 flex min-h-10 -translate-y-1/2 items-center gap-2 rounded-sm bg-emerald-400 px-3 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40"
         >
-          <span>Guess</span>
-          <ArrowRight size={14} />
+          <span>{'Guess'}</span>
+          <ArrowRight size={14} aria-hidden="true" />
         </button>
       </form>
 
-      {showSuggestions && filteredCountries.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-[100] max-h-56 overflow-y-auto">
-          {filteredCountries.map((country) => (
+      {suggestionsVisible && (
+        <div id={listId} role="listbox" aria-label={'Matching locations'} className="absolute left-0 right-0 top-full z-40 mt-1 max-h-72 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900 shadow-lg">
+          {filteredCountries.map(({ country }, index) => (
             <button
+              id={`${listId}-${index}`}
               key={country.id}
               type="button"
+              role="option"
+              aria-selected={index === activeIndex}
+              tabIndex={-1}
+              onMouseDown={e => e.preventDefault()}
               onClick={() => handleSelect(country)}
-              className="w-full text-left px-4 py-2.5 hover:bg-zinc-700/80 transition-colors border-b border-zinc-700/60 last:border-0 text-sm text-white flex items-center justify-between group"
+              onMouseEnter={() => setActiveIndex(index)}
+              className={`flex min-h-11 w-full items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-left text-sm text-sand-100 last:border-0 hover:bg-white/5 ${index === activeIndex ? 'bg-white/5' : ''}`}
             >
-              <span className="font-medium">{country.name || (country as any).nazwa}</span>
-              <span className="text-xs text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                Select ↵
-              </span>
+              <span>{displayName(country)}</span>
+              <ArrowRight size={13} className="shrink-0 text-emerald-400" aria-hidden="true" />
             </button>
           ))}
         </div>

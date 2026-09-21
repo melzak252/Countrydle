@@ -64,34 +64,42 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 p-8 rounded-xl shadow-xl">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login to Countrydle</h2>
+    <div className="mx-auto w-full max-w-md py-4 sm:py-8">
+      <div className="w-full">
+        <header className="mb-8 border-b border-white/10 pb-7">
+          <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">Welcome back</p>
+          <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">Login to Countrydle</h1>
+          <p className="mt-4 text-base leading-7 text-zinc-400">Continue your daily discoveries and keep your streak going.</p>
+        </header>
         
         {error && (
-          <div className="bg-red-900/20 border border-red-500/50 text-red-500 p-3 rounded-lg mb-4 text-sm">
+          <div role="alert" className="mb-5 rounded-sm border border-red-400/30 bg-red-400/10 p-4 text-sm leading-6 text-red-300">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Username</label>
+            <label htmlFor="login-username" className="mb-2 block text-sm font-medium text-sand-100">Username</label>
             <input
+              id="login-username"
+              autoComplete="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full rounded-sm border border-white/15 bg-obsidian-900 px-3 py-3 text-base text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Password</label>
+            <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-sand-100">Password</label>
             <input
+              id="login-password"
+              autoComplete="current-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full rounded-sm border border-white/15 bg-obsidian-900 px-3 py-3 text-base text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
               required
             />
           </div>
@@ -99,25 +107,25 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-sm bg-emerald-400 px-5 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Login'}
+            {loading ? <><Loader2 aria-hidden="true" className="animate-spin" size={18} /><span>Logging in…</span></> : 'Login'}
           </button>
         </form>
 
         <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-zinc-700"></div>
+            <div className="flex-1 border-t border-white/10"></div>
             <span className="px-4 text-zinc-500 text-sm">OR</span>
-            <div className="flex-1 border-t border-zinc-700"></div>
+            <div className="flex-1 border-t border-white/10"></div>
         </div>
 
         <div className="flex justify-center">
              <button
                 onClick={() => googleLogin()}
                 disabled={loading}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-medium py-2 rounded-lg transition-colors flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed gap-2"
+                className="flex w-full items-center justify-center gap-3 rounded-sm border border-white/15 bg-obsidian-900 px-5 py-3 text-sm font-medium text-sand-100 transition-colors hover:border-white/30 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
                     <path
                         fill="#EA4335"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -139,9 +147,9 @@ export default function LoginPage() {
              </button>
         </div>
 
-        <p className="mt-6 text-center text-sm text-zinc-500">
+        <p className="mt-7 border-t border-white/10 pt-6 text-center text-sm text-zinc-400">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-500 hover:text-blue-400">
+          <Link to="/register" className="text-emerald-300 underline decoration-emerald-400/30 underline-offset-4 hover:text-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
             Sign up
           </Link>
         </p>

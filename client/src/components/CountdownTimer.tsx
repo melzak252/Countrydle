@@ -58,9 +58,9 @@ export default function CountdownTimer() {
   if (!timeLeft) return null;
 
   return (
-    <div className="flex items-center gap-1.5 md:gap-2 text-zinc-400 font-mono text-xs md:text-sm bg-zinc-800/50 px-2 py-1 md:px-3 md:py-1.5 rounded-md border border-zinc-700/50" title="Time until next daily puzzle">
-      <Timer size={14} className="text-blue-400" />
-      <span className="text-zinc-200 font-bold whitespace-nowrap">{timeLeft}</span>
+    <div className="flex items-center gap-1.5 font-mono text-xs text-zinc-400" title="Time until next daily puzzle">
+      <Timer size={14} aria-hidden="true" />
+      <span className="whitespace-nowrap tabular-nums text-zinc-300">{timeLeft}</span>
     </div>
   );
 }

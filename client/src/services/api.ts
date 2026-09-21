@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { CountryDisplay, GameResponse, Question, Guess } from '../types';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 
 const api = axios.create({

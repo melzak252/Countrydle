@@ -151,7 +151,7 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
   };
 
   if (!geoJsonData) {
-    return <div className="h-[350px] md:h-[500px] w-full bg-zinc-900 rounded-xl animate-pulse flex items-center justify-center text-zinc-500">Ładowanie mapy powiatów...</div>;
+    return <div className="h-[350px] md:h-[500px] w-full bg-zinc-900 rounded-xl animate-pulse flex items-center justify-center text-zinc-500">Loading county map...</div>;
   }
 
   return (
@@ -165,7 +165,7 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
         <button
           onClick={clearSelection}
           className="bg-zinc-800 text-white p-2 rounded shadow-md hover:bg-zinc-700 transition-colors border border-zinc-600 w-8 h-8 flex items-center justify-center cursor-pointer"
-          title="Resetuj zaznaczenie"
+          title="Reset selection"
         >
           <RotateCcw size={16} />
         </button>
@@ -174,7 +174,7 @@ export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapP
           <button
             onClick={handleZoomToCorrect}
             className="bg-green-600 text-white p-2 rounded shadow-md hover:bg-green-700 transition-colors border border-green-500 w-8 h-8 flex items-center justify-center cursor-pointer"
-            title="Pokaż poprawny powiat"
+            title="Zoom to correct county"
           >
             <Check size={16} />
           </button>

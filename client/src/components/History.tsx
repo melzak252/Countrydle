@@ -1,8 +1,6 @@
 import type { Question } from '../types';
-import { Check, X, HelpCircle, Info, AlertTriangle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../lib/utils';
-import { useState } from 'react';
+import { Check, X, HelpCircle, ChevronDown, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface HistoryProps {
   questions: Question[];
@@ -10,103 +8,60 @@ interface HistoryProps {
 }
 
 export default function History({ questions, isGameOver = false }: HistoryProps) {
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const { t } = useTranslation();
   
-  // Sort questions by ID descending (newest first)
   const sortedQuestions = [...questions].sort((a, b) => b.id - a.id);
 
+  if (sortedQuestions.length === 0) {
+    return (
+      <div className="border border-dashed border-white/10 px-4 py-7 text-center">
+        <HelpCircle size={22} className="mx-auto mb-3 text-zinc-600" aria-hidden="true" />
+        <p className="text-sm leading-relaxed text-zinc-500">{t('history.empty')}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full space-y-3 mb-8">
-      {sortedQuestions.length === 0 ? (
-        <div className="text-center text-zinc-500 py-8">
-          No questions asked yet. Start by asking something!
-        </div>
-      ) : (
-        sortedQuestions.map((q, index) => {
-          const showExplanation = (!q.valid) || (q.explanation && isGameOver);
-          const isExpanded = hoveredId === q.id;
-
-          return (
-            <motion.div
-              key={q.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onMouseEnter={() => setHoveredId(q.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              className={cn(
-                "rounded-xl border shadow-sm transition-all overflow-hidden flex flex-col w-full",
-                q.valid ? "bg-zinc-900 border-zinc-800" : "bg-red-900/10 border-red-900/30"
+    <ol className="space-y-3">
+      {sortedQuestions.map(q => {
+        // Valid explanations may reveal the answer, so never mount them during play.
+        const showExplanation = Boolean(q.explanation) && (!q.valid || isGameOver);
+        const answerLabel = !q.valid ? ('Invalid question') : q.answer === true ? ('Yes') : q.answer === false ? ('No') : ('Unknown');
+        const answerColor = !q.valid ? 'border-amber-300/15 bg-amber-300/[0.08] text-amber-200' : q.answer === true ? 'border-emerald-300/15 bg-emerald-300/[0.10] text-emerald-300' : q.answer === false ? 'border-rose-300/15 bg-rose-300/[0.10] text-rose-300' : 'border-white/10 bg-white/5 text-zinc-300';
+        const content = (
+          <>
+            <p className="break-words px-4 py-4 text-base font-medium leading-6 text-sand-100">{q.original_question}</p>
+            <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t px-4 py-3 ${answerColor}`}>
+              <span className={`inline-flex items-center gap-2.5 font-semibold ${q.valid && q.answer !== null ? 'text-lg uppercase tracking-wide' : 'text-sm'}`}>
+                {!q.valid ? <AlertTriangle size={20} aria-hidden="true" /> : q.answer === true ? <Check size={23} strokeWidth={2.5} aria-hidden="true" /> : q.answer === false ? <X size={23} strokeWidth={2.5} aria-hidden="true" /> : <HelpCircle size={20} aria-hidden="true" />}
+                {answerLabel}
+              </span>
+              {showExplanation && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
+                  {'Explanation'}
+                  <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+                </span>
               )}
-            >
-              {/* Main Card Header */}
-              <div className="p-3 md:p-4 flex items-center gap-3 md:gap-4">
-                <div className="flex-shrink-0">
-                  {!q.valid ? (
-                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500">
-                      <AlertTriangle size={18} />
-                    </div>
-                  ) : q.answer === true ? (
-                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
-                      <Check size={18} />
-                    </div>
-                  ) : q.answer === false ? (
-                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
-                      <X size={18} />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500">
-                      <HelpCircle size={18} />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm md:text-base break-words leading-tight">{q.original_question}</p>
-                </div>
+            </div>
+          </>
+        );
 
-                {showExplanation && (
-                  <div className={cn("transition-colors", isExpanded ? "text-blue-400" : "text-zinc-600")}>
-                    <Info size={16} />
-                  </div>
-                )}
-                
-                <div className="text-[10px] text-zinc-600 font-mono ml-1 shrink-0">
-                  #{questions.length - index}
+        return (
+          <li key={q.id} className="overflow-hidden rounded-md border border-white/15 bg-obsidian-950">
+            {showExplanation ? (
+              <details className="group">
+                <summary className="cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-emerald-300 [&::-webkit-details-marker]:hidden">
+                  {content}
+                </summary>
+                <div className={`border-t border-white/10 px-4 py-4 text-sm leading-relaxed ${q.valid ? 'text-zinc-300' : 'text-amber-200'}`}>
+                  {!q.valid && <p className="mb-1 font-medium">{t('history.invalidReason')}</p>}
+                  <p>{q.explanation}</p>
                 </div>
-              </div>
-
-              {/* Expanded Section (Explanation) */}
-              <AnimatePresence>
-                {showExplanation && isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="px-4 pb-4">
-                      <div className={cn(
-                        "p-3 rounded-lg text-xs md:text-sm leading-relaxed",
-                        q.valid ? "bg-zinc-800 text-zinc-300" : "bg-amber-500/10 text-amber-200 border border-amber-500/20"
-                      )}>
-                        {!q.valid && (
-                          <div className="flex items-center gap-1.5 mb-1 text-amber-500 font-bold uppercase text-[10px] tracking-wider">
-                            <AlertTriangle size={12} />
-                            Invalid Question
-                          </div>
-                        )}
-                        {q.explanation}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })
-      )}
-    </div>
+              </details>
+            ) : content}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
-

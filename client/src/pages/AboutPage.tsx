@@ -1,198 +1,122 @@
-import { motion } from 'framer-motion';
-import { Globe, Database, Compass, Award, ShieldCheck, Heart, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function AboutPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 md:py-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-12"
-      >
-        {/* Hero Header */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs md:text-sm font-semibold uppercase tracking-wider">
-            <Compass size={16} />
-            {t('about.badge', 'Educational Geography Platform')}
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-teal-300 to-green-400 text-transparent bg-clip-text">
-            {t('about.title', 'About Countrydle')}
-          </h1>
-          <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            {t('about.subtitle', 'Making geographical discovery engaging, educational, and accessible through daily deductive puzzles.')}
-          </p>
+    <div className="mx-auto max-w-5xl bg-obsidian-950 pb-8 text-zinc-300">
+      <header className="border-b border-white/10 pb-8 md:pb-10">
+        <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">
+          {t('about.badge', 'Educational Geography Platform')}
+        </p>
+        <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">
+          {t('about.title', 'About Countrydle')}
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
+          {t('about.subtitle', 'Making geographical discovery engaging, educational, and accessible through daily deductive puzzles.')}
+        </p>
+      </header>
+
+      <section aria-labelledby="about-mission" className="grid gap-5 border-b border-white/10 py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
+        <h2 id="about-mission" className="text-xl font-semibold text-sand-100">{t('about.missionTitle', 'Our Mission')}</h2>
+        <div className="space-y-4 text-base leading-7">
+          <p>Countrydle was created by developer and geography enthusiast <strong className="font-semibold text-sand-100">Jakub Melzacki</strong> to transform geographic learning from static memorization into dynamic, hypothesis-driven deduction.</p>
+          <p>Inspired by the simplicity of <em>Wordle</em> and the strategic depth of <em>20 Questions</em>, Countrydle challenges players to ask smart yes/no questions about hemispheres, borders, coastlines, and demographics to deduce mystery locations across the globe.</p>
         </div>
+      </section>
 
-        {/* Origin & Mission */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-              <Globe size={24} />
-            </div>
-            <h2 className="text-2xl font-bold text-white">{t('about.missionTitle', 'Our Mission')}</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              Countrydle was created by developer and geography enthusiast <strong>Jakub Melzacki</strong> to transform geographic learning from static memorization into dynamic, hypothesis-driven deduction. 
-            </p>
-            <p className="text-zinc-400 leading-relaxed text-sm">
-              Inspired by the simplicity of <em>Wordle</em> and the strategic depth of <em>20 Questions</em>, Countrydle challenges players to ask smart yes/no questions about hemispheres, borders, coastlines, and demographics to deduce mystery locations across the globe.
-            </p>
-          </div>
-
-          <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-4 shadow-xl">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-400">
-              <Award size={24} />
-            </div>
-            <h2 className="text-2xl font-bold text-white">{t('about.pedagogyTitle', 'Educational & Deductive Play')}</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              Every daily challenge exercises spatial reasoning, deductive logic, and global awareness. Rather than relying on simple multiple-choice quizzes, players build their own elimination strategies.
-            </p>
-            <p className="text-zinc-400 leading-relaxed text-sm">
-              Whether played by classrooms learning world geography or puzzle fans testing their knowledge over morning coffee, our goal is to foster genuine curiosity about world cultures, borders, and administrative structures.
-            </p>
-          </div>
+      <section aria-labelledby="about-learning" className="grid gap-5 border-b border-white/10 py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
+        <h2 id="about-learning" className="text-xl font-semibold text-sand-100">{t('about.pedagogyTitle', 'Educational & Deductive Play')}</h2>
+        <div className="space-y-4 text-base leading-7">
+          <p>Every daily challenge exercises spatial reasoning, deductive logic, and global awareness. Rather than relying on simple multiple-choice quizzes, players build their own elimination strategies.</p>
+          <p>Whether played by classrooms learning world geography or puzzle fans testing their knowledge over morning coffee, our goal is to foster genuine curiosity about world cultures, borders, and administrative structures.</p>
         </div>
+      </section>
 
-        {/* The Four Modes In-Depth */}
-        <section className="space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-white">{t('about.modesTitle', 'Four Unique Geographic Challenges')}</h2>
-            <p className="text-zinc-400 text-sm max-w-xl mx-auto">
-              From global sovereign nations to deep regional administrative units.
-            </p>
+      <section aria-labelledby="about-modes" className="grid gap-5 border-b border-white/10 py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
+        <div>
+          <h2 id="about-modes" className="text-xl font-semibold text-sand-100">{t('about.modesTitle', 'Four Unique Geographic Challenges')}</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">From global sovereign nations to deep regional administrative units.</p>
+        </div>
+        <div className="divide-y divide-white/10">
+          <div className="pb-5">
+            <h3 className="mb-2 font-semibold text-sand-100">1. World Countries (Countrydle)</h3>
+            <p className="text-base leading-7">Spans all 195 sovereign nations across 7 continents. Players can test hypotheses regarding continental placement, oceanic coastlines, neighboring sovereign nations, capital cities, driving orientation, and national flag designs within a strict 10-question budget.</p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl space-y-3">
-              <h3 className="text-xl font-bold text-blue-400">1. World Countries (Countrydle)</h3>
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                Spans all 195 sovereign nations across 7 continents. Players can test hypotheses regarding continental placement, oceanic coastlines, neighboring sovereign nations, capital cities, driving orientation, and national flag designs within a strict 10-question budget.
-              </p>
-            </div>
-
-            <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl space-y-3">
-              <h3 className="text-xl font-bold text-indigo-400">2. United States (US Statedle)</h3>
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                Covers all 50 American states. Deduction features include US Census geographic regions and divisions (e.g., New England, Mountain, South Atlantic), border states, oceanic and Great Lakes coastlines, major rivers like the Mississippi, and statehood admission order.
-              </p>
-            </div>
-
-            <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl space-y-3">
-              <h3 className="text-xl font-bold text-green-400">3. Polish Voivodeships (Województwodle)</h3>
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                Explores Poland's 16 first-level administrative voivodeships (województwa). Players investigate macroregions, internal borders, foreign borders with neighboring countries, Baltic coastline access, and historical regions such as Silesia (Śląsk) and Greater Poland (Wielkopolska).
-              </p>
-            </div>
-
-            <div className="p-6 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl space-y-3">
-              <h3 className="text-xl font-bold text-red-400">4. Polish Counties (Powiatdle)</h3>
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                A hyper-local challenge across 380 Polish counties (powiaty). Features include vehicle registration plate codes (e.g. KR for Kraków, WZ for Warsaw West), city-county status, arterial highways (A1, A4, S7), and river systems.
-              </p>
-            </div>
+          <div className="py-5">
+            <h3 className="mb-2 font-semibold text-sand-100">2. United States (US Statedle)</h3>
+            <p className="text-base leading-7">Covers all 50 American states. Deduction features include US Census geographic regions and divisions (e.g., New England, Mountain, South Atlantic), border states, oceanic and Great Lakes coastlines, major rivers like the Mississippi, and statehood admission order.</p>
           </div>
-        </section>
-
-        {/* Dynamic Competitive Scoring */}
-        <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-6 shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-yellow-500/10 text-yellow-400">
-              <Trophy size={24} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">{t('about.scoringTitle', 'Dynamic Competitive Scoring')}</h2>
-              <p className="text-zinc-400 text-xs">{t('about.scoringSubtitle', 'Reward skill, speed, and daily consistency')}</p>
-            </div>
+          <div className="py-5">
+            <h3 className="mb-2 font-semibold text-sand-100">3. Polish Voivodeships (Województwodle)</h3>
+            <p className="text-base leading-7">Explores Poland's 16 first-level administrative voivodeships (województwa). Players investigate macroregions, internal borders, foreign borders with neighboring countries, Baltic coastline access, and historical regions such as Silesia (Śląsk) and Greater Poland (Wielkopolska).</p>
           </div>
-
-          <p className="text-zinc-300 leading-relaxed text-sm">
-            Unlike static games where scores cluster identically, Countrydle features an exponential 5-factor scoring engine designed for true player differentiation:
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-zinc-300">
-            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
-              <div className="text-yellow-400 font-bold">1. Base Win Floor (+500 pts)</div>
-              <p className="text-xs text-zinc-400">Guaranteed points for any successfully solved daily puzzle.</p>
-            </div>
-            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
-              <div className="text-purple-400 font-bold">2. Question Efficiency (Up to +1,500 pts)</div>
-              <p className="text-xs text-zinc-400">Exponential curve that rewards bold deduction with minimal questions used.</p>
-            </div>
-            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
-              <div className="text-green-400 font-bold">3. Guess Precision (Up to +500 pts)</div>
-              <p className="text-xs text-zinc-400">+500 pts for a 1st-try guess win, scaled down on subsequent attempts.</p>
-            </div>
-            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
-              <div className="text-amber-400 font-bold">4. Speed Bonus (Up to +300 pts)</div>
-              <p className="text-xs text-zinc-400">Decays over 5 minutes, breaking leaderboard ties down to the exact second.</p>
-            </div>
-            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
-              <div className="text-red-400 font-bold">5. Daily Streak Bonus (Up to +500 pts)</div>
-              <p className="text-xs text-zinc-400">+50 pts per consecutive day solved, up to a 10-day cap (+500 pts).</p>
-            </div>
-            <div className="p-4 bg-zinc-800/40 rounded-xl space-y-1 border border-zinc-800">
-              <div className="text-blue-400 font-bold">Category Bonuses</div>
-              <p className="text-xs text-zinc-400">+500 pts difficulty bonus for Powiaty (380 counties); +200 pts for US States.</p>
-            </div>
+          <div className="pt-5">
+            <h3 className="mb-2 font-semibold text-sand-100">4. Polish Counties (Powiatdle)</h3>
+            <p className="text-base leading-7">A hyper-local challenge across 380 Polish counties (powiaty). Features include vehicle registration plate codes (e.g. KR for Kraków, WZ for Warsaw West), city-county status, arterial highways (A1, A4, S7), and river systems.</p>
           </div>
         </div>
+      </section>
 
-        {/* Data Provenance & Authority (E-E-A-T) */}
-        <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-6 shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-400">
-              <Database size={24} />
+      <section aria-labelledby="about-scoring" className="grid gap-5 border-b border-white/10 py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
+        <div>
+          <h2 id="about-scoring" className="text-xl font-semibold text-sand-100">{t('about.scoringTitle', 'Dynamic Competitive Scoring')}</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">{t('about.scoringSubtitle', 'Reward skill, speed, and daily consistency')}</p>
+        </div>
+        <div>
+          <p className="mb-6 text-base leading-7">Unlike static games where scores cluster identically, Countrydle features an exponential 5-factor scoring engine designed for true player differentiation:</p>
+          <dl className="divide-y divide-white/10 border-y border-white/10">
+            <div className="py-4">
+              <dt className="font-medium text-sand-100">1. Base Win Floor (+500 pts)</dt>
+              <dd className="mt-1 text-sm leading-6 text-zinc-400">Guaranteed points for any successfully solved daily puzzle.</dd>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">{t('about.dataTitle', 'Data Sources & Verification')}</h2>
-              <p className="text-zinc-400 text-xs">{t('about.dataSubtitle', 'Curated, factual, and strictly grounded datasets')}</p>
+            <div className="py-4">
+              <dt className="font-medium text-sand-100">2. Question Efficiency (Up to +1,500 pts)</dt>
+              <dd className="mt-1 text-sm leading-6 text-zinc-400">Exponential curve that rewards bold deduction with minimal questions used.</dd>
             </div>
-          </div>
+            <div className="py-4">
+              <dt className="font-medium text-sand-100">3. Guess Precision (Up to +500 pts)</dt>
+              <dd className="mt-1 text-sm leading-6 text-zinc-400">+500 pts for a 1st-try guess win, scaled down on subsequent attempts.</dd>
+            </div>
+            <div className="py-4">
+              <dt className="font-medium text-sand-100">4. Speed Bonus (Up to +300 pts)</dt>
+              <dd className="mt-1 text-sm leading-6 text-zinc-400">Decays over 5 minutes, breaking leaderboard ties down to the exact second.</dd>
+            </div>
+            <div className="py-4">
+              <dt className="font-medium text-sand-100">5. Daily Streak Bonus (Up to +500 pts)</dt>
+              <dd className="mt-1 text-sm leading-6 text-zinc-400">+50 pts per consecutive day solved, up to a 10-day cap (+500 pts).</dd>
+            </div>
+            <div className="py-4">
+              <dt className="font-medium text-sand-100">Category Bonuses</dt>
+              <dd className="mt-1 text-sm leading-6 text-zinc-400">+500 pts difficulty bonus for Powiaty (380 counties); +200 pts for US States.</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
 
-          <p className="text-zinc-300 leading-relaxed text-sm">
-            To guarantee factual truth without AI hallucination, Countrydle evaluates questions against verified local databases rather than open-ended text generation. Our geospatial and demographic data are compiled from authoritative public bodies:
-          </p>
-
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-zinc-300">
-            <li className="flex items-start gap-2">
-              <span className="text-teal-400 font-bold">•</span>
-              <span><strong>Natural Earth &amp; OpenStreetMap</strong>: Global boundary vectors, island classifications, and coordinate centroids.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-teal-400 font-bold">•</span>
-              <span><strong>Główny Urząd Statystyczny (GUS)</strong>: Official Polish county demographics, TERYT territorial codes, and registration plate designations.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-teal-400 font-bold">•</span>
-              <span><strong>United States Census Bureau</strong>: State population estimates, census divisions, and official land areas.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-teal-400 font-bold">•</span>
-              <span><strong>CIA World Factbook &amp; REST Countries</strong>: International maritime coastlines, currencies, languages, and driving orientations.</span>
-            </li>
+      <section aria-labelledby="about-data" className="grid gap-5 border-b border-white/10 py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
+        <div>
+          <h2 id="about-data" className="text-xl font-semibold text-sand-100">{t('about.dataTitle', 'Data Sources & Verification')}</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">{t('about.dataSubtitle', 'Curated, factual, and strictly grounded datasets')}</p>
+        </div>
+        <div className="space-y-5 text-base leading-7">
+          <p>To guarantee factual truth without AI hallucination, Countrydle evaluates questions against verified local databases rather than open-ended text generation. Our geospatial and demographic data are compiled from authoritative public bodies:</p>
+          <ul className="list-disc space-y-3 pl-5 marker:text-emerald-400">
+            <li><strong className="font-semibold text-sand-100">Natural Earth &amp; OpenStreetMap</strong>: Global boundary vectors, island classifications, and coordinate centroids.</li>
+            <li><strong className="font-semibold text-sand-100">Główny Urząd Statystyczny (GUS)</strong>: Official Polish county demographics, TERYT territorial codes, and registration plate designations.</li>
+            <li><strong className="font-semibold text-sand-100">United States Census Bureau</strong>: State population estimates, census divisions, and official land areas.</li>
+            <li><strong className="font-semibold text-sand-100">CIA World Factbook &amp; REST Countries</strong>: International maritime coastlines, currencies, languages, and driving orientations.</li>
           </ul>
         </div>
+      </section>
 
-        {/* Privacy & Player Respect */}
-        <div className="p-8 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-white font-bold text-lg">
-              <ShieldCheck className="text-green-400" size={20} />
-              <span>{t('about.privacyTitle', 'Player Privacy & Open Access')}</span>
-            </div>
-            <p className="text-zinc-400 text-sm max-w-2xl">
-              Countrydle does not require registration. Guest play is 100% free with progress saved locally on your device. We do not sell player data or track personal browsing.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-zinc-500 text-xs shrink-0">
-            <Heart size={14} className="text-red-500" />
-            <span>Built for the global geography community</span>
-          </div>
+      <section aria-labelledby="about-privacy" className="grid gap-5 py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
+        <h2 id="about-privacy" className="text-xl font-semibold text-sand-100">{t('about.privacyTitle', 'Player Privacy & Open Access')}</h2>
+        <div>
+          <p className="text-base leading-7">Countrydle does not require registration. Guest play is 100% free with progress saved locally on your device. We do not sell player data or track personal browsing.</p>
+          <p className="mt-5 text-sm text-zinc-400">Built for the global geography community</p>
         </div>
-      </motion.div>
+      </section>
     </div>
   );
 }

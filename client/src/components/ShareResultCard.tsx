@@ -37,6 +37,7 @@ export default function ShareResultCard({
   targetName,
 }: ShareResultCardProps) {
   const { t } = useTranslation();
+  
   const [copied, setCopied] = useState(false);
 
   const displayDate = date || new Date().toISOString().split('T')[0];
@@ -54,7 +55,7 @@ export default function ShareResultCard({
 
     if (won) {
       if (points && points > 0) {
-        lines.push(`🏆 Score: ${points.toLocaleString()} pts`);
+        lines.push(`🏆 Score: ${points.toLocaleString('en-US')} pts`);
       }
       lines.push(`❓ Questions: ${questionsAsked}/${maxQuestions}`);
       lines.push(`🎯 Guesses: ${guessesMade}/${maxGuesses} (Solved!)`);
@@ -120,15 +121,15 @@ export default function ShareResultCard({
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-300 max-w-xl mx-auto w-full">
+    <div className="w-full space-y-4 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
       {/* Header Banner */}
-      <div className="flex items-center justify-between gap-3 border-b border-zinc-800/80 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-xl ${won ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+          <div className={`p-2 ${won ? 'text-emerald-400' : 'text-zinc-400'}`}>
             {won ? <Trophy size={20} /> : <Share2 size={20} />}
           </div>
           <div>
-            <h3 className="text-base md:text-lg font-black text-white">
+            <h3 className="font-serif text-xl text-sand-100">
               {won ? t('share.solvedTitle', 'Daily Challenge Solved!') : t('share.gameOverTitle', 'Game Over')}
             </h3>
             <p className="text-xs text-zinc-400">
@@ -137,18 +138,18 @@ export default function ShareResultCard({
           </div>
         </div>
 
-        {won && points && points > 0 && (
-          <div className="px-3 py-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-mono font-black text-sm md:text-base shrink-0">
-            +{points.toLocaleString()} pts
+        {won && points !== undefined && points > 0 && (
+          <div className="shrink-0 border border-emerald-500/20 px-3 py-2 font-mono text-sm text-emerald-400">
+            +{points.toLocaleString('en-US')} pts
           </div>
         )}
       </div>
 
       {/* Target Reveal */}
       {targetName && (
-        <div className="p-3 bg-zinc-800/40 rounded-xl flex items-center justify-between text-xs md:text-sm">
-          <span className="text-zinc-400">{t('gamePage.answer', 'The secret location was:')}</span>
-          <span className="font-bold text-white text-base">{targetName}</span>
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/10 pb-4 text-sm">
+          <span className="text-zinc-400">{"Today's location:"}</span>
+          <span className="break-words font-medium text-sand-100">{targetName}</span>
         </div>
       )}
 
@@ -156,15 +157,15 @@ export default function ShareResultCard({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
         <button
           onClick={handleNativeShare}
-          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-md shadow-blue-500/20"
+          className="flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3 py-2.5 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300"
         >
-          {copied ? <Check size={14} className="text-white" /> : <Share2 size={14} />}
+          {copied ? <Check size={14} aria-hidden="true" /> : <Share2 size={14} aria-hidden="true" />}
           <span>{copied ? t('share.copiedBtn', 'Copied!') : t('share.shareBtn', 'Share')}</span>
         </button>
 
         <button
           onClick={handleCopy}
-          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs transition-colors border border-zinc-700/60"
+          className="flex min-h-11 items-center justify-center gap-2 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/5"
         >
           {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
           <span>{t('share.copyBtn', 'Copy')}</span>
@@ -172,17 +173,17 @@ export default function ShareResultCard({
 
         <button
           onClick={handleShareX}
-          className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs transition-colors border border-zinc-700/60"
-          title="Share on X / Twitter"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/5"
+          aria-label={'Share on X / Twitter'}
         >
           <span className="font-bold">𝕏</span>
-          <span>Post</span>
+          <span>{'Post'}</span>
         </button>
 
         <button
           onClick={handleShareWhatsApp}
-          className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-green-950/40 hover:bg-green-900/50 text-green-300 font-medium text-xs transition-colors border border-green-800/50"
-          title="Share on WhatsApp"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/5"
+          aria-label={'Share on WhatsApp'}
         >
           <span>WhatsApp</span>
         </button>
@@ -193,13 +194,13 @@ export default function ShareResultCard({
         <div className="pt-2">
           <Link
             to="/blog"
-            className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-950/30 to-teal-950/20 border border-blue-500/20 hover:border-blue-500/40 text-xs transition-all group"
+            className="group flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs transition-colors hover:text-sand-100"
           >
             <div className="flex items-center gap-2 text-zinc-300">
-              <BookOpen size={14} className="text-teal-400 shrink-0" />
+              <BookOpen size={14} className="shrink-0 text-emerald-400" aria-hidden="true" />
               <span>{t('share.readBlogCta', 'Read Wikipedia trivia & deduction breakdown on our Daily Blog')}</span>
             </div>
-            <ArrowRight size={14} className="text-blue-400 group-hover:translate-x-1 transition-transform shrink-0" />
+            <ArrowRight size={14} className="shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
         </div>
       )}

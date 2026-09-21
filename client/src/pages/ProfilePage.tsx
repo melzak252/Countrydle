@@ -133,7 +133,7 @@ export default function ProfilePage() {
                 )}
               </div>
             )}
-            <p className="text-zinc-400 text-sm mt-1">{t('profile.memberSince', { date: new Date(stats.user.created_at).toLocaleDateString() })}</p>
+            <p className="text-zinc-400 text-sm mt-1">{t('profile.memberSince', { date: new Date(stats.user.created_at).toLocaleDateString('en-US') })}</p>
         </div>
       </div>
 

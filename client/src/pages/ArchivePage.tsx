@@ -51,69 +51,82 @@ export default function ArchivePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto pb-20 px-4">
-      <div className="flex items-center justify-center gap-3 mb-8">
-        <Calendar className="text-blue-500" size={40} />
-        <h2 className="text-3xl font-bold">{t('archive.title')}</h2>
-      </div>
+    <div className="mx-auto min-w-0 max-w-4xl space-y-8 bg-obsidian-950 pb-8">
+      <header className="border-b border-white/10 pb-8">
+        <div className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">
+          <Calendar size={15} aria-hidden="true" />
+          Past discoveries
+        </div>
+        <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">{t('archive.title')}</h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
+          Revisit past answers across every game mode. Open a country to explore its daily recap.
+        </p>
+      </header>
 
-      <div className="flex justify-center gap-2 mb-8 flex-wrap">
+      <div role="group" aria-label="Game mode" className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            type="button"
+            aria-pressed={gameType === tab.id}
             onClick={() => setGameType(tab.id as GameType)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full transition-all border",
-              gameType === tab.id 
-                ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/20" 
-                : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              "flex items-center gap-2 rounded-sm border px-3 py-2.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
+              gameType === tab.id
+                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
+                : "border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/20 hover:text-sand-100"
             )}
           >
-            <tab.icon size={16} />
+            <tab.icon size={16} aria-hidden="true" />
             <span className="font-medium">{tab.label}</span>
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-20"><Loader2 className="animate-spin text-blue-500" size={48} /></div>
+        <div role="status" aria-label="Loading past answers" className="flex justify-center py-20">
+          <Loader2 className="animate-spin text-emerald-400" size={28} aria-hidden="true" />
+        </div>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <table className="w-full text-left">
-            <thead className="bg-zinc-800/50 text-zinc-400 border-b border-zinc-800">
-              <tr>
-                 <th className="px-6 py-4 font-medium">{t('archive.date')}</th>
-                 <th className="px-6 py-4 font-medium text-right">{t('archive.answer')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {history.map((entry: any, index: number) => (
-                <tr key={index} className="hover:bg-zinc-800/30 transition-colors">
-                  <td className="px-6 py-4 text-zinc-300 font-mono">
-                    {entry.date}
-                  </td>
-                  <td className="px-6 py-4 text-right font-bold text-white">
-                    {gameType === 'country' ? (
-                      <Link
-                        to={`/blog/${entry.date}`}
-                        className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors group"
-                        title="Read Wikipedia trivia and daily recap"
-                      >
-                        <span>{getEntityName(entry)}</span>
-                        <ArrowRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
-                    ) : (
-                      getEntityName(entry)
-                    )}
-                  </td>
+        <div className="overflow-hidden rounded-md border border-white/10 bg-obsidian-900">
+          <div role="region" aria-label="Past answers" tabIndex={0} className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+            <table className="w-full table-fixed text-left text-sm">
+              <caption className="sr-only">Past answers — {tabs.find((tab) => tab.id === gameType)?.label}</caption>
+              <thead className="border-b border-white/10 text-xs uppercase tracking-[0.12em] text-zinc-400">
+                <tr>
+                  <th scope="col" className="w-32 px-4 py-4 font-medium sm:w-44 sm:px-6">{t('archive.date')}</th>
+                  <th scope="col" className="px-4 py-4 text-right font-medium sm:px-6">{t('archive.answer')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {history.map((entry, index) => (
+                  <tr key={index} className="transition-colors hover:bg-white/[0.02]">
+                    <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs text-zinc-400 sm:px-6">
+                      {entry.date}
+                    </td>
+                    <td className="break-words px-4 py-3.5 text-right font-medium text-sand-100 sm:px-6">
+                      {gameType === 'country' ? (
+                        <Link
+                          to={`/blog/${entry.date}`}
+                          className="inline-flex max-w-full items-center gap-2 text-emerald-300 transition-colors hover:text-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400"
+                          title="Read Wikipedia trivia and daily recap"
+                        >
+                          <span className="min-w-0 break-words">{getEntityName(entry)}</span>
+                          <ArrowRight size={14} className="shrink-0" aria-hidden="true" />
+                        </Link>
+                      ) : (
+                        getEntityName(entry)
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {history.length === 0 && (
-              <div className="p-8 text-center text-zinc-500">
-               {t('archive.empty')}
-             </div>
+            <div className="p-8 text-center text-sm text-zinc-400">
+              {t('archive.empty')}
+            </div>
           )}
         </div>
       )}

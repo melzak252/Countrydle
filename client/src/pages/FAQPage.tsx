@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface FAQItem {
@@ -118,114 +117,102 @@ export default function FAQPage() {
   }, [search, activeCategory]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-10"
-      >
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider">
-            <HelpCircle size={15} />
-            <span>{t('faq.badge', 'Knowledge Base & Help')}</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-teal-300 to-green-400 text-transparent bg-clip-text">
-            {t('faq.title', 'Frequently Asked Questions')}
-          </h1>
-          <p className="text-zinc-400 max-w-xl mx-auto text-sm md:text-base">
-            {t('faq.subtitle', 'Everything you need to know about deduction rules, scoring, geography datasets, and game mechanics.')}
-          </p>
-        </div>
+    <div className="mx-auto max-w-4xl bg-obsidian-950 pb-8">
+      <header className="border-b border-white/10 pb-8 md:pb-10">
+        <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">
+          {t('faq.badge', 'Knowledge Base & Help')}
+        </p>
+        <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">
+          {t('faq.title', 'Frequently Asked Questions')}
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
+          {t('faq.subtitle', 'Everything you need to know about deduction rules, scoring, geography datasets, and game mechanics.')}
+        </p>
+      </header>
 
-        {/* Search Bar & Category Filters */}
-        <div className="space-y-4">
+      <div className="space-y-5 py-7">
+        <div>
+          <label htmlFor="faq-search" className="mb-3 block text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+            Search questions
+          </label>
           <div className="relative">
+            <Search aria-hidden="true" size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
-              type="text"
+              id="faq-search"
+              type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search questions (e.g. streaks, borders, invalid questions, data)..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 pl-11 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors shadow-lg"
+              placeholder="Search rules, streaks, borders or data..."
+              className="w-full rounded-sm border border-white/15 bg-obsidian-900 py-3 pl-11 pr-4 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                { id: 'all', label: 'All Topics' },
-                { id: 'gameplay', label: 'Gameplay & Rules' },
-                { id: 'modes', label: 'Game Modes' },
-                { id: 'data', label: 'Data & Facts' },
-                { id: 'account', label: 'Accounts & Streaks' },
-              ] as const
-            ).map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeCategory === cat.id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
           </div>
         </div>
 
-        {/* Accordion List */}
-        <div className="space-y-3">
-          {filteredFAQs.length === 0 ? (
-            <div className="p-12 text-center text-zinc-500 bg-zinc-900/50 border border-zinc-800 rounded-3xl">
-              No questions found matching "{search}". Try searching for another topic.
-            </div>
-          ) : (
-            filteredFAQs.map((faq) => {
-              const isOpen = openIds.has(faq.id);
-              return (
-                <div
-                  key={faq.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden transition-colors hover:border-zinc-700"
-                >
+        <div role="group" aria-label="Filter questions by topic" className="flex flex-wrap gap-2">
+          {(
+            [
+              { id: 'all', label: 'All Topics' },
+              { id: 'gameplay', label: 'Gameplay & Rules' },
+              { id: 'modes', label: 'Game Modes' },
+              { id: 'data', label: 'Data & Facts' },
+              { id: 'account', label: 'Accounts & Streaks' },
+            ] as const
+          ).map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              aria-pressed={activeCategory === cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`min-h-11 rounded-sm border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 ${
+                activeCategory === cat.id
+                  ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+                  : 'border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/25 hover:text-sand-100'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p role="status" className="mb-3 text-sm text-zinc-400">
+        {filteredFAQs.length} {filteredFAQs.length === 1 ? 'question' : 'questions'}
+      </p>
+      <div className="divide-y divide-white/10 border-y border-white/10">
+        {filteredFAQs.length === 0 ? (
+          <div className="bg-obsidian-900 px-5 py-10 text-base leading-7 text-zinc-400">
+            No questions found matching "{search}". Try searching for another topic.
+          </div>
+        ) : (
+          filteredFAQs.map((faq) => {
+            const isOpen = openIds.has(faq.id);
+            return (
+              <section key={faq.id} aria-labelledby={`question-${faq.id}`} className={isOpen ? 'bg-obsidian-900' : ''}>
+                <h2>
                   <button
+                    id={`question-${faq.id}`}
                     type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={`answer-${faq.id}`}
                     onClick={() => toggleItem(faq.id)}
-                    className="w-full text-left px-6 py-4 flex items-center justify-between gap-4 cursor-pointer"
+                    className="flex w-full items-center justify-between gap-5 px-4 py-5 text-left transition-colors hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-emerald-400 sm:px-5"
                   >
-                    <span className="font-bold text-white text-base md:text-lg">{faq.question}</span>
+                    <span className="text-base font-medium leading-7 text-sand-100 sm:text-lg">{faq.question}</span>
                     <ChevronDown
+                      aria-hidden="true"
                       size={20}
-                      className={`text-zinc-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 text-blue-400' : ''
-                      }`}
+                      className={`shrink-0 text-emerald-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
-
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div className="px-6 pb-5 pt-1 text-zinc-300 text-sm leading-relaxed border-t border-zinc-800/60 mt-1">
-                          {faq.answer}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                </h2>
+                <div id={`answer-${faq.id}`} hidden={!isOpen} className="px-4 pb-6 sm:px-5">
+                  <p className="max-w-3xl text-base leading-7 text-zinc-300">{faq.answer}</p>
                 </div>
-              );
-            })
-          )}
-        </div>
-      </motion.div>
+              </section>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
