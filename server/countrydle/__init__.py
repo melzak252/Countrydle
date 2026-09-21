@@ -395,13 +395,37 @@ async def get_admin_country_facts(
     admin: User = Depends(get_admin_user),
 ):
     try:
+        resolved_name = country_name or entity_name
+        target_id = country_id or entity_id
+
+        if not resolved_name and target_id:
+            if game_type == "countrydle":
+                c = await CountryRepository(session).get(target_id)
+                if c:
+                    resolved_name = c.name
+            elif game_type == "us_statedle":
+                from db.repositories.us_state import USStateRepository
+                s = await USStateRepository(session).get(target_id)
+                if s:
+                    resolved_name = s.name
+            elif game_type == "powiatdle":
+                from db.repositories.powiatdle import PowiatRepository
+                p = await PowiatRepository(session).get(target_id)
+                if p:
+                    resolved_name = p.nazwa
+            elif game_type == "wojewodztwodle":
+                from db.repositories.wojewodztwo import WojewodztwoRepository
+                w = await WojewodztwoRepository(session).get(target_id)
+                if w:
+                    resolved_name = w.nazwa
+
         if game_type != "countrydle":
-            return get_local_facts(game_type, entity_id=entity_id or country_id, entity_name=entity_name or country_name)
-        if country_name:
-            return get_country_facts_by_name(country_name)
-        if country_id is None:
+            return get_local_facts(game_type, entity_id=target_id, entity_name=resolved_name)
+        if resolved_name:
+            return get_country_facts_by_name(resolved_name)
+        if target_id is None:
             raise HTTPException(status_code=400, detail="country_id or country_name is required")
-        return get_country_facts(country_id)
+        return get_country_facts(target_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

@@ -132,16 +132,16 @@ export default function AdminDashboard() {
       setFactEntities(list);
       if (list.length > 0) {
         setSelectedEntityId(list[0].id);
-        fetchEntityFacts(list[0].id);
+        fetchEntityFacts(list[0].name || list[0].id);
       }
     } catch (err: any) {
       setFactError(err.message || 'Failed to load entities');
     }
   };
 
-  const fetchEntityFacts = async (id: number) => {
+  const fetchEntityFacts = async (idOrName: number | string) => {
     try {
-      const facts = await adminService.getCountryFacts(id, factMode);
+      const facts = await adminService.getCountryFacts(idOrName, factMode);
       setEntityFacts(facts);
       setFactInputs(Object.fromEntries((facts.scalar_facts || []).map((f) => [f.relation, f.value ?? ''])));
     } catch (err: any) {
@@ -733,7 +733,8 @@ export default function AdminDashboard() {
                 onChange={(e) => {
                   const id = Number(e.target.value);
                   setSelectedEntityId(id);
-                  fetchEntityFacts(id);
+                  const selected = factEntities.find((item) => item.id === id);
+                  fetchEntityFacts(selected?.name || id);
                 }}
                 className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
               >
