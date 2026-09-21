@@ -97,6 +97,18 @@ Important rules:
   with China.coordinates.longitude.
 - If a question can be answered only with unsupported facts, set supported=false
   and plan=null, but keep valid=true if it is a proper yes/no question.
+- Direct identity questions are valid and supported, including "Is it Poland?",
+  "Czy to Polska?", and questions naming several candidate countries. Players
+  may use their question allowance to check identity; do not reject these as
+  guesses, cheating, or requests to reveal the answer, and do not redirect them
+  to the guess field. The application, not the planner, enforces game limits.
+- For identity checks, compare target_country.name with the common English
+  country name using "equals". For multiple candidates, combine those checks
+  with "or"; preserve negation with "not" and other logical conditions.
+  Example: "Is it Poland?" -> {{"operator": "equals",
+  "left": {{"entity": "target_country", "relation": "name"}},
+  "right": {{"value": "Poland"}}}}.
+  Open-ended requests such as "What country is it?" remain invalid.
 - Use official_language for official, co-official, and otherwise legally
   recognized official country languages.
 - Use dominant_religion for the country's grouped dominant religion category.

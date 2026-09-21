@@ -21,7 +21,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'valid-questions',
     category: 'gameplay',
     question: 'What kind of questions can I ask?',
-    answer: 'You can ask any factual yes/no question regarding geography, borders, physical features, or demographics! Great examples include: "Is it in the Northern Hemisphere?", "Does it have access to the sea?", "Does it border Germany?", "Is the population greater than 20 million?", "Does the flag contain red?", and "Is the capital city Paris?".'
+    answer: 'You can ask factual yes/no questions about geography, borders, physical features, demographics, or the country name. In Countrydle, direct identity questions and questions naming several candidate countries are allowed while the game is active and you have questions left. Each valid question uses one question, not a guess. A yes answer does not win the game: submit the location in the guess field to finish.'
   },
   {
     id: 'typos-and-invalid',
@@ -33,7 +33,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'scoring-and-limits',
     category: 'gameplay',
     question: 'How does scoring work and what happens when I run out of guesses?',
-    answer: 'Points are awarded dynamically across five performance factors: 1) Base win bonus (+500 pts), 2) Question efficiency (up to +1,500 pts rewarding bold deductions with fewer questions asked), 3) Guess efficiency (up to +500 pts for 1st-try accuracy), 4) Speed bonus (up to +300 pts for fast solves under 5 minutes), and 5) Daily streak bonus (+50 pts/day up to +500 pts). Total scores range up to ~3,300+ points. If you exhaust your guesses or questions, the game ends and reveals the secret entity.'
+    answer: 'Points are awarded dynamically across five performance factors: 1) Base win bonus (+500 pts), 2) Question efficiency (up to +1,500 pts rewarding bold deductions with fewer questions asked), 3) Guess efficiency (up to +500 pts for 1st-try accuracy), 4) Speed bonus (up to +300 pts for fast solves under 5 minutes), and 5) Daily streak bonus (+50 pts/day up to +500 pts). Total scores range up to ~3,300+ points. Running out of questions does not end the game: you can still use any remaining guesses. The game ends when you guess correctly or exhaust your guesses.'
   },
 
   // Category 2: Modes & Archive
