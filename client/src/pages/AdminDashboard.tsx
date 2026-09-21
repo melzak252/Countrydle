@@ -22,10 +22,11 @@ import {
   XCircle, 
   Clock, 
   ShieldCheck, 
-  Flame,
-  FileText,
-  Plus,
-  Trash2
+  Flame, 
+  FileText, 
+  Plus, 
+  Trash2, 
+  Sparkles
 } from 'lucide-react';
 
 type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts';
@@ -436,8 +437,16 @@ export default function AdminDashboard() {
                     <span className="font-bold text-blue-400">{q.username}</span>
                     <span>{q.asked_at ? new Date(q.asked_at).toLocaleTimeString() : ''}</span>
                   </div>
-                  <div className="font-medium text-white text-sm">
-                    "{q.question}"
+                  <div className="space-y-1">
+                    <div className="font-medium text-white text-sm">
+                      "{q.original_question || q.question}"
+                    </div>
+                    {q.improved_question && q.original_question && q.improved_question !== q.original_question && (
+                      <div className="text-[11px] text-teal-300 font-mono bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-md flex items-center gap-1.5">
+                        <Sparkles size={11} className="text-teal-400 shrink-0" />
+                        <span>AI: "{q.improved_question}"</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 pt-1">
                     {q.valid ? (
@@ -655,7 +664,17 @@ export default function AdminDashboard() {
                 {filteredQuestions.map((q) => (
                   <tr key={q.id} className="hover:bg-zinc-800/30 transition-colors">
                     <td className="px-5 py-3.5 font-bold text-blue-400">{q.user?.username || 'Guest'}</td>
-                    <td className="px-5 py-3.5 font-medium text-white max-w-xs">{q.original_question || q.question}</td>
+                    <td className="px-5 py-3.5 space-y-1.5 max-w-sm">
+                      <div className="font-medium text-white text-sm">
+                        "{q.original_question || q.question}"
+                      </div>
+                      {q.question && q.original_question && q.question !== q.original_question && (
+                        <div className="text-[11px] text-teal-300 font-mono bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-md flex items-center gap-1.5">
+                          <Sparkles size={11} className="text-teal-400 shrink-0" />
+                          <span>AI: "{q.question}"</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5">
                       {q.valid ? (
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${

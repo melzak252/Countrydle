@@ -129,11 +129,24 @@ Allowed operators:
 - contains_partial: substring match, preserving the old broad contains behavior
 - equals: scalar equals value
 - greater_than, less_than: numeric comparison
+- west_of: left longitude < right longitude (further west in signed coordinates)
+- east_of: left longitude > right longitude (further east in signed coordinates)
+- north_of: left latitude > right latitude (further north in signed coordinates)
+- south_of: left latitude < right latitude (further south in signed coordinates)
 - exists: relation has any value / boolean is true
 - starts_with, ends_with, contains_text, has_space
 - word_count_equals, word_count_greater_than, word_count_less_than
 - char_count_equals, char_count_greater_than, char_count_less_than
 - and, or, not
+
+Geographic Direction / Coordinate rules:
+- Longitudes in the Americas / USA are negative decimal degrees (e.g. 74° W is -74.0, 71.5° W is -71.5).
+- For questions like "further west than 74° W" or "west of 74° W":
+  ALWAYS use operator "west_of" (e.g. {{"operator":"west_of","left":{{"entity":"target_state","relation":"longitude"}},"right":-74.0}}).
+  NEVER use greater_than for "further west than" with negative numbers!
+- For questions like "further east than" or "east of", use operator "east_of".
+- For "further north than" or "north of", use operator "north_of".
+- For "further south than" or "south of", use operator "south_of".
 
 Reference format examples:
 {{"entity":"{config.target_entity}","relation":"population"}}
@@ -344,10 +357,17 @@ def evaluate(
             lnum, rnum = float(left), float(right)
         except (TypeError, ValueError):
             return None
+
+        # Guard against LLM cardinal direction inversion on negative longitudes:
+        left_dict = node.get("left") if isinstance(node.get("left"), dict) else {}
+        if op == "greater_than" and left_dict.get("relation") == "longitude" and rnum < 0:
+            q_lower = (plan.original_question or "").lower() + " " + (plan.improved_question or "").lower()
+            if any(w in q_lower for w in ["west", "further west", "zachod", "zachód", "zachodniej", "zachodnim"]):
+                op = "west_of"
+
         if op in {"greater_than", "east_of", "north_of"}:
             return lnum > rnum
         return lnum < rnum
-
     txt = text_value(left)
     n_txt = norm(txt)
     n_right = norm(right)
@@ -439,6 +459,26 @@ def generate_mode_explanation(
             return f"{name} is located in the {row['region']} region ({row['division']} division)."
         if rel == "admission_year":
             return f"{name} was admitted to the Union in {row['admission_year']} (state #{row['admission_order']})."
+        if rel == "longitude" and val is not None:
+            coord = abs(float(row["longitude"]))
+            dir_card = "W" if float(row["longitude"]) < 0 else "E"
+            val_num = float(val) if val is not None else 0
+            val_abs = abs(val_num)
+            val_dir = "W" if val_num < 0 else "E"
+            if answer:
+                return f"{name} is located at longitude {coord:.1f}° {dir_card} (further west than {val_abs:.1f}° {val_dir})."
+            else:
+                return f"{name} is located at longitude {coord:.1f}° {dir_card} (east of {val_abs:.1f}° {val_dir}, not further west)."
+        if rel == "latitude" and val is not None:
+            coord = abs(float(row["latitude"]))
+            dir_card = "N" if float(row["latitude"]) >= 0 else "S"
+            val_num = float(val) if val is not None else 0
+            val_abs = abs(val_num)
+            val_dir = "N" if val_num >= 0 else "S"
+            if answer:
+                return f"{name} is located at latitude {coord:.1f}° {dir_card} (further north than {val_abs:.1f}° {val_dir})."
+            else:
+                return f"{name} is located at latitude {coord:.1f}° {dir_card} (south of {val_abs:.1f}° {val_dir}, not further north)."
         return f"The answer is {'YES' if answer else 'NO'} based on verified facts about {name}."
 
 
