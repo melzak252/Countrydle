@@ -148,14 +148,22 @@ async def generate_yesterday_post_endpoint(
 
     # Find the CountrydleDay for that date
     day_country = await CountrydleRepository(session).get_day_country_by_date(eval_date)
-    if not day_country or not day_country.country:
+    if not day_country:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No mystery country found for {eval_date.isoformat()}.",
         )
 
-    new_post = await create_daily_blog_post(session, day_country.country, eval_date)
+    from db.repositories.country import CountryRepository
+    country = await CountryRepository(session).get(day_country.country_id)
+    if not country:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Country not found for ID {day_country.country_id}.",
+        )
+
+    new_post = await create_daily_blog_post(session, country, eval_date)
     saved_post = await repo.create(new_post)
-    logger.info(f"Generated daily blog post for {eval_date} ({day_country.country.name})")
+    logger.info(f"Generated daily blog post for {eval_date} ({country.name})")
 
     return await get_blog_post(saved_post.slug, session)

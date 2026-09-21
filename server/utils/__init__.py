@@ -70,14 +70,20 @@ async def generate_yesterday_blog_post():
             return
 
         day_country = await CountrydleRepository(session).get_day_country_by_date(yesterday)
-        if not day_country or not day_country.country:
+        if not day_country:
             logging.warning(f"No CountrydleDay found for {yesterday} to generate blog post.")
             return
 
+        from db.repositories.country import CountryRepository
+        country = await CountryRepository(session).get(day_country.country_id)
+        if not country:
+            logging.warning(f"No Country found for ID {day_country.country_id} to generate blog post.")
+            return
+
         try:
-            post = await create_daily_blog_post(session, day_country.country, yesterday)
+            post = await create_daily_blog_post(session, country, yesterday)
             await repo.create(post)
-            logging.info(f"Successfully generated daily blog post for {yesterday} ({day_country.country.name}).")
+            logging.info(f"Successfully generated daily blog post for {yesterday} ({country.name}).")
         except Exception as e:
             logging.error(f"Error generating daily blog post for {yesterday}: {e}", exc_info=True)
 

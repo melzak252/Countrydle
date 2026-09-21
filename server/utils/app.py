@@ -45,6 +45,7 @@ async def lifespan(app: FastAPI):
             await init_qdrant(session)
 
         utils.scheduler.start()
+        asyncio.create_task(utils.generate_yesterday_blog_post())
 
         yield
     except ConnectionRefusedError:
