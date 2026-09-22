@@ -9,16 +9,31 @@ export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const games = [
-    ['/game', t('header.worldMap', 'World Map (Countrydle)')],
-    ['/flagdle', '🚩 Flagdle'],
-    ['/europe', t('header.europe', 'Europedle')],
-    ['/asia', t('header.asia', 'Asiadle')],
-    ['/africa', t('header.africa', 'Africadle')],
-    ['/americas', t('header.americas', 'Americadle')],
-    ['/us-states', t('header.usStates')],
-    ['/powiaty', t('header.powiaty')],
-    ['/wojewodztwa', t('header.wojewodztwa')],
+  const gameCategories = [
+    {
+      category: t('header.groupGlobal', 'Global & Visual'),
+      items: [
+        { path: '/game', name: t('header.worldMap', 'World Map'), badge: 'Countrydle' },
+        { path: '/flagdle', name: 'Flagdle', badge: 'Flags' },
+      ],
+    },
+    {
+      category: t('header.groupContinents', 'Continents (8 Qs)'),
+      items: [
+        { path: '/europe', name: t('header.europe', 'Europedle'), badge: '47' },
+        { path: '/asia', name: t('header.asia', 'Asiadle'), badge: '47' },
+        { path: '/africa', name: t('header.africa', 'Africadle'), badge: '54' },
+        { path: '/americas', name: t('header.americas', 'Americadle'), badge: '35' },
+      ],
+    },
+    {
+      category: t('header.groupRegional', 'Regional Maps'),
+      items: [
+        { path: '/us-states', name: t('header.usStates', 'US States'), badge: '50' },
+        { path: '/wojewodztwa', name: t('header.wojewodztwa', 'Voivodeships'), badge: '16' },
+        { path: '/powiaty', name: t('header.powiaty', 'Counties'), badge: '380' },
+      ],
+    },
   ];
   const more = [
     ['/archive', t('header.archive')],
@@ -43,23 +58,68 @@ export default function Header() {
           <span className="text-xl font-semibold tracking-tight">Countrydle<span className="text-emerald-300">.</span></span>
         </Link>
         <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
-          {[{ label: t('header.games'), links: games }, { label: t('header.more', 'More'), links: more }].map(({ label, links }) => (
-            <details key={label} className="group relative" onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.currentTarget.open = false;
-                event.currentTarget.querySelector('summary')?.focus();
-              }
-            }}>
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-                {label}<ChevronDown size={13} className="group-open:rotate-180" aria-hidden="true" />
-              </summary>
-              <div className="absolute left-0 top-full w-56 border border-white/15 bg-obsidian-900 p-1 shadow-xl" onClick={(event) => {
+          <details className="group relative" onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.currentTarget.open = false;
+              event.currentTarget.querySelector('summary')?.focus();
+            }
+          }}>
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+              {t('header.games')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+            </summary>
+            <div
+              className="absolute left-0 top-full w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm"
+              onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
-              }}>
-                {links.map(([path, title]) => <NavLink key={path} to={path} className={linkClass}>{title}</NavLink>)}
-              </div>
-            </details>
-          ))}
+              }}
+            >
+              {gameCategories.map((group) => (
+                <div key={group.category} className="p-2">
+                  <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                    {group.category}
+                  </span>
+                  <div className={group.items.length > 2 ? 'grid grid-cols-2 gap-1' : 'flex flex-col gap-1'}>
+                    {group.items.map((item) => (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                          `flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs transition-colors ${
+                            isActive
+                              ? 'bg-emerald-500/10 text-emerald-300 font-medium'
+                              : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                          }`
+                        }
+                      >
+                        <span className="truncate">{item.name}</span>
+                        {item.badge && (
+                          <span className="shrink-0 text-[10px] text-zinc-400 font-mono">
+                            {item.badge}
+                          </span>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </details>
+
+          <details className="group relative" onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.currentTarget.open = false;
+              event.currentTarget.querySelector('summary')?.focus();
+            }
+          }}>
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+              {t('header.more', 'More')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+            </summary>
+            <div className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1 shadow-xl z-50 rounded-sm" onClick={(event) => {
+              if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
+            }}>
+              {more.map(([path, title]) => <NavLink key={path} to={path} className={linkClass}>{title}</NavLink>)}
+            </div>
+          </details>
           <NavLink to="/leaderboard" className={linkClass}>{t('header.leaderboard')}</NavLink>
           <NavLink to="/blog" className={linkClass}>{t('header.blog', 'Blog')}</NavLink>
         </nav>
@@ -81,11 +141,30 @@ export default function Header() {
         </div>
       </div>
       {isMenuOpen && <nav id="mobile-navigation" aria-label="Mobile navigation" className="max-h-[calc(100dvh-5rem)] overflow-y-auto border-t border-white/10 px-4 pb-5 pt-4 xl:hidden" onKeyDown={(event) => { if (event.key === 'Escape') closeMenu(); }}>
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <span className="font-mono text-xs uppercase tracking-widest text-zinc-400">{t('header.games')}</span>
-        </div>
-        <div className="grid grid-cols-2 border-y border-white/10 py-2" onClick={closeMenu}>
-          {games.map(([path, label]) => <NavLink key={path} to={path} className={linkClass}>{label}</NavLink>)}
+        <div className="space-y-4 border-y border-white/10 py-3" onClick={closeMenu}>
+          {gameCategories.map((group) => (
+            <div key={group.category}>
+              <span className="block mb-1.5 font-mono text-[10px] uppercase tracking-widest text-zinc-400">
+                {group.category}
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center justify-between gap-1 rounded-sm px-2.5 py-2 text-xs transition-colors ${
+                        isActive ? 'bg-emerald-500/10 text-emerald-300 font-medium' : 'text-zinc-200 hover:bg-white/5 bg-white/[0.02]'
+                      }`
+                    }
+                  >
+                    <span className="truncate">{item.name}</span>
+                    {item.badge && <span className="text-[10px] text-zinc-400 font-mono">{item.badge}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
         <div className="grid grid-cols-2 py-3" onClick={closeMenu}>
           {[[ '/leaderboard', t('header.leaderboard') ], ['/blog', t('header.blog', 'Blog')], ...more].map(([path, label]) => <NavLink key={path} to={path} className={linkClass}>{label}</NavLink>)}
