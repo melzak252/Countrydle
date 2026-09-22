@@ -56,10 +56,6 @@ export default function USStatesGamePage() {
   const [activeChatTab, setActiveChatTab] = useState<'questions' | 'guesses'>('questions');
   const [isResultDismissed, setIsResultDismissed] = useState(false);
 
-  // Auto-scroll refs
-  const questionsBottomRef = useRef<HTMLDivElement>(null);
-  const guessesBottomRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     fetchGameState();
     fetchStates();
@@ -67,25 +63,35 @@ export default function USStatesGamePage() {
     return () => window.removeEventListener('auth-login', syncGuestData);
   }, [fetchGameState, fetchStates, syncGuestData]);
 
-  // Auto-scroll when new question arrives
-  useEffect(() => {
-    if (isChatOpen && activeChatTab === 'questions') {
-      const timer = setTimeout(() => {
-        questionsBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [questions.length, isChatOpen, activeChatTab]);
+  // Auto-scroll refs
+  const questionsContainerRef = useRef<HTMLDivElement>(null);
+  const guessesContainerRef = useRef<HTMLDivElement>(null);
+  const prevQuestionsCount = useRef(questions.length);
+  const prevGuessesCount = useRef(guesses.length);
 
-  // Auto-scroll when new guess arrives
+  // Auto-scroll ONLY when a new question actually arrives
   useEffect(() => {
-    if (isChatOpen && activeChatTab === 'guesses') {
-      const timer = setTimeout(() => {
-        guessesBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 60);
-      return () => clearTimeout(timer);
+    if (questions.length > prevQuestionsCount.current) {
+      prevQuestionsCount.current = questions.length;
+      if (questionsContainerRef.current) {
+        questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
+      }
+    } else {
+      prevQuestionsCount.current = questions.length;
     }
-  }, [guesses.length, isChatOpen, activeChatTab]);
+  }, [questions.length]);
+
+  // Auto-scroll ONLY when a new guess actually arrives
+  useEffect(() => {
+    if (guesses.length > prevGuessesCount.current) {
+      prevGuessesCount.current = guesses.length;
+      if (guessesContainerRef.current) {
+        guessesContainerRef.current.scrollTop = guessesContainerRef.current.scrollHeight;
+      }
+    } else {
+      prevGuessesCount.current = guesses.length;
+    }
+  }, [guesses.length]);
 
   if (!gameState && isLoading) {
     return (
@@ -176,13 +182,14 @@ export default function USStatesGamePage() {
       </div>
 
       {/* 3. Unified Deduction Notebook (Left Side on Map) */}
-      <div className="pointer-events-none absolute left-11 sm:left-12 top-11 sm:top-12 z-[990] w-84 sm:w-96 max-w-[calc(100vw-4rem)]">
+      {/* 3. Unified Deduction Chat & Guesses (Bottom Left Corner) */}
+      <div className="pointer-events-none absolute left-4 bottom-4 z-[1000] w-80 sm:w-92 max-w-[calc(100vw-2rem)]">
         {!isChatOpen ? (
-          /* Collapsed Button */
+          /* Collapsed Pill Button in Bottom Left Corner */
           <button
             type="button"
             onClick={() => setIsChatOpen(true)}
-            className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/80 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
+            className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
             aria-label="Expand Deduction Chat"
           >
             <MessageSquare size={13} className="text-emerald-400" />
@@ -191,11 +198,11 @@ export default function USStatesGamePage() {
             <span className="text-sand-100 font-semibold">Q: {questions.length}/8</span>
             <span className="text-zinc-500">·</span>
             <span className="text-emerald-400 font-semibold">G: {guesses.length}/3</span>
-            <ChevronDown size={13} className="text-zinc-400 ml-0.5" />
+            <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
           </button>
         ) : (
-          /* Expanded Translucent Window */
-          <div className="pointer-events-auto flex max-h-[50vh] sm:max-h-[56vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/80 shadow-2xl backdrop-blur-md transition-all">
+          /* Expanded Translucent Chat Window (Opens Upwards from Bottom Left) */
+          <div className="pointer-events-auto flex h-[48vh] sm:h-[52vh] max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2">
               <div className="flex items-center gap-2">
@@ -235,13 +242,13 @@ export default function USStatesGamePage() {
                 title="Minimize chat"
                 aria-label="Minimize chat"
               >
-                <ChevronUp size={14} />
+                <ChevronDown size={14} />
               </button>
             </div>
 
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-3 text-xs scroll-smooth custom-scrollbar">
+              <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar overscroll-contain">
                 {sortedQuestions.length === 0 ? (
                   <div className="py-7 text-center text-zinc-400 space-y-2 border border-dashed border-white/10 rounded-sm p-4">
                     <MessageSquare size={20} className="mx-auto text-zinc-600" />
@@ -258,79 +265,81 @@ export default function USStatesGamePage() {
                     const isInvalid = !q.valid;
                     const answerLabel = isInvalid ? 'Invalid question' : isYes ? 'Yes' : isNo ? 'No' : 'Unknown';
                     const answerColor = isInvalid
-                      ? 'border-amber-300/15 bg-amber-300/[0.08] text-amber-200'
+                      ? 'border-amber-400/40 bg-amber-950/75 text-amber-200'
                       : isYes
-                      ? 'border-emerald-300/15 bg-emerald-300/[0.10] text-emerald-300'
+                      ? 'border-emerald-500/40 bg-emerald-950/80 text-emerald-200'
                       : isNo
-                      ? 'border-rose-300/15 bg-rose-300/[0.10] text-rose-300'
-                      : 'border-white/10 bg-white/5 text-zinc-300';
+                      ? 'border-rose-500/40 bg-rose-950/80 text-rose-200'
+                      : 'border-zinc-700 bg-zinc-850 text-zinc-300';
 
                     return (
                       <div key={q.id} className="space-y-1.5 border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
-                        {/* Player Inquiry */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-400">
+                        {/* Player Inquiry (Right-aligned chat bubble) */}
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-center justify-end mb-0.5 px-1">
+                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
                               #{String(index + 1).padStart(2, '0')} · You
                             </span>
                           </div>
-                          <div className="rounded-sm border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-sand-100 leading-relaxed">
+                          <div className="max-w-[85%] rounded-2xl rounded-tr-xs border border-emerald-500/30 bg-emerald-600/25 px-3.5 py-2 text-xs font-medium text-sand-100 leading-relaxed text-right shadow-sm">
                             {q.original_question}
                           </div>
                         </div>
 
-                        {/* Dispatch Response */}
-                        <div className="pt-0.5">
-                          <div className="flex items-center gap-1.5 mb-1">
+                        {/* Dispatch Response (Left-aligned chat bubble, NO nested boxes) */}
+                        <div className="flex flex-col items-start pt-0.5">
+                          <div className="flex items-center gap-1.5 mb-0.5 px-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-emerald-400 font-semibold">
                               Atlas Dispatch
                             </span>
                           </div>
 
-                          <div className={`rounded-sm border px-3 py-1.5 flex items-center justify-between gap-2 ${answerColor}`}>
-                            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider">
-                              {isYes && <Check size={14} strokeWidth={2.5} />}
-                              {isNo && <X size={14} strokeWidth={2.5} />}
-                              {isInvalid && <AlertTriangle size={14} />}
-                              <span>{answerLabel}</span>
-                            </span>
-
-                            {showExplanation && (
-                              <span className="font-mono text-[10px] text-zinc-400">
-                                {isInvalid ? 'details' : 'clue'}
+                          {/* Unified Response Bubble */}
+                          <div className={`max-w-[85%] rounded-2xl rounded-tl-xs border px-3.5 py-2 text-xs shadow-sm space-y-1.5 ${answerColor}`}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider">
+                                {isYes && <Check size={14} strokeWidth={2.5} />}
+                                {isNo && <X size={14} strokeWidth={2.5} />}
+                                {isInvalid && <AlertTriangle size={14} />}
+                                <span>{answerLabel}</span>
                               </span>
+                              {showExplanation && (
+                                <span className="font-mono text-[9px] opacity-70">
+                                  {isInvalid ? 'details' : 'clue'}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Explanation inside the same bubble under a subtle divider line */}
+                            {showExplanation && q.explanation && (
+                              <div className="pt-1.5 border-t border-current/15 text-[11px] leading-relaxed font-normal opacity-90">
+                                {isInvalid && (
+                                  <p className="font-mono text-[10px] uppercase tracking-wider text-amber-300 font-semibold mb-0.5">
+                                    {t('history.invalidReason')}
+                                  </p>
+                                )}
+                                <p>{q.explanation}</p>
+                              </div>
+                            )}
+
+                            {isGameOver && q.id > 0 && (
+                              <div className="pt-1 border-t border-current/10">
+                                <AnswerReportForm mode="us_statedle" questionId={q.id} reportToken={q.report_token} />
+                              </div>
                             )}
                           </div>
-
-                          {showExplanation && (
-                            <div className="mt-1 rounded-sm border border-white/10 bg-black/40 px-3 py-2 text-[11px] leading-relaxed text-zinc-300">
-                              {isInvalid && (
-                                <p className="font-mono text-[10px] uppercase tracking-wider text-amber-300 mb-0.5 font-medium">
-                                  {t('history.invalidReason')}
-                                </p>
-                              )}
-                              <p>{q.explanation}</p>
-                            </div>
-                          )}
-
-                          {isGameOver && q.id > 0 && (
-                            <div className="mt-1.5 border-t border-white/5 pt-1.5">
-                              <AnswerReportForm mode="us_statedle" questionId={q.id} reportToken={q.report_token} />
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
                   })
                 )}
-                <div ref={questionsBottomRef} />
               </div>
             )}
 
             {/* Tab 2: Guesses Stream */}
             {activeChatTab === 'guesses' && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs scroll-smooth custom-scrollbar">
+              <div ref={guessesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 text-xs custom-scrollbar overscroll-contain">
                 {guesses.length === 0 ? (
                   <div className="py-7 text-center text-zinc-400 space-y-1 border border-dashed border-white/10 rounded-sm p-4">
                     <Compass size={20} className="mx-auto text-zinc-600" />
@@ -390,7 +399,6 @@ export default function USStatesGamePage() {
                     );
                   })
                 )}
-                <div ref={guessesBottomRef} />
               </div>
             )}
           </div>
@@ -398,7 +406,7 @@ export default function USStatesGamePage() {
       </div>
 
       {/* 4. Floating Action Inputs Dock on the Map (Bottom Center) */}
-      <div className="pointer-events-none absolute bottom-5 left-1/2 z-[1000] w-full max-w-xl -translate-x-1/2 px-4">
+      <div className="pointer-events-none absolute bottom-4 left-1/2 z-[990] w-full max-w-md -translate-x-1/2 px-3">
         <div className="pointer-events-auto flex flex-col gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 p-3 shadow-2xl backdrop-blur-md transition-all">
           {!isGameOver ? (
             <>

@@ -23,7 +23,7 @@ export default function MapToolbar({
 }: MapToolbarProps) {
   return (
     <div
-      className={`absolute top-2 left-12 z-[1000] flex items-center gap-1 rounded-sm border border-white/10 bg-obsidian-950/90 px-1.5 py-1 shadow-md backdrop-blur-sm ${className}`}
+      className={`absolute top-2 left-12 z-[1050] flex items-center gap-1 rounded-sm border border-white/10 bg-obsidian-950/90 px-1.5 py-1 shadow-md backdrop-blur-sm ${className}`}
       role="toolbar"
       aria-label="Map marker colors"
     >

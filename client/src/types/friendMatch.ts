@@ -12,6 +12,7 @@ export interface FriendHistory {
   entity: FriendEntity | null; answer: HumanAnswer | null; correct: boolean | null;
   revision: number; created_at: string;
   timed_out?: boolean;
+  answered_by?: 'player' | 'ai' | null;
   revisions: { answer: HumanAnswer; revision: number; created_at: string }[];
 }
 export interface FriendGuidance {

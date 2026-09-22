@@ -62,7 +62,7 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction, defaul
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
-      <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000] flex flex-col gap-2">
+      <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1050] flex flex-col gap-2">
         {defaultCenter && (
           <button
             onClick={(e) => {
@@ -416,13 +416,16 @@ export function ControlledMapBox({
   }
 
   return (
-    <div className={`w-full overflow-hidden relative z-0 ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
+    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
       <style>{`
         .leaflet-interactive:focus {
             outline: none;
         }
         .leaflet-tooltip {
             pointer-events: none !important;
+        }
+        .leaflet-top, .leaflet-bottom, .leaflet-control {
+            z-index: 1050 !important;
         }
       `}</style>
       <MapContainer 

@@ -26,8 +26,9 @@ export default function Layout() {
     '/us-states',
     '/wojewodztwa',
     '/powiaty',
+    '/friends',
+    '/duel',
   ].some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`));
-
   return (
     <div className={`flex min-h-screen flex-col bg-obsidian-950 font-sans text-sand-100 ${isGameFullscreen ? 'h-screen overflow-hidden' : ''}`}>
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[2000] focus:bg-sand-100 focus:px-4 focus:py-3 focus:text-obsidian-950">Skip to content</a>
