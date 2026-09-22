@@ -325,6 +325,40 @@ function DuelRoom({ code }: { code?: string }) {
   const finished = snapshot?.status === 'finished';
   const revealedOpponent = finished ? snapshot.reveals?.find(item => item.player_id !== snapshot.you)?.entity.name : undefined;
   const canGuess = myTurn && (snapshot?.phase === 'thinking' || snapshot?.phase === 'reply');
+  const isMyQuestionTurn = Boolean(
+    snapshot?.status === 'active' &&
+    snapshot?.phase === 'thinking' &&
+    snapshot?.active_player_id === snapshot?.you
+  );
+
+  // Reactive timer for question turn gradient border
+  const [turnNow, setTurnNow] = useState(Date.now);
+  useEffect(() => {
+    if (!snapshot?.deadline || !isMyQuestionTurn) return;
+    const interval = window.setInterval(() => setTurnNow(Date.now()), 250);
+    return () => clearInterval(interval);
+  }, [snapshot?.deadline, isMyQuestionTurn]);
+
+  const turnSecondsLeft = snapshot?.deadline
+    ? Math.max(0, Math.ceil((Date.parse(snapshot.deadline) - turnNow) / 1000))
+    : 120;
+
+  const turnBorderPhase: 'red' | 'yellow' | 'green' =
+    turnSecondsLeft <= 10 ? 'red' : turnSecondsLeft <= 30 ? 'yellow' : 'green';
+
+  const borderGradient =
+    turnBorderPhase === 'red'
+      ? 'from-rose-600 via-red-500 to-rose-700 animate-pulse'
+      : turnBorderPhase === 'yellow'
+      ? 'from-amber-500 via-yellow-400 to-amber-600'
+      : 'from-emerald-500 via-teal-400 to-emerald-600';
+
+  const borderGlow =
+    turnBorderPhase === 'red'
+      ? 'shadow-[inset_0_0_50px_rgba(244,63,94,0.45)] animate-pulse'
+      : turnBorderPhase === 'yellow'
+      ? 'shadow-[inset_0_0_40px_rgba(245,158,11,0.35)]'
+      : 'shadow-[inset_0_0_30px_rgba(16,185,129,0.3)]';
 
   // Auto-switch action tab if reply phase requires guessing
   useEffect(() => {
@@ -615,6 +649,21 @@ function DuelRoom({ code }: { code?: string }) {
         />
       </div>
 
+      {/* 1b. Map Question Turn Gradient Border Overlay (Green > 30s, Yellow <= 30s, Red <= 10s) */}
+      {isMyQuestionTurn && (
+        <div className="pointer-events-none absolute inset-0 z-[400] transition-all duration-300">
+          {/* Atmospheric inner perimeter glow */}
+          <div className={`absolute inset-0 pointer-events-none transition-all duration-500 ${borderGlow}`} />
+          {/* Top edge gradient bar */}
+          <div className={`absolute inset-x-0 top-0 h-[4px] sm:h-[5px] bg-gradient-to-r ${borderGradient}`} />
+          {/* Bottom edge gradient bar */}
+          <div className={`absolute inset-x-0 bottom-0 h-[4px] sm:h-[5px] bg-gradient-to-r ${borderGradient}`} />
+          {/* Left edge gradient bar */}
+          <div className={`absolute inset-y-0 left-0 w-[4px] sm:w-[5px] bg-gradient-to-b ${borderGradient}`} />
+          {/* Right edge gradient bar */}
+          <div className={`absolute inset-y-0 right-0 w-[4px] sm:w-[5px] bg-gradient-to-b ${borderGradient}`} />
+        </div>
+      )}
       {/* 2. Top Unified Status HUD Strip */}
       <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 px-2">
         <div className="pointer-events-auto flex h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
