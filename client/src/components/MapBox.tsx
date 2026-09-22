@@ -5,7 +5,7 @@ import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
-import { Check } from 'lucide-react';
+import { Check, RotateCcw } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
 
 function isCorrectCountryFeature(feature: Feature | undefined, targetName?: string) {
@@ -18,6 +18,11 @@ interface MapBoxProps {
   correctCountryName?: string;
   className?: string;
   onCountryCode?: (code: string | undefined) => void;
+  center?: [number, number];
+  zoom?: number;
+  minZoom?: number;
+  maxZoom?: number;
+  onCountryClick?: (name: string) => void;
 }
 
 interface MapControlsProps {
@@ -25,11 +30,11 @@ interface MapControlsProps {
   geoJsonData: FeatureCollection | null;
   map: L.Map | null;
   interaction: MapInteractionState;
+  defaultCenter?: [number, number];
+  defaultZoom?: number;
 }
-
-function MapControls({ correctCountryName, geoJsonData, map, interaction }: MapControlsProps) {
+function MapControls({ correctCountryName, geoJsonData, map, interaction, defaultCenter, defaultZoom }: MapControlsProps) {
   const { isGameOver, activeMarkerColor, setActiveMarkerColor, clearMapMarkings } = interaction;
-
   const handleZoomToCorrect = () => {
     if (map && correctCountryName && geoJsonData) {
       const correctFeature = geoJsonData.features.find(feature => isCorrectCountryFeature(feature, correctCountryName));
@@ -43,6 +48,11 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction }: MapC
       }
     }
   };
+  const handleResetView = () => {
+    if (map && defaultCenter) {
+      map.flyTo(defaultCenter, defaultZoom || 2, { duration: 1 });
+    }
+  };
 
   return (
     <>
@@ -51,8 +61,20 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction }: MapC
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
-      {isGameOver && correctCountryName && (
-        <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000]">
+      <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000] flex flex-col gap-2">
+        {defaultCenter && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              handleResetView();
+            }}
+            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 w-8 h-8 flex items-center justify-center cursor-pointer"
+            title="Reset view"
+          >
+            <RotateCcw size={15} />
+          </button>
+        )}
+        {isGameOver && correctCountryName && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -63,8 +85,8 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction }: MapC
           >
             <Check size={16} />
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
@@ -104,14 +126,24 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     }} />;
 }
 
-export function ControlledMapBox({ correctCountryName, className, onCountryCode, interaction }: MapBoxProps & { interaction: MapInteractionState }) {
+export function ControlledMapBox({
+  correctCountryName,
+  className,
+  onCountryCode,
+  interaction,
+  center = [20, 0],
+  zoom = 2,
+  minZoom = 2,
+  maxZoom = 10,
+  onCountryClick,
+}: MapBoxProps & { interaction: MapInteractionState }) {
   const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const { entityMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctCountryName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
-  const current = useRef({ interaction, revealedName });
-  current.current = { interaction, revealedName };
+  const current = useRef({ interaction, revealedName, onCountryClick });
+  current.current = { interaction, revealedName, onCountryClick };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
 
   useEffect(() => {
@@ -239,6 +271,7 @@ export function ControlledMapBox({ correctCountryName, className, onCountryCode,
         }
 
         current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), false);
+        current.current.onCountryClick?.(countryName);
       },
       contextmenu: (e: any) => {
         e.originalEvent?.preventDefault?.();
@@ -284,11 +317,12 @@ export function ControlledMapBox({ correctCountryName, className, onCountryCode,
         }
       `}</style>
       <MapContainer 
-        center={[20, 0]} 
-        zoom={2} 
+        key={`${center[0]}-${center[1]}-${zoom}`}
+        center={center} 
+        zoom={zoom} 
         style={{ height: '100%', width: '100%', background: '#242424' }}
-        minZoom={2}
-        maxZoom={10}
+        minZoom={minZoom}
+        maxZoom={maxZoom}
         attributionControl={false}
         ref={setMap}
       >
@@ -306,7 +340,7 @@ export function ControlledMapBox({ correctCountryName, className, onCountryCode,
         
         <MapController correctCountryName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
-      <MapControls correctCountryName={revealedName} geoJsonData={geoJsonData} map={map} interaction={interaction} />
+      <MapControls correctCountryName={revealedName} geoJsonData={geoJsonData} map={map} interaction={interaction} defaultCenter={center} defaultZoom={zoom} />
     </div>
   );
 }

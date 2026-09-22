@@ -1,12 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { getContinentalStore } from '../stores/gameStore';
-import type { ContinentKey } from '../components/ContinentalMap';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
 import GuessHistory from '../components/GuessHistory';
-import ContinentalMap from '../components/ContinentalMap';
+import { ControlledMapBox } from '../components/MapBox';
 import GameInstructions from '../components/GameInstructions';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +13,7 @@ import ShareResultCard from '../components/ShareResultCard';
 import GuestProgress from '../components/GuestProgress';
 import { useDailyDate } from '../hooks/useDailyClock';
 
+export type ContinentKey = 'europe' | 'asia' | 'africa' | 'americas';
 interface ContinentalGamePageProps {
   continent?: ContinentKey;
 }
@@ -24,6 +24,10 @@ interface ContinentMeta {
   subtitle: string;
   path: string;
   count: number;
+  center: [number, number];
+  zoom: number;
+  minZoom: number;
+  maxZoom: number;
 }
 
 const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
@@ -33,6 +37,10 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     subtitle: '47 European Nations · 8 Questions · 3 Guesses',
     path: '/europe',
     count: 47,
+    center: [52, 16],
+    zoom: 3.8,
+    minZoom: 2.5,
+    maxZoom: 8,
   },
   asia: {
     key: 'asia',
@@ -40,6 +48,10 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     subtitle: '47 Asian Nations · 8 Questions · 3 Guesses',
     path: '/asia',
     count: 47,
+    center: [34, 95],
+    zoom: 3,
+    minZoom: 2,
+    maxZoom: 8,
   },
   africa: {
     key: 'africa',
@@ -47,6 +59,10 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     subtitle: '54 African Nations · 8 Questions · 3 Guesses',
     path: '/africa',
     count: 54,
+    center: [2, 20],
+    zoom: 3,
+    minZoom: 2,
+    maxZoom: 8,
   },
   americas: {
     key: 'americas',
@@ -54,6 +70,10 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     subtitle: '35 Nations (23 North + 12 South) · 8 Questions · 3 Guesses',
     path: '/americas',
     count: 35,
+    center: [15, -85],
+    zoom: 2.5,
+    minZoom: 1.8,
+    maxZoom: 8,
   },
 };
 
@@ -92,6 +112,11 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     syncGuestData,
     isGuest,
     dailyDate,
+    entityMarkings,
+    activeMarkerColor,
+    setActiveMarkerColor,
+    handleEntityMapClick,
+    clearMapMarkings,
   } = useStore();
 
   const { t } = useTranslation();
@@ -178,14 +203,24 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               <span className="text-emerald-400">{gameState.is_game_over ? 'Result' : 'Search area'}</span>
             </div>
             <div className="relative h-[310px] sm:h-[420px] lg:h-[460px]">
-              <ContinentalMap
-                continent={activeContinent}
+              <ControlledMapBox
                 correctCountryName={gameState.is_game_over ? correctCountry?.name : undefined}
                 className="h-full"
+                center={meta.center}
+                zoom={meta.zoom}
+                minZoom={meta.minZoom}
+                maxZoom={meta.maxZoom}
+                interaction={{
+                  entityMarkings,
+                  activeMarkerColor,
+                  setActiveMarkerColor,
+                  handleEntityMapClick,
+                  clearMapMarkings,
+                  isGameOver: !!gameState.is_game_over,
+                }}
               />
             </div>
           </div>
-
           {gameState.is_game_over ? (
             <ShareResultCard
               gameName={title}
