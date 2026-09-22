@@ -6,7 +6,7 @@ import GuessInput from '../components/GuessInput';
 import GuessHistory from '../components/GuessHistory';
 import MapBox from '../components/MapBox';
 import GameInstructions from '../components/GameInstructions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
 import GuestProgress from '../components/GuestProgress';
@@ -28,9 +28,16 @@ export default function GamePage() {
     isGuest,
     dailyDate,
   } = useGameStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const today = useDailyDate();
   const [revealedFlag, setRevealedFlag] = useState<string | undefined>();
+  const [showResultModal, setShowResultModal] = useState(true);
+
+  useEffect(() => {
+    if (gameState?.is_game_over) {
+      setShowResultModal(true);
+    }
+  }, [gameState?.is_game_over]);
   
 
   useEffect(() => {
@@ -79,6 +86,16 @@ export default function GamePage() {
             examples={t('gamePage.examples', { returnObjects: true }) as string[]}
             scoring={{ maxPoints: 3300, details: t('gamePage.scoringDetails', { returnObjects: true }) as string[] }}
           />
+          {gameState.is_game_over && (
+            <button
+              type="button"
+              onClick={() => setShowResultModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-emerald-400/40 bg-emerald-950/40 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/50 transition-colors"
+            >
+              <Trophy size={14} />
+              <span>{i18n.language.startsWith('pl') ? 'Wyniki' : 'Results'}</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -95,21 +112,27 @@ export default function GamePage() {
           </div>
 
           {gameState.is_game_over ? (
-            <ShareResultCard
-              gameName="Countrydle"
-              gamePath="/game"
-              date={dailyDate}
-              won={gameState.won}
-              points={gameState.points}
-              questionsAsked={gameState.questions_asked}
-              maxQuestions={10}
-              guessesMade={gameState.guesses_made}
-              maxGuesses={3}
-              targetName={correctCountry?.name || guesses.find(g => g.answer)?.guess}
-              isGuest={isGuest}
-              targetCountryCode={correctCountry?.iso2 || revealedFlag}
-              discovery={questions.find(q => q.valid && q.explanation)?.explanation}
-            />
+            <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900 p-4 sm:p-5 flex items-center justify-between gap-4">
+              <div>
+                <span className="font-mono text-xs uppercase tracking-wider text-emerald-400">
+                  {gameState.won ? (i18n.language.startsWith('pl') ? 'Wygrana!' : 'Solved!') : (i18n.language.startsWith('pl') ? 'Koniec gry' : 'Game Over')}
+                </span>
+                <h3 className="text-lg font-semibold text-sand-100">
+                  {correctCountry?.name || guesses.find(g => g.answer)?.guess || (i18n.language.startsWith('pl') ? 'Dzisiejsza zagadka' : "Today's Puzzle")}
+                </h3>
+                {gameState.won && gameState.points && gameState.points > 0 ? (
+                  <p className="font-mono text-xs text-emerald-400">+{gameState.points.toLocaleString()} pts</p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResultModal(true)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 cursor-pointer"
+              >
+                <Trophy size={16} aria-hidden="true" />
+                <span>{i18n.language.startsWith('pl') ? 'Pokaż wyniki' : 'View Results'}</span>
+              </button>
+            </div>
           ) : (
             <div className="space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
               <div>
@@ -157,6 +180,35 @@ export default function GamePage() {
           </section>
         </aside>
       </div>
+
+      {/* Centered Results Modal */}
+      {gameState.is_game_over && showResultModal && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowResultModal(false);
+          }}
+        >
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl my-auto">
+            <ShareResultCard
+              gameName="Countrydle"
+              gamePath="/game"
+              date={dailyDate}
+              won={gameState.won}
+              points={gameState.points}
+              questionsAsked={gameState.questions_asked}
+              maxQuestions={10}
+              guessesMade={gameState.guesses_made}
+              maxGuesses={3}
+              targetName={correctCountry?.name || guesses.find(g => g.answer)?.guess}
+              isGuest={isGuest}
+              targetCountryCode={correctCountry?.iso2 || revealedFlag}
+              discovery={questions.find(q => q.valid && q.explanation)?.explanation}
+              onClose={() => setShowResultModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

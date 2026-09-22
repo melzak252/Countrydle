@@ -5,7 +5,8 @@ import {
   Check, 
   Trophy, 
   BookOpen, 
-  ArrowRight
+  ArrowRight,
+  X
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -26,8 +27,8 @@ interface ShareResultCardProps {
   isGuest?: boolean;
   targetCountryCode?: string;
   discovery?: string;
+  onClose?: () => void;
 }
-
 export default function ShareResultCard({
   gameName,
   gamePath,
@@ -42,6 +43,7 @@ export default function ShareResultCard({
   isGuest = false,
   targetCountryCode,
   discovery,
+  onClose,
 }: ShareResultCardProps) {
   const { t, i18n } = useTranslation();
   const { today, remainingSeconds } = useDailyClock();
@@ -139,7 +141,7 @@ export default function ShareResultCard({
   };
 
   return (
-    <section aria-label={`${gameName} result`} className="w-full space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
+    <section aria-label={`${gameName} result`} className="w-full space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5 relative">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-center gap-2">
           <div className={`p-2 ${won ? 'text-emerald-400' : 'text-zinc-400'}`} aria-hidden="true">
@@ -155,11 +157,23 @@ export default function ShareResultCard({
           </div>
         </div>
 
-        {won && points !== undefined && points > 0 && (
-          <div className="shrink-0 border border-emerald-500/20 px-3 py-2 font-mono text-sm text-emerald-400">
-            +{points.toLocaleString('en-US')} pts
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {won && points !== undefined && points > 0 && (
+            <div className="shrink-0 border border-emerald-500/20 px-3 py-2 font-mono text-sm text-emerald-400">
+              +{points.toLocaleString('en-US')} pts
+            </div>
+          )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Close result modal"
+            >
+              <X size={20} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -308,6 +322,15 @@ export default function ShareResultCard({
             <ArrowRight size={14} className="shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
         </div>
+      )}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-sm font-semibold text-sand-100 hover:bg-white/10 transition-colors"
+        >
+          {i18n.language.startsWith('pl') ? 'Zamknij i zobacz mapę' : 'Close and View Map'}
+        </button>
       )}
     </section>
   );

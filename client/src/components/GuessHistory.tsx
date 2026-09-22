@@ -26,10 +26,11 @@ export default function GuessHistory({ guesses }: GuessHistoryProps) {
       </p>
     );
   }
+  const sortedGuesses = [...guesses].reverse();
 
   return (
     <ul className="space-y-2">
-      {guesses.map((g) => {
+      {sortedGuesses.map((g) => {
         const hasDistance =
           g.distance_km !== undefined &&
           g.distance_km !== null &&

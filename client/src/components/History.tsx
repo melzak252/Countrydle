@@ -12,7 +12,7 @@ interface HistoryProps {
 export default function History({ questions, mode, isGameOver = false }: HistoryProps) {
   const { t } = useTranslation();
   
-  const sortedQuestions = [...questions].sort((a, b) => b.id - a.id);
+  const sortedQuestions = [...questions].reverse();
 
   if (sortedQuestions.length === 0) {
     return (
