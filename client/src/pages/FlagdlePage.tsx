@@ -502,42 +502,67 @@ export default function FlagdlePage() {
 
       {/* Instructions Modal */}
       {showInstructions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-sm border border-white/15 bg-obsidian-950 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-lg font-bold text-sand-100 flex items-center gap-2">
-                <span>🚩 How to Play Flagdle</span>
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
+            onClick={() => setShowInstructions(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="How to Play Flagdle"
+            className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-6 shadow-2xl space-y-4 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 -mt-1 text-left">
+              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald-400">
+                Flagdle Guide
+              </span>
               <button
                 type="button"
                 onClick={() => setShowInstructions(false)}
-                className="text-zinc-400 hover:text-white"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              <p>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-sand-100 flex items-center gap-2">
+                <span>🚩 How to Play Flagdle</span>
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-zinc-400 leading-relaxed">
                 Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
               </p>
+            </div>
 
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
-                <div className="font-semibold text-sand-100">🎴 12-Card Cover Grid (3×4):</div>
+            <div className="space-y-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3.5 space-y-1.5">
+                <div className="font-semibold text-sand-100 flex items-center gap-2">
+                  <span>🎴 12-Card Cover Grid (3×4)</span>
+                </div>
                 <p className="text-zinc-400">
                   The flag is covered by 12 solid cards. Each guess unmasks 1 card, progressively revealing more of the flag underneath.
                 </p>
               </div>
 
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
-                <div className="font-semibold text-sand-100">🎨 Color Overlap Clues:</div>
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3.5 space-y-1.5">
+                <div className="font-semibold text-sand-100 flex items-center gap-2">
+                  <span>🎨 Color Overlap Clues</span>
+                </div>
                 <p className="text-zinc-400">
                   Each guess analyzes the colors of your guessed flag against the secret target. Green chips show shared colors, while crossed-out chips show colors absent from the secret flag.
                 </p>
               </div>
 
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
-                <div className="font-semibold text-sand-100">🧭 Distance & Direction:</div>
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3.5 space-y-1.5">
+                <div className="font-semibold text-sand-100 flex items-center gap-2">
+                  <span>🧭 Distance & Direction</span>
+                </div>
                 <p className="text-zinc-400">
                   An arrow and distance badge show the great-circle distance and compass bearing from your guessed country to the secret target.
                 </p>
@@ -547,7 +572,7 @@ export default function FlagdlePage() {
             <button
               type="button"
               onClick={() => setShowInstructions(false)}
-              className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-2.5 text-sm font-semibold text-obsidian-950 transition-colors cursor-pointer"
+              className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer"
             >
               Got it, let's play!
             </button>
