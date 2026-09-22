@@ -182,10 +182,10 @@ function HistoryCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-md border p-3.5 transition-all sm:p-4 ${
+      className={`relative overflow-hidden rounded-sm border p-3 transition-all ${
         isYou
-          ? 'border-l-4 border-l-emerald-400 border-white/10 bg-emerald-950/10 hover:border-l-emerald-300'
-          : 'border-l-4 border-l-blue-400 border-white/10 bg-blue-950/10 hover:border-l-blue-300'
+          ? 'border-l-4 border-l-emerald-400 border-white/10 bg-emerald-950/15 hover:border-l-emerald-300 ml-auto max-w-[92%]'
+          : 'border-l-4 border-l-blue-400 border-white/10 bg-blue-950/15 hover:border-l-blue-300 mr-auto max-w-[92%]'
       }`}
     >
       {/* Header: Author badge, type badge, timestamp */}
@@ -226,8 +226,8 @@ function HistoryCard({
       {/* Main Content */}
       <div className="mt-3">
         {item.type === 'question' ? (
-          <div className="space-y-3">
-            <p className="whitespace-pre-wrap break-words text-sm font-medium text-sand-100 sm:text-base leading-snug">
+          <div className="space-y-2.5">
+            <p className={`whitespace-pre-wrap break-words text-xs sm:text-sm font-medium text-sand-100 leading-snug ${isYou ? 'text-right' : 'text-left'}`}>
               {item.question}
             </p>
             <div className="flex flex-wrap items-center gap-2">

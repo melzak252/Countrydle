@@ -269,20 +269,20 @@ export default function USStatesGamePage() {
 
                     return (
                       <div key={q.id} className="space-y-1.5 border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
-                        {/* Player Inquiry */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
+                        {/* Player Inquiry (Right-aligned) */}
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-center justify-end mb-1">
                             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-400">
                               #{String(index + 1).padStart(2, '0')} · You
                             </span>
                           </div>
-                          <div className="rounded-sm border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-sand-100 leading-relaxed">
+                          <div className="max-w-[88%] rounded-sm border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-sand-100 leading-relaxed text-right">
                             {q.original_question}
                           </div>
                         </div>
 
-                        {/* Dispatch Response */}
-                        <div className="pt-0.5">
+                        {/* Dispatch Response (Left-aligned) */}
+                        <div className="flex flex-col items-start pt-0.5">
                           <div className="flex items-center gap-1.5 mb-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-emerald-400 font-semibold">
@@ -290,7 +290,7 @@ export default function USStatesGamePage() {
                             </span>
                           </div>
 
-                          <div className={`rounded-sm border px-3 py-1.5 flex items-center justify-between gap-2 ${answerColor}`}>
+                          <div className={`max-w-[88%] rounded-sm border px-3 py-1.5 flex items-center justify-between gap-2 ${answerColor}`}>
                             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider">
                               {isYes && <Check size={14} strokeWidth={2.5} />}
                               {isNo && <X size={14} strokeWidth={2.5} />}
