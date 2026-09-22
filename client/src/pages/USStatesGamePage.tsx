@@ -178,13 +178,21 @@ export default function USStatesGamePage() {
 
       {/* Centered Results Modal */}
       {gameState.is_game_over && showResultModal && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowResultModal(false);
-          }}
-        >
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl my-auto">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          {/* Backdrop: clicking anywhere in background closes modal */}
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
+            onClick={() => setShowResultModal(false)}
+            aria-hidden="true"
+          />
+
+          {/* Modal Dialog Card */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative z-10 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <ShareResultCard
               gameName="US Statedle"
               gamePath="/us-states"

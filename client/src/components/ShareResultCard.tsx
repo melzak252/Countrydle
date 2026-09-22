@@ -141,39 +141,45 @@ export default function ShareResultCard({
   };
 
   return (
-    <section aria-label={`${gameName} result`} className="w-full space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5 relative">
+    <section aria-label={`${gameName} result`} className="w-full space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-6 relative">
+      {onClose && (
+        <div className="flex items-center justify-between border-b border-white/10 pb-3 -mt-1">
+          <span className="font-mono text-xs uppercase tracking-wider text-zinc-400">
+            {gameName} Result · {displayDate}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            aria-label="Close result modal"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2">
-          <div className={`p-2 ${won ? 'text-emerald-400' : 'text-zinc-400'}`} aria-hidden="true">
-            {won ? <Trophy size={20} /> : <Check size={20} />}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`p-2.5 rounded-full border ${won ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-400' : 'border-white/10 bg-white/5 text-zinc-400'}`} aria-hidden="true">
+            {won ? <Trophy size={22} /> : <Check size={22} />}
           </div>
           <div>
-            <h2 className="font-serif text-2xl text-sand-100">
+            <h2 className="font-serif text-2xl text-sand-100 sm:text-3xl">
               {won ? 'You found it. Nicely done!' : 'Every guess builds your map.'}
             </h2>
-            <p className="mt-1 text-xs text-zinc-400">
-              {displayDate} · {gameName}
-            </p>
+            {!onClose && (
+              <p className="mt-1 text-xs text-zinc-400">
+                {displayDate} · {gameName}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {won && points !== undefined && points > 0 && (
-            <div className="shrink-0 border border-emerald-500/20 px-3 py-2 font-mono text-sm text-emerald-400">
-              +{points.toLocaleString('en-US')} pts
-            </div>
-          )}
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Close result modal"
-            >
-              <X size={20} />
-            </button>
-          )}
-        </div>
+        {won && points !== undefined && points > 0 && (
+          <div className="shrink-0 border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 font-mono text-sm font-semibold text-emerald-400 rounded-sm">
+            +{points.toLocaleString('en-US')} pts
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">

@@ -389,25 +389,37 @@ export default function FlagdlePage() {
 
         {/* Results Modal */}
         {isGameOver && showResultsModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowResultsModal(false);
-            }}
-          >
-            <section
-              aria-label="Game Result"
-              className="relative mx-auto w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-6 shadow-2xl text-center space-y-4 my-auto"
-            >
-              <button
-                type="button"
-                onClick={() => setShowResultsModal(false)}
-                className="absolute right-4 top-4 text-zinc-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
-                aria-label="Close"
-              >
-                <X size={20} />
-              </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            {/* Backdrop: clicking background closes modal */}
+            <div
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
+              onClick={() => setShowResultsModal(false)}
+              aria-hidden="true"
+            />
 
+            {/* Modal Dialog Card */}
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-label="Game Result"
+              className="relative z-10 mx-auto w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-6 shadow-2xl text-center space-y-4 my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Dedicated top header bar with cleanly aligned close button */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3 -mt-1 text-left">
+                <span className="font-mono text-xs uppercase tracking-wider text-zinc-400">
+                  Flagdle Result · {dailyDate}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowResultsModal(false)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close"
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
               <div className="inline-flex items-center justify-center rounded-full p-3 bg-obsidian-900 border border-white/10">
                 {isWon ? (
                   <Sparkles className="text-emerald-400" size={32} />
