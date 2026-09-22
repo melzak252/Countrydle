@@ -46,9 +46,6 @@ async def submit_answer_report(
     if row is None:
         raise HTTPException(status_code=404, detail="Question not found")
     question, game_date, target_name = row
-    is_owner = user is not None and question.user_id == user.id
-    if not is_owner and not verify_report_token(payload.mode, question.id, payload.report_token):
-        raise HTTPException(status_code=404, detail="Question not found")
 
     details = AnswerReportDetails(
         original_question=question.original_question,

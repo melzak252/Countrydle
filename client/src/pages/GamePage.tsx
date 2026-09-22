@@ -485,9 +485,13 @@ export default function GamePage() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150"
+          onClick={() => setIsResultDismissed(true)}
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
         >
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 sm:p-6 shadow-2xl">
+          <div
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 sm:p-6 shadow-2xl cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Close / Inspect Map Button */}
             <button
               type="button"
@@ -513,6 +517,7 @@ export default function GamePage() {
               isGuest={isGuest}
               targetCountryCode={correctCountry?.iso2 || revealedFlag}
               discovery={questions.find((q) => q.valid && q.explanation)?.explanation}
+              onClose={() => setIsResultDismissed(true)}
             />
 
             <div className="mt-4 flex justify-center">
