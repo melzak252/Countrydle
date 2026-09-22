@@ -148,29 +148,33 @@ export default function FlagdlePage() {
     if (!dailyDate || !gameState) return;
     const isWon = gameState.won;
     const scoreText = isWon ? `${guesses.length}/12` : 'X/12';
-    let text = `Countrydle Flagdle #${dailyDate} ${scoreText} 🚩\n\n`;
+    const lines: string[] = [];
+    lines.push(`Flagdle · ${dailyDate}`);
+    lines.push(`${scoreText} guesses 🚩`);
 
-    guesses.forEach((g: FlagdleGuess, idx: number) => {
-      const stageNum = idx + 1;
-      const unmaskedCount = g.answer ? 12 : Math.min(12, stageNum);
-      const tilesStr = Array.from({ length: 12 }, (_, i) => {
-        if (i < unmaskedCount) {
-          return g.answer ? '🟩' : '🟨';
-        }
-        return '⬛';
-      }).join('');
+    if (isWon && gameState.points && gameState.points > 0) {
+      lines.push(`Score: ${gameState.points.toLocaleString('en-US')} pts`);
+    }
 
+    lines.push('');
+
+    // Concise, authentic attempt trail
+    guesses.forEach((g: FlagdleGuess) => {
       if (g.answer) {
-        text += `${tilesStr} 🎯 FOUND!\n`;
+        lines.push('🟩 🎯');
       } else {
-        const dist = g.distance_km ? `${g.distance_km.toLocaleString()}km` : '';
-        const arrow = g.bearing_arrow || '🧭';
-        const dir = g.bearing_direction || '';
-        text += `${tilesStr} ${arrow} ${dist} ${dir}\n`;
+        const isClose = (g.distance_km !== null && g.distance_km !== undefined && g.distance_km < 2500) || (g.matched_colors && g.matched_colors.length > 0);
+        const tile = isClose ? '🟨' : '⬛';
+        const arrow = g.bearing_arrow ? `${g.bearing_arrow} ` : '';
+        const dist = g.distance_km ? `${g.distance_km.toLocaleString()} km` : '';
+        lines.push(`${tile} ${arrow}${dist}`.trim());
       }
     });
 
-    text += `\nhttps://countrydle.online/flagdle`;
+    lines.push('');
+    lines.push('https://countrydle.online/flagdle');
+
+    const text = lines.join('\n');
 
     navigator.clipboard.writeText(text);
     setCopied(true);

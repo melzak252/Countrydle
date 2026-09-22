@@ -63,38 +63,44 @@ export default function ShareResultCard({
     : { path: '/game', name: 'Countrydle' };
   const fullUrl = `https://countrydle.online${gamePath === '/game' ? '' : gamePath}`;
 
-  // Generate Wordle-style spoiler-free emoji grid
+  // Generate authentic, spoiler-free share text
   const generateShareText = () => {
     let emojiIcon = '🌍';
     if (gamePath.includes('us-states')) emojiIcon = '🇺🇸';
     else if (gamePath.includes('powiaty')) emojiIcon = '📍';
     else if (gamePath.includes('wojewodztwa')) emojiIcon = '🗺️';
+    else if (gamePath.includes('europe')) emojiIcon = '🧭';
+    else if (gamePath.includes('asia')) emojiIcon = '🌏';
+    else if (gamePath.includes('africa')) emojiIcon = '🌍';
+    else if (gamePath.includes('americas')) emojiIcon = '🌎';
 
-    const lines = [];
-    lines.push(`${gameName} ${displayDate} ${emojiIcon}`);
+    const lines: string[] = [];
+    lines.push(`${gameName} · ${displayDate}`);
 
     if (won) {
-      if (points && points > 0) {
-        lines.push(`🏆 Score: ${points.toLocaleString('en-US')} pts`);
+      if (questionsAsked === 0) {
+        lines.push(`Solved on 1st try (0 questions) ${emojiIcon}`);
+      } else {
+        const qWord = questionsAsked === 1 ? 'question' : 'questions';
+        const gWord = guessesMade === 1 ? 'guess' : 'guesses';
+        lines.push(`Solved in ${questionsAsked} ${qWord}, ${guessesMade} ${gWord} ${emojiIcon}`);
       }
-      lines.push(`❓ Questions: ${questionsAsked}/${maxQuestions}`);
-      lines.push(`🎯 Guesses: ${guessesMade}/${maxGuesses} (Solved!)`);
 
-      // Emoji squares: Green for questions used, White for unused lifelines
+      if (points && points > 0) {
+        lines.push(`Score: ${points.toLocaleString('en-US')} pts`);
+      }
+
+      lines.push('');
       const greenSquares = '🟩'.repeat(Math.min(questionsAsked, maxQuestions));
       const whiteSquares = '⬜'.repeat(Math.max(0, maxQuestions - questionsAsked));
-      lines.push(`${greenSquares}${whiteSquares}`);
-      lines.push('');
-      lines.push('Can you beat my deduction score?');
+      lines.push(`${greenSquares}${whiteSquares} 🎯`);
     } else {
-      lines.push(`❌ Didn't deduce today's secret location`);
-      lines.push(`❓ Questions: ${questionsAsked}/${maxQuestions}`);
-      lines.push(`🎯 Guesses: ${guessesMade}/${maxGuesses}`);
-      lines.push('🟥'.repeat(maxGuesses));
+      lines.push(`X/${maxGuesses} guesses (${questionsAsked}/${maxQuestions} questions) ${emojiIcon}`);
       lines.push('');
-      lines.push('Can you solve it?');
+      lines.push('🟥'.repeat(maxGuesses));
     }
 
+    lines.push('');
     lines.push(fullUrl);
     return lines.join('\n');
   };
