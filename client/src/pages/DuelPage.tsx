@@ -24,7 +24,8 @@ import type { FriendEntity, FriendMode, FriendSnapshot } from '../types/friendMa
 import GuessInput from '../components/GuessInput';
 import QuestionInput from '../components/QuestionInput';
 import FriendDuelMap from '../components/friendDuel/FriendDuelMap';
-import DuelHistory, { AnswerPicker, PrivateAdvice } from '../components/friendDuel/DuelHistory';
+import DuelHistory from '../components/friendDuel/DuelHistory';
+import FriendQuestionModal from '../components/friendDuel/FriendQuestionModal';
 import { duelButton, duelCopy, duelModes, duelPrimary } from '../components/friendDuel/copy';
 import type { DuelCopy } from '../components/friendDuel/copy';
 
@@ -717,42 +718,45 @@ function DuelRoom({ code }: { code?: string }) {
       )}
 
       {/* 3. Unified Deduction & Duel History Overlay (Left Side on Map) */}
+      {/* 3. Unified Deduction & Duel History Overlay (Bottom Left Corner) */}
       {(snapshot.status === 'active' || finished) && (
-        <div className="pointer-events-none absolute left-11 sm:left-12 top-11 sm:top-12 z-[990] w-84 sm:w-96 max-w-[calc(100vw-4rem)]">
+        <div className="pointer-events-none absolute left-4 bottom-4 z-[1000] w-80 sm:w-96 max-w-[calc(100vw-2rem)]">
           {!isHistoryOpen ? (
             <button
               type="button"
               onClick={() => setIsHistoryOpen(true)}
-              className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/80 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
-              aria-label="Expand Duel Log"
+              className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
+              aria-label="Expand Duel Chat"
             >
               <MessageSquare size={13} className="text-emerald-400" />
-              <span>Duel Log</span>
+              <span>Duel chat</span>
               <span className="text-zinc-500">·</span>
               <span className="text-emerald-400 font-semibold">Turn {snapshot.turn}</span>
-              <ChevronDown size={13} className="text-zinc-400 ml-0.5" />
+              <span className="text-zinc-500">·</span>
+              <span className="text-sand-200">M: {snapshot.history.length}</span>
+              <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
             </button>
           ) : (
-            <div className="pointer-events-auto flex max-h-[50vh] sm:max-h-[56vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/80 shadow-2xl backdrop-blur-md transition-all">
+            <div className="pointer-events-auto flex max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2">
+              <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2 shrink-0">
                 <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 font-semibold">
                   <MessageSquare size={13} className="text-emerald-400" />
-                  <span>Duel Exchange Log</span>
-                  <span className="text-zinc-500">({snapshot.history.length})</span>
+                  <span>Deduction Chat</span>
+                  <span className="text-zinc-500 font-normal">({snapshot.history.length})</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsHistoryOpen(false)}
                   className="rounded-sm p-1 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-                  title="Minimize log"
+                  title="Minimize chat"
                 >
-                  <ChevronUp size={14} />
+                  <ChevronDown size={14} />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-2.5 text-xs scroll-smooth custom-scrollbar">
+              <div className="flex-1 overflow-hidden min-h-0">
                 <DuelHistory
                   snapshot={snapshot}
                   copy={copy}
@@ -770,6 +774,26 @@ function DuelRoom({ code }: { code?: string }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* 3c. Friend Question Centered Modal */}
+      {mustAnswer && pendingQuestion && (
+        <FriendQuestionModal
+          pendingQuestion={pendingQuestion}
+          opponentName={opponent?.name || 'Friend'}
+          ownSecret={snapshot.own_secret}
+          deadline={snapshot.deadline}
+          advice={advice}
+          copy={copy}
+          busy={busy}
+          onAnswer={answer => {
+            void room.act('answer', {
+              question_id: pendingQuestion.id,
+              answer,
+              ...(advice?.status === 'completed' ? { observed_ai_question_id: pendingQuestion.id } : {}),
+            });
+          }}
+        />
       )}
 
       {/* 3b. Lobby Secret Selector & Invite Overlay */}
@@ -849,30 +873,15 @@ function DuelRoom({ code }: { code?: string }) {
 
       {/* 5. Floating Bottom Action Dock */}
       {snapshot.status === 'active' && (
-        <div className="pointer-events-none absolute bottom-5 left-1/2 z-[1000] w-full max-w-xl -translate-x-1/2 px-4">
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[990] w-full max-w-md -translate-x-1/2 px-3">
           <div className="pointer-events-auto flex flex-col gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 p-3 shadow-2xl backdrop-blur-md transition-all">
             {/* Case A: Must Answer Opponent's Question */}
             {mustAnswer && pendingQuestion ? (
-              <div ref={answerPanel} className="space-y-3">
-                <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-amber-300">
-                  <Zap size={14} className="text-amber-400" />
-                  <span>{copy.answering}: Inquirer asks</span>
+              <div ref={answerPanel} className="flex items-center justify-between gap-3 px-2 py-1">
+                <div className="flex items-center gap-2 font-mono text-[11px] text-amber-300">
+                  <Zap size={14} className="text-amber-400 animate-pulse" />
+                  <span>Question received — choose answer in modal</span>
                 </div>
-                <p className="whitespace-pre-wrap break-words text-sm font-medium text-sand-100 bg-obsidian-950/70 p-3 rounded-sm border border-white/10">
-                  &quot;{pendingQuestion.question}&quot;
-                </p>
-                <AnswerPicker
-                  copy={copy}
-                  disabled={busy}
-                  onAnswer={answer => {
-                    void room.act('answer', {
-                      question_id: pendingQuestion.id,
-                      answer,
-                      ...(advice?.status === 'completed' ? { observed_ai_question_id: pendingQuestion.id } : {}),
-                    });
-                  }}
-                />
-                <PrivateAdvice guidance={advice} copy={copy} />
               </div>
             ) : myTurn ? (
               /* Case B: Your Turn to Ask Question or Make Guess */

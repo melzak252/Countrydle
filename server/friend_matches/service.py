@@ -15,8 +15,8 @@ from db.models.friend_match import FriendAction, FriendAdvisory, FriendMatch, Fr
 from .providers import list_entities
 from .schemas import ActionRequest
 
-THINK_SECONDS = 45
-ANSWER_SECONDS = 30
+THINK_SECONDS = 120
+ANSWER_SECONDS = 60
 DISCONNECT_SECONDS = 30
 CONNECTED_SECONDS = 15
 INFRASTRUCTURE_GRACE_SECONDS = 10
@@ -74,7 +74,7 @@ def start_if_ready(match, seats, now):
     return False
 
 
-def expire_match(match, seats, now, *, pending_move=None, timeout_moves=None):
+def expire_match(match, seats, now, *, pending_move=None, advisory=None, timeout_moves=None):
     if match.status == "lobby":
         if seats and all(now - s.last_seen_at >= timedelta(minutes=30) for s in seats):
             finish(match, "cancelled", now)
@@ -95,6 +95,16 @@ def expire_match(match, seats, now, *, pending_move=None, timeout_moves=None):
             actor.timeout_count += 1
             if pending_move is not None:
                 pending_move.timed_out = True
+                # If player didn't answer in time, automatically provide AI answer
+                ai_answer = "unknown"
+                if advisory and advisory.status == "completed":
+                    if advisory.answer == "YES":
+                        ai_answer = "yes"
+                    elif advisory.answer == "NO":
+                        ai_answer = "no"
+                pending_move.answer = ai_answer
+                pending_move.answered_at = now
+                match.pending_question_id = None
             elif match.phase == "thinking":
                 match.move_ordinal += 1
                 timeout_move = FriendMove(
@@ -124,10 +134,13 @@ def expire_match(match, seats, now, *, pending_move=None, timeout_moves=None):
 
 async def expire_locked(session, match, seats, now):
     pending = None
+    advisory = None
     if match.pending_question_id and match.deadline and now >= match.deadline:
         pending = await session.get(FriendMove, match.pending_question_id)
+        if pending:
+            advisory = await session.get(FriendAdvisory, pending.id)
     moves = []
-    changed = expire_match(match, seats, now, pending_move=pending, timeout_moves=moves)
+    changed = expire_match(match, seats, now, pending_move=pending, advisory=advisory, timeout_moves=moves)
     session.add_all(moves)
     return changed
 
@@ -252,6 +265,7 @@ def project_move(move):
             "entity": move.entity if move.type == "guess" else None, "answer": move.answer,
             "correct": move.correct, "revision": move.revision, "created_at": iso(move.created_at),
             "timed_out": move.timed_out,
+            "answered_by": "ai" if (move.timed_out and move.answer) else ("player" if move.answer else None),
             "revisions": [{"answer": r["answer"], "revision": r["revision"], "created_at": r["created_at"]}
                           for r in move.revisions]}
 
