@@ -89,6 +89,10 @@ class GuessDisplay(GuessBase):
     id: int
     answer: bool | None
     guessed_at: datetime
+    distance_km: int | None = None
+    bearing_degrees: int | None = None
+    bearing_direction: str | None = None
+    bearing_arrow: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

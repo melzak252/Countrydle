@@ -44,6 +44,10 @@ class WojewodztwoGuessDisplay(BaseModel):
     wojewodztwo_id: Optional[int]
     guessed_at: datetime
     answer: bool
+    distance_km: Optional[int] = None
+    bearing_degrees: Optional[int] = None
+    bearing_direction: Optional[str] = None
+    bearing_arrow: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

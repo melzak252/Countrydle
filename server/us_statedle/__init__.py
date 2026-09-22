@@ -30,6 +30,8 @@ from schemas.us_statedle import (
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import us_statedle.utils as uutils
 from game_logic import GameConfig, GameRules, GameState
+from utils.geo import enhance_guess_with_hint
+
 
 router = APIRouter(prefix="/us_statedle")
 
@@ -44,6 +46,31 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+def format_us_state_guesses(guesses: list, target_state_id: int) -> list[USStateGuessDisplay]:
+    from datetime import datetime
+    formatted = []
+    for idx, g in enumerate(guesses):
+        hint = enhance_guess_with_hint(
+            mode="us_statedle",
+            guess_record=g,
+            guess_number=idx + 1,
+            max_guesses=USSTATEDLE_CONFIG.max_guesses,
+            target_id=target_state_id,
+        )
+        gd = USStateGuessDisplay(
+            id=int(getattr(g, "id", 0) or 0),
+            guess=str(getattr(g, "guess", "") or ""),
+            us_state_id=getattr(g, "us_state_id", None) if isinstance(getattr(g, "us_state_id", None), int) else None,
+            answer=bool(getattr(g, "answer", False) if isinstance(getattr(g, "answer", False), bool) else False),
+            guessed_at=getattr(g, "guessed_at", None) or datetime.now(),
+            distance_km=hint.get("distance_km"),
+            bearing_degrees=hint.get("bearing_degrees"),
+            bearing_direction=hint.get("bearing_direction"),
+            bearing_arrow=hint.get("bearing_arrow"),
+        )
+        formatted.append(gd)
+    return formatted
 
 
 async def normalize_state_limits(state, session: AsyncSession):
@@ -199,7 +226,7 @@ async def get_state(
             user=user,
             date=str(day_state.date),
             state=USStatedleStateSchema.model_validate(state),
-            guesses=guesses,
+            guesses=format_us_state_guesses(guesses, day_state.us_state_id),
             questions=questions,
             us_state=us_state,
         )
@@ -213,7 +240,7 @@ async def get_state(
         user=user,
         date=str(day_state.date),
         state=USStatedleStateSchema.model_validate(state),
-        guesses=guesses,
+        guesses=format_us_state_guesses(guesses, day_state.us_state_id),
         questions=questions_display,
         us_state=None,
     )
@@ -446,14 +473,24 @@ async def make_guess(
         if is_correct:
             guess.us_state_id = day_state.us_state_id
 
+    guess_num = 1
     if user is None:
         cookie = request.cookies.get("guest_us_statedle")
         guest_state = read_guest_game_token(cookie, "us_statedle", day_state.id)
         guesses_count = guest_state["guesses_count"] + 1
+        guess_num = guesses_count
         won = is_correct
         is_game_over = is_correct or (guesses_count >= USSTATEDLE_CONFIG.max_guesses)
         token = create_guest_game_token("us_statedle", day_state.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_us_statedle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
+        hint = enhance_guess_with_hint(
+            mode="us_statedle",
+            guess_record={"guess": guess.guess, "us_state_id": guess.us_state_id, "answer": is_correct},
+            guess_number=guess_num,
+            max_guesses=USSTATEDLE_CONFIG.max_guesses,
+            target_id=day_state.us_state_id,
+        )
 
         from datetime import datetime
         return USStateGuessDisplay(
@@ -461,7 +498,8 @@ async def make_guess(
             guess=guess.guess,
             us_state_id=guess.us_state_id,
             answer=is_correct,
-            guessed_at=datetime.now()
+            guessed_at=datetime.now(),
+            **hint,
         )
     state = await USStatedleStateRepository(session).get_state(user, day_state)
 
@@ -497,4 +535,22 @@ async def make_guess(
         )
     await USStatedleStateRepository(session).update_state(state)
 
-    return new_guess
+    hint = enhance_guess_with_hint(
+        mode="us_statedle",
+        guess_record=new_guess,
+        guess_number=state.guesses_made,
+        max_guesses=USSTATEDLE_CONFIG.max_guesses,
+        target_id=day_state.us_state_id,
+    )
+    from datetime import datetime
+    return USStateGuessDisplay(
+        id=int(getattr(new_guess, "id", 0) or 0),
+        guess=str(getattr(new_guess, "guess", guess.guess) or guess.guess),
+        us_state_id=getattr(new_guess, "us_state_id", guess.us_state_id) if isinstance(getattr(new_guess, "us_state_id", guess.us_state_id), int) else guess.us_state_id,
+        answer=is_correct,
+        guessed_at=getattr(new_guess, "guessed_at", None) or datetime.now(),
+        distance_km=hint.get("distance_km"),
+        bearing_degrees=hint.get("bearing_degrees"),
+        bearing_direction=hint.get("bearing_direction"),
+        bearing_arrow=hint.get("bearing_arrow"),
+    )

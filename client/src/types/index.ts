@@ -57,8 +57,16 @@ export interface Guess {
   id: number;
   guess: string;
   country_id?: number;
+  us_state_id?: number;
+  wojewodztwo_id?: number;
+  powiat_id?: number;
   answer?: boolean;
   guessed_at: string;
+  elapsed_seconds?: number;
+  distance_km?: number | null;
+  bearing_degrees?: number | null;
+  bearing_direction?: string | null;
+  bearing_arrow?: string | null;
 }
 
 export interface GameState {

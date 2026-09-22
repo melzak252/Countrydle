@@ -14,6 +14,9 @@ interface GameData {
   correctEntity: any | null;
   dailyDate: string | null;
   selectedEntityNames: string[];
+  candidateEntities: string[];
+  eliminatedEntities: string[];
+  mapInteractionMode: 'candidate' | 'eliminate';
   isLoading: boolean;
   isGuest: boolean;
   error: string | null;
@@ -29,6 +32,11 @@ interface GameActions {
   resetGame: () => void;
   toggleEntitySelection: (name: string) => void;
   clearSelection: () => void;
+  setMapInteractionMode: (mode: 'candidate' | 'eliminate') => void;
+  toggleEntityCandidate: (name: string) => void;
+  toggleEntityEliminated: (name: string) => void;
+  handleEntityMapClick: (name: string, isSecondary?: boolean) => void;
+  clearMapMarkings: () => void;
 }
 
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
@@ -139,6 +147,9 @@ const createGameStore = (gameType: GuestGameType) => {
     correctEntity: null,
     dailyDate: null,
     selectedEntityNames: [],
+    candidateEntities: [],
+    eliminatedEntities: [],
+    mapInteractionMode: 'candidate',
     isLoading: false,
     isGuest: false,
     error: null,
@@ -438,21 +449,67 @@ const createGameStore = (gameType: GuestGameType) => {
         questions: [], 
         guesses: [], 
         selectedEntityNames: [], 
+        candidateEntities: [],
+        eliminatedEntities: [],
         correctEntity: null, 
         isGuest: false,
         error: null 
     }),
-    
-    toggleEntitySelection: (name: string) => {
-      const { selectedEntityNames } = get();
-      if (selectedEntityNames.includes(name)) {
-        set({ selectedEntityNames: selectedEntityNames.filter(n => n !== name) });
-        return;
+
+    setMapInteractionMode: (mode: 'candidate' | 'eliminate') => set({ mapInteractionMode: mode }),
+
+    toggleEntityCandidate: (name: string) => {
+      const normalized = name.toUpperCase();
+      const { candidateEntities, eliminatedEntities } = get();
+      const nextEliminated = eliminatedEntities.filter(n => n !== normalized);
+      const nextCandidate = candidateEntities.includes(normalized)
+        ? candidateEntities.filter(n => n !== normalized)
+        : [...candidateEntities, normalized];
+      set({
+        candidateEntities: nextCandidate,
+        eliminatedEntities: nextEliminated,
+        selectedEntityNames: nextCandidate,
+      });
+    },
+
+    toggleEntityEliminated: (name: string) => {
+      const normalized = name.toUpperCase();
+      const { candidateEntities, eliminatedEntities } = get();
+      const nextCandidate = candidateEntities.filter(n => n !== normalized);
+      const nextEliminated = eliminatedEntities.includes(normalized)
+        ? eliminatedEntities.filter(n => n !== normalized)
+        : [...eliminatedEntities, normalized];
+      set({
+        candidateEntities: nextCandidate,
+        eliminatedEntities: nextEliminated,
+        selectedEntityNames: nextCandidate,
+      });
+    },
+
+    handleEntityMapClick: (name: string, isSecondary = false) => {
+      const { mapInteractionMode } = get();
+      const effectiveAction = isSecondary
+        ? (mapInteractionMode === 'candidate' ? 'eliminate' : 'candidate')
+        : mapInteractionMode;
+
+      if (effectiveAction === 'eliminate') {
+        get().toggleEntityEliminated(name);
+      } else {
+        get().toggleEntityCandidate(name);
       }
-      set({ selectedEntityNames: [...selectedEntityNames, name] });
     },
     
-    clearSelection: () => set({ selectedEntityNames: [] })
+    toggleEntitySelection: (name: string) => {
+      get().handleEntityMapClick(name, false);
+    },
+    
+    clearMapMarkings: () => set({
+      candidateEntities: [],
+      eliminatedEntities: [],
+      selectedEntityNames: [],
+    }),
+
+    clearSelection: () => get().clearMapMarkings(),
   }));
 };
 

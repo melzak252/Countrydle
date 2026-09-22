@@ -3,9 +3,10 @@ import { usePowiatyGameStore } from '../stores/gameStore';
 import QuestionInput from '../components/QuestionInput';
 import History from '../components/History';
 import GuessInput from '../components/GuessInput';
+import GuessHistory from '../components/GuessHistory';
 import PowiatyMap from '../components/PowiatyMap';
 import GameInstructions from '../components/GameInstructions';
-import { Check, Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
 import GuestProgress from '../components/GuestProgress';
@@ -139,17 +140,7 @@ export default function PowiatyGamePage() {
               <h2 className="text-sm font-medium text-sand-100">{t('gamePage.yourGuesses')}</h2>
               <span className="font-mono text-xs text-zinc-500">{guesses.length.toString().padStart(2, '0')}</span>
             </div>
-            {guesses.length > 0 ? (
-              <ul className="space-y-2">
-                {guesses.map(g => (
-                  <li key={g.id} className="flex items-center gap-3 border-l-2 border-white/10 bg-obsidian-950 px-3 py-2.5">
-                    {g.answer ? <Check size={16} className="shrink-0 text-emerald-400" aria-hidden="true" /> : <X size={16} className="shrink-0 text-rose-400" aria-hidden="true" />}
-                    <span className="sr-only">{t(g.answer ? 'gamePage.correct' : 'gamePage.incorrect')}: </span>
-                    <span className="break-words text-sm text-zinc-200">{g.guess}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm leading-relaxed text-zinc-500">{t('gamePage.makeAGuess')}</p>}
+            <GuessHistory guesses={guesses} />
           </section>
           <section className="p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">

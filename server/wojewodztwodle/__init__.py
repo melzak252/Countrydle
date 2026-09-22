@@ -30,6 +30,8 @@ from schemas.wojewodztwodle import (
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import wojewodztwodle.utils as wutils
 from game_logic import GameConfig, GameRules, GameState
+from utils.geo import enhance_guess_with_hint
+
 
 router = APIRouter(prefix="/wojewodztwodle")
 
@@ -44,6 +46,31 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+def format_wojewodztwo_guesses(guesses: list, target_wojewodztwo_id: int) -> list[WojewodztwoGuessDisplay]:
+    from datetime import datetime
+    formatted = []
+    for idx, g in enumerate(guesses):
+        hint = enhance_guess_with_hint(
+            mode="wojewodztwodle",
+            guess_record=g,
+            guess_number=idx + 1,
+            max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
+            target_id=target_wojewodztwo_id,
+        )
+        gd = WojewodztwoGuessDisplay(
+            id=int(getattr(g, "id", 0) or 0),
+            guess=str(getattr(g, "guess", "") or ""),
+            wojewodztwo_id=getattr(g, "wojewodztwo_id", None) if isinstance(getattr(g, "wojewodztwo_id", None), int) else None,
+            answer=bool(getattr(g, "answer", False) if isinstance(getattr(g, "answer", False), bool) else False),
+            guessed_at=getattr(g, "guessed_at", None) or datetime.now(),
+            distance_km=hint.get("distance_km"),
+            bearing_degrees=hint.get("bearing_degrees"),
+            bearing_direction=hint.get("bearing_direction"),
+            bearing_arrow=hint.get("bearing_arrow"),
+        )
+        formatted.append(gd)
+    return formatted
 
 
 async def normalize_state_limits(state, session: AsyncSession):
@@ -204,7 +231,7 @@ async def get_state(
             user=user,
             date=str(day_state.date),
             state=WojewodztwodleStateSchema.model_validate(state),
-            guesses=guesses,
+            guesses=format_wojewodztwo_guesses(guesses, day_state.wojewodztwo_id),
             questions=questions,
             wojewodztwo=wojewodztwo,
         )
@@ -222,7 +249,7 @@ async def get_state(
         user=user,
         date=str(day_state.date),
         state=WojewodztwodleStateSchema.model_validate(state),
-        guesses=guesses,
+        guesses=format_wojewodztwo_guesses(guesses, day_state.wojewodztwo_id),
         questions=questions_display,
         wojewodztwo=None,
     )
@@ -430,14 +457,24 @@ async def make_guess(
         if is_correct:
             guess.wojewodztwo_id = day_state.wojewodztwo_id
 
+    guess_num = 1
     if user is None:
         cookie = request.cookies.get("guest_wojewodztwodle")
         guest_state = read_guest_game_token(cookie, "wojewodztwodle", day_state.id)
         guesses_count = guest_state["guesses_count"] + 1
+        guess_num = guesses_count
         won = is_correct
         is_game_over = is_correct or (guesses_count >= WOJEWODZTWDLE_CONFIG.max_guesses)
         token = create_guest_game_token("wojewodztwodle", day_state.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_wojewodztwodle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
+        hint = enhance_guess_with_hint(
+            mode="wojewodztwodle",
+            guess_record={"guess": guess.guess, "wojewodztwo_id": guess.wojewodztwo_id, "answer": is_correct},
+            guess_number=guess_num,
+            max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
+            target_id=day_state.wojewodztwo_id,
+        )
 
         from datetime import datetime
         return WojewodztwoGuessDisplay(
@@ -445,7 +482,8 @@ async def make_guess(
             guess=guess.guess,
             wojewodztwo_id=guess.wojewodztwo_id,
             answer=is_correct,
-            guessed_at=datetime.now()
+            guessed_at=datetime.now(),
+            **hint,
         )
 
     state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
@@ -482,4 +520,22 @@ async def make_guess(
         )
     await WojewodztwodleStateRepository(session).update_state(state)
 
-    return new_guess
+    hint = enhance_guess_with_hint(
+        mode="wojewodztwodle",
+        guess_record=new_guess,
+        guess_number=state.guesses_made,
+        max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
+        target_id=day_state.wojewodztwo_id,
+    )
+    from datetime import datetime
+    return WojewodztwoGuessDisplay(
+        id=int(getattr(new_guess, "id", 0) or 0),
+        guess=str(getattr(new_guess, "guess", guess.guess) or guess.guess),
+        wojewodztwo_id=getattr(new_guess, "wojewodztwo_id", guess.wojewodztwo_id) if isinstance(getattr(new_guess, "wojewodztwo_id", guess.wojewodztwo_id), int) else guess.wojewodztwo_id,
+        answer=is_correct,
+        guessed_at=getattr(new_guess, "guessed_at", None) or datetime.now(),
+        distance_km=hint.get("distance_km"),
+        bearing_degrees=hint.get("bearing_degrees"),
+        bearing_direction=hint.get("bearing_direction"),
+        bearing_arrow=hint.get("bearing_arrow"),
+    )

@@ -62,6 +62,8 @@ from version import SERVER_VERSION
 import countrydle.utils as gutils
 from game_logic import GameConfig, GameRules, GameState
 import json
+from utils.geo import enhance_guess_with_hint
+
 
 load_dotenv()
 
@@ -82,6 +84,31 @@ def db_state_to_game_state(db_state) -> GameState:
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
     )
+
+def format_countrydle_guesses(guesses: list, target_country_id: int) -> list[GuessDisplay]:
+    from datetime import datetime
+    formatted = []
+    for idx, g in enumerate(guesses):
+        hint = enhance_guess_with_hint(
+            mode="countrydle",
+            guess_record=g,
+            guess_number=idx + 1,
+            max_guesses=COUNTRYDLE_CONFIG.max_guesses,
+            target_id=target_country_id,
+        )
+        gd = GuessDisplay(
+            id=int(getattr(g, "id", 0) or 0),
+            guess=str(getattr(g, "guess", "") or ""),
+            country_id=getattr(g, "country_id", None) if isinstance(getattr(g, "country_id", None), int) else None,
+            answer=getattr(g, "answer", None) if isinstance(getattr(g, "answer", None), bool) else None,
+            guessed_at=getattr(g, "guessed_at", None) or datetime.now(),
+            distance_km=hint.get("distance_km"),
+            bearing_degrees=hint.get("bearing_degrees"),
+            bearing_direction=hint.get("bearing_direction"),
+            bearing_arrow=hint.get("bearing_arrow"),
+        )
+        formatted.append(gd)
+    return formatted
 
 
 @router.post("/sync", response_model=CountrydleStateResponse)
@@ -204,7 +231,7 @@ async def get_end_state(
         date=str(day_country.date),
         country=country,
         state=CountrydleEndStateSchema.model_validate(state),
-        guesses=guesses,
+        guesses=format_countrydle_guesses(guesses, day_country.country_id),
         questions=questions,
     )
 
@@ -285,7 +312,7 @@ async def get_state(
         user=user,
         date=str(day_country.date),
         state=response_state,
-        guesses=guesses,
+        guesses=format_countrydle_guesses(guesses, day_country.country_id),
         questions=questions_display,
         country=None,
     )
@@ -862,14 +889,24 @@ async def make_guess(
         if is_correct:
             guess.country_id = daily_country.country_id
 
+    guess_num = 1
     if user is None:
         cookie = request.cookies.get("guest_countrydle")
         guest_state = read_guest_game_token(cookie, "countrydle", daily_country.id)
         guesses_count = guest_state["guesses_count"] + 1
+        guess_num = guesses_count
         won = is_correct
         is_game_over = is_correct or (guesses_count >= COUNTRYDLE_CONFIG.max_guesses)
         token = create_guest_game_token("countrydle", daily_country.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_countrydle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+
+        hint = enhance_guess_with_hint(
+            mode="countrydle",
+            guess_record={"guess": guess.guess, "country_id": guess.country_id, "answer": is_correct},
+            guess_number=guess_num,
+            max_guesses=COUNTRYDLE_CONFIG.max_guesses,
+            target_id=daily_country.country_id,
+        )
 
         from datetime import datetime
         return GuessDisplay(
@@ -877,7 +914,8 @@ async def make_guess(
             guess=guess.guess,
             country_id=guess.country_id,
             answer=is_correct,
-            guessed_at=datetime.now()
+            guessed_at=datetime.now(),
+            **hint,
         )
     state = await CountrydleStateRepository(session).get_player_countrydle_state(
         user,
@@ -895,6 +933,8 @@ async def make_guess(
             detail="User has no more guesses left or game is over!",
         )
 
+    guess_num = state.guesses_made + 1
+
     # Create Guess entry
     guess_create = GuessCreate(
         guess=guess.guess,
@@ -911,4 +951,23 @@ async def make_guess(
         state, new_guess, elapsed_seconds=guess.elapsed_seconds
     )
 
-    return GuessDisplay.model_validate(new_guess)
+    hint = enhance_guess_with_hint(
+        mode="countrydle",
+        guess_record=new_guess,
+        guess_number=guess_num,
+        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
+        target_id=daily_country.country_id,
+    )
+
+    from datetime import datetime
+    return GuessDisplay(
+        id=int(getattr(new_guess, "id", 0) or 0),
+        guess=str(getattr(new_guess, "guess", guess.guess) or guess.guess),
+        country_id=getattr(new_guess, "country_id", guess.country_id) if isinstance(getattr(new_guess, "country_id", guess.country_id), int) else guess.country_id,
+        answer=is_correct,
+        guessed_at=getattr(new_guess, "guessed_at", None) or datetime.now(),
+        distance_km=hint.get("distance_km"),
+        bearing_degrees=hint.get("bearing_degrees"),
+        bearing_direction=hint.get("bearing_direction"),
+        bearing_arrow=hint.get("bearing_arrow"),
+    )
