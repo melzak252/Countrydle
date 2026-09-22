@@ -47,7 +47,7 @@ def db_state_to_game_state(db_state) -> GameState:
         is_lost=db_state.is_game_over and not db_state.won,
     )
 
-def format_powiat_guesses(guesses: list, target_powiat_id: int) -> list[PowiatGuessDisplay]:
+def format_powiat_guesses(guesses: list, target_powiat_id: int, target_name: str | None = None) -> list[PowiatGuessDisplay]:
     from datetime import datetime
     formatted = []
     for idx, g in enumerate(guesses):
@@ -57,6 +57,7 @@ def format_powiat_guesses(guesses: list, target_powiat_id: int) -> list[PowiatGu
             guess_number=idx + 1,
             max_guesses=POWIATDLE_CONFIG.max_guesses,
             target_id=target_powiat_id,
+            target_name=target_name,
         )
         gd = PowiatGuessDisplay(
             id=int(getattr(g, "id", 0) or 0),
@@ -226,7 +227,7 @@ async def get_state(
             user=user,
             date=str(day_powiat.date),
             state=PowiatdleStateSchema.model_validate(state),
-            guesses=format_powiat_guesses(guesses, day_powiat.powiat_id),
+            guesses=format_powiat_guesses(guesses, day_powiat.powiat_id, powiat.nazwa if powiat else None),
             questions=questions,
             powiat=powiat,
         )
@@ -236,11 +237,12 @@ async def get_state(
         for question in questions
     ]
 
+    powiat_rec = await PowiatRepository(session).get(day_powiat.powiat_id)
     return PowiatdleStateResponse(
         user=user,
         date=str(day_powiat.date),
         state=PowiatdleStateSchema.model_validate(state),
-        guesses=format_powiat_guesses(guesses, day_powiat.powiat_id),
+        guesses=format_powiat_guesses(guesses, day_powiat.powiat_id, powiat_rec.nazwa if powiat_rec else None),
         questions=questions_display,
         powiat=None,
     )
@@ -464,6 +466,7 @@ async def make_guess(
             guess_number=guess_num,
             max_guesses=POWIATDLE_CONFIG.max_guesses,
             target_id=day_powiat.powiat_id,
+            target_name=target_powiat.nazwa if target_powiat else None,
         )
 
         from datetime import datetime
@@ -515,6 +518,7 @@ async def make_guess(
         guess_number=state.guesses_made,
         max_guesses=POWIATDLE_CONFIG.max_guesses,
         target_id=day_powiat.powiat_id,
+        target_name=target_powiat.nazwa if target_powiat else None,
     )
     from datetime import datetime
     return PowiatGuessDisplay(

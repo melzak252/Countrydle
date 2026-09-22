@@ -47,7 +47,7 @@ def db_state_to_game_state(db_state) -> GameState:
         is_lost=db_state.is_game_over and not db_state.won,
     )
 
-def format_wojewodztwo_guesses(guesses: list, target_wojewodztwo_id: int) -> list[WojewodztwoGuessDisplay]:
+def format_wojewodztwo_guesses(guesses: list, target_wojewodztwo_id: int, target_name: str | None = None) -> list[WojewodztwoGuessDisplay]:
     from datetime import datetime
     formatted = []
     for idx, g in enumerate(guesses):
@@ -57,6 +57,7 @@ def format_wojewodztwo_guesses(guesses: list, target_wojewodztwo_id: int) -> lis
             guess_number=idx + 1,
             max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
             target_id=target_wojewodztwo_id,
+            target_name=target_name,
         )
         gd = WojewodztwoGuessDisplay(
             id=int(getattr(g, "id", 0) or 0),
@@ -231,7 +232,7 @@ async def get_state(
             user=user,
             date=str(day_state.date),
             state=WojewodztwodleStateSchema.model_validate(state),
-            guesses=format_wojewodztwo_guesses(guesses, day_state.wojewodztwo_id),
+            guesses=format_wojewodztwo_guesses(guesses, day_state.wojewodztwo_id, wojewodztwo.nazwa if wojewodztwo else None),
             questions=questions,
             wojewodztwo=wojewodztwo,
         )
@@ -245,11 +246,12 @@ async def get_state(
         for question in questions
     ]
 
+    woj_rec = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
     return WojewodztwodleStateResponse(
         user=user,
         date=str(day_state.date),
         state=WojewodztwodleStateSchema.model_validate(state),
-        guesses=format_wojewodztwo_guesses(guesses, day_state.wojewodztwo_id),
+        guesses=format_wojewodztwo_guesses(guesses, day_state.wojewodztwo_id, woj_rec.nazwa if woj_rec else None),
         questions=questions_display,
         wojewodztwo=None,
     )
@@ -474,6 +476,7 @@ async def make_guess(
             guess_number=guess_num,
             max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
             target_id=day_state.wojewodztwo_id,
+            target_name=target_wojewodztwo.nazwa if target_wojewodztwo else None,
         )
 
         from datetime import datetime
@@ -526,6 +529,7 @@ async def make_guess(
         guess_number=state.guesses_made,
         max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
         target_id=day_state.wojewodztwo_id,
+        target_name=target_wojewodztwo.nazwa if target_wojewodztwo else None,
     )
     from datetime import datetime
     return WojewodztwoGuessDisplay(

@@ -47,7 +47,7 @@ def db_state_to_game_state(db_state) -> GameState:
         is_lost=db_state.is_game_over and not db_state.won,
     )
 
-def format_us_state_guesses(guesses: list, target_state_id: int) -> list[USStateGuessDisplay]:
+def format_us_state_guesses(guesses: list, target_state_id: int, target_name: str | None = None) -> list[USStateGuessDisplay]:
     from datetime import datetime
     formatted = []
     for idx, g in enumerate(guesses):
@@ -57,6 +57,7 @@ def format_us_state_guesses(guesses: list, target_state_id: int) -> list[USState
             guess_number=idx + 1,
             max_guesses=USSTATEDLE_CONFIG.max_guesses,
             target_id=target_state_id,
+            target_name=target_name,
         )
         gd = USStateGuessDisplay(
             id=int(getattr(g, "id", 0) or 0),
@@ -226,7 +227,7 @@ async def get_state(
             user=user,
             date=str(day_state.date),
             state=USStatedleStateSchema.model_validate(state),
-            guesses=format_us_state_guesses(guesses, day_state.us_state_id),
+            guesses=format_us_state_guesses(guesses, day_state.us_state_id, us_state.name if us_state else None),
             questions=questions,
             us_state=us_state,
         )
@@ -236,11 +237,12 @@ async def get_state(
         for question in questions
     ]
 
+    us_state_rec = await USStateRepository(session).get(day_state.us_state_id)
     return USStatedleStateResponse(
         user=user,
         date=str(day_state.date),
         state=USStatedleStateSchema.model_validate(state),
-        guesses=format_us_state_guesses(guesses, day_state.us_state_id),
+        guesses=format_us_state_guesses(guesses, day_state.us_state_id, us_state_rec.name if us_state_rec else None),
         questions=questions_display,
         us_state=None,
     )
@@ -490,6 +492,7 @@ async def make_guess(
             guess_number=guess_num,
             max_guesses=USSTATEDLE_CONFIG.max_guesses,
             target_id=day_state.us_state_id,
+            target_name=target_state.name if target_state else None,
         )
 
         from datetime import datetime
@@ -541,6 +544,7 @@ async def make_guess(
         guess_number=state.guesses_made,
         max_guesses=USSTATEDLE_CONFIG.max_guesses,
         target_id=day_state.us_state_id,
+        target_name=target_state.name if target_state else None,
     )
     from datetime import datetime
     return USStateGuessDisplay(

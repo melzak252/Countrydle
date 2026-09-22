@@ -85,7 +85,7 @@ def db_state_to_game_state(db_state) -> GameState:
         is_lost=db_state.is_game_over and not db_state.won,
     )
 
-def format_countrydle_guesses(guesses: list, target_country_id: int) -> list[GuessDisplay]:
+def format_countrydle_guesses(guesses: list, target_country_id: int, target_name: str | None = None) -> list[GuessDisplay]:
     from datetime import datetime
     formatted = []
     for idx, g in enumerate(guesses):
@@ -95,6 +95,7 @@ def format_countrydle_guesses(guesses: list, target_country_id: int) -> list[Gue
             guess_number=idx + 1,
             max_guesses=COUNTRYDLE_CONFIG.max_guesses,
             target_id=target_country_id,
+            target_name=target_name,
         )
         gd = GuessDisplay(
             id=int(getattr(g, "id", 0) or 0),
@@ -231,7 +232,7 @@ async def get_end_state(
         date=str(day_country.date),
         country=country,
         state=CountrydleEndStateSchema.model_validate(state),
-        guesses=format_countrydle_guesses(guesses, day_country.country_id),
+        guesses=format_countrydle_guesses(guesses, day_country.country_id, country.name if country else None),
         questions=questions,
     )
 
@@ -306,13 +307,14 @@ async def get_state(
         for question in questions
     ]
 
+    country_rec = await CountryRepository(session).get(day_country.country_id)
     response_state = CountrydleStateSchema.model_validate(state)
 
     return CountrydleStateResponse(
         user=user,
         date=str(day_country.date),
         state=response_state,
-        guesses=format_countrydle_guesses(guesses, day_country.country_id),
+        guesses=format_countrydle_guesses(guesses, day_country.country_id, country_rec.name if country_rec else None),
         questions=questions_display,
         country=None,
     )
@@ -906,6 +908,7 @@ async def make_guess(
             guess_number=guess_num,
             max_guesses=COUNTRYDLE_CONFIG.max_guesses,
             target_id=daily_country.country_id,
+            target_name=target_country.name if target_country else None,
         )
 
         from datetime import datetime
@@ -957,6 +960,7 @@ async def make_guess(
         guess_number=guess_num,
         max_guesses=COUNTRYDLE_CONFIG.max_guesses,
         target_id=daily_country.country_id,
+        target_name=target_country.name if target_country else None,
     )
 
     from datetime import datetime

@@ -95,14 +95,7 @@ def get_entity_coordinates(
         conn = sqlite3.connect(path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        row = None
-
-        if entity_id is not None and entity_id > 0:
-            row = cursor.execute(
-                f"SELECT latitude, longitude FROM {table} WHERE id = ?", (entity_id,)
-            ).fetchone()
-
-        if not row and name:
+        if name:
             clean_name = name.strip()
             row = cursor.execute(
                 f"SELECT latitude, longitude FROM {table} WHERE LOWER({name_col}) = LOWER(?)",
@@ -114,6 +107,10 @@ def get_entity_coordinates(
                     (clean_name,),
                 ).fetchone()
 
+        if not row and entity_id is not None and entity_id > 0:
+            row = cursor.execute(
+                f"SELECT latitude, longitude FROM {table} WHERE id = ?", (entity_id,)
+            ).fetchone()
         conn.close()
 
         if row and row["latitude"] is not None and row["longitude"] is not None:
@@ -185,13 +182,15 @@ def enhance_guess_with_hint(
     guess_record: Any,
     guess_number: int,
     max_guesses: int,
-    target_id: int,
+    target_id: int | None = None,
+    target_name: str | None = None,
     target_coords: tuple[float, float] | None = None,
 ) -> dict:
     """Extract coordinates and compute hints for a guess, returning a dict of fields."""
     if target_coords is None:
-        target_coords = get_entity_coordinates(mode, entity_id=target_id)
-
+        target_coords = get_entity_coordinates(
+            mode, entity_id=target_id, name=target_name
+        )
     guess_name = (
         getattr(guess_record, "guess", None)
         if not isinstance(guess_record, dict)
