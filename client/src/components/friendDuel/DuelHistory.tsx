@@ -114,11 +114,13 @@ export function AnswerBubble({
   answer,
   timedOut,
   answeredBy,
+  isCorrected,
   copy,
 }: {
   answer: HumanAnswer | null;
   timedOut?: boolean;
   answeredBy?: 'player' | 'ai' | null;
+  isCorrected?: boolean;
   copy: DuelCopy;
 }) {
   const isAiAnswer = answeredBy === 'ai' || (timedOut && Boolean(answer));
@@ -167,6 +169,11 @@ export function AnswerBubble({
     <div className={`rounded-2xl rounded-tl-xs border px-3.5 py-1.5 text-xs sm:text-sm font-medium flex items-center gap-2 shadow-sm ${bubbleStyle}`}>
       {icon}
       <span className="font-semibold">{label}</span>
+      {isCorrected && (
+        <span className="text-[10px] font-mono font-normal tracking-normal text-current opacity-60 italic">
+          (corrected)
+        </span>
+      )}
       {isAiAnswer && (
         <span className="ml-1 text-[9px] font-mono uppercase tracking-wider bg-amber-500/25 text-amber-300 border border-amber-500/35 px-1.5 py-0.2 rounded-full">
           AI
@@ -232,25 +239,9 @@ function ChatHistoryCard({
                 answer={item.answer}
                 timedOut={item.timed_out}
                 answeredBy={item.answered_by}
+                isCorrected={item.revisions.length > 1 || item.revision > 1}
                 copy={copy}
               />
-
-              {/* Revisions history */}
-              {item.revisions.length > 1 && (
-                <details className="text-[10px] text-zinc-500 px-1">
-                  <summary className="cursor-pointer hover:text-zinc-300 font-mono">
-                    {copy.revision} {item.revision} ({item.revisions.length} updates)
-                  </summary>
-                  <ol className="mt-0.5 space-y-0.5 pl-2 border-l border-zinc-700 text-zinc-400">
-                    {item.revisions.map(rev => (
-                      <li key={rev.revision}>
-                        v{rev.revision}: <strong>{copy[rev.answer]}</strong>
-                      </li>
-                    ))}
-                  </ol>
-                </details>
-              )}
-
               {/* Edit / Correct Answer (if subject is you) */}
               {snapshot.status === 'active' && item.subject_id === snapshot.you && item.answer && (
                 <div className="px-1">
@@ -411,7 +402,7 @@ export default function DuelHistory({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
       {/* 2-Tab Chat Header Switcher */}
       <div className="flex items-center gap-1 border-b border-white/10 bg-obsidian-950/80 px-2 py-1.5 shrink-0">
         <button
@@ -450,7 +441,9 @@ export default function DuelHistory({
       {/* Chat Messages Stream */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar"
+        onWheel={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar overscroll-contain select-text"
       >
         {activeMoves.length === 0 ? (
           <div className="py-8 text-center text-xs text-zinc-500 space-y-1">

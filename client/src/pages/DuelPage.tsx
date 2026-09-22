@@ -763,7 +763,7 @@ function DuelRoom({ code }: { code?: string }) {
               <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
             </button>
           ) : (
-            <div className="pointer-events-auto flex max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
+            <div className="pointer-events-auto flex h-[48vh] sm:h-[52vh] max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2 shrink-0">
                 <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 font-semibold">
@@ -782,7 +782,7 @@ function DuelRoom({ code }: { code?: string }) {
               </div>
 
               {/* Body */}
-              <div className="flex-1 overflow-hidden min-h-0">
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <DuelHistory
                   snapshot={snapshot}
                   copy={copy}

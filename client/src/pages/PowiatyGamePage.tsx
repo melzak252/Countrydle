@@ -207,7 +207,7 @@ export default function PowiatyGamePage() {
           </button>
         ) : (
           /* Expanded Translucent Chat Window (Opens Upwards from Bottom Left) */
-          <div className="pointer-events-auto flex max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
+          <div className="pointer-events-auto flex h-[48vh] sm:h-[52vh] max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2">
               <div className="flex items-center gap-2">
@@ -253,7 +253,7 @@ export default function PowiatyGamePage() {
 
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
-              <div ref={questionsContainerRef} className="flex-1 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar">
+              <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar overscroll-contain">
                 {sortedQuestions.length === 0 ? (
                   <div className="py-7 text-center text-zinc-400 space-y-2 border border-dashed border-white/10 rounded-sm p-4">
                     <MessageSquare size={20} className="mx-auto text-zinc-600" />
@@ -344,7 +344,7 @@ export default function PowiatyGamePage() {
 
             {/* Tab 2: Guesses Stream */}
             {activeChatTab === 'guesses' && (
-              <div ref={guessesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2 text-xs custom-scrollbar">
+              <div ref={guessesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 text-xs custom-scrollbar overscroll-contain">
                 {guesses.length === 0 ? (
                   <div className="py-7 text-center text-zinc-400 space-y-1 border border-dashed border-white/10 rounded-sm p-4">
                     <Compass size={20} className="mx-auto text-zinc-600" />
