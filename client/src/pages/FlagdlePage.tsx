@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
 import CountdownTimer from '../components/CountdownTimer';
-import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy } from 'lucide-react';
+import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import type { FlagdleCountry, FlagdleGuess } from '../types';
 
@@ -402,14 +403,20 @@ export default function FlagdlePage() {
               role="dialog"
               aria-modal="true"
               aria-label="Game Result"
-              className="relative z-10 mx-auto w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-6 shadow-2xl text-center space-y-4 my-auto"
+              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl text-left space-y-6 my-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Dedicated top header bar with cleanly aligned close button */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 -mt-1 text-left">
-                <span className="font-mono text-xs uppercase tracking-wider text-zinc-400">
-                  Flagdle Result · {dailyDate}
-                </span>
+              {/* Header Bar */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3.5 -mt-1 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">
+                    Flagdle Result
+                  </span>
+                  <span className="text-zinc-600">·</span>
+                  <span className="font-mono text-xs text-zinc-400">
+                    {dailyDate}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
@@ -420,79 +427,122 @@ export default function FlagdlePage() {
                   <X size={16} />
                 </button>
               </div>
-              <div className="inline-flex items-center justify-center rounded-full p-3 bg-obsidian-900 border border-white/10">
-                {isWon ? (
-                  <Sparkles className="text-emerald-400" size={32} />
-                ) : (
-                  <AlertCircle className="text-rose-400" size={32} />
-                )}
-              </div>
 
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-sand-100">
-                  {isWon ? 'Outstanding Vexillological Deduction!' : 'Mission Incomplete'}
-                </h2>
-                <p className="mt-1 text-sm text-zinc-400">
-                  {isWon
-                    ? `You accurately identified the flag in ${guesses.length} of 12 guesses.`
-                    : 'You used all 12 guesses. Better luck tomorrow!'}
-                </p>
-              </div>
-
-              {correctCountry && (
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-4 flex items-center justify-center gap-4">
-                  {resolvedFlagUrl ? (
-                    <img
-                      src={resolvedFlagUrl}
-                      alt={correctCountry.name}
-                      className="h-12 w-20 object-contain rounded shadow border border-white/10"
-                    />
-                  ) : correctCountry?.iso2 ? (
-                    <img
-                      src={`https://flagcdn.com/w160/${correctCountry.iso2.toLowerCase()}.png`}
-                      alt={correctCountry.name}
-                      className="h-12 w-20 object-contain rounded shadow border border-white/10"
-                    />
-                  ) : null}
-                  <div className="text-left">
-                    <div className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">
-                      Secret National Flag
+              {/* Hero Reveal Banner */}
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                  {correctCountry && (
+                    <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
+                      {resolvedFlagUrl ? (
+                        <img
+                          src={resolvedFlagUrl}
+                          alt={correctCountry.name}
+                          className="h-14 w-22 sm:h-18 sm:w-28 object-contain"
+                        />
+                      ) : correctCountry?.iso2 ? (
+                        <img
+                          src={`https://flagcdn.com/w320/${correctCountry.iso2.toLowerCase()}.png`}
+                          alt={correctCountry.name}
+                          className="h-14 w-22 sm:h-18 sm:w-28 object-contain"
+                        />
+                      ) : null}
                     </div>
-                    <div className="text-lg font-bold text-sand-100">{correctCountry.name}</div>
-                    {correctCountry.official_name && correctCountry.official_name !== correctCountry.name && (
-                      <div className="text-xs text-zinc-400">{correctCountry.official_name}</div>
+                  )}
+                  <div className="min-w-0">
+                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-emerald-400 font-semibold">
+                      Secret National Flag
+                    </span>
+                    <h2 className="mt-0.5 break-words font-serif text-3xl sm:text-4xl text-sand-100">
+                      {correctCountry?.name || 'Mystery Country'}
+                    </h2>
+                    {correctCountry?.official_name && correctCountry.official_name !== correctCountry.name && (
+                      <p className="mt-0.5 text-xs text-zinc-400 truncate">{correctCountry.official_name}</p>
                     )}
+                    <p className="mt-1 text-xs text-zinc-400">
+                      {isWon
+                        ? `Identified in ${guesses.length} of 12 guesses.`
+                        : 'Used all 12 guesses. Study the flag and try tomorrow!'}
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {isWon && gameState?.points ? (
-                <div className="inline-block rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-mono font-bold text-emerald-300">
-                  Score: +{gameState.points.toLocaleString()} pts
+                {/* Outcome Badge & Points */}
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
+                    isWon ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+                  }`}>
+                    {isWon ? <Sparkles size={14} /> : <AlertCircle size={14} />}
+                    <span>{isWon ? 'Solved' : 'Game Over'}</span>
+                  </div>
+                  {isWon && gameState?.points ? (
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
+                      +{gameState.points.toLocaleString()} pts
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
+              </div>
 
-              <div className="pt-2 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 py-3 text-sm font-semibold text-obsidian-950 shadow-md active:scale-95 transition-all cursor-pointer"
-                >
-                  {copied ? <Check size={16} /> : <Share2 size={16} />}
-                  <span>{copied ? 'Copied to Clipboard!' : 'Share Flagdle Result'}</span>
-                </button>
+              {/* Performance Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
+                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                    Guesses Used
+                  </span>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="font-mono text-2xl sm:text-3xl font-bold text-sand-100">{guesses.length}</span>
+                    <span className="text-xs text-zinc-500 font-mono">/ 12</span>
+                  </div>
+                </div>
+
+                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
+                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                    Points Earned
+                  </span>
+                  <div className="mt-1 font-mono text-2xl sm:text-3xl font-bold text-emerald-300">
+                    {isWon && gameState?.points ? `+${gameState.points.toLocaleString()}` : '0 pts'}
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
+                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                    Next Flagdle
+                  </span>
+                  <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-emerald-400">
+                    <CountdownTimer />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
+                  >
+                    {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
+                    <span>{copied ? 'Copied to Clipboard!' : 'Share Flagdle Result'}</span>
+                  </button>
+                  <Link
+                    to="/friends?mode=countrydle"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/10 transition-colors"
+                  >
+                    <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-300">
+                      1v1 Duel
+                    </span>
+                    <span>Challenge a friend</span>
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
-                  className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors"
+                  className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   Close & View Flag
                 </button>
-              </div>
-
-              <div className="border-t border-white/10 pt-3 text-xs text-zinc-400 flex items-center justify-center gap-2">
-                <span>Next Flagdle in:</span>
-                <CountdownTimer />
               </div>
             </section>
           </div>

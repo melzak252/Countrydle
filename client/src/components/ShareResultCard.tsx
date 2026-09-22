@@ -4,7 +4,7 @@ import {
   Copy, 
   Check, 
   Trophy, 
-  BookOpen, 
+  // BookOpen removed
   ArrowRight,
   X
 } from 'lucide-react';
@@ -40,7 +40,7 @@ export default function ShareResultCard({
   guessesMade,
   maxGuesses,
   targetName,
-  isGuest = false,
+  isGuest: _isGuest = false,
   targetCountryCode,
   discovery,
   onClose,
@@ -51,7 +51,7 @@ export default function ShareResultCard({
   const [copied, setCopied] = useState(false);
 
   const displayDate = date || today;
-  const newPuzzleReady = today > displayDate;
+  // newPuzzleReady removed
   const countdown = remainingSeconds === null ? null : [
     Math.floor(remainingSeconds / 3600),
     Math.floor((remainingSeconds % 3600) / 60),
@@ -141,12 +141,22 @@ export default function ShareResultCard({
   };
 
   return (
-    <section aria-label={`${gameName} result`} className="w-full space-y-5 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-6 relative">
-      {onClose && (
-        <div className="flex items-center justify-between border-b border-white/10 pb-3 -mt-1">
-          <span className="font-mono text-xs uppercase tracking-wider text-zinc-400">
-            {gameName} Result · {displayDate}
+    <section
+      aria-label={`${gameName} result`}
+      className="w-full space-y-6 rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-7 md:p-8 relative text-left"
+    >
+      {/* 1. Header Bar: Game Name & Date + Close Button */}
+      <div className="flex items-center justify-between border-b border-white/10 pb-3.5 -mt-1 text-left">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">
+            {gameName} Result
           </span>
+          <span className="text-zinc-600">·</span>
+          <span className="font-mono text-xs text-zinc-400">
+            {displayDate}
+          </span>
+        </div>
+        {onClose && (
           <button
             type="button"
             onClick={onClose}
@@ -156,188 +166,173 @@ export default function ShareResultCard({
           >
             <X size={16} />
           </button>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`p-2.5 rounded-full border ${won ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-400' : 'border-white/10 bg-white/5 text-zinc-400'}`} aria-hidden="true">
-            {won ? <Trophy size={22} /> : <Check size={22} />}
-          </div>
-          <div>
-            <h2 className="font-serif text-2xl text-sand-100 sm:text-3xl">
-              {won ? 'You found it. Nicely done!' : 'Every guess builds your map.'}
-            </h2>
-            {!onClose && (
-              <p className="mt-1 text-xs text-zinc-400">
-                {displayDate} · {gameName}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {won && points !== undefined && points > 0 && (
-          <div className="shrink-0 border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 font-mono text-sm font-semibold text-emerald-400 rounded-sm">
-            +{points.toLocaleString('en-US')} pts
-          </div>
         )}
       </div>
 
-      <div className="space-y-4">
-        <p className="text-sm leading-relaxed text-zinc-300">
-          {won
-            ? 'Your questions and deductions led you to the answer.'
-            : 'Not this time. Take a look at the answer, and bring what you learned to the next puzzle.'}
-        </p>
-        {targetName && (
-          <div className="flex items-center gap-4 border-l-2 border-emerald-400/60 pl-4">
-            {flagCode && /^[a-z]{2}$/.test(flagCode) && (
+      {/* 2. Hero Reveal Banner: Outcome & Mystery Location */}
+      <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+          {targetName && flagCode && /^[a-z]{2}$/.test(flagCode) && (
+            <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
               <img
                 src={`https://flagcdn.com/w320/${flagCode}.png`}
                 alt={`Flag of ${targetName}`}
-                className="h-10 w-16 shrink-0 object-contain sm:h-12 sm:w-20"
+                className="h-14 w-22 sm:h-16 sm:w-24 object-contain"
               />
-            )}
-            <div className="min-w-0">
-              <p className="text-xs uppercase tracking-widest text-zinc-400">The revealed location</p>
-              <h3 className="mt-1 break-words font-serif text-3xl text-sand-100 sm:text-4xl">{targetName}</h3>
             </div>
-          </div>
-        )}
-        <dl className="grid grid-cols-2 gap-3 text-sm">
-          <div className="border border-white/10 p-3">
-            <dt className="text-zinc-400">Questions asked</dt>
-            <dd className="mt-1 font-mono text-lg text-sand-100">{questionsAsked} <span className="text-sm text-zinc-400">/ {maxQuestions}</span></dd>
-          </div>
-          <div className="border border-white/10 p-3">
-            <dt className="text-zinc-400">Guesses made</dt>
-            <dd className="mt-1 font-mono text-lg text-sand-100">{guessesMade} <span className="text-sm text-zinc-400">/ {maxGuesses}</span></dd>
-          </div>
-        </dl>
-        {discovery?.trim() && (
-          <div className="border-t border-white/10 pt-4">
-            <h3 className="text-sm font-medium text-sand-100">From your questions</h3>
-            <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-zinc-300">{discovery}</p>
-          </div>
-        )}
-      </div>
-
-      <p className="text-xs text-zinc-400">Share your result without revealing the answer.</p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-        <button
-          type="button"
-          onClick={handleNativeShare}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3 py-2.5 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300"
-        >
-          {copied ? <Check size={14} aria-hidden="true" /> : <Share2 size={14} aria-hidden="true" />}
-          <span>{copied ? t('share.copiedBtn', 'Copied!') : t('share.shareBtn', 'Share')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/5"
-        >
-          {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-          <span>{t('share.copyBtn', 'Copy')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleShareX}
-          className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/5"
-          aria-label={'Share on X / Twitter'}
-        >
-          <span className="font-bold">𝕏</span>
-          <span>{'Post'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleShareWhatsApp}
-          className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/5"
-          aria-label={'Share on WhatsApp'}
-        >
-          <span>WhatsApp</span>
-        </button>
-      </div>
-
-      <Link
-        to={`/friends?mode=${gamePath === '/powiaty' ? 'powiatdle' : gamePath === '/wojewodztwa' ? 'wojewodztwodle' : gamePath === '/us-states' ? 'us_statedle' : 'countrydle'}`}
-        className="flex min-h-11 items-center justify-between gap-3 rounded-sm border border-emerald-400/30 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-400/10"
-      >
-        {i18n.language.startsWith('pl') ? 'Wyzwij znajomego' : 'Challenge a friend'}
-        <ArrowRight size={16} aria-hidden="true" />
-      </Link>
-
-      <div className="space-y-3 border-t border-white/10 pt-4">
-        {newPuzzleReady ? (
-          <>
-            <h3 className="font-serif text-xl text-sand-100">A new puzzle is ready.</h3>
-            <Link
-              to={gamePath}
-              reloadDocument
-              className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-sm font-semibold text-obsidian-950 hover:bg-emerald-300"
-            >
-              Play the new puzzle <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          </>
-        ) : (
-          <>
-            <h3 className="font-serif text-xl text-sand-100">A fresh start tomorrow.</h3>
-            <p className="text-sm text-zinc-300">
-              Next puzzle{countdown !== null ? <> in <span className="font-mono tabular-nums text-sand-100">{countdown}</span></> : ' at 00:00 UTC'}.
+          )}
+          <div className="min-w-0">
+            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-emerald-400 font-semibold">
+              The Mystery Location
+            </span>
+            <h2 className="mt-0.5 break-words font-serif text-3xl sm:text-4xl text-sand-100">
+              {targetName || 'Mystery Location'}
+            </h2>
+            <p className="mt-1 text-xs text-zinc-400">
+              {won
+                ? (i18n.language.startsWith('pl') ? 'Świetna dedukcja! Odgadłeś dzisiejszą lokalizację.' : 'Outstanding deduction! You uncovered the location.')
+                : (i18n.language.startsWith('pl') ? 'Koniec prób. Sprawdź rozwiązanie i spróbuj jutro!' : 'Better luck tomorrow! Study the clues and try again.')}
             </p>
-            <p className="text-xs text-zinc-400">A new location every day at 00:00 UTC.</p>
-          </>
-        )}
+          </div>
+        </div>
+
+        {/* Outcome & Points */}
+        <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
+            won ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+          }`}>
+            {won ? <Trophy size={14} /> : <Check size={14} />}
+            <span>{won ? (i18n.language.startsWith('pl') ? 'Zwycięstwo' : 'Solved') : (i18n.language.startsWith('pl') ? 'Koniec gry' : 'Game Over')}</span>
+          </div>
+          {won && points !== undefined && points > 0 && (
+            <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
+              +{points.toLocaleString('en-US')} pts
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Performance Metrics Grid (Spacious 3 columns) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
+          <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+            Questions Used
+          </span>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-sand-100">{questionsAsked}</span>
+            <span className="text-xs text-zinc-500 font-mono">/ {maxQuestions}</span>
+          </div>
+        </div>
+
+        <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
+          <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+            Guesses Made
+          </span>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-mono text-2xl sm:text-3xl font-bold text-sand-100">{guessesMade}</span>
+            <span className="text-xs text-zinc-500 font-mono">/ {maxGuesses}</span>
+          </div>
+        </div>
+
+        <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
+          <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+            Next Puzzle
+          </span>
+          <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-emerald-400">
+            {countdown !== null ? countdown : '00:00 UTC'}
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Deduction Clue (if present) */}
+      {discovery?.trim() && (
+        <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4 text-xs sm:text-sm text-zinc-300 space-y-1">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-sand-400 font-semibold block">
+            From Your Deductions
+          </span>
+          <p className="italic text-zinc-300 leading-relaxed whitespace-pre-line">
+            "{discovery}"
+          </p>
+        </div>
+      )}
+
+      {/* 5. Primary Actions: Share & 1v1 Challenge */}
+      <div className="space-y-3 pt-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleNativeShare}
+            className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors hover:bg-emerald-300 shadow-md cursor-pointer"
+          >
+            {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
+            <span>{copied ? t('share.copiedBtn', 'Copied to Clipboard!') : t('share.shareBtn', 'Share Result')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-white/15 px-4 py-3 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 cursor-pointer"
+            title="Copy emoji grid"
+          >
+            <Copy size={15} />
+            <span>{t('share.copyBtn', 'Copy')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShareX}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-sm border border-white/15 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+            aria-label="Share on X / Twitter"
+            title="Share on X"
+          >
+            <span className="font-bold text-sm">𝕏</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShareWhatsApp}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-sm border border-white/15 text-zinc-300 transition-colors hover:bg-white/10 hover:text-emerald-400 cursor-pointer"
+            aria-label="Share on WhatsApp"
+            title="Share on WhatsApp"
+          >
+            <span className="text-xs font-bold font-mono">WA</span>
+          </button>
+        </div>
+
+        {/* 1v1 Challenge Invite */}
         <Link
-          to={otherMode.path}
-          className="inline-flex min-h-11 items-center gap-2 text-sm text-zinc-300 underline decoration-white/20 underline-offset-4 hover:text-sand-100"
+          to={`/friends?mode=${gamePath === '/powiaty' ? 'powiatdle' : gamePath === '/wojewodztwa' ? 'wojewodztwodle' : gamePath === '/us-states' ? 'us_statedle' : 'countrydle'}`}
+          className="flex min-h-11 items-center justify-between gap-3 rounded-sm border border-amber-400/30 bg-amber-400/5 px-4 py-2.5 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/10 transition-colors"
         >
-          Try {otherMode.name} <ArrowRight size={14} aria-hidden="true" />
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-300">
+              1v1 Duel
+            </span>
+            <span>{i18n.language.startsWith('pl') ? 'Wyzwij znajomego na pojedynek' : 'Challenge a friend in real-time'}</span>
+          </div>
+          <ArrowRight size={15} />
         </Link>
       </div>
 
-      {isGuest && (
-        <div className="border-t border-white/10 pt-4">
-          <h3 className="text-sm font-medium text-sand-100">Keep your next discoveries with you.</h3>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-            Create a free account to save future games and play across devices.
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-400">Your older guest history stays on this device.</p>
-          <Link
-            to="/register"
-            className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm text-emerald-300 underline decoration-emerald-400/30 underline-offset-4 hover:text-emerald-200"
-          >
-            Create an account <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        </div>
-      )}
-
-      {/* Published articles are available independently of today's puzzle. */}
-      {gamePath === '/game' && (
-        <div className="pt-2">
-          <Link
-            to="/blog"
-            className="group flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs transition-colors hover:text-sand-100"
-          >
-            <div className="flex items-center gap-2 text-zinc-300">
-              <BookOpen size={14} className="shrink-0 text-emerald-400" aria-hidden="true" />
-              <span>Explore geography stories in the Daily Blog</span>
-            </div>
-            <ArrowRight size={14} className="shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-          </Link>
-        </div>
-      )}
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-sm font-semibold text-sand-100 hover:bg-white/10 transition-colors"
+      {/* 6. Footer Dismiss / Switch Mode */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs">
+        <Link
+          to={otherMode.path}
+          className="text-zinc-400 hover:text-sand-100 flex items-center gap-1.5 transition-colors"
         >
-          {i18n.language.startsWith('pl') ? 'Zamknij i zobacz mapę' : 'Close and View Map'}
-        </button>
-      )}
+          <span>Try {otherMode.name}</span>
+          <ArrowRight size={13} />
+        </Link>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-sm border border-white/15 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+          >
+            {i18n.language.startsWith('pl') ? 'Zamknij i przeglądaj mapę' : 'Close and View Map'}
+          </button>
+        )}
+      </div>
     </section>
   );
 }
