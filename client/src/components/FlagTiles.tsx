@@ -17,9 +17,8 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
   flagUrl,
   countryName,
 }) => {
-  const effectiveStage = isGameOver ? 6 : Math.max(1, Math.min(6, stage));
-  const revealedCount = isGameOver ? 12 : Math.max(2, Math.min(12, effectiveStage * 2));
-  const revealedSet = new Set(UNMASK_ORDER.slice(0, revealedCount));
+  const effectiveStage = isGameOver ? 12 : Math.max(1, Math.min(12, stage));
+  const revealedSet = new Set(UNMASK_ORDER.slice(0, effectiveStage));
   return (
     <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-2 sm:p-3 shadow-2xl">
       <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-obsidian-900 flex items-center justify-center">
@@ -68,10 +67,11 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
       </div>
       <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-zinc-400">
         <div className="flex items-center gap-1.5">
-          <span>{revealedCount} of 12 cards uncovered</span>
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>{effectiveStage} of 12 cards uncovered</span>
         </div>
         <span className="font-mono text-sand-100 font-semibold">
-          {Math.min(100, Math.round((revealedCount / 12) * 100))}% Revealed
+          {Math.min(100, Math.round((effectiveStage / 12) * 100))}% Revealed
         </span>
       </div>
     </div>

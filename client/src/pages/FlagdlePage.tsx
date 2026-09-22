@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
-import { FlagClueTimeline } from '../components/FlagClueTimeline';
 import CountdownTimer from '../components/CountdownTimer';
-import { Loader2, HelpCircle, Share2, Check, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { FlagdleCountry, FlagdleGuess } from '../types';
 import { API_URL } from '../services/api';
@@ -145,13 +144,13 @@ export default function FlagdlePage() {
   const handleShare = () => {
     if (!dailyDate || !gameState) return;
     const isWon = gameState.won;
-    const scoreText = isWon ? `${guesses.length}/6` : 'X/6';
+    const scoreText = isWon ? `${guesses.length}/12` : 'X/12';
     let text = `Countrydle Flagdle #${dailyDate} ${scoreText} 🚩\n\n`;
 
     guesses.forEach((g: FlagdleGuess, idx: number) => {
       const stageNum = idx + 1;
-      const unmaskedCount = g.answer ? 6 : Math.min(6, stageNum);
-      const tilesStr = Array.from({ length: 6 }, (_, i) => {
+      const unmaskedCount = g.answer ? 12 : Math.min(12, stageNum);
+      const tilesStr = Array.from({ length: 12 }, (_, i) => {
         if (i < unmaskedCount) {
           return g.answer ? '🟩' : '🟨';
         }
@@ -204,18 +203,17 @@ export default function FlagdlePage() {
 
         <div className="flex items-center gap-3">
           {/* Guesses Remaining Pill */}
-          <div className="flex items-center rounded-xl border border-sand-800 bg-sand-900/70 px-3.5 py-2 shadow-sm">
-            <span className="text-xs uppercase tracking-wider text-sand-400 mr-2">Guesses:</span>
+          <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-3.5 py-2 shadow-sm">
+            <span className="text-xs uppercase tracking-wider text-zinc-400 mr-2 font-mono">Guesses:</span>
             <span
               className={`font-mono text-base font-bold ${
-                (gameState?.remaining_guesses || 0) <= 2 ? 'text-amber-400' : 'text-emerald-400'
+                guesses.length >= 10 ? 'text-amber-400' : 'text-emerald-400'
               }`}
             >
-              {gameState?.remaining_guesses ?? 6}
+              {guesses.length}
             </span>
-            <span className="text-xs text-sand-500 font-mono"> / 6</span>
+            <span className="text-xs text-zinc-500 font-mono"> / 12</span>
           </div>
-
           {/* Instructions Modal Button */}
           <button
             type="button"
@@ -304,7 +302,44 @@ export default function FlagdlePage() {
           </section>
         )}
 
-        {/* 3. Game Over / Solution Card */}
+        {/* Previous Guesses List */}
+        {guesses.length > 0 && (
+          <section aria-label="Previous Guesses" className="mx-auto w-full max-w-xl space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">Your Guesses</span>
+              <span className="text-xs font-mono text-zinc-500">{guesses.length} / 12</span>
+            </div>
+            <ul className="space-y-1.5">
+              {guesses.map((g, idx) => (
+                <li
+                  key={g.id || idx}
+                  className={`flex items-center justify-between rounded-sm border-l-2 bg-obsidian-950 px-3.5 py-2.5 ${
+                    g.answer ? 'border-emerald-400' : 'border-rose-500/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {g.answer ? (
+                      <Check size={16} className="shrink-0 text-emerald-400" aria-hidden="true" />
+                    ) : (
+                      <X size={16} className="shrink-0 text-rose-400" aria-hidden="true" />
+                    )}
+                    <span className="truncate text-sm font-medium text-sand-100">{g.guess}</span>
+                  </div>
+                  {g.distance_km !== null && g.distance_km !== undefined && !g.answer && (
+                    <div className="flex items-center gap-1.5 font-mono text-xs text-zinc-400">
+                      <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-zinc-300">
+                        {g.distance_km.toLocaleString()} km
+                      </span>
+                      {g.bearing_arrow && (
+                        <span className="text-emerald-400 text-sm font-semibold">{g.bearing_arrow}</span>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {isGameOver && (
           <section
             aria-label="Game Result"
@@ -324,8 +359,8 @@ export default function FlagdlePage() {
               </h2>
               <p className="mt-1 text-sm text-zinc-400">
                 {isWon
-                  ? `You accurately identified the flag in ${guesses.length} of 6 guesses.`
-                  : 'You used all 6 guesses. Better luck tomorrow!'}
+                  ? `You accurately identified the flag in ${guesses.length} of 12 guesses.`
+                  : 'You used all 12 guesses. Better luck tomorrow!'}
               </p>
             </div>
 
@@ -381,10 +416,6 @@ export default function FlagdlePage() {
           </section>
         )}
 
-        {/* 4. Deduction Timeline & Clues Matrix */}
-        <section aria-label="Deduction Clues">
-          <FlagClueTimeline guesses={guesses} />
-        </section>
       </main>
 
       {/* Instructions Modal */}

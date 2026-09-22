@@ -28,7 +28,7 @@ const limits: Record<GuestGameType, { questions: number; guesses: number }> = {
   asia: { questions: 8, guesses: 3 },
   africa: { questions: 8, guesses: 3 },
   americas: { questions: 8, guesses: 3 },
-  flagdle: { questions: 0, guesses: 6 },
+  flagdle: { questions: 0, guesses: 12 },
 };
 
 function isDate(value: string): boolean {

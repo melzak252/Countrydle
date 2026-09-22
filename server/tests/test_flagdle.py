@@ -23,11 +23,14 @@ def test_flagdle_points_calculation():
     # Win on 1st guess: base (500) + guess bonus (1500) = 2000 (no speed/streak)
     assert calculate_flagdle_points(won=True, guesses_used=1, elapsed_seconds=0, streak=0) == 2000
 
-    # Win on 2nd guess: 500 + 1100 = 1600
-    assert calculate_flagdle_points(won=True, guesses_used=2) == 1600
+    # Win on 2nd guess: 500 + 1300 = 1800
+    assert calculate_flagdle_points(won=True, guesses_used=2) == 1800
 
-    # Win on 6th guess: 500 + 100 = 600
-    assert calculate_flagdle_points(won=True, guesses_used=6) == 600
+    # Win on 6th guess: 500 + 650 = 1150
+    assert calculate_flagdle_points(won=True, guesses_used=6) == 1150
+
+    # Win on 12th guess: 500 + 50 = 550
+    assert calculate_flagdle_points(won=True, guesses_used=12) == 550
 
     # Streak bonus adds +50 per day up to 500
     score_streak_3 = calculate_flagdle_points(won=True, guesses_used=1, streak=3)
@@ -129,7 +132,7 @@ async def test_flagdle_state_anti_cheat(async_client):
         # Target country MUST NOT be exposed while game is in progress
         assert data["country"] is None
         assert data["state"]["is_game_over"] is False
-        assert data["state"]["remaining_guesses"] == 6
+        assert data["state"]["remaining_guesses"] == 12
         assert data["state"]["revealed_stage"] == 1
 
         # The flag asset URL must be an obfuscated proxy token URL, NOT revealing "fr.svg"

@@ -657,8 +657,8 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
 
       const combinedGuesses = isGuest && localGuesses.length > 0 ? localGuesses : data.guesses;
       const calculatedStage = effectiveState.is_game_over
-        ? 6
-        : Math.min(6, Math.max(effectiveState.revealed_stage, combinedGuesses.length + 1));
+        ? 12
+        : Math.min(12, Math.max(effectiveState.revealed_stage, combinedGuesses.length + 1));
 
       let revealedCountry = data.country || null;
       if (effectiveState.is_game_over && !revealedCountry) {
@@ -727,13 +727,13 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
 
       const nextGuesses = [...get().guesses, guessRes];
       const isWon = guessRes.answer;
-      const isGameOver = isWon || nextGuesses.length >= 6;
-      const nextStage = isGameOver ? 6 : Math.min(6, nextGuesses.length + 1);
+      const isGameOver = isWon || nextGuesses.length >= 12;
+      const nextStage = isGameOver ? 12 : Math.min(12, nextGuesses.length + 1);
 
       const nextState: FlagdleState = {
         ...gameState,
         guesses_made: nextGuesses.length,
-        remaining_guesses: Math.max(0, 6 - nextGuesses.length),
+        remaining_guesses: Math.max(0, 12 - nextGuesses.length),
         revealed_stage: nextStage,
         is_game_over: isGameOver,
         won: isWon,

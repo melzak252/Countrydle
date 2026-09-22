@@ -10,7 +10,7 @@ WOJEWODZTWDLE_CONFIG = GameConfig(max_questions=5, max_guesses=2)
 POWIATDLE_CONFIG = GameConfig(max_questions=15, max_guesses=3)
 USSTATEDLE_CONFIG = GameConfig(max_questions=8, max_guesses=3)
 CONTINENTAL_CONFIG = GameConfig(max_questions=8, max_guesses=3)
-FLAGDLE_CONFIG = GameConfig(max_questions=0, max_guesses=6)
+FLAGDLE_CONFIG = GameConfig(max_questions=0, max_guesses=12)
 
 def calculate_flagdle_points(
     won: bool,
@@ -22,8 +22,8 @@ def calculate_flagdle_points(
         return 0
 
     base_points = 500
-    guess_bonus_map = {1: 1500, 2: 1100, 3: 800, 4: 500, 5: 250, 6: 100}
-    guess_bonus = guess_bonus_map.get(guesses_used, 50)
+    guess_bonus_map = {1: 1500, 2: 1300, 3: 1100, 4: 950, 5: 800, 6: 650, 7: 500, 8: 400, 9: 300, 10: 200, 11: 100, 12: 50}
+    guess_bonus = guess_bonus_map.get(guesses_used, 25)
 
     speed_bonus = 0
     if elapsed_seconds is not None and elapsed_seconds > 0:

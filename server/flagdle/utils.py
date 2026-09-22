@@ -19,7 +19,7 @@ _DATA_DIR = (
 FACTS_DB_PATH = _DATA_DIR / "country_facts.sqlite"
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback_countrydle_secret")
 
-UNMASK_ORDER = [0, 4, 2, 5, 1, 3]
+UNMASK_ORDER = [0, 6, 11, 5, 3, 8, 1, 10, 2, 9, 4, 7]
 
 
 def get_sqlite_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:

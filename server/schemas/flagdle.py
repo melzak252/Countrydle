@@ -51,7 +51,7 @@ class FlagdleGuessDisplay(BaseModel):
 
 
 class FlagdleStateSchema(BaseModel):
-    remaining_guesses: int = 6
+    remaining_guesses: int = 12
     guesses_made: int = 0
     revealed_stage: int = 1
     is_game_over: bool = False

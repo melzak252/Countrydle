@@ -190,7 +190,7 @@ async def get_state(
         is_won = guest_state["won"]
         is_game_over = guest_state["is_game_over"]
         remaining_guesses = max(0, FLAGDLE_CONFIG.max_guesses - guesses_made)
-        revealed_stage = 6 if is_game_over else min(6, guesses_made + 1)
+        revealed_stage = 12 if is_game_over else min(12, guesses_made + 1)
 
         state_schema = FlagdleStateSchema(
             remaining_guesses=remaining_guesses,
@@ -294,8 +294,8 @@ async def make_guess(
     new_remaining = max(0, FLAGDLE_CONFIG.max_guesses - new_guesses_made)
     is_game_over = is_correct or (new_remaining == 0)
     won = is_correct
-    new_stage = 6 if is_game_over else min(6, new_guesses_made + 1)
-    revealed_tile = UNMASK_ORDER[min(current_guess_idx, 5)]
+    new_stage = 12 if is_game_over else min(12, new_guesses_made + 1)
+    revealed_tile = UNMASK_ORDER[min(current_guess_idx, 11)]
 
     now = datetime.now()
 
@@ -543,12 +543,14 @@ async def sync_guest_data(
         clues = evaluate_flag_clues(
             target_country_id=target_country.id if target_country else 0,
             guessed_country_id=guessed_country.id,
+            target_country_name=target_country.name if target_country else None,
+            guessed_country_name=guessed_country.name,
             all_matched_colors_so_far=all_matched_colors,
         )
         if clues["matched_colors"]:
             all_matched_colors.update(clues["matched_colors"])
 
-        revealed_tile = UNMASK_ORDER[min(idx, 5)]
+        revealed_tile = UNMASK_ORDER[min(idx, 11)]
 
         guess_create = FlagdleGuessCreate(
             guess=guessed_country.name,
