@@ -438,13 +438,13 @@ export default function FlagdlePage() {
 
             <div className="space-y-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
               <p>
-                Deduce the secret national flag in <strong>6 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
+                Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
               </p>
 
               <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
                 <div className="font-semibold text-sand-100">🎴 12-Card Cover Grid (3×4):</div>
                 <p className="text-zinc-400">
-                  The flag is covered by 12 solid cards. Every incorrect guess lifts 2 cards, revealing more of the flag underneath.
+                  The flag is covered by 12 solid cards. Each guess unmasks 1 card, progressively revealing more of the flag underneath.
                 </p>
               </div>
 

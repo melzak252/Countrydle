@@ -1,14 +1,14 @@
 import React from 'react';
 
 interface FlagTilesProps {
-  stage: number; // 1 to 6
+  stage: number; // 1 to 12
   isGameOver: boolean;
   flagUrl: string | null;
   countryName?: string | null;
 }
 
 // 12 grid tiles (3 rows x 4 columns)
-// Unmask order uncovers 2 symmetric/tactical cards per stage (12 cards total across 6 stages)
+// Unmask order uncovers cards across 12 stages (1 card per stage, 12 cards total)
 const UNMASK_ORDER = [0, 11, 5, 6, 3, 8, 1, 10, 2, 9, 4, 7];
 
 export const FlagTiles: React.FC<FlagTilesProps> = ({
