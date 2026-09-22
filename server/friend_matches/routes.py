@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 COOKIE_NAME = "friend_duel_seat"
 COOKIE_AGE = 60 * 60 * 24 * 365
 DEFAULT_ORIGINS = {
-    "http://localhost", "http://localhost:80", "http://localhost:5173",
-    "http://127.0.0.1", "http://127.0.0.1:80", "http://127.0.0.1:5173",
+    "http://localhost", "http://localhost:80", "http://localhost:5173", "http://localhost:5174",
+    "http://127.0.0.1", "http://127.0.0.1:80", "http://127.0.0.1:5173", "http://127.0.0.1:5174",
     "https://jmelzacki.com", "https://www.jmelzacki.com",
 }
 
