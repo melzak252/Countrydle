@@ -5,7 +5,6 @@ import CountdownTimer from '../components/CountdownTimer';
 import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { FlagdleCountry, FlagdleGuess } from '../types';
-import { API_URL } from '../services/api';
 
 
 export default function FlagdlePage() {
@@ -38,9 +37,11 @@ export default function FlagdlePage() {
     if (flagAssetUrl.startsWith('http://') || flagAssetUrl.startsWith('https://')) {
       return flagAssetUrl;
     }
-    const base = API_URL.replace(/\/$/, '');
-    const path = flagAssetUrl.startsWith('/') ? flagAssetUrl : `/${flagAssetUrl}`;
-    return `${base}${path}`;
+    const cleanPath = flagAssetUrl.startsWith('/') ? flagAssetUrl : `/${flagAssetUrl}`;
+    if (!cleanPath.startsWith('/api')) {
+      return `/api${cleanPath}`;
+    }
+    return cleanPath;
   }, [flagAssetUrl]);
 
 

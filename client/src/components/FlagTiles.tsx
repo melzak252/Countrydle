@@ -26,8 +26,7 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
           <img
             src={flagUrl}
             alt={isGameOver && countryName ? `Flag of ${countryName}` : 'Mystery National Flag'}
-            className="h-full w-full object-contain transition-all duration-700 select-none"
-            draggable={false}
+            className="h-full w-full object-cover transition-all duration-700 select-none"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-zinc-500 animate-pulse font-mono text-sm">
@@ -35,9 +34,9 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
           </div>
         )}
 
-        {/* 6-Card Physical Cover Overlay (active only before game over) */}
+        {/* 12-Card Physical Cover Overlay (transparent container so revealed tiles show the flag underneath) */}
         {!isGameOver && (
-          <div className="absolute inset-0 grid grid-cols-4 grid-rows-3 gap-0.5 p-0.5 bg-obsidian-950">
+          <div className="absolute inset-0 grid grid-cols-4 grid-rows-3 gap-0.5 p-0.5 bg-transparent pointer-events-none">
             {Array.from({ length: 12 }, (_, tileIdx) => {
               const isRevealed = revealedSet.has(tileIdx);
               return (
@@ -45,8 +44,8 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
                   key={tileIdx}
                   className={`relative flex items-center justify-center border border-white/15 transition-all duration-500 ease-out ${
                     isRevealed
-                      ? 'pointer-events-none opacity-0 scale-95'
-                      : 'bg-[#0f0f14] opacity-100 shadow-lg z-10'
+                      ? 'opacity-0 scale-95 pointer-events-none'
+                      : 'bg-[#0f0f14] opacity-100 shadow-lg z-10 pointer-events-auto'
                   }`}
                 >
                   {!isRevealed && (
