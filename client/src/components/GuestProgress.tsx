@@ -7,6 +7,7 @@ const modeNames: Record<GuestGameType, string> = {
   powiaty: 'Polish counties',
   us_states: 'US states',
   wojewodztwa: 'Polish voivodeships',
+  flagdle: 'Flagdle',
 };
 const labels = { won: 'Solved', lost: 'Not solved', unplayed: 'Not played' };
 const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });

@@ -6,6 +6,7 @@ from .wojewodztwo import Wojewodztwo
 from .wojewodztwodle import WojewodztwodleDay, WojewodztwodleState, WojewodztwodleGuess, WojewodztwodleQuestion
 from .us_state import USState
 from .us_statedle import USStatedleDay, USStatedleState, USStatedleGuess, USStatedleQuestion
+from .flagdle import FlagdleDay, FlagdleState, FlagdleGuess
 from .question import CountrydleQuestion
 from .country_fact_change_log import CountryFactChangeLog
 from .fragment import CountryFragment, PowiatFragment, WojewodztwoFragment, USStateFragment

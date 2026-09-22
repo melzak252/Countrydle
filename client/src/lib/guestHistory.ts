@@ -1,4 +1,4 @@
-export type GuestGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa';
+export type GuestGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'flagdle';
 
 export interface GuestHistory {
   currentStreak: number;
@@ -24,6 +24,7 @@ const limits: Record<GuestGameType, { questions: number; guesses: number }> = {
   powiaty: { questions: 15, guesses: 3 },
   us_states: { questions: 8, guesses: 3 },
   wojewodztwa: { questions: 5, guesses: 2 },
+  flagdle: { questions: 0, guesses: 6 },
 };
 
 function isDate(value: string): boolean {

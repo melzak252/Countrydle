@@ -56,6 +56,10 @@ async def generate_day_countries():
             print(f"Generating country for {day_date}")
             await c_repo.generate_new_day_country(day_date)
 
+async def generate_day_flags():
+    from flagdle.scheduler import generate_day_flags as _gen_flags
+    await _gen_flags()
+
 
 async def generate_yesterday_blog_post():
     from db.repositories.blog import BlogRepository
@@ -91,3 +95,4 @@ scheduler = AsyncIOScheduler()
 scheduler.add_job(generate_day_countries, CronTrigger(hour=0, minute=0))
 scheduler.add_job(check_streaks, CronTrigger(hour=0, minute=0))
 scheduler.add_job(generate_yesterday_blog_post, CronTrigger(hour=0, minute=5))
+scheduler.add_job(generate_day_flags, CronTrigger(hour=0, minute=0))

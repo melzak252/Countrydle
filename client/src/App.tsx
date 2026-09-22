@@ -11,6 +11,7 @@ import SetupProfilePage from './pages/SetupProfilePage';
 import PowiatyGamePage from './pages/PowiatyGamePage';
 import USStatesGamePage from './pages/USStatesGamePage';
 import WojewodztwaGamePage from './pages/WojewodztwaGamePage';
+import FlagdlePage from './pages/FlagdlePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
@@ -22,7 +23,7 @@ import FAQPage from './pages/FAQPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
 import { useAuthStore } from './stores/authStore';
-import { useCountryGameStore, usePowiatyGameStore, useUSStatesGameStore, useWojewodztwaGameStore } from './stores/gameStore';
+import { useCountryGameStore, usePowiatyGameStore, useUSStatesGameStore, useWojewodztwaGameStore, useFlagdleGameStore } from './stores/gameStore';
 import { useEffect } from 'react';
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
         usePowiatyGameStore.getState().syncGuestData();
         useUSStatesGameStore.getState().syncGuestData();
         useWojewodztwaGameStore.getState().syncGuestData();
+        useFlagdleGameStore.getState().syncGuestData();
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -57,12 +59,14 @@ function App() {
       usePowiatyGameStore.getState().resetGame();
       useUSStatesGameStore.getState().resetGame();
       useWojewodztwaGameStore.getState().resetGame();
+      useFlagdleGameStore.getState().resetGame();
       
       // After reset, fetch guest state (if any)
       useCountryGameStore.getState().fetchGameState();
       usePowiatyGameStore.getState().fetchGameState();
       useUSStatesGameStore.getState().fetchGameState();
       useWojewodztwaGameStore.getState().fetchGameState();
+      useFlagdleGameStore.getState().fetchGameState();
     };
 
     window.addEventListener('auth-logout', handleLogout);
@@ -90,6 +94,7 @@ function App() {
           <Route path="powiaty" element={<PowiatyGamePage />} />
           <Route path="us-states" element={<USStatesGamePage />} />
           <Route path="wojewodztwa" element={<WojewodztwaGamePage />} />
+          <Route path="flagdle" element={<FlagdlePage />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="terms" element={<TermsOfServicePage />} />
           <Route path="cookie-policy" element={<CookiePolicyPage />} />
