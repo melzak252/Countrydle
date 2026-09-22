@@ -335,188 +335,256 @@ function DuelRoom({ code }: { code?: string }) {
   // SCENARIO A: Lobby Entry (no snapshot yet) -> Clean centered card layout
   if (!snapshot) {
     return (
-      <div className="relative min-h-[calc(100vh-3.5rem)] w-full flex items-center justify-center p-4 bg-obsidian-950 font-sans">
-        <div className="relative z-10 w-full max-w-md rounded-sm border border-white/15 bg-obsidian-900/95 p-6 shadow-2xl backdrop-blur-md">
-          <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-400">
-            {copy.multiplayer}
-          </p>
-          <h2 className="mb-2 text-xl font-bold text-sand-100">
-            {code ? copy.join : copy.create}
-          </h2>
-          <p className="mb-5 text-xs leading-relaxed text-zinc-400">{copy.subtitle}</p>
-
-          {room.invite && (
-            <div className="mb-4 rounded-sm border border-emerald-500/30 bg-emerald-950/20 p-2.5 font-mono text-xs text-emerald-300">
-              <span className="font-semibold text-zinc-300">Players: </span>
-              {room.invite.players.map(p => p.name).join(' / ')}
-            </div>
-          )}
-
-          {code && !room.invite ? (
-            <button type="button" className={duelButton} onClick={() => { void room.refresh(); }}>
-              {copy.refresh}
-            </button>
-          ) : code && room.invite && (room.invite.full || room.invite.status !== 'lobby') ? (
-            <div className="space-y-4">
-              <div className="rounded-sm border border-amber-500/40 bg-amber-950/20 p-3 text-xs text-amber-200">
-                <p className="font-semibold text-amber-300 mb-1">
-                  {room.invite.status === 'finished' ? copy.ended : copy.full}
-                </p>
-              </div>
-              <Link to="/friends" className={`${duelPrimary} block w-full text-center rounded-sm`}>
-                {copy.newDuel}
-              </Link>
-            </div>
-          ) : (
-            <form
-              className="space-y-4"
-              onSubmit={event => {
-                event.preventDefault();
-                void enter();
-              }}
-            >
-              <div>
-                <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-name">
-                  {accountName ? t('auth.username') : copy.name}
-                </label>
-                <input
-                  id="duel-name"
-                  className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 placeholder:text-zinc-600 focus:border-emerald-500/70 focus:outline-none"
-                  autoComplete="nickname"
-                  value={name}
-                  maxLength={40}
-                  required
-                  readOnly={Boolean(accountName)}
-                  disabled={authLoading || entryBusy || entryUncertain}
-                  onChange={event => setGuestName(event.target.value)}
-                />
-              </div>
-
-              {!code && (
-                <div className="relative" ref={modeDropdownRef}>
-                  <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-mode-btn">
-                    {copy.mode}
-                  </label>
-                  <button
-                    id="duel-mode-btn"
-                    type="button"
-                    className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 flex items-center justify-between text-left cursor-pointer"
-                    disabled={entryBusy || entryUncertain}
-                    onClick={() => setModeDropdownOpen(open => !open)}
-                    aria-haspopup="listbox"
-                    aria-expanded={modeDropdownOpen}
-                  >
-                    <span className="truncate">{copy[mode]}</span>
-                    <ChevronDown size={14} className={`text-zinc-400 transition-transform ${modeDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {modeDropdownOpen && (
-                    <div
-                      className="absolute left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto divide-y divide-white/10 rounded-sm border border-white/15 bg-obsidian-900 shadow-2xl z-50 p-2 space-y-2"
-                      role="listbox"
-                    >
-                      <div>
-                        <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                          {copy.groupGlobal}
-                        </span>
-                        <div className="flex flex-col gap-1">
-                          {(['countrydle'] as const).map(item => (
-                            <button
-                              key={item}
-                              type="button"
-                              role="option"
-                              aria-selected={mode === item}
-                              className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                                mode === item ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                              }`}
-                              onClick={() => {
-                                setMode(item);
-                                setModeDropdownOpen(false);
-                              }}
-                            >
-                              <span>{copy[item]}</span>
-                              <span className="text-[10px] font-mono text-zinc-400">195</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="pt-2">
-                        <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                          {copy.groupContinents}
-                        </span>
-                        <div className="grid grid-cols-2 gap-1">
-                          {([
-                            { id: 'europe', badge: '47' },
-                            { id: 'asia', badge: '47' },
-                            { id: 'africa', badge: '54' },
-                            { id: 'americas', badge: '35' },
-                          ] as const).map(item => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              role="option"
-                              aria-selected={mode === item.id}
-                              className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                                mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                              }`}
-                              onClick={() => {
-                                setMode(item.id);
-                                setModeDropdownOpen(false);
-                              }}
-                            >
-                              <span className="truncate">{copy[item.id]}</span>
-                              <span className="shrink-0 text-[10px] font-mono text-zinc-400">{item.badge}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="pt-2">
-                        <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                          {copy.groupRegional}
-                        </span>
-                        <div className="flex flex-col gap-1">
-                          {([
-                            { id: 'us_statedle', badge: '50' },
-                            { id: 'wojewodztwodle', badge: '16' },
-                            { id: 'powiatdle', badge: '380' },
-                          ] as const).map(item => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              role="option"
-                              aria-selected={mode === item.id}
-                              className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                                mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                              }`}
-                              onClick={() => {
-                                setMode(item.id);
-                                setModeDropdownOpen(false);
-                              }}
-                            >
-                              <span>{copy[item.id]}</span>
-                              <span className="text-[10px] font-mono text-zinc-400">{item.badge}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {entryError && <p role="alert" className="text-xs text-rose-400">{entryError}</p>}
-              {entryUncertain && <p className="text-xs text-amber-200">{copy.uncertain}</p>}
-
-              <button
-                type="submit"
-                className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer disabled:opacity-40"
-                disabled={authLoading || entryBusy || !name.trim()}
-              >
-                {entryUncertain ? copy.retry : code ? copy.join : copy.create}
-              </button>
-            </form>
-          )}
+      <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
+        {/* Full-Canvas Background Map (previews selected mode!) */}
+        <div className="absolute inset-0 z-0 h-full w-full">
+          <FriendDuelMap
+            mode={viewMode}
+            matchKey={`entry-preview-${viewMode}`}
+            finished={false}
+            className="h-full w-full rounded-none border-0 shadow-none"
+            isLobby={true}
+          />
         </div>
+
+        {/* Top Status HUD Bar */}
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 px-2">
+          <div className="pointer-events-auto flex h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
+            <div className="flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{copy[`play_${viewMode}`]}</span>
+              <span className="font-semibold text-sand-100">Multiplayer</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRulesOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+              title={copy.rulesTitle}
+            >
+              <HelpCircle size={13} className="text-emerald-400" />
+              <span>Rules</span>
+            </button>
+          </div>
+        </div>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
+        >
+          <div className="relative z-10 w-full max-w-md rounded-sm border border-white/20 bg-obsidian-950/95 p-6 shadow-2xl space-y-4">
+            <div>
+              <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-400">
+                {copy.multiplayer}
+              </p>
+              <h2 className="text-xl font-bold text-sand-100">
+                {code ? copy.join : copy.create}
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-400">{copy.subtitle}</p>
+            </div>
+
+            {room.invite && (
+              <div className="rounded-sm border border-emerald-500/30 bg-emerald-950/20 p-2.5 font-mono text-xs text-emerald-300">
+                <span className="font-semibold text-zinc-300">Players: </span>
+                {room.invite.players.map(p => p.name).join(' / ')}
+              </div>
+            )}
+
+            {code && !room.invite ? (
+              <button type="button" className={duelButton} onClick={() => { void room.refresh(); }}>
+                {copy.refresh}
+              </button>
+            ) : code && room.invite && (room.invite.full || room.invite.status !== 'lobby') ? (
+              <div className="space-y-4">
+                <div className="rounded-sm border border-amber-500/40 bg-amber-950/20 p-3 text-xs text-amber-200">
+                  <p className="font-semibold text-amber-300 mb-1">
+                    {room.invite.status === 'finished' ? copy.ended : copy.full}
+                  </p>
+                </div>
+                <Link to="/friends" className={`${duelPrimary} block w-full text-center rounded-sm`}>
+                  {copy.newDuel}
+                </Link>
+              </div>
+            ) : (
+              <form
+                className="space-y-4"
+                onSubmit={event => {
+                  event.preventDefault();
+                  void enter();
+                }}
+              >
+                <div>
+                  <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-name">
+                    {accountName ? t('auth.username') : copy.name}
+                  </label>
+                  <input
+                    id="duel-name"
+                    className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 placeholder:text-zinc-600 focus:border-emerald-500/70 focus:outline-none"
+                    autoComplete="nickname"
+                    value={name}
+                    maxLength={40}
+                    required
+                    readOnly={Boolean(accountName)}
+                    disabled={authLoading || entryBusy || entryUncertain}
+                    onChange={event => setGuestName(event.target.value)}
+                  />
+                </div>
+
+                {!code && (
+                  <div className="relative" ref={modeDropdownRef}>
+                    <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-mode-btn">
+                      {copy.mode}
+                    </label>
+                    <button
+                      id="duel-mode-btn"
+                      type="button"
+                      className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 flex items-center justify-between text-left cursor-pointer"
+                      disabled={entryBusy || entryUncertain}
+                      onClick={() => setModeDropdownOpen(open => !open)}
+                      aria-haspopup="listbox"
+                      aria-expanded={modeDropdownOpen}
+                    >
+                      <span className="truncate">{copy[mode]}</span>
+                      <ChevronDown size={14} className={`text-zinc-400 transition-transform ${modeDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {modeDropdownOpen && (
+                      <div
+                        className="absolute left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto divide-y divide-white/10 rounded-sm border border-white/15 bg-obsidian-900 shadow-2xl z-50 p-2 space-y-2"
+                        role="listbox"
+                      >
+                        <div>
+                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                            {copy.groupGlobal}
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            {(['countrydle'] as const).map(item => (
+                              <button
+                                key={item}
+                                type="button"
+                                role="option"
+                                aria-selected={mode === item}
+                                className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
+                                  mode === item ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                                }`}
+                                onClick={() => {
+                                  setMode(item);
+                                  setModeDropdownOpen(false);
+                                }}
+                              >
+                                <span>{copy[item]}</span>
+                                <span className="text-[10px] font-mono text-zinc-400">195</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="pt-2">
+                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                            {copy.groupContinents}
+                          </span>
+                          <div className="grid grid-cols-2 gap-1">
+                            {([
+                              { id: 'europe', badge: '47' },
+                              { id: 'asia', badge: '47' },
+                              { id: 'africa', badge: '54' },
+                              { id: 'americas', badge: '35' },
+                            ] as const).map(item => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                role="option"
+                                aria-selected={mode === item.id}
+                                className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
+                                  mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                                }`}
+                                onClick={() => {
+                                  setMode(item.id);
+                                  setModeDropdownOpen(false);
+                                }}
+                              >
+                                <span className="truncate">{copy[item.id]}</span>
+                                <span className="shrink-0 text-[10px] font-mono text-zinc-400">{item.badge}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="pt-2">
+                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                            {copy.groupRegional}
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            {([
+                              { id: 'us_statedle', badge: '50' },
+                              { id: 'wojewodztwodle', badge: '16' },
+                              { id: 'powiatdle', badge: '380' },
+                            ] as const).map(item => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                role="option"
+                                aria-selected={mode === item.id}
+                                className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
+                                  mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                                }`}
+                                onClick={() => {
+                                  setMode(item.id);
+                                  setModeDropdownOpen(false);
+                                }}
+                              >
+                                <span>{copy[item.id]}</span>
+                                <span className="text-[10px] font-mono text-zinc-400">{item.badge}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {entryError && <p role="alert" className="text-xs text-rose-400">{entryError}</p>}
+                {entryUncertain && <p className="text-xs text-amber-200">{copy.uncertain}</p>}
+
+                <button
+                  type="submit"
+                  className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer disabled:opacity-40"
+                  disabled={authLoading || entryBusy || !name.trim()}
+                >
+                  {entryUncertain ? copy.retry : code ? copy.join : copy.create}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+
+        {/* Rules Modal */}
+        {rulesOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setRulesOpen(false)}
+            className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+          >
+            <div
+              className="relative w-full max-w-md rounded-sm border border-white/20 bg-obsidian-950/95 p-5 shadow-2xl space-y-3 cursor-default"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-emerald-400 font-semibold">
+                  {copy.rulesTitle}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setRulesOpen(false)}
+                  className="text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <p className="text-xs leading-relaxed text-zinc-300">{copy.rules}</p>
+              <p className="text-xs leading-relaxed text-zinc-400">{copy.timeoutRules}</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
