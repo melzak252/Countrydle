@@ -13,16 +13,38 @@ interface FriendDuelMapProps {
   finished: boolean;
   revealedEntityName?: string;
   className?: string;
+  onEntitySelect?: (name: string) => void;
+  isLobby?: boolean;
+  selectedSecretName?: string;
 }
 
-function MatchMap({ mode, finished, revealedEntityName, className }: FriendDuelMapProps) {
+function MatchMap({
+  mode,
+  finished,
+  revealedEntityName,
+  className,
+  onEntitySelect,
+  isLobby = false,
+  selectedSecretName,
+}: FriendDuelMapProps) {
   const [entityMarkings, setEntityMarkings] = useState<Record<string, MapMarkerColor>>({});
   const [activeMarkerColor, setActiveMarkerColor] = useState<MapMarkerColor>('green');
+
+  // In the lobby, disable general palette coloring; highlight ONLY the selected secret country
+  const effectiveMarkings = isLobby
+    ? (selectedSecretName ? { [selectedSecretName.toUpperCase()]: 'green' as MapMarkerColor } : {})
+    : entityMarkings;
+
   const interaction: MapInteractionState = {
-    entityMarkings,
+    entityMarkings: effectiveMarkings,
     activeMarkerColor,
     setActiveMarkerColor,
     handleEntityMapClick: (name, isSecondary = false) => {
+      if (isLobby) {
+        // In lobby, map clicks select the secret; coloring is handled via selectedSecretName
+        onEntitySelect?.(name);
+        return;
+      }
       const color = mapClickColor(activeMarkerColor, isSecondary);
       setEntityMarkings(markings => toggleMapMarking(markings, name, color));
     },
@@ -33,13 +55,69 @@ function MatchMap({ mode, finished, revealedEntityName, className }: FriendDuelM
 
   switch (mode) {
     case 'countrydle':
-      return <ControlledMapBox interaction={interaction} correctCountryName={revealedName} className={className} />;
+      return <ControlledMapBox interaction={interaction} correctCountryName={revealedName} className={className} onCountryClick={onEntitySelect} />;
+    case 'europe':
+      return (
+        <ControlledMapBox
+          interaction={interaction}
+          correctCountryName={revealedName}
+          className={className}
+          center={[52, 16]}
+          zoom={3.8}
+          minZoom={2.5}
+          maxZoom={8}
+          geoJsonUrl="/europe.geojson"
+          onCountryClick={onEntitySelect}
+        />
+      );
+    case 'asia':
+      return (
+        <ControlledMapBox
+          interaction={interaction}
+          correctCountryName={revealedName}
+          className={className}
+          center={[34, 95]}
+          zoom={3}
+          minZoom={2}
+          maxZoom={8}
+          geoJsonUrl="/asia.geojson"
+          onCountryClick={onEntitySelect}
+        />
+      );
+    case 'africa':
+      return (
+        <ControlledMapBox
+          interaction={interaction}
+          correctCountryName={revealedName}
+          className={className}
+          center={[2, 20]}
+          zoom={3}
+          minZoom={2}
+          maxZoom={8}
+          geoJsonUrl="/africa.geojson"
+          onCountryClick={onEntitySelect}
+        />
+      );
+    case 'americas':
+      return (
+        <ControlledMapBox
+          interaction={interaction}
+          correctCountryName={revealedName}
+          className={className}
+          center={[15, -85]}
+          zoom={2.5}
+          minZoom={1.8}
+          maxZoom={8}
+          geoJsonUrl="/americas.geojson"
+          onCountryClick={onEntitySelect}
+        />
+      );
     case 'us_statedle':
-      return <ControlledUSStatesMap interaction={interaction} correctStateName={revealedName} className={className} />;
+      return <ControlledUSStatesMap interaction={interaction} correctStateName={revealedName} className={className} onStateClick={onEntitySelect} />;
     case 'wojewodztwodle':
-      return <ControlledWojewodztwaMap interaction={interaction} correctWojewodztwoName={revealedName} className={className} />;
+      return <ControlledWojewodztwaMap interaction={interaction} correctWojewodztwoName={revealedName} className={className} onWojewodztwoClick={onEntitySelect} />;
     case 'powiatdle':
-      return <ControlledPowiatyMap interaction={interaction} correctPowiatName={revealedName} className={className} />;
+      return <ControlledPowiatyMap interaction={interaction} correctPowiatName={revealedName} className={className} onPowiatClick={onEntitySelect} />;
   }
 }
 

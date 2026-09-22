@@ -15,6 +15,10 @@ from local_kb_question import QuestionPlan
     "mode,name,relation,value",
     [
         ("countrydle", "Poland", "capital", "Warsaw"),
+        ("europe", "Poland", "capital", "Warsaw"),
+        ("asia", "Japan", "capital", "Tokyo"),
+        ("africa", "Egypt", "capital", "Cairo"),
+        ("americas", "Brazil", "capital", "Brasília"),
         ("us_statedle", "California", "region", "West"),
         ("wojewodztwodle", "Dolnośląskie", "seat", "Wrocław"),
         ("powiatdle", "Biała Podlaska", "is_city_county", 1),

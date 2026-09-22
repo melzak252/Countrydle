@@ -3,7 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
-Mode = Literal["countrydle", "us_statedle", "wojewodztwodle", "powiatdle"]
+Mode = Literal[
+    "countrydle", "us_statedle", "wojewodztwodle", "powiatdle",
+    "europe", "asia", "africa", "americas"
+]
 HumanAnswer = Literal["yes", "mostly_yes", "mostly_no", "no", "unknown"]
 ActionType = Literal["select_secret", "randomize_secret", "ready", "ask", "answer", "guess", "pass", "correct_answer", "offer_draw", "accept_draw", "decline_draw", "leave", "rematch"]
 Comparison = Literal["all", "agree", "disagree", "not_comparable", "ai_invalid", "ai_unavailable", "pending_ai"]

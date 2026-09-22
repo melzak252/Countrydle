@@ -1,4 +1,4 @@
-export type FriendMode = 'countrydle' | 'us_statedle' | 'wojewodztwodle' | 'powiatdle';
+export type FriendMode = 'countrydle' | 'europe' | 'asia' | 'africa' | 'americas' | 'us_statedle' | 'wojewodztwodle' | 'powiatdle';
 export type HumanAnswer = 'yes' | 'mostly_yes' | 'mostly_no' | 'no' | 'unknown';
 export interface FriendEntity { id: string; name: string; code?: string | null }
 export interface FriendPlayer {

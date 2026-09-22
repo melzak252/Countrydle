@@ -92,8 +92,32 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction, defaul
   );
 }
 
-function MapController({ correctCountryName, geoJsonData, isGameOver }: { correctCountryName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
+function MapController({
+  correctCountryName,
+  geoJsonData,
+  isGameOver,
+}: {
+  correctCountryName?: string;
+  geoJsonData: FeatureCollection | null;
+  isGameOver: boolean;
+}) {
   const map = useMap();
+
+  // Keep Leaflet viewport and tiles updated when container size changes
+  useEffect(() => {
+    const container = map.getContainer();
+    if (!container) return;
+
+    // Immediate recalculation
+    map.invalidateSize();
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
 
   useEffect(() => {
     if (isGameOver && correctCountryName && geoJsonData) {

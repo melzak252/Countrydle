@@ -11,10 +11,23 @@ import type { MapInteractionState } from '../lib/mapMarkings';
 interface USStatesMapProps {
   correctStateName?: string;
   className?: string;
+  onStateClick?: (name: string) => void;
 }
 
 function MapController({ correctName, geoJsonData, isGameOver }: { correctName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
   const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    if (!container) return;
+    map.invalidateSize();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
 
   useEffect(() => {
     if (isGameOver && correctName && geoJsonData) {
@@ -49,14 +62,19 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
     }} />;
 }
 
-export function ControlledUSStatesMap({ correctStateName, className, interaction }: USStatesMapProps & { interaction: MapInteractionState }) {
+export function ControlledUSStatesMap({
+  correctStateName,
+  className,
+  onStateClick,
+  interaction,
+}: USStatesMapProps & { interaction: MapInteractionState }) {
   const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctStateName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
-  const current = useRef({ interaction, revealedName });
-  current.current = { interaction, revealedName };
+  const current = useRef({ interaction, revealedName, onStateClick });
+  current.current = { interaction, revealedName, onStateClick };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const activeHoverLayerRef = useRef<L.Layer | null>(null);
 
@@ -182,6 +200,7 @@ export function ControlledUSStatesMap({ correctStateName, className, interaction
     layer.on({
       click: () => {
         current.current.interaction.handleEntityMapClick(name.toUpperCase(), false);
+        current.current.onStateClick?.(name);
       },
       contextmenu: (e: any) => {
         e.originalEvent?.preventDefault?.();

@@ -36,15 +36,22 @@ class _Engine:
     config: local.LocalModeConfig | None = None
 
 
-@lru_cache(maxsize=4)
-def _engine(mode: str) -> _Engine:
-    if mode not in {"countrydle", "us_statedle", "wojewodztwodle", "powiatdle"}:
-        raise ValueError("Unsupported friend match mode")
-    module = importlib.import_module(f"{mode}.utils")
-    if mode == "countrydle":
-        from countrydle.local_answering import DEFAULT_DB_PATH
+CONTINENTAL_MODES = {
+    "europe": ["Europe"],
+    "asia": ["Asia"],
+    "africa": ["Africa"],
+    "americas": ["North America", "South America"],
+}
 
+@lru_cache(maxsize=16)
+def _engine(mode: str) -> _Engine:
+    if mode not in {"countrydle", "us_statedle", "wojewodztwodle", "powiatdle", *CONTINENTAL_MODES}:
+        raise ValueError("Unsupported friend match mode")
+    if mode in CONTINENTAL_MODES or mode == "countrydle":
+        module = importlib.import_module("countrydle.utils")
+        from countrydle.local_answering import DEFAULT_DB_PATH
         return _Engine(mode, module, DEFAULT_DB_PATH, "countries", "app_country_name", "cca3", "cca2", "target_country")
+    module = importlib.import_module(f"{mode}.utils")
     config = module.LOCAL_CONFIG
     key, code = {
         "us_statedle": ("name", None),
@@ -52,7 +59,6 @@ def _engine(mode: str) -> _Engine:
         "powiatdle": ("terc", "terc"),
     }[mode]
     return _Engine(mode, module, config.db_path, config.table, config.name_column, key, code, config.target_entity, config)
-
 
 def _connect(path: Path) -> sqlite3.Connection:
     # mode=ro also makes a missing facts database an error, never an empty file.
@@ -74,13 +80,24 @@ def _entity(engine: _Engine, row: sqlite3.Row) -> dict:
     }
 
 
-@lru_cache(maxsize=16)
+@lru_cache(maxsize=32)
 def _entity_pool(mode: str, stamp: tuple[int, int]) -> tuple[dict, ...]:
     engine = _engine(mode)
     with closing(_connect(engine.db_path)) as conn:
-        entities = tuple(_entity(engine, row) for row in conn.execute(
-            f"SELECT * FROM {engine.table} ORDER BY {engine.name_column}, {engine.key_column}"
-        ))
+        if mode in CONTINENTAL_MODES:
+            continents = CONTINENTAL_MODES[mode]
+            ph = ",".join("?" for _ in continents)
+            query = (
+                f"SELECT DISTINCT c.* FROM {engine.table} c "
+                f"JOIN country_continents cc ON c.id = cc.country_id "
+                f"WHERE cc.continent IN ({ph}) "
+                f"ORDER BY c.{engine.name_column}, c.{engine.key_column}"
+            )
+            entities = tuple(_entity(engine, row) for row in conn.execute(query, continents))
+        else:
+            entities = tuple(_entity(engine, row) for row in conn.execute(
+                f"SELECT * FROM {engine.table} ORDER BY {engine.name_column}, {engine.key_column}"
+            ))
     if not entities or len({item["id"] for item in entities}) != len(entities):
         raise RuntimeError("Canonical entity pool is empty or has duplicate identifiers")
     return entities
@@ -130,9 +147,9 @@ def _server_metadata(engine: _Engine) -> dict:
 
     server = Path(__file__).resolve().parents[1]
     sources = [Path(__file__), Path(local.__file__), Path(engine.module.__file__)]
-    if engine.mode != "countrydle":
+    if engine.mode not in ("countrydle", *CONTINENTAL_MODES):
         sources.append(server / "countrydle" / "utils.py")
-    if engine.mode == "countrydle":
+    if engine.mode in ("countrydle", *CONTINENTAL_MODES):
         sources += [server / "countrydle" / "local_planner.py", server / "countrydle" / "local_answering.py"]
     return {
         "version": SERVER_VERSION,
@@ -144,8 +161,7 @@ def _server_metadata(engine: _Engine) -> dict:
 
 def _plan(engine: _Engine, question: str, evidence: dict):
     # Legacy cached plans do not record their model/prompt provenance. A fresh
-    # call keeps stored evidence truthful without changing normal daily caching.
-    if engine.mode == "countrydle":
+    if engine.mode in ("countrydle", *CONTINENTAL_MODES):
         from countrydle.local_planner import analyze_question_for_local_plan
 
         return analyze_question_for_local_plan(question, use_cache=False, strict_errors=True, evidence=evidence)
@@ -220,7 +236,7 @@ def _evaluate(mode: str, entity: dict, question: str) -> dict | _Fallback:
             raise RuntimeError("Canonical target disappeared during guidance evaluation")
         evidence["facts"] = _facts(engine, conn, row)
         if plan.supported and plan.plan:
-            if mode == "countrydle":
+            if mode in ("countrydle", *CONTINENTAL_MODES):
                 from countrydle import local_answering as country
 
                 executed_plan = country.normalize_geographic_area_plan(conn, plan.plan) or plan.plan
@@ -249,7 +265,7 @@ def _evaluate(mode: str, entity: dict, question: str) -> dict | _Fallback:
 def _fallback_context(request: _Fallback) -> tuple[str, dict]:
     facts = request.evidence["facts"]
     provenance = {"source": "canonical_facts_and_markdown"}
-    if request.engine.mode == "countrydle":
+    if request.engine.mode in ("countrydle", *CONTINENTAL_MODES):
         # Countries' SQLite schema has no markdown column. Use the same index
         # as the normal country data population scripts, keyed by canonical name.
         index_path = local.ROOT_DIR / "data" / "countries.csv"
