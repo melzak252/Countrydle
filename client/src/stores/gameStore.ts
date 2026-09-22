@@ -715,22 +715,28 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
       }
 
       let revealedCountry = get().correctCountry;
-      if (isGameOver) {
+      if (isWon) {
+        const found = get().countries.find(
+          (c) => c.name.toLowerCase() === countryName.trim().toLowerCase()
+        );
+        revealedCountry = (found as any) || { id: countryId || 0, name: countryName };
+      } else if (isGameOver) {
         try {
           const endState = await flagdleService.getEndState();
-          revealedCountry = endState.country || null;
+          revealedCountry = (endState.country as any) || null;
         } catch {
           try {
             const rev = await flagdleService.reveal();
-            revealedCountry = rev ? { id: rev.id, name: rev.name, iso2: rev.iso2, iso3: rev.iso3 } : null;
+            revealedCountry = (rev as any) || null;
           } catch {
             // fallback
           }
         }
-        if (isGuest && dailyDate) {
-          recordGuestCompletion('flagdle', dailyDate, nextState, dailyDate);
-          notifyGuestHistoryChanged();
-        }
+      }
+
+      if (isGameOver && isGuest && dailyDate) {
+        recordGuestCompletion('flagdle', dailyDate, nextState, dailyDate);
+        notifyGuestHistoryChanged();
       }
 
       set({

@@ -310,11 +310,11 @@ export default function FlagdlePage() {
         {isGameOver && (
           <section
             aria-label="Game Result"
-            className="mx-auto w-full max-w-xl rounded-2xl border border-sand-700/80 bg-sand-950 p-5 sm:p-6 shadow-2xl text-center space-y-4"
+            className="mx-auto w-full max-w-xl rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-6 shadow-2xl text-center space-y-4"
           >
-            <div className="inline-flex items-center justify-center rounded-full p-3 bg-sand-900 border border-sand-800">
+            <div className="inline-flex items-center justify-center rounded-full p-3 bg-obsidian-900 border border-white/10">
               {isWon ? (
-                <Sparkles className="text-amber-400" size={32} />
+                <Sparkles className="text-emerald-400" size={32} />
               ) : (
                 <AlertCircle className="text-rose-400" size={32} />
               )}
@@ -324,7 +324,7 @@ export default function FlagdlePage() {
               <h2 className="text-xl sm:text-2xl font-bold text-sand-100">
                 {isWon ? 'Outstanding Vexillological Deduction!' : 'Mission Incomplete'}
               </h2>
-              <p className="mt-1 text-sm text-sand-400">
+              <p className="mt-1 text-sm text-zinc-400">
                 {isWon
                   ? `You accurately identified the flag in ${guesses.length} of 6 guesses.`
                   : 'You used all 6 guesses. Better luck tomorrow!'}
@@ -332,26 +332,34 @@ export default function FlagdlePage() {
             </div>
 
             {correctCountry && (
-              <div className="rounded-xl border border-sand-800 bg-sand-900/60 p-4 flex items-center justify-center gap-4">
-                <img
-                  src={`https://flagcdn.com/w160/${correctCountry.iso2.toLowerCase()}.png`}
-                  alt=""
-                  className="h-12 w-18 object-contain rounded shadow"
-                />
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-4 flex items-center justify-center gap-4">
+                {resolvedFlagUrl ? (
+                  <img
+                    src={resolvedFlagUrl}
+                    alt={correctCountry.name}
+                    className="h-12 w-20 object-contain rounded shadow border border-white/10"
+                  />
+                ) : correctCountry?.iso2 ? (
+                  <img
+                    src={`https://flagcdn.com/w160/${correctCountry.iso2.toLowerCase()}.png`}
+                    alt={correctCountry.name}
+                    className="h-12 w-20 object-contain rounded shadow border border-white/10"
+                  />
+                ) : null}
                 <div className="text-left">
-                  <div className="text-xs uppercase tracking-wider text-sand-500 font-semibold">
+                  <div className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">
                     Secret National Flag
                   </div>
                   <div className="text-lg font-bold text-sand-100">{correctCountry.name}</div>
-                  {correctCountry.official_name && (
-                    <div className="text-xs text-sand-400">{correctCountry.official_name}</div>
+                  {correctCountry.official_name && correctCountry.official_name !== correctCountry.name && (
+                    <div className="text-xs text-zinc-400">{correctCountry.official_name}</div>
                   )}
                 </div>
               </div>
             )}
 
             {isWon && gameState?.points ? (
-              <div className="inline-block rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-mono font-bold text-amber-300">
+              <div className="inline-block rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-mono font-bold text-emerald-300">
                 Score: +{gameState.points.toLocaleString()} pts
               </div>
             ) : null}
@@ -361,14 +369,14 @@ export default function FlagdlePage() {
               <button
                 type="button"
                 onClick={handleShare}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-950/50 active:scale-95 transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-2.5 text-sm font-semibold text-obsidian-950 shadow-md active:scale-95 transition-all cursor-pointer"
               >
                 {copied ? <Check size={16} /> : <Share2 size={16} />}
                 <span>{copied ? 'Copied to Clipboard!' : 'Share Flagdle Result'}</span>
               </button>
             </div>
 
-            <div className="border-t border-sand-800/80 pt-3 text-xs text-sand-400 flex items-center justify-center gap-2">
+            <div className="border-t border-white/10 pt-3 text-xs text-zinc-400 flex items-center justify-center gap-2">
               <span>Next Flagdle in:</span>
               <CountdownTimer />
             </div>
