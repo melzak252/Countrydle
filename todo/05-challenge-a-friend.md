@@ -7,7 +7,7 @@
 
 ## 1. Recommendation
 
-Build this feature. The strongest idea is a shared mystery and shared clues: the question you ask changes what your friend knows. That creates a social deduction game, not just another leaderboard.
+The primary live experience is **two friends, two owned secrets**: each player knows their own country, answers questions about it, and tries to guess the other's country. Human judgment drives play; the normal game's AI runs alongside as private help and supplies useful evidence for later question-answering improvements.
 
 However, the previous document mixed a promising concept with unsafe example code and unmeasured performance/growth promises. This revision replaces those examples with explicit game rules, real integration points, failure handling, and independently verifiable delivery slices.
 
@@ -18,31 +18,31 @@ The entertainment loop should be:
 Three priorities:
 
 1. **Remove invitation friction.** A link, a name, and a ready button; no account required.
-2. **Reward deduction rather than waiting.** Give the person asking a useful question a brief opportunity to act on it.
-3. **Make another round worthwhile.** A fresh target, alternating starting player, session score, and a clear rematch invitation—not an unavoidable popup.
+2. **Keep the turn simple.** In human-owned games, ask one question OR make one guess. Guesses are unlimited; a wrong guess ends the turn, not the match.
+3. **Make another round easy.** Mutual rematch, fresh private selection and an honest session score—not an unavoidable popup.
 
 Live duels remain the headline experience. Play-later challenges are equally discoverable at creation because friends are not always online together. Neither path may be a dead button, placeholder, or simulated opponent.
 
-**User-selected extension:** Add **Each player owns a secret** as a distinct human-answer live game. Both players know their own location and answer questions about it; neither knows the opponent's location. The player answers independently using five choices, with the normal game's AI answer/recommendation and explanation displayed privately beside the controls as non-blocking guidance. Visible revisions and an Admin-reviewed improvement pipeline are specified in §4.4. Shared-mystery and play-later paths remain available; human judgments do not silently replace their verified answers.
+**User-selected human game:** Each player chooses or randomizes their own secret. Five human answer buttons publish only the selected answer to the friend. AI independently returns YES/NO/INVALID with an owner-only explanation; neither answering nor subsequent turns wait for it. PostgreSQL stores every question, human response and AI attempt/result, including late results, for comparison and reviewed improvements. Draws are valid outcomes. This is casual play, not an equal-difficulty competition; future Europadle/Asiadle pools are separate mode work. §4.4 overrides the older AI-shared rules wherever they differ.
 
 ### 1.1 Decisions that differ from the original
 
 | Original proposal | Recommended decision | Reason |
 |---|---|---|
-| Ask OR guess, immediately give opponent the turn | Ask, then optionally guess in a short exclusive window; direct guesses remain possible | Otherwise the person producing the decisive clue can hand the win directly to the opponent |
+| Ask OR guess versus protected guessing | Human-owned: strictly ask OR guess, with unlimited guesses. AI-shared: retain the separately proposed protected window | The user selected a simple casual human loop, not lives or a bonus guess after asking |
 | Hard-coded keyword evaluator; unknown questions return No | Reuse the real planner/evaluator; unsupported is not false | A false clue ruins trust and the match |
 | Sub-5 ms natural-language answers | Separate planner latency, fact execution, and network delivery budgets; measure each | Natural-language planning can call Gemini; SQLite lookup time is not end-to-end latency |
 | No PostgreSQL access until game over | Persist accepted state transitions and action evidence transactionally | Reconnects, reports, async play, and honest results need durable state |
 | Browser-supplied guest ID proves identity | Server-issued participant credentials; ID is never authority | Otherwise knowing an opponent's ID permits impersonation |
 | Exact distance plus bearing after a wrong guess | Radar off by default; optional coarse clues only after balance checks | Distance and initial bearing from a known point reconstruct the target coordinates |
-| Daily target optionally reused in live competition | Fresh challenge target; exclude today's target for that mode | A player who already solved daily has an unfair advantage |
-| 20 questions plus unbounded passes | Bounded turn count, independent question count, final sealed guesses | Avoid stalled matches and unclear endings |
+| Daily target optionally reused in AI competition | AI-shared/async exclude today's target; human choices use the public eligible pool | Avoid already-solved AI puzzles without leaking daily/opponent secrets through human selection restrictions |
+| One set of limits for every game | Human-owned: no question/guess quota or fixed turn cap. AI-shared: bounded turns and sealed finals | Do not import the old competitive rule set into the selected human game |
 | Async time as a tie-breaker | Solve, guesses, questions; ties are allowed | An asynchronous player may legitimately pause or use another device |
 | Guessed viral coefficient of 0.80 | Measure invitation and completion funnels | The earlier invite/conversion numbers were assumptions, not site measurements |
-| Model cannot settle a vague or subjective question | In human-answer duels, the secret's owner answers with five choices and optional context | A person who knows the location can give a useful qualified answer without pretending it is a verified fact |
+| Model cannot settle a vague or subjective question | Human owner chooses Yes, Yes-ish, No-ish, No or I don't know; the friend sees only that answer | AI remains YES/NO/INVALID guidance, not the authority over human answers |
 | Editing an answer replaces history | Append attributed answer revisions and explicitly handle affected guesses | Players must see what changed and cannot unlearn a spoiled clue |
 
-These are proposed defaults, not claims that balance has already been proven. The shared-clue rule and the exclusive guess window need actual paired playtests before public release.
+The human-owned rules reflect the user's decisions; AI-shared rules remain a separately labelled proposal. Playtests should improve comprehension and enjoyment, not introduce equal-difficulty selection, limited guess lives or mandatory AI waiting into the human game.
 
 ## 2. What already exists and what must be reused
 
@@ -70,10 +70,10 @@ Inspected against the repository during this revision. Line numbers can move; sy
 
 Important distinctions:
 
-- Existing generated explanations can name the answer. Hiding them with CSS or withholding their rendering is insufficient for multiplayer: omit them from live payloads.
+- Existing generated explanations can name the answer. Human-owned rooms send them only to the subject's owner, including after game over; AI-shared/async rooms disclose them only at their allowed reveal point. Hiding a leaked field with CSS is insufficient.
 - Local execution can be quick, but synchronous planner/network work must not block the ASGI event loop.
 - A new React store alone is not a multiplayer authority. Browser state is only a view of server-owned state.
-- The recent country-identity question behavior remains unchanged in daily games. A challenge-specific rule must prevent identity questions becoming free guesses in a two-life duel.
+- Existing daily country-identity question behavior remains unchanged. Human-owned questions and guesses each cost a turn, so identity questions need no AI-dependent free-guess detector; only a server-validated guess can win. The separate two-life AI-shared proposal has stricter identity routing.
 
 ## 3. The player experience
 
@@ -103,9 +103,9 @@ Live invites may be created by guests. Async invitations are shareable only afte
 - Two clearly labelled seats; display connection and readiness separately.
 - Primary **Share invite** using the existing native share behavior; **Copy link** fallback; optional QR for people in the same room.
 - Copy success only after clipboard success. Native-share cancellation is not a failure toast.
-- Show game mode, answerer type, turn time, two guesses per player, and any optional radar setting.
-- AI mystery rule: **Your questions help both players. After asking, you get a brief chance to guess.**
-- Human-answer rule: **You know your secret. Answer your friend's questions honestly while trying to guess theirs. “Yes-ish” and “I don't know” are allowed.**
+- Show geography, answerer type and selected turn time. Human-owned lobby says **Unlimited guesses · Ask OR guess each turn · Draws allowed**; no lives or radar/balance claims.
+- AI mystery rule: **Your questions help both players. After asking, you get a brief chance to guess.** Its two-guess limit is displayed only for that variant.
+- Human-answer rule: **You know your secret. Answer your friend's questions while guessing theirs. Your answer is shared; AI guidance and explanations are private.**
 - Both players explicitly ready; three-second countdown begins only with two connected seats.
 - If settings change, clear both ready flags and announce what changed.
 - If a friend has not joined after 60 seconds, offer **Make a play-later challenge** without pretending the match has started. This creates a separate async challenge; it does not mutate a live match in progress.
@@ -116,7 +116,7 @@ Live invites may be created by guests. Async invitations are shareable only afte
 
 Desktop:
 
-- Compact header: player names, two remaining guesses each, active player, turn number, countdown.
+- Compact header: player names, active player, round/turn and countdown. Human-owned rooms show guess counts as statistics, never remaining guesses/lives; AI-shared rooms show their actual remaining allowance.
 - Map/notebook on the left; chronological shared clue history on the right.
 - Question and guess actions below the map, with one unambiguous primary submit.
 
@@ -131,9 +131,9 @@ Mobile:
 
 Feedback:
 
-- Immediate local pending state, then server acknowledgement, then verified YES/NO.
-- Shared timeline shows who asked, the original question, a safe interpretation label if needed, and YES/NO/unsupported as genuinely separate outcomes.
-- The server emits only target-independent validation text during play. No raw explanations or retrieval context.
+- Immediate local pending state followed by acknowledgement of the committed action.
+- Human-owned timeline shows the original question, asker, subject and the owner's selected five-value answer. No interpretation, explanation, qualification, private feedback or AI status is copied into that shared answer.
+- AI-shared timeline shows verified YES/NO/unsupported and safe target-independent validation text. Raw explanation/retrieval evidence follows that variant's reveal policy.
 - One restrained turn-change sound, opt-in after user interaction; independent mute control.
 - Optional small reaction set with rate limit, mute, and reduced-motion support. No free-text chat in this release.
 - Do not announce every countdown tick through a screen reader. Announce turn changes and a small number of time warnings.
@@ -142,10 +142,10 @@ Feedback:
 
 Use a results panel, not a blocking unscrollable celebration modal.
 
-1. Correct verdict: **Solved**, **Won by knockout**, **Won by forfeit**, **Draw**, or **Match interrupted**. Never describe a knockout as solving first.
+1. Correct verdict: **Solved**, **Draw**, **Won by forfeit**, or **Match interrupted**; **Won by knockout** exists only in the separate limited-guess AI variant.
 2. Target reveal and mode-appropriate facts from the pinned knowledge base.
 3. Side-by-side questions, guesses and result. No fabricated skill rating.
-4. Expandable shared timeline with full explanations now unlocked.
+4. Expandable shared timeline. Human-owned games retain owner-only AI guidance even after the secrets are revealed; AI-shared/async results may unlock their full explanations.
 5. **Report answer** on eligible persisted question actions, only after the relevant game/attempt is over.
 6. Primary **Rematch**. Secondary **Share result** and **Back to daily**.
 7. Small session score, such as **You 1 — Sam 1**, labelled as this session only.
@@ -156,7 +156,7 @@ A spoiler-free share card may include names, geography mode, result and session 
 
 ## 4. Recommended live rules: precise contract
 
-Sections 4.1–4.3 define **AI shared-mystery** rules. Section 4.4 defines the selected **human-answer, two-secret** variant and overrides target ownership, question resolution, answer timers, uncertainty and correction behavior. Identity, durable state, guess validation and post-game reporting remain server-enforced in both variants.
+Sections 4.1–4.3 apply **only to the separately proposed AI shared-mystery game**. Section 4.4 is the primary user-selected human-answer game and overrides lives, turn limits, guess windows, endings, public content and AI timing. Never inherit an AI-shared rule into `human_owned` just because a field has a default. Both retain server-authorized actions, durable state, canonical guess checks and post-game reporting.
 
 ### 4.1 Defaults
 
@@ -223,207 +223,128 @@ There is no claim that shared-clue play is first-move neutral. Randomize the fir
 
 ### 4.4 Human-answer duels: each player owns a secret
 
-**Selected by the user.** This adds human judgment and conversation without giving someone the answer they are supposed to guess.
+**Authoritative user-selected rules.** A casual game between friends, not a competition requiring equally difficult targets. The following replaces earlier proposals for human guess lives, public qualifications, clarification chat and a post-question guess window.
 
-#### A. Secret ownership and victory
+#### A. Owned secrets and casual difficulty
 
-- Each player privately chooses **Choose my country** or **Random country** before readying. For regional games, use the equivalent state/voivodeship/county label. Alice owns her selection; Bob owns his.
-- **Choose my country:** use the existing searchable canonical entity picker, then confirm the selected location. Choosing a place the owner knows well is encouraged; this is a casual friend game, not a claim of equal target difficulty.
-- **Random country:** the server selects from the same public geography pool and shows the result only to its owner. The owner can keep it, request another random choice, or switch to manual selection while the lobby is unlocked. Rate-limit random requests and make retries idempotent; refresh/reconnect must not reroll.
-- Both players may choose independently: manual/manual, random/random or mixed. The opponent sees only **Choosing a secret** or **Secret ready**, never selection text, suggestions, search terms, random previews or the chosen entity.
-- Ready requires a confirmed valid secret. Unready/change-secret before countdown clears readiness. Starting the countdown atomically locks both targets and their versions; later selection/reroll commands are rejected without changing the match. A cancelled countdown returns to the lobby and requires fresh readiness before any revised choices can start.
-- Allow both players to independently choose the same country. Never reject a choice because it matches the opponent's secret: that would leak their target. There are two separately owned target records, not a requirement for different entities.
-- Human-choice eligibility is the public supported geography pool, not a target-dependent secret exclusion list. Do not reject a manual selection because it is today's hidden daily country, or filter random human choices using the opponent's secret. Human games remain separate from daily progress; AI-shared and async games keep their fresh-target exclusion rules.
-- On rematch, return both players to private selection with nothing automatically confirmed. Random selection avoids the previous revealed targets when the public pool permits; manual selection may deliberately reuse a familiar location. No opponent secret is exposed through availability or error messages.
-- Alice may see only Alice's secret and its owner-only fact sheet. Bob asks about Alice's secret; Alice asks about Bob's secret.
-- Server stores both targets and checks guesses. A player cannot mark a correct guess wrong, change the secret, or award themselves a win.
-- Each player has two guesses against the opponent's target. First correct guess wins; a second wrong guess loses by knockout. Alternate who asks first on rematch.
-- At the ordinary-turn/match ceiling, sealed final guesses target the opponent's respective secret. Both correct or neither correct is a draw, as in §4.3.
-- On terminal match state, reveal both secrets, clearly labelled by owner.
-- This is a casual, trust-based friend game. The server can enforce identities, timing and exact guesses; it cannot prove that “known for music” is objectively true or that the owner is being honest.
-- Human-answer rooms are live only. Play-later challenges stay AI-resolved; they do not unexpectedly wait for an offline owner to reply.
+- Each player privately chooses **Choose my country** or **Random country** before readying; use the corresponding entity label for other geographies. Each knows their own secret and guesses the opponent's.
+- Manual selection reuses the canonical searchable picker. Random selection uses the same public geography pool and shows its result only to the owner. Both can independently choose manual/random; reroll or switch before readiness locks the selection.
+- Retry/reconnect does not reroll. Selection changes clear readiness. Countdown atomically locks both targets and selection versions; no changes during the match.
+- The opponent sees only choosing/ready status, never private search, selection, previews or AI evidence.
+- Same-country selections are allowed. Never reject a country because it equals the opposing secret or today's hidden daily country: that would disclose private information.
+- Human games do not affect daily progress. There is no skill matching, target difficulty equalizer, curated balancing pool or ranking requirement.
+- Future **Europadle** and **Asiadle** can offer smaller geography pools. This document does not implement those separate modes; the adapter must accept their public eligible pools when they exist.
+- Each participant has an owned target record. Guesses always resolve against the opponent's locked canonical entity on the server; an owner cannot veto a correct guess.
+- Rematch needs both players, alternates the opener and returns to private selection. No automatic confirmation; manual reuse is allowed and random choice may avoid the previous publicly revealed targets.
+- Human-owned rooms are live only. Async remains the separately specified AI challenge.
 
-#### B. Five answers, with words rather than misleading numbers
+#### B. Human answer versus private AI answer
 
-| Stored value | Player label | Meaning | Example context |
-|---|---|---|---|
-| `yes` | Yes | I would answer this affirmatively | “Yes, it has a coastline.” |
-| `mostly_yes` | Yes-ish / Mostly yes | Generally yes, with a meaningful qualification | “Yes for its musical traditions, not necessarily modern pop.” |
-| `mostly_no` | No-ish / Mostly no | Generally no, although an exception exists | “Not especially, but it has one famous annual festival.” |
-| `no` | No | I would answer this negatively | “No, it does not border that country.” |
-| `unknown` | I don't know | I cannot give you a reliable answer | “I'm not sure how well known it is internationally.” |
+| Human stored value | Button shared with the friend |
+|---|---|
+| `yes` | Yes |
+| `mostly_yes` | Yes-ish |
+| `mostly_no` | No-ish |
+| `no` | No |
+| `unknown` | I don't know |
 
-- These are semantic answers, not confidence scores. “Mostly yes” must not become `true`, `0.75`, or a model probability.
-- Human answers always carry **Answered by Alice**, even when Alice accepted an AI suggestion. Do not mark them verified by the knowledge base.
-- Require a brief 1–200-character qualification for both “-ish” answers. Context is optional for Yes, No and I don't know.
-- The UI presents labelled buttons, not only colors or icons; use amber/neutral treatment for qualified and unknown answers, not the binary red/green styling.
-- The five human answer controls are available immediately. The normal game's AI recommendation and explanation load beside them, privately, without requiring an accept/reject step or delaying submission. No answer is auto-selected or auto-published.
-- No human answer—including Yes or No—automatically changes the authoritative candidate map. Human judgments are not verified elimination predicates. Private manual marks remain available.
-- Existing daily questions and AI-mystery answers keep their boolean contract; add a discriminated human-answer outcome, not a global replacement of `Question.answer`.
+- Five labelled choices are immediately usable; **Send answer** confirms the player's choice, not acceptance of an AI result. Nothing is preselected, sent automatically or disabled while AI loads.
+- The friend receives only the selected answer, attribution, question/subject association and revision metadata. There is **no public note, qualification, explanation or clarification message**, including for Yes-ish/No-ish.
+- Answers remain attributed human judgments, not verified KB facts. Qualified values are not probabilities or coerced booleans. No human answer automatically eliminates map candidates.
+- The owner's private side panel shows **AI: YES / NO / INVALID** and the actual explanation/context returned by the normal per-mode game engine for their own secret.
+- AI has no Yes-ish/No-ish outcome. Unsupported/invalid question content maps to `INVALID`; loading, provider timeout, capacity failure and missing explanation are operational statuses, not `INVALID` or fabricated No.
+- Reuse existing target-explicit planning, answering and explanation, including normal configured fallback where applicable. Do not call a daily-state endpoint or add a second engine. Preserve source, interpretation and versions privately for QA.
+- Desktop places guidance beside the controls; mobile places it below without moving or obscuring Send. Explanation expansion is optional. Missing explanation says unavailable; never synthesize a replacement rationale.
+- AI explanations stay private to the country owner and authorized Admin reviewers, including after game over. Revealing the two countries does not authorize sharing private AI evidence or feedback with the opponent.
 
-#### C. Player answers independently; normal-game AI guidance appears alongside
+Example: Bob asks Alice **“Is your country known for music?”** Alice sees her country, immediately chooses **Yes-ish**, and Bob receives **Alice answered Yes-ish**. AI may arrive before or after this with YES, NO or INVALID and its explanation. Bob never receives that recommendation or explanation, and Alice need not wait or justify her answer publicly.
 
-The primary answering area shows **Your secret**, **Friend's question**, the five answer choices and **Send answer**. It works immediately, even while the AI is loading or unavailable.
+#### C. AI always runs independently of play
 
-Beside it, an **AI recommendation — only you can see this** panel shows:
+1. Accept and commit a human question with its exact text, subject and a durable AI job record.
+2. Deliver it immediately to the country owner with enabled answer controls. Dispatch AI independently; do not await provider capacity, a model response or explanation before delivery.
+3. Accept the owner's selected answer immediately, commit it, publish the straight answer and hand the turn to the other player.
+4. AI completion independently stores its actual result/explanation and timing. If the owner is still answering, show it beside the controls. Otherwise attach it privately to that historical question as **Arrived after your answer**.
 
-1. The answer returned by the normal game's answering pipeline for this question and this owned secret.
-2. The normal game's actual factual explanation, available source references and interpreted question—not a separately generated persuasive justification.
-3. A clear source/status: local facts, configured normal-game fallback, unsupported, loading or unavailable. AI confidence is not converted into Yes-ish/No-ish.
+- Generate guidance for every accepted question; provider limits may queue or explicitly fail the job, never block human play. Continue pending work after the human answer or match completion within the normal bounded provider-job deadline.
+- No gameplay state transition depends on AI. A late/failing result cannot change a human answer, consume another turn, restart a clock, reopen the composer, prevent guesses or delay results/rematch.
+- AI work uses bounded workers without holding a room lock/database connection across the network call. Durable request records survive dispatch failure; interrupted attempts are recorded honestly and retries get distinct attempt provenance.
+- No observed AI draft ID is required to answer. Capture any delivered/rendered recommendation reference without trusting it as proof the player read the explanation.
+- AI guidance events are private and question-scoped; they do not bump the gameplay state version and make a concurrent human submission stale.
 
-Reuse the existing per-mode answering/explanation functions through a target-explicit, non-daily-persisting adapter, including the normal configured fallback where applicable. Do not call the current-day HTTP endpoint, change a daily score, or implement a second question engine. The owner may agree, disagree or ignore the recommendation.
+#### D. One action per turn, unlimited guesses
 
-Desktop places guidance next to the answer controls. Mobile puts a compact recommendation card directly below them, with expandable explanation; loading or expanding it must not move the selected answer or obscure Send. No suggestion is preselected.
+**Thinking → ask → owner answers → opponent's turn**, OR **Thinking → guess → next turn/result**. No optional guess window and no mandatory AI phase.
 
-Example:
+- On your turn choose one question, one canonical guess or pass. Asking about the opponent's country spends your turn once their human answer is submitted; it does not also grant a guess.
+- Answering is a response to the opponent's question, not a second action spent from the owner's upcoming turn.
+- A wrong guess ends your turn. There are **no guess lives, strikes, elimination after wrong guesses, guess quota, question quota or inherited 12-turn cap**. Counts are descriptive only.
+- Asking “Is it France?” may receive a human answer like any other turn-consuming question. It does not win automatically; confirming France as a guess requires your own subsequent guess turn. Do not wait for an AI identity classifier to route human questions.
+- Human I don't know and AI INVALID still leave the human question as a spent turn. There are no AI-rejection repair turns in this variant.
+- Existing proposed thinking presets (45/60 seconds) and a 30-second owner-answer timeout may be playtested independently of AI; neither waits for or resets on AI. Do not import the AI-shared ten-minute gameplay ceiling or forced sealed final round.
+- On owner timeout publish the distinct event **No answer received**, not a human I don't know. End the asking turn; two consecutive owner-answer timeouts may forfeit under the clearly displayed timeout rules. Explicit human answers reset that streak.
+- Finite disconnect grace and infrastructure interruption handling apply, not penalties caused by advisory AI. No general chat or public clarification subphase.
 
-- Bob asks Alice: **“Is your place known for music?”**
-- Alice privately sees her secret and **Cannot verify this — the current facts do not establish what ‘known for music’ means.** This is an unsupported explanation, not an invented Yes/No answer.
-- Alice selects **Yes-ish**, adds the private reason **“It has a strong folk tradition, but the wording is subjective”**, and a short public qualification **“Yes for traditional music; not necessarily modern pop.”**
-- Bob sees only **Alice answered Yes-ish** and the public qualification during play. Full AI explanations may unlock after the match; Alice's private correction reason stays restricted to Alice and authorized Admin reviewers, not her opponent.
+#### E. Wins and draws
 
-Rules:
+- Draw is a first-class persisted outcome, not a failure or an arbitrarily chosen winner. **Offer draw** can be proposed by either player; only the other player's acceptance ends the match as a draw. A proposal alone never pauses play or ends the match.
+- Proposed default for a natural solved draw: group turns into rounds, one turn per player. If the opener guesses correctly, record a pending win and give the other player **one final guess turn**. Correct also → draw; wrong/pass/timeout → opener wins. This reply guess consumes that player's turn, never follows a question as a free extra action.
+- If the second player guesses correctly after the opener already took their turn in that round, the second player wins; do not grant a new extra round. Alternate opener on rematch.
+- Reveal both secrets only after the pending reply resolves or another authorized terminal transition commits. Neither AI completion nor an owner's Yes answer declares a win.
+- A mutually accepted draw can finish an unsolved game whenever the friends want. No automatic “fewest guesses” tie-breaker and no difficulty compensation.
+- Draw acceptance, guesses, reply deadlines and disconnect transitions serialize against the same gameplay version. After a terminal commit, stale commands cannot replace the result.
+- Infrastructure interruption/both-player abandonment is no-contest, not a played draw or phantom victory. Leaving is distinct from accepting a draw. Session scores represent draws explicitly without awarding a win.
 
-- Request one real AI recommendation automatically when a question arrives. Owner answer controls remain enabled throughout the request; no “Check with AI” action is needed.
-- Start the owner's 30-second answering clock when the question is delivered, independently of the recommendation request. AI completion, timeout or failure never resets it. The asker is not losing their thinking budget during this phase, and the match ceiling still applies.
-- If an answer arrives without an explanation, show **Explanation unavailable** rather than inventing one. The owner can still answer normally.
-- Submitting a matching human value means **agrees with suggestion**, not “accepted/verified AI.” Do not infer that the owner read or endorsed the explanation.
-- The owner may choose any of the five answers immediately. A private **AI answer/explanation seems wrong** note is optional and never blocks gameplay; only an explicit note/dispute counts as a reported AI correction. The usual short public qualification remains required for Yes-ish/No-ish.
-- Capture explanation-only disagreements even if the player's Yes/No answer matches. A difference in values alone is a disagreement candidate for review, not proof of an AI defect.
-- Public context remains a separate, clearly labelled 200-character field. It is required for Yes-ish/No-ish and optional otherwise. Never prefill it with a private explanation that might name the target.
-- Loading, unsupported and unavailable statuses never disable the five choices. I don't know remains a legitimate voluntary response, distinct from any service failure.
-- A late recommendation may be retained as separate diagnostic evidence but must not change the human answer, insert a second review case, reset a timer, or open a new active-turn prompt. Label it **Arrived after your answer** in the owner's completed clue details.
-- Human changes apply immediately to this match's answer, with the revision safeguards below. They become proposed improvement evidence for the real game, not automatic changes to global facts or model behavior.
+#### F. Corrections, protocol and ownership
 
-#### D. Asking, answering and clarifying
-
-Human turn phases: **asking → owner answer (AI guidance loads concurrently) → optional clarification → guess window → next asker**. Recommendation generation is not a blocking gameplay phase.
-
-- Asking player has the selected 45/60-second thinking clock to submit a question, make a direct guess or pass.
-- On a submitted question, freeze the asker's clock and immediately give the owner 30 seconds to answer. Launch bounded AI guidance independently against the owner's secret. The question is explicitly bound to `subject_participant_id`; timelines must not mix clues about the two secrets.
-- The owner's answer produces the usual eight-second optional guess window for the asker, even for I don't know. There is no life penalty for an uncertain answer.
-- Each new submitted question consumes that turn's one question opportunity. I don't know does not grant unlimited free replacement questions or secretly count as a question the model rejected.
-- Both parties can request **one clarification per question in total**, before the next turn starts: the owner may ask what a term means; the asker may request context for the submitted answer. A short question-linked prompt/reply is limited to 200 characters each, with a 15-second response deadline.
-- On clarification, freeze the current answer/guess phase with its remaining budget. Resume it after the reply or deadline; do not reset a full 30-second answering clock repeatedly.
-- If the owner fails to answer by their deadline, publish **No answer received** with provenance `timeout`, not **Alice answered I don't know**. This is distinct from the five intentional answer values.
-- The first answering timeout ends that turn without charging the asker a guess. Two consecutive answering timeouts by that owner cause forfeit; a deliberate submitted answer resets that timeout streak.
-- Existing finite disconnect grace applies. A dropped answering player does not cause the asker to lose their thinking time.
-- The ten-minute wall-clock ceiling still bounds answering and clarification delays. Once reached, reject new answer/helper/clarification actions and enter the sealed final round; an already accepted exact guess or expired forfeit takes precedence. Unanswered questions are recorded as unresolved, not false.
-- Broad and subjective questions are welcome here. Exact identity questions still require server-validated guess confirmation, rather than allowing unlimited free attempts to name the opponent's secret.
-
-#### E. Corrections during play are not post-game reports
-
-There are two different controls:
-
-- **Correct my answer:** only the secret's owner can revise their own submitted human answer during the match.
-- **Report answer:** the existing-style dispute/evidence submission, available only after the match is over.
-
-Correction behavior:
-
-1. Select the affected clue, choose a new value and add a required reason of 1–200 characters.
-2. Server checks the owner, subject, match state and expected answer revision, then appends a revision. It never silently overwrites the old answer or edits someone else's question.
-3. Both players see **Alice corrected No → Yes-ish**, the reason, timestamp and a visible revision badge. The current answer is prominent; earlier versions remain expandable.
-4. An unaccepted AI suggestion is a private draft, not a public answer. Changing it before first submission does not create fake public correction history.
-5. No automatic map eliminations or life changes follow a correction.
-
-Fairness after a correction:
-
-- If the question is still in its current answer/guess phase and no later guess has been accepted, show the correction and preserve the asker's remaining guess-window budget while they read it.
-- If any subsequent guess was accepted, pause normal gameplay for **Continue with correction** or **Void and rematch**, chosen by the affected guesser. Unanimous consent is required to count the remainder as an ordinary scored match; the affected player can instead end it as no-contest.
-- This intentionally does not try to determine whether the wrong answer “caused” a guess. That cannot be established reliably from the log.
-- Do not auto-refund a guess or rewind turns: players cannot unlearn information already revealed. A void match contributes no session win/loss; a rematch uses fresh secrets and still requires both players' agreement.
-- A correction-consent decision has a 15-second deadline; no response ends the match as no-contest rather than silently accepting the correction.
-- Informational reading pauses for corrections have a 30-second cumulative room budget. Corrections remain possible afterward, but cannot keep extending the clock; repeated changes can always be handled by ending the match unscored.
-- Match state and answer revisions serialize correction/guess races. A guess committed before a correction is treated as subsequent play for this policy; a stale guess referencing an older clue revision is rejected without spending a life.
-- After a terminal win/knockout/final verdict, no live correction can rewrite that outcome. Allow a post-game report/addendum and offer a fresh rematch; preserve the original result and mark disputes explicitly.
-
-The owner may intentionally or accidentally include the secret name in their human-written explanation. Warn against this, detect obvious canonical-name/alias matches as a courtesy, and require confirmation before sending them. This is not a complete spoiler or honesty guarantee. The opponent can choose a no-contest exit if the secret was spoiled; server-derived target disclosure must still be prevented absolutely.
-
-#### F. Protocol, persistence and visibility extensions
-
-- Match `answer_mode`: `ai_shared` or `human_owned`, immutable after readiness; async permits only `ai_shared`.
-- Represent targets separately in `friend_targets`: match ID, subject key (`shared` or a participant ID), canonical entity key and pinned fact revision. Validate exactly one shared target or one confirmed owned target per participant before starting; human-owned entities may coincide. Store selection source (`manual`/`random`), selection version and lock timestamp. Do not leave an ambiguous single `target_id` authoritative in human games.
-- Human-lobby commands `select_secret` and `randomize_secret` require participant authorization, idempotency and expected lobby/selection version. Only the caller's target can change. Canonical eligibility checks are server-side and independent of the opponent's secret; ready/countdown races serialize with selection updates.
-- Add `subject_participant_id` to human question/guess actions and `answer_revision` to the clue record. Add append-only `friend_answer_revisions` with author, value, context, reason, prior revision and timestamp.
-- Keep `public_revision_reason` (up to 200 characters, shown to both players on a live correction) separate from `private_review_reason` (up to 500 characters, owner/Admin only). An initial correction of an unpublished AI draft is an owner review, not a public history revision.
-- Outcomes are discriminated: `verified_boolean`, `human_answer`, `unsupported`, `answer_timeout`, and `provider_failure`. Only `human_answer` has the five-value semantic enum; timeout/failure is not an intentional I don't know.
-- Human commands: `answer_question`, `request_clarification`, `reply_clarification`, `correct_answer`, and `resolve_correction`. Each uses action idempotency plus expected match/phase/answer revision. `answer_question` allows a null `observed_ai_draft_id`; any supplied ID must belong to this question and owner. There is no mandatory `accept_ai_answer` command.
-- Persist the recommendation request/status/deadline and immutable result separately from the owner answer. Snapshot any observed draft ID and display acknowledgement at submission, plus clarification use/deadline, correction consent, read-pause budget and answering-timeout streak. Reconnect restores state without resetting budgets or fabricating observation.
-- Human viewer snapshot is **shared state + your own secret sheet + your own private AI suggestion**. Neither opponent credentials nor opponent secret/helper output may be returned. The original single public snapshot must not be sent identically to both players.
-- Keep private helper explanations distinct from safe human-authored context in DTOs. The former must never be broadcast, even if the owner selected Yes.
-- Audit reports capture the complete revision chain and distinguish **human judgment disputed** from **AI suggestion disputed**. They are not unverified corrections to the canonical knowledge base.
-- Automatic AI guidance shares bounded provider capacity. Loading, capacity rejection and service failure only affect the private guidance status; independent human answering remains available.
+- **Correct my answer** changes only the owner's own previously submitted human answer. Append the new five-value answer with author/time/revision; preserve all earlier values.
+- Both see a compact **Alice corrected No → Yes-ish** notice. No public reason field or explanation. An optional private feedback reason is owner/Admin-only and never required to select a human answer.
+- Corrections do not refund a turn, create a bonus guess, force a consent modal or replace a terminal verdict. Players can keep playing, agree a draw or agree an unscored restart. Post-game reports remain available only after completion.
+- Core human commands: `select_secret`, `randomize_secret`, `answer_question`, `guess`, `pass`, `correct_answer`, `offer_draw`, `accept_draw`, `decline_draw`, mutual restart/rematch. Every mutation has authorization, idempotency and the relevant expected gameplay/answer revision.
+- `answer_question` accepts one five-value value and optional observation metadata, never a public text field or mandatory AI acceptance. A submitted observed-result reference must belong to that exact question/owner.
+- Viewer state is shared gameplay plus **your own** secret and private guidance. A reconnect restores these projections independently; it never returns the opponent's helper history.
+- Answer outcomes distinguish five-value human judgment, unanswered/timeout and infrastructure failure. AI result uses a separate YES/NO/INVALID enum plus job lifecycle, not the human enum or current daily boolean field.
+- All questions and guesses are subject-bound. No shared single `target_id` can ambiguously resolve both opponents' actions.
 
 #### G. Human-game delivery slices and acceptance checks
 
-These are additional required slices after core identities/targets and before launch; they are not optional polish:
+- **H1 — Select and hide owned secrets.** Manual/random combinations, same-country selection, locked targets and viewer projections. Proof: two browser contexts cannot see/change the other's selection; reroll retries are idempotent and guesses test the correct locked target.
+- **H2 — Publish only five-value human answers.** Add owner controls and typed persistence. Proof: every value round-trips without coercion or required text; network snapshots contain no public explanation/qualification; non-owners cannot answer.
+- **H3 — Run normal-game AI beside human play.** Durable jobs, real engine and owner-only guidance. Proof: hold the provider response while answering, guessing and finishing; gameplay advances normally and the eventual YES/NO/INVALID plus explanation persists without changing it.
+- **H4 — Enforce ask OR guess with unlimited guesses.** Remove human lives, bonus windows and inherited caps. Proof: more than two wrong guesses and more than twelve total turns remain playable; asking never enables a same-turn guess; answering does not consume the owner's next turn.
+- **H5 — Correct visibly without public prose.** Append revisions and keep private feedback separate. Proof: stale/retried correction cannot erase history, add turns or mutate a terminal verdict; the opponent receives only answer/revision metadata.
+- **H6 — Complete wins, draws and rematches.** Mutual draw, pending-win reply guess, terminal dual reveal and session score. Proof: both solved in one round draw; second-seat solve needs no extra round; unilateral offer is not a draw; simultaneous terminal commands resolve once.
+- **H7 — Persist complete comparison evidence for Admin.** Every question, original/revised human answer, guess and AI attempt/result survives restart and is queryable. Proof: early/late AI, matching/differing/qualified human answers, no human answer and provider failure remain separately identifiable; retries do not multiply gameplay records.
 
-- **H1 — Select and hide owned secrets.** Add manual/random private selection, `answer_mode`, subject-bound targets and viewer projections. Proof: all manual/random combinations work in two isolated browser contexts; same-country choices succeed without disclosure; invalid IDs and cross-seat changes fail; reroll retries/reconnect do not change the selection twice; countdown freezes both targets; guesses always test the opponent's locked entity.
-- **H2 — Submit five attributed human answers.** Add the answer picker, qualified context and typed persistence. Proof: each value round-trips without boolean coercion; a non-owner cannot answer; no value automatically removes map candidates.
-- **H3 — Show normal-game AI guidance without gating answers.** Reuse the actual per-mode answer/explanation pipeline in an owner-only side panel. Proof: the player can submit before AI completion, during failure, or with a different value; no selection is prefilled; opponent frames contain no private explanation; late results never change the answer or timers.
-- **H4 — Resolve human phases and clarification.** Add bounded response time, one question-linked clarification and truthful timeout events. Proof: owner thinking/disconnection does not spend the asker's clock; deliberate unknown and answer timeout remain different outcomes.
-- **H5 — Correct visibly and handle affected guesses.** Add append-only revisions, correction notices and continue/no-contest negotiation. Proof: duplicate/stale corrections, correction-versus-guess races and reconnects cannot erase history, consume extra lives or bypass consent.
-- **H6 — Finish and review both secrets.** Add dual reveal, report source/provenance, revision history and fresh-secret rematches. Proof: reports appear only post-game, human claims never modify canonical facts, and void matches do not increment the session score.
-- Playtest all four geographies with a subjective question, an I don't know, a clarification and an actual answer correction. Confirm that both players know which secret each clue describes.
-- **H7 — Turn human answers and explicit feedback into reviewed evidence.** Save the owner answer with its observed recommendation snapshot, allow separately timestamped late AI evidence, and provide an Admin improvement queue. Proof: unseen AI is never classified as accepted/corrected; explanation-only disputes are captured; duplicate submits create one case; unreviewed differences cannot alter daily answers.
+Run these checks across the four existing geography adapters with two actual isolated browser sessions; include subjective questions and delayed AI. No simulated opponent or one-mode demo counts as the complete feature.
 
-#### H. Feedback loop: improve the real game without blindly trusting corrections
+#### H. PostgreSQL evidence and reviewed improvement loop
 
-**Purpose:** Use real friend questions and owner reviews to discover where the daily question system misunderstands language, lacks facts, evaluates incorrectly or explains badly.
-
-Record every explicitly submitted owner answer and its AI-observation snapshot in the same transaction as the gameplay answer. Store recommendations that arrive later separately without rewriting what the player saw at submission.
+**Save everything needed to compare answers, not only disagreements or reports.** Accepted questions, guesses and human answers are durable before success acknowledgement; AI requests and their eventual results use separate durable records joined by question ID.
 
 | Evidence | Required contents |
 |---|---|
-| Original request | Exact question, language, geography mode, subject's canonical target and match/action IDs |
-| AI interpretation | Displayed interpreted question, structured query plan and relation/operator when available |
-| AI result | Immutable draft ID, supported/unavailable status, proposed answer, actual factual explanation, fact/source references, failure classification |
-| Reproducibility | Model identifier, prompt/schema/evaluator/rule versions, fact-bundle revision, server version and evaluation timestamp |
-| Human decision | Five-value answer, optional private dispute/reason, public qualification, owner and submission timestamp; decision origin remains human. Separate comparison status: `agrees`, `differs`, `no_suggestion_observed`, `suggestion_unsupported`, `suggestion_unavailable`, or `not_comparable` |
-| Later changes | Full append-only revision chain, correction consent/no-contest state and any post-game reports |
-| Recommendation exposure | Nullable observed draft ID, server produced/sent timestamps, client-render acknowledgement when available, answer submission time, explanation expansion acknowledgement and late-result marker; these are observation signals, not proof the owner read or understood the text |
+| Question | Exact original text, language, mode, asker, owning subject, locked canonical target, match/action/round/turn IDs and acceptance time |
+| Human answer | Five-value original answer, owner, submission time and append-only revisions; explicit timeout/unanswered status when no answer was submitted |
+| Guess | Canonical guessed entity, guessing participant, subject, turn, server-checked result and committed timestamp |
+| AI job/attempt | Question FK, stable request ID, attempt ID, queued/started/completed/failed status, timing and actual failure reason; no missing row disguised as INVALID |
+| AI answer | YES/NO/INVALID, actual normal-game explanation, interpreted question/plan, source references and raw public-facing engine result where needed to reproduce normalization |
+| Versions | Model, prompt/schema/evaluator/server/rules versions and pinned fact-bundle revision |
+| Exposure | Produced/sent/render-acknowledged time, nullable observed result ID at human submission and late-result marker; not proof the explanation was read |
+| Review | Optional private feedback/report, Admin status/classification/rationale, supporting evidence and eventual fix/release reference |
 
-- Store displayed factual explanation and structured plan, not hidden model reasoning or credentials. Human explanations are untrusted text; they must never become system instructions for a later model call.
-- Preserve both the AI draft and the human response. Never replace the AI output with the correction or lose the evidence needed to reproduce the error.
-- Human answers and apparent agreement are not verified truth. Even a rendered recommendation may not have been read; never label matching values as explicit acceptance or treat them as independently collected ground truth.
-- With an observed supported boolean, human Yes/No can agree/differ. Yes-ish, No-ish and I don't know are `not_comparable`, never coerced into booleans. Explicit explanation disputes are recorded independently of this comparison.
-- Surface explicit disputes, qualified judgments and disagreement/unsupported candidates in Admin after the match is terminal. Label unprompted answers and late/unseen AI comparisons distinctly; routine matches stay out of the issue queue. Observation metadata is client-reported and not trustworthy evidence of honesty.
-- Corrections enter this queue automatically when submitted in gameplay. Players should not have to submit a second post-game report to make the feedback usable. The separate Report answer action remains post-game only.
-
-Admin review flow:
-
-1. **New:** compare original question, interpretation, AI answer/explanation, pinned target facts and human correction side by side.
-2. **Triage:** classify as wrong interpretation, missing/wrong fact, evaluator defect, misleading explanation, subjective/ambiguous question, technical failure, unsupported domain, mistaken human correction or abuse. Keep unresolved cases explicitly unverified.
-3. **Verify:** check authoritative evidence or reproduce against the pinned fact/planner version. Similar corrections can suggest a pattern; majority votes do not prove a fact.
-4. **Decision:** `confirmed`, `needs_evidence`, `subjective`, `rejected`, or `duplicate`; attach reviewer identity, rationale and reference to any related case.
-5. **Fix:** link the confirmed case to the exact prompt/parser, fact-data, evaluator or explanation change. A reviewed daily fact change must use the existing audited fact-edit workflow; do not directly write from a duel response.
-6. **Verify and release:** test the original question plus relevant variants and protected counterexamples, then mark the case `fixed` with the release/change reference. Admin clicking “confirmed” does not deploy anything.
-
-Examples of different fixes:
-
-- **Wrong interpretation:** “Does it border X?” was interpreted as “Is it X?” → fix planning/prompt rules; test both intents, negation and Polish wording.
-- **Wrong fact:** a verified border/capital/language record is outdated → update the fact source through the audited data path, not a question-specific exception.
-- **Wrong execution:** a correct plan evaluated a list or unary operator incorrectly → fix the evaluator and retain a behavioral regression.
-- **Bad explanation:** the boolean is correct but the explanation cites an unrelated fact → fix the explanation builder; no need to relabel the boolean.
-- **Subjective music question:** the owner gives Yes-ish → useful evidence for unsupported-question guidance or a separately defined new relation, not permission to add an unqualified `known_for_music=true` to daily facts.
-
-Engineering evaluation:
-
-- Approved cases form a versioned, redacted regression/evaluation corpus. Unreviewed human values never become binary ground-truth labels.
-- Separate related paraphrases/matches when selecting development versus held-out evaluation examples; otherwise repeat questions make improvements look better than they are.
-- Measure interpretation correctness, verified-answer correctness, unsupported handling and explanation quality separately, including per-mode/per-language results.
-- Keep a fixed existing-behavior evaluation set so improving one corrected question does not regress other relations. Do not tune only to accepted corrections.
-- No automatic fine-tuning, self-training, production prompt edits or cross-game fact updates. Any later training/export program requires its own consent, privacy and quality policy.
-
-Data and schema:
-
-- Add `friend_answer_reviews`, keyed uniquely by question action, owner answer revision and AI draft/preparation attempt. It references the immutable draft, decision, private reason and reviewer workflow; idempotent answer retries cannot multiply cases.
-- Document this QA use to players: **“Your answer reviews may help us improve question answering. Corrections are reviewed before changing the game.”** Keep private reasons visibly distinguished from notes shared with the friend.
-- Existing match evidence retention applies unless a case is explicitly retained for review under the published report policy. On retaining a case, copy the minimal reproducible evidence into its review record before match cleanup.
-- Remove participant names, invitation codes, account/device identifiers and unrelated free text from approved evaluation exports. Retained derived examples must follow the stated deletion/erasure policy; account erasure cannot leave identifying JSON snapshots behind.
-- Admin access is permission-gated and audited. Improvement data is operational QA content, not raw-question analytics sent to third-party trackers.
-
-
+- A human answer transaction must not wait for an AI row to be completed. Persist a nullable observed-result reference; later AI completion adds its own row and never rewrites the human submission snapshot.
+- Pending/late AI is retained even if its gameplay phase or match has finished. Provider failures/retries/restarts are recorded explicitly; missing output is not fabricated and does not suppress the human answer.
+- Compare human Yes/No with AI YES/NO after either result arrives, regardless of whether the recommendation was seen: `agree` or `disagree`. Keep exposure separately as before-human/after-human/unobserved; late agreement remains useful independent evidence, not “AI accepted.”
+- Human Yes-ish, No-ish and I don't know remain their original values and compare as `not_comparable`, never rounded to a boolean. AI INVALID is `ai_invalid`, provider failure is `ai_unavailable`, pending is `pending_ai`; do not classify them as disagreement or matching unknown.
+- Admin can filter and inspect **agreements as well as disagreements**, invalid results, qualified answers and failures. Every valid pair is retained; queue prioritization must not sample away matching answers.
+- Human agreement is not verified truth, and a rendered AI answer is not proof of independent agreement. Preserve attribution and exposure so reviewers can distinguish these cases.
+- Private explanation-only feedback can identify a bad rationale even when the boolean matches. It is optional, not a public note or prerequisite for answering.
+- Use `friend_ai_jobs`/`friend_ai_attempts` for independent request/result lifecycle and `friend_answer_revisions` for immutable human responses. `friend_answer_reviews` stores Admin workflow/optional feedback, not the only copy of raw evidence. No new review case is required for every retry or late result.
+- Review flow: inspect question/target/interpretation and both answers → classify interpretation/fact/evaluator/explanation/subjective/technical/human error → verify evidence → link a reviewed fix and regression case → record release. Admin confirmation alone does not deploy changes.
+- Reuse audited fact edits for verified data changes. No automatic model training, majority-vote truth, production prompt edits or knowledge-base updates from players' answers.
+- Explain collection before joining: **“We save questions, your answers and AI recommendations to check agreement and improve question answering.”** Raw evidence lives in permission-gated PostgreSQL/Admin tools, not third-party analytics.
+- Apply published evidence retention and account-erasure policy to all rows, including matching answers, late results and private text. Retained reviewed examples are minimal and redacted; do not keep identifiers in copied JSON after erasure.
 
 ## 5. Radar and map deduction without spoiling the game
 
@@ -511,11 +432,11 @@ Private server state includes target identities, fact revisions, raw AI explanat
 Public live snapshot contains only:
 
 - Match ID, rule version, mode, room state/version and server time.
-- Safe player display fields, readiness, connection state and lives.
+- Safe player display fields, readiness and connection state; lives only for rule sets that actually limit guesses, never human-owned.
 - Active seat, turn/phase IDs, deadlines and safe action acknowledgements.
-- Original question text, safe interpretation if available, and a discriminated result: verified boolean, attributed five-value human answer/context, unsupported, timeout or provider failure. Human clues include their subject and revision.
-- Wrong guessed entity identities and explicitly permitted coarse clues.
-- No shared-mystery target, opponent-owned target, or raw valid AI explanation before terminal state. Owner-only disclosure in §4.4 is explicit and never part of the shared broadcast.
+- Original question text and a discriminated result: attributed five-value human answer or truthful human timeout; AI-shared outcomes retain their separate verified/unsupported/failure contract. Human clues include subject/revision, never public context or AI interpretation.
+- Wrong guessed entity identities and explicitly permitted variant-specific clues.
+- No shared-mystery target or opponent-owned target before terminal reveal. In human-owned games, raw AI explanation remains owner/Admin-only even afterward.
 
 Do not serialize a private object and then delete a few fields. Construct and validate an allowlisted public DTO for each state and viewer. Invite previews are a third, even smaller DTO.
 
@@ -525,7 +446,7 @@ User-authored questions can themselves mention candidate names; that is not equi
 
 ### 8.1 Persistence decision
 
-Use existing PostgreSQL for durable accepted match transitions. At two players and bounded turns, “zero database queries” is not an appropriate objective without measurements showing a bottleneck.
+Use existing PostgreSQL for every accepted question, human answer/revision, guess and AI request/result as well as durable match transitions. “Zero database queries” is not an objective; human gameplay has no fixed turn cap, so paginate history rather than cap accepted moves to fit a payload.
 
 - In-memory room objects hold socket subscriptions, timers, bounded queues and cached public state.
 - Database is authoritative for accepted actions, participants, sealed attempts and terminal results.
@@ -545,10 +466,11 @@ Prefer a small explicit schema over separate copies of each game's daily tables:
 |---|---|
 | `friend_matches` | UUID ID, unique invite code, live/async kind, geography mode, immutable `answer_mode`, status, `state_version`, immutable rule snapshot, turn/phase state, deadlines, created/started/finished/expiry timestamps, nullable winner, terminal reason, optional rematch parent |
 | `friend_targets` | Match FK, unique subject key per match (`shared` or participant ID), canonical entity key, pinned fact-bundle revision, selection source/version and lock timestamp; one shared target for AI games or one independently selected target per human participant, with coincident entities allowed |
-| `friend_participants` | Match FK, seat 0/1 unique per match, participant UUID, nullable account FK, credential/session binding, safe display name, ready state, remaining lives, question count, disconnect budget, connection generation, answering-timeout streak, optional terminal async attempt state |
-| `friend_actions` | UUID ID, match/participant FKs, unique participant action ID, subject participant where applicable, turn/phase, ordinal, accepted/resolved status, original text or canonical guess key, private plan/evidence, discriminated public outcome, answer revision, immutable timestamps |
-| `friend_answer_revisions` | Human question action FK, unique increasing revision per action, authorized owner, five-value answer, context/reason, prior revision and timestamp; append-only |
-| `friend_answer_reviews` | Unique action + owner answer revision + AI preparation reference; immutable AI draft/evidence, human decision/reason, review status/classification, reviewer rationale, related case and fix/release reference |
+| `friend_participants` | Match FK, seat 0/1 unique per match, participant UUID, nullable account FK, credential binding, display name/readiness, descriptive question/guess counts, disconnect budget/generation, answering-timeout streak and optional async attempt state; lives only in limited-guess rule sets |
+| `friend_actions` | UUID ID, match/participant FKs, unique participant action ID, subject, round/turn/phase, ordinal, exact original question or canonical guess key, accepted/resolved status, canonical outcome and timestamps |
+| `friend_answer_revisions` | Human question FK, unique increasing revision, owner, five-value answer, prior revision, submitted time and nullable observed AI result reference; append-only, no public text/context |
+| `friend_ai_jobs` / `friend_ai_attempts` | Durable question-linked request and attempt identities, dispatch/deadline/status/failure times; private YES/NO/INVALID, actual explanation/plan/source/version evidence and exposure metadata; completion independent of gameplay state |
+| `friend_answer_reviews` | Question/human revision/AI attempt references, optional private feedback and Admin workflow/classification/rationale/fix reference; raw evidence remains queryable without creating a review case |
 | `friend_reports` | Action FK + reporter participant FK unique, trimmed comment, canonical diagnostic snapshot, created/reviewed metadata; exposes the existing Admin review DTO through an explicit source adapter |
 
 A rematch belongs to one parent and has one accepted successor per negotiated request. A series score can be derived from completed live matches in that rematch chain; do not add a second independently mutable score counter unless needed.
@@ -563,7 +485,7 @@ HTTP paths below are backend paths; the browser uses the existing `/api` prefix:
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /friend-matches` | Create a live lobby or async creator attempt; server selects the target |
+| `POST /friend-matches` | Create a live lobby or async creator attempt; AI variants select a target, human-owned seats subsequently choose/randomize their own |
 | `GET /friend-matches/invites/{code}` | Safe preview; no seat allocation or secret |
 | `POST /friend-matches/invites/{code}/join` | Atomically claim the available seat |
 | `GET /friend-matches/{id}` | Viewer-authorized current snapshot |
@@ -571,24 +493,26 @@ HTTP paths below are backend paths; the browser uses the existing `/api` prefix:
 | `POST /friend-matches/{id}/socket-ticket` | Short-lived authorized live connection ticket if required |
 | `GET /friend-matches` | Authorized personal challenge list with pagination |
 | `POST /friend-matches/{id}/actions/{action_id}/reports` | Post-game report from an authorized participant |
-| `WS /friend-matches/{id}/ws` | Live commands and public state events |
+| `WS /friend-matches/{id}/ws` | Live commands, shared gameplay and separately authorized owner-only AI events |
 
 Use `/duel/:inviteCode` for the live browser route and `/challenge/:inviteCode` for play-later invitations. Do not overload the geography `mode` field with `live_1v1`; `kind` and `mode` are separate.
 
 Command envelope: `protocol_version`, `action_id`, `expected_state_version`, `turn_id`, `phase_id`, discriminated `type`, typed payload. Never trust client `sender`, winner, target, counters or time.
 
-Event envelope: `protocol_version`, `event_id`, increasing `state_version`, `server_time_ms`, discriminated type, typed payload. Use one field vocabulary in backend schemas, frontend types, snapshots and events.
+Event envelope: `protocol_version`, `event_id`, `server_time_ms`, discriminated type and typed payload. Gameplay events additionally carry increasing `state_version`; private AI events carry question/job/attempt IDs and independent evidence ordering. Use the same vocabulary in backend schemas and frontend types, never a private-AI update masquerading as a turn-state mutation.
 
-Start with authoritative public snapshots after accepted state changes; two players and twelve turns make this simple and bounded. Reconnect always gets a complete viewer-specific snapshot. Cosmetic reactions are separate transient events. If incremental deltas are added later, a version gap must trigger snapshot resync.
+Start with authoritative viewer-specific snapshots after accepted gameplay transitions. Include current phase and a bounded recent history page, with authorized pagination for older actions; unlimited human turns must not create unbounded frames. Reconnect restores current gameplay plus the viewer's own private guidance. AI job events carry question/result IDs and independent event ordering, not a new gameplay version. Cosmetic reactions remain transient.
 
 ### 8.4 Action reservation and timing
+
+The reservation/evaluation sequence below applies to **AI-resolved shared/async actions**. Human questions instead commit question + durable AI job, immediately enter owner-answer phase and advance on the human answer alone (§4.4C). Their AI completion transaction stores evidence even after a later turn or terminal match, without changing gameplay versions, counters, clocks or verdicts.
 
 1. Check participant permission, match/phase, remaining allowance, deadline and duplicate action ID.
 2. In a short locked/conditional transaction, reserve the action and transition to resolving. Only one reserved action is allowed for that turn.
 3. Execute the real planner and evaluator in bounded worker capacity, outside the event loop and outside any database transaction. Enforce a real provider timeout; cancelling a coroutine alone does not stop a blocking thread/network request.
 4. Re-check reservation ID, state version and terminal state before committing the result.
 5. Commit result, counters, public event version and next deadline atomically; then enqueue broadcasts.
-6. If another terminal transition already won, discard the late result without advancing a second turn or charging a life.
+6. If another terminal transition already won, retain completed diagnostic evidence but do not advance another turn or charge a life. Never apply this stale-gameplay check to discard human-owned advisory results.
 
 A duplicate action returns its original acknowledgement/result; it never spends another life or calls the model again. A command for an old turn gets a typed stale-state response plus a fresh snapshot.
 
@@ -601,9 +525,9 @@ Use bounded per-client outbound queues. A slow recipient cannot hold the room lo
 - Authenticate the returning participant; resync authoritative state, not a client-supplied history.
 - Connected clients use application ping/pong or transport-supported heartbeat with a documented timeout; ordinary server events can provide liveness. A browser cannot directly emit WebSocket control ping frames.
 - Confirmed disconnect pauses the current room phase and consumes that participant's total 30-second budget. Repeated disconnects do not replenish it.
-- Reconnecting participants retain phase, lives, action result and remaining time. A late timer associated with an old connection is ignored.
-- If an action resolves while disconnected, persist it but do not grant an unseen new guess window; resume from the saved phase when both return, subject to the match ceiling.
-- Live deploy: stop accepting new rooms, allow existing rooms to finish within the match bound, then replace the owner. Existing async attempts remain resumable.
+- Reconnecting participants retain phase, counters, accepted actions and remaining time; lives only where applicable. Ignore timers associated with an old connection.
+- Persist accepted answers during disconnect and resume their saved phase under the relevant rule set. Private AI completion neither creates a guess window nor changes the saved gameplay phase.
+- Live deploy: stop new admission and allow a published bounded drain period. AI-shared matches have their gameplay ceiling; human-owned matches do not, so at drain expiry mark remaining games interrupted/no-contest rather than forcing a draw/loss. Resume/record pending AI jobs and preserve async attempts.
 - Unexpected owner/process restart: read durable records, preserve already committed terminal results, mark unresolved live matches interrupted/no-contest and offer rematch. Do not pretend a volatile timer survived or award losses during server downtime.
 - Database outage: do not acknowledge uncommitted moves. Preserve the last committed state, surface a service interruption, and finalize honestly when storage is available. No automatic player forfeit for an infrastructure outage.
 
@@ -617,7 +541,7 @@ Adapter contract:
 - AI-shared/async target selection excludes today's target and recent series targets. Human-owned manual/random selection follows §4.4's public-pool and privacy rules; never validate a player's choice against a hidden opponent/daily target.
 - Exact canonical guess validation and name aliases supplied by existing entity data.
 - Target-explicit question planning/execution, separate from daily state updates.
-- Structured result: supported/unsupported/provider-failure, interpreted question, boolean if supported, private explanation/evidence, model/prompt/rule/fact revisions.
+- Structured engine result: supported/unsupported/provider-failure, interpreted question, boolean where supported, private explanation/evidence and model/prompt/rule/fact revisions. Human guidance normalizes content to YES/NO/INVALID; operational failures remain separate job status.
 - Public result builder that cannot include private explanation/context.
 - Optional centroid access for guided radar, not sent to the browser.
 
@@ -637,7 +561,7 @@ Benchmark on the actual constrained deployment, not an unconstrained laptop. Rec
 
 Reporting remains a post-game action, matching the deployed site's behavior.
 
-Live human-answer corrections are a separate owner-only gameplay action (§4.4), not an exception to this reporting gate. Owner accept/correct decisions and their AI draft evidence are recorded automatically for the Admin improvement workflow; this does not require an in-game Report button. Human judgments, private AI evidence and later Admin verification retain distinct provenance.
+Live human-answer corrections are separate owner-only gameplay actions (§4.4), not an exception to this reporting gate. All questions, human answers/revisions and AI attempts/results are saved automatically, whether they agree or disagree and whether AI arrives before or after the human answer. Admin inspection does not require an in-game Report button or an explicit AI acceptance.
 
 - Live: either participant can report a shared persisted question action after the match is terminal.
 - Async: a participant can report their own action after their attempt is terminal; this must not unlock the opponent's ongoing attempt.
@@ -658,17 +582,17 @@ Live human-answer corrections are a separate owner-only gameplay action (§4.4),
 | Feature | Player value | Acceptance signal |
 |---|---|---|
 | Guest invite + native share/copy | A friend can actually get into the game | Invite opens lead to claimed seats and started matches |
-| Protected post-question guess window | Asking feels active rather than self-defeating | Playtesters understand why they won/lost; reduced deliberate passing |
+| Simple ask-OR-guess human turns | Players control pace without limited guess lives or AI waiting | Third wrong guess and later turns remain playable; asking never adds a bonus guess |
 | Private map marks/drafts on opponent's turn | Waiting time remains useful | Players can think without leaking strategy or changing daily state |
 | Shared attributed clue timeline | Creates conversation and understandable turning points | Both clients agree on order/outcomes after reconnect |
-| Clear result + full evidence | Failure still teaches something | Players inspect explanations and identify disputed clues |
+| Clear result + authorized evidence | Players understand the outcome without private-output leaks | Human owners can revisit their own guidance; Admin can compare both answer sources |
 | Mutual rematch + alternating opener | Makes “one more round” straightforward and fairer | Voluntary rematch requests and acceptances |
 | Async sealed comparison | Friends can play without scheduling | Recipients finish later and return to compare |
 | Small muteable reactions | Social presence without chat moderation overhead | Reactions cannot obscure inputs, spam, or create accessibility problems |
 
 ### Keep out of this implementation
 
-- Ranked matchmaking, public leaderboards, public room browser, spectators and unrestricted free-text chat. Human-answer context and one bounded question-linked clarification are explicitly allowed, not a general chat channel.
+- Ranked matchmaking, difficulty equalization, public leaderboards, public rooms, spectators and unrestricted free-text chat. Human answers have no public note or clarification field. Europadle/Asiadle are separately owned future geography modes, not a balancing subsystem here.
 - Paid advantages, streak punishment, energy systems, forced signup, fake opponents or manufactured online counts.
 - Automated bot opponent while waiting, unless separately designed and visibly labelled.
 - Large achievements/season-pass systems before real rematch and return behavior is known.
@@ -719,18 +643,18 @@ Every slice has a runnable acceptance result. These are implementation tasks for
 
 5. **Create and join a real lobby.** HTTP endpoints plus minimal browser lobby and invitation path. Proof: two independent browser contexts, guest names, share/copy failure handling, readiness reset and atomic second-seat claim.
 6. **Carry authorized snapshots over WebSocket.** Implement ticket/cookie authorization, snapshot versioning, Vite/Nginx upgrades. Proof: two clients see the same seats through the actual proxy; cross-origin/unauthorized handshakes fail.
-7. **Play direct guesses with real rules.** Canonical selection, lives, turn switching, immediate win/knockout. Proof: wrong entity, correct entity, duplicate action and simultaneous timeout produce one authoritative result.
-8. **Integrate one real natural-language question path.** Reserve/evaluate/commit with the existing engine and safe payload. Proof: a real supported question works end-to-end; unsupported/negated/compound/Polish questions do not fall through to fabricated No; no explanation leak in frames.
-9. **Add the protected guess window and complete clock rules.** Fake-clock tests plus browser behavior for repairs, passes, direct guesses and timeouts. Proof: an accepted pre-deadline question does not lose to model latency; stale actions cannot spend a second life.
-10. **Implement all terminal paths and sealed final round.** Turn cap, match ceiling, timeout forfeit, draw, disconnect and infrastructure interruption. Proof: both final guesses remain secret until resolution; every state has a bounded path to terminal.
+7. **Play direct guesses and human turns.** Canonical selection, ask-OR-guess switching and no human lives/cap. Proof: correct/wrong guesses, more than two misses, retries and timeout races produce one authoritative transition; variant-specific AI limits remain isolated.
+8. **Integrate real question paths.** Human questions commit and reach the owner while private advisory jobs run independently; AI-shared questions resolve through their actual engine. Proof: delayed AI cannot block human turns; negation/compound/Polish/unsupported outcomes preserve provenance and privacy.
+9. **Complete variant-specific clocks.** Human owner timeout is independent of AI with no bonus guess; AI-shared retains its protected window/repair rules. Proof: stale events cannot spend two actions and delayed AI cannot stale a human submit or reset any clock.
+10. **Implement wins, draws and interruption.** Human mutual draws and pending-win reply turns; AI-shared turn cap/sealed finals; explicit disconnect/infrastructure policies. Proof: both human solves in a round draw, no forced human guess quota, one committed terminal result, no premature dual reveal.
 11. **Resume connections without double actions.** Connection generation, bounded queues, snapshot resync, finite grace budget and draft preservation. Proof: reconnect after commit-before-ack shows exactly one action; old socket cleanup cannot disconnect a new session.
 
-**Human-answer dependency:** Implement H1–H7 from §4.4 after the relevant core target/transport slices. This is part of the complete release, not a future placeholder. Dispatch by immutable `answer_mode`, with separate answer permissions and viewer projections. Independent human controls, non-blocking normal-game AI guidance, observation-aware evidence and the Admin improvement queue are required.
+**Human-answer priority:** Implement H1–H7 alongside the relevant core target/transport slices as the primary live experience. Do not build the AI-shared life/window defaults first and inherit them into human rooms. Dispatch by immutable `answer_mode`; answer-only public payloads, independent AI jobs, complete PostgreSQL evidence and Admin agreement comparison are required.
 
 ### C. Make it enjoyable and complete
 
 12. **Integrate controlled maps and mobile arena.** Coordinate extraction with 03; use existing inputs and isolated private selection. Proof: daily state unchanged; keyboard-open mobile view retains timer/latest clue/submit; keyboard-only and reduced-motion flows work.
-13. **Finish results, mutual rematch and session score.** Full explanations, correct verdict wording, fresh target, alternating opener, optional reactions. Proof: simultaneous rematch requests create one successor and nobody is forced into it.
+13. **Finish results, mutual rematch and session score.** Correct verdicts including draws, dual human reveal, owner-only AI history, fresh selection, alternating opener and optional reactions. Proof: simultaneous requests create one successor, nobody is forced into it, and terminal human snapshots still omit the opponent's private explanation.
 14. **Add post-game challenge reports to Admin.** Canonical action evidence and existing review presentation. Proof: reports hidden during live play; unauthorized or in-progress action reports rejected; both participants can report a shared clue once; daily report tests remain valid.
 
 ### D. Complete play-later and return flows
@@ -743,7 +667,7 @@ Every slice has a runnable acceptance result. These are implementation tasks for
 
 18. **Exercise four-mode compatibility.** Complete AI-shared live, human-owned live and async challenges in every mode with real adapters. Include all five human values, an unsupported AI-helper question and a correction. Proof: subject secrecy and mode-specific names/IDs/reveals work, no country-only assumptions, no daily progress or leaderboard changes.
 19. **Verify capacity, recovery and deployment.** Bounded concurrent live/async clients, real fact/model path, proxy idle intervals, provider/DB failures and graceful drain. Proof: measured latency/cost plus no uncommitted wins; daily service remains responsive.
-20. **Run paired gameplay sessions and refine defaults.** Test the chosen rules with actual pairs, including mobile users and mixed skill. Proof: observed time-to-first-match, match duration, passing behavior, opener advantage, understanding of knockout/draw and willingness to rematch. Record evidence; do not substitute a speculative growth estimate.
+20. **Run paired gameplay sessions and refine presentation.** Test actual friends, mobile users, mixed skill and differently difficult chosen countries. Proof: players understand ask-OR-guess, five human answers, private non-blocking AI and draws; observe enjoyment/rematches without imposing equalized targets or limited guesses.
 21. **Enable measured rollout and retention policy.** Feature flags for live and async admission, privacy copy, essential safe metrics and cleanup jobs. Proof: disabling admission preserves existing resumable challenges; expiration jobs cannot delete active attempts or retained reports.
 
 A country-only internal integration is a development checkpoint, not completion. The requested product release includes both play paths and all four existing geography modes; do not quietly call a lobby or one-mode demo finished.
@@ -752,16 +676,16 @@ A country-only internal integration is a development checkpoint, not completion.
 
 | Area | Observable scenarios that must pass |
 |---|---|
-| Secrecy | Active HTTP snapshots, WS events, reconnects, errors, invitation previews and OG cards exclude server-derived target/reveal/evidence fields |
+| Secrecy | Owner sees own secret and AI guidance; opponent never gets private AI explanation, feedback, public-note field or premature target through HTTP/WS/reconnect/results/preview payloads |
 | Integrity | Same action sent twice, reconnect retry, simultaneous join, stale turn, timeout race and late model completion cannot consume twice or fork the match |
-| Knowledge | English/Polish, negation, compound predicates, unsupported facts, explicit identity conversion, missing data and model timeout remain distinct outcomes |
-| Game rules | Ask-window guess, direct guess, wrong guess, second strike, pass, repeated timeouts, 12-turn cap, ceiling, both/one/neither final guesses correct |
+| Knowledge | English/Polish, negation, compound predicates, unsupported facts, missing data and model timeout stay distinct; identity conversion applies only to AI-resolved games, never blocks human questions |
+| Game rules | Human ask OR guess, unlimited misses, no twelve-turn cap, no bonus guess, owner response preserves next turn, mutual draw, pending-win reply draw; AI-shared limits/finals verified separately |
 | Connection | One/both disconnected, repeated disconnect budget, new socket versus old close, slow recipient, lost acknowledgement, backgrounded mobile browser |
 | Infrastructure | Process restart mid-turn, restart after committed win, DB outage, external planner delay, real reverse-proxy upgrade and idle timeout |
 | Async | Creator seal, late invite claim, 24-hour finish window, midnight, changed fact bundle, both failures, tie, copied capability, optional account link |
 | Reporting | Post-game only; action belongs to match; caller owns a permitted seat; immutable evidence; Admin filtering/review; duplicate semantics |
-| Human guidance | Normal-game AI answer/explanation visible only to owner alongside immediately usable controls; submission before AI completion/failure; no preselection; five values preserved; no late-answer replacement |
-| Improvement evidence | Human submission snapshots the observed draft or absence; late/unseen comparisons distinguished; agreement not treated as endorsement/truth; duplicate retry yields one case; approved redacted exports and reviewed fix/release linkage |
+| Human guidance | Immediate five-choice answer-only UI; independent real YES/NO/INVALID recommendation; owner-only actual explanation; before/after-submit/after-match completion and provider failure never block or rewrite play |
+| Improvement evidence | PostgreSQL retains every question, guess, human revision and AI attempt/result, including agreements/late results; exposure separate from comparison; qualified answers/INVALID/failure distinguished; Admin filters all outcomes; retries preserve one gameplay action |
 | Isolation | Complete daily, start friend match, return to daily; daily history, map state, scores, streaks, guest token and sync data are unchanged |
 | UX | 360px phone, keyboard-open landscape/portrait, native-share cancellation, clipboard rejection, missing browser storage, screen reader, reduced motion |
 | Operations | Room cap, bounded planner concurrency, expiring draft/room cleanup, active fact-bundle retention, feature disable/drain and rollback |
@@ -787,8 +711,8 @@ Never treat pressing Copy as proof that an invitation was delivered. Separate in
 
 - Can a new guest get from invitation to ready without explanation from the host?
 - Does a live match finish before the players become bored?
-- Do players voluntarily ask useful questions or mostly pass to avoid helping the opponent?
-- Does the opener win disproportionately after accounting for repeat opponents and mode?
+- Do human players understand that a question and a guess each take a turn, without expecting a bonus guess?
+- Do friends enjoy their chosen difficulty and understand the draw/reply rule, without needing target balancing?
 - Do losers understand the outcome and accept a rematch?
 - How often does a friend open a live invite when the host has left? Does the play-later option recover that visit?
 - Is a second match enjoyable, or merely caused by an aggressive button?
@@ -802,7 +726,7 @@ Do not publish a K-factor forecast. Establish a baseline, then compare real coho
 2. Deploy additive schema and disabled endpoints; verify rollback compatibility before enabling live rooms.
 3. Verify a real two-browser match through production-like proxies on staging, including one reconnect and rematch; verify async resume across backend restart.
 4. Run internal paired playtests with operational limits enabled.
-5. Enable guest invitations in a limited rollout, then broader discovery once support, capacity and fairness checks pass.
+5. Enable guest invitations in a limited rollout, then broader discovery once support, capacity, privacy and rule-comprehension checks pass. Human target equality is not a launch gate.
 6. Drain live rooms before replacement. Disable new room admission if errors rise; do not delete ongoing async challenges or pretend abandoned live matches were wins.
 7. Remove temporary fixtures and debug artifacts; preserve documented rollback paths. Merge/push/deploy only with user approval at implementation time.
 
@@ -810,8 +734,8 @@ Do not publish a K-factor forecast. Establish a baseline, then compare real coho
 
 - Both live and asynchronous challenge journeys work end-to-end for guests and signed-in participants.
 - All four existing geography modes use real canonical data. AI-resolved games use the supported question engine; human-owned games expose immediately usable player answers with private non-blocking normal-game AI recommendations and explanations alongside.
-- Both live variants have unambiguous targets, timing, lives, final-round, reconnect, rematch and interruption behavior. Human answers, bounded clarifications, append-only corrections and affected-guesser consent are complete.
-- Owner reviews preserve reproducible AI and human evidence, reach the Admin improvement workflow, and support reviewed regression cases without automatically changing daily facts, prompts or answers.
+- Human-owned games have ask-OR-guess turns, unlimited guesses, answer-only shared payloads, optional mutual draws, explicit solved-draw reply rules, reconnect and rematch behavior. AI-shared lives/windows/finals stay isolated; no human public notes or clarification chat.
+- Every question, human answer/revision, guess and independent AI attempt/result is durable, including matching and late results. Admin can inspect agreement with timing/exposure and build reviewed fixes without automatically changing facts/prompts/answers.
 - No server-derived spoilers before the viewer's allowed reveal point; no guessed IDs used as credentials.
 - Results/actions are durable before acknowledgement; duplicate and racing actions cannot alter outcomes twice.
 - Daily gameplay, map selections, guest progress, streaks, leaderboards and reporting remain correct.
@@ -831,12 +755,10 @@ Concrete checks during planning:
 - Exact distance plus initial bearing from a known point reconstructs a target point; therefore “no coordinate field” is not a sufficient radar privacy guarantee.
 - Repository confirms `AsyncSessionLocal` in `server/db/__init__.py`, target-name local execution, direct daily-store coupling in `MapBox`, and the completed-game reporting gate.
 
-**Subsequent user decisions:** The user selected **Each player owns a secret**, added **Choose my country** or **Random country**, and clarified that players answer independently with the normal game's AI recommendation and explanation beside the controls. This supersedes mandatory AI-first accept/correct gating. Section 4.4 records private selection, five answer choices, advisory AI, visible revisions and the observation-aware reviewed improvement loop. These decisions approve product direction, not a merge or deployment.
+**Latest user decisions:** Each player knows their own manually chosen/random secret and guesses the opponent's. Only the selected five-value human answer is shared. Normal-game AI runs independently in parallel, returns YES/NO/INVALID and provides its actual explanation only to the country owner; nobody waits for it. PostgreSQL saves all questions and both answer sources, including agreement and late results, for Admin verification. Guesses are unlimited and consume a full turn. Draws are allowed. This is fun between friends, not equal-difficulty competition; future Europadle/Asiadle are separate mode work.
 
-Recommended defaults are specified above so implementation is not blocked on minor choices. Three product decisions deserve explicit review before coding the game loop:
+These supersede earlier human public qualifications, life limits, knockout, forced turn caps, mandatory review/clarification and protected post-question guesses. The shared-AI/async proposals remain separate; their rules must not leak into human play.
 
-1. Accept the protected post-question guess window instead of strict ask-OR-guess alternation.
-2. Keep exact radar out of standard duels; guided coarse radar is conditional on real candidate-pool checks.
-3. Keep asynchronous results turn-based with genuine draws, not wall-clock tie-breaking.
+The solved-draw mechanism in §4.4E (reply guess within the same round) is a proposed concrete default, not a claim the user specified that exact mechanism. Mutual draw is available independently. Existing suggested human timeout presets remain playtestable, not a reason to wait for AI.
 
-The next concrete action is to review these three choices, then implement slice A with agreed public/private schemas—not copy the old example code into production.
+Next: implement the agreed human-owned contracts and H1–H7 through isolated worktrees, with actual two-browser and PostgreSQL proof. This document changes only the plan; implementation, merge and deployment require their normal approval gates.
