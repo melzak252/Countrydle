@@ -58,7 +58,25 @@ export function ControlledPowiatyMap({ correctPowiatName, className, interaction
   const current = useRef({ interaction, revealedName });
   current.current = { interaction, revealedName };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
-  
+  const activeHoverLayerRef = useRef<L.Layer | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    const onMapMouseOut = () => {
+      if (activeHoverLayerRef.current) {
+        const prev = activeHoverLayerRef.current as any;
+        prev.closeTooltip?.();
+        if (prev.feature) {
+          prev.setStyle?.(getStyle(prev.feature));
+        }
+        activeHoverLayerRef.current = null;
+      }
+    };
+    map.on('mouseout', onMapMouseOut);
+    return () => {
+      map.off('mouseout', onMapMouseOut);
+    };
+  }, [map]);
   useEffect(() => {
     fetch('/powiaty-min.geojson?v=' + new Date().getTime())
       .then(res => res.json())
@@ -171,23 +189,40 @@ export function ControlledPowiatyMap({ correctPowiatName, className, interaction
         e.originalEvent?.preventDefault?.();
         current.current.interaction.handleEntityMapClick((name || '').toUpperCase(), true);
       },
-      mouseover: (e) => {
+      mouseover: (e: any) => {
         const l = e.target;
+        if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
+          const prev = activeHoverLayerRef.current as any;
+          prev.closeTooltip?.();
+          if (prev.feature) {
+            prev.setStyle?.(getStyle(prev.feature));
+          }
+        }
+        activeHoverLayerRef.current = l;
+
         l.setStyle({
           weight: 2,
-          fillOpacity: 0.8,
+          fillOpacity: 0.85,
         });
-        l.bringToFront();
+        l.openTooltip?.();
       },
-      mouseout: (e) => {
+      mouseout: (e: any) => {
         const l = e.target;
         const style = getStyle(feature);
         l.setStyle(style);
+        l.closeTooltip?.();
+        if (activeHoverLayerRef.current === l) {
+          activeHoverLayerRef.current = null;
+        }
       }
     });
 
     if (feature.properties) {
-        layer.bindTooltip(`${feature.properties.nazwa}`);
+      layer.bindTooltip(`${feature.properties.nazwa}`, {
+        sticky: true,
+        direction: 'auto',
+        opacity: 0.95,
+      });
     }
   };
 
@@ -218,6 +253,9 @@ export function ControlledPowiatyMap({ correctPowiatName, className, interaction
       <style>{`
         .leaflet-interactive:focus {
             outline: none;
+        }
+        .leaflet-tooltip {
+            pointer-events: none !important;
         }
       `}</style>
       <MapToolbar

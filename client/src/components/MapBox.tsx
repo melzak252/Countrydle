@@ -23,6 +23,7 @@ interface MapBoxProps {
   minZoom?: number;
   maxZoom?: number;
   onCountryClick?: (name: string) => void;
+  geoJsonUrl?: string;
 }
 
 interface MapControlsProps {
@@ -126,6 +127,35 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     }} />;
 }
 
+const geoJsonCache = new Map<string, FeatureCollection>();
+const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
+
+function loadGeoJson(url: string): Promise<FeatureCollection> {
+  const cached = geoJsonCache.get(url);
+  if (cached) {
+    return Promise.resolve(cached);
+  }
+  let p = geoJsonPromiseCache.get(url);
+  if (!p) {
+    p = fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status} loading ${url}`);
+        return res.json();
+      })
+      .then(data => {
+        geoJsonCache.set(url, data);
+        geoJsonPromiseCache.delete(url);
+        return data;
+      })
+      .catch(err => {
+        geoJsonPromiseCache.delete(url);
+        throw err;
+      });
+    geoJsonPromiseCache.set(url, p);
+  }
+  return p;
+}
+
 export function ControlledMapBox({
   correctCountryName,
   className,
@@ -136,8 +166,10 @@ export function ControlledMapBox({
   minZoom = 2,
   maxZoom = 10,
   onCountryClick,
+  geoJsonUrl = '/countries_50m.geojson',
 }: MapBoxProps & { interaction: MapInteractionState }) {
-  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
+  const targetUrl = geoJsonUrl || '/countries_50m.geojson';
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(() => geoJsonCache.get(targetUrl) || null);
   const [map, setMap] = useState<L.Map | null>(null);
   const { entityMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctCountryName : undefined;
@@ -145,14 +177,40 @@ export function ControlledMapBox({
   const current = useRef({ interaction, revealedName, onCountryClick });
   current.current = { interaction, revealedName, onCountryClick };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const activeHoverLayerRef = useRef<L.Layer | null>(null);
+
+  // Close lingering tooltips when mouse moves out of the map container
+  useEffect(() => {
+    if (!map) return;
+    const onMapMouseOut = () => {
+      if (activeHoverLayerRef.current) {
+        const prev = activeHoverLayerRef.current as any;
+        prev.closeTooltip?.();
+        if (prev.feature) {
+          prev.setStyle?.(getStyle(prev.feature));
+        }
+        activeHoverLayerRef.current = null;
+      }
+    };
+    map.on('mouseout', onMapMouseOut);
+    return () => {
+      map.off('mouseout', onMapMouseOut);
+    };
+  }, [map]);
 
   useEffect(() => {
-    fetch('/countries_50m.geojson')
-      .then(res => res.json())
-      .then(data => setGeoJsonData(data))
+    let active = true;
+    loadGeoJson(targetUrl)
+      .then(data => {
+        if (active) {
+          setGeoJsonData(data);
+        }
+      })
       .catch(err => console.error('Failed to load map data', err));
-  }, []);
-
+    return () => {
+      active = false;
+    };
+  }, [targetUrl]);
   useEffect(() => {
     if (!onCountryCode) return;
     const name = revealedName?.toLowerCase();
@@ -281,32 +339,56 @@ export function ControlledMapBox({
 
         current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), true);
       },
-      mouseover: (e) => {
+      mouseover: (e: any) => {
         const l = e.target;
+        if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
+          const prev = activeHoverLayerRef.current as any;
+          prev.closeTooltip?.();
+          if (prev.feature) {
+            prev.setStyle?.(getStyle(prev.feature));
+          }
+        }
+        activeHoverLayerRef.current = l;
+
         l.setStyle({
           weight: 2,
-          fillOpacity: 0.8,
+          fillOpacity: 0.85,
         });
-        l.bringToFront();
+        l.openTooltip?.();
       },
-      mouseout: (e) => {
+      mouseout: (e: any) => {
         const l = e.target;
         const style = getStyle(feature);
         l.setStyle(style);
+        l.closeTooltip?.();
+        if (activeHoverLayerRef.current === l) {
+          activeHoverLayerRef.current = null;
+        }
       }
     });
 
     if (feature.properties) {
-        layer.bindTooltip(`
-          <b>${feature.properties.SOVEREIGNT}</b>
-          <br/>
-          ${feature.properties.ADMIN === feature.properties.SOVEREIGNT ? '' : `(${feature.properties.ADMIN})`}
-          `);
+      const name = feature.properties.SOVEREIGNT || feature.properties.ADMIN;
+      const sub = feature.properties.ADMIN && feature.properties.ADMIN !== feature.properties.SOVEREIGNT
+        ? ` (${feature.properties.ADMIN})`
+        : '';
+      layer.bindTooltip(`<b>${name}</b>${sub}`, {
+        sticky: true,
+        direction: 'auto',
+        opacity: 0.95,
+      });
     }
   };
 
   if (!geoJsonData) {
-    return <div className="h-[400px] w-full bg-zinc-900 rounded-xl animate-pulse flex items-center justify-center text-zinc-500">Loading Map...</div>;
+    return (
+      <div className={`w-full bg-obsidian-950 border border-white/10 rounded-sm flex items-center justify-center text-zinc-400 font-mono text-xs ${className ? className : 'h-[350px] md:h-[500px]'}`}>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Loading map...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -314,6 +396,9 @@ export function ControlledMapBox({
       <style>{`
         .leaflet-interactive:focus {
             outline: none;
+        }
+        .leaflet-tooltip {
+            pointer-events: none !important;
         }
       `}</style>
       <MapContainer 

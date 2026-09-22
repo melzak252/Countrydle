@@ -28,6 +28,7 @@ interface ContinentMeta {
   zoom: number;
   minZoom: number;
   maxZoom: number;
+  geoJsonUrl: string;
 }
 
 const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
@@ -41,6 +42,7 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     zoom: 3.8,
     minZoom: 2.5,
     maxZoom: 8,
+    geoJsonUrl: '/europe.geojson',
   },
   asia: {
     key: 'asia',
@@ -52,6 +54,7 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     zoom: 3,
     minZoom: 2,
     maxZoom: 8,
+    geoJsonUrl: '/asia.geojson',
   },
   africa: {
     key: 'africa',
@@ -63,6 +66,7 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     zoom: 3,
     minZoom: 2,
     maxZoom: 8,
+    geoJsonUrl: '/africa.geojson',
   },
   americas: {
     key: 'americas',
@@ -74,6 +78,7 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
     zoom: 2.5,
     minZoom: 1.8,
     maxZoom: 8,
+    geoJsonUrl: '/americas.geojson',
   },
 };
 
@@ -132,18 +137,17 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     return () => window.removeEventListener('auth-login', handleLogin);
   }, [activeContinent, fetchGameState, fetchCountries, syncGuestData]);
 
-  if (!gameState && isLoading) {
+  const title = t(`${activeContinent}Title`, { defaultValue: meta.title });
+  const subtitle = t(`${activeContinent}Subtitle`, { defaultValue: meta.subtitle });
+
+  if (!gameState) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="animate-spin text-emerald-500" size={32} />
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+        <Loader2 className="animate-spin" size={24} aria-hidden="true" />
+        <span className="text-sm font-medium text-zinc-300">Loading {title}...</span>
       </div>
     );
   }
-
-  if (!gameState) return null;
-
-  const title = t(`${activeContinent}Title`, { defaultValue: meta.title });
-  const subtitle = t(`${activeContinent}Subtitle`, { defaultValue: meta.subtitle });
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -210,6 +214,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                 zoom={meta.zoom}
                 minZoom={meta.minZoom}
                 maxZoom={meta.maxZoom}
+                geoJsonUrl={meta.geoJsonUrl}
                 interaction={{
                   entityMarkings,
                   activeMarkerColor,
