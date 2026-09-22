@@ -95,7 +95,7 @@ class FlagdleStateRepository:
         return result.scalar_one_or_none()
 
     async def create_state(
-        self, user: Optional[User], day_flag: FlagdleDay, max_guesses: int = 6
+        self, user: Optional[User], day_flag: FlagdleDay, max_guesses: int = 12
     ) -> FlagdleState:
         state = FlagdleState(
             user_id=user.id if user else None,

@@ -174,14 +174,16 @@ VITE_GOOGLE_ADSENSE_ID=ca-pub-XXXXXXXXXXXXXXXX
 
 ---
 
-## 5. How to Run Locally with Docker Compose
+## 5. How to Run Locally
 
-### Prerequisites
+### Option A: Running with Docker Compose (Full Stack in Containers)
+
+#### Prerequisites
 - Docker & Docker Compose v2+ installed.
 - Ensure the `data` symlink exists at the root: `ln -s server/data data`.
 - Valid `GEMINI_API_KEY` in `.env` for the local question answering engine.
 
-### Launching Services
+#### Launching Services
 ```bash
 # Start all 4 containers in detached mode
 docker compose up -d
@@ -193,7 +195,7 @@ docker compose ps
 docker compose logs -f backend
 ```
 
-### Exposed Host Ports
+#### Exposed Host Ports
 | Service | Host Port | Internal Container Port | Description |
 |---|---|---|---|
 | **frontend** | `http://localhost:5173` | `80` | Client application (React via Nginx) |
@@ -201,11 +203,59 @@ docker compose logs -f backend
 | **database** | `localhost:5434` | `5432` | PostgreSQL 17 + pgvector |
 | **qdrant** | `http://localhost:6351` | `6333` | Qdrant vector database HTTP API |
 
-### Stopping Services
+#### Stopping Services
 ```bash
 docker compose down
 ```
 
+---
+
+### Option B: Running Bare-Metal / Local Dev (Host Python + Vite)
+
+Use this for active development with fast HMR (Hot Module Replacement) and debugger support:
+
+#### 1. Start Background Services (Postgres & Qdrant only)
+```bash
+# Launch database and Qdrant in Docker
+docker compose up -d db qdrant
+```
+
+#### 2. Backend (FastAPI with Uvicorn)
+```bash
+# From project root or server/ directory
+cd server
+
+# Activate your virtual environment (e.g. python 3.12)
+source .venv/bin/activate  # or /tmp/countrydle-friend-venv/bin/activate
+
+# Ensure dependencies are installed
+pip install -r requirements.txt
+
+# Run the development server with live reload
+python -m uvicorn app:app --host 127.0.0.1 --port 8080 --reload
+
+# Or if running on a custom port (e.g. 8105) alongside Vite proxy:
+python -m uvicorn app:app --host 127.0.0.1 --port 8105
+```
+
+#### 3. Frontend (React 19 + TypeScript + Vite)
+```bash
+cd client
+
+# Install npm dependencies
+npm install  # or bun install
+
+# Start Vite dev server on port 5173 (proxies /api to the backend)
+npm run dev -- --host 0.0.0.0 --port 5173
+
+# If your backend runs on port 8105, configure Vite proxy:
+API_PROXY_TARGET=http://127.0.0.1:8105 npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+#### 4. Access Local Application
+- **Frontend**: `http://localhost:5173`
+- **Multiplayer Friend Duels**: `http://localhost:5173/friends`
+- **FastAPI Interactive Docs**: `http://localhost:8080/docs` (or `http://localhost:8105/docs`)
 ---
 
 ## 6. Testing & Quality Assurance

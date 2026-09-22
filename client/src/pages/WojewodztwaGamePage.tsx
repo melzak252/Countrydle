@@ -49,7 +49,7 @@ export default function WojewodztwaGamePage() {
     isGuest,
     dailyDate,
   } = useWojewodztwaGameStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const today = useDailyDate();
 
   // HUD & Chat state

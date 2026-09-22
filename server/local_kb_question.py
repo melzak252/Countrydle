@@ -308,7 +308,8 @@ def evaluate(
             return any(norm(v) == right_val for v in rel_items)
 
     if op == "not":
-        value = evaluate(conn, config, row, node.get("condition", {}), item_value)
+        sub_node = node.get("condition") or node.get("operand") or {}
+        value = evaluate(conn, config, row, sub_node, item_value)
         return None if value is None else not value
     if op in {"any", "all"}:
         items = resolve_ref(conn, config, row, node.get("items", {}))
