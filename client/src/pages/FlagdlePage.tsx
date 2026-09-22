@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
 import { FlagClueTimeline } from '../components/FlagClueTimeline';
-import QuestionInput from '../components/QuestionInput';
-import History from '../components/History';
 import CountdownTimer from '../components/CountdownTimer';
 import { Loader2, HelpCircle, Share2, Check, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -15,7 +13,6 @@ export default function FlagdlePage() {
   const {
     gameState,
     guesses,
-    questions,
     stage,
     flagAssetUrl,
     correctCountry,
@@ -25,7 +22,6 @@ export default function FlagdlePage() {
     isGuest,
     fetchGameState,
     fetchCountries,
-    askQuestion,
     makeGuess,
     syncGuestData,
   } = useFlagdleGameStore();
@@ -36,7 +32,6 @@ export default function FlagdlePage() {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [showInstructions, setShowInstructions] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [gameMode, setGameMode] = useState<'cards' | 'questions'>('cards');
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const resolvedFlagUrl = useMemo(() => {
@@ -234,77 +229,16 @@ export default function FlagdlePage() {
       </header>
 
       {/* Main Game Container */}
-      {/* Mode Switcher: Card Reveal vs 20 Questions */}
-      <div className="flex items-center justify-center">
-        <div className="inline-flex rounded-sm border border-white/10 bg-obsidian-900 p-1 shadow-inner" role="tablist" aria-label="Flagdle Game Mode">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={gameMode === 'cards'}
-            onClick={() => setGameMode('cards')}
-            className={`flex items-center gap-2 rounded-sm px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-              gameMode === 'cards'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'text-zinc-400 hover:text-white border border-transparent'
-            }`}
-          >
-            <span>🎴 Card Reveal (6 Guesses)</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={gameMode === 'questions'}
-            onClick={() => setGameMode('questions')}
-            className={`flex items-center gap-2 rounded-sm px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-              gameMode === 'questions'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'text-zinc-400 hover:text-white border border-transparent'
-            }`}
-          >
-            <span>❓ 20 Questions (Ask Clues)</span>
-          </button>
-        </div>
-      </div>
-
-      {gameMode === 'questions' && (
-        <section aria-label="Flag Questions" className="mx-auto w-full max-w-xl space-y-4 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
-          <div>
-            <h2 className="mb-1 text-sm font-medium text-sand-100">Ask a Question about the Secret Flag</h2>
-            <p className="mb-3 text-xs text-zinc-400">
-              Ask yes/no questions about colors, stripes, stars, crosses, animals, or country geography.
-            </p>
-            <QuestionInput
-              onAsk={askQuestion}
-              isLoading={isLoading}
-              remainingQuestions={Math.max(0, 8 - questions.length)}
-              placeholder="e.g. Does the flag have green? Does it feature stripes?"
-            />
-          </div>
-          {questions.length > 0 && (
-            <div className="border-t border-white/10 pt-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                  Questions Asked ({questions.length} / 8)
-                </h3>
-              </div>
-              <History mode="countrydle" questions={questions} isGameOver={isGameOver} />
-            </div>
-          )}
-        </section>
-      )}
-
       <main className="space-y-6">
-        {/* 1. The 6-Card Progressive Unmasking Canvas */}
-        {(gameMode === 'cards' || isGameOver) && (
-          <section aria-label="Flag Visualizer">
-            <FlagTiles
-              stage={stage}
-              isGameOver={isGameOver}
-              flagUrl={resolvedFlagUrl}
-              countryName={correctCountry?.name}
-            />
-          </section>
-        )}
+        {/* 1. The 12-Card Progressive Unmasking Canvas (3 rows x 4 columns) */}
+        <section aria-label="Flag Visualizer">
+          <FlagTiles
+            stage={stage}
+            isGameOver={isGameOver}
+            flagUrl={resolvedFlagUrl}
+            countryName={correctCountry?.name}
+          />
+        </section>
         {/* 2. Autocomplete Search Input (active when game not over) */}
         {!isGameOver && (
           <section aria-label="Guess Input" className="mx-auto w-full max-w-xl">
@@ -455,44 +389,44 @@ export default function FlagdlePage() {
 
       {/* Instructions Modal */}
       {showInstructions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-sand-700 bg-sand-950 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-sand-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-sm border border-white/15 bg-obsidian-950 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-lg font-bold text-sand-100 flex items-center gap-2">
                 <span>🚩 How to Play Flagdle</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setShowInstructions(false)}
-                className="text-sand-400 hover:text-sand-200"
+                className="text-zinc-400 hover:text-white"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 text-xs sm:text-sm text-sand-300 leading-relaxed">
+            <div className="space-y-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
               <p>
                 Deduce the secret national flag in <strong>6 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
               </p>
 
-              <div className="rounded-xl border border-sand-800 bg-sand-900/60 p-3 space-y-2">
-                <div className="font-semibold text-sand-200">🔍 Progressive Visual Revelation:</div>
-                <p className="text-sand-400">
-                  The flag begins partially masked in a 3×2 grid. Every incorrect guess unmasks an additional tile (16.6% more of the flag).
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
+                <div className="font-semibold text-sand-100">🎴 12-Card Cover Grid (3×4):</div>
+                <p className="text-zinc-400">
+                  The flag is covered by 12 solid cards. Every incorrect guess lifts 2 cards, revealing more of the flag underneath.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-sand-800 bg-sand-900/60 p-3 space-y-2">
-                <div className="font-semibold text-sand-200">🎨 Color Overlap Clues:</div>
-                <p className="text-sand-400">
-                  Each guess analyzes the colors of your guess against the secret target. Green chips show shared colors, while crossed-out chips show colors absent from the secret flag.
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
+                <div className="font-semibold text-sand-100">🎨 Color Overlap Clues:</div>
+                <p className="text-zinc-400">
+                  Each guess analyzes the colors of your guessed flag against the secret target. Green chips show shared colors, while crossed-out chips show colors absent from the secret flag.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-sand-800 bg-sand-900/60 p-3 space-y-2">
-                <div className="font-semibold text-sand-200">🧭 Distance & Direction:</div>
-                <p className="text-sand-400">
-                  An arrow and distance indicator show the spherical distance and compass bearing from your guessed country to the secret target country.
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 space-y-1.5">
+                <div className="font-semibold text-sand-100">🧭 Distance & Direction:</div>
+                <p className="text-zinc-400">
+                  An arrow and distance badge show the great-circle distance and compass bearing from your guessed country to the secret target.
                 </p>
               </div>
             </div>
@@ -500,7 +434,7 @@ export default function FlagdlePage() {
             <button
               type="button"
               onClick={() => setShowInstructions(false)}
-              className="w-full rounded-xl bg-sand-800 hover:bg-sand-700 py-2.5 text-sm font-semibold text-sand-100 transition-colors"
+              className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-2.5 text-sm font-semibold text-obsidian-950 transition-colors cursor-pointer"
             >
               Got it, let's play!
             </button>
