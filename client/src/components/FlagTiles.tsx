@@ -21,8 +21,8 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
   const revealedSet = new Set(UNMASK_ORDER.slice(0, effectiveStage));
 
   return (
-    <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-sand-700/60 bg-sand-950 p-2 sm:p-3 shadow-2xl shadow-sand-950/80">
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-xl bg-sand-900 flex items-center justify-center">
+    <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-2 sm:p-3 shadow-2xl">
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-obsidian-900 flex items-center justify-center">
         {flagUrl ? (
           <img
             src={flagUrl}
@@ -31,7 +31,7 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
             draggable={false}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sand-500 animate-pulse font-mono text-sm">
+          <div className="flex h-full w-full items-center justify-center text-zinc-500 animate-pulse font-mono text-sm">
             Loading Flag...
           </div>
         )}
@@ -43,15 +43,14 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
               const isRevealed = revealedSet.has(tileIdx);
               return (
                 <div
-                  key={tileIdx}
-                  className={`border border-sand-800/40 backdrop-blur-sm transition-all duration-700 ease-out flex items-center justify-center ${
+                  className={`border border-white/10 backdrop-blur-sm transition-all duration-700 ease-out flex items-center justify-center ${
                     isRevealed
                       ? 'pointer-events-none opacity-0 scale-95'
-                      : 'bg-sand-900/95 opacity-100 shadow-inner'
+                      : 'bg-obsidian-900/98 opacity-100 shadow-inner'
                   }`}
                 >
                   {!isRevealed && (
-                    <span className="select-none font-mono text-xs sm:text-sm font-semibold text-sand-500/60">
+                    <span className="select-none font-mono text-xs sm:text-sm font-semibold text-zinc-600">
                       ?
                     </span>
                   )}
@@ -62,12 +61,12 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-sand-400">
+      <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-zinc-400">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-sand-400 animate-pulse" />
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Tile {effectiveStage} of 6</span>
         </div>
-        <span className="font-mono text-sand-300 font-semibold">
+        <span className="font-mono text-sand-100 font-semibold">
           {Math.min(100, Math.round((effectiveStage / 6) * 100))}% Unmasked
         </span>
       </div>

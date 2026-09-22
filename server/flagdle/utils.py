@@ -29,9 +29,29 @@ def get_sqlite_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
     return conn
 
 
+def get_sqlite_country_id(
+    cur: sqlite3.Cursor, country_id: int | None = None, name: str | None = None
+) -> int | None:
+    if name:
+        clean = name.strip()
+        row = cur.execute(
+            "SELECT id FROM countries WHERE LOWER(app_country_name) = LOWER(?) OR LOWER(official_name) = LOWER(?)",
+            (clean, clean),
+        ).fetchone()
+        if row:
+            return row[0]
+    if country_id is not None and country_id > 0:
+        row = cur.execute("SELECT id FROM countries WHERE id = ?", (country_id,)).fetchone()
+        if row:
+            return row[0]
+    return None
+
+
 def evaluate_flag_clues(
-    target_country_id: int,
-    guessed_country_id: int,
+    target_country_id: int | None = None,
+    guessed_country_id: int | None = None,
+    target_country_name: str | None = None,
+    guessed_country_name: str | None = None,
     db_path: Optional[Path] = None,
     all_matched_colors_so_far: Optional[Set[str]] = None,
 ) -> Dict[str, Any]:
@@ -40,18 +60,20 @@ def evaluate_flag_clues(
     cur = conn.cursor()
 
     try:
+        t_id = get_sqlite_country_id(cur, target_country_id, target_country_name)
+        g_id = get_sqlite_country_id(cur, guessed_country_id, guessed_country_name)
         # 1. Colors
         cur.execute(
             "SELECT color FROM country_flag_colors WHERE country_id=?",
-            (target_country_id,),
+            (t_id,),
         )
-        target_colors = {r[0] for r in cur.fetchall()}
+        target_colors = {r[0] for r in cur.fetchall()} if t_id else set()
 
         cur.execute(
             "SELECT color FROM country_flag_colors WHERE country_id=?",
-            (guessed_country_id,),
+            (g_id,),
         )
-        guessed_colors = {r[0] for r in cur.fetchall()}
+        guessed_colors = {r[0] for r in cur.fetchall()} if g_id else set()
 
         matched_colors = sorted(list(target_colors.intersection(guessed_colors)))
         missed_colors = sorted(list(guessed_colors.difference(target_colors)))
@@ -65,30 +87,30 @@ def evaluate_flag_clues(
         # 2. Symbols
         cur.execute(
             "SELECT symbol FROM country_flag_symbols WHERE country_id=?",
-            (target_country_id,),
+            (t_id,),
         )
-        target_symbols = {r[0] for r in cur.fetchall()}
+        target_symbols = {r[0] for r in cur.fetchall()} if t_id else set()
 
         cur.execute(
             "SELECT symbol FROM country_flag_symbols WHERE country_id=?",
-            (guessed_country_id,),
+            (g_id,),
         )
-        guessed_symbols = {r[0] for r in cur.fetchall()}
+        guessed_symbols = {r[0] for r in cur.fetchall()} if g_id else set()
 
         matched_symbols = sorted(list(target_symbols.intersection(guessed_symbols)))
 
         # 3. Coordinates & Geo
         cur.execute(
             "SELECT latitude, longitude FROM countries WHERE id=?",
-            (target_country_id,),
+            (t_id,),
         )
-        target_coords = cur.fetchone()
+        target_coords = cur.fetchone() if t_id else None
 
         cur.execute(
             "SELECT latitude, longitude FROM countries WHERE id=?",
-            (guessed_country_id,),
+            (g_id,),
         )
-        guessed_coords = cur.fetchone()
+        guessed_coords = cur.fetchone() if g_id else None
 
         dist_km: Optional[int] = None
         bearing_deg: Optional[int] = None

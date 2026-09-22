@@ -281,6 +281,8 @@ async def make_guess(
     clues = evaluate_flag_clues(
         target_country_id=target_country.id,
         guessed_country_id=guessed_country.id,
+        target_country_name=target_country.name,
+        guessed_country_name=guessed_country.name,
         all_matched_colors_so_far=all_matched_colors,
     )
 
