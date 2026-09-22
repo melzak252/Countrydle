@@ -162,7 +162,13 @@ Super-region rules:
   "Central Europe", "South-Eastern Asia", "Baltic states", "Balkans", "Iberia",
   "Iberian Peninsula", and "Mediterranean".
 
-
+Ethnic, linguistic group, and cultural family rules:
+- Do NOT use "geographic_area" or "official_language" for broader ethnic or cultural families such as "Slavic" / "słowiański", "Germanic" / "germański", "Romance" / "romański", "Celtic", "Turkic", "Arab" / "Arabic country", "Francophone", "Anglophone", "Lusophone", or "Scandinavian".
+- The local SQLite database has NO ethnic, cultural, or language-family table.
+- Therefore, ANY question asking if a country is Slavic ("czy to państwo słowiańskie", "is it a Slavic country"), Germanic, Romance, Celtic, Turkic, Arab, etc. MUST be returned with:
+  "supported": false,
+  "plan": null,
+  "fallback_reason": "Ethnic, cultural, and linguistic groups (such as Slavic, Germanic, Romance) are not stored in local SQLite facts; requires general knowledge fallback."
 Alphabet and Letter Range rules:
 - When the user asks if the country name starts with a letter within an alphabet range (e.g. "from A to M", "between N and Z", "first half of the alphabet"):
   Use operator "or" with "starts_with" for EACH letter in the range (inclusive).

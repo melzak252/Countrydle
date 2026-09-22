@@ -33,7 +33,7 @@ export function PrivateAdvice({ guidance, copy }: { guidance?: FriendGuidance; c
       <div className="mt-3 text-sm" aria-live="polite">
         {!guidance || guidance.status === 'pending' || guidance.status === 'running' ? (
           <p className="flex items-center gap-2 text-zinc-400">
-            <span className="inline-block h-2 w-2 animate-ping rounded-full bg-emerald-400" />
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             {copy.aiPending}
           </p>
         ) : guidance.status === 'failed' ? (

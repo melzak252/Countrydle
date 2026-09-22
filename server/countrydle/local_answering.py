@@ -1142,6 +1142,11 @@ def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) 
                 pass
             else:
                 right["value"] = canonical_area
+        else:
+            # If right["value"] is not a recognized geographic area in the database
+            # (e.g. cultural or ethnic family like "Slavic", "Germanic", etc.),
+            # this plan cannot be truthfully evaluated against local geographic_area tables.
+            return None
     if isinstance(normalized.get("condition"), dict):
         normalized["condition"] = normalize_geographic_area_plan(conn, normalized["condition"])
     if isinstance(normalized.get("conditions"), list):

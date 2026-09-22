@@ -374,7 +374,7 @@ function DuelRoom({ code }: { code?: string }) {
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-emerald-300 sm:text-base flex items-center gap-2">
                     {copy.yourTurn}
-                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
                   </h2>
                   <p className="text-xs text-emerald-100/90 sm:text-sm">
                     {snapshot.phase === 'reply' ? copy.reply : copy.turnHelp}
@@ -471,7 +471,7 @@ function DuelRoom({ code }: { code?: string }) {
                       : 'bg-zinc-800 text-zinc-400'
                   }`}
                 >
-                  {myTurn && <span className="h-1.5 w-1.5 rounded-full bg-obsidian-950 animate-ping" />}
+                  {myTurn && <span className="h-1.5 w-1.5 rounded-full bg-obsidian-950" />}
                   {myTurn ? copy.yourTurn : copy.waiting}
                 </span>
               )}
@@ -541,7 +541,7 @@ function DuelRoom({ code }: { code?: string }) {
                           : 'bg-zinc-800 text-zinc-400'
                       }`}
                     >
-                      {!myTurn && <span className="h-1.5 w-1.5 rounded-full bg-obsidian-950 animate-ping" />}
+                      {!myTurn && <span className="h-1.5 w-1.5 rounded-full bg-obsidian-950" />}
                       {!myTurn ? copy.activeTurn : copy.waiting}
                     </span>
                   )}

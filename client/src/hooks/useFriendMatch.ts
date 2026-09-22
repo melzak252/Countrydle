@@ -30,6 +30,23 @@ export function useFriendMatch(code: string | undefined, fallbackError: string, 
         return old && ranks[old.status] > ranks[item.status] ? old : item;
       });
       next = { ...next, guidance };
+      // If version and key fields are identical, avoid re-triggering component re-renders
+      if (
+        previous.version === next.version &&
+        previous.phase === next.phase &&
+        previous.status === next.status &&
+        previous.active_player_id === next.active_player_id &&
+        previous.pending_question_id === next.pending_question_id &&
+        previous.history.length === next.history.length &&
+        previous.guidance.length === next.guidance.length &&
+        previous.players.every((p, i) => {
+          const np = next.players[i];
+          return np && p.ready === np.ready && p.connected === np.connected && p.question_count === np.question_count && p.guess_count === np.guess_count;
+        }) &&
+        JSON.stringify(previous.guidance) === JSON.stringify(next.guidance)
+      ) {
+        return;
+      }
     }
     current.current = next;
     setSnapshot(next);
