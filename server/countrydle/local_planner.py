@@ -340,16 +340,21 @@ User question: {question}
 """.strip()
 
 
-def analyze_question_for_local_plan(question: str) -> QuestionPlan:
+def analyze_question_for_local_plan(
+    question: str, *, use_cache: bool = True, strict_errors: bool = False,
+    evidence: dict | None = None,
+) -> QuestionPlan:
     from utils.plan_cache import plan_cache
 
-    cached = plan_cache.get("countrydle", question)
+    cached = plan_cache.get("countrydle", question) if use_cache else None
     if cached is not None:
         return cached
 
     load_dotenv_if_present()
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
+        if strict_errors:
+            raise RuntimeError("GEMINI_API_KEY is not configured")
         return QuestionPlan(
             original_question=question,
             valid=True,
@@ -361,6 +366,11 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
         )
 
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or DEFAULT_MODEL
+    if evidence is not None:
+        evidence.update(
+            provider="gemini", model=model, prompt=build_planner_prompt(question),
+            temperature=0, max_output_tokens=1024, cache_hit=False,
+        )
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": build_planner_prompt(question)}]}],
@@ -380,6 +390,8 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
         with urlopen(request, timeout=30) as response:
             data = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
+        if strict_errors:
+            raise RuntimeError(f"Gemini planner HTTP error: {exc.code}") from exc
         return QuestionPlan(
             original_question=question,
             valid=True,
@@ -389,11 +401,15 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
             plan=None,
             fallback_reason=f"Gemini planner HTTP error: {exc.code}",
         )
+    if evidence is not None:
+        evidence.update(model_version=data.get("modelVersion"), response_id=data.get("responseId"))
 
     raw_text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
     try:
         parsed = json.loads(raw_text)
     except json.JSONDecodeError:
+        if strict_errors:
+            raise RuntimeError("Gemini planner returned invalid JSON.")
         return QuestionPlan(
             original_question=question,
             valid=True,
@@ -403,6 +419,10 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
             plan=None,
             fallback_reason="Gemini planner returned invalid JSON.",
         )
+    if strict_errors:
+        from local_kb_question import validate_planner_response
+
+        validate_planner_response(parsed)
 
     plan = QuestionPlan(
         original_question=question,
@@ -413,5 +433,6 @@ def analyze_question_for_local_plan(question: str) -> QuestionPlan:
         plan=parsed.get("plan"),
         fallback_reason=parsed.get("fallback_reason"),
     )
-    plan_cache.set("countrydle", question, plan)
+    if use_cache:
+        plan_cache.set("countrydle", question, plan)
     return plan

@@ -219,20 +219,10 @@ Output:
 
 
 
-async def ask_question(
-    question: USStateQuestionEnhanced,
-    day_state: USStatedleDay,
-    user: User | None,
-    session: AsyncSession,
-) -> Tuple[USStateQuestionCreate, List[float]]:
-
-
-    fragments, question_vector = await get_fragments_matching_question(
-        question.question, "us_state_id", day_state.us_state_id, "us_states", session, limit=qdrant.US_STATEDLE_CONTEXT_LIMIT
-    )
-    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
-    state: USState = await USStateRepository(session).get(day_state.us_state_id)
-
+def answer_prompts(
+    question: USStateQuestionEnhanced, entity_name: str, context: str,
+) -> tuple[str, str]:
+    """Build the shared daily and explicit-target answer instructions."""
     system_prompt = f"""
 You are an AI assistant in a game where players try to guess a US State by asking True/False questions. 
 Your task is to:
@@ -244,11 +234,11 @@ Instructions:
 - If you cannot determine the answer even with general knowledge, set "answer" to null.
 - Incorporate any relevant details from the provided context about the state into your explanations.
 - If the question asks if the state borders/neighbors [X], and the secret state IS [X], answer "true". Treat a state as bordering itself for the purpose of this game.
-- **Informative Explanations**: Write the `explanation` as factual information about the state that answers the question and provides details. Avoid starting with 'Yes' or 'No' or simply repeating the answer. The explanation should be an informative statement about the state that justifies the True/False answer (e.g., instead of 'Yes, it is in the South', use '{state.name} is located in the Southeastern United States and is known for its humid subtropical climate.').
-- **User Perspective**: If the user refers to themselves as the state (e.g., "Am I in the South?"), you should still answer about the state in the third person (e.g., "{state.name} is in the South") to maintain a factual and informative tone.
+- **Informative Explanations**: Write the `explanation` as factual information about the state that answers the question and provides details. Avoid starting with 'Yes' or 'No' or simply repeating the answer. The explanation should be an informative statement about the state that justifies the True/False answer (e.g., instead of 'Yes, it is in the South', use '{entity_name} is located in the Southeastern United States and is known for its humid subtropical climate.').
+- **User Perspective**: If the user refers to themselves as the state (e.g., "Am I in the South?"), you should still answer about the state in the third person (e.g., "{entity_name} is in the South") to maintain a factual and informative tone.
 - **Handle Logical 'OR' and Lists**: If a question contains 'or' or provides a list of options (e.g., 'Is it California or Texas?'), the answer is `true` if the target state matches **at least one** of those options.
 
-### State to Guess: {state.name}
+### State to Guess: {entity_name}
 ### Question Intent: {question.intent}
 ### Required Information: {question.required_info}
 ### Context: 
@@ -266,6 +256,15 @@ Answer with JSON format and nothing else. Use the specific format:
 
     question_prompt = f"""User's Original Question: {question.original_question}
 Simplified Question: {question.question}"""
+    return system_prompt, question_prompt
+
+
+def answer_question_for_entity(
+    question: USStateQuestionEnhanced, entity_name: str, context: str, *,
+    evidence: dict | None = None, request_timeout: float | None = None,
+) -> dict:
+    """Run the normal answer model for an explicit target, without daily state."""
+    system_prompt, question_prompt = answer_prompts(question, entity_name, context)
 
 
     prompts = [
@@ -274,7 +273,7 @@ Simplified Question: {question.question}"""
     ]
     model = os.getenv("QUIZ_MODEL")
 
-    client = OpenAI()
+    client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
     response = client.chat.completions.create(
         model=model,
         messages=prompts,
@@ -290,6 +289,30 @@ Simplified Question: {question.question}"""
     except json.JSONDecodeError:
         print(answer)
         raise
+    if evidence is not None:
+        evidence.update(
+            provider="openai", model=response.model, requested_model=model,
+            messages=prompts, temperature=0, seed=42,
+            response_id=response.id, system_fingerprint=response.system_fingerprint,
+        )
+    return answer_dict
+
+
+async def ask_question(
+    question: USStateQuestionEnhanced,
+    day_state: USStatedleDay,
+    user: User | None,
+    session: AsyncSession,
+) -> Tuple[USStateQuestionCreate, List[float]]:
+
+
+    fragments, question_vector = await get_fragments_matching_question(
+        question.question, "us_state_id", day_state.us_state_id, "us_states", session, limit=qdrant.US_STATEDLE_CONTEXT_LIMIT
+    )
+    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
+    state: USState = await USStateRepository(session).get(day_state.us_state_id)
+    answer_dict = answer_question_for_entity(question, state.name, context)
+
 
     question_create = USStateQuestionCreate(
         user_id=user.id if user else None,

@@ -7,7 +7,7 @@ import CountdownTimer from './CountdownTimer';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const games = [
     ['/game', t('header.worldMap', 'World Map (Countrydle)')],
@@ -19,6 +19,7 @@ export default function Header() {
     ['/us-states', t('header.usStates')],
     ['/powiaty', t('header.powiaty')],
     ['/wojewodztwa', t('header.wojewodztwa')],
+    ['/friends', i18n.language.startsWith('pl') ? 'Graj ze znajomym' : 'Play with a friend'],
   ];
   const more = [
     ['/archive', t('header.archive')],

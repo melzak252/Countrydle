@@ -10,22 +10,30 @@ export default function CookieConsent() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    // Check if user has already made a choice
-    const consent = localStorage.getItem("cookie-consent");
-    if (!consent) {
-      // Delay showing the banner slightly for better UX
-      const timer = setTimeout(() => setIsVisible(true), 1000);
-      return () => clearTimeout(timer);
+    try {
+      if (localStorage.getItem("cookie-consent")) return;
+    } catch {
+      // Keep the choice available for this page even without storage.
     }
+    const timer = setTimeout(() => setIsVisible(true), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem("cookie-consent", "accepted");
+    try {
+      localStorage.setItem("cookie-consent", "accepted");
+    } catch {
+      // The current page can still dismiss the banner.
+    }
     setIsVisible(false);
   };
 
   const handleDecline = () => {
-    localStorage.setItem("cookie-consent", "declined");
+    try {
+      localStorage.setItem("cookie-consent", "declined");
+    } catch {
+      // The current page can still dismiss the banner.
+    }
     setIsVisible(false);
   };
 

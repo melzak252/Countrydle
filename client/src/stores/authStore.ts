@@ -39,12 +39,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   setUser: (user) => {
-    if (user) {
+    try {
+      if (user) {
         localStorage.setItem('user', JSON.stringify(user));
-        set({ user, isAuthenticated: true, isLoading: false });
-    } else {
+      } else {
         localStorage.removeItem('user');
-        set({ user: null, isAuthenticated: false, isLoading: false });
+      }
+    } catch {
+      // Guest seat cookies remain usable without persistent browser storage.
     }
+    set({ user, isAuthenticated: Boolean(user), isLoading: false });
   },
 }));

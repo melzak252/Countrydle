@@ -3,21 +3,21 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useWojewodztwaGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
-import type { Feature } from 'geojson';
+import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
+import type { MapInteractionState } from '../lib/mapMarkings';
 
 interface WojewodztwaMapProps {
   correctWojewodztwoName?: string;
   className?: string;
 }
 
-function MapController({ correctName, geoJsonData }: { correctName?: string, geoJsonData: any }) {
+function MapController({ correctName, geoJsonData, isGameOver }: { correctName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
   const map = useMap();
-  const { gameState } = useWojewodztwaGameStore();
 
   useEffect(() => {
-    if (gameState?.is_game_over && correctName && geoJsonData) {
+    if (isGameOver && correctName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
         f.properties.nazwa.toUpperCase() === correctName.toUpperCase()
       );
@@ -30,23 +30,33 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
         }
       }
     }
-  }, [gameState?.is_game_over, correctName, geoJsonData, map]);
+  }, [isGameOver, correctName, geoJsonData, map]);
 
   return null;
 }
 
 export default function WojewodztwaMap({ correctWojewodztwoName, className }: WojewodztwaMapProps) {
-  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+  const state = useWojewodztwaGameStore();
+  return <ControlledWojewodztwaMap className={className}
+    correctWojewodztwoName={correctWojewodztwoName || state.correctEntity?.nazwa}
+    interaction={{
+      entityMarkings: state.entityMarkings,
+      activeMarkerColor: state.activeMarkerColor,
+      setActiveMarkerColor: state.setActiveMarkerColor,
+      handleEntityMapClick: state.handleEntityMapClick,
+      clearMapMarkings: state.clearMapMarkings,
+      isGameOver: !!state.gameState?.is_game_over,
+    }} />;
+}
+
+export function ControlledWojewodztwaMap({ correctWojewodztwoName, className, interaction }: WojewodztwaMapProps & { interaction: MapInteractionState }) {
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
-  const {
-    entityMarkings,
-    activeMarkerColor,
-    setActiveMarkerColor,
-    handleEntityMapClick,
-    clearMapMarkings,
-    gameState,
-    correctEntity,
-  } = useWojewodztwaGameStore();
+  const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
+  const revealedName = isGameOver ? correctWojewodztwoName : undefined;
+  // Leaflet retains handlers from layer creation; refs keep them on the current props.
+  const current = useRef({ interaction, revealedName });
+  current.current = { interaction, revealedName };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   
   useEffect(() => {
@@ -125,8 +135,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
   };
 
   const getStyle = (feature: any) => {
-    const { entityMarkings: em, correctEntity: ce, gameState: gs } = useWojewodztwaGameStore.getState();
-    return getStyleFromState(feature, em, gs?.is_game_over ? ce?.nazwa : undefined);
+    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
   };
 
   useEffect(() => {
@@ -134,32 +143,31 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
       geoJsonLayerRef.current.eachLayer((layer: any) => {
         const feature = layer.feature;
         if (feature) {
-          const { gameState: gs, correctEntity: ce } = useWojewodztwaGameStore.getState();
           const newStyle = getStyleFromState(
             feature,
             entityMarkings,
-            gs?.is_game_over ? correctWojewodztwoName || ce?.nazwa : undefined
+            revealedName
           );
           layer.setStyle(newStyle);
 
-          if (gs?.is_game_over && (correctWojewodztwoName || ce?.nazwa) && (feature.properties.nazwa.toUpperCase() === (correctWojewodztwoName || ce?.nazwa).toUpperCase())) {
+          if (revealedName && feature.properties.nazwa.toUpperCase() === revealedName.toUpperCase()) {
             layer.bringToFront();
           }
         }
       });
     }
-  }, [entityMarkings, gameState?.is_game_over, correctWojewodztwoName]);
+  }, [entityMarkings, revealedName, geoJsonData]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.nazwa;
     
     layer.on({
       click: () => {
-        handleEntityMapClick(name.toUpperCase(), false);
+        current.current.interaction.handleEntityMapClick(name.toUpperCase(), false);
       },
       contextmenu: (e: any) => {
         e.originalEvent?.preventDefault?.();
-        handleEntityMapClick(name.toUpperCase(), true);
+        current.current.interaction.handleEntityMapClick(name.toUpperCase(), true);
       },
       mouseover: (e) => {
         const l = e.target;
@@ -171,12 +179,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
       },
       mouseout: (e) => {
         const l = e.target;
-        const { entityMarkings: em, correctEntity: ce, gameState: gs } = useWojewodztwaGameStore.getState();
-        const style = getStyleFromState(
-          feature,
-          em,
-          gs?.is_game_over ? ce?.nazwa : undefined
-        );
+        const style = getStyle(feature);
         l.setStyle(style);
       }
     });
@@ -187,7 +190,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
   };
 
   const handleZoomToCorrect = () => {
-    const targetName = correctWojewodztwoName || correctEntity?.nazwa;
+    const targetName = revealedName;
     
     if (map && targetName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
@@ -220,7 +223,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
-      {gameState?.is_game_over && (
+      {revealedName && (
         <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000]">
           <button
             onClick={handleZoomToCorrect}
@@ -253,7 +256,7 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
             ref={geoJsonLayerRef}
         />
 
-        <MapController correctName={correctWojewodztwoName} geoJsonData={geoJsonData} />
+        <MapController correctName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
     </div>
   );

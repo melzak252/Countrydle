@@ -10,8 +10,12 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  if (localStorage.getItem('user')) {
-    config.headers['X-Client-Authenticated'] = 'true';
+  try {
+    if (localStorage.getItem('user')) {
+      config.headers['X-Client-Authenticated'] = 'true';
+    }
+  } catch {
+    // HttpOnly-cookie requests still work when browser storage is unavailable.
   }
   return config;
 });
@@ -20,9 +24,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('user');
+      try {
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          localStorage.setItem('session_expired', 'true');
+        }
+      } catch {
+        // A denied storage API must not prevent session recovery.
+      }
       if (window.location.pathname !== '/login') {
-        localStorage.setItem('session_expired', 'true');
         window.location.href = '/login';
       }
     }

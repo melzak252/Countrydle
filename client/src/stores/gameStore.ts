@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from './authStore';
 import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHistory';
 import toast from 'react-hot-toast';
+import { mapClickColor, toggleMapMarking } from '../lib/mapMarkings';
 
 export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange';
 
@@ -501,16 +502,9 @@ const createGameStore = (gameType: MapGameType) => {
     }),
 
     toggleEntityMarker: (name: string, color?: MapMarkerColor) => {
-      const normalized = name.toUpperCase();
-      const targetColor = color || get().activeMarkerColor;
       const { entityMarkings } = get();
-      const nextMarkings = { ...entityMarkings };
-
-      if (nextMarkings[normalized] === targetColor) {
-        delete nextMarkings[normalized];
-      } else {
-        nextMarkings[normalized] = targetColor;
-      }
+      const targetColor = color || get().activeMarkerColor;
+      const nextMarkings = toggleMapMarking(entityMarkings, name, targetColor);
 
       const nextCandidate = Object.keys(nextMarkings).filter(k => nextMarkings[k] === 'green');
       const nextEliminated = Object.keys(nextMarkings).filter(k => nextMarkings[k] === 'red');
@@ -533,14 +527,7 @@ const createGameStore = (gameType: MapGameType) => {
 
     handleEntityMapClick: (name: string, isSecondary = false) => {
       const { activeMarkerColor } = get();
-      let targetColor = activeMarkerColor;
-      if (isSecondary) {
-        if (activeMarkerColor === 'green') targetColor = 'red';
-        else if (activeMarkerColor === 'red') targetColor = 'green';
-        else if (activeMarkerColor === 'blue') targetColor = 'orange';
-        else if (activeMarkerColor === 'orange') targetColor = 'blue';
-      }
-      get().toggleEntityMarker(name, targetColor);
+      get().toggleEntityMarker(name, mapClickColor(activeMarkerColor, isSecondary));
     },
     
     toggleEntitySelection: (name: string) => {
