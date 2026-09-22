@@ -46,6 +46,7 @@ async def lifespan(app: FastAPI):
 
         utils.scheduler.start()
         asyncio.create_task(utils.generate_yesterday_blog_post())
+        asyncio.create_task(utils.run_generate_continental_days())
 
         yield
     except ConnectionRefusedError:

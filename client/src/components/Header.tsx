@@ -10,7 +10,11 @@ export default function Header() {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const games = [
-    ['/game', t('header.worldMap')],
+    ['/game', t('header.worldMap', 'World Map (Countrydle)')],
+    ['/europe', t('header.europe', 'Europedle')],
+    ['/asia', t('header.asia', 'Asiadle')],
+    ['/africa', t('header.africa', 'Africadle')],
+    ['/americas', t('header.americas', 'Americadle')],
     ['/us-states', t('header.usStates')],
     ['/powiaty', t('header.powiaty')],
     ['/wojewodztwa', t('header.wojewodztwa')],

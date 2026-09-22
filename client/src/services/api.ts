@@ -207,6 +207,46 @@ export const wojewodztwoService = {
   },
 };
 
+export const createContinentalService = (continent: string) => ({
+  getState: async (): Promise<GameResponse> => {
+    const response = await api.get(`/continental/${continent}/state`);
+    return response.data;
+  },
+  getCountries: async (): Promise<CountryDisplay[]> => {
+    const response = await api.get(`/continental/${continent}/countries`);
+    return response.data;
+  },
+  askQuestion: async (question: string): Promise<Question> => {
+    const response = await api.post(`/continental/${continent}/question`, { question });
+    return response.data;
+  },
+  makeGuess: async (guess: string, country_id?: number, elapsed_seconds?: number): Promise<Guess> => {
+    const response = await api.post(`/continental/${continent}/guess`, { guess, country_id, elapsed_seconds });
+    return response.data;
+  },
+  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<unknown[]> => {
+    const response = await api.get(`/continental/${continent}/leaderboard?type=${type}`);
+    return response.data;
+  },
+  getHistory: async (): Promise<unknown[]> => {
+    const response = await api.get(`/continental/${continent}/history`);
+    return response.data;
+  },
+  syncGuestData: async (data: unknown): Promise<GameResponse> => {
+    const response = await api.post(`/continental/${continent}/sync`, data);
+    return response.data;
+  },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get(`/continental/${continent}/reveal`);
+    return response.data;
+  },
+});
+
+export const europeService = createContinentalService('europe');
+export const asiaService = createContinentalService('asia');
+export const africaService = createContinentalService('africa');
+export const americasService = createContinentalService('americas');
+
 export const blogService = {
   getPosts: async (page = 1, limit = 12, search?: string) => {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });

@@ -9,6 +9,7 @@ COUNTRYDLE_CONFIG = GameConfig(max_questions=10, max_guesses=3)
 WOJEWODZTWDLE_CONFIG = GameConfig(max_questions=5, max_guesses=2)
 POWIATDLE_CONFIG = GameConfig(max_questions=15, max_guesses=3)
 USSTATEDLE_CONFIG = GameConfig(max_questions=8, max_guesses=3)
+CONTINENTAL_CONFIG = GameConfig(max_questions=8, max_guesses=3)
 
 @dataclass(frozen=True)
 class GameState:
