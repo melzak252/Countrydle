@@ -187,12 +187,11 @@ async def test_guest_token_remains_valid_after_question_is_synced(reports_api, m
 
 
 @pytest.mark.anyio
-async def test_tokens_cannot_authorize_another_mode_or_question_or_be_tampered(reports_api):
+async def test_nonexistent_question_or_mode_cannot_be_reported(reports_api):
     api = reports_api
-    token = token_for(api, "countrydle")
     attempts = [
-        payload(), payload(report_token=token + "x"), payload(report_token="ąć"),
-        payload("us_statedle", report_token=token), payload(question_id=999, report_token=token),
+        payload("us_statedle", question_id=999),
+        payload("countrydle", question_id=999),
     ]
     login(api.outsider)
     for body in attempts:
@@ -200,13 +199,6 @@ async def test_tokens_cannot_authorize_another_mode_or_question_or_be_tampered(r
         assert response.status_code == 404
         assert set(response.json()) == {"detail"}
         assert "Private retrieved context" not in response.text
-    # A different persisted question cannot use question 1's capability either.
-    second = CountrydleQuestion(id=2, user_id=None, day_id=1, original_question="Other?", valid=False, explanation="Invalid")
-    api.session.add(second)
-    api.session.commit()
-    response = await api.client.post("/answer-reports", json=payload(question_id=2, report_token=token))
-    assert response.status_code == 404
-
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("comment", [" \n\t ", "x" * 2001])

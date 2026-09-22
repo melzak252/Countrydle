@@ -14,14 +14,12 @@ import {
   AlertTriangle,
   Trophy,
   Compass,
-  Eye,
   MessageSquare,
   Target,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
-import GuestProgress from '../components/GuestProgress';
-import { useDailyDate } from '../hooks/useDailyClock';
+// removed GuestProgress and useDailyDate
 
 function getDistanceColor(distanceKm: number): string {
   if (distanceKm <= 100) {
@@ -50,7 +48,7 @@ export default function WojewodztwaGamePage() {
     dailyDate,
   } = useWojewodztwaGameStore();
   const { t } = useTranslation();
-  const today = useDailyDate();
+// today removed
 
   // HUD & Chat state
   const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
@@ -484,23 +482,14 @@ export default function WojewodztwaGamePage() {
         <div
           role="dialog"
           aria-modal="true"
+          aria-label="Daily Results"
           onClick={() => setIsResultDismissed(true)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer overflow-y-auto"
         >
           <div
-            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 sm:p-6 shadow-2xl cursor-default"
+            className="relative z-10 w-full max-w-2xl sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-sm shadow-2xl my-auto cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setIsResultDismissed(true)}
-              className="absolute right-4 top-4 rounded-sm border border-white/10 bg-white/5 p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-              title="Inspect Map"
-              aria-label="Close modal and explore map"
-            >
-              <X size={15} />
-            </button>
-
             <ShareResultCard
               gameName="Województwodle"
               gamePath="/wojewodztwa"
@@ -516,23 +505,6 @@ export default function WojewodztwaGamePage() {
               discovery={questions.find((q) => q.valid && q.explanation)?.explanation}
               onClose={() => setIsResultDismissed(true)}
             />
-
-            <div className="mt-4 flex justify-center">
-              <button
-                type="button"
-                onClick={() => setIsResultDismissed(true)}
-                className="flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-              >
-                <Eye size={13} />
-                <span>Explore Map & Revealed Voivodeship</span>
-              </button>
-            </div>
-
-            {isGuest && (
-              <div className="mt-4 pt-3 border-t border-white/10">
-                <GuestProgress gameType="wojewodztwa" today={today} />
-              </div>
-            )}
           </div>
         </div>
       )}
