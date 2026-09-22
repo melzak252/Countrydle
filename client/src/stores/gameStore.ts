@@ -6,6 +6,8 @@ import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHi
 import type { GuestGameType } from '../lib/guestHistory';
 import toast from 'react-hot-toast';
 
+export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange';
+
 interface GameData {
   gameState: GameState | null;
   questions: Question[];
@@ -13,6 +15,8 @@ interface GameData {
   entities: any[]; // General entities (countries, powiaty, etc.)
   correctEntity: any | null;
   dailyDate: string | null;
+  entityMarkings: Record<string, MapMarkerColor>;
+  activeMarkerColor: MapMarkerColor;
   selectedEntityNames: string[];
   candidateEntities: string[];
   eliminatedEntities: string[];
@@ -32,13 +36,14 @@ interface GameActions {
   resetGame: () => void;
   toggleEntitySelection: (name: string) => void;
   clearSelection: () => void;
+  setActiveMarkerColor: (color: MapMarkerColor) => void;
+  toggleEntityMarker: (name: string, color?: MapMarkerColor) => void;
   setMapInteractionMode: (mode: 'candidate' | 'eliminate') => void;
   toggleEntityCandidate: (name: string) => void;
   toggleEntityEliminated: (name: string) => void;
   handleEntityMapClick: (name: string, isSecondary?: boolean) => void;
   clearMapMarkings: () => void;
 }
-
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
 
 interface GuestSnapshot {
@@ -146,6 +151,8 @@ const createGameStore = (gameType: GuestGameType) => {
     entities: [],
     correctEntity: null,
     dailyDate: null,
+    entityMarkings: {},
+    activeMarkerColor: 'green',
     selectedEntityNames: [],
     candidateEntities: [],
     eliminatedEntities: [],
@@ -448,6 +455,8 @@ const createGameStore = (gameType: GuestGameType) => {
         gameState: null, 
         questions: [], 
         guesses: [], 
+        entityMarkings: {},
+        activeMarkerColor: 'green',
         selectedEntityNames: [], 
         candidateEntities: [],
         eliminatedEntities: [],
@@ -456,47 +465,57 @@ const createGameStore = (gameType: GuestGameType) => {
         error: null 
     }),
 
-    setMapInteractionMode: (mode: 'candidate' | 'eliminate') => set({ mapInteractionMode: mode }),
+    setActiveMarkerColor: (color: MapMarkerColor) => set({
+      activeMarkerColor: color,
+      mapInteractionMode: color === 'red' ? 'eliminate' : 'candidate',
+    }),
 
-    toggleEntityCandidate: (name: string) => {
+    setMapInteractionMode: (mode: 'candidate' | 'eliminate') => set({
+      mapInteractionMode: mode,
+      activeMarkerColor: mode === 'eliminate' ? 'red' : 'green',
+    }),
+
+    toggleEntityMarker: (name: string, color?: MapMarkerColor) => {
       const normalized = name.toUpperCase();
-      const { candidateEntities, eliminatedEntities } = get();
-      const nextEliminated = eliminatedEntities.filter(n => n !== normalized);
-      const nextCandidate = candidateEntities.includes(normalized)
-        ? candidateEntities.filter(n => n !== normalized)
-        : [...candidateEntities, normalized];
+      const targetColor = color || get().activeMarkerColor;
+      const { entityMarkings } = get();
+      const nextMarkings = { ...entityMarkings };
+
+      if (nextMarkings[normalized] === targetColor) {
+        delete nextMarkings[normalized];
+      } else {
+        nextMarkings[normalized] = targetColor;
+      }
+
+      const nextCandidate = Object.keys(nextMarkings).filter(k => nextMarkings[k] === 'green');
+      const nextEliminated = Object.keys(nextMarkings).filter(k => nextMarkings[k] === 'red');
+
       set({
+        entityMarkings: nextMarkings,
         candidateEntities: nextCandidate,
         eliminatedEntities: nextEliminated,
         selectedEntityNames: nextCandidate,
       });
+    },
+
+    toggleEntityCandidate: (name: string) => {
+      get().toggleEntityMarker(name, 'green');
     },
 
     toggleEntityEliminated: (name: string) => {
-      const normalized = name.toUpperCase();
-      const { candidateEntities, eliminatedEntities } = get();
-      const nextCandidate = candidateEntities.filter(n => n !== normalized);
-      const nextEliminated = eliminatedEntities.includes(normalized)
-        ? eliminatedEntities.filter(n => n !== normalized)
-        : [...eliminatedEntities, normalized];
-      set({
-        candidateEntities: nextCandidate,
-        eliminatedEntities: nextEliminated,
-        selectedEntityNames: nextCandidate,
-      });
+      get().toggleEntityMarker(name, 'red');
     },
 
     handleEntityMapClick: (name: string, isSecondary = false) => {
-      const { mapInteractionMode } = get();
-      const effectiveAction = isSecondary
-        ? (mapInteractionMode === 'candidate' ? 'eliminate' : 'candidate')
-        : mapInteractionMode;
-
-      if (effectiveAction === 'eliminate') {
-        get().toggleEntityEliminated(name);
-      } else {
-        get().toggleEntityCandidate(name);
+      const { activeMarkerColor } = get();
+      let targetColor = activeMarkerColor;
+      if (isSecondary) {
+        if (activeMarkerColor === 'green') targetColor = 'red';
+        else if (activeMarkerColor === 'red') targetColor = 'green';
+        else if (activeMarkerColor === 'blue') targetColor = 'orange';
+        else if (activeMarkerColor === 'orange') targetColor = 'blue';
       }
+      get().toggleEntityMarker(name, targetColor);
     },
     
     toggleEntitySelection: (name: string) => {
@@ -504,6 +523,7 @@ const createGameStore = (gameType: GuestGameType) => {
     },
     
     clearMapMarkings: () => set({
+      entityMarkings: {},
       candidateEntities: [],
       eliminatedEntities: [],
       selectedEntityNames: [],

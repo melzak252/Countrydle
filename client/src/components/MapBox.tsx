@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature } from 'geojson';
 import MapToolbar from './MapToolbar';
@@ -22,8 +22,8 @@ interface MapControlsProps {
 function MapControls({ correctCountryName, geoJsonData, map }: MapControlsProps) {
   const {
     gameState,
-    mapInteractionMode,
-    setMapInteractionMode,
+    activeMarkerColor,
+    setActiveMarkerColor,
     clearMapMarkings,
   } = useGameStore();
 
@@ -46,8 +46,8 @@ function MapControls({ correctCountryName, geoJsonData, map }: MapControlsProps)
   return (
     <>
       <MapToolbar
-        mode={mapInteractionMode}
-        onModeChange={setMapInteractionMode}
+        activeColor={activeMarkerColor}
+        onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
       {gameState?.is_game_over && (
@@ -96,8 +96,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const {
-    candidateEntities,
-    eliminatedEntities,
+    entityMarkings,
     handleEntityMapClick,
     gameState,
   } = useGameStore();
@@ -130,16 +129,14 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 
   const getStyleFromState = (
     feature: any,
-    candidates: string[],
-    eliminated: string[],
+    markings: Record<string, MapMarkerColor>,
     currentCorrectName?: string
   ): PathOptions => {
     if (!feature || !feature.properties) return {};
 
     const countryName = feature.properties.SOVEREIGNT.toUpperCase();
     const isCorrect = isCorrectCountryFeature(feature, currentCorrectName);
-    const isCandidate = candidates.includes(countryName);
-    const isEliminated = eliminated.includes(countryName);
+    const marker = markings[countryName];
 
     if (isCorrect) {
       return {
@@ -151,7 +148,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
       };
     }
 
-    if (isCandidate) {
+    if (marker === 'green') {
       return {
         fillColor: '#059669',
         weight: 2,
@@ -161,14 +158,34 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
       };
     }
 
-    if (isEliminated) {
+    if (marker === 'red') {
       return {
-        fillColor: '#09090b',
+        fillColor: '#18181b',
         weight: 1.5,
-        opacity: 0.7,
+        opacity: 0.8,
         color: '#f43f5e',
         dashArray: '3, 4',
         fillOpacity: 0.85,
+      };
+    }
+
+    if (marker === 'blue') {
+      return {
+        fillColor: '#1d4ed8',
+        weight: 2,
+        opacity: 1,
+        color: '#60a5fa',
+        fillOpacity: 0.6,
+      };
+    }
+
+    if (marker === 'orange') {
+      return {
+        fillColor: '#c2410c',
+        weight: 2,
+        opacity: 1,
+        color: '#fb923c',
+        fillOpacity: 0.6,
       };
     }
 
@@ -183,10 +200,9 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
   };
 
   const getStyle = (feature: any) => {
-    const { candidateEntities: c, eliminatedEntities: el, correctEntity } = useGameStore.getState();
-    return getStyleFromState(feature, c, el, correctEntity?.name);
+    const { entityMarkings: em, correctEntity } = useGameStore.getState();
+    return getStyleFromState(feature, em, correctEntity?.name);
   };
-
   // Optimization: Update styles imperatively instead of re-rendering whole map
   useEffect(() => {
     if (geoJsonLayerRef.current) {
@@ -196,12 +212,10 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
           const { gameState, correctEntity } = useGameStore.getState();
           const newStyle = getStyleFromState(
             feature,
-            candidateEntities,
-            eliminatedEntities,
+            entityMarkings,
             gameState?.is_game_over ? correctCountryName || correctEntity?.name : undefined
           );
           layer.setStyle(newStyle);
-
           const countryName = feature.properties.SOVEREIGNT.toUpperCase();
           if (gameState?.is_game_over && correctCountryName && (countryName === correctCountryName.toUpperCase())) {
             layer.bringToFront();
@@ -209,7 +223,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
         }
       });
     }
-  }, [candidateEntities, eliminatedEntities, gameState?.is_game_over, correctCountryName]);
+  }, [entityMarkings, gameState?.is_game_over, correctCountryName]);
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const countryName = feature.properties?.SOVEREIGNT;
     
@@ -247,12 +261,10 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
       mouseout: (e) => {
         const l = e.target;
         // Reset to computed style using direct store access
-        const { candidateEntities: c, eliminatedEntities: el, gameState: currentGameState, correctEntity } = useGameStore.getState();
-        
+        const { entityMarkings: em, gameState: currentGameState, correctEntity } = useGameStore.getState();
         const style = getStyleFromState(
             feature, 
-            c,
-            el,
+            em,
             currentGameState?.is_game_over ? correctCountryName || correctEntity?.name : undefined
         );
         l.setStyle(style);

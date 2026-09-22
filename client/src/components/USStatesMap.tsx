@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useUSStatesGameStore } from '../stores/gameStore';
+import { useUSStatesGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature } from 'geojson';
 import MapToolbar from './MapToolbar';
@@ -39,10 +39,9 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const {
-    candidateEntities,
-    eliminatedEntities,
-    mapInteractionMode,
-    setMapInteractionMode,
+    entityMarkings,
+    activeMarkerColor,
+    setActiveMarkerColor,
     handleEntityMapClick,
     clearMapMarkings,
     gameState,
@@ -57,13 +56,12 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       .catch(err => console.error('Failed to load US states map data', err));
   }, []);
 
-  const getStyleFromState = (feature: any, candidates: string[], eliminated: string[], currentCorrect?: string): PathOptions => {
+  const getStyleFromState = (feature: any, markings: Record<string, MapMarkerColor>, currentCorrect?: string): PathOptions => {
     if (!feature || !feature.properties || !feature.properties.name) return {};
 
     const name = feature.properties.name.toUpperCase();
     const isCorrect = currentCorrect ? name === currentCorrect.toUpperCase() : false;
-    const isCandidate = candidates.includes(name);
-    const isEliminated = eliminated.includes(name);
+    const marker = markings[name];
 
     if (isCorrect) {
       return {
@@ -75,7 +73,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       };
     }
 
-    if (isCandidate) {
+    if (marker === 'green') {
       return {
         fillColor: '#059669',
         weight: 2,
@@ -85,14 +83,34 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       };
     }
 
-    if (isEliminated) {
+    if (marker === 'red') {
       return {
-        fillColor: '#09090b',
+        fillColor: '#18181b',
         weight: 1.5,
-        opacity: 0.7,
+        opacity: 0.8,
         color: '#f43f5e',
         dashArray: '3, 4',
         fillOpacity: 0.85,
+      };
+    }
+
+    if (marker === 'blue') {
+      return {
+        fillColor: '#1d4ed8',
+        weight: 2,
+        opacity: 1,
+        color: '#60a5fa',
+        fillOpacity: 0.6,
+      };
+    }
+
+    if (marker === 'orange') {
+      return {
+        fillColor: '#c2410c',
+        weight: 2,
+        opacity: 1,
+        color: '#fb923c',
+        fillOpacity: 0.6,
       };
     }
 
@@ -107,8 +125,8 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
   };
 
   const getStyle = (feature: any) => {
-    const { candidateEntities: c, eliminatedEntities: el, correctEntity: ce, gameState: gs } = useUSStatesGameStore.getState();
-    return getStyleFromState(feature, c, el, gs?.is_game_over ? ce?.name : undefined);
+    const { entityMarkings: em, correctEntity: ce, gameState: gs } = useUSStatesGameStore.getState();
+    return getStyleFromState(feature, em, gs?.is_game_over ? ce?.name : undefined);
   };
 
   useEffect(() => {
@@ -119,8 +137,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
           const { gameState: gs, correctEntity: ce } = useUSStatesGameStore.getState();
           const newStyle = getStyleFromState(
             feature,
-            candidateEntities,
-            eliminatedEntities,
+            entityMarkings,
             gs?.is_game_over ? correctStateName || ce?.name : undefined
           );
           layer.setStyle(newStyle);
@@ -131,7 +148,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
         }
       });
     }
-  }, [candidateEntities, eliminatedEntities, gameState?.is_game_over, correctStateName]);
+  }, [entityMarkings, gameState?.is_game_over, correctStateName]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.name;
@@ -154,11 +171,10 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       },
       mouseout: (e) => {
         const l = e.target;
-        const { candidateEntities: c, eliminatedEntities: el, correctEntity: ce, gameState: gs } = useUSStatesGameStore.getState();
+        const { entityMarkings: em, correctEntity: ce, gameState: gs } = useUSStatesGameStore.getState();
         const style = getStyleFromState(
           feature,
-          c,
-          el,
+          em,
           gs?.is_game_over ? ce?.name : undefined
         );
         l.setStyle(style);
@@ -200,8 +216,8 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
         }
       `}</style>
       <MapToolbar
-        mode={mapInteractionMode}
-        onModeChange={setMapInteractionMode}
+        activeColor={activeMarkerColor}
+        onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
       {gameState?.is_game_over && (

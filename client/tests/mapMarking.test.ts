@@ -75,6 +75,25 @@ describe('Dual-State Map Marking & Elimination Store Logic', () => {
     expect(useCountryGameStore.getState().candidateEntities).toEqual(['FINLAND']);
   });
 
+  test('toggleEntityMarker supports blue and orange colors', () => {
+    const store = useCountryGameStore.getState();
+    store.setActiveMarkerColor('blue');
+    store.toggleEntityMarker('Greece');
+    expect(useCountryGameStore.getState().entityMarkings['GREECE']).toBe('blue');
+
+    store.setActiveMarkerColor('orange');
+    store.toggleEntityMarker('Portugal');
+    expect(useCountryGameStore.getState().entityMarkings['PORTUGAL']).toBe('orange');
+
+    // Switching an entity from blue to orange
+    store.toggleEntityMarker('Greece', 'orange');
+    expect(useCountryGameStore.getState().entityMarkings['GREECE']).toBe('orange');
+
+    // Clicking with the same color clears the marker
+    store.toggleEntityMarker('Greece', 'orange');
+    expect(useCountryGameStore.getState().entityMarkings['GREECE']).toBeUndefined();
+  });
+
   test('clearMapMarkings removes all candidate and eliminated entities', () => {
     const store = useCountryGameStore.getState();
     store.toggleEntityCandidate('Poland');

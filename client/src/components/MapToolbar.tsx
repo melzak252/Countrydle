@@ -1,60 +1,66 @@
 import { RotateCcw } from 'lucide-react';
+import type { MapMarkerColor } from '../stores/gameStore';
 
 interface MapToolbarProps {
-  mode: 'candidate' | 'eliminate';
-  onModeChange: (mode: 'candidate' | 'eliminate') => void;
+  activeColor: MapMarkerColor;
+  onColorChange: (color: MapMarkerColor) => void;
   onClear: () => void;
   className?: string;
 }
 
+const COLOR_CONFIGS: { color: MapMarkerColor; label: string; dotClass: string }[] = [
+  { color: 'green', label: 'Green marker', dotClass: 'bg-emerald-400 hover:bg-emerald-300' },
+  { color: 'red', label: 'Red marker', dotClass: 'bg-rose-500 hover:bg-rose-400' },
+  { color: 'blue', label: 'Blue marker', dotClass: 'bg-blue-400 hover:bg-blue-300' },
+  { color: 'orange', label: 'Orange marker', dotClass: 'bg-orange-400 hover:bg-orange-300' },
+];
+
 export default function MapToolbar({
-  mode,
-  onModeChange,
+  activeColor,
+  onColorChange,
   onClear,
   className = '',
 }: MapToolbarProps) {
   return (
     <div
-      className={`absolute top-2 left-12 z-[1000] flex items-center gap-1 rounded-sm border border-white/10 bg-obsidian-950/90 p-1 shadow-md backdrop-blur-sm ${className}`}
+      className={`absolute top-2 left-12 z-[1000] flex items-center gap-1 rounded-sm border border-white/10 bg-obsidian-950/90 px-1.5 py-1 shadow-md backdrop-blur-sm ${className}`}
       role="toolbar"
-      aria-label="Map marking tools"
+      aria-label="Map marker colors"
     >
-      <button
-        type="button"
-        onClick={() => onModeChange('candidate')}
-        className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
-          mode === 'candidate'
-            ? 'border border-emerald-500/40 bg-emerald-500/20 text-emerald-300'
-            : 'border border-transparent text-zinc-400 hover:bg-white/5 hover:text-sand-100'
-        }`}
-        title="Mark as potential candidate (left-click / tap)"
-      >
-        <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
-        <span>Candidate</span>
-      </button>
+      {COLOR_CONFIGS.map(({ color, label, dotClass }) => {
+        const isActive = activeColor === color;
+        return (
+          <button
+            key={color}
+            type="button"
+            onClick={() => onColorChange(color)}
+            className={`flex h-6 w-6 items-center justify-center rounded-sm transition-all cursor-pointer ${
+              isActive ? 'bg-white/10' : 'hover:bg-white/5'
+            }`}
+            title={label}
+            aria-label={label}
+            aria-pressed={isActive}
+          >
+            <span
+              className={`h-3 w-3 rounded-full transition-transform ${dotClass} ${
+                isActive
+                  ? 'ring-2 ring-white ring-offset-1 ring-offset-obsidian-950 scale-125'
+                  : 'opacity-70 hover:opacity-100 hover:scale-110'
+              }`}
+              aria-hidden="true"
+            />
+          </button>
+        );
+      })}
 
-      <button
-        type="button"
-        onClick={() => onModeChange('eliminate')}
-        className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
-          mode === 'eliminate'
-            ? 'border border-rose-500/40 bg-rose-500/20 text-rose-300'
-            : 'border border-transparent text-zinc-400 hover:bg-white/5 hover:text-sand-100'
-        }`}
-        title="Mark as eliminated (left-click / tap; or right-click anytime)"
-      >
-        <span className="h-2 w-2 rounded-full bg-rose-400" aria-hidden="true" />
-        <span>Eliminate</span>
-      </button>
-
-      <div className="mx-0.5 h-4 w-px bg-white/10" aria-hidden="true" />
+      <div className="mx-0.5 h-3.5 w-px bg-white/15" aria-hidden="true" />
 
       <button
         type="button"
         onClick={onClear}
         className="flex h-6 w-6 items-center justify-center rounded-sm text-zinc-400 transition-colors hover:bg-white/10 hover:text-sand-100 cursor-pointer"
         title="Clear all map markings"
-        aria-label="Reset map markings"
+        aria-label="Clear all map markings"
       >
         <RotateCcw size={13} />
       </button>
