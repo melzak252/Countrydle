@@ -36,23 +36,29 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
           </div>
         )}
 
-        {/* 6-Tile Curtain Mask Overlay (active only before game over) */}
+        {/* 6-Card Physical Cover Overlay (active only before game over) */}
         {!isGameOver && (
-          <div className="absolute inset-0 grid grid-cols-3 grid-rows-2">
+          <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-0.5 p-0.5 bg-obsidian-950">
             {[0, 1, 2, 3, 4, 5].map((tileIdx) => {
               const isRevealed = revealedSet.has(tileIdx);
               return (
                 <div
-                  className={`border border-white/10 backdrop-blur-sm transition-all duration-700 ease-out flex items-center justify-center ${
+                  key={tileIdx}
+                  className={`relative flex items-center justify-center border border-white/15 transition-all duration-500 ease-out ${
                     isRevealed
                       ? 'pointer-events-none opacity-0 scale-95'
-                      : 'bg-obsidian-900/98 opacity-100 shadow-inner'
+                      : 'bg-[#0f0f14] opacity-100 shadow-lg z-10'
                   }`}
                 >
                   {!isRevealed && (
-                    <span className="select-none font-mono text-xs sm:text-sm font-semibold text-zinc-600">
-                      ?
-                    </span>
+                    <div className="flex flex-col items-center justify-center gap-1 text-center p-2 select-none">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 font-mono text-xs font-semibold text-zinc-300 shadow-inner">
+                        {tileIdx + 1}
+                      </div>
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-400 font-medium">
+                        Card {tileIdx + 1}
+                      </span>
+                    </div>
                   )}
                 </div>
               );
@@ -60,14 +66,13 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
           </div>
         )}
       </div>
-
       <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-zinc-400">
         <div className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Tile {effectiveStage} of 6</span>
+          <span>Card {effectiveStage} of 6 uncovered</span>
         </div>
         <span className="font-mono text-sand-100 font-semibold">
-          {Math.min(100, Math.round((effectiveStage / 6) * 100))}% Unmasked
+          {Math.min(100, Math.round((effectiveStage / 6) * 100))}% Revealed
         </span>
       </div>
     </div>

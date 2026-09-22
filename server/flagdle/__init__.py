@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from datetime import date, datetime
 import logging
-from typing import List, Optional
+from typing import List, Optional, Union
+from countrydle.local_planner import analyze_question_for_local_plan
+from countrydle.local_answering import execute_local_plan
+from schemas.countrydle import QuestionBase, FullQuestionDisplay, InvalidQuestionDisplay
 import urllib.request
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -369,6 +372,72 @@ async def make_guess(
             guessed_at=now,
         )
 
+
+
+@router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])
+async def ask_flag_question(
+    question: QuestionBase,
+    user: Optional[User] = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
+):
+    """Allows players to ask yes/no questions about flag design, colors, symbols, and country."""
+    day_repo = FlagdleDayRepository(session)
+    today_flag = await day_repo.get_today_flag()
+    if not today_flag:
+        today_flag = await day_repo.generate_new_day_flag()
+
+    target_country = today_flag.country
+    if not target_country:
+        target_country = await CountryRepository(session).get(today_flag.country_id)
+
+    plan = analyze_question_for_local_plan(question.question)
+    now = datetime.now()
+
+    if not plan.valid:
+        return InvalidQuestionDisplay(
+            id=0,
+            original_question=question.question,
+            valid=False,
+            answer=None,
+            user_id=user.id if user else None,
+            day_id=today_flag.id,
+            asked_at=now,
+            explanation=plan.explanation or "Please ask a valid yes/no question about the flag or country.",
+        )
+
+    ans = None
+    if plan.plan and target_country:
+        ans = execute_local_plan(
+            plan.plan,
+            target_country.name,
+            plan.improved_question or question.question,
+            plan.explanation,
+        )
+
+    if ans is None:
+        return InvalidQuestionDisplay(
+            id=0,
+            original_question=question.question,
+            valid=False,
+            answer=None,
+            user_id=user.id if user else None,
+            day_id=today_flag.id,
+            asked_at=now,
+            explanation="Could not verify this question with local flag facts. Ask about flag colors, stripes, symbols, or country geography.",
+        )
+
+    return FullQuestionDisplay(
+        id=int(now.timestamp()),
+        original_question=question.question,
+        question=ans.question,
+        valid=True,
+        answer=ans.answer,
+        user_id=user.id if user else None,
+        day_id=today_flag.id,
+        asked_at=now,
+        explanation=ans.explanation,
+        context=f"flag_kb:{ans.relation}",
+    )
 
 @router.get("/reveal", response_model=CountryDisplay)
 async def reveal_country(

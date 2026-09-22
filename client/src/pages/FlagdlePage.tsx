@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
 import { FlagClueTimeline } from '../components/FlagClueTimeline';
+import QuestionInput from '../components/QuestionInput';
+import History from '../components/History';
 import CountdownTimer from '../components/CountdownTimer';
 import { Loader2, HelpCircle, Share2, Check, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -13,6 +15,7 @@ export default function FlagdlePage() {
   const {
     gameState,
     guesses,
+    questions,
     stage,
     flagAssetUrl,
     correctCountry,
@@ -22,6 +25,7 @@ export default function FlagdlePage() {
     isGuest,
     fetchGameState,
     fetchCountries,
+    askQuestion,
     makeGuess,
     syncGuestData,
   } = useFlagdleGameStore();
@@ -32,7 +36,7 @@ export default function FlagdlePage() {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [showInstructions, setShowInstructions] = useState(false);
   const [copied, setCopied] = useState(false);
-
+  const [gameMode, setGameMode] = useState<'cards' | 'questions'>('cards');
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const resolvedFlagUrl = useMemo(() => {
@@ -230,17 +234,77 @@ export default function FlagdlePage() {
       </header>
 
       {/* Main Game Container */}
-      <main className="space-y-6">
-        {/* 1. The 6-Tile Progressive Unmasking Canvas */}
-        <section aria-label="Flag Visualizer">
-          <FlagTiles
-            stage={stage}
-            isGameOver={isGameOver}
-            flagUrl={resolvedFlagUrl}
-            countryName={correctCountry?.name}
-          />
-        </section>
+      {/* Mode Switcher: Card Reveal vs 20 Questions */}
+      <div className="flex items-center justify-center">
+        <div className="inline-flex rounded-sm border border-white/10 bg-obsidian-900 p-1 shadow-inner" role="tablist" aria-label="Flagdle Game Mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={gameMode === 'cards'}
+            onClick={() => setGameMode('cards')}
+            className={`flex items-center gap-2 rounded-sm px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+              gameMode === 'cards'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                : 'text-zinc-400 hover:text-white border border-transparent'
+            }`}
+          >
+            <span>🎴 Card Reveal (6 Guesses)</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={gameMode === 'questions'}
+            onClick={() => setGameMode('questions')}
+            className={`flex items-center gap-2 rounded-sm px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+              gameMode === 'questions'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                : 'text-zinc-400 hover:text-white border border-transparent'
+            }`}
+          >
+            <span>❓ 20 Questions (Ask Clues)</span>
+          </button>
+        </div>
+      </div>
 
+      {gameMode === 'questions' && (
+        <section aria-label="Flag Questions" className="mx-auto w-full max-w-xl space-y-4 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
+          <div>
+            <h2 className="mb-1 text-sm font-medium text-sand-100">Ask a Question about the Secret Flag</h2>
+            <p className="mb-3 text-xs text-zinc-400">
+              Ask yes/no questions about colors, stripes, stars, crosses, animals, or country geography.
+            </p>
+            <QuestionInput
+              onAsk={askQuestion}
+              isLoading={isLoading}
+              remainingQuestions={Math.max(0, 8 - questions.length)}
+              placeholder="e.g. Does the flag have green? Does it feature stripes?"
+            />
+          </div>
+          {questions.length > 0 && (
+            <div className="border-t border-white/10 pt-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Questions Asked ({questions.length} / 8)
+                </h3>
+              </div>
+              <History mode="countrydle" questions={questions} isGameOver={isGameOver} />
+            </div>
+          )}
+        </section>
+      )}
+
+      <main className="space-y-6">
+        {/* 1. The 6-Card Progressive Unmasking Canvas */}
+        {(gameMode === 'cards' || isGameOver) && (
+          <section aria-label="Flag Visualizer">
+            <FlagTiles
+              stage={stage}
+              isGameOver={isGameOver}
+              flagUrl={resolvedFlagUrl}
+              countryName={correctCountry?.name}
+            />
+          </section>
+        )}
         {/* 2. Autocomplete Search Input (active when game not over) */}
         {!isGameOver && (
           <section aria-label="Guess Input" className="mx-auto w-full max-w-xl">

@@ -581,6 +581,7 @@ export const getContinentalStore = (continent: 'europe' | 'asia' | 'africa' | 'a
 interface FlagdleStateData {
   gameState: FlagdleState | null;
   guesses: FlagdleGuess[];
+  questions: Question[];
   stage: number;
   flagAssetUrl: string | null;
   correctCountry: Country | null;
@@ -593,6 +594,7 @@ interface FlagdleStateData {
 
   fetchGameState: () => Promise<void>;
   fetchCountries: () => Promise<void>;
+  askQuestion: (questionText: string) => Promise<void>;
   makeGuess: (countryName: string, countryId?: number) => Promise<void>;
   syncGuestData: () => Promise<void>;
   resetGame: () => void;
@@ -601,6 +603,7 @@ interface FlagdleStateData {
 export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
   gameState: null,
   guesses: [],
+  questions: [],
   stage: 1,
   flagAssetUrl: null,
   correctCountry: null,
@@ -627,6 +630,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
       const localKey = `guess_game_flagdle_${data.date}`;
       const localRaw = localStorage.getItem(localKey);
       let localGuesses: FlagdleGuess[] = [];
+      let localQuestions: Question[] = [];
       let effectiveState = data.state;
       const isGuest = !data.user;
 
@@ -635,6 +639,9 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
           const parsed = JSON.parse(localRaw);
           if (parsed && Array.isArray(parsed.guesses)) {
             localGuesses = parsed.guesses;
+          }
+          if (parsed && Array.isArray(parsed.questions)) {
+            localQuestions = parsed.questions;
           }
           if (parsed && parsed.state) {
             effectiveState = { ...effectiveState, ...parsed.state };
@@ -666,6 +673,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
       set({
         gameState: effectiveState,
         guesses: combinedGuesses,
+        questions: localQuestions,
         stage: calculatedStage,
         flagAssetUrl: data.flag_asset_url || null,
         correctCountry: revealedCountry,
@@ -680,6 +688,30 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
     }
   },
 
+  askQuestion: async (questionText: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const q = await flagdleService.askQuestion(questionText);
+      if (q && q.valid === false) {
+        toast.error(q.explanation || 'Please ask a valid yes/no question.');
+        set({ isLoading: false });
+        return;
+      }
+      const nextQuestions = [...get().questions, q];
+      const { dailyDate, gameState } = get();
+      if (dailyDate && gameState) {
+        const localKey = `guess_game_flagdle_${dailyDate}`;
+        const existing = localStorage.getItem(localKey);
+        const parsed = existing ? JSON.parse(existing) : {};
+        localStorage.setItem(localKey, JSON.stringify({ ...parsed, questions: nextQuestions }));
+      }
+      set({ questions: nextQuestions, isLoading: false });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to evaluate question.';
+      toast.error(msg);
+      set({ isLoading: false });
+    }
+  },
   makeGuess: async (countryName: string, countryId?: number) => {
     const { gameState, startTime, dailyDate, isGuest } = get();
     if (!gameState || gameState.is_game_over || gameState.remaining_guesses <= 0) return;
@@ -781,6 +813,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
     set({
       gameState: null,
       guesses: [],
+      questions: [],
       stage: 1,
       flagAssetUrl: null,
       correctCountry: null,

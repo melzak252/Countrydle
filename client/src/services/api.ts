@@ -259,6 +259,10 @@ export const flagdleService = {
     const response = await api.post('/flagdle/guess', data);
     return response.data;
   },
+  askQuestion: async (question: string): Promise<Question> => {
+    const response = await api.post('/flagdle/question', { question });
+    return response.data;
+  },
   reveal: async (): Promise<CountryDisplay> => {
     const response = await api.get('/flagdle/reveal');
     return response.data;
