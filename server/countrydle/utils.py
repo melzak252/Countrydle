@@ -289,18 +289,23 @@ async def ask_question(
     session: AsyncSession,
 ) -> Tuple[QuestionCreate, List[float]]:
 
-    fragments, question_vector = await get_fragments_matching_question(
-        question.question,
-        "country_id",
-        day_country.country_id,
-        "countries",
-        session,
-        limit=qdrant.COUNTRYDLE_CONTEXT_LIMIT,
-    )
-    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
+    fragments = []
+    question_vector = []
+    try:
+        fragments, question_vector = await get_fragments_matching_question(
+            question.question,
+            "country_id",
+            day_country.country_id,
+            "countries",
+            session,
+            limit=qdrant.COUNTRYDLE_CONTEXT_LIMIT,
+        )
+    except Exception as exc:
+        print(f"Warning: Vector retrieval failed ({exc}); answering directly with Gemini general knowledge.")
+
+    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     country: Country = await CountryRepository(session).get(day_country.country_id)
     answer_dict = answer_question_for_entity(question, country.name, context)
-
 
     question_create = QuestionCreate(
         user_id=user.id if user else None,

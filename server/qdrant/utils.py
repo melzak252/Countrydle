@@ -96,17 +96,28 @@ def get_fragments_matching_question_sync(
     embedding_timeout: float | None = None,
 ) -> Tuple[list[Fragment], List[float]]:
     query = question
-    query_vector = get_embedding(query, qdrant.EMBEDDING_MODEL, request_timeout=embedding_timeout)
+    try:
+        query_vector = get_embedding(query, qdrant.EMBEDDING_MODEL, request_timeout=embedding_timeout)
+    except Exception as exc:
+        if strict_errors:
+            raise
+        print(f"Warning: Failed to generate embedding for vector retrieval ({exc}); proceeding without Qdrant context.")
+        return [], []
 
-    points: List[ScoredPoint] = search_matches(
-        collection_name=collection_name,
-        query_vector=query_vector,
-        filter_key=filter_key,
-        filter_value=filter_value,
-        limit=limit,
-        request_timeout=request_timeout,
-    )
-
+    try:
+        points: List[ScoredPoint] = search_matches(
+            collection_name=collection_name,
+            query_vector=query_vector,
+            filter_key=filter_key,
+            filter_value=filter_value,
+            limit=limit,
+            request_timeout=request_timeout,
+        )
+    except Exception as exc:
+        if strict_errors:
+            raise
+        print(f"Warning: Qdrant search matches failed ({exc}); proceeding without Qdrant context.")
+        return [], query_vector
     if not points:
         return [], query_vector
 
@@ -173,6 +184,8 @@ async def add_question_to_qdrant(
     filter_value: int,
     collection_name: str = "questions",
 ):
+    if not vector:
+        return
     print(f"Adding question ID {question.id} to collection '{collection_name}'...")
     point = PointStruct(
         id=question.id,

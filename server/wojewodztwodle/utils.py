@@ -238,29 +238,28 @@ def answer_question_for_entity(
         {"role": "user", "content": question_prompt},
     ]
     model = os.getenv("QUIZ_MODEL")
-
-    client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
-    response = client.chat.completions.create(
-        model=model,
-        messages=prompts,
-        response_format={"type": "json_object"},
-        temperature=0.0,
-        seed=42,
-    )
-
-    answer = response.choices[0].message.content
-
+    answer_dict = None
     try:
-        answer_dict = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
-    if evidence is not None:
-        evidence.update(
-            provider="openai", model=response.model, requested_model=model,
-            messages=prompts, temperature=0, seed=42,
-            response_id=response.id, system_fingerprint=response.system_fingerprint,
+        client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
+        response = client.chat.completions.create(
+            model=model,
+            messages=prompts,
+            response_format={"type": "json_object"},
+            temperature=0.0,
+            seed=42,
         )
+        answer = response.choices[0].message.content
+        answer_dict = json.loads(answer)
+        if evidence is not None:
+            evidence.update(
+                provider="openai", model=response.model, requested_model=model,
+                messages=prompts, temperature=0, seed=42,
+                response_id=response.id, system_fingerprint=response.system_fingerprint,
+            )
+    except Exception as exc:
+        print(f"Warning: OpenAI call failed ({exc}); falling back to Gemini.")
+        from countrydle.utils import gemini_json
+        answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768, evidence=evidence)
     return answer_dict
 
 
@@ -271,14 +270,19 @@ async def ask_question(
     session: AsyncSession,
 ) -> Tuple[WojewodztwoQuestionCreate, List[float]]:
 
-    fragments, question_vector = await get_fragments_matching_question(
-        question.question,
-        "wojewodztwo_id",
-        day_wojewodztwo.wojewodztwo_id,
-        "wojewodztwa",
-        session,
-        limit=qdrant.WOJEWODZTWDLE_CONTEXT_LIMIT
-    )
+    fragments = []
+    question_vector = []
+    try:
+        fragments, question_vector = await get_fragments_matching_question(
+            question.question,
+            "wojewodztwo_id",
+            day_wojewodztwo.wojewodztwo_id,
+            "wojewodztwa",
+            session,
+            limit=qdrant.WOJEWODZTWDLE_CONTEXT_LIMIT
+        )
+    except Exception as exc:
+        print(f"Warning: Vector retrieval failed ({exc}); proceeding without Qdrant context.")
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
     wojewodztwo: Wojewodztwo = await WojewodztwoRepository(session).get(
         day_wojewodztwo.wojewodztwo_id
