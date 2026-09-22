@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleStateResponse } from '../types';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -246,6 +246,32 @@ export const europeService = createContinentalService('europe');
 export const asiaService = createContinentalService('asia');
 export const africaService = createContinentalService('africa');
 export const americasService = createContinentalService('americas');
+export const flagdleService = {
+  getState: async (): Promise<FlagdleStateResponse> => {
+    const response = await api.get('/flagdle/state');
+    return response.data;
+  },
+  getCountries: async (): Promise<FlagdleCountry[]> => {
+    const response = await api.get('/flagdle/countries');
+    return response.data;
+  },
+  makeGuess: async (data: { guess: string; country_id?: number; elapsed_seconds?: number }): Promise<FlagdleGuess> => {
+    const response = await api.post('/flagdle/guess', data);
+    return response.data;
+  },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get('/flagdle/reveal');
+    return response.data;
+  },
+  getEndState: async (): Promise<FlagdleStateResponse> => {
+    const response = await api.get('/flagdle/end/state');
+    return response.data;
+  },
+  syncGuestData: async (data: unknown): Promise<FlagdleStateResponse> => {
+    const response = await api.post('/flagdle/sync', data);
+    return response.data;
+  },
+};
 
 export const blogService = {
   getPosts: async (page = 1, limit = 12, search?: string) => {

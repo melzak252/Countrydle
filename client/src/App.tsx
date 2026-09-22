@@ -12,6 +12,7 @@ import PowiatyGamePage from './pages/PowiatyGamePage';
 import USStatesGamePage from './pages/USStatesGamePage';
 import WojewodztwaGamePage from './pages/WojewodztwaGamePage';
 import ContinentalGamePage from './pages/ContinentalGamePage';
+import FlagdlePage from './pages/FlagdlePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
@@ -32,6 +33,7 @@ import {
   useAsiaGameStore,
   useAfricaGameStore,
   useAmericasGameStore,
+  useFlagdleGameStore,
 } from './stores/gameStore';
 import { useEffect } from 'react';
 
@@ -59,6 +61,7 @@ function App() {
         useAsiaGameStore.getState().syncGuestData();
         useAfricaGameStore.getState().syncGuestData();
         useAmericasGameStore.getState().syncGuestData();
+        useFlagdleGameStore.getState().syncGuestData();
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -75,6 +78,7 @@ function App() {
       useAsiaGameStore.getState().resetGame();
       useAfricaGameStore.getState().resetGame();
       useAmericasGameStore.getState().resetGame();
+      useFlagdleGameStore.getState().resetGame();
       
       // After reset, fetch guest state (if any)
       useCountryGameStore.getState().fetchGameState();
@@ -85,6 +89,7 @@ function App() {
       useAsiaGameStore.getState().fetchGameState();
       useAfricaGameStore.getState().fetchGameState();
       useAmericasGameStore.getState().fetchGameState();
+      useFlagdleGameStore.getState().fetchGameState();
     };
 
     window.addEventListener('auth-logout', handleLogout);
@@ -116,6 +121,7 @@ function App() {
           <Route path="asia" element={<ContinentalGamePage continent="asia" />} />
           <Route path="africa" element={<ContinentalGamePage continent="africa" />} />
           <Route path="americas" element={<ContinentalGamePage continent="americas" />} />
+          <Route path="flagdle" element={<FlagdlePage />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="terms" element={<TermsOfServicePage />} />
           <Route path="cookie-policy" element={<CookiePolicyPage />} />

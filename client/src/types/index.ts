@@ -11,6 +11,7 @@ export interface User {
 export interface Country {
   id: number;
   name: string;
+  official_name?: string | null;
   iso2: string;
   iso3: string;
 }
@@ -96,4 +97,46 @@ export interface CountryDisplay {
     name: string;
     iso2: string;
     iso3: string;
+}
+
+export interface FlagdleCountry {
+  id: number;
+  name: string;
+  official_name?: string | null;
+  iso2: string;
+}
+
+export interface FlagdleGuess {
+  id: number;
+  guess: string;
+  country_id?: number | null;
+  answer: boolean;
+  distance_km?: number | null;
+  bearing_degrees?: number | null;
+  bearing_direction?: string | null;
+  bearing_arrow?: string | null;
+  matched_colors: string[];
+  missed_colors: string[];
+  remaining_colors_count?: number | null;
+  matched_symbols: string[];
+  revealed_tile?: number | null;
+  guessed_at: string;
+}
+
+export interface FlagdleState {
+  remaining_guesses: number;
+  guesses_made: number;
+  revealed_stage: number;
+  is_game_over: boolean;
+  won: boolean;
+  points: number;
+}
+
+export interface FlagdleStateResponse {
+  user: User | null;
+  date: string;
+  state: FlagdleState;
+  guesses: FlagdleGuess[];
+  flag_asset_url?: string | null;
+  country?: Country | null;
 }

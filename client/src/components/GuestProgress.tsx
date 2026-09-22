@@ -11,6 +11,7 @@ const modeNames: Record<GuestGameType, string> = {
   asia: 'Asia',
   africa: 'Africa',
   americas: 'The Americas',
+  flagdle: 'Flagdle',
 };
 const labels = { won: 'Solved', lost: 'Not solved', unplayed: 'Not played' };
 const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });

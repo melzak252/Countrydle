@@ -11,6 +11,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const games = [
     ['/game', t('header.worldMap', 'World Map (Countrydle)')],
+    ['/flagdle', '🚩 Flagdle'],
     ['/europe', t('header.europe', 'Europedle')],
     ['/asia', t('header.asia', 'Asiadle')],
     ['/africa', t('header.africa', 'Africadle')],

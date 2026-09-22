@@ -153,6 +153,7 @@ FLAG_DATA = {
     "PER": (["red", "white"], ["coat_of_arms", "stripes"]),
     "PHL": (["blue", "red", "white", "yellow"], ["star", "stars", "sun", "stripes"]),
     "POL": (["white", "red"], ["stripes"]),
+    "PSE": (["black", "white", "green", "red"], ["stripes"]),
     "PRT": (["green", "red", "yellow", "blue", "white"], ["coat_of_arms", "stripes"]),
     "QAT": (["white", "red"], ["stripes"]),
     "ROU": (["blue", "yellow", "red"], ["stripes"]),
