@@ -6,6 +6,13 @@ from .wojewodztwo import Wojewodztwo
 from .wojewodztwodle import WojewodztwodleDay, WojewodztwodleState, WojewodztwodleGuess, WojewodztwodleQuestion
 from .us_state import USState
 from .us_statedle import USStatedleDay, USStatedleState, USStatedleGuess, USStatedleQuestion
+from .continental import (
+    ContinentCode,
+    ContinentalDay,
+    ContinentalState,
+    ContinentalGuess,
+    ContinentalQuestion,
+)
 from .question import CountrydleQuestion
 from .country_fact_change_log import CountryFactChangeLog
 from .fragment import CountryFragment, PowiatFragment, WojewodztwoFragment, USStateFragment

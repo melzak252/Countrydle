@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { GameState, Question, Guess } from '../types';
-import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
+import { gameService, powiatService, usStateService, wojewodztwoService, europeService, asiaService, africaService, americasService } from '../services/api';
 import { useAuthStore } from './authStore';
 import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHistory';
 import type { GuestGameType } from '../lib/guestHistory';
@@ -97,6 +97,10 @@ const gameLimits = {
     powiaty: { maxQuestions: 15, maxGuesses: 3 },
     us_states: { maxQuestions: 8, maxGuesses: 3 },
     wojewodztwa: { maxQuestions: 5, maxGuesses: 2 },
+    europe: { maxQuestions: 8, maxGuesses: 3 },
+    asia: { maxQuestions: 8, maxGuesses: 3 },
+    africa: { maxQuestions: 8, maxGuesses: 3 },
+    americas: { maxQuestions: 8, maxGuesses: 3 },
 } as const;
 
 const createGuestGameState = (gameType: keyof typeof gameLimits) => ({
@@ -132,7 +136,11 @@ const guessMapping: any = {
     country: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
     powiaty: (g: any) => ({ guess: g.guess, powiat_id: g.powiat_id }),
     us_states: (g: any) => ({ guess: g.guess, us_state_id: g.us_state_id }),
-    wojewodztwa: (g: any) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id })
+    wojewodztwa: (g: any) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id }),
+    europe: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    asia: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    africa: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    americas: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
 };
 
 // Factory to create stores for different game types
@@ -141,7 +149,11 @@ const createGameStore = (gameType: GuestGameType) => {
     country: gameService,
     powiaty: powiatService,
     us_states: usStateService,
-    wojewodztwa: wojewodztwoService
+    wojewodztwa: wojewodztwoService,
+    europe: europeService,
+    asia: asiaService,
+    africa: africaService,
+    americas: americasService,
   }[gameType];
 
   return create<GameData & GameActions>((set, get) => ({
@@ -276,12 +288,14 @@ const createGameStore = (gameType: GuestGameType) => {
 
     fetchEntities: async () => {
       try {
-        let entities = [];
+        let entities: any[] = [];
         if (gameType === 'country') entities = await gameService.getCountries();
         else if (gameType === 'powiaty') entities = await powiatService.getPowiaty();
         else if (gameType === 'us_states') entities = await usStateService.getStates();
         else if (gameType === 'wojewodztwa') entities = await wojewodztwoService.getWojewodztwa();
-        
+        else if (['europe', 'asia', 'africa', 'americas'].includes(gameType)) {
+          entities = await service.getCountries();
+        }
         set({ entities });
       } catch (e) {
         console.error(e);
@@ -539,5 +553,19 @@ export const usePowiatyGameStore = createGameStore('powiaty');
 export const useUSStatesGameStore = createGameStore('us_states');
 export const useWojewodztwaGameStore = createGameStore('wojewodztwa');
 
+
+export const useEuropeGameStore = createGameStore('europe');
+export const useAsiaGameStore = createGameStore('asia');
+export const useAfricaGameStore = createGameStore('africa');
+export const useAmericasGameStore = createGameStore('americas');
+
+export const getContinentalStore = (continent: 'europe' | 'asia' | 'africa' | 'americas') => {
+  switch (continent) {
+    case 'europe': return useEuropeGameStore;
+    case 'asia': return useAsiaGameStore;
+    case 'africa': return useAfricaGameStore;
+    case 'americas': return useAmericasGameStore;
+  }
+};
 // Default export for backward compatibility (pointing to country store)
 export const useGameStore = useCountryGameStore;

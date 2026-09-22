@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, BookOpen, Flag, Globe, Map, MapPin } from 'lucide-react';
+import { ArrowDown, ArrowRight, BookOpen, Compass, Flag, Globe, Globe2, Map, MapPin, Sun } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import GuestProgress from '../components/GuestProgress';
 import { useDailyDate } from '../hooks/useDailyClock';
@@ -60,16 +60,28 @@ export default function HomePage() {
   const games = [
     { id: 'world', title: t('home.games.worldTitle'), region: 'The world',
       description: 'From islands to landlocked nations. Find the mystery country.',
-      path: '/game', icon: Globe, questions: 10, guesses: 3 },
+      path: '/game', icon: Globe, questions: 10, guesses: 3, count: 195 },
+    { id: 'europe', title: t('europeTitle', { defaultValue: 'Europedle' }), region: 'Europe',
+      description: 'From Nordic fjords to Mediterranean archipelagos. Find the mystery European country.',
+      path: '/europe', icon: Compass, questions: 8, guesses: 3, count: 47 },
+    { id: 'asia', title: t('asiaTitle', { defaultValue: 'Asiadle' }), region: 'Asia',
+      description: 'Steppes, islands, and ancient civilizations. Pinpoint the hidden Asian nation.',
+      path: '/asia', icon: Globe2, questions: 8, guesses: 3, count: 47 },
+    { id: 'africa', title: t('africaTitle', { defaultValue: 'Africadle' }), region: 'Africa',
+      description: 'Deserts, savannas, and vibrant cultures. Discover today’s mystery African country.',
+      path: '/africa', icon: Sun, questions: 8, guesses: 3, count: 54 },
+    { id: 'americas', title: t('americasTitle', { defaultValue: 'Americadle' }), region: 'The Americas',
+      description: 'Spanning from the Arctic tundra to Patagonia. Uncover the mystery American state.',
+      path: '/americas', icon: Map, questions: 8, guesses: 3, count: 35 },
     { id: 'us-states', title: t('home.games.usStatesTitle'), region: 'United States',
       description: 'Coastlines, borders and regions. Which state fits the clues?',
-      path: '/us-states', icon: Map, questions: 8, guesses: 3 },
+      path: '/us-states', icon: Map, questions: 8, guesses: 3, count: 50 },
     { id: 'powiaty', title: t('home.games.powiatyTitle'), region: 'Poland / Counties',
       description: 'Take a closer look at Poland. Track down the hidden county.',
-      path: '/powiaty', icon: MapPin, questions: 15, guesses: 3 },
+      path: '/powiaty', icon: MapPin, questions: 15, guesses: 3, count: 380 },
     { id: 'wojewodztwa', title: t('home.games.wojewodztwaTitle'), region: 'Poland / Voivodeships',
       description: 'Think regionally. Identify the voivodeship with just a few questions.',
-      path: '/wojewodztwa', icon: Flag, questions: 5, guesses: 2 },
+      path: '/wojewodztwa', icon: Flag, questions: 5, guesses: 2, count: 16 },
   ];
 
   return (
