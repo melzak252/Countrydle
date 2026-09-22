@@ -1,33 +1,46 @@
 import { useState, useMemo, useRef, useEffect, useId } from 'react';
-import type { CountryDisplay } from '../types';
 import { Search, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-interface GuessInputProps {
-  countries: CountryDisplay[];
-  onGuess: (countryId: number, name: string) => Promise<void>;
+interface LocationOption<Id extends string | number> {
+  id: Id;
+  name: string;
+  nazwa?: string;
+}
+
+interface GuessInputProps<Id extends string | number> {
+  countries: LocationOption<Id>[];
+  onGuess: (countryId: Id, name: string) => Promise<void | boolean>;
+  onUnknownGuess?: (name: string) => Promise<void | boolean>;
   isLoading: boolean;
-  remainingGuesses: number;
+  remainingGuesses?: number;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
+  submitLabel?: string;
+  noMatchesLabel?: string;
 }
 
 function normalizeName(value: string) {
   return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 }
 
-function displayName(country: CountryDisplay & { nazwa?: string }) {
+function displayName(country: { name: string; nazwa?: string }) {
   return country.name || country.nazwa || '';
 }
 
-export default function GuessInput({
+export default function GuessInput<Id extends string | number = number>({
   countries,
   onGuess,
   isLoading,
+  onUnknownGuess,
   remainingGuesses,
   placeholder,
   className,
-}: GuessInputProps) {
+  disabled: externallyDisabled = false,
+  submitLabel = 'Guess',
+  noMatchesLabel = 'No matching locations.',
+}: GuessInputProps<Id>) {
   const { t } = useTranslation();
   
   const inputId = useId();
@@ -36,7 +49,7 @@ export default function GuessInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
-  const disabled = isLoading || remainingGuesses <= 0;
+  const disabled = externallyDisabled || isLoading || (remainingGuesses !== undefined && remainingGuesses <= 0);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -58,27 +71,26 @@ export default function GuessInput({
     : [], [searchableCountries, normalizedQuery]);
   const suggestionsVisible = showSuggestions && !disabled && filteredCountries.length > 0;
 
-  const handleSelect = (country: CountryDisplay) => {
+  const handleSelect = async (country: LocationOption<Id>) => {
     if (disabled) return;
-    onGuess(country.id, displayName(country));
+    if (await onGuess(country.id, displayName(country)) === false) return;
     setQuery('');
     setShowSuggestions(false);
     setActiveIndex(-1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || disabled) return;
 
     const selected = suggestionsVisible && activeIndex >= 0 ? filteredCountries[activeIndex] : undefined;
     const match = selected || searchableCountries.find(item => item.name === normalizedQuery) || filteredCountries[0];
     if (match) {
-      handleSelect(match.country);
+      await handleSelect(match.country);
       return;
     }
 
-    // Preserve free-text submissions when no known location matches.
-    onGuess(0, query.trim());
+    if (!onUnknownGuess || await onUnknownGuess(query.trim()) === false) return;
     setQuery('');
     setShowSuggestions(false);
     setActiveIndex(-1);
@@ -131,10 +143,10 @@ export default function GuessInput({
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
         <button
           type="submit"
-          disabled={!query.trim() || disabled}
+          disabled={!query.trim() || disabled || (!filteredCountries.length && !onUnknownGuess)}
           className="absolute right-1 top-1/2 flex min-h-10 -translate-y-1/2 items-center gap-2 rounded-sm bg-emerald-400 px-3 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40"
         >
-          <span>{'Guess'}</span>
+          <span>{submitLabel}</span>
           <ArrowRight size={14} aria-hidden="true" />
         </button>
       </form>
@@ -160,6 +172,7 @@ export default function GuessInput({
           ))}
         </div>
       )}
+      {query.trim() && !filteredCountries.length && !onUnknownGuess && !disabled && <p role="status" className="mt-2 text-xs text-zinc-400">{noMatchesLabel}</p>}
     </div>
   );
 }

@@ -43,7 +43,7 @@ export default function ShareResultCard({
   targetCountryCode,
   discovery,
 }: ShareResultCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { today, remainingSeconds } = useDailyClock();
   
   const [copied, setCopied] = useState(false);
@@ -240,6 +240,14 @@ export default function ShareResultCard({
           <span>WhatsApp</span>
         </button>
       </div>
+
+      <Link
+        to={`/friends?mode=${gamePath === '/powiaty' ? 'powiatdle' : gamePath === '/wojewodztwa' ? 'wojewodztwodle' : gamePath === '/us-states' ? 'us_statedle' : 'countrydle'}`}
+        className="flex min-h-11 items-center justify-between gap-3 rounded-sm border border-emerald-400/30 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-400/10"
+      >
+        {i18n.language.startsWith('pl') ? 'Wyzwij znajomego' : 'Challenge a friend'}
+        <ArrowRight size={16} aria-hidden="true" />
+      </Link>
 
       <div className="space-y-3 border-t border-white/10 pt-4">
         {newPuzzleReady ? (

@@ -188,6 +188,82 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
 
 
+def answer_prompts(
+    question: WojewodztwoQuestionEnhanced, entity_name: str, context: str,
+) -> tuple[str, str]:
+    """Build the shared daily and explicit-target answer instructions."""
+    system_prompt = f"""
+Jesteś 'Mistrzem Gry' w Wojewodztwodle. Twoim zadaniem jest odpowiedzieć na pytanie Tak/Nie dotyczące konkretnego polskiego województwa na podstawie dostarczonego kontekstu i Twojej wiedzy ogólnej.
+
+### Docelowe województwo: {entity_name}
+### Intencja pytania: {question.intent}
+### Wymagane informacje: {question.required_info}
+
+### Fragmenty kontekstu:
+{context}
+
+### Twoje instrukcje:
+1. **Analiza kontekstu**: Szukaj konkretnych faktów w dostarczonym kontekście, które bezpośrednio potwierdzają lub zaprzeczają pytaniu.
+2. **Wiedza ogólna**: Jeśli w kontekście brakuje konkretnego faktu, użyj swojej wiedzy wewnętrznej o geografii, historii i administracji Polski, aby udzielić dokładnej odpowiedzi.
+3. **Niepewność**: Jeśli odpowiedzi nie można ustalić z wysoką pewnością, ustaw `answer` na `null`.
+4. **Zasada sąsiedztwa**: Jeśli padnie pytanie, czy województwo sąsiaduje z [X], a docelowym województwem JEST [X], odpowiedź brzmi ZAWSZE `true`. Traktuj województwo jako sąsiadujące samo ze sobą na potrzeby tej gry.
+5. **Informacyjne Wyjaśnienia**: Napisz `explanation` jako informację o województwie, która odpowiada na pytanie i podaje szczegóły. Unikaj zaczynania od 'Tak' lub 'Nie' oraz prostego powtarzania odpowiedzi. Wyjaśnienie powinno być zdaniem informacyjnym o województwie, które uzasadnia odpowiedź Tak/Nie (np. zamiast 'Tak, województwo leży nad morzem', użyj 'Województwo {entity_name} jest położone w północnej części Polski i posiada szeroki dostęp do Morza Bałtyckiego.').
+6. **Obsługa logicznego 'LUB' i list**: Jeśli pytanie zawiera słowo 'lub' lub podaje listę opcji (np. 'Czy to małopolskie lub śląskie?'), odpowiedź brzmi `true`, jeśli docelowe województwo pasuje do **przynajmniej jednej** z tych opcji.
+
+7. **Perspektywa użytkownika**: Jeśli użytkownik odnosi się do siebie jako do województwa (np. "Czy jestem w północnej Polsce?"), powinieneś nadal odpowiadać o województwie w trzeciej osobie (np. "Województwo {entity_name} leży w północnej części Polski"), aby zachować rzeczowy i informacyjny ton.
+
+### Format wyjściowy (Strict JSON):
+{{
+    "explanation": "Informacyjne stwierdzenie faktyczne o województwie.",
+    "answer": true | false | null
+}}
+"""
+
+
+    question_prompt = f"""Oryginalne pytanie użytkownika: {question.original_question}
+Uproszczone pytanie: {question.question}"""
+    return system_prompt, question_prompt
+
+
+def answer_question_for_entity(
+    question: WojewodztwoQuestionEnhanced, entity_name: str, context: str, *,
+    evidence: dict | None = None, request_timeout: float | None = None,
+) -> dict:
+    """Run the normal answer model for an explicit target, without daily state."""
+    system_prompt, question_prompt = answer_prompts(question, entity_name, context)
+
+
+    prompts = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": question_prompt},
+    ]
+    model = os.getenv("QUIZ_MODEL")
+
+    client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
+    response = client.chat.completions.create(
+        model=model,
+        messages=prompts,
+        response_format={"type": "json_object"},
+        temperature=0.0,
+        seed=42,
+    )
+
+    answer = response.choices[0].message.content
+
+    try:
+        answer_dict = json.loads(answer)
+    except json.JSONDecodeError:
+        print(answer)
+        raise
+    if evidence is not None:
+        evidence.update(
+            provider="openai", model=response.model, requested_model=model,
+            messages=prompts, temperature=0, seed=42,
+            response_id=response.id, system_fingerprint=response.system_fingerprint,
+        )
+    return answer_dict
+
+
 async def ask_question(
     question: WojewodztwoQuestionEnhanced,
     day_wojewodztwo: WojewodztwodleDay,
@@ -207,61 +283,8 @@ async def ask_question(
     wojewodztwo: Wojewodztwo = await WojewodztwoRepository(session).get(
         day_wojewodztwo.wojewodztwo_id
     )
+    answer_dict = answer_question_for_entity(question, wojewodztwo.nazwa, context)
 
-    system_prompt = f"""
-Jesteś 'Mistrzem Gry' w Wojewodztwodle. Twoim zadaniem jest odpowiedzieć na pytanie Tak/Nie dotyczące konkretnego polskiego województwa na podstawie dostarczonego kontekstu i Twojej wiedzy ogólnej.
-
-### Docelowe województwo: {wojewodztwo.nazwa}
-### Intencja pytania: {question.intent}
-### Wymagane informacje: {question.required_info}
-
-### Fragmenty kontekstu:
-{context}
-
-### Twoje instrukcje:
-1. **Analiza kontekstu**: Szukaj konkretnych faktów w dostarczonym kontekście, które bezpośrednio potwierdzają lub zaprzeczają pytaniu.
-2. **Wiedza ogólna**: Jeśli w kontekście brakuje konkretnego faktu, użyj swojej wiedzy wewnętrznej o geografii, historii i administracji Polski, aby udzielić dokładnej odpowiedzi.
-3. **Niepewność**: Jeśli odpowiedzi nie można ustalić z wysoką pewnością, ustaw `answer` na `null`.
-4. **Zasada sąsiedztwa**: Jeśli padnie pytanie, czy województwo sąsiaduje z [X], a docelowym województwem JEST [X], odpowiedź brzmi ZAWSZE `true`. Traktuj województwo jako sąsiadujące samo ze sobą na potrzeby tej gry.
-5. **Informacyjne Wyjaśnienia**: Napisz `explanation` jako informację o województwie, która odpowiada na pytanie i podaje szczegóły. Unikaj zaczynania od 'Tak' lub 'Nie' oraz prostego powtarzania odpowiedzi. Wyjaśnienie powinno być zdaniem informacyjnym o województwie, które uzasadnia odpowiedź Tak/Nie (np. zamiast 'Tak, województwo leży nad morzem', użyj 'Województwo {wojewodztwo.nazwa} jest położone w północnej części Polski i posiada szeroki dostęp do Morza Bałtyckiego.').
-6. **Obsługa logicznego 'LUB' i list**: Jeśli pytanie zawiera słowo 'lub' lub podaje listę opcji (np. 'Czy to małopolskie lub śląskie?'), odpowiedź brzmi `true`, jeśli docelowe województwo pasuje do **przynajmniej jednej** z tych opcji.
-
-7. **Perspektywa użytkownika**: Jeśli użytkownik odnosi się do siebie jako do województwa (np. "Czy jestem w północnej Polsce?"), powinieneś nadal odpowiadać o województwie w trzeciej osobie (np. "Województwo {wojewodztwo.nazwa} leży w północnej części Polski"), aby zachować rzeczowy i informacyjny ton.
-
-### Format wyjściowy (Strict JSON):
-{{
-    "explanation": "Informacyjne stwierdzenie faktyczne o województwie.",
-    "answer": true | false | null
-}}
-"""
-
-
-    question_prompt = f"""Oryginalne pytanie użytkownika: {question.original_question}
-Uproszczone pytanie: {question.question}"""
-
-
-    prompts = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question_prompt},
-    ]
-    model = os.getenv("QUIZ_MODEL")
-
-    client = OpenAI()
-    response = client.chat.completions.create(
-        model=model,
-        messages=prompts,
-        response_format={"type": "json_object"},
-        temperature=0.0,
-        seed=42,
-    )
-
-    answer = response.choices[0].message.content
-
-    try:
-        answer_dict = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
 
     question_create = WojewodztwoQuestionCreate(
         user_id=user.id if user else None,

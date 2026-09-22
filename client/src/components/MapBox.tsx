@@ -3,9 +3,16 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
-import type { Feature } from 'geojson';
+import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
+import type { MapInteractionState } from '../lib/mapMarkings';
+
+function isCorrectCountryFeature(feature: Feature | undefined, targetName?: string) {
+  const name = feature?.properties?.SOVEREIGNT;
+  return typeof name === 'string' && !!targetName
+    && name.localeCompare(targetName, undefined, { sensitivity: 'base' }) === 0;
+}
 
 interface MapBoxProps {
   correctCountryName?: string;
@@ -15,23 +22,17 @@ interface MapBoxProps {
 
 interface MapControlsProps {
   correctCountryName?: string;
-  geoJsonData: any;
+  geoJsonData: FeatureCollection | null;
   map: L.Map | null;
+  interaction: MapInteractionState;
 }
 
-function MapControls({ correctCountryName, geoJsonData, map }: MapControlsProps) {
-  const {
-    gameState,
-    activeMarkerColor,
-    setActiveMarkerColor,
-    clearMapMarkings,
-  } = useGameStore();
+function MapControls({ correctCountryName, geoJsonData, map, interaction }: MapControlsProps) {
+  const { isGameOver, activeMarkerColor, setActiveMarkerColor, clearMapMarkings } = interaction;
 
   const handleZoomToCorrect = () => {
     if (map && correctCountryName && geoJsonData) {
-      const correctFeature = geoJsonData.features.find((f: any) => 
-        f.properties.SOVEREIGNT.toUpperCase() === correctCountryName.toUpperCase()
-      );
+      const correctFeature = geoJsonData.features.find(feature => isCorrectCountryFeature(feature, correctCountryName));
 
       if (correctFeature) {
         const layer = L.geoJSON(correctFeature);
@@ -50,7 +51,7 @@ function MapControls({ correctCountryName, geoJsonData, map }: MapControlsProps)
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
-      {gameState?.is_game_over && (
+      {isGameOver && correctCountryName && (
         <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000]">
           <button
             onClick={(e) => {
@@ -68,16 +69,13 @@ function MapControls({ correctCountryName, geoJsonData, map }: MapControlsProps)
   );
 }
 
-function MapController({ correctCountryName, geoJsonData }: { correctCountryName?: string, geoJsonData: any }) {
+function MapController({ correctCountryName, geoJsonData, isGameOver }: { correctCountryName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
   const map = useMap();
-  const { gameState } = useGameStore();
 
   useEffect(() => {
-    if (gameState?.is_game_over && correctCountryName && geoJsonData) {
+    if (isGameOver && correctCountryName && geoJsonData) {
       // Find the feature for the correct country
-      const correctFeature = geoJsonData.features.find((f: any) => 
-        f.properties.SOVEREIGNT.toUpperCase() === correctCountryName.toUpperCase()
-      );
+      const correctFeature = geoJsonData.features.find(feature => isCorrectCountryFeature(feature, correctCountryName));
 
       if (correctFeature) {
         const layer = L.geoJSON(correctFeature);
@@ -87,26 +85,35 @@ function MapController({ correctCountryName, geoJsonData }: { correctCountryName
         }
       }
     }
-  }, [gameState?.is_game_over, correctCountryName, geoJsonData, map]);
+  }, [isGameOver, correctCountryName, geoJsonData, map]);
 
   return null;
 }
 
 export default function MapBox({ correctCountryName, className, onCountryCode }: MapBoxProps) {
-  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+  const state = useGameStore();
+  return <ControlledMapBox className={className} onCountryCode={onCountryCode}
+    correctCountryName={correctCountryName || state.correctEntity?.name}
+    interaction={{
+      entityMarkings: state.entityMarkings,
+      activeMarkerColor: state.activeMarkerColor,
+      setActiveMarkerColor: state.setActiveMarkerColor,
+      handleEntityMapClick: state.handleEntityMapClick,
+      clearMapMarkings: state.clearMapMarkings,
+      isGameOver: !!state.gameState?.is_game_over,
+    }} />;
+}
+
+export function ControlledMapBox({ correctCountryName, className, onCountryCode, interaction }: MapBoxProps & { interaction: MapInteractionState }) {
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
-  const {
-    entityMarkings,
-    handleEntityMapClick,
-    gameState,
-  } = useGameStore();
+  const { entityMarkings, isGameOver } = interaction;
+  const revealedName = isGameOver ? correctCountryName : undefined;
+  // Leaflet retains handlers from layer creation; refs keep them on the current props.
+  const current = useRef({ interaction, revealedName });
+  current.current = { interaction, revealedName };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
 
-  const isCorrectCountryFeature = (feature: any, currentCorrectName?: string) => {
-    if (!feature?.properties || !currentCorrectName) return false;
-    return feature.properties.SOVEREIGNT.toUpperCase() === currentCorrectName.toUpperCase();
-  };
-  
   useEffect(() => {
     fetch('/countries_50m.geojson')
       .then(res => res.json())
@@ -116,7 +123,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 
   useEffect(() => {
     if (!onCountryCode) return;
-    const name = correctCountryName?.toLowerCase();
+    const name = revealedName?.toLowerCase();
     const feature = geoJsonData?.features.find((item: Feature) => {
       const properties = item.properties;
       return name && [properties?.ADMIN, properties?.NAME_LONG, properties?.NAME_EN]
@@ -125,7 +132,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     const code = [feature?.properties?.ISO_A2, feature?.properties?.WB_A2]
       .find(value => typeof value === 'string' && /^[a-z]{2}$/i.test(value));
     onCountryCode(code);
-  }, [correctCountryName, geoJsonData, onCountryCode]);
+  }, [revealedName, geoJsonData, onCountryCode]);
 
   const getStyleFromState = (
     feature: any,
@@ -200,8 +207,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
   };
 
   const getStyle = (feature: any) => {
-    const { entityMarkings: em, correctEntity } = useGameStore.getState();
-    return getStyleFromState(feature, em, correctEntity?.name);
+    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
   };
   // Optimization: Update styles imperatively instead of re-rendering whole map
   useEffect(() => {
@@ -209,46 +215,38 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
       geoJsonLayerRef.current.eachLayer((layer: any) => {
         const feature = layer.feature;
         if (feature) {
-          const { gameState, correctEntity } = useGameStore.getState();
           const newStyle = getStyleFromState(
             feature,
             entityMarkings,
-            gameState?.is_game_over ? correctCountryName || correctEntity?.name : undefined
+            revealedName
           );
           layer.setStyle(newStyle);
-          const countryName = feature.properties.SOVEREIGNT.toUpperCase();
-          if (gameState?.is_game_over && correctCountryName && (countryName === correctCountryName.toUpperCase())) {
+          if (isCorrectCountryFeature(feature, revealedName)) {
             layer.bringToFront();
           }
         }
       });
     }
-  }, [entityMarkings, gameState?.is_game_over, correctCountryName]);
+  }, [entityMarkings, revealedName, geoJsonData]);
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const countryName = feature.properties?.SOVEREIGNT;
     
     // Bind click handler
     layer.on({
       click: () => {
-        const { gameState: currentGameState, correctEntity } = useGameStore.getState();
-        const currentCorrectName = correctCountryName || correctEntity?.name;
-
-        if (currentGameState?.is_game_over && isCorrectCountryFeature(feature, currentCorrectName)) {
+        if (isCorrectCountryFeature(feature, current.current.revealedName)) {
           return;
         }
 
-        handleEntityMapClick(countryName.toUpperCase(), false);
+        current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), false);
       },
       contextmenu: (e: any) => {
         e.originalEvent?.preventDefault?.();
-        const { gameState: currentGameState, correctEntity } = useGameStore.getState();
-        const currentCorrectName = correctCountryName || correctEntity?.name;
-
-        if (currentGameState?.is_game_over && isCorrectCountryFeature(feature, currentCorrectName)) {
+        if (isCorrectCountryFeature(feature, current.current.revealedName)) {
           return;
         }
 
-        handleEntityMapClick(countryName.toUpperCase(), true);
+        current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), true);
       },
       mouseover: (e) => {
         const l = e.target;
@@ -260,13 +258,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
       },
       mouseout: (e) => {
         const l = e.target;
-        // Reset to computed style using direct store access
-        const { entityMarkings: em, gameState: currentGameState, correctEntity } = useGameStore.getState();
-        const style = getStyleFromState(
-            feature, 
-            em,
-            currentGameState?.is_game_over ? correctCountryName || correctEntity?.name : undefined
-        );
+        const style = getStyle(feature);
         l.setStyle(style);
       }
     });
@@ -312,9 +304,9 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
             ref={geoJsonLayerRef}
         />
         
-        <MapController correctCountryName={correctCountryName} geoJsonData={geoJsonData} />
+        <MapController correctCountryName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
-      <MapControls correctCountryName={correctCountryName} geoJsonData={geoJsonData} map={map} />
+      <MapControls correctCountryName={revealedName} geoJsonData={geoJsonData} map={map} interaction={interaction} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleStateResponse } from '../types';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -10,8 +10,12 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  if (localStorage.getItem('user')) {
-    config.headers['X-Client-Authenticated'] = 'true';
+  try {
+    if (localStorage.getItem('user')) {
+      config.headers['X-Client-Authenticated'] = 'true';
+    }
+  } catch {
+    // HttpOnly-cookie requests still work when browser storage is unavailable.
   }
   return config;
 });
@@ -20,9 +24,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('user');
+      try {
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          localStorage.setItem('session_expired', 'true');
+        }
+      } catch {
+        // A denied storage API must not prevent session recovery.
+      }
       if (window.location.pathname !== '/login') {
-        localStorage.setItem('session_expired', 'true');
         window.location.href = '/login';
       }
     }
@@ -203,6 +213,72 @@ export const wojewodztwoService = {
   },
   reveal: async (): Promise<any> => {
     const response = await api.get('/wojewodztwodle/reveal');
+    return response.data;
+  },
+};
+
+export const createContinentalService = (continent: string) => ({
+  getState: async (): Promise<GameResponse> => {
+    const response = await api.get(`/continental/${continent}/state`);
+    return response.data;
+  },
+  getCountries: async (): Promise<CountryDisplay[]> => {
+    const response = await api.get(`/continental/${continent}/countries`);
+    return response.data;
+  },
+  askQuestion: async (question: string): Promise<Question> => {
+    const response = await api.post(`/continental/${continent}/question`, { question });
+    return response.data;
+  },
+  makeGuess: async (guess: string, country_id?: number, elapsed_seconds?: number): Promise<Guess> => {
+    const response = await api.post(`/continental/${continent}/guess`, { guess, country_id, elapsed_seconds });
+    return response.data;
+  },
+  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<unknown[]> => {
+    const response = await api.get(`/continental/${continent}/leaderboard?type=${type}`);
+    return response.data;
+  },
+  getHistory: async (): Promise<unknown[]> => {
+    const response = await api.get(`/continental/${continent}/history`);
+    return response.data;
+  },
+  syncGuestData: async (data: unknown): Promise<GameResponse> => {
+    const response = await api.post(`/continental/${continent}/sync`, data);
+    return response.data;
+  },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get(`/continental/${continent}/reveal`);
+    return response.data;
+  },
+});
+
+export const europeService = createContinentalService('europe');
+export const asiaService = createContinentalService('asia');
+export const africaService = createContinentalService('africa');
+export const americasService = createContinentalService('americas');
+export const flagdleService = {
+  getState: async (): Promise<FlagdleStateResponse> => {
+    const response = await api.get('/flagdle/state');
+    return response.data;
+  },
+  getCountries: async (): Promise<FlagdleCountry[]> => {
+    const response = await api.get('/flagdle/countries');
+    return response.data;
+  },
+  makeGuess: async (data: { guess: string; country_id?: number; elapsed_seconds?: number }): Promise<FlagdleGuess> => {
+    const response = await api.post('/flagdle/guess', data);
+    return response.data;
+  },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get('/flagdle/reveal');
+    return response.data;
+  },
+  getEndState: async (): Promise<FlagdleStateResponse> => {
+    const response = await api.get('/flagdle/end/state');
+    return response.data;
+  },
+  syncGuestData: async (data: unknown): Promise<FlagdleStateResponse> => {
+    const response = await api.post('/flagdle/sync', data);
     return response.data;
   },
 };

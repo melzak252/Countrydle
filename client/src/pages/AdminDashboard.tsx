@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
+import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
 import { 
   adminService, 
   gameService, 
@@ -30,7 +31,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports';
+type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'friendAnswers';
 type GameType = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
 
 export default function AdminDashboard() {
@@ -198,7 +199,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {activeTab !== 'reports' && <div className="flex items-center gap-3">
+        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && <div className="flex items-center gap-3">
           <button
             onClick={() => {
               if (activeTab === 'overview') fetchOverview();
@@ -223,6 +224,7 @@ export default function AdminDashboard() {
           { id: 'questions', label: 'Questions Log', icon: HelpCircle },
           { id: 'facts', label: 'Knowledge Base Editor', icon: Database },
           { id: 'reports', label: 'Reports', icon: FileText },
+          { id: 'friendAnswers', label: 'Friend game answers', icon: HelpCircle },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -245,6 +247,7 @@ export default function AdminDashboard() {
       </div>
 
       {activeTab === 'reports' && <AnswerReportsPanel />}
+      {activeTab === 'friendAnswers' && <FriendAnswerReviewsPanel />}
 
       {/* TAB 1: OVERVIEW & TODAY'S STATS */}
       {activeTab === 'overview' && (

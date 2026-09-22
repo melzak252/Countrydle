@@ -20,7 +20,10 @@ from countrydle.local_planner import QuestionPlan, analyze_question_for_local_pl
 GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
 
-def gemini_json(system_prompt: str, user_prompt: str, max_output_tokens: int = 1024) -> dict:
+def gemini_json(
+    system_prompt: str, user_prompt: str, max_output_tokens: int = 1024, *,
+    evidence: dict | None = None, request_timeout: float = 60, max_attempts: int = 3,
+) -> dict:
     """Call Gemini and return a strict JSON object.
 
     Used for the Countrydle fallback pipeline so we can move away from OpenAI
@@ -54,19 +57,26 @@ def gemini_json(system_prompt: str, user_prompt: str, max_output_tokens: int = 1
     )
     retryable_statuses = {429, 500, 502, 503, 504}
     last_error: RuntimeError | None = None
-    for attempt in range(3):
+    for attempt in range(max_attempts):
         try:
-            with urlopen(request, timeout=60) as response:
+            with urlopen(request, timeout=request_timeout) as response:
                 data = json.loads(response.read().decode("utf-8"))
                 break
         except HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
             last_error = RuntimeError(f"Gemini HTTP error {exc.code}: {body[:500]}")
-            if exc.code not in retryable_statuses or attempt == 2:
+            if exc.code not in retryable_statuses or attempt == max_attempts - 1:
                 raise last_error from exc
             time.sleep(2**attempt)
     else:
         raise last_error or RuntimeError("Gemini request failed")
+    if evidence is not None:
+        evidence.update(
+            provider="gemini", model=model,
+            model_version=data.get("modelVersion"), response_id=data.get("responseId"),
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+            temperature=0, max_output_tokens=max_output_tokens,
+        )
 
     answer = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
     try:
@@ -215,6 +225,63 @@ async def analyze_and_answer_locally(
     ), planned_question
 
 
+def answer_prompts(
+    question: QuestionEnhanced, entity_name: str, context: str,
+) -> tuple[str, str]:
+    """Build the shared daily and explicit-target answer instructions."""
+    system_prompt = f"""
+You are the 'Game Master' for Countrydle. Your task is to answer a True/False question about a specific country based on provided context and your general knowledge.
+
+### Target Country: {entity_name}
+### Question Intent: {question.intent}
+### Required Information: {question.required_info}
+
+### Context Fragments:
+{context}
+
+### Your Instructions:
+1. **Analyze the Context**: Look for specific facts in the provided context that directly confirm or deny the question.
+2. **Use General Knowledge**: If the context is missing the specific fact, use your internal knowledge to provide an accurate answer.
+3. **Handle Super-regions (e.g., Eurasia)**: If the question asks about a large landmass or super-region (like Eurasia, The Americas, Oceania), and the country is located in any part of that region (e.g., Europe or Asia for Eurasia), the answer must be `true`.
+4. **Transcontinental Logic**: For countries spanning multiple continents (e.g., Turkey, Russia, Egypt, Kazakhstan), if the question asks if they are in either of those continents, the answer is `true`.
+5. **Handle Uncertainty**: If the answer cannot be determined with high confidence, set `answer` to `null`.
+6. **Special Rule (Self-Bordering)**: If asked if the country borders/neighbors [X], and the target country IS [X], the answer is ALWAYS `true`. Treat a country as bordering itself for the purpose of this game.
+7. **Temporal Cutoff**: For any events or data from April 2024 onwards, set `answer` to `null`.
+8. **Informative Explanations**: Write the `explanation` as factual information about the country that answers the question and provides details. Avoid starting with 'Yes' or 'No' or simply repeating the answer. The explanation should be an informative statement about the country that justifies the True/False answer (e.g., instead of 'Yes, it is in Europe', use '{entity_name} is a country located in Southeastern Europe, bordering the Black Sea.').
+9. **Handle Logical 'OR' and Lists**: If a question contains 'or' or provides a list of options (e.g., 'Is it in Europe or Asia?', 'Is it Poland, Germany, or France?'), the answer is `true` if the target country matches **at least one** of those options. Do not answer `false` just because it doesn't match all of them.
+
+10. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), you should still answer about the country in the third person (e.g., "{entity_name} is in Europe") to maintain a factual and informative tone.
+
+### Output Format (Strict JSON):
+{{
+    "explanation": "Informative factual statement about the country.",
+    "answer": true | false | null
+}}
+"""
+
+    question_prompt = f"""User's Original Question: {question.original_question}
+Simplified Question: {question.question}"""
+    return system_prompt, question_prompt
+
+
+def answer_question_for_entity(
+    question: QuestionEnhanced, entity_name: str, context: str, *,
+    evidence: dict | None = None, request_timeout: float | None = None,
+) -> dict:
+    """Run the normal answer model for an explicit target, without daily state."""
+    system_prompt, question_prompt = answer_prompts(question, entity_name, context)
+
+    if evidence is None and request_timeout is None:
+        answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768)
+    else:
+        answer_dict = gemini_json(
+            system_prompt, question_prompt, max_output_tokens=768, evidence=evidence,
+            request_timeout=60 if request_timeout is None else request_timeout,
+            max_attempts=3 if request_timeout is None else 1,
+        )
+    return answer_dict
+
+
 async def ask_question(
     question: QuestionEnhanced,
     day_country: CountrydleDay,
@@ -232,41 +299,8 @@ async def ask_question(
     )
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
     country: Country = await CountryRepository(session).get(day_country.country_id)
+    answer_dict = answer_question_for_entity(question, country.name, context)
 
-    system_prompt = f"""
-You are the 'Game Master' for Countrydle. Your task is to answer a True/False question about a specific country based on provided context and your general knowledge.
-
-### Target Country: {country.name}
-### Question Intent: {question.intent}
-### Required Information: {question.required_info}
-
-### Context Fragments:
-{context}
-
-### Your Instructions:
-1. **Analyze the Context**: Look for specific facts in the provided context that directly confirm or deny the question.
-2. **Use General Knowledge**: If the context is missing the specific fact, use your internal knowledge to provide an accurate answer.
-3. **Handle Super-regions (e.g., Eurasia)**: If the question asks about a large landmass or super-region (like Eurasia, The Americas, Oceania), and the country is located in any part of that region (e.g., Europe or Asia for Eurasia), the answer must be `true`.
-4. **Transcontinental Logic**: For countries spanning multiple continents (e.g., Turkey, Russia, Egypt, Kazakhstan), if the question asks if they are in either of those continents, the answer is `true`.
-5. **Handle Uncertainty**: If the answer cannot be determined with high confidence, set `answer` to `null`.
-6. **Special Rule (Self-Bordering)**: If asked if the country borders/neighbors [X], and the target country IS [X], the answer is ALWAYS `true`. Treat a country as bordering itself for the purpose of this game.
-7. **Temporal Cutoff**: For any events or data from April 2024 onwards, set `answer` to `null`.
-8. **Informative Explanations**: Write the `explanation` as factual information about the country that answers the question and provides details. Avoid starting with 'Yes' or 'No' or simply repeating the answer. The explanation should be an informative statement about the country that justifies the True/False answer (e.g., instead of 'Yes, it is in Europe', use '{country.name} is a country located in Southeastern Europe, bordering the Black Sea.').
-9. **Handle Logical 'OR' and Lists**: If a question contains 'or' or provides a list of options (e.g., 'Is it in Europe or Asia?', 'Is it Poland, Germany, or France?'), the answer is `true` if the target country matches **at least one** of those options. Do not answer `false` just because it doesn't match all of them.
-
-10. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), you should still answer about the country in the third person (e.g., "{country.name} is in Europe") to maintain a factual and informative tone.
-
-### Output Format (Strict JSON):
-{{
-    "explanation": "Informative factual statement about the country.",
-    "answer": true | false | null
-}}
-"""
-
-    question_prompt = f"""User's Original Question: {question.original_question}
-Simplified Question: {question.question}"""
-
-    answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768)
 
     question_create = QuestionCreate(
         user_id=user.id if user else None,

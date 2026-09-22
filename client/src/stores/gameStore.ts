@@ -1,10 +1,20 @@
 import { create } from 'zustand';
-import type { GameState, Question, Guess } from '../types';
-import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
+import type { GameState, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleState, Country } from '../types';
+import {
+  gameService,
+  powiatService,
+  usStateService,
+  wojewodztwoService,
+  europeService,
+  asiaService,
+  africaService,
+  americasService,
+  flagdleService,
+} from '../services/api';
 import { useAuthStore } from './authStore';
 import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHistory';
-import type { GuestGameType } from '../lib/guestHistory';
 import toast from 'react-hot-toast';
+import { mapClickColor, toggleMapMarking } from '../lib/mapMarkings';
 
 export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange';
 
@@ -97,6 +107,10 @@ const gameLimits = {
     powiaty: { maxQuestions: 15, maxGuesses: 3 },
     us_states: { maxQuestions: 8, maxGuesses: 3 },
     wojewodztwa: { maxQuestions: 5, maxGuesses: 2 },
+    europe: { maxQuestions: 8, maxGuesses: 3 },
+    asia: { maxQuestions: 8, maxGuesses: 3 },
+    africa: { maxQuestions: 8, maxGuesses: 3 },
+    americas: { maxQuestions: 8, maxGuesses: 3 },
 } as const;
 
 const createGuestGameState = (gameType: keyof typeof gameLimits) => ({
@@ -132,16 +146,26 @@ const guessMapping: any = {
     country: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
     powiaty: (g: any) => ({ guess: g.guess, powiat_id: g.powiat_id }),
     us_states: (g: any) => ({ guess: g.guess, us_state_id: g.us_state_id }),
-    wojewodztwa: (g: any) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id })
+    wojewodztwa: (g: any) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id }),
+    europe: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    asia: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    africa: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+    americas: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
 };
 
+type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'europe' | 'asia' | 'africa' | 'americas';
+
 // Factory to create stores for different game types
-const createGameStore = (gameType: GuestGameType) => {
+const createGameStore = (gameType: MapGameType) => {
   const service: any = {
     country: gameService,
     powiaty: powiatService,
     us_states: usStateService,
-    wojewodztwa: wojewodztwoService
+    wojewodztwa: wojewodztwoService,
+    europe: europeService,
+    asia: asiaService,
+    africa: africaService,
+    americas: americasService,
   }[gameType];
 
   return create<GameData & GameActions>((set, get) => ({
@@ -276,12 +300,14 @@ const createGameStore = (gameType: GuestGameType) => {
 
     fetchEntities: async () => {
       try {
-        let entities = [];
+        let entities: any[] = [];
         if (gameType === 'country') entities = await gameService.getCountries();
         else if (gameType === 'powiaty') entities = await powiatService.getPowiaty();
         else if (gameType === 'us_states') entities = await usStateService.getStates();
         else if (gameType === 'wojewodztwa') entities = await wojewodztwoService.getWojewodztwa();
-        
+        else if (['europe', 'asia', 'africa', 'americas'].includes(gameType)) {
+          entities = await service.getCountries();
+        }
         set({ entities });
       } catch (e) {
         console.error(e);
@@ -476,16 +502,9 @@ const createGameStore = (gameType: GuestGameType) => {
     }),
 
     toggleEntityMarker: (name: string, color?: MapMarkerColor) => {
-      const normalized = name.toUpperCase();
-      const targetColor = color || get().activeMarkerColor;
       const { entityMarkings } = get();
-      const nextMarkings = { ...entityMarkings };
-
-      if (nextMarkings[normalized] === targetColor) {
-        delete nextMarkings[normalized];
-      } else {
-        nextMarkings[normalized] = targetColor;
-      }
+      const targetColor = color || get().activeMarkerColor;
+      const nextMarkings = toggleMapMarking(entityMarkings, name, targetColor);
 
       const nextCandidate = Object.keys(nextMarkings).filter(k => nextMarkings[k] === 'green');
       const nextEliminated = Object.keys(nextMarkings).filter(k => nextMarkings[k] === 'red');
@@ -508,14 +527,7 @@ const createGameStore = (gameType: GuestGameType) => {
 
     handleEntityMapClick: (name: string, isSecondary = false) => {
       const { activeMarkerColor } = get();
-      let targetColor = activeMarkerColor;
-      if (isSecondary) {
-        if (activeMarkerColor === 'green') targetColor = 'red';
-        else if (activeMarkerColor === 'red') targetColor = 'green';
-        else if (activeMarkerColor === 'blue') targetColor = 'orange';
-        else if (activeMarkerColor === 'orange') targetColor = 'blue';
-      }
-      get().toggleEntityMarker(name, targetColor);
+      get().toggleEntityMarker(name, mapClickColor(activeMarkerColor, isSecondary));
     },
     
     toggleEntitySelection: (name: string) => {
@@ -539,5 +551,224 @@ export const usePowiatyGameStore = createGameStore('powiaty');
 export const useUSStatesGameStore = createGameStore('us_states');
 export const useWojewodztwaGameStore = createGameStore('wojewodztwa');
 
+
+export const useEuropeGameStore = createGameStore('europe');
+export const useAsiaGameStore = createGameStore('asia');
+export const useAfricaGameStore = createGameStore('africa');
+export const useAmericasGameStore = createGameStore('americas');
+
+export const getContinentalStore = (continent: 'europe' | 'asia' | 'africa' | 'americas') => {
+  switch (continent) {
+    case 'europe': return useEuropeGameStore;
+    case 'asia': return useAsiaGameStore;
+    case 'africa': return useAfricaGameStore;
+    case 'americas': return useAmericasGameStore;
+  }
+};
+interface FlagdleStateData {
+  gameState: FlagdleState | null;
+  guesses: FlagdleGuess[];
+  stage: number;
+  flagAssetUrl: string | null;
+  correctCountry: Country | null;
+  countries: FlagdleCountry[];
+  dailyDate: string | null;
+  isLoading: boolean;
+  isGuest: boolean;
+  error: string | null;
+  startTime: number | null;
+
+  fetchGameState: () => Promise<void>;
+  fetchCountries: () => Promise<void>;
+  makeGuess: (countryName: string, countryId?: number) => Promise<void>;
+  syncGuestData: () => Promise<void>;
+  resetGame: () => void;
+}
+
+export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
+  gameState: null,
+  guesses: [],
+  stage: 1,
+  flagAssetUrl: null,
+  correctCountry: null,
+  countries: [],
+  dailyDate: null,
+  isLoading: false,
+  isGuest: false,
+  error: null,
+  startTime: null,
+
+  fetchCountries: async () => {
+    try {
+      const countries = await flagdleService.getCountries();
+      set({ countries });
+    } catch (err) {
+      console.error('Failed to fetch Flagdle countries', err);
+    }
+  },
+
+  fetchGameState: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await flagdleService.getState();
+      const localKey = `guess_game_flagdle_${data.date}`;
+      const localRaw = localStorage.getItem(localKey);
+      let localGuesses: FlagdleGuess[] = [];
+      let effectiveState = data.state;
+      const isGuest = !data.user;
+
+      if (isGuest && localRaw) {
+        try {
+          const parsed = JSON.parse(localRaw);
+          if (parsed && Array.isArray(parsed.guesses)) {
+            localGuesses = parsed.guesses;
+          }
+          if (parsed && parsed.state) {
+            effectiveState = { ...effectiveState, ...parsed.state };
+          }
+          if (effectiveState.is_game_over) {
+            recordGuestCompletion('flagdle', data.date, effectiveState, data.date);
+            notifyGuestHistoryChanged();
+          }
+        } catch {
+          // ignore invalid local storage
+        }
+      }
+
+      const combinedGuesses = isGuest && localGuesses.length > 0 ? localGuesses : data.guesses;
+      const calculatedStage = effectiveState.is_game_over
+        ? 6
+        : Math.min(6, Math.max(effectiveState.revealed_stage, combinedGuesses.length + 1));
+
+      let revealedCountry = data.country || null;
+      if (effectiveState.is_game_over && !revealedCountry) {
+        try {
+          const endRes = await flagdleService.getEndState();
+          revealedCountry = endRes.country || null;
+        } catch {
+          // silent fallback
+        }
+      }
+
+      set({
+        gameState: effectiveState,
+        guesses: combinedGuesses,
+        stage: calculatedStage,
+        flagAssetUrl: data.flag_asset_url || null,
+        correctCountry: revealedCountry,
+        dailyDate: data.date,
+        isGuest,
+        isLoading: false,
+        startTime: Date.now(),
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to fetch Flagdle game state.';
+      set({ error: msg, isLoading: false });
+    }
+  },
+
+  makeGuess: async (countryName: string, countryId?: number) => {
+    const { gameState, startTime, dailyDate, isGuest } = get();
+    if (!gameState || gameState.is_game_over || gameState.remaining_guesses <= 0) return;
+
+    set({ isLoading: true });
+    try {
+      const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+      const guessRes = await flagdleService.makeGuess({
+        guess: countryName,
+        country_id: countryId,
+        elapsed_seconds: elapsed,
+      });
+
+      const nextGuesses = [...get().guesses, guessRes];
+      const isWon = guessRes.answer;
+      const isGameOver = isWon || nextGuesses.length >= 6;
+      const nextStage = isGameOver ? 6 : Math.min(6, nextGuesses.length + 1);
+
+      const nextState: FlagdleState = {
+        ...gameState,
+        guesses_made: nextGuesses.length,
+        remaining_guesses: Math.max(0, 6 - nextGuesses.length),
+        revealed_stage: nextStage,
+        is_game_over: isGameOver,
+        won: isWon,
+      };
+
+      if (dailyDate) {
+        localStorage.setItem(
+          `guess_game_flagdle_${dailyDate}`,
+          JSON.stringify({ state: nextState, guesses: nextGuesses })
+        );
+      }
+
+      let revealedCountry = get().correctCountry;
+      if (isGameOver) {
+        try {
+          const endState = await flagdleService.getEndState();
+          revealedCountry = endState.country || null;
+        } catch {
+          try {
+            const rev = await flagdleService.reveal();
+            revealedCountry = rev ? { id: rev.id, name: rev.name, iso2: rev.iso2, iso3: rev.iso3 } : null;
+          } catch {
+            // fallback
+          }
+        }
+        if (isGuest && dailyDate) {
+          recordGuestCompletion('flagdle', dailyDate, nextState, dailyDate);
+          notifyGuestHistoryChanged();
+        }
+      }
+
+      set({
+        gameState: nextState,
+        guesses: nextGuesses,
+        stage: nextStage,
+        correctCountry: revealedCountry,
+        isLoading: false,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error submitting guess.';
+      toast.error(msg);
+      set({ isLoading: false });
+    }
+  },
+
+  syncGuestData: async () => {
+    const { dailyDate } = get();
+    if (!dailyDate) return;
+    const localKey = `guess_game_flagdle_${dailyDate}`;
+    const localRaw = localStorage.getItem(localKey);
+    if (!localRaw) return;
+
+    try {
+      const snapshot = JSON.parse(localRaw);
+      await flagdleService.syncGuestData({
+        date: dailyDate,
+        state: snapshot.state,
+        guesses: (snapshot.guesses || []).map((g: FlagdleGuess) => ({
+          guess: g.guess,
+          country_id: g.country_id,
+        })),
+      });
+      localStorage.removeItem(localKey);
+      await get().fetchGameState();
+    } catch (err) {
+      console.error('Failed to sync Flagdle guest data', err);
+    }
+  },
+
+  resetGame: () => {
+    set({
+      gameState: null,
+      guesses: [],
+      stage: 1,
+      flagAssetUrl: null,
+      correctCountry: null,
+      isLoading: false,
+      error: null,
+    });
+  },
+}));
 // Default export for backward compatibility (pointing to country store)
 export const useGameStore = useCountryGameStore;

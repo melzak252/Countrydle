@@ -9,6 +9,29 @@ COUNTRYDLE_CONFIG = GameConfig(max_questions=10, max_guesses=3)
 WOJEWODZTWDLE_CONFIG = GameConfig(max_questions=5, max_guesses=2)
 POWIATDLE_CONFIG = GameConfig(max_questions=15, max_guesses=3)
 USSTATEDLE_CONFIG = GameConfig(max_questions=8, max_guesses=3)
+CONTINENTAL_CONFIG = GameConfig(max_questions=8, max_guesses=3)
+FLAGDLE_CONFIG = GameConfig(max_questions=0, max_guesses=6)
+
+def calculate_flagdle_points(
+    won: bool,
+    guesses_used: int,
+    elapsed_seconds: int | None = None,
+    streak: int = 0,
+) -> int:
+    if not won:
+        return 0
+
+    base_points = 500
+    guess_bonus_map = {1: 1500, 2: 1100, 3: 800, 4: 500, 5: 250, 6: 100}
+    guess_bonus = guess_bonus_map.get(guesses_used, 50)
+
+    speed_bonus = 0
+    if elapsed_seconds is not None and elapsed_seconds > 0:
+        decay_factor = max(0.0, (180 - elapsed_seconds) / 180)
+        speed_bonus = int(300 * (decay_factor ** 1.5))
+
+    streak_bonus = min(500, max(0, streak) * 50)
+    return base_points + guess_bonus + speed_bonus + streak_bonus
 
 @dataclass(frozen=True)
 class GameState:

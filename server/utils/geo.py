@@ -34,6 +34,11 @@ MODE_TABLE_MAP: dict[str, tuple[str, str, str]] = {
     "wojewodztwa": ("voivodeship_facts.sqlite", "voivodeships", "name"),
     "powiatdle": ("powiat_facts.sqlite", "powiats", "name"),
     "powiaty": ("powiat_facts.sqlite", "powiats", "name"),
+    "continental": ("country_facts.sqlite", "countries", "app_country_name"),
+    "europe": ("country_facts.sqlite", "countries", "app_country_name"),
+    "asia": ("country_facts.sqlite", "countries", "app_country_name"),
+    "africa": ("country_facts.sqlite", "countries", "app_country_name"),
+    "americas": ("country_facts.sqlite", "countries", "app_country_name"),
 }
 
 
@@ -206,6 +211,11 @@ def enhance_guess_with_hint(
         "wojewodztwa": "wojewodztwo_id",
         "powiatdle": "powiat_id",
         "powiaty": "powiat_id",
+        "continental": "country_id",
+        "europe": "country_id",
+        "asia": "country_id",
+        "africa": "country_id",
+        "americas": "country_id",
     }
     id_attr = id_attr_map.get(mode, "entity_id")
     guessed_id = (

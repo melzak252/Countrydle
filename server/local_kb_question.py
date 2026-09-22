@@ -66,7 +66,7 @@ def load_dotenv() -> None:
         os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
-def gemini_json(prompt: str, max_output_tokens: int = 1024) -> dict[str, Any]:
+def gemini_json(prompt: str, max_output_tokens: int = 1024, *, evidence: dict | None = None) -> dict[str, Any]:
     load_dotenv()
     key = os.getenv("GEMINI_API_KEY")
     if not key:
@@ -83,14 +83,32 @@ def gemini_json(prompt: str, max_output_tokens: int = 1024) -> dict[str, Any]:
             data = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         raise RuntimeError(exc.read().decode("utf-8", errors="replace")[:1000]) from exc
+    if evidence is not None:
+        evidence.update(model_version=data.get("modelVersion"), response_id=data.get("responseId"))
     raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
     return json.loads(raw)
 
 
-def analyze_question(question: str, config: LocalModeConfig) -> QuestionPlan:
+def validate_planner_response(data: Any) -> None:
+    """Reject provider protocol failures rather than classifying them as invalid questions."""
+    if not isinstance(data, dict) or type(data.get("valid")) is not bool or type(data.get("supported")) is not bool:
+        raise RuntimeError("Planner returned an invalid response schema")
+    if data["valid"] and data["supported"] and not isinstance(data.get("plan"), dict):
+        raise RuntimeError("Planner returned no executable plan")
+    if data.get("explanation") is not None and not isinstance(data["explanation"], str):
+        raise RuntimeError("Planner returned a malformed explanation")
+    for key in ("improved_question", "fallback_reason"):
+        if data.get(key) is not None and not isinstance(data[key], str):
+            raise RuntimeError("Planner returned an invalid response schema")
+
+
+def analyze_question(
+    question: str, config: LocalModeConfig, *, use_cache: bool = True,
+    strict_errors: bool = False, evidence: dict | None = None,
+) -> QuestionPlan:
     from utils.plan_cache import plan_cache
 
-    cached = plan_cache.get(config.mode_name, question)
+    cached = plan_cache.get(config.mode_name, question) if use_cache else None
     if cached is not None:
         return cached
 
@@ -176,7 +194,15 @@ Unsupported format:
 
 User question: {question}
 """.strip()
-    data = gemini_json(prompt)
+    data = gemini_json(prompt, evidence=evidence) if evidence is not None else gemini_json(prompt)
+    if strict_errors:
+        validate_planner_response(data)
+    if evidence is not None:
+        evidence.update(
+            provider="gemini",
+            model=os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or "gemini-2.5-flash-lite",
+            prompt=prompt, temperature=0, max_output_tokens=1024, cache_hit=False,
+        )
     plan = QuestionPlan(
         original_question=question,
         valid=bool(data.get("valid")),
@@ -186,7 +212,8 @@ User question: {question}
         plan=data.get("plan"),
         fallback_reason=data.get("fallback_reason"),
     )
-    plan_cache.set(config.mode_name, question, plan)
+    if use_cache:
+        plan_cache.set(config.mode_name, question, plan)
     return plan
 
 

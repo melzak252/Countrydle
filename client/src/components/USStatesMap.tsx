@@ -3,21 +3,21 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useUSStatesGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
-import type { Feature } from 'geojson';
+import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
+import type { MapInteractionState } from '../lib/mapMarkings';
 
 interface USStatesMapProps {
   correctStateName?: string;
   className?: string;
 }
 
-function MapController({ correctName, geoJsonData }: { correctName?: string, geoJsonData: any }) {
+function MapController({ correctName, geoJsonData, isGameOver }: { correctName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
   const map = useMap();
-  const { gameState } = useUSStatesGameStore();
 
   useEffect(() => {
-    if (gameState?.is_game_over && correctName && geoJsonData) {
+    if (isGameOver && correctName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
         f.properties.name.toUpperCase() === correctName.toUpperCase()
       );
@@ -30,23 +30,33 @@ function MapController({ correctName, geoJsonData }: { correctName?: string, geo
         }
       }
     }
-  }, [gameState?.is_game_over, correctName, geoJsonData, map]);
+  }, [isGameOver, correctName, geoJsonData, map]);
 
   return null;
 }
 
 export default function USStatesMap({ correctStateName, className }: USStatesMapProps) {
-  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+  const state = useUSStatesGameStore();
+  return <ControlledUSStatesMap className={className}
+    correctStateName={correctStateName || state.correctEntity?.name}
+    interaction={{
+      entityMarkings: state.entityMarkings,
+      activeMarkerColor: state.activeMarkerColor,
+      setActiveMarkerColor: state.setActiveMarkerColor,
+      handleEntityMapClick: state.handleEntityMapClick,
+      clearMapMarkings: state.clearMapMarkings,
+      isGameOver: !!state.gameState?.is_game_over,
+    }} />;
+}
+
+export function ControlledUSStatesMap({ correctStateName, className, interaction }: USStatesMapProps & { interaction: MapInteractionState }) {
+  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
-  const {
-    entityMarkings,
-    activeMarkerColor,
-    setActiveMarkerColor,
-    handleEntityMapClick,
-    clearMapMarkings,
-    gameState,
-    correctEntity,
-  } = useUSStatesGameStore();
+  const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
+  const revealedName = isGameOver ? correctStateName : undefined;
+  // Leaflet retains handlers from layer creation; refs keep them on the current props.
+  const current = useRef({ interaction, revealedName });
+  current.current = { interaction, revealedName };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   
   useEffect(() => {
@@ -125,8 +135,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
   };
 
   const getStyle = (feature: any) => {
-    const { entityMarkings: em, correctEntity: ce, gameState: gs } = useUSStatesGameStore.getState();
-    return getStyleFromState(feature, em, gs?.is_game_over ? ce?.name : undefined);
+    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
   };
 
   useEffect(() => {
@@ -134,32 +143,31 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       geoJsonLayerRef.current.eachLayer((layer: any) => {
         const feature = layer.feature;
         if (feature) {
-          const { gameState: gs, correctEntity: ce } = useUSStatesGameStore.getState();
           const newStyle = getStyleFromState(
             feature,
             entityMarkings,
-            gs?.is_game_over ? correctStateName || ce?.name : undefined
+            revealedName
           );
           layer.setStyle(newStyle);
 
-          if (gs?.is_game_over && (correctStateName || ce?.name) && (feature.properties.name.toUpperCase() === (correctStateName || ce?.name).toUpperCase())) {
+          if (revealedName && feature.properties.name.toUpperCase() === revealedName.toUpperCase()) {
             layer.bringToFront();
           }
         }
       });
     }
-  }, [entityMarkings, gameState?.is_game_over, correctStateName]);
+  }, [entityMarkings, revealedName, geoJsonData]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.name;
     
     layer.on({
       click: () => {
-        handleEntityMapClick(name.toUpperCase(), false);
+        current.current.interaction.handleEntityMapClick(name.toUpperCase(), false);
       },
       contextmenu: (e: any) => {
         e.originalEvent?.preventDefault?.();
-        handleEntityMapClick(name.toUpperCase(), true);
+        current.current.interaction.handleEntityMapClick(name.toUpperCase(), true);
       },
       mouseover: (e) => {
         const l = e.target;
@@ -171,12 +179,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
       },
       mouseout: (e) => {
         const l = e.target;
-        const { entityMarkings: em, correctEntity: ce, gameState: gs } = useUSStatesGameStore.getState();
-        const style = getStyleFromState(
-          feature,
-          em,
-          gs?.is_game_over ? ce?.name : undefined
-        );
+        const style = getStyle(feature);
         l.setStyle(style);
       }
     });
@@ -187,7 +190,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
   };
 
   const handleZoomToCorrect = () => {
-    const targetName = correctStateName || correctEntity?.name;
+    const targetName = revealedName;
     
     if (map && targetName && geoJsonData) {
       const correctFeature = geoJsonData.features.find((f: any) => 
@@ -220,7 +223,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
-      {gameState?.is_game_over && (
+      {revealedName && (
         <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000]">
           <button
             onClick={handleZoomToCorrect}
@@ -253,7 +256,7 @@ export default function USStatesMap({ correctStateName, className }: USStatesMap
             ref={geoJsonLayerRef}
         />
 
-        <MapController correctName={correctStateName} geoJsonData={geoJsonData} />
+        <MapController correctName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
     </div>
   );

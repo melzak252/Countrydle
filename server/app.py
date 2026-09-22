@@ -17,9 +17,12 @@ from countrydle import router as countrydle_router
 from powiatdle import router as powiatdle_router
 from us_statedle import router as us_statedle_router
 from wojewodztwodle import router as wojewodztwodle_router
+from continental import router as continental_router
 from blog import router as blog_router
+from flagdle import router as flagdle_router
 from admin import router as admin_router
 from answer_reports import router as answer_reports_router, admin_router as admin_answer_reports_router
+from friend_matches import router as friend_matches_router
 from db import get_db
 
 from db.repositories.user import UserRepository
@@ -151,10 +154,13 @@ app.include_router(countrydle_router, tags=["countrydle"])
 app.include_router(powiatdle_router, tags=["powiatdle"])
 app.include_router(us_statedle_router, tags=["us_statedle"])
 app.include_router(wojewodztwodle_router, tags=["wojewodztwodle"])
+app.include_router(continental_router, tags=["continental"])
+app.include_router(flagdle_router, tags=["flagdle"])
 app.include_router(blog_router)
 app.include_router(admin_router)
 app.include_router(answer_reports_router)
 app.include_router(admin_answer_reports_router)
+app.include_router(friend_matches_router)
 
 
 
@@ -185,6 +191,7 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
     urls_xml = [
         "<url><loc>https://countrydle.online/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>",
         "<url><loc>https://countrydle.online/game</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/flagdle</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/us-states</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/powiaty</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/wojewodztwa</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",

@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from qdrant import close_qdrant_client, init_qdrant
 from sqlalchemy.ext.asyncio import AsyncEngine
 import utils
+from friend_matches import start_workers, stop_workers
 
 
 async def init_models(engine: AsyncEngine):
@@ -46,6 +47,8 @@ async def lifespan(app: FastAPI):
 
         utils.scheduler.start()
         asyncio.create_task(utils.generate_yesterday_blog_post())
+        asyncio.create_task(utils.run_generate_continental_days())
+        await start_workers()
 
         yield
     except ConnectionRefusedError:
@@ -58,6 +61,7 @@ async def lifespan(app: FastAPI):
     finally:
         try:
             logging.info("Shutting down application...")
+            await stop_workers()
             utils.scheduler.shutdown(wait=True)
             close_qdrant_client()
             await engine.dispose()

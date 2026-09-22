@@ -56,6 +56,10 @@ async def generate_day_countries():
             print(f"Generating country for {day_date}")
             await c_repo.generate_new_day_country(day_date)
 
+async def generate_day_flags():
+    from flagdle.scheduler import generate_day_flags as _gen_flags
+    await _gen_flags()
+
 
 async def generate_yesterday_blog_post():
     from db.repositories.blog import BlogRepository
@@ -87,7 +91,17 @@ async def generate_yesterday_blog_post():
         except Exception as e:
             logging.error(f"Error generating daily blog post for {yesterday}: {e}", exc_info=True)
 
+async def run_generate_continental_days():
+    try:
+        async with AsyncSessionLocal() as session:
+            from continental.scheduler import generate_continental_days
+            await generate_continental_days(session, days_ahead=5)
+    except Exception as e:
+        logging.error(f"Error generating continental days: {e}", exc_info=True)
+
 scheduler = AsyncIOScheduler()
 scheduler.add_job(generate_day_countries, CronTrigger(hour=0, minute=0))
 scheduler.add_job(check_streaks, CronTrigger(hour=0, minute=0))
 scheduler.add_job(generate_yesterday_blog_post, CronTrigger(hour=0, minute=5))
+scheduler.add_job(run_generate_continental_days, CronTrigger(hour=0, minute=0))
+scheduler.add_job(generate_day_flags, CronTrigger(hour=0, minute=0))
