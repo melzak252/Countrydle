@@ -10,9 +10,11 @@ interface GameInstructionsProps {
     maxPoints: number;
     details: string[];
   };
+  triggerClassName?: string;
+  compact?: boolean;
 }
 
-const GameInstructions = ({ gameName, examples, scoring }: GameInstructionsProps) => {
+const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compact = false }: GameInstructionsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { t, i18n } = useTranslation();
 
@@ -175,11 +177,11 @@ const GameInstructions = ({ gameName, examples, scoring }: GameInstructionsProps
       <button 
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex h-9 items-center gap-1.5 px-3 rounded-sm border border-white/15 bg-obsidian-900 text-zinc-300 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors text-xs font-semibold cursor-pointer"
+        className={triggerClassName || "flex h-9 items-center gap-1.5 px-3 rounded-sm border border-white/15 bg-obsidian-900 text-zinc-300 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors text-xs font-semibold cursor-pointer"}
         title={t('instructions.title', 'How to Play & Info')}
       >
-        <HelpCircle size={15} className="text-emerald-400" aria-hidden="true" />
-        <span>{i18n.language.startsWith('pl') ? 'Jak grać' : 'How to Play'}</span>
+        <HelpCircle size={compact ? 13 : 15} className="text-emerald-400 shrink-0" aria-hidden="true" />
+        <span>{compact ? (i18n.language.startsWith('pl') ? 'Zasady' : 'Guide') : (i18n.language.startsWith('pl') ? 'Jak grać' : 'How to Play')}</span>
       </button>
       {isOpen && createPortal(modalContent, document.body)}
     </>

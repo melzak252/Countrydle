@@ -19,6 +19,7 @@ interface GuessInputProps<Id extends string | number> {
   disabled?: boolean;
   submitLabel?: string;
   noMatchesLabel?: string;
+  dropup?: boolean;
 }
 
 function normalizeName(value: string) {
@@ -40,6 +41,7 @@ export default function GuessInput<Id extends string | number = number>({
   disabled: externallyDisabled = false,
   submitLabel = 'Guess',
   noMatchesLabel = 'No matching locations.',
+  dropup = false,
 }: GuessInputProps<Id>) {
   const { t } = useTranslation();
   
@@ -152,7 +154,7 @@ export default function GuessInput<Id extends string | number = number>({
       </form>
 
       {suggestionsVisible && (
-        <div id={listId} role="listbox" aria-label={'Matching locations'} className="absolute left-0 right-0 top-full z-40 mt-1 max-h-72 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900 shadow-lg">
+        <div id={listId} role="listbox" aria-label={'Matching locations'} className={`absolute left-0 right-0 ${dropup ? 'bottom-full mb-1.5' : 'top-full mt-1'} z-50 max-h-72 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900/95 shadow-xl backdrop-blur-md divide-y divide-white/5`}>
           {filteredCountries.map(({ country }, index) => (
             <button
               id={`${listId}-${index}`}
