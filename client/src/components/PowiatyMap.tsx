@@ -268,13 +268,16 @@ export function ControlledPowiatyMap({
   }
 
   return (
-    <div className={`w-full overflow-hidden relative z-0 ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'}`}>
+    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'}`}>
       <style>{`
         .leaflet-interactive:focus {
             outline: none;
         }
         .leaflet-tooltip {
             pointer-events: none !important;
+        }
+        .leaflet-top, .leaflet-bottom, .leaflet-control {
+            z-index: 1050 !important;
         }
       `}</style>
       <MapToolbar
@@ -283,7 +286,7 @@ export function ControlledPowiatyMap({
         onClear={clearMapMarkings}
       />
       {revealedName && (
-        <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1000]">
+        <div className="absolute top-0 left-0 mt-16 md:mt-20 ml-2 md:ml-3 z-[1050]">
           <button
             onClick={handleZoomToCorrect}
             className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 w-8 h-8 flex items-center justify-center cursor-pointer"

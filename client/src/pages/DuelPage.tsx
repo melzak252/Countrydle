@@ -6,7 +6,6 @@ import {
   Eye,
   EyeOff,
   Users,
-  Target,
   HelpCircle,
   Zap,
   Dices,
@@ -345,21 +344,23 @@ function DuelRoom({ code }: { code?: string }) {
 
   const turnBorderPhase: 'red' | 'yellow' | 'green' =
     turnSecondsLeft <= 10 ? 'red' : turnSecondsLeft <= 30 ? 'yellow' : 'green';
-
-  const borderGradient =
+  const topGradient =
     turnBorderPhase === 'red'
-      ? 'from-rose-600 via-red-500 to-rose-700 animate-pulse'
+      ? 'from-rose-500/35 via-rose-600/12 to-transparent'
       : turnBorderPhase === 'yellow'
-      ? 'from-amber-500 via-yellow-400 to-amber-600'
-      : 'from-emerald-500 via-teal-400 to-emerald-600';
+      ? 'from-amber-400/30 via-amber-500/10 to-transparent'
+      : 'from-emerald-400/25 via-emerald-500/08 to-transparent';
+
+  const bottomGradient = topGradient;
+  const leftGradient = topGradient;
+  const rightGradient = topGradient;
 
   const borderGlow =
     turnBorderPhase === 'red'
-      ? 'shadow-[inset_0_0_50px_rgba(244,63,94,0.45)] animate-pulse'
+      ? 'shadow-[inset_0_0_50px_rgba(244,63,94,0.45),inset_0_0_15px_rgba(239,68,68,0.5)] animate-pulse'
       : turnBorderPhase === 'yellow'
-      ? 'shadow-[inset_0_0_40px_rgba(245,158,11,0.35)]'
-      : 'shadow-[inset_0_0_30px_rgba(16,185,129,0.3)]';
-
+      ? 'shadow-[inset_0_0_40px_rgba(245,158,11,0.35),inset_0_0_12px_rgba(251,191,36,0.4)]'
+      : 'shadow-[inset_0_0_35px_rgba(16,185,129,0.3),inset_0_0_10px_rgba(52,211,153,0.35)]';
   // Auto-switch action tab if reply phase requires guessing
   useEffect(() => {
     if (snapshot?.phase === 'reply') {
@@ -628,7 +629,7 @@ function DuelRoom({ code }: { code?: string }) {
   return (
     <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
       {/* 1. Full-Canvas Duel Map */}
-      <div className="absolute inset-0 z-0 h-full w-full">
+      <div className="absolute inset-0 h-full w-full">
         <FriendDuelMap
           mode={viewMode}
           matchKey={snapshot.id || `preview-${viewMode}`}
@@ -649,19 +650,16 @@ function DuelRoom({ code }: { code?: string }) {
         />
       </div>
 
-      {/* 1b. Map Question Turn Gradient Border Overlay (Green > 30s, Yellow <= 30s, Red <= 10s) */}
+      {/* 1b. Map Question Turn Ambient Shadow Indicator (Pure Vignette & Rich Alpha, No Hard Border) */}
       {isMyQuestionTurn && (
-        <div className="pointer-events-none absolute inset-0 z-[400] transition-all duration-300">
-          {/* Atmospheric inner perimeter glow */}
+        <div className={`pointer-events-none absolute inset-0 z-[500] transition-all duration-500 ${turnBorderPhase === 'red' ? 'animate-pulse' : ''}`}>
           <div className={`absolute inset-0 pointer-events-none transition-all duration-500 ${borderGlow}`} />
-          {/* Top edge gradient bar */}
-          <div className={`absolute inset-x-0 top-0 h-[4px] sm:h-[5px] bg-gradient-to-r ${borderGradient}`} />
-          {/* Bottom edge gradient bar */}
-          <div className={`absolute inset-x-0 bottom-0 h-[4px] sm:h-[5px] bg-gradient-to-r ${borderGradient}`} />
-          {/* Left edge gradient bar */}
-          <div className={`absolute inset-y-0 left-0 w-[4px] sm:w-[5px] bg-gradient-to-b ${borderGradient}`} />
-          {/* Right edge gradient bar */}
-          <div className={`absolute inset-y-0 right-0 w-[4px] sm:w-[5px] bg-gradient-to-b ${borderGradient}`} />
+
+          {/* 4-Sided Inward Alpha Gradients (Subtle, non-distracting rim glow) */}
+          <div className={`absolute inset-x-0 top-0 h-7 sm:h-10 bg-gradient-to-b ${topGradient} transition-all duration-500 pointer-events-none`} />
+          <div className={`absolute inset-x-0 bottom-0 h-7 sm:h-10 bg-gradient-to-t ${bottomGradient} transition-all duration-500 pointer-events-none`} />
+          <div className={`absolute inset-y-0 left-0 w-7 sm:w-10 bg-gradient-to-r ${leftGradient} transition-all duration-500 pointer-events-none`} />
+          <div className={`absolute inset-y-0 right-0 w-7 sm:w-10 bg-gradient-to-l ${rightGradient} transition-all duration-500 pointer-events-none`} />
         </div>
       )}
       {/* 2. Top Unified Status HUD Strip */}
@@ -728,27 +726,6 @@ function DuelRoom({ code }: { code?: string }) {
         </div>
       </div>
 
-      {/* 2b. Turn Action Status Banner (Centered just below the HUD) */}
-      {snapshot.status === 'active' && (
-        <div className="pointer-events-none absolute left-1/2 top-13 z-[995] -translate-x-1/2 px-2">
-          {mustAnswer ? (
-            <div className="pointer-events-auto flex items-center gap-2 rounded-sm border border-amber-500/50 bg-amber-950/80 px-3 py-1 shadow-lg backdrop-blur-md font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200">
-              <Zap size={13} className="text-amber-400 animate-pulse" />
-              <span>{copy.actionRequired}: {copy.answering}</span>
-            </div>
-          ) : myTurn ? (
-            <div className="pointer-events-auto flex items-center gap-2 rounded-sm border border-emerald-500/50 bg-emerald-950/80 px-3 py-1 shadow-lg backdrop-blur-md font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
-              <Target size={13} className="text-emerald-400" />
-              <span>{copy.yourTurn}</span>
-            </div>
-          ) : (
-            <div className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/10 bg-obsidian-900/80 px-3 py-1 shadow-lg backdrop-blur-md font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400">
-              <Clock size={13} />
-              <span>{opponent?.name || 'Friend'}: {snapshot.phase === 'answering' ? copy.awaitingAnswer : copy.theirTurn}</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Entity Load Error Banner */}
       {snapshot && (entitiesError || (!entitiesLoading && !entities.length)) && !finished && (
