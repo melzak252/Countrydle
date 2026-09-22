@@ -41,12 +41,14 @@ def split_document(content: str) -> List[Document]:
     return fragments
 
 
-def get_points(client: QdrantClient, collection_name: str, ids: list[int]):
+def get_points(client: QdrantClient, collection_name: str, ids: list[int], *, strict_errors: bool = False, request_timeout: int | None = None):
     try:
         # Try to get the point by its ID
-        points = client.retrieve(collection_name=collection_name, ids=ids)
+        points = client.retrieve(collection_name=collection_name, ids=ids, timeout=request_timeout)
         return points
     except UnexpectedResponse:
+        if strict_errors:
+            raise
         return []
 
 
@@ -56,6 +58,8 @@ def search_matches(
     filter_key: str,
     filter_value: int,
     limit: int = 5,
+    *,
+    request_timeout: int | None = None,
 ) -> List[ScoredPoint]:
     search_result: GroupsResult = qdrant.client.query_points_groups(
         collection_name=collection_name,
@@ -72,6 +76,7 @@ def search_matches(
             ]
         ),
         with_payload=True,
+        timeout=request_timeout,
     )
     if not search_result.groups:
         return []
@@ -79,16 +84,19 @@ def search_matches(
     return group.hits
 
 
-async def get_fragments_matching_question(
+def get_fragments_matching_question_sync(
     question: str,
     filter_key: str,
     filter_value: int,
     collection_name: str,
-    session: AsyncSession,
     limit: int = 1,
+    *,
+    strict_errors: bool = False,
+    request_timeout: int | None = None,
+    embedding_timeout: float | None = None,
 ) -> Tuple[list[Fragment], List[float]]:
     query = question
-    query_vector = get_embedding(query, qdrant.EMBEDDING_MODEL)
+    query_vector = get_embedding(query, qdrant.EMBEDDING_MODEL, request_timeout=embedding_timeout)
 
     points: List[ScoredPoint] = search_matches(
         collection_name=collection_name,
@@ -96,6 +104,7 @@ async def get_fragments_matching_question(
         filter_key=filter_key,
         filter_value=filter_value,
         limit=limit,
+        request_timeout=request_timeout,
     )
 
     if not points:
@@ -114,7 +123,10 @@ async def get_fragments_matching_question(
             ids_to_fetch.add(point.id)
 
     # Fetch all these points from Qdrant
-    all_points = get_points(qdrant.client, collection_name, list(ids_to_fetch))
+    all_points = get_points(
+        qdrant.client, collection_name, list(ids_to_fetch),
+        strict_errors=strict_errors, request_timeout=request_timeout,
+    )
 
     # Filter points to ensure they belong to the same entity and are valid
     valid_points = []
@@ -138,6 +150,19 @@ async def get_fragments_matching_question(
                 fragments.append(Fragment(text=text))
 
     return fragments, query_vector
+
+
+async def get_fragments_matching_question(
+    question: str,
+    filter_key: str,
+    filter_value: int,
+    collection_name: str,
+    session: AsyncSession,
+    limit: int = 1,
+) -> Tuple[list[Fragment], List[float]]:
+    return get_fragments_matching_question_sync(
+        question, filter_key, filter_value, collection_name, limit
+    )
 
 
 

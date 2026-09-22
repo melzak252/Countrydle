@@ -2,9 +2,9 @@ from typing import List
 from openai import OpenAI
 
 
-def get_embedding(text: str, model: str) -> List[float]:
+def get_embedding(text: str, model: str, *, request_timeout: float | None = None) -> List[float]:
     print(f"Generating embedding for text (length: {len(text)}) using model '{model}'...")
-    client = OpenAI()
+    client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
     text = text.replace("\n", " ")
     embedding = client.embeddings.create(input=[text], model=model).data[0].embedding
     print("Embedding generated successfully.")

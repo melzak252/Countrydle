@@ -186,23 +186,14 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
 
 
-async def ask_question(
-    question: PowiatQuestionEnhanced,
-    day_powiat: PowiatdleDay,
-    user: User | None,
-    session: AsyncSession,
-) -> Tuple[PowiatQuestionCreate, List[float]]:
-
-    fragments, question_vector = await get_fragments_matching_question(
-        question.question, "powiat_id", day_powiat.powiat_id, "powiaty", session, limit=qdrant.POWIATDLE_CONTEXT_LIMIT
-    )
-    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
-    powiat: Powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
-
+def answer_prompts(
+    question: PowiatQuestionEnhanced, entity_name: str, context: str,
+) -> tuple[str, str]:
+    """Build the shared daily and explicit-target answer instructions."""
     system_prompt = f"""
 Jesteś 'Mistrzem Gry' w Powiatdle. Twoim zadaniem jest odpowiedzieć na pytanie Tak/Nie dotyczące konkretnego polskiego powiatu na podstawie dostarczonego kontekstu i Twojej wiedzy ogólnej.
 
-### Docelowy powiat: {powiat.nazwa}
+### Docelowy powiat: {entity_name}
 ### Intencja pytania: {question.intent}
 ### Wymagane informacje: {question.required_info}
 
@@ -214,10 +205,10 @@ Jesteś 'Mistrzem Gry' w Powiatdle. Twoim zadaniem jest odpowiedzieć na pytanie
 2. **Wiedza ogólna**: Jeśli w kontekście brakuje konkretnego faktu, użyj swojej wiedzy wewnętrznej o geografii i administracji Polski, aby udzielić dokładnej odpowiedzi.
 3. **Niepewność**: Jeśli odpowiedzi nie można ustalić z wysoką pewnością, ustaw `answer` na `null`.
 4. **Zasada sąsiedztwa**: Jeśli padnie pytanie, czy powiat sąsiaduje z [X], a docelowym powiatem JEST [X], odpowiedź brzmi ZAWSZE `true`. Traktuj powiat jako sąsiadujący sam ze sobą na potrzeby tej gry.
-5. **Informacyjne Wyjaśnienia**: Napisz `explanation` jako informację o powiecie, która odpowiada na pytanie i podaje szczegóły. Unikaj zaczynania od 'Tak' lub 'Nie' oraz prostego powtarzania odpowiedzi. Wyjaśnienie powinno być zdaniem informacyjnym o powiecie, które uzasadnia odpowiedź Tak/Nie (np. zamiast 'Tak, powiat leży w małopolskim', użyj 'Powiat {powiat.nazwa} znajduje się w województwie małopolskim, w południowej części kraju.').
+5. **Informacyjne Wyjaśnienia**: Napisz `explanation` jako informację o powiecie, która odpowiada na pytanie i podaje szczegóły. Unikaj zaczynania od 'Tak' lub 'Nie' oraz prostego powtarzania odpowiedzi. Wyjaśnienie powinno być zdaniem informacyjnym o powiecie, które uzasadnia odpowiedź Tak/Nie (np. zamiast 'Tak, powiat leży w małopolskim', użyj 'Powiat {entity_name} znajduje się w województwie małopolskim, w południowej części kraju.').
 6. **Obsługa logicznego 'LUB' i list**: Jeśli pytanie zawiera słowo 'lub' lub podaje listę opcji (np. 'Czy to powiat krakowski lub wielicki?'), odpowiedź brzmi `true`, jeśli docelowy powiat pasuje do **przynajmniej jednej** z tych opcji.
 
-7. **Perspektywa użytkownika**: Jeśli użytkownik odnosi się do siebie jako do powiatu (np. "Czy jestem w małopolskim?"), powinieneś nadal odpowiadać o powiecie w trzeciej osobie (np. "Powiat {powiat.nazwa} leży w województwie małopolskim"), aby zachować rzeczowy i informacyjny ton.
+7. **Perspektywa użytkownika**: Jeśli użytkownik odnosi się do siebie jako do powiatu (np. "Czy jestem w małopolskim?"), powinieneś nadal odpowiadać o powiecie w trzeciej osobie (np. "Powiat {entity_name} leży w województwie małopolskim"), aby zachować rzeczowy i informacyjny ton.
 
 ### Format wyjściowy (Strict JSON):
 {{
@@ -229,6 +220,15 @@ Jesteś 'Mistrzem Gry' w Powiatdle. Twoim zadaniem jest odpowiedzieć na pytanie
 
     question_prompt = f"""Oryginalne pytanie użytkownika: {question.original_question}
 Uproszczone pytanie: {question.question}"""
+    return system_prompt, question_prompt
+
+
+def answer_question_for_entity(
+    question: PowiatQuestionEnhanced, entity_name: str, context: str, *,
+    evidence: dict | None = None, request_timeout: float | None = None,
+) -> dict:
+    """Run the normal answer model for an explicit target, without daily state."""
+    system_prompt, question_prompt = answer_prompts(question, entity_name, context)
 
 
     prompts = [
@@ -237,7 +237,7 @@ Uproszczone pytanie: {question.question}"""
     ]
     model = os.getenv("QUIZ_MODEL")
 
-    client = OpenAI()
+    client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
     response = client.chat.completions.create(
         model=model,
         messages=prompts,
@@ -253,6 +253,29 @@ Uproszczone pytanie: {question.question}"""
     except json.JSONDecodeError:
         print(answer)
         raise
+    if evidence is not None:
+        evidence.update(
+            provider="openai", model=response.model, requested_model=model,
+            messages=prompts, temperature=0, seed=42,
+            response_id=response.id, system_fingerprint=response.system_fingerprint,
+        )
+    return answer_dict
+
+
+async def ask_question(
+    question: PowiatQuestionEnhanced,
+    day_powiat: PowiatdleDay,
+    user: User | None,
+    session: AsyncSession,
+) -> Tuple[PowiatQuestionCreate, List[float]]:
+
+    fragments, question_vector = await get_fragments_matching_question(
+        question.question, "powiat_id", day_powiat.powiat_id, "powiaty", session, limit=qdrant.POWIATDLE_CONTEXT_LIMIT
+    )
+    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments)
+    powiat: Powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
+    answer_dict = answer_question_for_entity(question, powiat.nazwa, context)
+
 
     question_create = PowiatQuestionCreate(
         user_id=user.id if user else None,

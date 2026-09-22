@@ -761,4 +761,33 @@ These supersede earlier human public qualifications, life limits, knockout, forc
 
 The solved-draw mechanism in §4.4E (reply guess within the same round) is a proposed concrete default, not a claim the user specified that exact mechanism. Mutual draw is available independently. Existing suggested human timeout presets remain playtestable, not a reason to wait for AI.
 
-Next: implement the agreed human-owned contracts and H1–H7 through isolated worktrees, with actual two-browser and PostgreSQL proof. This document changes only the plan; implementation, merge and deployment require their normal approval gates.
+The approved human-owned implementation is now on the isolated `feature/friend-duels` branch; see §18 for delivered scope and verification. Merge, push and deployment still require explicit approval.
+
+## 18. Implementation status — human-owned live duels
+
+Delivered on `feature/friend-duels` in the separate `Countrydle-friend-duels` worktree:
+
+- `/friends` creates an invitation; `/duel/:code` supports guest seats, private manual/random secrets, readiness, reconnect, public move history, private map markings, results and mutual rematches.
+- All four modes reuse their normal game's actual map, toolbar, canonical autocomplete and question input, with map-left/history-right desktop layout and stacked mobile controls. Multiplayer markings use isolated local state, never the daily stores, and reset on rematch.
+- Countrydle, US Statedle, Wojewodztwodle and Powiatdle reuse existing Gemini planners and answer prompts. Duel fallback uses Gemini with canonical SQLite facts and target markdown, not OpenAI embeddings or Qdrant. Provider/model and exact context provenance are retained privately.
+- A human turn is one question **or** one guess. Guesses are unlimited. Five human choices are shared without notes. AI never blocks the human answer; its real YES/NO/INVALID recommendation and explanation remain owner-only, including after the match.
+- Mutual draws and the same-round reply-guess draw rule are implemented. Rematches swap the opener and require fresh secrets. First ordinary timeout passes; a second consecutive timeout forfeits. A reply timeout awards the pending solved win. Disconnect grace and interrupted outcomes are separate.
+- PostgreSQL migration `c8d9e0f1a2b3` adds matches, seats, moves, idempotent actions, leased AI advisories and reports. Original answers, revisions, exposure and late AI evidence are retained; model results never rewrite gameplay.
+- Admin → **Friend game answers** lists agreements, disagreements, qualified/unanswered cases, invalid advice, failures and pending advice. Review notes/classification and post-game reports never mutate facts automatically.
+- A session-cookie preflight precedes admission, so losing a create/join response cannot lose the seat credential. Modern browsers serialize preflight across tabs with Web Locks; older/non-secure browsers serialize within one tab. Cookies are HttpOnly/SameSite=Lax; production Compose forces Secure.
+- Existing app lifecycle starts and drains the bounded AI workers. Both Nginx configurations support WebSocket upgrades. Admission, room/backlog caps, worker count and extra allowed origins are configurable in `.env.example`; stopping new admission leaves existing matches playable.
+- Pre-admission disclosure and the privacy policy describe collection and retention: ordinary completed games 30 days; reviewed/reported games 90 days from latest relevant activity; unresolved reports or unfinished AI defer deletion.
+
+Verification on the isolated local PostgreSQL database:
+
+- Full backend suite: **394 passed, 1 skipped**. New async tests use the existing AnyIO fixture convention; they do not close the suite's shared event loop.
+- Existing frontend history/map regressions: **13 passed**. TypeScript and production Vite build passed under Node 22.
+- Empty-database Alembic upgrade and downgrade/re-upgrade passed.
+- Real HTTP/WebSocket games completed in all four modes. Exercises included six incorrect guesses without knockout, all five human answers, solved and mutual draws, reports, mutual rematch and independent real AI completion after play. Local human submissions were approximately **25–33 ms**, not an AI latency guarantee.
+- Separate desktop/mobile browser sessions completed a solved draw. Owner-private explanations remained distinct after reloading across an API restart. Mobile answer controls were usable while AI was pending; desktop/mobile layouts had no horizontal overflow.
+- Map redesign smoke: two browsers completed a solved draw using shared autocomplete and question controls. All four multiplayer maps rendered and accepted markings (240 country paths, 52 US paths, 16 voivodeships, 380 counties). Multiplayer markings left the actual daily stores unchanged and did not appear on the opponent's map. The four daily maps still updated their own stores. Terminal target highlights cleared on rematch. **395 WebSocket snapshots** preserved owner-only advice and withheld early reveals.
+- Live Germany mountains question completed as **YES** through **Gemini `gemini-2.5-flash-lite`**, citing the Alps and Zugspitze. PostgreSQL evidence confirmed `canonical_facts_and_markdown` context and Gemini provider. Mobile human choices remained enabled while advice was pending; no browser application errors or horizontal overflow were observed.
+- The actual Admin screen filtered a deliberate human/AI disagreement and persisted a review note. Concurrent fresh tabs recovered both seats with local storage denied and no application errors.
+- Production Compose configuration validated. Focused security review findings about initial-credential recovery and Secure-cookie deployment were fixed. Shared `services/api.ts` retains its pre-existing 39 `no-explicit-any` lint errors; new duel surfaces produced no lint findings. Vite retains the existing large-bundle warning.
+
+The earlier shared-AI and asynchronous proposals remain separate and are **not** represented as delivered by this human-owned implementation. No merge, remote push or deployment has been performed.

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "February 15, 2026"; // Current date
+  const lastUpdated = "September 22, 2026";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -54,6 +54,20 @@ export default function PrivacyPolicyPage() {
                   We use cookies to enhance your experience on the Website and manage sessions. Cookies are small text files stored on your device that allow us to maintain your login session and analyze usage.
                 </p>
               </div>
+              <div>
+                <h3 className="text-lg font-medium text-white mb-2">d. Friend Duels</h3>
+                <p className="text-zinc-300">
+                  Friend duels store display names, chosen locations, questions, guesses, human answers and their revisions,
+                  AI recommendations and explanations, timing and available evidence, and submitted reports. We retain
+                  agreements as well as disagreements to verify and improve question answering. Avoid including personal
+                  or sensitive information in questions, names or reports.
+                </p>
+                <p className="mt-2 text-zinc-300">
+                  Your opponent sees your human answers, not your private AI advice or reports. Secret locations are revealed
+                  when the duel ends. Authorized administrators can review completed-game evidence. A necessary HttpOnly
+                  browser cookie preserves your guest seats for up to one year; clearing it can remove your access to them.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -86,12 +100,23 @@ export default function PrivacyPolicyPage() {
             <p className="text-zinc-300 leading-relaxed">
               We will not sell or rent your personal information to third parties. However, we may share your information with trusted service providers (such as hosting or analytics), with Google to facilitate login and ads, or if required by law.
             </p>
+            <p className="mt-3 text-zinc-300 leading-relaxed">
+              Friend-duel questions and the relevant location facts are processed by Google Gemini.
+              Recommendations remain private to the location owner and authorized reviewers; they never replace
+              the human player's answer or decide the duel.
+            </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4 text-white">6. Data Retention and Rights</h2>
             <p className="text-zinc-300 leading-relaxed mb-4">
               We retain your personal information for as long as your account is active. You have the right to access, rectify, or erase your data. 
+            </p>
+            <p className="text-zinc-300 leading-relaxed mb-4">
+              Completed friend-duel records are normally removed after 30 days. Reviewed or reported records are normally
+              retained for 90 days after the latest completion, report or review. Unreviewed reports and pending or running
+              AI work defer deletion until resolved; cleanup runs periodically. These limits are separate from account
+              retention and the guest-seat cookie lifetime.
             </p>
             <p className="text-zinc-300 leading-relaxed">
               If you are in the EU (GDPR jurisdiction), you have specific rights regarding data portability and withdrawing consent. To exercise these rights, please contact us at <strong>melzacki.jakub@gmail.com</strong>.

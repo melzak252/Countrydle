@@ -124,6 +124,7 @@ export default function WojewodztwaGamePage() {
                 <GuessInput
                   countries={wojewodztwa}
                   onGuess={async (id, name) => makeGuess(name, id)}
+                  onUnknownGuess={async name => makeGuess(name, 0)}
                   isLoading={isLoading}
                   remainingGuesses={gameState.remaining_guesses}
                   placeholder={t('wojewodztwaPage.guessPlaceholder', { count: gameState.remaining_guesses })}

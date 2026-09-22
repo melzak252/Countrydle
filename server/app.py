@@ -22,6 +22,7 @@ from blog import router as blog_router
 from flagdle import router as flagdle_router
 from admin import router as admin_router
 from answer_reports import router as answer_reports_router, admin_router as admin_answer_reports_router
+from friend_matches import router as friend_matches_router
 from db import get_db
 
 from db.repositories.user import UserRepository
@@ -159,6 +160,7 @@ app.include_router(blog_router)
 app.include_router(admin_router)
 app.include_router(answer_reports_router)
 app.include_router(admin_answer_reports_router)
+app.include_router(friend_matches_router)
 
 
 
