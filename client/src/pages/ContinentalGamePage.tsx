@@ -145,9 +145,8 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     clearMapMarkings,
   } = useStore();
 
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const today = useDailyDate();
-  const [showResultModal, setShowResultModal] = useState(true);
 
   // HUD & Chat state
   const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
@@ -159,11 +158,6 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   const questionsBottomRef = useRef<HTMLDivElement>(null);
   const guessesBottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (gameState?.is_game_over) {
-      setShowResultModal(true);
-    }
-  }, [gameState?.is_game_over]);
   useEffect(() => {
     fetchGameState();
     fetchCountries();

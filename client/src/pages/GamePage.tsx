@@ -49,7 +49,7 @@ export default function GamePage() {
     isGuest,
     dailyDate,
   } = useGameStore();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const today = useDailyDate();
   const [revealedFlag, setRevealedFlag] = useState<string | undefined>();
 

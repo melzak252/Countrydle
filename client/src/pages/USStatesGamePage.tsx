@@ -49,7 +49,7 @@ export default function USStatesGamePage() {
     isGuest,
     dailyDate,
   } = useUSStatesGameStore();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const today = useDailyDate();
 
   // HUD & Chat state

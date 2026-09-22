@@ -49,7 +49,7 @@ export default function PowiatyGamePage() {
     isGuest,
     dailyDate,
   } = usePowiatyGameStore();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const today = useDailyDate();
 
   // HUD & Chat state
