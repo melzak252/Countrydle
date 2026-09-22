@@ -36,16 +36,16 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
 
         {/* 12-Card Physical Cover Overlay (transparent container so revealed tiles show the flag underneath) */}
         {!isGameOver && (
-          <div className="absolute inset-0 grid grid-cols-4 grid-rows-3 gap-0.5 p-0.5 bg-transparent pointer-events-none">
+          <div className="absolute inset-0 grid grid-cols-4 grid-rows-3 gap-0 p-0 bg-transparent pointer-events-none">
             {Array.from({ length: 12 }, (_, tileIdx) => {
               const isRevealed = revealedSet.has(tileIdx);
               return (
                 <div
                   key={tileIdx}
-                  className={`relative flex items-center justify-center border border-white/15 transition-all duration-500 ease-out ${
+                  className={`relative flex items-center justify-center transition-opacity duration-300 ease-out ${
                     isRevealed
-                      ? 'opacity-0 scale-95 pointer-events-none'
-                      : 'bg-[#0f0f14] opacity-100 shadow-lg z-10 pointer-events-auto'
+                      ? 'opacity-0 pointer-events-none'
+                      : 'bg-[#0f0f14] opacity-100 z-10 pointer-events-auto border border-white/10'
                   }`}
                 >
                   {!isRevealed && (

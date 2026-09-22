@@ -299,6 +299,24 @@ async def make_guess(
 
     now = datetime.now()
 
+    # Progressive distance & direction disclosure:
+    # Guesses 1-3: Visual cards only (no distance, no direction)
+    # Guesses 4-7: Distance (km) only
+    # Guesses 8-12: Distance (km) AND Direction
+    effective_dist: Optional[int] = None
+    effective_bearing_deg: Optional[int] = None
+    effective_compass: Optional[str] = None
+    effective_arrow: Optional[str] = None
+    if is_correct:
+        effective_dist = 0
+    else:
+        if new_guesses_made >= 4:
+            effective_dist = clues["distance_km"]
+        if new_guesses_made >= 8:
+            effective_bearing_deg = clues["bearing_degrees"]
+            effective_compass = clues["bearing_direction"]
+            effective_arrow = clues["bearing_arrow"]
+
     if user:
         guess_repo = FlagdleGuessRepository(session)
         guess_create = FlagdleGuessCreate(
@@ -307,10 +325,10 @@ async def make_guess(
             day_id=today_flag.id,
             user_id=user.id,
             answer=is_correct,
-            distance_km=clues["distance_km"],
-            bearing_degrees=clues["bearing_degrees"],
-            bearing_direction=clues["bearing_direction"],
-            bearing_arrow=clues["bearing_arrow"],
+            distance_km=effective_dist,
+            bearing_degrees=effective_bearing_deg,
+            bearing_direction=effective_compass,
+            bearing_arrow=effective_arrow,
             matched_colors=clues["matched_colors"],
             missed_colors=clues["missed_colors"],
             remaining_colors_count=clues["remaining_colors_count"],
@@ -360,10 +378,10 @@ async def make_guess(
             guess=guessed_country.name,
             country_id=guessed_country.id,
             answer=is_correct,
-            distance_km=clues["distance_km"],
-            bearing_degrees=clues["bearing_degrees"],
-            bearing_direction=clues["bearing_direction"],
-            bearing_arrow=clues["bearing_arrow"],
+            distance_km=effective_dist,
+            bearing_degrees=effective_bearing_deg,
+            bearing_direction=effective_compass,
+            bearing_arrow=effective_arrow,
             matched_colors=clues["matched_colors"],
             missed_colors=clues["missed_colors"],
             remaining_colors_count=clues["remaining_colors_count"],

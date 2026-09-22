@@ -193,8 +193,9 @@ async def test_flagdle_guess_endpoint(async_client):
         assert "blue" in data["matched_colors"]
         assert "red" in data["matched_colors"]
         assert "yellow" in data["matched_colors"]
-        assert data["distance_km"] is not None
-        assert data["bearing_direction"] in ["N", "NNE"]
+        # Guess 1: No distance (starts at guess 4) and no direction (starts at guess 8)
+        assert data["distance_km"] is None
+        assert data["bearing_direction"] is None
         assert data["revealed_tile"] == UNMASK_ORDER[0]
 
 
