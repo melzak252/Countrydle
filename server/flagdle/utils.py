@@ -10,8 +10,13 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from utils.country_codes import COUNTRY_CCA2_MAP
 from utils.geo import calculate_bearing, calculate_distance_km
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-FACTS_DB_PATH = ROOT_DIR / "data" / "country_facts.sqlite"
+_APP_DIR = Path(__file__).resolve().parent
+_DATA_DIR = (
+    _APP_DIR.parent / "data"
+    if (_APP_DIR.parent / "data").exists()
+    else _APP_DIR.parents[1] / "data"
+)
+FACTS_DB_PATH = _DATA_DIR / "country_facts.sqlite"
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback_countrydle_secret")
 
 UNMASK_ORDER = [0, 4, 2, 5, 1, 3]

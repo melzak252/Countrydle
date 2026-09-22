@@ -152,7 +152,7 @@ const guessMapping: any = {
     americas: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
 };
 
-type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa';
+type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'europe' | 'asia' | 'africa' | 'americas';
 
 // Factory to create stores for different game types
 const createGameStore = (gameType: MapGameType) => {
