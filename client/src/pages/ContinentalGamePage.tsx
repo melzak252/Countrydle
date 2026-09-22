@@ -244,28 +244,28 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
       {/* 2. Top Status HUD Bar */}
       <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 px-2">
-        <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 rounded-sm border border-white/10 bg-obsidian-900/85 px-3 py-1.5 shadow-md backdrop-blur-md font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+        <div className="pointer-events-auto flex h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
+          <div className="flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             <span>{title}</span>
-            <span className="text-sand-100 font-semibold">{dailyDate}</span>
+            <span className="font-semibold text-sand-100">{dailyDate}</span>
           </div>
 
-          <dl className="flex divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900/85 shadow-md backdrop-blur-md">
-            <div className="px-3 py-1 flex items-center gap-2">
-              <dt className="text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-400">Questions</dt>
-              <dd className="font-mono text-xs font-semibold text-sand-100">
-                {gameState.remaining_questions}
-                <span className="text-[10px] text-zinc-500"> / 8</span>
-              </dd>
-            </div>
-            <div className="px-3 py-1 flex items-center gap-2">
-              <dt className="text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-400">Guesses</dt>
-              <dd className="font-mono text-xs font-semibold text-emerald-400">
-                {gameState.remaining_guesses}
-                <span className="text-[10px] text-zinc-500"> / 3</span>
-              </dd>
-            </div>
-          </dl>
+          <div className="flex items-center gap-1.5 px-3">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">Q:</span>
+            <span className="font-semibold text-sand-100">
+              {gameState.remaining_questions}
+              <span className="text-[10px] text-zinc-500">/8</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-3">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">G:</span>
+            <span className="font-semibold text-emerald-400">
+              {gameState.remaining_guesses}
+              <span className="text-[10px] text-zinc-500">/3</span>
+            </span>
+          </div>
 
           <GameInstructions
             gameName={title}
@@ -284,14 +284,15 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                 'Streak bonus: +50 pts per day (capped at +500 pts)',
               ],
             }}
+            compact={true}
+            triggerClassName="flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
           />
-
 
           {isGameOver && (
             <button
               type="button"
               onClick={() => setIsResultDismissed(false)}
-              className="flex items-center gap-1.5 rounded-sm border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300 shadow hover:bg-emerald-500/30 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
             >
               <Trophy size={13} />
               <span>Result</span>
