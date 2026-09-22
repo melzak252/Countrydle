@@ -887,9 +887,7 @@ function DuelRoom({ code }: { code?: string }) {
                 <button type="button" className={duelButton} onClick={() => { void room.refresh(); }}>
                   {copy.refresh}
                 </button>
-              ) : !room.invite ? (
-                <p className="text-sm text-red-300 font-medium">{copy.error}</p>
-              ) : room.invite.full || room.invite.status !== 'lobby' ? (
+              ) : code && room.invite && (room.invite.full || room.invite.status !== 'lobby') ? (
                 <div className="space-y-4">
                   <div className="rounded border border-amber-500/40 bg-amber-950/20 p-3 text-xs text-amber-200">
                     <p className="font-semibold text-amber-300 mb-1">
