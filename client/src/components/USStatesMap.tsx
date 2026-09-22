@@ -266,7 +266,7 @@ export function ControlledUSStatesMap({
   }
 
   return (
-    <div className={`w-full bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg relative z-0 ${className ? className : 'h-[400px] md:h-[600px]'}`}>
+    <div className={`w-full overflow-hidden relative z-0 ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'}`}>
       <style>{`
         .leaflet-interactive:focus {
             outline: none;

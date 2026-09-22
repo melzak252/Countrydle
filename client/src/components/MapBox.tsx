@@ -406,7 +406,7 @@ export function ControlledMapBox({
 
   if (!geoJsonData) {
     return (
-      <div className={`w-full bg-obsidian-950 border border-white/10 rounded-sm flex items-center justify-center text-zinc-400 font-mono text-xs ${className ? className : 'h-[350px] md:h-[500px]'}`}>
+      <div className={`w-full bg-obsidian-950 flex items-center justify-center text-zinc-400 font-mono text-xs ${className ? className : 'border border-white/10 rounded-sm h-[350px] md:h-[500px]'}`}>
         <div className="flex items-center gap-2">
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Loading map...</span>
@@ -416,7 +416,7 @@ export function ControlledMapBox({
   }
 
   return (
-    <div className={`w-full bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg relative z-0 ${className ? className : 'h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
+    <div className={`w-full overflow-hidden relative z-0 ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
       <style>{`
         .leaflet-interactive:focus {
             outline: none;
