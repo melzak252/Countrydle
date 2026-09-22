@@ -270,67 +270,70 @@ export default function WojewodztwaGamePage() {
                     const isInvalid = !q.valid;
                     const answerLabel = isInvalid ? 'Invalid question' : isYes ? 'Yes' : isNo ? 'No' : 'Unknown';
                     const answerColor = isInvalid
-                      ? 'border-amber-300/15 bg-amber-300/[0.08] text-amber-200'
+                      ? 'border-amber-400/40 bg-amber-950/75 text-amber-200'
                       : isYes
-                      ? 'border-emerald-300/15 bg-emerald-300/[0.10] text-emerald-300'
+                      ? 'border-emerald-500/40 bg-emerald-950/80 text-emerald-200'
                       : isNo
-                      ? 'border-rose-300/15 bg-rose-300/[0.10] text-rose-300'
-                      : 'border-white/10 bg-white/5 text-zinc-300';
+                      ? 'border-rose-500/40 bg-rose-950/80 text-rose-200'
+                      : 'border-zinc-700 bg-zinc-850 text-zinc-300';
 
                     return (
                       <div key={q.id} className="space-y-1.5 border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
-                        {/* Player Inquiry (Right-aligned) */}
+                        {/* Player Inquiry (Right-aligned chat bubble) */}
                         <div className="flex flex-col items-end">
-                          <div className="flex items-center justify-end mb-1">
-                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-400">
+                          <div className="flex items-center justify-end mb-0.5 px-1">
+                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
                               #{String(index + 1).padStart(2, '0')} · You
                             </span>
                           </div>
-                          <div className="max-w-[88%] rounded-sm border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-sand-100 leading-relaxed text-right">
+                          <div className="max-w-[85%] rounded-2xl rounded-tr-xs border border-emerald-500/30 bg-emerald-600/25 px-3.5 py-2 text-xs font-medium text-sand-100 leading-relaxed text-right shadow-sm">
                             {q.original_question}
                           </div>
                         </div>
 
-                        {/* Dispatch Response (Left-aligned) */}
+                        {/* Dispatch Response (Left-aligned chat bubble, NO nested boxes) */}
                         <div className="flex flex-col items-start pt-0.5">
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <div className="flex items-center gap-1.5 mb-0.5 px-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-emerald-400 font-semibold">
                               Atlas Dispatch
                             </span>
                           </div>
 
-                          <div className={`max-w-[88%] rounded-sm border px-3 py-1.5 flex items-center justify-between gap-2 ${answerColor}`}>
-                            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider">
-                              {isYes && <Check size={14} strokeWidth={2.5} />}
-                              {isNo && <X size={14} strokeWidth={2.5} />}
-                              {isInvalid && <AlertTriangle size={14} />}
-                              <span>{answerLabel}</span>
-                            </span>
-
-                            {showExplanation && (
-                              <span className="font-mono text-[10px] text-zinc-400">
-                                {isInvalid ? 'details' : 'clue'}
+                          {/* Unified Response Bubble */}
+                          <div className={`max-w-[85%] rounded-2xl rounded-tl-xs border px-3.5 py-2 text-xs shadow-sm space-y-1.5 ${answerColor}`}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider">
+                                {isYes && <Check size={14} strokeWidth={2.5} />}
+                                {isNo && <X size={14} strokeWidth={2.5} />}
+                                {isInvalid && <AlertTriangle size={14} />}
+                                <span>{answerLabel}</span>
                               </span>
+                              {showExplanation && (
+                                <span className="font-mono text-[9px] opacity-70">
+                                  {isInvalid ? 'details' : 'clue'}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Explanation inside the same bubble under a subtle divider line */}
+                            {showExplanation && q.explanation && (
+                              <div className="pt-1.5 border-t border-current/15 text-[11px] leading-relaxed font-normal opacity-90">
+                                {isInvalid && (
+                                  <p className="font-mono text-[10px] uppercase tracking-wider text-amber-300 font-semibold mb-0.5">
+                                    {t('history.invalidReason')}
+                                  </p>
+                                )}
+                                <p>{q.explanation}</p>
+                              </div>
+                            )}
+
+                            {isGameOver && q.id > 0 && (
+                              <div className="pt-1 border-t border-current/10">
+                                <AnswerReportForm mode="wojewodztwodle" questionId={q.id} reportToken={q.report_token} />
+                              </div>
                             )}
                           </div>
-
-                          {showExplanation && (
-                            <div className="mt-1 rounded-sm border border-white/10 bg-black/40 px-3 py-2 text-[11px] leading-relaxed text-zinc-300">
-                              {isInvalid && (
-                                <p className="font-mono text-[10px] uppercase tracking-wider text-amber-300 mb-0.5 font-medium">
-                                  {t('history.invalidReason')}
-                                </p>
-                              )}
-                              <p>{q.explanation}</p>
-                            </div>
-                          )}
-
-                          {isGameOver && q.id > 0 && (
-                            <div className="mt-1.5 border-t border-white/5 pt-1.5">
-                              <AnswerReportForm mode="wojewodztwodle" questionId={q.id} reportToken={q.report_token} />
-                            </div>
-                          )}
                         </div>
                       </div>
                     );

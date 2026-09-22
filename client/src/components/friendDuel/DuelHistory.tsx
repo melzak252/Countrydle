@@ -7,7 +7,6 @@ import {
   X,
   AlertCircle,
   Sparkles,
-  Bot,
   Trophy,
   HelpCircle,
 } from 'lucide-react';
@@ -108,75 +107,73 @@ export function AnswerBadge({
   answeredBy?: 'player' | 'ai' | null;
   copy: DuelCopy;
 }) {
+  return <AnswerBubble answer={answer} timedOut={timedOut} answeredBy={answeredBy} copy={copy} />;
+}
+
+export function AnswerBubble({
+  answer,
+  timedOut,
+  answeredBy,
+  copy,
+}: {
+  answer: HumanAnswer | null;
+  timedOut?: boolean;
+  answeredBy?: 'player' | 'ai' | null;
+  copy: DuelCopy;
+}) {
   const isAiAnswer = answeredBy === 'ai' || (timedOut && Boolean(answer));
 
-  if (isAiAnswer && answer) {
+  if (!answer && timedOut) {
     return (
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded bg-amber-950/70 border border-amber-500/40 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-300">
-          <Bot size={12} className="text-amber-400" />
-          <span>{copy.aiAnswered || '🤖 AI Answer (Time expired)'}:</span>
-          <strong className="uppercase text-amber-200">{copy[answer]}</strong>
-        </span>
+      <div className="rounded-2xl rounded-tl-xs border border-rose-500/40 bg-rose-950/70 px-3.5 py-1.5 text-xs font-medium text-rose-300 flex items-center gap-2 shadow-sm">
+        <Clock size={13} />
+        <span>{copy.unanswered}</span>
       </div>
-    );
-  }
-
-  if (timedOut && !answer) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded bg-rose-950/70 border border-rose-500/40 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-rose-300">
-        <Clock size={11} />
-        {copy.unanswered}
-      </span>
     );
   }
 
   if (!answer) {
     return (
-      <span className="inline-flex items-center gap-1 rounded bg-amber-950/50 border border-amber-500/40 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-amber-300 animate-pulse">
-        <Clock size={11} />
-        {copy.pending}
-      </span>
+      <div className="rounded-2xl rounded-tl-xs border border-amber-500/30 bg-amber-950/40 px-3.5 py-1.5 text-xs font-medium text-amber-300 flex items-center gap-2 animate-pulse shadow-sm">
+        <Clock size={13} />
+        <span>{copy.pending}…</span>
+      </div>
     );
   }
 
-  switch (answer) {
-    case 'yes':
-      return (
-        <span className="inline-flex items-center gap-1 rounded bg-emerald-950/80 border border-emerald-500/50 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300 shadow-sm uppercase tracking-wider">
-          <Check size={13} className="stroke-[3]" />
-          {copy.yes}
-        </span>
-      );
-    case 'mostly_yes':
-      return (
-        <span className="inline-flex items-center gap-1 rounded bg-teal-950/70 border border-teal-500/40 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-teal-300 shadow-sm uppercase tracking-wider">
-          <Check size={12} />
-          {copy.mostly_yes}
-        </span>
-      );
-    case 'no':
-      return (
-        <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 border border-rose-500/50 px-2.5 py-0.5 font-mono text-[10px] font-bold text-rose-300 shadow-sm uppercase tracking-wider">
-          <X size={13} className="stroke-[3]" />
-          {copy.no}
-        </span>
-      );
-    case 'mostly_no':
-      return (
-        <span className="inline-flex items-center gap-1 rounded bg-rose-950/50 border border-rose-400/30 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-rose-300 shadow-sm uppercase tracking-wider">
-          <X size={12} />
-          {copy.mostly_no}
-        </span>
-      );
-    case 'unknown':
-      return (
-        <span className="inline-flex items-center gap-1 rounded bg-zinc-800 border border-zinc-600 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-300 uppercase tracking-wider">
-          <AlertCircle size={12} />
-          {copy.unknown}
-        </span>
-      );
+  let bubbleStyle = 'border-zinc-700 bg-zinc-850 text-zinc-300';
+  let icon = <AlertCircle size={14} className="text-zinc-400 shrink-0" />;
+  let label = copy.unknown;
+
+  if (answer === 'yes') {
+    bubbleStyle = 'border-emerald-500/40 bg-emerald-950/85 text-emerald-200';
+    icon = <Check size={14} className="text-emerald-400 stroke-[3] shrink-0" />;
+    label = copy.yes;
+  } else if (answer === 'mostly_yes') {
+    bubbleStyle = 'border-teal-500/40 bg-teal-950/85 text-teal-200';
+    icon = <Check size={14} className="text-teal-400 stroke-[2.5] shrink-0" />;
+    label = copy.mostly_yes;
+  } else if (answer === 'mostly_no') {
+    bubbleStyle = 'border-rose-400/40 bg-rose-950/70 text-rose-200';
+    icon = <X size={14} className="text-rose-400 stroke-[2.5] shrink-0" />;
+    label = copy.mostly_no;
+  } else if (answer === 'no') {
+    bubbleStyle = 'border-rose-500/50 bg-rose-950/85 text-rose-200';
+    icon = <X size={14} className="text-rose-400 stroke-[3] shrink-0" />;
+    label = copy.no;
   }
+
+  return (
+    <div className={`rounded-2xl rounded-tl-xs border px-3.5 py-1.5 text-xs sm:text-sm font-medium flex items-center gap-2 shadow-sm ${bubbleStyle}`}>
+      {icon}
+      <span className="font-semibold">{label}</span>
+      {isAiAnswer && (
+        <span className="ml-1 text-[9px] font-mono uppercase tracking-wider bg-amber-500/25 text-amber-300 border border-amber-500/35 px-1.5 py-0.2 rounded-full">
+          AI
+        </span>
+      )}
+    </div>
+  );
 }
 
 function ChatHistoryCard({
@@ -201,36 +198,37 @@ function ChatHistoryCard({
   return (
     <article className="space-y-1.5 transition-all">
       {item.type === 'question' ? (
-        <div className="space-y-2">
-          {/* Inquirer's Question Message (Right-aligned if you asked, left-aligned if friend asked) */}
-          <div className={`flex flex-col max-w-[88%] ${isYou ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
-            <div className="flex items-center gap-2 mb-1 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-400">
-              <span className="font-semibold text-emerald-400">
+        <div className="space-y-1.5">
+          {/* Inquirer's Question Message (Speech bubble on right if you, on left if opponent) */}
+          <div className={`flex flex-col max-w-[85%] ${isYou ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+            <div className="flex items-center gap-1.5 mb-0.5 px-1 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+              <span className={isYou ? 'text-emerald-400 font-semibold' : 'text-blue-400 font-semibold'}>
                 {isYou ? copy.you : authorName} · #{String(item.ordinal).padStart(2, '0')}
               </span>
-              <span className="text-zinc-500">
+              <span>·</span>
+              <span>
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
             <div
-              className={`rounded-sm px-3.5 py-2 text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
+              className={`rounded-2xl px-3.5 py-2 text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
                 isYou
-                  ? 'border border-emerald-500/25 bg-emerald-500/15 text-sand-100'
-                  : 'border border-blue-500/25 bg-blue-500/15 text-sand-100'
+                  ? 'rounded-tr-xs border border-emerald-500/30 bg-emerald-600/25 text-sand-100 text-right'
+                  : 'rounded-tl-xs border border-blue-500/30 bg-blue-600/25 text-sand-100 text-left'
               }`}
             >
               {item.question}
             </div>
           </div>
 
-          {/* Responder's Answer Card (Opposite alignment) */}
-          <div className={`flex flex-col max-w-[88%] ${isYou ? 'mr-auto items-start' : 'ml-auto items-end'}`}>
-            <div className="flex items-center gap-1.5 mb-1 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-400">
-              <span>{item.answered_by === 'ai' || (item.timed_out && item.answer) ? '🤖 AI' : responderName}:</span>
+          {/* Responder's Answer Message (Speech bubble on opposite side, NO nested outer boxes) */}
+          <div className={`flex flex-col max-w-[85%] ${isYou ? 'mr-auto items-start' : 'ml-auto items-end'}`}>
+            <div className="flex items-center gap-1 mb-0.5 px-1 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+              <span>{item.answered_by === 'ai' || (item.timed_out && item.answer) ? '🤖 AI Response' : `${responderName} Response`}</span>
             </div>
 
-            <div className="rounded-sm border border-white/10 bg-obsidian-950/80 px-3 py-2 space-y-1.5 shadow-sm">
-              <AnswerBadge
+            <div className="flex flex-col gap-1">
+              <AnswerBubble
                 answer={item.answer}
                 timedOut={item.timed_out}
                 answeredBy={item.answered_by}
@@ -239,14 +237,14 @@ function ChatHistoryCard({
 
               {/* Revisions history */}
               {item.revisions.length > 1 && (
-                <details className="rounded border border-white/5 bg-black/20 p-1.5 text-[10px] text-zinc-400">
-                  <summary className="cursor-pointer hover:text-zinc-200 font-mono">
+                <details className="text-[10px] text-zinc-500 px-1">
+                  <summary className="cursor-pointer hover:text-zinc-300 font-mono">
                     {copy.revision} {item.revision} ({item.revisions.length} updates)
                   </summary>
-                  <ol className="mt-1 space-y-0.5 pl-2 border-l border-zinc-700">
+                  <ol className="mt-0.5 space-y-0.5 pl-2 border-l border-zinc-700 text-zinc-400">
                     {item.revisions.map(rev => (
                       <li key={rev.revision}>
-                        v{rev.revision}: <strong className="text-sand-100">{copy[rev.answer]}</strong>
+                        v{rev.revision}: <strong>{copy[rev.answer]}</strong>
                       </li>
                     ))}
                   </ol>
@@ -255,17 +253,17 @@ function ChatHistoryCard({
 
               {/* Edit / Correct Answer (if subject is you) */}
               {snapshot.status === 'active' && item.subject_id === snapshot.you && item.answer && (
-                <div className="pt-1 border-t border-white/5">
+                <div className="px-1">
                   <button
                     type="button"
-                    className="font-mono text-[9px] uppercase tracking-wider text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                    className="font-mono text-[9px] uppercase tracking-wider text-emerald-400/80 hover:text-emerald-300 transition-colors cursor-pointer"
                     disabled={busy}
                     onClick={() => setEditing(!editing)}
                   >
-                    {editing ? copy.cancel : copy.correctAnswer}
+                    {editing ? copy.cancel : '✎ ' + copy.correctAnswer}
                   </button>
                   {editing && (
-                    <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
+                    <div className="mt-1.5 p-2 rounded-sm border border-white/10 bg-obsidian-950 shadow-md">
                       <AnswerPicker
                         copy={copy}
                         disabled={busy}
