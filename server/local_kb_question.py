@@ -366,6 +366,11 @@ def evaluate(
         if relation.startswith("borders_") and is_self_reference(right, row, config):
             return True
     if op == "exists":
+        # If right/value is provided, the planner intended membership check (e.g. water_access contains "Gulf of Mexico")
+        if right is not None:
+            if isinstance(left, list):
+                return any(norm(v) == norm(right) for v in left)
+            return norm(left) == norm(right)
         if isinstance(left, list):
             return len(left) > 0
         return bool(left)

@@ -52,12 +52,16 @@ LOCAL_CONFIG = LocalModeConfig(
     language="English or Polish",
     fk_column="state_id",
     mode_notes=(
+        "- For questions asking whether the state borders an ocean or is a coastal state (e.g. 'Do I border an ocean', 'Is it coastal', 'czy leży nad oceanem'), "
+        "ALWAYS check the scalar boolean relation is_coastal == 1 (e.g. {\"operator\": \"equals\", \"left\": {\"entity\": \"target_state\", \"relation\": \"is_coastal\"}, \"right\": 1}). "
+        "Do NOT use generic water_access for 'ocean' questions because water_access also includes inland lakes (e.g. Lake Michigan for Indiana).\n"
+        "- For questions asking about a specific named water body like Gulf of Mexico, Atlantic Ocean, Pacific Ocean, Lake Michigan, etc., use contains_exact on relation water_access "
+        "(e.g. {\"operator\": \"contains_exact\", \"left\": {\"entity\": \"target_state\", \"relation\": \"water_access\"}, \"right\": {\"value\": \"Gulf of Mexico\"}}).\n"
         "- For broad labels such as East Coast, West Coast, Gulf Coast, Great Lakes, "
         "Pacific Northwest, Southwest, Great Plains, Appalachia, Deep South, Rust Belt, "
         "Mid-Atlantic or Upper Midwest, prefer relation regional_labels.\n"
         "- Census region and division are scalar official categories; informal/coastal/"
-        "cultural regions should use regional_labels.\n"
-        "- For direct water-body questions, use water_access."
+        "cultural regions should use regional_labels."
     ),
 )
 
