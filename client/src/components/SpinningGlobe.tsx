@@ -246,25 +246,80 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         }
       }
 
-      // 5a. Render Back Dots (Translucent Glass Layer)
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+      // 5a. Render Back Dots (Translucent Glass Matrix)
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+      ctx.beginPath();
       for (let i = 0; i < backDots.length; i++) {
         const [px, py] = backDots[i];
+        ctx.moveTo(px + 0.65, py);
+        ctx.arc(px, py, 0.65, 0, Math.PI * 2);
+      }
+      ctx.fill();
+
+      // 5b. Render Front Dots in 4 Depth Tiers for Maximum Performance & Crisp Glow
+      const tier1: [number, number][] = []; // 0 < z <= 0.25
+      const tier2: [number, number][] = []; // 0.25 < z <= 0.5
+      const tier3: [number, number][] = []; // 0.5 < z <= 0.75
+      const tier4: [number, number][] = []; // z > 0.75
+
+      for (let i = 0; i < frontDots.length; i++) {
+        const [px, py, z] = frontDots[i];
+        if (z <= 0.25) {
+          tier1.push([px, py]);
+        } else if (z <= 0.5) {
+          tier2.push([px, py]);
+        } else if (z <= 0.75) {
+          tier3.push([px, py]);
+        } else {
+          tier4.push([px, py]);
+        }
+      }
+
+      // Tier 1: Rim / Horizon edge
+      if (tier1.length > 0) {
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
         ctx.beginPath();
-        ctx.arc(px, py, 0.9, 0, Math.PI * 2);
+        for (let i = 0; i < tier1.length; i++) {
+          const [px, py] = tier1[i];
+          ctx.moveTo(px + 0.85, py);
+          ctx.arc(px, py, 0.85, 0, Math.PI * 2);
+        }
         ctx.fill();
       }
 
-      // 5b. Render Front Dots (Bright Emerald Depth Glow)
-      for (let i = 0; i < frontDots.length; i++) {
-        const [px, py, z] = frontDots[i];
-        // Depth-dependent intensity
-        const alpha = Math.max(0.25, Math.min(0.92, 0.25 + 0.67 * z));
-        const dotRadius = Math.max(0.9, 0.9 + 1.1 * z);
-
-        ctx.fillStyle = `rgba(52, 211, 153, ${alpha})`;
+      // Tier 2: Mid-depth
+      if (tier2.length > 0) {
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.55)';
         ctx.beginPath();
-        ctx.arc(px, py, dotRadius, 0, Math.PI * 2);
+        for (let i = 0; i < tier2.length; i++) {
+          const [px, py] = tier2[i];
+          ctx.moveTo(px + 1.1, py);
+          ctx.arc(px, py, 1.1, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+
+      // Tier 3: Near-front
+      if (tier3.length > 0) {
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.78)';
+        ctx.beginPath();
+        for (let i = 0; i < tier3.length; i++) {
+          const [px, py] = tier3[i];
+          ctx.moveTo(px + 1.35, py);
+          ctx.arc(px, py, 1.35, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+
+      // Tier 4: Direct Facing (High Intensity Emerald Glow)
+      if (tier4.length > 0) {
+        ctx.fillStyle = '#6ee7b7';
+        ctx.beginPath();
+        for (let i = 0; i < tier4.length; i++) {
+          const [px, py] = tier4[i];
+          ctx.moveTo(px + 1.6, py);
+          ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+        }
         ctx.fill();
       }
 
