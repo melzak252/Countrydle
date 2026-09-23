@@ -80,11 +80,10 @@ def test_factual_explanation_formatting():
         "left": {"entity": "target_country", "relation": "borders_country"},
         "right": {"value": "Germany"},
     }
-    # Polish query
+    # Polish query receives English explanation
     ans_pl = execute_local_plan(p_border, "Poland", "Czy ten kraj graniczy z Niemcami?")
     assert ans_pl.answer is True
-    assert "Poland graniczy z: Germany." in ans_pl.explanation
-
+    assert "Poland shares a land border with Germany." in ans_pl.explanation
     # English query
     ans_en = execute_local_plan(p_border, "Poland", "Does it border Germany?")
     assert ans_en.answer is True

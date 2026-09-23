@@ -1215,11 +1215,6 @@ def generate_factual_explanation(
     original_question: str | None = None,
 ) -> str:
     name = country["app_country_name"]
-    q_combined = f"{original_question or ''} {improved_question or ''}".lower()
-    words = set(re.findall(r"\w+", q_combined))
-    is_polish = any(c in q_combined for c in "ąćęłńóśźż") or bool(
-        words & {"czy", "ten", "kraj", "państwo", "panstwo", "ma", "jest", "leży", "lezy", "graniczy", "fladze", "w", "nad", "stolica", "waluta", "jezyk", "język"}
-    )
     node = plan if isinstance(plan, dict) else {}
     op = node.get("operator")
     left = node.get("left")
@@ -1236,10 +1231,10 @@ def generate_factual_explanation(
     if rel == "borders_country" and target_val:
         borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
         if answer:
-            return f"{name} graniczy z: {target_val}." if is_polish else f"{name} shares a land border with {target_val}."
+            return f"{name} shares a land border with {target_val}."
         else:
-            b_str = ", ".join(sorted(set(borders))) if borders else ("brak (kraj wyspiarski)" if is_polish else "none (island nation)")
-            return f"{name} nie graniczy z: {target_val}. Lądowi sąsiedzi to: {b_str}." if is_polish else f"{name} does not border {target_val}. Its land borders are: {b_str}."
+            b_str = ", ".join(sorted(set(borders))) if borders else "none (island nation)"
+            return f"{name} does not border {target_val}. Its land borders are: {b_str}."
 
     if rel == "water_access":
         db_waters = sorted(set(r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))))
@@ -1252,37 +1247,36 @@ def generate_factual_explanation(
 
         if target_val:
             via_sub = [w for w in db_waters if w in WATER_BODY_PARENT_MAP and target_val in WATER_BODY_PARENT_MAP[w]]
-            via_str = f" (przez {', '.join(via_sub)})" if is_polish else f" (via the {', '.join(via_sub)})"
+            via_str = f" (via the {', '.join(via_sub)})"
             if answer:
                 sub_note = via_str if via_sub and target_val not in db_waters else ""
-                return f"{name} ma bezpośredni dostęp do: {target_val}{sub_note}." if is_polish else f"{name} has direct coastline access to: {target_val}{sub_note}."
+                return f"{name} has direct coastline access to: {target_val}{sub_note}."
             else:
                 if all_waters_sorted:
-                    return f"{name} nie ma bezpośredniego dostępu do: {target_val}. Dostęp do wód: {w_str}." if is_polish else f"{name} does not have direct coastline access to: {target_val}. Its coastline access: {w_str}."
+                    return f"{name} does not have direct coastline access to: {target_val}. Its coastline access: {w_str}."
                 else:
-                    return f"{name} jest krajem śródlądowym i nie ma bezpośredniego dostępu do morza ani oceanu (brak dostępu do: {target_val})." if is_polish else f"{name} is completely landlocked with no direct coastline to any sea or ocean (no access to: {target_val})."
+                    return f"{name} is completely landlocked with no direct coastline to any sea or ocean (no access to: {target_val})."
         else:
             if answer:
-                return f"{name} ma dostęp do morza/oceanu: {w_str}." if is_polish else f"{name} has direct coastline access to: {w_str}."
+                return f"{name} has direct coastline access to: {w_str}."
             else:
-                return f"{name} jest krajem śródlądowym i nie ma bezpośredniego dostępu do morza." if is_polish else f"{name} is completely landlocked with no direct coastline."
+                return f"{name} is completely landlocked with no direct coastline."
 
     if rel == "is_island":
         if answer:
-            return f"{name} jest krajem wyspiarskim." if is_polish else f"{name} is an island nation."
+            return f"{name} is an island nation."
         else:
             borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
-            b_str = f" Graniczy drogą lądową z: {', '.join(sorted(set(borders)))}." if borders else ""
-            b_str_en = f" It shares land borders with: {', '.join(sorted(set(borders)))}." if borders else ""
-            return f"{name} leży na kontynencie i nie jest wyspą.{b_str}" if is_polish else f"{name} is a continental country, not an island.{b_str_en}"
+            b_str = f" It shares land borders with: {', '.join(sorted(set(borders)))}." if borders else ""
+            return f"{name} is a continental country, not an island.{b_str}"
 
     if rel == "continent":
         conts = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))]
         c_str = ", ".join(conts)
         if answer:
-            return f"{name} leży na kontynencie: {c_str}." if is_polish else f"{name} is located in {c_str}."
+            return f"{name} is located in {c_str}."
         else:
-            return f"{name} nie leży w: {target_val or 'tym regionie'}. Prawidłowy kontynent: {c_str}." if is_polish else f"{name} is not located in {target_val or 'that continent'}; it is in {c_str}."
+            return f"{name} is not located in {target_val or 'that continent'}; it is in {c_str}."
 
     if rel in ("geographic_area", "region", "subregion") and target_val:
         subregs = [r[0] for r in conn.execute("SELECT subregion_name FROM country_subregions WHERE country_id=?", (country["id"],))]
@@ -1290,108 +1284,105 @@ def generate_factual_explanation(
         all_areas = sorted(set(subregs + regs))
         areas_str = ", ".join(all_areas)
         if answer:
-            return f"Tak, {name} leży w regionie: {target_val}." if is_polish else f"Yes, {name} is located in {target_val}."
+            return f"Yes, {name} is located in {target_val}."
         else:
-            return f"Nie, {name} nie leży w: {target_val}. Regiony geograficzne tego kraju to: {areas_str}." if is_polish else f"No, {name} is not located in {target_val}. Its geographic regions are: {areas_str}."
+            return f"No, {name} is not located in {target_val}. Its geographic regions are: {areas_str}."
 
     if rel == "currency":
         curr_rows = conn.execute("SELECT currency_name, currency_code FROM country_currencies WHERE country_id=?", (country["id"],)).fetchall()
-        currs_str = ", ".join(f"{r[0]} ({r[1]})" if r[1] else r[0] for r in curr_rows) if curr_rows else ("brak danych" if is_polish else "no data")
+        currs_str = ", ".join(f"{r[0]} ({r[1]})" if r[1] else r[0] for r in curr_rows) if curr_rows else "no data"
         if answer:
-            return f"Oficjalną walutą w {name} jest: {currs_str}." if is_polish else f"The official currency of {name} is: {currs_str}."
+            return f"The official currency of {name} is: {currs_str}."
         else:
-            return f"Walutą w {name} nie jest {target_val}. Oficjalna waluta to: {currs_str}." if is_polish else f"The currency of {name} is not {target_val}. Official currency: {currs_str}."
+            return f"The currency of {name} is not {target_val}. Official currency: {currs_str}."
 
     if rel == "official_language":
         langs = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id=?", (country["id"],))]
-        langs_str = ", ".join(langs) if langs else ("brak danych" if is_polish else "no data")
+        langs_str = ", ".join(langs) if langs else "no data"
         if answer:
-            return f"Językiem urzędowym w {name} jest: {target_val} (języki urzędowe: {langs_str})." if is_polish else f"An official language of {name} is: {target_val} (official language(s): {langs_str})."
+            return f"An official language of {name} is: {target_val} (official language(s): {langs_str})."
         else:
-            return f"Językiem urzędowym w {name} nie jest {target_val}. Języki urzędowe to: {langs_str}." if is_polish else f"{target_val} is not an official language of {name}. Official language(s): {langs_str}."
+            return f"{target_val} is not an official language of {name}. Official language(s): {langs_str}."
 
     if rel == "major_rivers":
         rivers = [r[0] for r in conn.execute("SELECT river_name FROM country_major_rivers WHERE country_id=?", (country["id"],))]
-        riv_str = ", ".join(rivers) if rivers else ("brak odnotowanych głównych rzek" if is_polish else "no major rivers recorded")
+        riv_str = ", ".join(rivers) if rivers else "no major rivers recorded"
         if answer:
-            return f"Przez {name} przepływa rzeka: {target_val}." if is_polish else f"The river {target_val} flows through {name}."
+            return f"The river {target_val} flows through {name}."
         else:
-            return f"Rzeka {target_val} nie przepływa przez {name}. Główne rzeki to: {riv_str}." if is_polish else f"The river {target_val} does not flow through {name}. Major rivers include: {riv_str}."
+            return f"The river {target_val} does not flow through {name}. Major rivers include: {riv_str}."
 
     if rel in ("historical_union", "membership") and target_val:
         if rel == "membership":
             if answer:
-                return f"Tak, {name} należy lub należało do: {target_val}." if is_polish else f"Yes, {name} is or was a member of {target_val}."
+                return f"Yes, {name} is or was a member of {target_val}."
             else:
-                return f"Nie, {name} nie należy do organizacji/unii: {target_val}." if is_polish else f"No, {name} is not a member of {target_val}."
+                return f"No, {name} is not a member of {target_val}."
         else:
             if answer:
-                return f"Tak, {name} historycznie wchodziło w skład: {target_val}." if is_polish else f"Yes, {name} was historically part of {target_val}."
+                return f"Yes, {name} was historically part of {target_val}."
             else:
-                return f"Nie, {name} nie wchodziło w skład: {target_val}." if is_polish else f"No, {name} was not part of {target_val}."
+                return f"No, {name} was not part of {target_val}."
 
     if rel == "flag_color" and target_val:
         colors = [r[0] for r in conn.execute("SELECT color FROM country_flag_colors WHERE country_id=?", (country["id"],))]
         c_str = ", ".join(colors)
         if answer:
-            return f"Tak, flaga {name} zawiera kolor {target_val}. Wszystkie kolory: {c_str}." if is_polish else f"Yes, the flag of {name} includes the color {target_val}. Flag colors: {c_str}."
+            return f"Yes, the flag of {name} includes the color {target_val}. Flag colors: {c_str}."
         else:
-            return f"Nie, flaga {name} nie zawiera koloru {target_val}. Kolory na fladze: {c_str}." if is_polish else f"No, the flag of {name} does not include {target_val}. Flag colors: {c_str}."
+            return f"No, the flag of {name} does not include {target_val}. Flag colors: {c_str}."
 
     if rel == "flag_symbol" and target_val:
         symbols = [r[0] for r in conn.execute("SELECT symbol FROM country_flag_symbols WHERE country_id=?", (country["id"],))]
-        s_str = ", ".join(symbols) if symbols else ("brak (proste pasy/kolory)" if is_polish else "none (plain stripes/colors)")
+        s_str = ", ".join(symbols) if symbols else "none (plain stripes/colors)"
         if answer:
-            return f"Tak, na fladze {name} znajduje się symbol: {target_val}." if is_polish else f"Yes, the flag of {name} features: {target_val}."
+            return f"Yes, the flag of {name} features: {target_val}."
         else:
-            return f"Nie, na fladze {name} nie ma symbolu {target_val}. Symbole na fladze: {s_str}." if is_polish else f"No, the flag of {name} does not feature {target_val}. Elements on flag: {s_str}."
+            return f"No, the flag of {name} does not feature {target_val}. Elements on flag: {s_str}."
 
     if rel == "driving_side":
-        side_pl = "lewostronny" if country["driving_side"] == "left" else "prawostronny"
         side_en = "left" if country["driving_side"] == "left" else "right"
-        return f"W {name} obowiązuje ruch {side_pl}." if is_polish else f"Traffic in {name} drives on the {side_en} side."
+        return f"Traffic in {name} drives on the {side_en} side."
 
     if rel == "capital":
         cap = country["capital"]
         if target_val and not answer:
-            return f"Stolicą {name} jest {cap}, a nie {target_val}." if is_polish else f"The capital of {name} is {cap}, not {target_val}."
-        return f"Stolicą {name} jest {cap}." if is_polish else f"The capital of {name} is {cap}."
+            return f"The capital of {name} is {cap}, not {target_val}."
+        return f"The capital of {name} is {cap}."
 
     if rel == "population":
         pop = country["population"]
         if target_val and op in ("greater_than", "less_than"):
             try:
                 val_num = float(target_val)
-                comp_pl = "więcej" if pop > val_num else "mniej"
                 comp_en = "more" if pop > val_num else "fewer"
-                return f"{name} liczy około {pop:,} mieszkańców (to {comp_pl} niż {int(val_num):,})." if is_polish else f"{name} has a population of approximately {pop:,} ({comp_en} than {int(val_num):,})."
+                return f"{name} has a population of approximately {pop:,} ({comp_en} than {int(val_num):,})."
             except (ValueError, TypeError):
                 pass
-        return f"{name} liczy około {pop:,} mieszkańców." if is_polish else f"{name} has a population of approximately {pop:,}."
+        return f"{name} has a population of approximately {pop:,}."
 
     if rel in ("area_km2", "area"):
         area = country["area_km2"]
         if target_val and op in ("greater_than", "less_than"):
             try:
                 val_num = float(target_val)
-                comp_pl = "większa" if area > val_num else "mniejsza"
                 comp_en = "larger" if area > val_num else "smaller"
-                return f"Powierzchnia {name} wynosi około {area:,.0f} km² (jest {comp_pl} niż {val_num:,.0f} km²)." if is_polish else f"The area of {name} is approximately {area:,.0f} km² (it is {comp_en} than {val_num:,.0f} km²)."
+                return f"The area of {name} is approximately {area:,.0f} km² (it is {comp_en} than {val_num:,.0f} km²)."
             except (ValueError, TypeError):
                 pass
-        return f"Powierzchnia {name} wynosi około {area:,.0f} km²." if is_polish else f"The area of {name} is approximately {area:,.0f} km²."
+        return f"The area of {name} is approximately {area:,.0f} km²."
 
     if rel == "dominant_religion":
         relig = country["dominant_religion"]
         if target_val and not answer:
-            return f"Dominującą religią w {name} jest {relig}, a nie {target_val}." if is_polish else f"The dominant religion in {name} is {relig}, not {target_val}."
-        return f"Dominującą religią w {name} jest: {relig}." if is_polish else f"The dominant religion in {name} is {relig}."
+            return f"The dominant religion in {name} is {relig}, not {target_val}."
+        return f"The dominant religion in {name} is {relig}."
 
     if rel == "government_type":
         gov = country["government_type"]
         if target_val and not answer:
-            return f"Ustrojem politycznym {name} jest {gov}, a nie {target_val}." if is_polish else f"The government type of {name} is {gov}, not {target_val}."
-        return f"Ustrojem politycznym {name} jest: {gov}." if is_polish else f"The government type of {name} is {gov}."
+            return f"The government type of {name} is {gov}, not {target_val}."
+        return f"The government type of {name} is {gov}."
 
     if op in ("north_of", "south_of", "east_of", "west_of"):
         other_entity_name = None
@@ -1405,52 +1396,42 @@ def generate_factual_explanation(
             o_lat = other_country["latitude"]
             o_lon = other_country["longitude"]
             if op in ("north_of", "south_of"):
-                actual_dir_pl = "na północ" if c_lat > o_lat else "na południe"
                 actual_dir_en = "north" if c_lat > o_lat else "south"
                 lat_card = "N" if c_lat >= 0 else "S"
                 o_lat_card = "N" if o_lat >= 0 else "S"
-                return (
-                    f"{name} ({abs(c_lat):.1f}°{lat_card}) leży {actual_dir_pl} od {o_name} ({abs(o_lat):.1f}°{o_lat_card})."
-                    if is_polish else
-                    f"{name} ({abs(c_lat):.1f}°{lat_card}) is located {actual_dir_en} of {o_name} ({abs(o_lat):.1f}°{o_lat_card})."
-                )
+                return f"{name} ({abs(c_lat):.1f}°{lat_card}) is located {actual_dir_en} of {o_name} ({abs(o_lat):.1f}°{o_lat_card})."
             if op in ("east_of", "west_of"):
-                actual_dir_pl = "na wschód" if c_lon > o_lon else "na zachód"
                 actual_dir_en = "east" if c_lon > o_lon else "west"
                 lon_card = "E" if c_lon >= 0 else "W"
                 o_lon_card = "E" if o_lon >= 0 else "W"
-                return (
-                    f"{name} ({abs(c_lon):.1f}°{lon_card}) leży {actual_dir_pl} od {o_name} ({abs(o_lon):.1f}°{o_lon_card})."
-                    if is_polish else
-                    f"{name} ({abs(c_lon):.1f}°{lon_card}) is located {actual_dir_en} of {o_name} ({abs(o_lon):.1f}°{o_lon_card})."
-                )
+                return f"{name} ({abs(c_lon):.1f}°{lon_card}) is located {actual_dir_en} of {o_name} ({abs(o_lon):.1f}°{o_lon_card})."
 
     left_rel = left.get("relation") if isinstance(left, dict) else rel
     if left_rel == "name":
         if op == "has_space":
-            return f"Nazwa {name} {'zawiera' if answer else 'nie zawiera'} spacji." if is_polish else f"The name {name} {'contains' if answer else 'does not contain'} a space."
+            return f"The name {name} {'contains' if answer else 'does not contain'} a space."
         if op and op.startswith("word_count"):
             wc = word_count(name)
-            return f"Nazwa {name} składa się z {wc} {'słów' if wc != 1 else 'słowa'}." if is_polish else f"The name {name} consists of {wc} {'words' if wc != 1 else 'word'}."
+            return f"The name {name} consists of {wc} {'words' if wc != 1 else 'word'}."
         if op and op.startswith("char_count"):
             cc = char_count(name)
-            return f"Nazwa {name} liczy {cc} liter." if is_polish else f"The name {name} has {cc} letters."
+            return f"The name {name} has {cc} letters."
         if op == "ends_with" and target_val:
             last_let = name[-1].upper()
             val_u = str(target_val).upper()
             if answer:
-                return f"Nazwa {name} kończy się na literę '{val_u}'." if is_polish else f"The name {name} ends with the letter '{val_u}'."
+                return f"The name {name} ends with the letter '{val_u}'."
             else:
-                return f"Nazwa {name} kończy się na literę '{last_let}', a nie '{val_u}'." if is_polish else f"The name {name} ends with the letter '{last_let}', not '{val_u}'."
+                return f"The name {name} ends with the letter '{last_let}', not '{val_u}'."
 
     # Handle starts_with single letter questions
     if rel == "name" and op == "starts_with" and target_val:
         first_letter = name[0].upper()
         val_u = str(target_val).upper()
         if answer:
-            return f"Nazwa {name} zaczyna się na literę '{val_u}'." if is_polish else f"The name {name} starts with the letter '{val_u}'."
+            return f"The name {name} starts with the letter '{val_u}'."
         else:
-            return f"Nazwa {name} zaczyna się na literę '{first_letter}', a nie '{val_u}'." if is_polish else f"The name {name} starts with the letter '{first_letter}', not '{val_u}'."
+            return f"The name {name} starts with the letter '{first_letter}', not '{val_u}'."
 
     # Handle OR of starts_with (letter ranges)
     if op == "or":
@@ -1464,17 +1445,27 @@ def generate_factual_explanation(
                 last_let = letters_sorted[-1]
                 range_str = f"{first_let}–{last_let}" if len(letters_sorted) > 2 else ", ".join(letters_sorted)
                 if answer:
-                    return f"Nazwa {name} zaczyna się na literę '{first_letter}' (w przedziale {range_str})." if is_polish else f"The name {name} starts with '{first_letter}' (within the range {range_str})."
+                    return f"The name {name} starts with '{first_letter}' (within the range {range_str})."
                 else:
-                    return f"Nazwa {name} zaczyna się na literę '{first_letter}' (poza przedziałem {range_str})." if is_polish else f"The name {name} starts with '{first_letter}' (outside the range {range_str})."
+                    return f"The name {name} starts with '{first_letter}' (outside the range {range_str})."
 
+    # Informative fallback
+    prefix = "Yes" if answer else "No"
     if planner_explanation:
-        prefix = ("Tak" if answer else "Nie") if is_polish else ("Yes" if answer else "No")
-        return f"{prefix}. {planner_explanation}"
+        return f"{prefix} - {planner_explanation.rstrip('.')} for {name}."
 
-    if is_polish:
-        return f"Odpowiedź {'TAK' if answer else 'NIE'} wynika z faktów geograficznych o państwie: {name}."
-    return f"The answer is {'YES' if answer else 'NO'} based on verified geographical facts about {name}."
+    parts = []
+    conts = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))]
+    if conts:
+        parts.append(f"located in {', '.join(conts)}")
+    if country["capital"]:
+        parts.append(f"capital: {country['capital']}")
+    if country["population"]:
+        parts.append(f"population: {country['population']:,}")
+    summary = ", ".join(parts)
+    if summary:
+        return f"{prefix} ({name} is {summary})."
+    return f"{prefix} for {name}."
 
 def normalize_letter_range_plan(plan: dict) -> dict:
     if not isinstance(plan, dict):

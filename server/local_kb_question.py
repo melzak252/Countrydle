@@ -481,7 +481,7 @@ def generate_mode_explanation(
             return f"Powiat {name} leży w województwie {row['voivodeship']}."
         if rel == "is_city_county":
             return f"{name} jest miastem na prawach powiatu." if answer else f"{name} jest powiatem ziemskim."
-        return f"Odpowiedź {'TAK' if answer else 'NIE'} wynika ze sprawdzonych faktów o: {name}."
+        return f"{'Tak' if answer else 'Nie'} - {plan.explanation.rstrip('.')} dla {name}." if plan.explanation else f"{'Tak' if answer else 'Nie'} dla: {name}."
     else:
         if rel == "is_coastal":
             return f"{name} is a coastal state with ocean/gulf coastline." if answer else f"{name} is an inland state with no ocean coastline."
@@ -512,7 +512,7 @@ def generate_mode_explanation(
                 return f"{name} is located at latitude {coord:.1f}° {dir_card} (further north than {val_abs:.1f}° {val_dir})."
             else:
                 return f"{name} is located at latitude {coord:.1f}° {dir_card} (south of {val_abs:.1f}° {val_dir}, not further north)."
-        return f"The answer is {'YES' if answer else 'NO'} based on verified facts about {name}."
+        return f"{'Yes' if answer else 'No'} - {plan.explanation.rstrip('.')} for {name}." if plan.explanation else f"{'Yes' if answer else 'No'} for {name}."
 
 
 def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) -> LocalAnswer | None:

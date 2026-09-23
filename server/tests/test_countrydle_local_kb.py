@@ -576,7 +576,7 @@ def test_water_access_exists_for_bosnia_and_explains_coastline():
     )
     assert ans_pl is not None
     assert ans_pl.answer is True
-    assert "dostęp do morza" in ans_pl.explanation
+    assert "has direct coastline access to:" in ans_pl.explanation
     assert "Adriatic Sea" in ans_pl.explanation
 
 
@@ -591,9 +591,9 @@ def test_water_access_explains_actual_coastline_when_different_sea_queried():
     )
     assert ans_pl is not None
     assert ans_pl.answer is False
-    assert "nie ma bezpośredniego dostępu do: Mediterranean Sea" in ans_pl.explanation
+    assert "does not have direct coastline access to: Mediterranean Sea" in ans_pl.explanation
     assert "Baltic Sea" in ans_pl.explanation
-    assert "śródlądowym" not in ans_pl.explanation
+    assert "landlocked" not in ans_pl.explanation
 
     ans_en = execute_local_plan(
         plan,
@@ -618,7 +618,7 @@ def test_truly_landlocked_countries_state_landlocked():
     )
     assert ans is not None
     assert ans.answer is False
-    assert "jest krajem śródlądowym" in ans.explanation
+    assert "is completely landlocked" in ans.explanation
 
 
 def test_informative_explanations_for_currency_language_area_coords_capital():
@@ -629,7 +629,7 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     )
     assert ans_curr is not None
     assert ans_curr.answer is False
-    assert "Walutą w Poland nie jest Euro" in ans_curr.explanation
+    assert "currency of Poland is not Euro" in ans_curr.explanation
     assert "Polish złoty" in ans_curr.explanation
 
     # Currency (True)
@@ -638,7 +638,7 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     )
     assert ans_curr_de is not None
     assert ans_curr_de.answer is True
-    assert "Oficjalną walutą w Germany jest" in ans_curr_de.explanation
+    assert "The official currency of Germany is:" in ans_curr_de.explanation
 
     # Official Language (False)
     lang_plan = contains_plan("official_language", "Spanish")
@@ -670,5 +670,5 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     )
     assert ans_coords is not None
     assert ans_coords.answer is True
-    assert "leży na północ od Italy" in ans_coords.explanation
+    assert "is located north of Italy" in ans_coords.explanation
     assert "52.0°N" in ans_coords.explanation
