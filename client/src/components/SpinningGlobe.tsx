@@ -368,9 +368,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
     const rotScale = 0.006;
     rotationRef.current.lon += dx * rotScale;
-    rotationRef.current.lat += dy * 0.4;
+    rotationRef.current.lat -= dy * 0.35;
     rotationRef.current.velLon = dx * rotScale * 0.5;
-    rotationRef.current.velLat = dy * 0.2;
+    rotationRef.current.velLat = -dy * 0.15;
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
