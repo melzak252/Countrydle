@@ -1,9 +1,10 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Compass, ChevronDown, Menu, X, LogOut } from 'lucide-react';
+import { ChevronDown, Menu, X, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import CountdownTimer from './CountdownTimer';
+import CountrydleLogo from './CountrydleLogo';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -55,7 +56,7 @@ export default function Header() {
     <header className="sticky top-0 z-[1001] border-b border-white/10 bg-obsidian-950 text-sand-100">
       <div className="mx-auto flex min-h-14 sm:min-h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2.5" aria-label="Countrydle">
-          <Compass size={25} strokeWidth={1.4} className="text-emerald-300" aria-hidden="true" />
+          <CountrydleLogo size={32} />
           <span className="text-xl font-semibold tracking-tight">Countrydle<span className="text-emerald-300">.</span></span>
         </Link>
         <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">

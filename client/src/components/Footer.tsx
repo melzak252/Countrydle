@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Compass } from 'lucide-react';
+import CountrydleLogo from './CountrydleLogo';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <Compass size={15} />
+            <CountrydleLogo size={20} />
           </div>
           <div className="space-y-0.5 text-center md:text-left">
             <div className="text-zinc-300 font-bold tracking-tight text-sm">Countrydle</div>
