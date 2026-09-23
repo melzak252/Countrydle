@@ -36,7 +36,12 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  /* Exclude Leaflet panes, zoom transforms, and tile layers from zeroing transitions.
+     Otherwise, zeroing duration breaks Leaflet's zoom-anim matrix calculations and
+     causes tiles and layers to jump/stutter. */
+  *:not([class*="leaflet-"]):not([class*="leaflet-"] *)::before,
+  *:not([class*="leaflet-"]):not([class*="leaflet-"] *)::after,
+  *:not([class*="leaflet-"]):not([class*="leaflet-"] *) {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

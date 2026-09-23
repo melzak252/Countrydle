@@ -327,6 +327,10 @@ export function ControlledPowiatyMap({
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+            keepBuffer={8}
+            updateInterval={100}
+            updateWhenZooming={false}
+            updateWhenIdle={false}
         />
         
         <GeoJSON 
