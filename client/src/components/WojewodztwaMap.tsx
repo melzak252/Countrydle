@@ -22,11 +22,27 @@ function MapController({ correctName, geoJsonData, isGameOver }: { correctName?:
     if (!container) return;
     map.invalidateSize();
     if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize();
+    let lastWidth = container.clientWidth;
+    let lastHeight = container.clientHeight;
+    let resizeTimer: number | undefined;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (Math.abs(width - lastWidth) > 3 || Math.abs(height - lastHeight) > 3) {
+          lastWidth = width;
+          lastHeight = height;
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(() => {
+            map.invalidateSize({ animate: false });
+          }, 100);
+        }
+      }
     });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      window.clearTimeout(resizeTimer);
+      observer.disconnect();
+    };
   }, [map]);
 
   useEffect(() => {
@@ -302,6 +318,8 @@ export function ControlledWojewodztwaMap({
         minZoom={5}
         maxZoom={10}
         attributionControl={false}
+        wheelDebounceTime={80}
+        wheelPxPerZoomLevel={120}
         ref={setMap}
       >
         <TileLayer

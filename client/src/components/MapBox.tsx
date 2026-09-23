@@ -108,15 +108,32 @@ function MapController({
     const container = map.getContainer();
     if (!container) return;
 
-    // Immediate recalculation
     map.invalidateSize();
 
     if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize();
+    let lastWidth = container.clientWidth;
+    let lastHeight = container.clientHeight;
+    let resizeTimer: number | undefined;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Ignore micro-subpixel shifts during pan/zoom transforms
+        if (Math.abs(width - lastWidth) > 3 || Math.abs(height - lastHeight) > 3) {
+          lastWidth = width;
+          lastHeight = height;
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(() => {
+            map.invalidateSize({ animate: false });
+          }, 100);
+        }
+      }
     });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      window.clearTimeout(resizeTimer);
+      observer.disconnect();
+    };
   }, [map]);
 
   useEffect(() => {
@@ -429,13 +446,14 @@ export function ControlledMapBox({
         }
       `}</style>
       <MapContainer 
-        key={`${center[0]}-${center[1]}-${zoom}`}
         center={center} 
         zoom={zoom} 
         style={{ height: '100%', width: '100%', background: '#242424' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
         attributionControl={false}
+        wheelDebounceTime={80}
+        wheelPxPerZoomLevel={120}
         ref={setMap}
       >
         <TileLayer
