@@ -182,14 +182,6 @@ export default function FlagdlePage() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  if (!gameState && isLoading) {
-    return (
-      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
-        <Loader2 className="animate-spin" size={24} aria-hidden="true" />
-        <span className="text-sm font-medium text-sand-300">Loading daily Flagdle...</span>
-      </div>
-    );
-  }
 
   const isGameOver = gameState?.is_game_over || false;
   const isWon = gameState?.won || false;
@@ -201,6 +193,14 @@ export default function FlagdlePage() {
   }, [isGameOver]);
 
   const sortedGuesses = useMemo(() => [...guesses].reverse(), [guesses]);
+  if (!gameState && isLoading) {
+    return (
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+        <Loader2 className="animate-spin" size={24} aria-hidden="true" />
+        <span className="text-sm font-medium text-sand-300">Loading daily Flagdle...</span>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto w-full max-w-4xl px-3 py-4 sm:px-6">
       {/* Header Bar */}
