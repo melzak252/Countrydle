@@ -44,9 +44,6 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     let lastTime = performance.now();
     let pulseTime = 0;
 
-    // Check prefers-reduced-motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
     // Fixed axial tilt (Earth's obliquity: 23.44 degrees)
     const AXIAL_TILT = (23.44 * Math.PI) / 180;
 
@@ -61,15 +58,14 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
       const state = rotationRef.current;
 
-      // Handle momentum & continuous rotation
+      // Handle momentum & continuous rotation with framerate independence
       if (!state.isDragging) {
-        if (!prefersReducedMotion) {
-          state.lon += state.velLon;
-        }
-        // Damping on manual swipe
+        const frameScale = Math.max(0.5, Math.min(2.0, dt * 60));
+        state.lon += state.velLon * frameScale;
+        // Damping towards default rotation speed
         state.velLon = state.velLon * 0.98 + (0.0035 * (1 - 0.98));
         state.velLat *= 0.95;
-        state.lat += state.velLat;
+        state.lat += state.velLat * frameScale;
         // Clamp vertical latitude tilt to [-40, 40]
         state.lat = Math.max(-40, Math.min(40, state.lat));
       }
@@ -382,6 +378,21 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     setIsInteracting(false);
     rotationRef.current.isDragging = false;
   };
+  // Safety listener so pointer release outside canvas/window never traps isDragging
+  useEffect(() => {
+    const handleGlobalRelease = () => {
+      if (rotationRef.current.isDragging) {
+        rotationRef.current.isDragging = false;
+        setIsInteracting(false);
+      }
+    };
+    window.addEventListener('pointerup', handleGlobalRelease);
+    window.addEventListener('pointercancel', handleGlobalRelease);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalRelease);
+      window.removeEventListener('pointercancel', handleGlobalRelease);
+    };
+  }, []);
 
   return (
     <figure
