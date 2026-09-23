@@ -373,10 +373,11 @@ async def make_guess(
         token = create_guest_game_token("flagdle", today_flag.id, new_guesses_made, is_game_over, won)
         response.set_cookie("guest_flagdle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
-        return FlagdleGuessDisplay(
-            id=new_guesses_made,
+        guest_guess_create = FlagdleGuessCreate(
             guess=guessed_country.name,
             country_id=guessed_country.id,
+            day_id=today_flag.id,
+            user_id=None,
             answer=is_correct,
             distance_km=effective_dist,
             bearing_degrees=effective_bearing_deg,
@@ -387,9 +388,26 @@ async def make_guess(
             remaining_colors_count=clues["remaining_colors_count"],
             matched_symbols=clues["matched_symbols"],
             revealed_tile=revealed_tile,
-            guessed_at=now,
+            elapsed_seconds=guess_in.elapsed_seconds,
         )
+        saved_guess = await FlagdleGuessRepository(session).add_guess(guest_guess_create)
 
+        return FlagdleGuessDisplay(
+            id=saved_guess.id,
+            guess=saved_guess.guess,
+            country_id=saved_guess.country_id,
+            answer=saved_guess.answer,
+            distance_km=saved_guess.distance_km,
+            bearing_degrees=saved_guess.bearing_degrees,
+            bearing_direction=saved_guess.bearing_direction,
+            bearing_arrow=saved_guess.bearing_arrow,
+            matched_colors=saved_guess.matched_colors or [],
+            missed_colors=saved_guess.missed_colors or [],
+            remaining_colors_count=saved_guess.remaining_colors_count,
+            matched_symbols=saved_guess.matched_symbols or [],
+            revealed_tile=saved_guess.revealed_tile,
+            guessed_at=saved_guess.guessed_at or now,
+        )
 
 
 @router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])

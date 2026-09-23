@@ -902,9 +902,19 @@ async def make_guess(
         token = create_guest_game_token("countrydle", daily_country.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_countrydle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
+        guess_create = GuessCreate(
+            guess=guess.guess,
+            country_id=guess.country_id,
+            day_id=daily_country.id,
+            user_id=None,
+            answer=is_correct,
+            elapsed_seconds=guess.elapsed_seconds,
+        )
+        saved_guess = await CountrydleGuessRepository(session).add_guess(guess_create)
+
         hint = enhance_guess_with_hint(
             mode="countrydle",
-            guess_record={"guess": guess.guess, "country_id": guess.country_id, "answer": is_correct},
+            guess_record=saved_guess,
             guess_number=guess_num,
             max_guesses=COUNTRYDLE_CONFIG.max_guesses,
             target_id=daily_country.country_id,
@@ -913,11 +923,11 @@ async def make_guess(
 
         from datetime import datetime
         return GuessDisplay(
-            id=0,
-            guess=guess.guess,
+            id=int(getattr(saved_guess, "id", 0) or 0),
+            guess=str(getattr(saved_guess, "guess", guess.guess) or guess.guess),
             country_id=guess.country_id,
-            answer=is_correct,
-            guessed_at=datetime.now(),
+            answer=saved_guess.answer,
+            guessed_at=getattr(saved_guess, "guessed_at", None) or datetime.now(),
             **hint,
         )
     state = await CountrydleStateRepository(session).get_player_countrydle_state(

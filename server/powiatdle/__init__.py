@@ -460,22 +460,31 @@ async def make_guess(
         token = create_guest_game_token("powiatdle", day_powiat.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_powiatdle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
+        guess_create = PowiatGuessCreate(
+            guess=guess.guess,
+            powiat_id=guess.powiat_id,
+            day_id=day_powiat.id,
+            user_id=None,
+            answer=is_correct,
+            elapsed_seconds=guess.elapsed_seconds,
+        )
+        saved_guess = await PowiatdleGuessRepository(session).add_guess(guess_create)
+
         hint = enhance_guess_with_hint(
             mode="powiatdle",
-            guess_record={"guess": guess.guess, "powiat_id": guess.powiat_id, "answer": is_correct},
+            guess_record=saved_guess,
             guess_number=guess_num,
             max_guesses=POWIATDLE_CONFIG.max_guesses,
             target_id=day_powiat.powiat_id,
             target_name=target_powiat.nazwa if target_powiat else None,
         )
 
-        from datetime import datetime
         return PowiatGuessDisplay(
-            id=0,
-            guess=guess.guess,
-            powiat_id=guess.powiat_id,
-            answer=is_correct,
-            guessed_at=datetime.now(),
+            id=saved_guess.id,
+            guess=saved_guess.guess,
+            powiat_id=saved_guess.powiat_id,
+            answer=saved_guess.answer,
+            guessed_at=saved_guess.guessed_at,
             **hint,
         )
 

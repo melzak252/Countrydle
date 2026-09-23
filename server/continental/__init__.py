@@ -441,13 +441,19 @@ async def make_guess(
             cookie_name, token, httponly=True, samesite="lax", max_age=86400 * 2
         )
 
+        guess_create = ContinentalGuessCreate(
+            guess=candidate_name,
+            country_id=guess.country_id,
+            day_id=day.id,
+            user_id=None,
+            answer=is_correct,
+            elapsed_seconds=guess.elapsed_seconds,
+        )
+        saved_guess = await ContinentalGuessRepository(session).add_guess(guess_create)
+
         hint = enhance_guess_with_hint(
             mode="countrydle",
-            guess_record={
-                "guess": guess.guess,
-                "country_id": guess.country_id,
-                "answer": is_correct,
-            },
+            guess_record=saved_guess,
             guess_number=guesses_count,
             max_guesses=CONTINENTAL_CONFIG.max_guesses,
             target_id=day.country_id,
@@ -455,12 +461,12 @@ async def make_guess(
         )
 
         return ContinentalGuessDisplay(
-            id=0,
-            guess=guess.guess,
-            country_id=guess.country_id,
-            answer=is_correct,
-            guessed_at=datetime.now(),
-            elapsed_seconds=guess.elapsed_seconds,
+            id=saved_guess.id,
+            guess=saved_guess.guess,
+            country_id=saved_guess.country_id,
+            answer=saved_guess.answer,
+            guessed_at=saved_guess.guessed_at,
+            elapsed_seconds=saved_guess.elapsed_seconds,
             is_game_over=is_game_over,
             won=won,
             points=0,

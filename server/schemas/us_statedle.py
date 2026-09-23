@@ -34,7 +34,7 @@ class USStateGuessBase(BaseModel):
     elapsed_seconds: Optional[int] = None
 
 class USStateGuessCreate(USStateGuessBase):
-    user_id: int
+    user_id: Optional[int] = None
     day_id: int
     answer: bool
 

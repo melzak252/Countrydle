@@ -81,7 +81,7 @@ class GuessBase(BaseModel):
 
 class GuessCreate(GuessBase):
     day_id: int
-    user_id: int
+    user_id: int | None = None
     answer: bool | None
 
 

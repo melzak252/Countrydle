@@ -128,6 +128,28 @@ def mock_common_database_repositories(monkeypatch, request):
 
     async def update_countrydle_state(self, state):
         return state
+    async def flagdle_add_guess(self, guess_create):
+        from types import SimpleNamespace
+        from datetime import datetime
+        return SimpleNamespace(
+            id=1,
+            guess=guess_create.guess,
+            country_id=guess_create.country_id,
+            day_id=guess_create.day_id,
+            user_id=guess_create.user_id,
+            answer=guess_create.answer,
+            distance_km=guess_create.distance_km,
+            bearing_degrees=guess_create.bearing_degrees,
+            bearing_direction=guess_create.bearing_direction,
+            bearing_arrow=guess_create.bearing_arrow,
+            matched_colors=guess_create.matched_colors or [],
+            missed_colors=guess_create.missed_colors or [],
+            remaining_colors_count=guess_create.remaining_colors_count or 0,
+            matched_symbols=guess_create.matched_symbols or [],
+            revealed_tile=guess_create.revealed_tile,
+            elapsed_seconds=guess_create.elapsed_seconds,
+            guessed_at=datetime.now(),
+        )
 
     monkeypatch.setattr("db.repositories.user.UserRepository.register_user", register_user)
     monkeypatch.setattr("db.repositories.user.UserRepository.get_user", get_user)
@@ -139,6 +161,7 @@ def mock_common_database_repositories(monkeypatch, request):
     monkeypatch.setattr("db.repositories.countrydle.CountrydleRepository.generate_new_day_country", generate_new_day_country)
     monkeypatch.setattr("db.repositories.countrydle.CountrydleStateRepository.get_player_countrydle_state", get_player_countrydle_state)
     monkeypatch.setattr("db.repositories.countrydle.CountrydleStateRepository.update_countrydle_state", update_countrydle_state)
+    monkeypatch.setattr("db.repositories.flagdle.FlagdleGuessRepository.add_guess", flagdle_add_guess)
 
 @pytest.fixture
 async def token(async_client):

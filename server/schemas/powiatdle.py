@@ -33,7 +33,7 @@ class PowiatGuessBase(BaseModel):
     elapsed_seconds: Optional[int] = None
 
 class PowiatGuessCreate(PowiatGuessBase):
-    user_id: int
+    user_id: Optional[int] = None
     day_id: int
     answer: bool
 

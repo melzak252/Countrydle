@@ -486,22 +486,31 @@ async def make_guess(
         token = create_guest_game_token("us_statedle", day_state.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_us_statedle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
+        guess_create = USStateGuessCreate(
+            guess=guess.guess,
+            us_state_id=guess.us_state_id,
+            day_id=day_state.id,
+            user_id=None,
+            answer=is_correct,
+            elapsed_seconds=guess.elapsed_seconds,
+        )
+        saved_guess = await USStatedleGuessRepository(session).add_guess(guess_create)
+
         hint = enhance_guess_with_hint(
             mode="us_statedle",
-            guess_record={"guess": guess.guess, "us_state_id": guess.us_state_id, "answer": is_correct},
+            guess_record=saved_guess,
             guess_number=guess_num,
             max_guesses=USSTATEDLE_CONFIG.max_guesses,
             target_id=day_state.us_state_id,
             target_name=target_state.name if target_state else None,
         )
 
-        from datetime import datetime
         return USStateGuessDisplay(
-            id=0,
-            guess=guess.guess,
-            us_state_id=guess.us_state_id,
-            answer=is_correct,
-            guessed_at=datetime.now(),
+            id=saved_guess.id,
+            guess=saved_guess.guess,
+            us_state_id=saved_guess.us_state_id,
+            answer=saved_guess.answer,
+            guessed_at=saved_guess.guessed_at,
             **hint,
         )
     state = await USStatedleStateRepository(session).get_state(user, day_state)
