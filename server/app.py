@@ -50,6 +50,7 @@ from users.utils import (
 
 from utils.email import fm_noreply
 from version import SERVER_VERSION
+from utils.guest_session import get_guest_identity
 
 app = FastAPI(lifespan=lifespan)
 
@@ -71,6 +72,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+SOLO_STATE_PATHS = frozenset({
+    "/countrydle/state",
+    "/us_statedle/state",
+    "/powiatdle/state",
+    "/wojewodztwodle/state",
+    "/flagdle/state",
+    "/continental/europe/state",
+    "/continental/asia/state",
+    "/continental/africa/state",
+    "/continental/americas/state",
+})
+
+
+@app.middleware("http")
+async def initialize_guest_identity(request: Request, call_next):
+    response = await call_next(request)
+    if (
+        request.method == "GET"
+        and request.url.path in SOLO_STATE_PATHS
+        and response.status_code == 200
+    ):
+        # Establish browser identity before parallel actions, not participation.
+        get_guest_identity(request, response)
+    return response
 
 
 @app.middleware("http")

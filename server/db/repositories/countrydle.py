@@ -2,7 +2,7 @@ from datetime import date
 import random
 from typing import List
 from pydantic import BaseModel
-from sqlalchemy import Integer, and_, case, cast, func, select
+from sqlalchemy import Integer, and_, case, cast, func, or_, select
 from sqlalchemy.orm import joinedload, aliased, contains_eager
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -180,6 +180,7 @@ class CountrydleRepository:
                         User.username.not_like("guess_c_%"),
                         User.username.not_like("ask_q_%"),
                         cd.date >= current_month,
+                        or_(cs.questions_asked > 0, cs.guesses_made > 0),
                     )
                 )
                 .group_by(
@@ -228,6 +229,7 @@ class CountrydleRepository:
                         User.username.not_like("guess_c_%"),
                         User.username.not_like("ask_q_%"),
                         cs.is_game_over == True,
+                        or_(cs.questions_asked > 0, cs.guesses_made > 0),
                     )
                 )
                 .group_by(

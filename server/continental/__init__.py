@@ -48,7 +48,9 @@ from schemas.countrydle import LeaderboardEntry, QuestionCreate
 from schemas.user import UserDisplay
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.geo import enhance_guess_with_hint
-from utils.guest_session import create_guest_game_token, read_guest_game_token
+from utils.guest_session import (
+    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+)
 
 
 router = APIRouter(prefix="/continental")
@@ -70,6 +72,7 @@ def db_state_to_game_state(db_state) -> GameState:
 async def sync_guest_data(
     continent: ContinentCode,
     sync_data: ContinentalSyncSchema,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -94,6 +97,9 @@ async def sync_guest_data(
 
     # If user already has progress on server, ignore guest sync
     if state.questions_asked > 0 or state.guesses_made > 0:
+        linked = await link_guest_participation(session, request, f"continental:{continent.value}", day.id, user.id)
+        if linked is not None:
+            await session.commit()
         return await get_state(continent, user, session)
 
     # Claim questions belonging to this day that have no user assigned
@@ -140,6 +146,8 @@ async def sync_guest_data(
     if state.is_game_over:
         await UserRepository(session).update_points(user.id, state)
 
+    if state.questions_asked > 0 or state.guesses_made > 0:
+        await link_guest_participation(session, request, f"continental:{continent.value}", day.id, user.id)
     await state_repo.update_state(state)
     return await get_state(continent, user, session)
 
@@ -248,11 +256,13 @@ async def reveal_country(
 async def ask_question(
     continent: ContinentCode,
     question: ContinentalQuestionBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     try:
-        return await _do_ask_question(continent, question, user, session)
+        return await _do_ask_question(continent, question, user, session, request, response)
     except HTTPException:
         raise
     except Exception as exc:
@@ -264,6 +274,8 @@ async def _do_ask_question(
     question: ContinentalQuestionBase,
     user: User | None,
     session: AsyncSession,
+    request: Request,
+    response: Response,
 ):
     day_repo = ContinentalDayRepository(session)
     day = await day_repo.get_today_day(continent)
@@ -281,6 +293,8 @@ async def _do_ask_question(
             session=session,
         )
         if local_question_create is not None:
+            if local_question_create.valid:
+                await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, question=True)
             new_quest = await question_repo.create_question(local_question_create)
             if not local_question_create.valid:
                 return InvalidContinentalQuestionDisplay.model_validate(new_quest)
@@ -307,6 +321,8 @@ async def _do_ask_question(
             user=None,
             session=session,
         )
+        if question_create.valid:
+            await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, question=True)
         new_quest = await question_repo.create_question(question_create)
         if question_vector:
             await add_question_to_qdrant(
@@ -449,6 +465,7 @@ async def make_guess(
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )
+        await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, won=is_correct)
         saved_guess = await ContinentalGuessRepository(session).add_guess(guess_create)
 
         hint = enhance_guess_with_hint(

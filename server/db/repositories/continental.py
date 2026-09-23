@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 import random
 from typing import List, Optional, Set
-from sqlalchemy import and_, cast, desc, func, Integer, select, update
+from sqlalchemy import and_, or_, cast, desc, func, Integer, select, update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -257,6 +257,7 @@ class ContinentalStateRepository:
                         User.username.not_like("test_%"),
                         User.username.not_like("pytest_%"),
                         ContinentalDay.date >= current_month,
+                        or_(ContinentalState.questions_asked > 0, ContinentalState.guesses_made > 0),
                     )
                 )
                 .group_by(User.id, User.username)
@@ -289,6 +290,7 @@ class ContinentalStateRepository:
                         ContinentalDay.continent == continent,
                         User.username.not_like("test_%"),
                         User.username.not_like("pytest_%"),
+                        or_(ContinentalState.questions_asked > 0, ContinentalState.guesses_made > 0),
                     )
                 )
                 .group_by(User.id, User.username)

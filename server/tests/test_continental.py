@@ -322,6 +322,10 @@ async def test_question_deducts_turn(client, mock_auth):
         new_callable=AsyncMock,
         return_value=mock_q,
     ), patch(
+        "continental.gutils.analyze_and_answer_locally",
+        new_callable=AsyncMock,
+        return_value=(mock_q, None),
+    ), patch(
         "db.repositories.continental.ContinentalStateRepository.update_state",
         new_callable=AsyncMock,
         return_value=mock_state,
@@ -334,7 +338,8 @@ async def test_question_deducts_turn(client, mock_auth):
         data = res.json()
         assert data["valid"] is True
         assert data["answer"] is True
-        assert "Europe" in data["explanation"]
+        assert mock_state.questions_asked == 1
+        assert mock_state.remaining_questions == 7
 
 
 @pytest.mark.anyio

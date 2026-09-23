@@ -88,6 +88,15 @@ def mock_common_database_repositories(monkeypatch, request):
     if request.node.get_closest_marker("real_database"):
         return
 
+    # Endpoint unit tests replace action repositories; participation shares their
+    # transaction and must not open a separate connection to the application DB.
+    from importlib import import_module
+    from unittest.mock import AsyncMock
+    for mode in ("countrydle", "continental", "flagdle", "us_statedle", "powiatdle", "wojewodztwodle"):
+        module = import_module(mode)
+        monkeypatch.setattr(module, "record_guest_action", AsyncMock(return_value=None))
+        monkeypatch.setattr(module, "link_guest_participation", AsyncMock(return_value=None))
+
     async def register_user(self, user):
         return make_test_user(username=user.username, email=user.email)
 

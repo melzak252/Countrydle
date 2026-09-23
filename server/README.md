@@ -110,6 +110,49 @@ The `answer_reports` table is created by Alembic revision `4c9f2a1b8d60`, applie
 
 ---
 
+## Active participation counts
+
+Blog player statistics and the admin overview use `db/repositories/participation.py`.
+A player must have an accepted question or guess for that puzzle; merely opening
+the game or having a daily state created by the streak job does not count.
+Blog statistics are scoped to the article's Countrydle puzzle date and are
+recomputed when an existing article is fetched, without rewriting its text.
+
+Monthly leaderboards require at least one question or guess in the selected mode
+during the current month. Active players with zero points remain eligible; empty
+daily states do not qualify. Average leaderboards also exclude empty states from
+their game counts and eligibility thresholds, while retaining their existing
+historical period, completion rules, minimum games, and scoring. Leaderboards
+remain account-based; guest participation contributes to statistics, not anonymous
+ranked entries.
+
+Guests are identified by a signed, HttpOnly, SameSite=Lax `guest_identity` cookie
+with a two-day lifetime (Secure on HTTPS). Opening a solo game's state endpoint
+establishes the cookie but creates no participation row. Accepted actions update
+`guest_participations` in the same database transaction as the saved action.
+Guest-to-account sync links that browser's puzzle so it is not counted twice.
+No IP address or browser fingerprint is used.
+
+The admin overview covers all nine daily challenges. Its player total counts
+distinct accounts and guest browser identities across modes; games won and the
+win rate are calculated per puzzle played, not per unique person. These are
+browser/account counts, not a claim to identify real people: clearing or expiring
+cookies, using multiple browsers, or sharing a browser affects uniqueness.
+Historical anonymous guesses have no usable player identity and are **not**
+backfilled as people. Historical guest participation therefore remains incomplete.
+
+Alembic revision `d9e0f1a2b3c4` adds the guest table and
+`flagdle_states.questions_asked`. Apply it through the normal migration process
+before running this code; do not run the new code against the old schema.
+The PostgreSQL regression tests require an explicitly disposable
+`PARTICIPATION_TEST_DATABASE_URL`; they create and remove isolated schemas:
+
+```bash
+python -m pytest -q tests/test_guest_participation.py tests/test_guest_participation_routes.py tests/test_participation_reporting.py tests/test_blog.py
+```
+
+---
+
 ## 🛠 How to Add a New Game
 
 To add a new game mode (e.g., "Cities"), follow these steps:

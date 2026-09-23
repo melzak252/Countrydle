@@ -67,7 +67,8 @@ async def test_get_blog_post_by_slug_success(async_client: AsyncClient):
     mock_country.md_file = ""
     mock_post.country = mock_country
 
-    with patch("db.repositories.blog.BlogRepository.get_by_slug", new_callable=AsyncMock) as mock_get_slug:
+    with patch("db.repositories.blog.BlogRepository.get_by_slug", new_callable=AsyncMock) as mock_get_slug, \
+         patch("db.repositories.blog.BlogRepository.get_day_player_stats", new_callable=AsyncMock, return_value={}):
         mock_get_slug.return_value = mock_post
 
         resp = await async_client.get("/blog/2026-09-19-poland")

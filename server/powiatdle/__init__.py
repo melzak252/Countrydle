@@ -1,7 +1,9 @@
 from typing import Union, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
-from utils.guest_session import create_guest_game_token, read_guest_game_token
+from utils.guest_session import (
+    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -90,6 +92,7 @@ async def normalize_state_limits(state, session: AsyncSession):
 @router.post("/sync", response_model=PowiatdleStateResponse)
 async def sync_guest_data(
     sync_data: PowiatdleSyncSchema,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -115,6 +118,9 @@ async def sync_guest_data(
         )
     
     if state.questions_asked > 0 or state.guesses_made > 0:
+        linked = await link_guest_participation(session, request, "powiatdle", day_powiat.id, user.id)
+        if linked is not None:
+            await session.commit()
         return await get_state(user, session)
 
     if sync_data.questions:
@@ -160,6 +166,8 @@ async def sync_guest_data(
         state.points = await PowiatdleStateRepository(session).calc_points(
             state, elapsed_seconds=elapsed, streak=streak
         )
+    if state.questions_asked > 0 or state.guesses_made > 0:
+        await link_guest_participation(session, request, "powiatdle", day_powiat.id, user.id)
     await PowiatdleStateRepository(session).update_state(state)
     
     return await get_state(user, session)
@@ -281,11 +289,13 @@ async def get_admin_questions(
 @router.post("/question", response_model=PowiatQuestionDisplay)
 async def ask_question(
     question: PowiatQuestionBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     try:
-        return await _do_ask_question(question, user, session)
+        return await _do_ask_question(question, user, session, request, response)
     except HTTPException:
         raise
     except Exception as exc:
@@ -309,6 +319,8 @@ async def _do_ask_question(
     question: PowiatQuestionBase,
     user: User | None,
     session: AsyncSession,
+    request: Request,
+    response: Response,
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
     
@@ -332,6 +344,8 @@ async def _do_ask_question(
         else:
             question_vector = None
 
+        if question_create.valid:
+            await record_guest_action(session, request, response, "powiatdle", day_powiat.id, question=True)
         new_quest = await PowiatdleQuestionRepository(session).create_question(
             question_create
         )
@@ -468,6 +482,7 @@ async def make_guess(
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )
+        await record_guest_action(session, request, response, "powiatdle", day_powiat.id, won=is_correct)
         saved_guess = await PowiatdleGuessRepository(session).add_guess(guess_create)
 
         hint = enhance_guess_with_hint(

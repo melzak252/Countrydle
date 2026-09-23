@@ -690,7 +690,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         const localKey = `guess_game_flagdle_${dailyDate}`;
         const existing = localStorage.getItem(localKey);
         const parsed = existing ? JSON.parse(existing) : {};
-        localStorage.setItem(localKey, JSON.stringify({ ...parsed, questions: nextQuestions }));
+        localStorage.setItem(localKey, JSON.stringify({ ...parsed, state: gameState, questions: nextQuestions }));
       }
       set({ questions: nextQuestions, isLoading: false });
     } catch (err: unknown) {

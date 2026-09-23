@@ -256,13 +256,13 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-6 bg-obsidian-900 border border-white/10 rounded-sm space-y-2">
               <div className="flex items-center justify-between text-sand-100/65 text-xs font-semibold uppercase tracking-wider">
-                <span>Challengers Today</span>
+                <span>Active Players Today</span>
                 <Users size={18} className="text-emerald-300" />
               </div>
               <div className="text-3xl md:text-4xl font-semibold text-sand-100">
                 {overview?.today?.total_players ?? 0}
               </div>
-              <p className="text-xs text-sand-100/55">Across all 4 game challenges</p>
+              <p className="text-xs text-sand-100/55">Unique accounts and guest browsers across daily challenges</p>
             </div>
 
             <div className="p-6 bg-obsidian-900 border border-white/10 rounded-sm space-y-2">
@@ -289,14 +289,14 @@ export default function AdminDashboard() {
 
             <div className="p-6 bg-obsidian-900 border border-white/10 rounded-sm space-y-2">
               <div className="flex items-center justify-between text-sand-100/65 text-xs font-semibold uppercase tracking-wider">
-                <span>Today's Solve Rate</span>
+                <span>Today's Game Win Rate</span>
                 <Trophy size={18} className="text-emerald-300" />
               </div>
               <div className="text-3xl md:text-4xl font-semibold text-emerald-300">
                 {overview?.today?.win_rate_pct ?? 0}%
               </div>
               <p className="text-xs text-sand-100/55">
-                {overview?.today?.total_winners ?? 0} successful solvers
+                Games won: {overview?.today?.total_winners ?? 0}
               </p>
             </div>
           </div>
@@ -358,9 +358,9 @@ export default function AdminDashboard() {
                 <thead className="bg-white/[0.03] text-sand-100/65 border-b border-white/10">
                   <tr>
                     <th className="px-5 py-3 font-semibold">Date</th>
-                    <th className="px-5 py-3 font-semibold text-right">Challengers</th>
-                    <th className="px-5 py-3 font-semibold text-right">Solvers</th>
-                    <th className="px-5 py-3 font-semibold">Win Rate</th>
+                    <th className="px-5 py-3 font-semibold text-right">Active Players</th>
+                    <th className="px-5 py-3 font-semibold text-right">Games Won</th>
+                    <th className="px-5 py-3 font-semibold">Game Win Rate</th>
                     <th className="px-5 py-3 font-semibold text-right">Questions</th>
                     <th className="px-5 py-3 font-semibold text-right">Guesses</th>
                   </tr>

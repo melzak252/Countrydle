@@ -32,7 +32,9 @@ from schemas.flagdle import (
     FlagdleSyncSchema,
 )
 from users.utils import get_current_or_guest_user, get_current_user
-from utils.guest_session import create_guest_game_token, read_guest_game_token
+from utils.guest_session import (
+    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+)
 from flagdle.utils import (
     UNMASK_ORDER,
     evaluate_flag_clues,
@@ -390,6 +392,7 @@ async def make_guess(
             revealed_tile=revealed_tile,
             elapsed_seconds=guess_in.elapsed_seconds,
         )
+        await record_guest_action(session, request, response, "flagdle", today_flag.id, won=is_correct)
         saved_guess = await FlagdleGuessRepository(session).add_guess(guest_guess_create)
 
         return FlagdleGuessDisplay(
@@ -413,6 +416,8 @@ async def make_guess(
 @router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])
 async def ask_flag_question(
     question: QuestionBase,
+    request: Request,
+    response: Response,
     user: Optional[User] = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -462,6 +467,22 @@ async def ask_flag_question(
             asked_at=now,
             explanation="Could not verify this question with local flag facts. Ask about flag colors, stripes, symbols, or country geography.",
         )
+
+    if user is None:
+        await record_guest_action(session, request, response, "flagdle", today_flag.id, question=True)
+        await session.commit()
+    else:
+        state_repo = FlagdleStateRepository(session)
+        state = await state_repo.get_state(user, today_flag)
+        if state is None:
+            state = await state_repo.create_state(user, today_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
+        from sqlalchemy import update
+        from db.models.flagdle import FlagdleState
+        await session.execute(
+            update(FlagdleState).where(FlagdleState.id == state.id)
+            .values(questions_asked=FlagdleState.questions_asked + 1)
+        )
+        await session.commit()
 
     return FullQuestionDisplay(
         id=int(now.timestamp()),
@@ -556,6 +577,10 @@ async def sync_guest_data(
 
     # Server state takes strict precedence if user already played on server
     if state.guesses_made > 0:
+        linked = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)
+        if linked is not None:
+            state.questions_asked = max(state.questions_asked, linked)
+            await state_repo.update_state(state)
         return await get_state(request=request, user=user, session=session)
 
     guess_repo = FlagdleGuessRepository(session)
@@ -623,5 +648,8 @@ async def sync_guest_data(
                 break
         state.points = await state_repo.calc_points(state, elapsed_seconds=elapsed, streak=streak)
 
+    linked_questions = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)
+    if linked_questions is not None:
+        state.questions_asked = max(state.questions_asked, linked_questions)
     await state_repo.update_state(state)
     return await get_state(request=request, user=user, session=session)

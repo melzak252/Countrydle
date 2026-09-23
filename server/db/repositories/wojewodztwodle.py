@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import select, func, and_, cast, Integer, desc
+from sqlalchemy import select, func, and_, or_, cast, Integer, desc
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.wojewodztwo import Wojewodztwo
@@ -164,6 +164,7 @@ class WojewodztwodleStateRepository:
                         User.username.not_like("guess_c_%"),
                         User.username.not_like("ask_q_%"),
                         WojewodztwodleDay.date >= current_month,
+                        or_(WojewodztwodleState.questions_asked > 0, WojewodztwodleState.guesses_made > 0),
                     )
                 )
                 .group_by(User.id, User.username)
@@ -202,6 +203,7 @@ class WojewodztwodleStateRepository:
                         User.username.not_like("guess_c_%"),
                         User.username.not_like("ask_q_%"),
                         WojewodztwodleState.is_game_over == True,
+                        or_(WojewodztwodleState.questions_asked > 0, WojewodztwodleState.guesses_made > 0),
                     )
                 )
                 .group_by(User.id, User.username)

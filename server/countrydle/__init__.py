@@ -23,7 +23,9 @@ from schemas.user import UserDisplay
 from schemas.countrydle import FullQuestionDisplay
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
-from utils.guest_session import create_guest_game_token, read_guest_game_token
+from utils.guest_session import (
+    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+)
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
@@ -115,6 +117,7 @@ def format_countrydle_guesses(guesses: list, target_country_id: int, target_name
 @router.post("/sync", response_model=CountrydleStateResponse)
 async def sync_guest_data(
     sync_data: CountrydleSyncSchema,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -142,6 +145,9 @@ async def sync_guest_data(
     # If the user already has any progress on the server (at least 1 question or guess),
     # we ignore the guest sync to prevent merging conflicts or exceeding game limits.
     if state.questions_asked > 0 or state.guesses_made > 0:
+        linked = await link_guest_participation(session, request, "countrydle", day_country.id, user.id)
+        if linked is not None:
+            await session.commit()
         return await get_state(user, session)
 
     # 3. Update questions - only claim those that belong to this day and have no user assigned
@@ -196,6 +202,8 @@ async def sync_guest_data(
     if state.is_game_over:
         from db.repositories.user import UserRepository
         await UserRepository(session).update_points(user.id, state)
+    if state.questions_asked > 0 or state.guesses_made > 0:
+        await link_guest_participation(session, request, "countrydle", day_country.id, user.id)
     await CountrydleStateRepository(session).update_countrydle_state(state)
     
     return await get_state(user, session)
@@ -649,11 +657,13 @@ async def get_admin_country_fact_change_log(
 @router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])
 async def ask_question(
     question: QuestionBase,
+    request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     try:
-        return await _do_ask_question(question, user, session)
+        return await _do_ask_question(question, user, session, request, response)
     except HTTPException:
         raise
     except Exception as exc:
@@ -677,6 +687,8 @@ async def _do_ask_question(
     question: QuestionBase,
     user: User | None,
     session: AsyncSession,
+    request: Request,
+    response: Response,
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
@@ -690,6 +702,8 @@ async def _do_ask_question(
             session=session,
         )
         if local_question_create is not None:
+            if local_question_create.valid:
+                await record_guest_action(session, request, response, "countrydle", daily_country.id, question=True)
             new_quest = await CountrydleQuestionsRepository(session).create_question(
                 local_question_create
             )
@@ -722,6 +736,8 @@ async def _do_ask_question(
             session=session,
         )
 
+        if question_create.valid:
+            await record_guest_action(session, request, response, "countrydle", daily_country.id, question=True)
         new_quest = await CountrydleQuestionsRepository(session).create_question(
             question_create
         )
@@ -910,6 +926,7 @@ async def make_guess(
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )
+        await record_guest_action(session, request, response, "countrydle", daily_country.id, won=is_correct)
         saved_guess = await CountrydleGuessRepository(session).add_guess(guess_create)
 
         hint = enhance_guess_with_hint(

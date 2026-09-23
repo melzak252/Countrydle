@@ -37,6 +37,7 @@ class FlagdleState(Base):
     day_id = Column(Integer, ForeignKey("flagdle_days.id", ondelete="CASCADE"), nullable=False, index=True)
 
     remaining_guesses = Column(Integer, nullable=False, default=12)
+    questions_asked = Column(Integer, nullable=False, default=0, server_default="0")
     guesses_made = Column(Integer, nullable=False, default=0)
     revealed_stage = Column(Integer, nullable=False, default=1)
     is_game_over = Column(Boolean, nullable=False, default=False)
