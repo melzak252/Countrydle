@@ -62,7 +62,7 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction, defaul
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
       />
-      <div className="absolute top-[5.25rem] left-2.5 md:left-3 z-[1050] flex flex-col gap-2">
+      <div className="absolute top-[5.25rem] left-[12px] md:left-[12px] z-[1050] flex flex-col gap-2">
         {defaultCenter && (
           <button
             onClick={(e) => {

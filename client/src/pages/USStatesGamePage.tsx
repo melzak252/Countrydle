@@ -142,7 +142,7 @@ export default function USStatesGamePage() {
       </div>
 
       {/* 2. Top Status HUD Bar */}
-      <div className="pointer-events-none absolute left-1/2 top-2 sm:top-3 z-[1000] -translate-x-1/2 px-2 max-w-[calc(100vw-1rem)]">
+      <div className="pointer-events-none absolute left-14 sm:left-1/2 top-2 sm:top-3 z-[1000] -translate-x-0 sm:-translate-x-1/2 px-1 sm:px-2 max-w-[calc(100vw-4.5rem)] sm:max-w-none">
         <div className="pointer-events-auto flex h-7 sm:h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
           <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />

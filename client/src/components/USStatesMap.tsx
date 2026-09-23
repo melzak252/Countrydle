@@ -300,7 +300,7 @@ export function ControlledUSStatesMap({
         onClear={clearMapMarkings}
       />
       {revealedName && (
-        <div className="absolute top-[5.25rem] left-2.5 md:left-3 z-[1050]">
+        <div className="absolute top-[5.25rem] left-[12px] md:left-[12px] z-[1050]">
           <button
             onClick={handleZoomToCorrect}
             className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 w-8 h-8 flex items-center justify-center cursor-pointer"

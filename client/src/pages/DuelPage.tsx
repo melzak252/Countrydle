@@ -671,7 +671,7 @@ function DuelRoom({ code }: { code?: string }) {
       )}
       {/* 2. Top Unified Status HUD Strip */}
       {/* 2. Top Unified Status HUD Strip */}
-      <div className="pointer-events-none absolute left-1/2 top-2 sm:top-3 z-[1000] -translate-x-1/2 px-1 max-w-[calc(100vw-1rem)]">
+      <div className="pointer-events-none absolute left-14 sm:left-1/2 top-2 sm:top-3 z-[1000] -translate-x-0 sm:-translate-x-1/2 px-1 sm:px-2 max-w-[calc(100vw-4.5rem)] sm:max-w-none">
         <div className="pointer-events-auto flex h-7 sm:h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
           {/* Brand & Mode */}
           <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
