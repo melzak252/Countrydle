@@ -32,27 +32,29 @@ const PRIME_MERIDIAN_LINES: [number, number][][] = [
   [[-85, 360], [85, 360]],
 ];
 
-const createBadgeIcon = (text: string, color: 'amber' | 'cyan' | 'emerald') => {
-  const colorClasses = {
-    amber: 'border-amber-400/80 text-amber-300 bg-obsidian-950/90 ring-1 ring-amber-400/30',
-    cyan: 'border-sky-400/80 text-sky-300 bg-obsidian-950/90 ring-1 ring-sky-400/30',
-    emerald: 'border-emerald-400/80 text-emerald-300 bg-obsidian-950/90 ring-1 ring-emerald-400/30',
-  }[color];
-
+const createBadgeIcon = (text: string) => {
   return L.divIcon({
     className: 'custom-map-badge',
-    html: `<span class="inline-flex items-center px-1.5 py-0.5 rounded-[3px] border font-mono text-[9px] font-semibold tracking-wider uppercase whitespace-nowrap shadow-md select-none pointer-events-none ${colorClasses}">${text}</span>`,
+    html: `<span class="inline-flex items-center px-1.5 py-0.5 rounded-[3px] border border-zinc-600/70 bg-obsidian-950/90 text-zinc-300 font-mono text-[9px] font-medium tracking-wider uppercase whitespace-nowrap shadow-sm select-none pointer-events-none">${text}</span>`,
     iconSize: undefined,
   });
 };
 
-const REFERENCE_BADGES: { pos: [number, number]; text: string; color: 'amber' | 'cyan' | 'emerald' }[] = [
-  { pos: [0, -36], text: 'Equator · 0°', color: 'amber' },
-  { pos: [0, -145], text: 'Equator · 0°', color: 'amber' },
-  { pos: [72, 0], text: 'Greenwich · 0°', color: 'cyan' },
-  { pos: [-38, 0], text: 'Greenwich · 0°', color: 'cyan' },
-  { pos: [0, 0], text: '0°, 0°', color: 'emerald' },
+const REFERENCE_BADGES: { pos: [number, number]; text: string }[] = [
+  { pos: [0, -36], text: 'Equator · 0°' },
+  { pos: [0, -145], text: 'Equator · 0°' },
+  { pos: [72, 0], text: 'Greenwich · 0°' },
+  { pos: [-38, 0], text: 'Greenwich · 0°' },
+  { pos: [0, 0], text: '0°, 0°' },
 ];
+
+const REFERENCE_LINE_STYLE: PathOptions = {
+  color: '#a1a1aa',
+  weight: 1.5,
+  opacity: 0.65,
+  dashArray: '6, 6',
+  interactive: false,
+};
 
 interface MapBoxProps {
   correctCountryName?: string;
@@ -134,8 +136,8 @@ function MapControls({
             }}
             className={`p-2 rounded shadow-md transition-colors border w-8 h-8 flex items-center justify-center cursor-pointer ${
               showReferenceLines
-                ? 'bg-amber-500/20 text-amber-300 border-amber-400/50 hover:bg-amber-500/30'
-                : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-white'
+                ? 'bg-zinc-700 text-zinc-100 border-zinc-500 hover:bg-zinc-600'
+                : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-white'
             }`}
             title={showReferenceLines ? 'Hide Equator & Greenwich lines' : 'Show Equator & Greenwich lines'}
             aria-label="Toggle Equator and Greenwich reference lines"
@@ -555,13 +557,7 @@ export function ControlledMapBox({
             {/* Equator (0° Latitude) */}
             <Polyline
               positions={EQUATOR_COORDINATES}
-              pathOptions={{
-                color: '#f59e0b',
-                weight: 2,
-                opacity: 0.85,
-                dashArray: '8, 8',
-                interactive: false,
-              }}
+              pathOptions={REFERENCE_LINE_STYLE}
             />
 
             {/* Prime Meridian / Greenwich Line (0° Longitude) & duplicates */}
@@ -569,13 +565,7 @@ export function ControlledMapBox({
               <Polyline
                 key={`prime-meridian-${idx}`}
                 positions={lineCoords}
-                pathOptions={{
-                  color: '#38bdf8',
-                  weight: 2,
-                  opacity: 0.85,
-                  dashArray: '8, 8',
-                  interactive: false,
-                }}
+                pathOptions={REFERENCE_LINE_STYLE}
               />
             ))}
 
@@ -584,7 +574,7 @@ export function ControlledMapBox({
               <Marker
                 key={`badge-${idx}`}
                 position={badge.pos}
-                icon={createBadgeIcon(badge.text, badge.color)}
+                icon={createBadgeIcon(badge.text)}
                 interactive={false}
               />
             ))}
