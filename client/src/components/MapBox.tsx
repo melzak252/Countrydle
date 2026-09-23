@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Polyline, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
-import { Check, RotateCcw } from 'lucide-react';
+import { Check, Compass, RotateCcw } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
 
 function isCorrectCountryFeature(feature: Feature | undefined, targetName?: string) {
@@ -13,6 +13,46 @@ function isCorrectCountryFeature(feature: Feature | undefined, targetName?: stri
   return typeof name === 'string' && !!targetName
     && name.localeCompare(targetName, undefined, { sensitivity: 'base' }) === 0;
 }
+
+// Equator spans across 3 world widths (-540° to +540°) for seamless world wrapping
+const EQUATOR_COORDINATES: [number, number][] = [
+  [0, -540],
+  [0, -360],
+  [0, -180],
+  [0, 0],
+  [0, 180],
+  [0, 360],
+  [0, 540],
+];
+
+// Prime Meridian (Greenwich Line) at longitude 0°, with wrapped duplicates at -360° and +360°
+const PRIME_MERIDIAN_LINES: [number, number][][] = [
+  [[-85, 0], [85, 0]],
+  [[-85, -360], [85, -360]],
+  [[-85, 360], [85, 360]],
+];
+
+const createBadgeIcon = (text: string, color: 'amber' | 'cyan' | 'emerald') => {
+  const colorClasses = {
+    amber: 'border-amber-400/80 text-amber-300 bg-obsidian-950/90 ring-1 ring-amber-400/30',
+    cyan: 'border-sky-400/80 text-sky-300 bg-obsidian-950/90 ring-1 ring-sky-400/30',
+    emerald: 'border-emerald-400/80 text-emerald-300 bg-obsidian-950/90 ring-1 ring-emerald-400/30',
+  }[color];
+
+  return L.divIcon({
+    className: 'custom-map-badge',
+    html: `<span class="inline-flex items-center px-1.5 py-0.5 rounded-[3px] border font-mono text-[9px] font-semibold tracking-wider uppercase whitespace-nowrap shadow-md select-none pointer-events-none ${colorClasses}">${text}</span>`,
+    iconSize: undefined,
+  });
+};
+
+const REFERENCE_BADGES: { pos: [number, number]; text: string; color: 'amber' | 'cyan' | 'emerald' }[] = [
+  { pos: [0, -36], text: 'Equator · 0°', color: 'amber' },
+  { pos: [0, -145], text: 'Equator · 0°', color: 'amber' },
+  { pos: [72, 0], text: 'Greenwich · 0°', color: 'cyan' },
+  { pos: [-38, 0], text: 'Greenwich · 0°', color: 'cyan' },
+  { pos: [0, 0], text: '0°, 0°', color: 'emerald' },
+];
 
 interface MapBoxProps {
   correctCountryName?: string;
@@ -33,8 +73,19 @@ interface MapControlsProps {
   interaction: MapInteractionState;
   defaultCenter?: [number, number];
   defaultZoom?: number;
+  showReferenceLines?: boolean;
+  onToggleReferenceLines?: () => void;
 }
-function MapControls({ correctCountryName, geoJsonData, map, interaction, defaultCenter, defaultZoom }: MapControlsProps) {
+function MapControls({
+  correctCountryName,
+  geoJsonData,
+  map,
+  interaction,
+  defaultCenter,
+  defaultZoom,
+  showReferenceLines,
+  onToggleReferenceLines,
+}: MapControlsProps) {
   const { isGameOver, activeMarkerColor, setActiveMarkerColor, clearMapMarkings } = interaction;
   const handleZoomToCorrect = () => {
     if (map && correctCountryName && geoJsonData) {
@@ -73,6 +124,24 @@ function MapControls({ correctCountryName, geoJsonData, map, interaction, defaul
             title="Reset view"
           >
             <RotateCcw size={15} />
+          </button>
+        )}
+        {onToggleReferenceLines && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onToggleReferenceLines();
+            }}
+            className={`p-2 rounded shadow-md transition-colors border w-8 h-8 flex items-center justify-center cursor-pointer ${
+              showReferenceLines
+                ? 'bg-amber-500/20 text-amber-300 border-amber-400/50 hover:bg-amber-500/30'
+                : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-white'
+            }`}
+            title={showReferenceLines ? 'Hide Equator & Greenwich lines' : 'Show Equator & Greenwich lines'}
+            aria-label="Toggle Equator and Greenwich reference lines"
+            aria-pressed={showReferenceLines}
+          >
+            <Compass size={15} />
           </button>
         )}
         {isGameOver && correctCountryName && (
@@ -196,6 +265,78 @@ function loadGeoJson(url: string): Promise<FeatureCollection> {
   }
   return p;
 }
+const getStyleFromState = (
+  feature: Feature | undefined,
+  markings: Record<string, MapMarkerColor>,
+  currentCorrectName?: string
+): PathOptions => {
+  if (!feature || !feature.properties) return {};
+
+  const countryName = feature.properties.SOVEREIGNT.toUpperCase();
+  const isCorrect = isCorrectCountryFeature(feature, currentCorrectName);
+  const marker = markings[countryName];
+
+  if (isCorrect) {
+    return {
+      fillColor: '#10b981',
+      weight: 2,
+      opacity: 1,
+      color: '#34d399',
+      fillOpacity: 0.85,
+    };
+  }
+
+  if (marker === 'green') {
+    return {
+      fillColor: '#059669',
+      weight: 1.5,
+      opacity: 0.8,
+      color: '#6ee7b7',
+      fillOpacity: 0.35,
+    };
+  }
+
+  if (marker === 'red') {
+    return {
+      fillColor: '#18181b',
+      weight: 1.5,
+      opacity: 0.8,
+      color: '#f43f5e',
+      dashArray: '3, 4',
+      fillOpacity: 0.85,
+    };
+  }
+
+  if (marker === 'blue') {
+    return {
+      fillColor: '#1d4ed8',
+      weight: 2,
+      opacity: 1,
+      color: '#60a5fa',
+      fillOpacity: 0.6,
+    };
+  }
+
+  if (marker === 'orange') {
+    return {
+      fillColor: '#c2410c',
+      weight: 2,
+      opacity: 1,
+      color: '#fb923c',
+      fillOpacity: 0.6,
+    };
+  }
+
+  return {
+    fillColor: '#242424',
+    weight: 1,
+    opacity: 1,
+    color: 'white',
+    fillOpacity: 0.7,
+    dashArray: undefined,
+  };
+};
+
 
 export function ControlledMapBox({
   correctCountryName,
@@ -212,6 +353,7 @@ export function ControlledMapBox({
   const targetUrl = geoJsonUrl || '/countries_50m.geojson';
   const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(() => geoJsonCache.get(targetUrl) || null);
   const [map, setMap] = useState<L.Map | null>(null);
+  const [showReferenceLines, setShowReferenceLines] = useState<boolean>(true);
   const { entityMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctCountryName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
@@ -219,6 +361,10 @@ export function ControlledMapBox({
   current.current = { interaction, revealedName, onCountryClick };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const activeHoverLayerRef = useRef<L.Layer | null>(null);
+
+  const getStyle = (feature: Feature | undefined) => {
+    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
+  };
 
   // Close lingering tooltips when mouse moves out of the map container
   useEffect(() => {
@@ -265,81 +411,6 @@ export function ControlledMapBox({
     onCountryCode(code);
   }, [revealedName, geoJsonData, onCountryCode]);
 
-  const getStyleFromState = (
-    feature: any,
-    markings: Record<string, MapMarkerColor>,
-    currentCorrectName?: string
-  ): PathOptions => {
-    if (!feature || !feature.properties) return {};
-
-    const countryName = feature.properties.SOVEREIGNT.toUpperCase();
-    const isCorrect = isCorrectCountryFeature(feature, currentCorrectName);
-    const marker = markings[countryName];
-
-    if (isCorrect) {
-      return {
-        fillColor: '#10b981',
-        weight: 2,
-        opacity: 1,
-        color: '#34d399',
-        fillOpacity: 0.85,
-      };
-    }
-
-    if (marker === 'green') {
-      return {
-        fillColor: '#059669',
-        weight: 1.5,
-        opacity: 0.8,
-        color: '#6ee7b7',
-        fillOpacity: 0.35,
-      };
-    }
-
-    if (marker === 'red') {
-      return {
-        fillColor: '#18181b',
-        weight: 1.5,
-        opacity: 0.8,
-        color: '#f43f5e',
-        dashArray: '3, 4',
-        fillOpacity: 0.85,
-      };
-    }
-
-    if (marker === 'blue') {
-      return {
-        fillColor: '#1d4ed8',
-        weight: 2,
-        opacity: 1,
-        color: '#60a5fa',
-        fillOpacity: 0.6,
-      };
-    }
-
-    if (marker === 'orange') {
-      return {
-        fillColor: '#c2410c',
-        weight: 2,
-        opacity: 1,
-        color: '#fb923c',
-        fillOpacity: 0.6,
-      };
-    }
-
-    return {
-      fillColor: '#242424',
-      weight: 1,
-      opacity: 1,
-      color: 'white',
-      fillOpacity: 0.7,
-      dashArray: undefined,
-    };
-  };
-
-  const getStyle = (feature: any) => {
-    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
-  };
   // Optimization: Update styles imperatively instead of re-rendering whole map
   useEffect(() => {
     if (geoJsonLayerRef.current) {
@@ -444,6 +515,14 @@ export function ControlledMapBox({
         .leaflet-top, .leaflet-bottom, .leaflet-control {
             z-index: 1050 !important;
         }
+        .custom-map-badge {
+            background: transparent !important;
+            border: none !important;
+            display: inline-flex !important;
+            width: auto !important;
+            height: auto !important;
+            transform: translate(-50%, -50%);
+        }
       `}</style>
       <MapContainer 
         center={center} 
@@ -471,10 +550,59 @@ export function ControlledMapBox({
             onEachFeature={onEachFeature}
             ref={geoJsonLayerRef}
         />
+        {showReferenceLines && (
+          <>
+            {/* Equator (0° Latitude) */}
+            <Polyline
+              positions={EQUATOR_COORDINATES}
+              pathOptions={{
+                color: '#f59e0b',
+                weight: 2,
+                opacity: 0.85,
+                dashArray: '8, 8',
+                interactive: false,
+              }}
+            />
+
+            {/* Prime Meridian / Greenwich Line (0° Longitude) & duplicates */}
+            {PRIME_MERIDIAN_LINES.map((lineCoords, idx) => (
+              <Polyline
+                key={`prime-meridian-${idx}`}
+                positions={lineCoords}
+                pathOptions={{
+                  color: '#38bdf8',
+                  weight: 2,
+                  opacity: 0.85,
+                  dashArray: '8, 8',
+                  interactive: false,
+                }}
+              />
+            ))}
+
+            {/* Ocean Label Badges */}
+            {REFERENCE_BADGES.map((badge, idx) => (
+              <Marker
+                key={`badge-${idx}`}
+                position={badge.pos}
+                icon={createBadgeIcon(badge.text, badge.color)}
+                interactive={false}
+              />
+            ))}
+          </>
+        )}
         
         <MapController correctCountryName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
-      <MapControls correctCountryName={revealedName} geoJsonData={geoJsonData} map={map} interaction={interaction} defaultCenter={center} defaultZoom={zoom} />
+      <MapControls
+        correctCountryName={revealedName}
+        geoJsonData={geoJsonData}
+        map={map}
+        interaction={interaction}
+        defaultCenter={center}
+        defaultZoom={zoom}
+        showReferenceLines={showReferenceLines}
+        onToggleReferenceLines={() => setShowReferenceLines((prev) => !prev)}
+      />
     </div>
   );
 }
