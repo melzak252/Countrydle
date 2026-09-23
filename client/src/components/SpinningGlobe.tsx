@@ -12,7 +12,11 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [currentLon, setCurrentLon] = useState<number>(0);
+  const [hudCoords, setHudCoords] = useState<{ lon: string; tilt: string; isStopped: boolean }>({
+    lon: '0°',
+    tilt: '+16°',
+    isStopped: false,
+  });
   const [isInteracting, setIsInteracting] = useState<boolean>(false);
 
   // Interaction refs to avoid re-renders
@@ -24,6 +28,10 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     isDragging: boolean;
     lastMouseX: number;
     lastMouseY: number;
+    lastMoveTime: number;
+    dragDistance: number;
+    downTime: number;
+    recentMoves: Array<{ dx: number; dy: number; dt: number }>;
   }>({
     lon: 0,
     lat: 16, // subtle tilt towards viewer so Northern Hemisphere is visible
@@ -32,6 +40,10 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0,
+    lastMoveTime: 0,
+    dragDistance: 0,
+    downTime: 0,
+    recentMoves: [],
   });
 
   useEffect(() => {
@@ -58,22 +70,38 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
       const state = rotationRef.current;
 
-      // Handle momentum & continuous rotation with framerate independence
+      // Handle continuous rotation at the user-chosen tempo
       if (!state.isDragging) {
         const frameScale = Math.max(0.5, Math.min(2.0, dt * 60));
         state.lon += state.velLon * frameScale;
-        // Damping towards default rotation speed
-        state.velLon = state.velLon * 0.98 + (0.0035 * (1 - 0.98));
-        state.velLat *= 0.95;
+        // Damping vertical latitude pitch velocity so tilt angle settles smoothly
+        state.velLat *= 0.88;
         state.lat += state.velLat * frameScale;
-        // Clamp vertical latitude tilt to [-40, 40]
-        state.lat = Math.max(-40, Math.min(40, state.lat));
+        state.lat = Math.max(-50, Math.min(50, state.lat));
       }
 
-      // Update readout every ~10 frames
-      if (Math.floor(time / 150) !== Math.floor((time - dt * 1000) / 150)) {
-        const deg = Math.floor(((-state.lon * 180) / Math.PI) % 360 + 360) % 360;
-        setCurrentLon(deg);
+      // Update readout every ~100ms
+      if (Math.floor(time / 100) !== Math.floor((time - dt * 1000) / 100)) {
+        // Standard geographic center longitude (-180° to +180°)
+        const rawLon = ((-state.lon * 180) / Math.PI) % 360;
+        const normalizedLon = ((rawLon + 540) % 360) - 180;
+        const roundedLon = Math.round(normalizedLon);
+        let lonString: string;
+        if (roundedLon === 0) {
+          lonString = '0°';
+        } else if (Math.abs(roundedLon) === 180) {
+          lonString = '180°';
+        } else if (roundedLon > 0) {
+          lonString = `${roundedLon}° E`;
+        } else {
+          lonString = `${Math.abs(roundedLon)}° W`;
+        }
+
+        const roundedTilt = Math.round(state.lat);
+        const tiltString = `${roundedTilt >= 0 ? '+' : ''}${roundedTilt}°`;
+        const isStopped = Math.abs(state.velLon) < 0.0002;
+
+        setHudCoords({ lon: lonString, tilt: tiltString, isStopped });
       }
 
       const dpr = window.devicePixelRatio || 1;
@@ -115,8 +143,8 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         const cosP = Math.cos(pitchRad);
         const sinP = Math.sin(pitchRad);
         const x2 = x1;
-        const y2 = y1 * cosP - z1 * sinP;
-        const z2 = y1 * sinP + z1 * cosP;
+        const y2 = y1 * cosP + z1 * sinP;
+        const z2 = -y1 * sinP + z1 * cosP;
 
         // 2D screen coordinates
         const px = cx + x2 * radius;
@@ -398,30 +426,41 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     };
   }, []);
 
-  // Mouse / Touch handlers for tactile rotation
+  // Mouse / Touch handlers for tactile rotation and tempo control
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsInteracting(true);
+    const now = performance.now();
     rotationRef.current.isDragging = true;
     rotationRef.current.lastMouseX = e.clientX;
     rotationRef.current.lastMouseY = e.clientY;
-    rotationRef.current.velLon = 0;
-    rotationRef.current.velLat = 0;
+    rotationRef.current.lastMoveTime = now;
+    rotationRef.current.downTime = now;
+    rotationRef.current.dragDistance = 0;
+    rotationRef.current.recentMoves = [];
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!rotationRef.current.isDragging) return;
+    const now = performance.now();
+    const dt = Math.max(now - rotationRef.current.lastMoveTime, 1);
     const dx = e.clientX - rotationRef.current.lastMouseX;
     const dy = e.clientY - rotationRef.current.lastMouseY;
 
     rotationRef.current.lastMouseX = e.clientX;
     rotationRef.current.lastMouseY = e.clientY;
+    rotationRef.current.lastMoveTime = now;
+    rotationRef.current.dragDistance += Math.hypot(dx, dy);
 
-    const rotScale = 0.006;
+    const rotScale = 0.0055;
     rotationRef.current.lon += dx * rotScale;
-    rotationRef.current.lat -= dy * 0.35;
-    rotationRef.current.velLon = dx * rotScale * 0.5;
-    rotationRef.current.velLat = -dy * 0.15;
+    rotationRef.current.lat += dy * 0.25;
+    rotationRef.current.lat = Math.max(-50, Math.min(50, rotationRef.current.lat));
+
+    rotationRef.current.recentMoves.push({ dx, dy, dt });
+    if (rotationRef.current.recentMoves.length > 5) {
+      rotationRef.current.recentMoves.shift();
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -430,8 +469,44 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     } catch {
       // Ignored if capture already lost
     }
+    const state = rotationRef.current;
+    const now = performance.now();
+
+    // Tap or hold without significant motion (< 4px): toggle stop or gentle spin
+    if (state.dragDistance < 4) {
+      if (Math.abs(state.velLon) > 0.0003) {
+        state.velLon = 0; // Stop!
+      } else {
+        state.velLon = 0.0035; // Resume default smooth spin
+      }
+      state.velLat = 0;
+    } else {
+      // Released after a drag/flick:
+      const timeSinceLastMove = now - state.lastMoveTime;
+      if (timeSinceLastMove > 130) {
+        // Held still before letting go -> stop
+        state.velLon = 0;
+        state.velLat = 0;
+      } else {
+        let totalDx = 0;
+        let totalDt = 0;
+        for (const m of state.recentMoves) {
+          totalDx += m.dx;
+          totalDt += m.dt;
+        }
+        if (totalDt > 0) {
+          const pxPerMs = totalDx / totalDt;
+          const rotScale = 0.0055;
+          let releaseVel = pxPerMs * 16.6 * rotScale;
+          // Clamp to smooth and enjoyable speed range [-0.035, 0.035]
+          releaseVel = Math.max(-0.035, Math.min(0.035, releaseVel));
+          state.velLon = releaseVel;
+        }
+      }
+    }
+
+    state.isDragging = false;
     setIsInteracting(false);
-    rotationRef.current.isDragging = false;
   };
   // Safety listener so pointer release outside canvas/window never traps isDragging
   useEffect(() => {
@@ -495,11 +570,24 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
       {/* Technical HUD Telemetry Strip */}
       <figcaption className="mt-3 flex w-full max-w-[340px] items-center justify-between border-t border-emerald-500/20 pt-2 font-mono text-[10px] uppercase tracking-wider text-emerald-400/70">
         <span className="flex items-center gap-1.5">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${isInteracting ? 'bg-emerald-300 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
-          {isInteracting ? 'MANUAL ROTATION' : 'LIVE 3D PROJECTION'}
+          <span
+            className={`inline-block h-1.5 w-1.5 rounded-full ${
+              isInteracting
+                ? 'bg-emerald-300 animate-ping'
+                : hudCoords.isStopped
+                ? 'bg-zinc-500'
+                : 'bg-emerald-400 animate-pulse'
+            }`}
+          />
+          {isInteracting
+            ? 'MANUAL ROTATION'
+            : hudCoords.isStopped
+            ? 'ROTATION PAUSED'
+            : 'LIVE 3D PROJECTION'}
         </span>
         <span className="text-zinc-400">
-          LON: <span className="font-semibold text-emerald-300">{currentLon}°</span> · TILT: +23.4°
+          LON: <span className="font-semibold text-emerald-300">{hudCoords.lon}</span> · TILT:{' '}
+          <span className="font-semibold text-emerald-300">{hudCoords.tilt}</span>
         </span>
       </figcaption>
     </figure>
