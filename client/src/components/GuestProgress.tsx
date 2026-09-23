@@ -22,7 +22,7 @@ export default function GuestProgress({ gameType, today }: { gameType: GuestGame
   return (
     <section aria-label={`${modeNames[gameType]} guest progress`} className="rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-serif text-xl text-sand-100">Your daily habit</h2>
+        <h2 className="text-xl font-bold tracking-tight text-sand-50">Your daily habit</h2>
         <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">{modeNames[gameType]} · This device</span>
       </div>
       <dl className="mb-5 grid grid-cols-3 divide-x divide-white/10 text-center">
