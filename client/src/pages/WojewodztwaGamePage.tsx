@@ -226,8 +226,15 @@ export default function WojewodztwaGamePage() {
             onPointerDown={(e) => e.stopPropagation()}
             className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-92 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
           >
-            {/* Mobile Drag Handle */}
-            <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20 md:hidden" />
+            {/* Mobile Drag Handle (Tap to collapse) */}
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(false)}
+              className="w-full flex items-center justify-center pt-2.5 pb-1 md:hidden cursor-pointer touch-manipulation focus:outline-none"
+              aria-label="Collapse chat drawer"
+            >
+              <div className="h-1.5 w-12 rounded-full bg-white/30 hover:bg-white/50 active:bg-white/60 transition-colors" />
+            </button>
 
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 py-2 shrink-0">

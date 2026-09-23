@@ -54,7 +54,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
           placeholder={placeholder || defaultPlaceholder}
           minLength={minLength}
           maxLength={maxLength}
-          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-3 pr-14 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40"
+          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-3 pr-14 text-base sm:text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40"
           disabled={unavailable}
         />
         <button
