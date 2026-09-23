@@ -552,7 +552,6 @@ export default function USStatesGamePage() {
               maxGuesses={3}
               targetName={correctState?.name || guesses.find((g) => g.answer)?.guess}
               isGuest={isGuest}
-              discovery={questions.find((q) => q.valid && q.explanation)?.explanation}
               onClose={() => setIsResultDismissed(true)}
             />
           </div>

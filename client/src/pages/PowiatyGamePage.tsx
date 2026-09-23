@@ -554,7 +554,6 @@ export default function PowiatyGamePage() {
               maxGuesses={totalGuesses}
               targetName={correctPowiat?.nazwa || guesses.find((g) => g.answer)?.guess}
               isGuest={isGuest}
-              discovery={questions.find((q) => q.valid && q.explanation)?.explanation}
               onClose={() => setIsResultDismissed(true)}
             />
           </div>

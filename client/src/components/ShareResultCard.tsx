@@ -26,7 +26,6 @@ interface ShareResultCardProps {
   targetName?: string;
   isGuest?: boolean;
   targetCountryCode?: string;
-  discovery?: string;
   onClose?: () => void;
 }
 export default function ShareResultCard({
@@ -42,7 +41,6 @@ export default function ShareResultCard({
   targetName,
   isGuest: _isGuest = false,
   targetCountryCode,
-  discovery,
   onClose,
 }: ShareResultCardProps) {
   const { t, i18n } = useTranslation();
@@ -250,17 +248,6 @@ export default function ShareResultCard({
         </div>
       </div>
 
-      {/* 4. Deduction Clue (if present) */}
-      {discovery?.trim() && (
-        <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4 text-xs sm:text-sm text-zinc-300 space-y-1">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-sand-400 font-semibold block">
-            From Your Deductions
-          </span>
-          <p className="italic text-zinc-300 leading-relaxed whitespace-pre-line">
-            "{discovery}"
-          </p>
-        </div>
-      )}
 
       {/* 5. Primary Actions: Share & 1v1 Challenge */}
       <div className="space-y-3 pt-1">

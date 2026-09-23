@@ -682,7 +682,6 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               maxGuesses={3}
               targetName={correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess}
               isGuest={isGuest}
-              discovery={questions.find((q: { valid: boolean; explanation?: string }) => q.valid && q.explanation)?.explanation}
               onClose={() => setIsResultDismissed(true)}
             />
           </div>

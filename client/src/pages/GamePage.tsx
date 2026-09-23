@@ -559,7 +559,6 @@ export default function GamePage() {
               targetName={correctCountry?.name || guesses.find((g) => g.answer)?.guess}
               isGuest={isGuest}
               targetCountryCode={correctCountry?.iso2 || revealedFlag}
-              discovery={questions.find((q) => q.valid && q.explanation)?.explanation}
               onClose={() => setIsResultDismissed(true)}
             />
           </div>
