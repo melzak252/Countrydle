@@ -25,6 +25,7 @@ import QuestionInput from '../components/QuestionInput';
 import FriendDuelMap from '../components/friendDuel/FriendDuelMap';
 import DuelHistory from '../components/friendDuel/DuelHistory';
 import FriendQuestionModal from '../components/friendDuel/FriendQuestionModal';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { duelButton, duelCopy, duelModes, duelPrimary } from '../components/friendDuel/copy';
 import type { DuelCopy } from '../components/friendDuel/copy';
 
@@ -249,11 +250,17 @@ function DuelRoom({ code }: { code?: string }) {
   const [showSecret, setShowSecret] = useState(false);
   const [activeActionTab, setActiveActionTab] = useState<'question' | 'guess'>('question');
 
-  // Desktop HUD & Chat state
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  // Desktop & Mobile HUD & Chat state
+  const isMobile = useIsMobile();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isResultDismissed, setIsResultDismissed] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isMobile) {
+      setIsHistoryOpen(true);
+    }
+  }, [isMobile]);
   const answerPanel = useRef<HTMLDivElement>(null);
   const activeMode = snapshot?.mode;
   const viewMode = activeMode || room.invite?.mode || mode;
@@ -627,7 +634,7 @@ function DuelRoom({ code }: { code?: string }) {
 
   // SCENARIO B: Active or Lobby Match -> Full Canvas Desktop HUD Redesign
   return (
-    <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
+    <div className="relative h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
       {/* 1. Full-Canvas Duel Map */}
       <div className="absolute inset-0 h-full w-full">
         <FriendDuelMap
@@ -663,29 +670,32 @@ function DuelRoom({ code }: { code?: string }) {
         </div>
       )}
       {/* 2. Top Unified Status HUD Strip */}
-      <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 px-2">
-        <div className="pointer-events-auto flex h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
+      {/* 2. Top Unified Status HUD Strip */}
+      <div className="pointer-events-none absolute left-1/2 top-2 sm:top-3 z-[1000] -translate-x-1/2 px-1 max-w-[calc(100vw-1rem)]">
+        <div className="pointer-events-auto flex h-7 sm:h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
           {/* Brand & Mode */}
-          <div className="flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span className="font-semibold text-sand-100">{copy[`play_${viewMode}`]}</span>
+          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <span className="font-semibold text-sand-100 hidden sm:inline">{copy[`play_${viewMode}`]}</span>
+            <span className="font-semibold text-sand-100 sm:hidden">Duel</span>
             {snapshot.status === 'active' && (
-              <span className="text-emerald-400 font-bold">Turn {snapshot.turn}</span>
+              <span className="text-emerald-400 font-bold ml-1">T{snapshot.turn}</span>
             )}
           </div>
 
-          {/* Self status */}
-          <div className="flex items-center gap-1.5 px-3">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">{self?.name || copy.you}:</span>
+          {/* Self status (compact on mobile) */}
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 hidden sm:inline">{self?.name || copy.you}:</span>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 sm:hidden">You:</span>
             <span className={`font-semibold ${myTurn && !finished ? 'text-emerald-400' : 'text-sand-100'}`}>
               {snapshot.status === 'lobby'
                 ? self?.ready ? copy.ready : copy.notReady
-                : `Q:${self?.question_count ?? 0} G:${self?.guess_count ?? 0}`}
+                : <><span className="hidden sm:inline">Q:{self?.question_count ?? 0} G:{self?.guess_count ?? 0}</span><span className="sm:hidden">{self?.question_count ?? 0}/{self?.guess_count ?? 0}</span></>}
             </span>
           </div>
 
-          {/* Opponent status */}
-          <div className="flex items-center gap-1.5 px-3">
+          {/* Opponent status (desktop only in top HUD) */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3">
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">{opponent?.name || 'Friend'}:</span>
             <span className={`font-semibold ${!myTurn && snapshot.status === 'active' && !finished ? 'text-blue-400' : 'text-zinc-300'}`}>
               {opponent
@@ -701,15 +711,32 @@ function DuelRoom({ code }: { code?: string }) {
             <Countdown deadline={snapshot.deadline} copy={copy} />
           )}
 
-          {/* Rules dialog trigger */}
+          {/* Mobile Secret Pill inside HUD */}
+          {snapshot.status === 'active' && snapshot.own_secret && (
+            <div className="sm:hidden flex items-center gap-1 px-2 text-[10px]">
+              <span className="font-semibold text-emerald-300 truncate max-w-[65px]">
+                {showSecret ? snapshot.own_secret.name : '••••'}
+              </span>
+              <button
+                type="button"
+                className="text-zinc-400 hover:text-sand-100 p-0.5"
+                aria-label={showSecret ? copy.hideSecret : copy.showSecret}
+                onClick={() => setShowSecret(!showSecret)}
+              >
+                {showSecret ? <EyeOff size={11} /> : <Eye size={11} />}
+              </button>
+            </div>
+          )}
+
+          {/* Rules dialog trigger (desktop only in HUD) */}
           <button
             type="button"
             onClick={() => setRulesOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
             title={copy.rulesTitle}
           >
             <HelpCircle size={13} className="text-emerald-400" />
-            <span className="hidden sm:inline">Rules</span>
+            <span>Rules</span>
           </button>
 
           {/* Result modal reopen button */}
@@ -744,28 +771,48 @@ function DuelRoom({ code }: { code?: string }) {
       )}
 
       {/* 3. Unified Deduction & Duel History Overlay (Left Side on Map) */}
-      {/* 3. Unified Deduction & Duel History Overlay (Bottom Left Corner) */}
+      {/* 3. Unified Deduction & Duel History Overlay */}
+      {/* Mobile Drawer Backdrop */}
+      {isHistoryOpen && (
+        <div
+          onClick={() => setIsHistoryOpen(false)}
+          className="fixed inset-0 z-[1090] bg-black/60 backdrop-blur-xs md:hidden"
+          aria-hidden="true"
+        />
+      )}
+
       {(snapshot.status === 'active' || finished) && (
-        <div className="pointer-events-none absolute left-4 bottom-4 z-[1000] w-80 sm:w-96 max-w-[calc(100vw-2rem)]">
+        <div className={`pointer-events-none ${
+          isHistoryOpen
+            ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-96 md:max-w-[calc(100vw-2rem)]'
+            : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-96 md:max-w-[calc(100vw-2rem)]'
+        }`}>
           {!isHistoryOpen ? (
             <button
               type="button"
               onClick={() => setIsHistoryOpen(true)}
-              className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
+              className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
               aria-label="Expand Duel Chat"
             >
               <MessageSquare size={13} className="text-emerald-400" />
-              <span>Duel chat</span>
+              <span>Chat</span>
               <span className="text-zinc-500">·</span>
-              <span className="text-emerald-400 font-semibold">Turn {snapshot.turn}</span>
+              <span className="text-emerald-400 font-semibold">T{snapshot.turn}</span>
               <span className="text-zinc-500">·</span>
               <span className="text-sand-200">M: {snapshot.history.length}</span>
               <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
             </button>
           ) : (
-            <div className="pointer-events-auto flex h-[48vh] sm:h-[52vh] max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
+            <div
+              onWheel={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-96 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
+            >
+              {/* Mobile Drag Handle */}
+              <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20 md:hidden" />
+
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2 shrink-0">
+              <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 py-2 shrink-0">
                 <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 font-semibold">
                   <MessageSquare size={13} className="text-emerald-400" />
                   <span>Deduction Chat</span>
@@ -774,7 +821,7 @@ function DuelRoom({ code }: { code?: string }) {
                 <button
                   type="button"
                   onClick={() => setIsHistoryOpen(false)}
-                  className="rounded-sm p-1 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
+                  className="rounded-sm p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
                   title="Minimize chat"
                 >
                   <ChevronDown size={14} />
@@ -879,7 +926,7 @@ function DuelRoom({ code }: { code?: string }) {
 
       {/* 4. Own Secret Viewing Pill (Top Right on Map during active duel) */}
       {snapshot.status === 'active' && snapshot.own_secret && (
-        <div className="pointer-events-none absolute right-3 top-3 z-[1000]">
+        <div className="hidden sm:block pointer-events-none absolute right-3 top-3 z-[1000]">
           <div className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/10 bg-obsidian-900/80 px-2.5 py-1 backdrop-blur-md shadow text-xs font-mono">
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">{copy.secret}:</span>
             <span className="font-semibold text-emerald-300 text-xs">
@@ -899,8 +946,8 @@ function DuelRoom({ code }: { code?: string }) {
 
       {/* 5. Floating Bottom Action Dock */}
       {snapshot.status === 'active' && (
-        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[990] w-full max-w-md -translate-x-1/2 px-3">
-          <div className="pointer-events-auto flex flex-col gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 p-3 shadow-2xl backdrop-blur-md transition-all">
+        <div className="pointer-events-none max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-[1000] max-md:w-full max-md:px-0 md:absolute md:bottom-4 md:left-1/2 md:z-[990] md:w-full md:max-w-md md:-translate-x-1/2 md:px-3">
+          <div className="pointer-events-auto flex flex-col gap-2 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all max-md:rounded-none max-md:border-t max-md:border-white/15 max-md:p-2.5 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:p-3">
             {/* Case A: Must Answer Opponent's Question */}
             {mustAnswer && pendingQuestion ? (
               <div ref={answerPanel} className="flex items-center justify-between gap-3 px-2 py-1">
@@ -918,38 +965,50 @@ function DuelRoom({ code }: { code?: string }) {
                       type="button"
                       onClick={() => setActiveActionTab('question')}
                       disabled={snapshot.phase === 'reply'}
-                      className={`flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
                         activeActionTab === 'question'
                           ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
                           : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 disabled:opacity-40'
                       }`}
                     >
-                      <span>Ask question</span>
+                      <span>Question</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setActiveActionTab('guess')}
-                      className={`flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
                         activeActionTab === 'guess'
                           ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
                           : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
                       }`}
                     >
-                      <span>Make guess</span>
+                      <span>Guess</span>
                     </button>
+
+                    {canGuess && (
+                      <button
+                        type="button"
+                        className="font-mono text-[10px] uppercase tracking-wider text-zinc-400 hover:text-amber-300 disabled:opacity-40 cursor-pointer ml-1"
+                        disabled={busy}
+                        onClick={() => { void room.act('pass', {}); }}
+                      >
+                        {copy.pass}
+                      </button>
+                    )}
                   </div>
 
-                  {canGuess && (
-                    <button
-                      type="button"
-                      className="font-mono text-[10px] uppercase tracking-wider text-zinc-400 hover:text-amber-300 disabled:opacity-40 cursor-pointer"
-                      disabled={busy}
-                      onClick={() => { void room.act('pass', {}); }}
-                    >
-                      {copy.pass}
-                    </button>
-                  )}
+                  {/* Mobile Chat Shortcut Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="md:hidden flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 hover:bg-white/5 rounded-sm"
+                    aria-label="Open chat"
+                  >
+                    <MessageSquare size={12} />
+                    <span>Chat</span>
+                    <span className="text-sand-200">({snapshot.history.length})</span>
+                  </button>
                 </div>
 
                 <div className="pt-0.5">

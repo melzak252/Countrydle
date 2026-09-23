@@ -140,10 +140,10 @@ export function ControlledPowiatyMap({
     if (marker === 'green') {
       return {
         fillColor: '#059669',
-        weight: 2,
-        opacity: 1,
+        weight: 1.5,
+        opacity: 0.8,
         color: '#6ee7b7',
-        fillOpacity: 0.65,
+        fillOpacity: 0.35,
       };
     }
 

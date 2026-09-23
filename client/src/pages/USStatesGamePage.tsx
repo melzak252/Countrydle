@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
-// removed GuestProgress and useDailyDate
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 function getDistanceColor(distanceKm: number): string {
   if (distanceKm <= 500) {
@@ -51,11 +51,17 @@ export default function USStatesGamePage() {
 // today removed
 
   // HUD & Chat state
+  const isMobile = useIsMobile();
   const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatTab, setActiveChatTab] = useState<'questions' | 'guesses'>('questions');
   const [isResultDismissed, setIsResultDismissed] = useState(false);
 
+  useEffect(() => {
+    if (!isMobile) {
+      setIsChatOpen(true);
+    }
+  }, [isMobile]);
   useEffect(() => {
     fetchGameState();
     fetchStates();
@@ -136,12 +142,12 @@ export default function USStatesGamePage() {
       </div>
 
       {/* 2. Top Status HUD Bar */}
-      <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 px-2">
-        <div className="pointer-events-auto flex h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
-          <div className="flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+      <div className="pointer-events-none absolute left-1/2 top-2 sm:top-3 z-[1000] -translate-x-1/2 px-2 max-w-[calc(100vw-1rem)]">
+        <div className="pointer-events-auto flex h-7 sm:h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span>US States</span>
-            <span className="font-semibold text-sand-100">{dailyDate}</span>
+            <span className="font-semibold text-sand-100 hidden sm:inline">{dailyDate}</span>
           </div>
 
           <div className="flex items-center gap-1.5 px-3">
@@ -181,11 +187,23 @@ export default function USStatesGamePage() {
         </div>
       </div>
 
-      {/* 3. Unified Deduction Notebook (Left Side on Map) */}
-      {/* 3. Unified Deduction Chat & Guesses (Bottom Left Corner) */}
-      <div className="pointer-events-none absolute left-4 bottom-4 z-[1000] w-80 sm:w-92 max-w-[calc(100vw-2rem)]">
+      {/* 3. Unified Deduction Notebook & Chat */}
+      {/* Mobile Drawer Backdrop */}
+      {isChatOpen && (
+        <div
+          onClick={() => setIsChatOpen(false)}
+          className="fixed inset-0 z-[1090] bg-black/60 backdrop-blur-xs md:hidden"
+          aria-hidden="true"
+        />
+      )}
+
+      <div className={`pointer-events-none ${
+        isChatOpen
+          ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-92 md:max-w-[calc(100vw-2rem)]'
+          : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-92 md:max-w-[calc(100vw-2rem)]'
+      }`}>
         {!isChatOpen ? (
-          /* Collapsed Pill Button in Bottom Left Corner */
+          /* Collapsed Pill Button */
           <button
             type="button"
             onClick={() => setIsChatOpen(true)}
@@ -194,17 +212,23 @@ export default function USStatesGamePage() {
           >
             <MessageSquare size={13} className="text-emerald-400" />
             <span>Chat</span>
-            <span className="text-zinc-500">·</span>
             <span className="text-sand-100 font-semibold">Q: {questions.length}/8</span>
             <span className="text-zinc-500">·</span>
             <span className="text-emerald-400 font-semibold">G: {guesses.length}/3</span>
             <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
           </button>
         ) : (
-          /* Expanded Translucent Chat Window (Opens Upwards from Bottom Left) */
-          <div className="pointer-events-auto flex h-[48vh] sm:h-[52vh] max-h-[48vh] sm:max-h-[52vh] flex-col overflow-hidden rounded-sm border border-white/15 bg-obsidian-900/85 shadow-2xl backdrop-blur-md transition-all">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/70 px-3 py-2">
+          /* Expanded Chat: Mobile Bottom Sheet Drawer / Desktop Bottom-Left Window */
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-92 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
+          >
+            {/* Mobile Drag Handle */}
+            <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20 md:hidden" />
+
+            {/* Notebook Tabbed Header */}
+            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 py-2 shrink-0">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -405,39 +429,53 @@ export default function USStatesGamePage() {
         )}
       </div>
 
-      {/* 4. Floating Action Inputs Dock on the Map (Bottom Center) */}
-      <div className="pointer-events-none absolute bottom-4 left-1/2 z-[990] w-full max-w-md -translate-x-1/2 px-3">
-        <div className="pointer-events-auto flex flex-col gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 p-3 shadow-2xl backdrop-blur-md transition-all">
+      {/* 4. Floating Action Inputs Dock on the Map */}
+      <div className="pointer-events-none max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-[1000] max-md:w-full max-md:px-0 md:absolute md:bottom-4 md:left-1/2 md:z-[990] md:w-full md:max-w-md md:-translate-x-1/2 md:px-3">
+        <div className="pointer-events-auto flex flex-col gap-2 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all max-md:rounded-none max-md:border-t max-md:border-white/15 max-md:p-2.5 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:p-3">
+          {/* Action Tabs Switcher */}
           {!isGameOver ? (
             <>
-              <div className="flex items-center border-b border-white/10 mb-1 pb-1">
-                <button
-                  type="button"
-                  onClick={() => setUserSelectedTab('question')}
-                  className={`flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                    activeInputTab === 'question'
-                      ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                      : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                  }`}
-                >
-                  <span>Ask a question</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_questions}/8)</span>
-                </button>
+              <div className="flex items-center justify-between border-b border-white/10 mb-1 pb-1">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setUserSelectedTab('question')}
+                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
+                      activeInputTab === 'question'
+                        ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
+                        : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
+                    }`}
+                  >
+                    <span>Question</span>
+                    <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_questions}/8)</span>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => setUserSelectedTab('guess')}
+                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
+                      activeInputTab === 'guess'
+                        ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
+                        : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
+                    }`}
+                  >
+                    <span>Guess</span>
+                    <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_guesses}/3)</span>
+                  </button>
+                </div>
+
+                {/* Mobile Chat Shortcut Trigger */}
                 <button
                   type="button"
-                  onClick={() => setUserSelectedTab('guess')}
-                  className={`flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                    activeInputTab === 'guess'
-                      ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                      : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                  }`}
+                  onClick={() => setIsChatOpen(true)}
+                  className="md:hidden flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 hover:bg-white/5 rounded-sm"
+                  aria-label="Open chat"
                 >
-                  <span>Name location</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_guesses}/3)</span>
+                  <MessageSquare size={12} />
+                  <span>Chat</span>
+                  <span className="text-sand-200">({questions.length})</span>
                 </button>
               </div>
-
               <div className="pt-0.5">
                 {activeInputTab === 'question' ? (
                   <QuestionInput

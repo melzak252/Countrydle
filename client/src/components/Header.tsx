@@ -53,7 +53,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-[1001] border-b border-white/10 bg-obsidian-950 text-sand-100">
-      <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex min-h-14 sm:min-h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2.5" aria-label="Countrydle">
           <Compass size={25} strokeWidth={1.4} className="text-emerald-300" aria-hidden="true" />
           <span className="text-xl font-semibold tracking-tight">Countrydle<span className="text-emerald-300">.</span></span>
