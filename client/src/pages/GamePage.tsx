@@ -500,6 +500,8 @@ export default function GamePage() {
                   <GuessInput
                     dropup={true}
                     countries={countries}
+                    alreadyGuessedNames={guesses.map((g) => g.guess)}
+                    alreadyGuessedIds={guesses.map((g) => g.country_id).filter(Boolean)}
                     onGuess={async (id, name) => handleGuess(name, Number(id))}
                     onUnknownGuess={async (name) => handleGuess(name, 0)}
                     isLoading={isLoading}

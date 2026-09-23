@@ -2,7 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { ChevronDown, Menu, X, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
 import CountrydleLogo from './CountrydleLogo';
 
@@ -49,6 +49,19 @@ export default function Header() {
     closeMenu();
     await logout();
   };
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('details')) {
+        document.querySelectorAll('header details[open]').forEach((el) => {
+          (el as HTMLDetailsElement).open = false;
+        });
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `block px-3 py-2.5 text-sm transition-colors ${isActive ? 'text-emerald-300 bg-white/5' : 'text-zinc-300 hover:text-sand-50 hover:bg-white/5'}`;
 
@@ -60,17 +73,23 @@ export default function Header() {
           <span className="text-xl font-semibold tracking-tight">Countrydle<span className="text-emerald-300">.</span></span>
         </Link>
         <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
-          <details className="group relative" onKeyDown={(event) => {
-            if (event.key === 'Escape') {
+          <details
+            className="group relative"
+            onMouseLeave={(event) => {
               event.currentTarget.open = false;
-              event.currentTarget.querySelector('summary')?.focus();
-            }
-          }}>
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+              }
+            }}
+          >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
               {t('header.games')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm"
+              className="absolute left-0 top-full w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
@@ -107,18 +126,27 @@ export default function Header() {
             </div>
           </details>
 
-          <details className="group relative" onKeyDown={(event) => {
-            if (event.key === 'Escape') {
+          <details
+            className="group relative"
+            onMouseLeave={(event) => {
               event.currentTarget.open = false;
-              event.currentTarget.querySelector('summary')?.focus();
-            }
-          }}>
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+              }
+            }}
+          >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
               {t('header.more', 'More')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
             </summary>
-            <div className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1 shadow-xl z-50 rounded-sm" onClick={(event) => {
-              if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
-            }}>
+            <div
+              className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1 shadow-xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
+              }}
+            >
               {more.map(([path, title]) => <NavLink key={path} to={path} className={linkClass}>{title}</NavLink>)}
             </div>
           </details>

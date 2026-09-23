@@ -223,6 +223,9 @@ const resources = {
         usStates: 'US States',
         wojewodztwa: 'Polish Voivodeships',
       },
+      game: {
+        alreadyGuessed: 'You already guessed this location!',
+      },
       home: {
         heroTitle: 'Explore the World',
         heroSubtitle:

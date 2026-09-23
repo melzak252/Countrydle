@@ -73,18 +73,23 @@ export default function FlagdlePage() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // Filter countries for autocomplete
+  // Filter countries for autocomplete (excluding already guessed countries)
   const filteredCountries = useMemo(() => {
     const query = inputVal.trim().toLowerCase();
     if (!query) return [];
+    const guessedIds = new Set(guesses.map((g) => g.country_id).filter(Boolean));
+    const guessedNames = new Set(guesses.map((g) => g.guess.toLowerCase()));
+
     return countries
       .filter(
         (c) =>
-          c.name.toLowerCase().includes(query) ||
-          (c.official_name && c.official_name.toLowerCase().includes(query))
+          !guessedIds.has(c.id) &&
+          !guessedNames.has(c.name.toLowerCase()) &&
+          (c.name.toLowerCase().includes(query) ||
+            (c.official_name && c.official_name.toLowerCase().includes(query)))
       )
       .slice(0, 8);
-  }, [countries, inputVal]);
+  }, [countries, inputVal, guesses]);
 
   const handleSelectCountry = (country: FlagdleCountry) => {
     setSelectedCountry(country);
@@ -121,6 +126,12 @@ export default function FlagdlePage() {
     const name = (selectedCountry ? selectedCountry.name : inputVal).trim();
     if (!name) return;
 
+    const guessedNames = new Set(guesses.map((g) => g.guess.toLowerCase()));
+    if (guessedNames.has(name.toLowerCase())) {
+      toast.error('You already guessed this country!');
+      return;
+    }
+
     let countryId = selectedCountry?.id;
     if (!countryId) {
       const match = countries.find(
@@ -135,6 +146,11 @@ export default function FlagdlePage() {
 
     if (!countryId) {
       toast.error('Please select a valid sovereign country from the list.');
+      return;
+    }
+
+    if (guesses.some((g) => g.country_id === countryId)) {
+      toast.error('You already guessed this country!');
       return;
     }
 

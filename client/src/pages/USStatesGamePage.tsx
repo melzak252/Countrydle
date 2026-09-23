@@ -495,6 +495,8 @@ export default function USStatesGamePage() {
                   <GuessInput
                     dropup={true}
                     countries={states}
+                    alreadyGuessedNames={guesses.map((g) => g.guess)}
+                    alreadyGuessedIds={guesses.map((g) => g.us_state_id).filter(Boolean)}
                     onGuess={async (id, name) => handleGuess(name, Number(id))}
                     onUnknownGuess={async (name) => handleGuess(name, 0)}
                     isLoading={isLoading}

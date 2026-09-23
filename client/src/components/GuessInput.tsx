@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useId } from 'react';
 import { Search, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
 
 interface LocationOption<Id extends string | number> {
   id: Id;
@@ -20,8 +21,9 @@ interface GuessInputProps<Id extends string | number> {
   submitLabel?: string;
   noMatchesLabel?: string;
   dropup?: boolean;
+  alreadyGuessedNames?: string[];
+  alreadyGuessedIds?: (Id | string | number | undefined | null)[];
 }
-
 function normalizeName(value: string) {
   return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 }
@@ -42,6 +44,8 @@ export default function GuessInput<Id extends string | number = number>({
   submitLabel = 'Guess',
   noMatchesLabel = 'No matching locations.',
   dropup = false,
+  alreadyGuessedNames = [],
+  alreadyGuessedIds = [],
 }: GuessInputProps<Id>) {
   const { t } = useTranslation();
   
@@ -62,11 +66,27 @@ export default function GuessInput<Id extends string | number = number>({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  const normalizedExcludedNames = useMemo(() => new Set(
+    alreadyGuessedNames.map(name => normalizeName(name)).filter(Boolean)
+  ), [alreadyGuessedNames]);
 
-  const searchableCountries = useMemo(() => countries.map(country => ({
+  const excludedIdsSet = useMemo(() => new Set(
+    alreadyGuessedIds.map(id => String(id)).filter(Boolean)
+  ), [alreadyGuessedIds]);
+
+  const availableCountries = useMemo(() => {
+    return countries.filter(country => {
+      if (excludedIdsSet.has(String(country.id))) return false;
+      const norm = normalizeName(displayName(country));
+      if (normalizedExcludedNames.has(norm)) return false;
+      return true;
+    });
+  }, [countries, excludedIdsSet, normalizedExcludedNames]);
+
+  const searchableCountries = useMemo(() => availableCountries.map(country => ({
     country,
     name: normalizeName(displayName(country)),
-  })), [countries]);
+  })), [availableCountries]);
   const normalizedQuery = normalizeName(query);
   const filteredCountries = useMemo(() => normalizedQuery
     ? searchableCountries.filter(item => item.name.includes(normalizedQuery)).slice(0, 6)
@@ -75,6 +95,10 @@ export default function GuessInput<Id extends string | number = number>({
 
   const handleSelect = async (country: LocationOption<Id>) => {
     if (disabled) return;
+    if (excludedIdsSet.has(String(country.id)) || normalizedExcludedNames.has(normalizeName(displayName(country)))) {
+      toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+      return;
+    }
     if (await onGuess(country.id, displayName(country)) === false) return;
     setQuery('');
     setShowSuggestions(false);
@@ -85,10 +109,25 @@ export default function GuessInput<Id extends string | number = number>({
     e.preventDefault();
     if (!query.trim() || disabled) return;
 
+    // Guard against duplicate manual submission
+    if (normalizedExcludedNames.has(normalizedQuery)) {
+      toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+      return;
+    }
+
     const selected = suggestionsVisible && activeIndex >= 0 ? filteredCountries[activeIndex] : undefined;
     const match = selected || searchableCountries.find(item => item.name === normalizedQuery) || filteredCountries[0];
     if (match) {
+      if (excludedIdsSet.has(String(match.country.id))) {
+        toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+        return;
+      }
       await handleSelect(match.country);
+      return;
+    }
+
+    if (normalizedExcludedNames.has(normalizeName(query.trim()))) {
+      toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
       return;
     }
 

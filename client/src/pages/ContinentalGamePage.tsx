@@ -622,6 +622,8 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   <GuessInput
                     dropup={true}
                     countries={countries}
+                    alreadyGuessedNames={guesses.map((g: { guess: string }) => g.guess)}
+                    alreadyGuessedIds={guesses.map((g: { country_id?: number }) => g.country_id).filter(Boolean)}
                     onGuess={async (id, name) => handleGuess(name, Number(id))}
                     onUnknownGuess={async (name) => handleGuess(name, 0)}
                     isLoading={isLoading}

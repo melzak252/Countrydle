@@ -1032,6 +1032,8 @@ function DuelRoom({ code }: { code?: string }) {
                     <GuessInput
                       dropup={true}
                       countries={entities}
+                      alreadyGuessedNames={snapshot.history.filter(h => h.player_id === snapshot.you && h.type === 'guess' && h.entity).map(h => h.entity!.name)}
+                      alreadyGuessedIds={snapshot.history.filter(h => h.player_id === snapshot.you && h.type === 'guess' && h.entity).map(h => h.entity!.id)}
                       onGuess={id => room.act('guess', { entity_id: id })}
                       isLoading={busy || entitiesLoading}
                       disabled={!canGuess}
