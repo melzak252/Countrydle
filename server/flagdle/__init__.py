@@ -430,6 +430,7 @@ async def ask_flag_question(
             target_country.name,
             plan.improved_question or question.question,
             plan.explanation,
+            original_question=question.question,
         )
 
     if ans is None:

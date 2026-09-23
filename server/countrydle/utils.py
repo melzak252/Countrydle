@@ -207,6 +207,7 @@ async def analyze_and_answer_locally(
         country.name,
         planned_question.improved_question or original_question,
         planned_question.explanation,
+        original_question=original_question,
     )
     if local_answer is None:
         return None, planned_question

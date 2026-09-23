@@ -79,6 +79,15 @@ COUNTRY_WATER_ACCESS_REMOVALS = {
     # Moldova has river access via the Danube, but not direct sea coastline.
     "Moldova": {"Black Sea"},
 }
+PARENT_WATER_BODIES = {
+    "Adriatic Sea": "Mediterranean Sea",
+    "Aegean Sea": "Mediterranean Sea",
+    "Ionian Sea": "Mediterranean Sea",
+    "Ligurian Sea": "Mediterranean Sea",
+    "Tyrrhenian Sea": "Mediterranean Sea",
+    "Sea of Crete": "Mediterranean Sea",
+}
+
 
 MINOR_WATER_BODY_KEYWORDS = (
     "Bay",
@@ -254,6 +263,11 @@ def clean_water_access(country_name: str, values: object) -> list[str]:
         if key not in seen:
             cleaned.append(water_body)
             seen.add(key)
+    for water_body in list(cleaned):
+        parent = PARENT_WATER_BODIES.get(water_body)
+        if parent and parent.casefold() not in seen:
+            cleaned.append(parent)
+            seen.add(parent.casefold())
     return cleaned
 
 

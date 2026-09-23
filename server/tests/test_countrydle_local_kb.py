@@ -540,3 +540,135 @@ def test_mixed_conditions_can_still_answer_when_sqlite_logic_is_decisive():
 )
 def test_invalid_or_nonsense_local_plans_do_not_produce_answers(invalid_plan):
     assert local_answer(invalid_plan, "Poland") is None
+
+
+@pytest.mark.parametrize(
+    ("country", "water_body"),
+    [
+        ("Bosnia and Herzegovina", "Adriatic Sea"),
+        ("Bosnia and Herzegovina", "Mediterranean Sea"),
+        ("Croatia", "Adriatic Sea"),
+        ("Croatia", "Mediterranean Sea"),
+        ("Montenegro", "Adriatic Sea"),
+        ("Montenegro", "Mediterranean Sea"),
+        ("Slovenia", "Adriatic Sea"),
+        ("Slovenia", "Mediterranean Sea"),
+        ("Albania", "Mediterranean Sea"),
+        ("Italy", "Mediterranean Sea"),
+        ("Greece", "Mediterranean Sea"),
+    ],
+)
+def test_bosnia_and_adriatic_countries_have_mediterranean_water_access(country, water_body):
+    plan = contains_plan("water_access", water_body)
+    ans = execute_local_plan(plan, country, f"Does the country have access to {water_body}?")
+    assert ans is not None
+    assert ans.answer is True
+    assert water_body in ans.explanation
+
+
+def test_water_access_exists_for_bosnia_and_explains_coastline():
+    plan = exists_plan("water_access")
+    ans_pl = execute_local_plan(
+        plan,
+        "Bosnia and Herzegovina",
+        "Does the country have access to a sea or ocean?",
+        original_question="Czy ma dostęp do morza/oceanu?",
+    )
+    assert ans_pl is not None
+    assert ans_pl.answer is True
+    assert "dostęp do morza" in ans_pl.explanation
+    assert "Adriatic Sea" in ans_pl.explanation
+
+
+def test_water_access_explains_actual_coastline_when_different_sea_queried():
+    # Poland has Baltic Sea, not Mediterranean Sea. Must NOT say landlocked!
+    plan = contains_plan("water_access", "Mediterranean Sea")
+    ans_pl = execute_local_plan(
+        plan,
+        "Poland",
+        "Does the country have access to the Mediterranean Sea?",
+        original_question="Czy ma dostęp do Morza Śródziemnego?",
+    )
+    assert ans_pl is not None
+    assert ans_pl.answer is False
+    assert "nie ma bezpośredniego dostępu do: Mediterranean Sea" in ans_pl.explanation
+    assert "Baltic Sea" in ans_pl.explanation
+    assert "śródlądowym" not in ans_pl.explanation
+
+    ans_en = execute_local_plan(
+        plan,
+        "Poland",
+        "Does the country have access to the Mediterranean Sea?",
+        original_question="Does it have access to the Mediterranean Sea?",
+    )
+    assert ans_en is not None
+    assert ans_en.answer is False
+    assert "does not have direct coastline access to: Mediterranean Sea" in ans_en.explanation
+    assert "Baltic Sea" in ans_en.explanation
+    assert "completely landlocked" not in ans_en.explanation
+
+
+def test_truly_landlocked_countries_state_landlocked():
+    plan = exists_plan("water_access")
+    ans = execute_local_plan(
+        plan,
+        "Czech Republic",
+        "Does it have sea access?",
+        original_question="Czy ma dostęp do morza?",
+    )
+    assert ans is not None
+    assert ans.answer is False
+    assert "jest krajem śródlądowym" in ans.explanation
+
+
+def test_informative_explanations_for_currency_language_area_coords_capital():
+    # Currency (False)
+    curr_plan = contains_plan("currency", "Euro")
+    ans_curr = execute_local_plan(
+        curr_plan, "Poland", "Is the currency Euro?", original_question="Czy walutą jest Euro?"
+    )
+    assert ans_curr is not None
+    assert ans_curr.answer is False
+    assert "Walutą w Poland nie jest Euro" in ans_curr.explanation
+    assert "Polish złoty" in ans_curr.explanation
+
+    # Currency (True)
+    ans_curr_de = execute_local_plan(
+        curr_plan, "Germany", "Is the currency Euro?", original_question="Czy walutą jest Euro?"
+    )
+    assert ans_curr_de is not None
+    assert ans_curr_de.answer is True
+    assert "Oficjalną walutą w Germany jest" in ans_curr_de.explanation
+
+    # Official Language (False)
+    lang_plan = contains_plan("official_language", "Spanish")
+    ans_lang = execute_local_plan(
+        lang_plan, "Brazil", "Is Spanish an official language?", original_question="Czy językiem jest hiszpański?"
+    )
+    assert ans_lang is not None
+    assert ans_lang.answer is False
+    assert "Portuguese" in ans_lang.explanation
+
+    # Capital (False)
+    cap_plan = scalar_plan("equals", "capital", "Krakow")
+    ans_cap = execute_local_plan(
+        cap_plan, "Poland", "Is the capital Krakow?", original_question="Czy stolicą jest Kraków?"
+    )
+    assert ans_cap is not None
+    assert ans_cap.answer is False
+    assert "Warsaw" in ans_cap.explanation
+    assert "Krakow" in ans_cap.explanation
+
+    # Coordinates (north_of)
+    coords_plan = {
+        "operator": "north_of",
+        "left": {"entity": "target_country", "relation": "coordinates.latitude"},
+        "right": {"entity": "Italy", "relation": "coordinates.latitude"},
+    }
+    ans_coords = execute_local_plan(
+        coords_plan, "Poland", "Is the country north of Italy?", original_question="Czy leży na północ od Włoch?"
+    )
+    assert ans_coords is not None
+    assert ans_coords.answer is True
+    assert "leży na północ od Italy" in ans_coords.explanation
+    assert "52.0°N" in ans_coords.explanation
