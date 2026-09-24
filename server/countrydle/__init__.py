@@ -150,6 +150,10 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
+    country_repo = CountryRepository(session)
+    for guess in sync_data.guesses:
+        await country_repo.validate_guess(guess.country_id, guess.guess)
+
     # 3. Update questions - only claim those that belong to this day and have no user assigned
     if sync_data.questions:
         from db.models import CountrydleQuestion
@@ -890,6 +894,7 @@ async def make_guess(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    await CountryRepository(session).validate_guess(guess.country_id, guess.guess)
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()

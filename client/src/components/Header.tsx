@@ -23,7 +23,7 @@ export default function Header() {
       category: t('header.groupContinents', 'Continents (8 Qs)'),
       items: [
         { path: '/europe', name: t('header.europe', 'Europedle'), badge: '47' },
-        { path: '/asia', name: t('header.asia', 'Asiadle'), badge: '47' },
+        { path: '/asia', name: t('header.asia', 'Asiadle'), badge: '46' },
         { path: '/africa', name: t('header.africa', 'Africadle'), badge: '54' },
         { path: '/americas', name: t('header.americas', 'Americadle'), badge: '35' },
       ],

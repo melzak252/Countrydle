@@ -41,7 +41,7 @@ export default function AboutPage() {
         <div className="divide-y divide-white/10">
           <div className="pb-5">
             <h3 className="mb-2 font-semibold text-sand-100">1. World Countries (Countrydle)</h3>
-            <p className="text-base leading-7">Spans all 195 sovereign nations across 7 continents. Players can test hypotheses regarding continental placement, oceanic coastlines, neighboring sovereign nations, capital cities, driving orientation, and national flag designs within a strict 10-question budget.</p>
+            <p className="text-base leading-7">Spans 195 playable countries across 7 continents. Players can test hypotheses regarding continental placement, oceanic coastlines, neighboring sovereign nations, capital cities, driving orientation, and national flag designs within a strict 10-question budget.</p>
           </div>
           <div className="py-5">
             <h3 className="mb-2 font-semibold text-sand-100">2. United States (US Statedle)</h3>

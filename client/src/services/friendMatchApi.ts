@@ -1,6 +1,7 @@
 import axios from 'axios';
 import api, { API_URL } from './api';
 import type { FriendAction, FriendEntity, FriendHistoryPage, FriendInvite, FriendMode, FriendSnapshot } from '../types/friendMatch';
+import { isCountryAvailable } from '../lib/countryEligibility';
 
 const root = '/friend-matches';
 const segment = encodeURIComponent;
@@ -26,7 +27,8 @@ async function prepareFriendSession(): Promise<void> {
 
 export const friendMatchApi = {
   async entities(mode: FriendMode): Promise<FriendEntity[]> {
-    return (await api.get<{ entities: FriendEntity[] }>(`${root}/entities`, { params: { mode }, timeout: 15000 })).data.entities;
+    const { data } = await api.get<{ entities: FriendEntity[] }>(`${root}/entities`, { params: { mode }, timeout: 15000 });
+    return data.entities.filter(entity => isCountryAvailable(entity.name, mode));
   },
   async create(body: { name: string; mode: FriendMode; request_id: string }): Promise<FriendSnapshot> {
     await prepareFriendSession();

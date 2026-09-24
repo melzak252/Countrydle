@@ -11,6 +11,7 @@ from db.models import Country
 from db.models.continental import ContinentCode
 from schemas.continental import ContinentalGuessDisplay
 from utils.geo import enhance_guess_with_hint
+from country_eligibility import is_country_eligible
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -51,7 +52,7 @@ def get_continent_country_names(continent: ContinentCode, db_path: Path | None =
             """,
             continents,
         )
-        return [row[0] for row in c.fetchall()]
+        return [row[0] for row in c.fetchall() if is_country_eligible(row[0], continent.value)]
     finally:
         conn.close()
 

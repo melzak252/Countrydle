@@ -16,6 +16,7 @@ interface FriendDuelMapProps {
   onEntitySelect?: (name: string) => void;
   isLobby?: boolean;
   selectedSecretName?: string;
+  eligibleCountries: readonly { name: string }[];
 }
 
 function MatchMap({
@@ -26,6 +27,7 @@ function MatchMap({
   onEntitySelect,
   isLobby = false,
   selectedSecretName,
+  eligibleCountries,
 }: FriendDuelMapProps) {
   const [entityMarkings, setEntityMarkings] = useState<Record<string, MapMarkerColor>>({});
   const [activeMarkerColor, setActiveMarkerColor] = useState<MapMarkerColor>('green');
@@ -55,10 +57,12 @@ function MatchMap({
 
   switch (mode) {
     case 'countrydle':
-      return <ControlledMapBox interaction={interaction} correctCountryName={revealedName} className={className} onCountryClick={onEntitySelect} />;
+      return <ControlledMapBox interaction={interaction} correctCountryName={revealedName} className={className} onCountryClick={onEntitySelect} eligibleCountries={eligibleCountries} countryMode={mode} />;
     case 'europe':
       return (
         <ControlledMapBox
+          eligibleCountries={eligibleCountries}
+          countryMode={mode}
           interaction={interaction}
           correctCountryName={revealedName}
           className={className}
@@ -73,6 +77,8 @@ function MatchMap({
     case 'asia':
       return (
         <ControlledMapBox
+          eligibleCountries={eligibleCountries}
+          countryMode={mode}
           interaction={interaction}
           correctCountryName={revealedName}
           className={className}
@@ -87,6 +93,8 @@ function MatchMap({
     case 'africa':
       return (
         <ControlledMapBox
+          eligibleCountries={eligibleCountries}
+          countryMode={mode}
           interaction={interaction}
           correctCountryName={revealedName}
           className={className}
@@ -101,6 +109,8 @@ function MatchMap({
     case 'americas':
       return (
         <ControlledMapBox
+          eligibleCountries={eligibleCountries}
+          countryMode={mode}
           interaction={interaction}
           correctCountryName={revealedName}
           className={className}

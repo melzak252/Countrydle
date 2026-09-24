@@ -1,0 +1,40 @@
+{
+  "sources": {
+    "geography_government_languages_religion_flag_history": "https://raw.githubusercontent.com/factbook/factbook.json/master/europe/kv.json",
+    "population_2024": "https://api.worldbank.org/v2/country/XKX/indicator/SP.POP.TOTL?format=json&date=2024",
+    "currency_rivers": "https://en.wikipedia.org/wiki/Kosovo",
+    "driving_side": "https://www.rac.co.uk/drive/travel/country/kosovo/",
+    "retrieved": "2026-09-23",
+    "code_note": "XK and XKX are user-assigned codes, not officially assigned ISO 3166 country codes."
+  },
+  "country": {
+    "app_country_name": "Kosovo",
+    "official_name": "Republic of Kosovo",
+    "cca2": "XK",
+    "cca3": "XKX",
+    "region": "Europe",
+    "subregion": "Southeast Europe",
+    "capital": "Pristina",
+    "population": 1594353,
+    "area_km2": 10887,
+    "latitude": 42.583333333333336,
+    "longitude": 21.0,
+    "is_island": 0,
+    "driving_side": "right",
+    "government_type": "Republic",
+    "dominant_religion": "Islam",
+    "source": "Kosovo seed: CIA World Factbook; World Bank SP.POP.TOTL 2024; source URLs in scripts/country_sources/kosovo.json"
+  },
+  "continents": ["Europe"],
+  "regions": ["Europe"],
+  "subregions": ["Balkans", "Southeast Europe", "Southern Europe"],
+  "borders": [["Albania", "ALB"], ["Montenegro", "MNE"], ["North Macedonia", "MKD"], ["Serbia", "SRB"]],
+  "currencies": [["EUR", "Euro", "€"]],
+  "languages": [["sqi", "Albanian"], ["srp", "Serbian"]],
+  "memberships": ["FIFA", "IBRD", "IDA", "IFC", "IMF", "IOC", "MIGA", "Yugoslavia", "Ottoman Empire"],
+  "water_access": [],
+  "major_rivers": ["White Drin", "Ibar", "Sitnica", "Lepenac"],
+  "flag_colors": ["blue", "yellow", "white"],
+  "flag_symbols": ["star", "stars"],
+  "historical_unions": ["Yugoslavia", "Ottoman Empire"]
+}

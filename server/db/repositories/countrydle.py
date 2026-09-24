@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Country, CountrydleState, CountrydleDay, User
 from db.repositories.country import CountryRepository
+from country_eligibility import require_eligible_target
 from db.models import CountrydleGuess
 from db.repositories.user import UserRepository
 from db.models.user import UserPoints
@@ -35,28 +36,30 @@ class CountrydleRepository:
 
     async def get_day_country_by_date(self, day_date: date) -> CountrydleDay | None:
         result = await self.session.execute(
-            select(CountrydleDay).where(CountrydleDay.date == day_date)
+            select(CountrydleDay).options(joinedload(CountrydleDay.country)).where(CountrydleDay.date == day_date)
         )
 
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first())
 
     async def get_today_country(self) -> CountrydleDay | None:
         result = await self.session.execute(
             select(CountrydleDay)
+            .options(joinedload(CountrydleDay.country))
             .where(CountrydleDay.date == date.today())
             .order_by(CountrydleDay.id.desc())
         )
 
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first())
 
     async def get_today_country_sync(self) -> CountrydleDay | None:
         # This is for debugging purposes if needed, but we should use async
         result = await self.session.execute(
             select(CountrydleDay)
+            .options(joinedload(CountrydleDay.country))
             .where(CountrydleDay.date == date.today())
             .order_by(CountrydleDay.id.desc())
         )
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first())
 
     async def get_last_added_day_country(self) -> CountrydleDay | None:
         result = await self.session.execute(

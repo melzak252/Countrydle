@@ -17,6 +17,7 @@ from game_logic import calculate_points, CONTINENTAL_CONFIG
 from schemas.continental import ContinentalGuessCreate
 from schemas.countrydle import LeaderboardEntry
 from continental.utils import get_continent_country_ids
+from country_eligibility import require_eligible_target
 
 
 COOLDOWN_DAYS: dict[ContinentCode, int] = {
@@ -44,7 +45,7 @@ class ContinentalDayRepository:
             )
             .order_by(ContinentalDay.id.desc())
         )
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first(), continent.value)
 
     async def get_day_by_date(
         self, continent: ContinentCode, day_date: date
@@ -59,7 +60,7 @@ class ContinentalDayRepository:
                 )
             )
         )
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first(), continent.value)
 
     async def get_history(self, continent: ContinentCode) -> List[ContinentalDay]:
         result = await self.session.execute(

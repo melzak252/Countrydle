@@ -12,6 +12,8 @@ from db.models.flagdle import FlagdleDay, FlagdleState, FlagdleGuess
 from db.models.user import User
 from game_logic import calculate_flagdle_points
 from schemas.flagdle import FlagdleGuessCreate
+from country_eligibility import require_eligible_target
+from db.repositories.country import CountryRepository
 
 
 class FlagdleDayRepository:
@@ -25,7 +27,7 @@ class FlagdleDayRepository:
             .options(joinedload(FlagdleDay.country))
             .where(FlagdleDay.date == today)
         )
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first())
 
     async def get_day_flag_by_date(self, target_date: date) -> Optional[FlagdleDay]:
         result = await self.session.execute(
@@ -33,7 +35,7 @@ class FlagdleDayRepository:
             .options(joinedload(FlagdleDay.country))
             .where(FlagdleDay.date == target_date)
         )
-        return result.scalars().first()
+        return require_eligible_target(result.scalars().first())
 
     async def generate_new_day_flag(
         self, target_date: Optional[date] = None, cooldown_days: int = 90
@@ -51,7 +53,7 @@ class FlagdleDayRepository:
         )
         recent_ids = set((await self.session.execute(recent_subq)).scalars().all())
 
-        all_countries = (await self.session.execute(select(Country))).scalars().all()
+        all_countries = await CountryRepository(self.session).get_all_countries()
         if not all_countries:
             raise Exception("No countries found in database!")
 

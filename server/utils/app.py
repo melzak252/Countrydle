@@ -12,6 +12,8 @@ from qdrant import close_qdrant_client, init_qdrant
 from sqlalchemy.ext.asyncio import AsyncEngine
 import utils
 from friend_matches import start_workers, stop_workers
+from countrydle.local_answering import DEFAULT_DB_PATH
+from scripts.country_additions import provision_country_additions
 
 
 async def init_models(engine: AsyncEngine):
@@ -40,6 +42,7 @@ async def lifespan(app: FastAPI):
     engine = get_engine()
     try:
         await init_models(engine)
+        await asyncio.to_thread(provision_country_additions, DEFAULT_DB_PATH.parent)
 
         async with AsyncSessionLocal() as session:
             await ucrud.add_base_permissions(session)

@@ -27,6 +27,11 @@ import sys
 from pathlib import Path
 from urllib.request import urlopen
 
+try:
+    from country_additions import add_kosovo_facts, provision_country_sources
+except ImportError:
+    from scripts.country_additions import add_kosovo_facts, provision_country_sources
+
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_COUNTRIES_CSV = ROOT_DIR / "data" / "countries.csv"
@@ -247,6 +252,7 @@ def normalize_name(value: str) -> str:
 
 
 def read_app_countries(path: Path, sample: bool) -> list[str]:
+    provision_country_sources(path.parent)
     with path.open("r", encoding="utf-8", newline="") as file:
         rows = list(csv.DictReader(file))
 
@@ -622,6 +628,9 @@ def main() -> int:
     inserted = 0
     try:
         for app_name in app_countries:
+            if app_name == "Kosovo":
+                # Insert after its neighbours so reciprocal border rows are complete.
+                continue
             country = find_rest_country(app_name, index)
             if not country:
                 missing.append(app_name)
@@ -631,6 +640,8 @@ def main() -> int:
                 missing_factbook.append(app_name)
             insert_country(connection, app_name, country, cca3_to_name, factbook_profile)
             inserted += 1
+        if "Kosovo" in app_countries:
+            inserted += int(add_kosovo_facts(connection))
         connection.commit()
     finally:
         connection.close()

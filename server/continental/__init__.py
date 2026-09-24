@@ -102,6 +102,12 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(continent, user, session)
 
+    country_repo = CountryRepository(session)
+    for guess in sync_data.guesses:
+        await country_repo.validate_guess(guess.country_id, guess.guess, continent.value)
+        if not is_eligible_candidate(guess.guess, continent):
+            raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
+
     # Claim questions belonging to this day that have no user assigned
     if sync_data.questions:
         question_repo = ContinentalQuestionRepository(session)
@@ -414,6 +420,7 @@ async def make_guess(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    await CountryRepository(session).validate_guess(guess.country_id, guess.guess, continent.value)
     # Rule 2: Whitelist enforcement
     candidate_name = guess.guess.strip()
     if not is_eligible_candidate(candidate_name, continent):

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, Polyline, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
@@ -7,6 +7,11 @@ import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check, Compass, RotateCcw } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
+import { isCountryAvailable } from '../lib/countryEligibility';
+
+function countryNameKey(name: string): string {
+  return name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+}
 
 function isCorrectCountryFeature(feature: Feature | undefined, targetName?: string) {
   const name = feature?.properties?.SOVEREIGNT;
@@ -66,6 +71,8 @@ interface MapBoxProps {
   maxZoom?: number;
   onCountryClick?: (name: string) => void;
   geoJsonUrl?: string;
+  eligibleCountries: readonly { name: string }[];
+  countryMode?: string;
 }
 
 interface MapControlsProps {
@@ -225,9 +232,10 @@ function MapController({
   return null;
 }
 
-export default function MapBox({ correctCountryName, className, onCountryCode }: MapBoxProps) {
+export default function MapBox({ correctCountryName, className, onCountryCode }: Omit<MapBoxProps, 'eligibleCountries'>) {
   const state = useGameStore();
   return <ControlledMapBox className={className} onCountryCode={onCountryCode}
+    eligibleCountries={state.entities}
     correctCountryName={correctCountryName || state.correctEntity?.name}
     interaction={{
       entityMarkings: state.entityMarkings,
@@ -269,12 +277,23 @@ function loadGeoJson(url: string): Promise<FeatureCollection> {
 }
 const getStyleFromState = (
   feature: Feature | undefined,
+  eligibleNames: ReadonlySet<string>,
   markings: Record<string, MapMarkerColor>,
   currentCorrectName?: string
 ): PathOptions => {
   if (!feature || !feature.properties) return {};
 
   const countryName = feature.properties.SOVEREIGNT.toUpperCase();
+  if (!eligibleNames.has(countryNameKey(countryName))) {
+    return {
+      fillColor: '#18181b',
+      weight: 1,
+      opacity: 0.4,
+      color: '#71717a',
+      fillOpacity: 0.7,
+      dashArray: undefined,
+    };
+  }
   const isCorrect = isCorrectCountryFeature(feature, currentCorrectName);
   const marker = markings[countryName];
 
@@ -351,21 +370,28 @@ export function ControlledMapBox({
   maxZoom = 10,
   onCountryClick,
   geoJsonUrl = '/countries_50m.geojson',
+  eligibleCountries,
+  countryMode,
 }: MapBoxProps & { interaction: MapInteractionState }) {
   const targetUrl = geoJsonUrl || '/countries_50m.geojson';
   const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(() => geoJsonCache.get(targetUrl) || null);
   const [map, setMap] = useState<L.Map | null>(null);
   const [showReferenceLines, setShowReferenceLines] = useState<boolean>(true);
   const { entityMarkings, isGameOver } = interaction;
-  const revealedName = isGameOver ? correctCountryName : undefined;
+  const eligibleNames = useMemo(() => new Set(eligibleCountries
+    .filter(country => isCountryAvailable(country.name, countryMode))
+    .map(country => countryNameKey(country.name))), [eligibleCountries, countryMode]);
+  const revealedName = isGameOver && correctCountryName && eligibleNames.has(countryNameKey(correctCountryName))
+    ? correctCountryName
+    : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
-  const current = useRef({ interaction, revealedName, onCountryClick });
-  current.current = { interaction, revealedName, onCountryClick };
+  const current = useRef({ interaction, revealedName, onCountryClick, eligibleNames });
+  current.current = { interaction, revealedName, onCountryClick, eligibleNames };
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const activeHoverLayerRef = useRef<L.Layer | null>(null);
 
   const getStyle = (feature: Feature | undefined) => {
-    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
+    return getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
   };
 
   // Close lingering tooltips when mouse moves out of the map container
@@ -410,7 +436,7 @@ export function ControlledMapBox({
     });
     const code = [feature?.properties?.ISO_A2, feature?.properties?.WB_A2]
       .find(value => typeof value === 'string' && /^[a-z]{2}$/i.test(value));
-    onCountryCode(code);
+    onCountryCode(code?.toLowerCase());
   }, [revealedName, geoJsonData, onCountryCode]);
 
   // Optimization: Update styles imperatively instead of re-rendering whole map
@@ -421,6 +447,7 @@ export function ControlledMapBox({
         if (feature) {
           const newStyle = getStyleFromState(
             feature,
+            eligibleNames,
             entityMarkings,
             revealedName
           );
@@ -431,14 +458,14 @@ export function ControlledMapBox({
         }
       });
     }
-  }, [entityMarkings, revealedName, geoJsonData]);
+  }, [entityMarkings, revealedName, geoJsonData, eligibleNames]);
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const countryName = feature.properties?.SOVEREIGNT;
     
     // Bind click handler
     layer.on({
       click: () => {
-        if (isCorrectCountryFeature(feature, current.current.revealedName)) {
+        if (!current.current.eligibleNames.has(countryNameKey(countryName)) || isCorrectCountryFeature(feature, current.current.revealedName)) {
           return;
         }
 
@@ -447,13 +474,14 @@ export function ControlledMapBox({
       },
       contextmenu: (e: any) => {
         e.originalEvent?.preventDefault?.();
-        if (isCorrectCountryFeature(feature, current.current.revealedName)) {
+        if (!current.current.eligibleNames.has(countryNameKey(countryName)) || isCorrectCountryFeature(feature, current.current.revealedName)) {
           return;
         }
 
         current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), true);
       },
       mouseover: (e: any) => {
+        if (!current.current.eligibleNames.has(countryNameKey(countryName))) return;
         const l = e.target;
         if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
           const prev = activeHoverLayerRef.current as any;

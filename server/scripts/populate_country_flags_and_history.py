@@ -1,5 +1,5 @@
 """
-Populate flag colors, symbols, and historical unions for all 195 countries in country_facts.sqlite.
+Populate flag colors, symbols, and historical unions in country_facts.sqlite.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ DB_PATH = ROOT_DIR / "data" / "country_facts.sqlite"
 # Canonical symbols: star, stars, cross, crescent, sun, stripes, circle, eagle, coat_of_arms
 
 FLAG_DATA = {
+    "XKX": (["blue", "yellow", "white"], ["star", "stars"]),
     "AFG": (["black", "red", "green", "white"], ["coat_of_arms", "stripes"]),
     "ALB": (["red", "black"], ["eagle"]),
     "DZA": (["green", "white", "red"], ["star", "crescent", "stripes"]),
@@ -218,7 +219,7 @@ HISTORICAL_UNIONS = {
         "RUS", "UKR", "BLR", "MDA", "GEO", "ARM", "AZE", "KAZ", "UZB", "TKM", "KGZ", "TJK", "EST", "LVA", "LTU"
     ],
     "Yugoslavia": [
-        "SRB", "HRV", "BIH", "SVN", "MKD", "MNE"
+        "SRB", "HRV", "BIH", "SVN", "MKD", "MNE", "XKX"
     ],
     "Czechoslovakia": [
         "CZE", "SVK"
@@ -251,7 +252,7 @@ HISTORICAL_UNIONS = {
     ],
     "Ottoman Empire": [
         "TUR", "GRC", "BGR", "SRB", "BIH", "ALB", "MKD", "MNE", "EGY", "IRQ", "SYR", "LBN",
-        "JOR", "ISR", "SAU", "YEM", "KWT", "LBY", "TUN", "DZA"
+        "JOR", "ISR", "SAU", "YEM", "KWT", "LBY", "TUN", "DZA", "XKX"
     ],
 }
 

@@ -243,7 +243,7 @@ function DuelRoom({ code }: { code?: string }) {
   const entryInFlight = useRef(false);
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const modeDropdownRef = useRef<HTMLDivElement>(null);
-  const [entities, setEntities] = useState<FriendEntity[]>([]);
+  const [entityPool, setEntityPool] = useState<{ mode: FriendMode; entities: FriendEntity[] } | null>(null);
   const [entitiesError, setEntitiesError] = useState('');
   const [entityReload, setEntityReload] = useState(0);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
@@ -264,16 +264,16 @@ function DuelRoom({ code }: { code?: string }) {
   const answerPanel = useRef<HTMLDivElement>(null);
   const activeMode = snapshot?.mode;
   const viewMode = activeMode || room.invite?.mode || mode;
+  const entities = entityPool?.mode === viewMode ? entityPool.entities : [];
 
   useEffect(() => {
-    if (!activeMode) return;
     let alive = true;
     void (async () => {
       setEntitiesLoading(true);
       setEntitiesError('');
       try {
-        const list = await friendMatchApi.entities(activeMode);
-        if (alive) setEntities(list);
+        const list = await friendMatchApi.entities(viewMode);
+        if (alive) setEntityPool({ mode: viewMode, entities: list });
       } catch (cause) {
         if (alive) setEntitiesError(friendError(cause, copy.error));
       } finally {
@@ -281,7 +281,7 @@ function DuelRoom({ code }: { code?: string }) {
       }
     })();
     return () => { alive = false; };
-  }, [activeMode, entityReload, copy.error]);
+  }, [viewMode, entityReload, copy.error]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -382,6 +382,7 @@ function DuelRoom({ code }: { code?: string }) {
         {/* Full-Canvas Background Map (previews selected mode!) */}
         <div className="absolute inset-0 z-0 h-full w-full">
           <FriendDuelMap
+            eligibleCountries={entities}
             mode={viewMode}
             matchKey={`entry-preview-${viewMode}`}
             finished={false}
@@ -527,7 +528,7 @@ function DuelRoom({ code }: { code?: string }) {
                           <div className="grid grid-cols-2 gap-1">
                             {([
                               { id: 'europe', badge: '47' },
-                              { id: 'asia', badge: '47' },
+                              { id: 'asia', badge: '46' },
                               { id: 'africa', badge: '54' },
                               { id: 'americas', badge: '35' },
                             ] as const).map(item => (
@@ -638,6 +639,7 @@ function DuelRoom({ code }: { code?: string }) {
       {/* 1. Full-Canvas Duel Map */}
       <div className="absolute inset-0 h-full w-full">
         <FriendDuelMap
+          eligibleCountries={entities}
           mode={viewMode}
           matchKey={snapshot.id || `preview-${viewMode}`}
           finished={Boolean(finished)}

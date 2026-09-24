@@ -12,6 +12,7 @@ from sqlalchemy import and_, case, func, or_, select
 
 from db import AsyncSessionLocal
 from db.models.friend_match import FriendAction, FriendAdvisory, FriendMatch, FriendMove, FriendReport, FriendSeat
+from country_eligibility import is_country_eligible
 from .providers import list_entities
 from .schemas import ActionRequest
 
@@ -75,6 +76,12 @@ def start_if_ready(match, seats, now):
 
 
 def expire_match(match, seats, now, *, pending_move=None, advisory=None, timeout_moves=None):
+    if match.status in {"lobby", "active"} and match.mode in {
+        "countrydle", "europe", "asia", "africa", "americas"
+    } and any(s.secret and not is_country_eligible(s.secret["name"], match.mode) for s in seats):
+        finish(match, "cancelled" if match.status == "lobby" else "interrupted", now)
+        match.version += 1
+        return True
     if match.status == "lobby":
         if seats and all(now - s.last_seen_at >= timedelta(minutes=30) for s in seats):
             finish(match, "cancelled", now)

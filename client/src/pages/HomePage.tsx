@@ -91,7 +91,7 @@ export default function HomePage() {
       path: '/europe', icon: Compass, questions: 8, guesses: 3, count: 47 },
     { id: 'asia', title: t('asiaTitle', { defaultValue: 'Asiadle' }), region: 'Asia',
       description: 'Steppes, islands, and ancient civilizations. Pinpoint the hidden Asian nation.',
-      path: '/asia', icon: Globe2, questions: 8, guesses: 3, count: 47 },
+      path: '/asia', icon: Globe2, questions: 8, guesses: 3, count: 46 },
     { id: 'africa', title: t('africaTitle', { defaultValue: 'Africadle' }), region: 'Africa',
       description: 'Deserts, savannas, and vibrant cultures. Discover today’s mystery African country.',
       path: '/africa', icon: Sun, questions: 8, guesses: 3, count: 54 },

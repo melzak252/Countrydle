@@ -92,6 +92,7 @@ export default function FlagdlePage() {
   }, [countries, inputVal, guesses]);
 
   const handleSelectCountry = (country: FlagdleCountry) => {
+    if (!countries.some(available => available.id === country.id)) return;
     setSelectedCountry(country);
     setInputVal(country.name);
     setShowSuggestions(false);
@@ -144,7 +145,7 @@ export default function FlagdlePage() {
       }
     }
 
-    if (!countryId) {
+    if (!countryId || !countries.some(country => country.id === countryId)) {
       toast.error('Please select a valid sovereign country from the list.');
       return;
     }

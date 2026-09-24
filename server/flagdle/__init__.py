@@ -226,6 +226,7 @@ async def make_guess(
     session: AsyncSession = Depends(get_db),
 ):
     """Processes a Flagdle guess and returns tile reveal, color match, symbol match, and geo clues."""
+    await CountryRepository(session).validate_guess(guess_in.country_id, guess_in.guess)
     day_repo = FlagdleDayRepository(session)
     today_flag = await day_repo.get_today_flag()
     if not today_flag:
@@ -582,6 +583,9 @@ async def sync_guest_data(
             state.questions_asked = max(state.questions_asked, linked)
             await state_repo.update_state(state)
         return await get_state(request=request, user=user, session=session)
+
+    for guess in sync_data.guesses:
+        await CountryRepository(session).validate_guess(guess.country_id, guess.guess)
 
     guess_repo = FlagdleGuessRepository(session)
     country_repo = CountryRepository(session)

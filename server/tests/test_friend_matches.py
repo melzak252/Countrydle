@@ -28,6 +28,28 @@ def action(kind, **payload):
     return ActionRequest(action_id=uuid4(), expected_version=1, type=kind, payload=payload)
 
 
+@pytest.mark.parametrize("mode,name", [("countrydle", "Israel"), ("europe", "Azerbaijan")])
+def test_disabled_existing_secret_interrupts_play_without_erasing_history(mode, name):
+    game, seats = active_game()
+    game.mode = mode
+    seats[0].secret = {"id": "old-secret", "name": name, "code": None}
+    assert expire_match(game, seats, NOW)
+    assert game.result == "interrupted"
+    assert game.winner_id is None
+    assert seats[0].secret["name"] == name
+
+
+def test_completed_duel_with_disabled_secret_keeps_its_result():
+    game, seats = active_game()
+    game.status = "finished"
+    game.result = "solved"
+    game.winner_id = seats[0].id
+    seats[0].secret = {"id": "ISR", "name": "Israel", "code": "IL"}
+    assert not expire_match(game, seats, NOW)
+    assert game.result == "solved"
+    assert game.winner_id == seats[0].id
+
+
 def test_unlimited_wrong_guesses_spend_one_turn_each_and_cannot_double_move():
     game, seats = active_game()
     for _ in range(12):

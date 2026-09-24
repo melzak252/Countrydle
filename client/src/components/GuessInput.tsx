@@ -95,6 +95,7 @@ export default function GuessInput<Id extends string | number = number>({
 
   const handleSelect = async (country: LocationOption<Id>) => {
     if (disabled) return;
+    if (!countries.some(available => available.id === country.id)) return;
     if (excludedIdsSet.has(String(country.id)) || normalizedExcludedNames.has(normalizeName(displayName(country)))) {
       toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
       return;

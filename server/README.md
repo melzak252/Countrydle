@@ -94,6 +94,35 @@ python scripts/populate_all.py
 ```
 *This script reads the CSVs, creates DB entries, reads the Markdown files, chunks them, generates OpenAI embeddings, and upserts them to Qdrant.*
 
+### Country availability and Kosovo rollout
+
+Game eligibility is separate from factual geography and historical results.
+Israel is excluded from all country-game targets and guesses. Azerbaijan is
+excluded only from Europedle; it remains available worldwide and in Asia.
+Kosovo is available worldwide, in Europe, in Flagdle, and in country friend duels.
+
+Startup applies the PostgreSQL migration and provisions Kosovo's sourced SQLite
+facts, CSV entry, and article into the existing mounted data directory. Repeated
+startup preserves subsequent fact edits. Unplayed current/future disabled targets
+are replaced; past results and recorded play are retained. An already-played
+disabled daily target is unavailable for further play rather than silently
+changing its answer. Active duels with disabled secrets are interrupted.
+
+After deploying and starting the server, populate Kosovo's retrieval data from
+the `server` directory (or inside the backend container):
+
+```bash
+python -m scripts.country_additions
+```
+
+This requires a funded `OPENAI_API_KEY` and the configured PostgreSQL/Qdrant
+services. It generates real embeddings, stores fragments in PostgreSQL, and
+upserts them into Qdrant's `countries` collection. Reruns reuse stored embeddings.
+Failures are reported rather than replaced with fabricated vectors. This is
+separate from startup so an exhausted embedding quota does not prevent the game
+server from running. Until it succeeds, Kosovo has local facts but no new RAG
+fragments.
+
 ---
 
 ## Answer Reports

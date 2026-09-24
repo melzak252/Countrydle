@@ -92,20 +92,24 @@ def test_candidate_counts_per_continent():
     americas = get_continent_country_names(ContinentCode.AMERICAS)
 
     assert len(europe) == 47
-    assert len(asia) == 47
+    assert len(asia) == 46
     assert len(africa) == 54
     assert len(americas) == 35
 
 
 def test_transcontinental_candidate_rules():
-    """Verify transcontinental countries belong to both Europe and Asia."""
+    """Playable pools apply game exclusions without removing shared countries."""
     europe = set(get_continent_country_names(ContinentCode.EUROPE))
     asia = set(get_continent_country_names(ContinentCode.ASIA))
 
-    # Russia, Turkey, Azerbaijan are in both
-    for country in ["Russia", "Turkey", "Azerbaijan"]:
+    for country in ["Russia", "Turkey"]:
         assert country in europe
         assert country in asia
+
+    assert "Azerbaijan" not in europe
+    assert "Azerbaijan" in asia
+    assert "Kosovo" in europe
+    assert "Israel" not in asia
 
     # Germany is in Europe, not in Asia
     assert "Germany" in europe

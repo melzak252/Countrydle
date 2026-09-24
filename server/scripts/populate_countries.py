@@ -21,6 +21,8 @@ import qdrant.utils as qutils
 from db.models import Country, CountryFragment
 from db.repositories.country import CountryRepository
 
+from scripts.country_additions import provision_country_sources
+from pathlib import Path
 
 async def populate_countries(session: AsyncSession):
     # Try to find data directory (either sibling to server or inside server)
@@ -36,6 +38,8 @@ async def populate_countries(session: AsyncSession):
     if not os.path.exists(csv_file):
         logging.error(f"{csv_file} not found!")
         return
+
+    provision_country_sources(Path(data_dir))
 
     # Read all rows first to use tqdm
     rows = []

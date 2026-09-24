@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleStateResponse } from '../types';
+import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -88,7 +89,7 @@ export const gameService = {
   },
   getCountries: async (): Promise<CountryDisplay[]> => {
     const response = await api.get('/countrydle/countries');
-    return response.data;
+    return response.data.filter((country: CountryDisplay) => isCountryAvailable(country.name));
   },
   askQuestion: async (question: string): Promise<Question> => {
     const response = await api.post('/countrydle/question', { question });
@@ -224,7 +225,7 @@ export const createContinentalService = (continent: string) => ({
   },
   getCountries: async (): Promise<CountryDisplay[]> => {
     const response = await api.get(`/continental/${continent}/countries`);
-    return response.data;
+    return response.data.filter((country: CountryDisplay) => isCountryAvailable(country.name, continent));
   },
   askQuestion: async (question: string): Promise<Question> => {
     const response = await api.post(`/continental/${continent}/question`, { question });
@@ -263,7 +264,7 @@ export const flagdleService = {
   },
   getCountries: async (): Promise<FlagdleCountry[]> => {
     const response = await api.get('/flagdle/countries');
-    return response.data;
+    return response.data.filter((country: FlagdleCountry) => isCountryAvailable(country.name));
   },
   makeGuess: async (data: { guess: string; country_id?: number; elapsed_seconds?: number }): Promise<FlagdleGuess> => {
     const response = await api.post('/flagdle/guess', data);

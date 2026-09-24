@@ -56,9 +56,9 @@ const CONTINENT_META: Record<ContinentKey, ContinentMeta> = {
   asia: {
     key: 'asia',
     title: 'Asiadle',
-    subtitle: '47 Asian Nations · 8 Questions · 3 Guesses',
+    subtitle: '46 Asian Nations · 8 Questions · 3 Guesses',
     path: '/asia',
-    count: 47,
+    count: 46,
     center: [34, 95],
     zoom: 3,
     minZoom: 2,
@@ -234,6 +234,9 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
       {/* 1. Full-Canvas Map */}
       <div className="absolute inset-0 z-0 h-full w-full">
         <ControlledMapBox
+          key={activeContinent}
+          eligibleCountries={countries}
+          countryMode={activeContinent}
           correctCountryName={isGameOver ? correctCountry?.name : undefined}
           className="h-full w-full rounded-none border-0 shadow-none"
           center={meta.center}

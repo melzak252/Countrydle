@@ -41,7 +41,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'game-modes',
     category: 'modes',
     question: 'What are the four different game modes?',
-    answer: 'Countrydle offers four distinct geographic scopes: 1) World Countries (195 sovereign nations across all continents), 2) US Statedle (all 50 American states), 3) Województwodle (Poland\'s 16 administrative voivodeships), and 4) Powiatdle (380 Polish counties tested via registration plates, rivers, and roads).'
+    answer: 'Countrydle offers four distinct geographic scopes: 1) World Countries (195 playable countries across all continents), 2) US Statedle (all 50 American states), 3) Województwodle (Poland\'s 16 administrative voivodeships), and 4) Powiatdle (380 Polish counties tested via registration plates, rivers, and roads).'
   },
   {
     id: 'play-past-games',

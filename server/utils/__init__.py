@@ -9,6 +9,7 @@ from db.base import Base
 from db.models import *  # noqa: F403
 from db.repositories.countrydle import CountrydleRepository, CountrydleStateRepository
 from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy import select
 
 from db.repositories.user import UserRepository
 
@@ -48,7 +49,11 @@ async def generate_day_countries():
         c_repo = CountrydleRepository(session)
 
         for day_date in (date.today() + timedelta(days=n) for n in range(5)):
-            day_country = await c_repo.get_day_country_by_date(day_date)
+            # Existing rows, including preserved played targets, must not stop
+            # generation for later dates. Gameplay lookups enforce eligibility.
+            day_country = await session.scalar(
+                select(CountrydleDay.id).where(CountrydleDay.date == day_date)
+            )
             if day_country is not None:
                 logging.info(f"DayCountry for {day_date} already exists.")
                 continue

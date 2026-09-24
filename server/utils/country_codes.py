@@ -91,6 +91,7 @@ COUNTRY_CCA2_MAP = {
     "Kazakhstan": "kz",
     "Kenya": "ke",
     "Kiribati": "ki",
+    "Kosovo": "xk",
     "Kuwait": "kw",
     "Kyrgyzstan": "kg",
     "Laos": "la",

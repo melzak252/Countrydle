@@ -21,6 +21,7 @@ from types import ModuleType
 from typing import Any
 
 import local_kb_question as local
+from country_eligibility import is_country_eligible
 
 
 @dataclass(frozen=True)
@@ -98,13 +99,15 @@ def _entity_pool(mode: str, stamp: tuple[int, int]) -> tuple[dict, ...]:
             entities = tuple(_entity(engine, row) for row in conn.execute(
                 f"SELECT * FROM {engine.table} ORDER BY {engine.name_column}, {engine.key_column}"
             ))
+    if mode == "countrydle" or mode in CONTINENTAL_MODES:
+        entities = tuple(item for item in entities if is_country_eligible(item["name"], mode))
     if not entities or len({item["id"] for item in entities}) != len(entities):
         raise RuntimeError("Canonical entity pool is empty or has duplicate identifiers")
     return entities
 
 
 def list_entities(mode: str) -> list[dict]:
-    """Return the full canonical pool. Async callers must offload the first read."""
+    """Return eligible canonical entities. Async callers must offload the first read."""
     engine = _engine(mode)
     return [dict(item) for item in _entity_pool(mode, _stamp(engine.db_path))]
 
