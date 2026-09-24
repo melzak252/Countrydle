@@ -37,20 +37,19 @@ const PRIME_MERIDIAN_LINES: [number, number][][] = [
   [[-85, 360], [85, 360]],
 ];
 
-const createBadgeIcon = (text: string) => {
-  return L.divIcon({
-    className: 'custom-map-badge',
-    html: `<span class="inline-flex items-center px-1.5 py-0.5 rounded-[3px] border border-zinc-600/70 bg-obsidian-950/90 text-zinc-300 font-mono text-[9px] font-medium tracking-wider uppercase whitespace-nowrap shadow-sm select-none pointer-events-none">${text}</span>`,
-    iconSize: undefined,
-  });
-};
+const REFERENCE_LABEL_ICON = L.divIcon({
+  className: 'map-reference-label',
+  html: '<span class="text-zinc-400 font-mono text-[9px] select-none pointer-events-none">0</span>',
+  iconSize: [8, 12],
+  iconAnchor: [4, 6],
+});
 
-const REFERENCE_BADGES: { pos: [number, number]; text: string }[] = [
-  { pos: [0, -36], text: 'Equator · 0°' },
-  { pos: [0, -145], text: 'Equator · 0°' },
-  { pos: [72, 0], text: 'Greenwich · 0°' },
-  { pos: [-38, 0], text: 'Greenwich · 0°' },
-  { pos: [0, 0], text: '0°, 0°' },
+const REFERENCE_LABEL_POSITIONS: [number, number][] = [
+  [0, -36],
+  [0, -145],
+  [72, 0],
+  [-38, 0],
+  [0, 0],
 ];
 
 const REFERENCE_LINE_STYLE: PathOptions = {
@@ -597,13 +596,14 @@ export function ControlledMapBox({
               />
             ))}
 
-            {/* Ocean Label Badges */}
-            {REFERENCE_BADGES.map((badge, idx) => (
+            {/* Reference line labels */}
+            {REFERENCE_LABEL_POSITIONS.map((position, idx) => (
               <Marker
-                key={`badge-${idx}`}
-                position={badge.pos}
-                icon={createBadgeIcon(badge.text)}
+                key={`reference-label-${idx}`}
+                position={position}
+                icon={REFERENCE_LABEL_ICON}
                 interactive={false}
+                keyboard={false}
               />
             ))}
           </>
