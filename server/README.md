@@ -137,6 +137,15 @@ After a game ends (win or loss), players can report a saved question result from
 
 The `answer_reports` table is created by Alembic revision `4c9f2a1b8d60`, applied through the existing startup migration process. Report tokens use `SECRET_KEY`; keep it stable across replicas. Rotating it invalidates previously issued guest report tokens.
 
+### Admin question tests
+
+The admin **Test pytań** tab evaluates a question against an explicitly selected entity in any of the nine game modes. **Testuj pytanie** on a report prefills its original question and selects the target only when its name matches exactly one entity. Historical and current results are shown separately; automatic comparison requires the same mode, uniquely matched target, and original question.
+
+- `GET /admin/question-tests/entities?mode=...` lists entity names and actual PostgreSQL IDs, with continent-specific membership where applicable.
+- `POST /admin/question-tests` accepts `{ "mode": "powiatdle", "entity_id": 123, "question": "Czy ten powiat ma tablice ST?" }`. The entity ID must be a positive integer; questions are trimmed, nonempty, and limited to 100 characters. Both endpoints require admin authentication.
+- Evaluation reuses the daily question pipeline with fresh, uncached planning and current facts/models. Flagdle remains local-only. The response includes validity, answer, interpretation, explanation, source, context, structured plan, server version, and duration. Operational failures return an error rather than a fabricated answer.
+- Tests do not create daily targets or save questions, attempts, progress, points, report status, or Qdrant data. They do not replay a historical server version and require no new database migration.
+
 ---
 
 ## Active participation counts

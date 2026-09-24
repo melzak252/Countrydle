@@ -1,6 +1,6 @@
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, ConfigDict
+from typing import Any, Dict, List, Literal, Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AdminModeToday(BaseModel):
@@ -100,3 +100,42 @@ class AdminLiveGuess(BaseModel):
 class AdminLiveFeedResponse(BaseModel):
     recent_questions: List[AdminLiveQuestion]
     recent_guesses: List[AdminLiveGuess]
+
+
+AdminQuestionTestMode = Literal[
+    "countrydle", "us_statedle", "powiatdle", "wojewodztwodle",
+    "europe", "asia", "africa", "americas", "flagdle",
+]
+
+
+class AdminQuestionTestEntity(BaseModel):
+    id: int
+    name: str
+
+
+class AdminQuestionTestRequest(BaseModel):
+    mode: AdminQuestionTestMode
+    entity_id: int = Field(gt=0, strict=True)
+    question: str = Field(min_length=1, max_length=100)
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("question", mode="before")
+    @classmethod
+    def trim_question(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class AdminQuestionTestResponse(BaseModel):
+    mode: AdminQuestionTestMode
+    entity: AdminQuestionTestEntity
+    original_question: str
+    question: str | None
+    valid: bool
+    answer: bool | None
+    explanation: str
+    context: str | None
+    source: Literal["local_kb", "local_planner", "fallback", "flag_kb"]
+    server_version: str
+    duration_ms: int
+    plan: Dict[str, Any] | None

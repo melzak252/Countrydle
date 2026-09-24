@@ -54,6 +54,34 @@ export interface AnswerReport {
   };
 }
 
+export type QuestionTestMode = AnswerReportMode | 'europe' | 'asia' | 'africa' | 'americas' | 'flagdle';
+
+export interface QuestionTestEntity {
+  id: number;
+  name: string;
+}
+
+export interface QuestionTestRequest {
+  mode: QuestionTestMode;
+  entity_id: number;
+  question: string;
+}
+
+export interface QuestionTestResult {
+  mode: QuestionTestMode;
+  entity: QuestionTestEntity;
+  original_question: string;
+  question: string | null;
+  valid: boolean;
+  answer: boolean | null;
+  explanation: string;
+  context: string | null;
+  source: 'local_kb' | 'local_planner' | 'fallback' | 'flag_kb';
+  server_version: string;
+  duration_ms: number;
+  plan: Record<string, unknown> | null;
+}
+
 export interface Guess {
   id: number;
   guess: string;

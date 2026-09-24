@@ -77,9 +77,14 @@ def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> U
     )
 
 
-async def analyze_and_answer_locally(question: str, day_state: USStatedleDay, user: User | None, session: AsyncSession):
+async def analyze_and_answer_locally(
+    question: str, day_state: USStatedleDay, user: User | None, session: AsyncSession,
+    *, strict_errors: bool = False,
+):
     state: USState = await USStateRepository(session).get(day_state.us_state_id)
-    plan = analyze_question(question, LOCAL_CONFIG)
+    plan = analyze_question(
+        question, LOCAL_CONFIG, strict_errors=True, use_cache=False
+    ) if strict_errors else analyze_question(question, LOCAL_CONFIG)
     if not plan.valid:
         return USStateQuestionCreate(
             user_id=user.id if user else None,
@@ -93,9 +98,13 @@ async def analyze_and_answer_locally(question: str, day_state: USStatedleDay, us
             intent=plan.explanation,
             required_info=plan.fallback_reason,
         ), plan
+    if strict_errors and plan.supported and plan.plan and not LOCAL_CONFIG.db_path.is_file():
+        raise RuntimeError("Local facts are unavailable")
     try:
         answer = execute_plan(LOCAL_CONFIG, state.name, plan)
     except Exception:
+        if strict_errors:
+            raise
         return None, plan
     if answer is None:
         return None, plan

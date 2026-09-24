@@ -180,10 +180,14 @@ async def analyze_and_answer_locally(
     day_country: CountrydleDay,
     user: User | None,
     session: AsyncSession,
+    *,
+    strict_errors: bool = False,
 ) -> tuple[QuestionCreate | None, QuestionPlan]:
     """Run one Gemini validator/planner call and answer locally when possible."""
     country: Country = await CountryRepository(session).get(day_country.country_id)
-    planned_question = analyze_question_for_local_plan(original_question)
+    planned_question = analyze_question_for_local_plan(
+        original_question, strict_errors=True, use_cache=False
+    ) if strict_errors else analyze_question_for_local_plan(original_question)
 
     if not planned_question.valid:
         return QuestionCreate(

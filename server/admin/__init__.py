@@ -36,10 +36,12 @@ from schemas.admin import (
     AdminUsersResponse,
 )
 from users.utils import get_admin_user
+from admin.question_tests import router as question_tests_router
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+router.include_router(question_tests_router)
 
 
 def _mode_today(stats, mode_key: str, mode_label: str, target_name: str) -> AdminModeToday:

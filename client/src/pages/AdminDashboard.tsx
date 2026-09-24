@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
 import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
+import QuestionTestsPanel from '../components/QuestionTestsPanel';
+import type { AnswerReport } from '../types';
 import { 
   adminService, 
   gameService, 
@@ -31,11 +33,12 @@ import {
   Sparkles
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'friendAnswers';
+type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'friendAnswers' | 'questionTests';
 type GameType = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [questionTestReport, setQuestionTestReport] = useState<AnswerReport | null>(null);
   const [overview, setOverview] = useState<any | null>(null);
   const [isOverviewLoading, setIsOverviewLoading] = useState(true);
 
@@ -199,7 +202,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && <div className="flex items-center gap-3">
+        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && <div className="flex items-center gap-3">
           <button
             onClick={() => {
               if (activeTab === 'overview') fetchOverview();
@@ -224,6 +227,7 @@ export default function AdminDashboard() {
           { id: 'questions', label: 'Questions Log', icon: HelpCircle },
           { id: 'facts', label: 'Knowledge Base Editor', icon: Database },
           { id: 'reports', label: 'Reports', icon: FileText },
+          { id: 'questionTests', label: 'Test pytań', icon: Sparkles },
           { id: 'friendAnswers', label: 'Friend game answers', icon: HelpCircle },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -246,7 +250,11 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {activeTab === 'reports' && <AnswerReportsPanel />}
+      {activeTab === 'reports' && <AnswerReportsPanel onTestQuestion={(report) => {
+        setQuestionTestReport(report);
+        setActiveTab('questionTests');
+      }} />}
+      {activeTab === 'questionTests' && <QuestionTestsPanel report={questionTestReport} onClearReport={() => setQuestionTestReport(null)} />}
       {activeTab === 'friendAnswers' && <FriendAnswerReviewsPanel />}
 
       {/* TAB 1: OVERVIEW & TODAY'S STATS */}

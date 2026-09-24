@@ -27,7 +27,7 @@ type ReportResult = {
 
 const controlClass = 'rounded-sm border border-white/10 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 disabled:cursor-not-allowed disabled:opacity-40';
 
-export default function AnswerReportsPanel() {
+export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion: (report: AnswerReport) => void }) {
   const [query, setQuery] = useState<ReportQuery>({ status: 'open', mode: '', page: 1, revision: 0 });
   const [result, setResult] = useState<ReportResult | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -160,6 +160,15 @@ export default function AnswerReportsPanel() {
                   {report.reviewed_at ? <>Reviewed <time dateTime={report.reviewed_at}>{new Date(report.reviewed_at).toLocaleString('en-US')}</time></> : 'Open'}
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busyId !== null}
+                  onClick={() => onTestQuestion(report)}
+                  className={`${controlClass} hover:border-emerald-400/40 hover:text-emerald-300`}
+                >
+                  Testuj pytanie
+                </button>
               <button
                 type="button"
                 disabled={busyId !== null}
@@ -170,6 +179,7 @@ export default function AnswerReportsPanel() {
                 {report.reviewed_at ? <RotateCcw size={14} aria-hidden="true" /> : <CheckCircle2 size={14} aria-hidden="true" />}
                 {busyId === report.id ? 'Saving…' : report.reviewed_at ? 'Reopen' : 'Mark reviewed'}
               </button>
+              </div>
             </div>
 
             <div className="border-l-2 border-emerald-400/50 bg-emerald-400/5 p-4">

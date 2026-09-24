@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleStateResponse } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -371,6 +371,14 @@ export const reportService = {
 };
 
 export const adminService = {
+  getQuestionTestEntities: async (mode: QuestionTestMode, signal?: AbortSignal): Promise<QuestionTestEntity[]> => {
+    const response = await api.get<QuestionTestEntity[]>('/admin/question-tests/entities', { params: { mode }, signal });
+    return response.data;
+  },
+  testQuestion: async (request: QuestionTestRequest): Promise<QuestionTestResult> => {
+    const response = await api.post<QuestionTestResult>('/admin/question-tests', request);
+    return response.data;
+  },
   getAnswerReports: async (
     status: AnswerReportStatus,
     page: number,
