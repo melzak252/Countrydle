@@ -1,10 +1,14 @@
 from datetime import date, timedelta
+import importlib.util
 import sqlite3
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from fastapi import HTTPException, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -134,11 +138,10 @@ async def test_guest_sync_rejects_disabled_country_before_importing_progress(mon
         return_value=SimpleNamespace(id=1, name="Israel", official_name="State of Israel")))
     data = SimpleNamespace(date=date.today().isoformat(), questions=[],
                            guesses=[SimpleNamespace(country_id=1, guess="Kosovo")])
-    kwargs = {"sync_data": data, "user": SimpleNamespace(id=1), "session": AsyncMock()}
+    kwargs = {"sync_data": data, "user": SimpleNamespace(id=1), "session": AsyncMock(),
+              "request": Request({"type": "http", "headers": []})}
     if mode == "continental":
         kwargs["continent"] = ContinentCode.EUROPE
-    if mode == "flagdle":
-        kwargs["request"] = SimpleNamespace()
     with pytest.raises(HTTPException) as exc:
         await importlib.import_module(mode).sync_guest_data(**kwargs)
     assert exc.value.status_code == 400
@@ -159,3 +162,51 @@ async def test_generation_cooldown_fallback_still_excludes_israel(country_sessio
     else:
         day = await FlagdleDayRepository(country_session).generate_new_day_flag(target_date=date.today())
     assert day.country_id == 2
+
+
+def test_country_migration_preserves_guest_play_and_repairs_only_unplayed_targets():
+    path = Path(__file__).resolve().parents[1] / "alembic/versions/e0f1a2b3c4d5_add_kosovo_and_repair_targets.py"
+    spec = importlib.util.spec_from_file_location("kosovo_migration", path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as conn:
+            Country.__table__.create(conn)
+            conn.execute(Country.__table__.insert(), [
+                {"id": 1, "name": "Israel", "md_file": "Israel.md"},
+                {"id": 2, "name": "Azerbaijan", "md_file": "Azerbaijan.md"},
+            ])
+            conn.exec_driver_sql("CREATE TABLE daily_blog_posts (date DATE)")
+            conn.exec_driver_sql("CREATE TABLE guest_participations (mode TEXT, day_id INTEGER)")
+            for mode, country_id, participation_mode in [
+                ("countrydle", 1, "countrydle"),
+                ("flagdle", 1, "flagdle"),
+                ("continental", 2, "continental:europe"),
+            ]:
+                conn.exec_driver_sql(
+                    f"CREATE TABLE {mode}_days (id INTEGER PRIMARY KEY, country_id INTEGER, date DATE, continent TEXT)"
+                )
+                for suffix in ("states", "guesses", "questions"):
+                    conn.exec_driver_sql(f"CREATE TABLE {mode}_{suffix} (day_id INTEGER)")
+                for day_id in (1, 2):
+                    conn.exec_driver_sql(
+                        f"INSERT INTO {mode}_days VALUES (?, ?, CURRENT_DATE, 'europe')",
+                        (day_id, country_id),
+                    )
+                conn.exec_driver_sql(
+                    "INSERT INTO guest_participations VALUES (?, 1)", (participation_mode,)
+                )
+            with Operations.context(MigrationContext.configure(conn)):
+                migration.upgrade()
+                migration.upgrade()
+            kosovo_id = conn.exec_driver_sql("SELECT id FROM countries WHERE name = 'Kosovo'").scalar_one()
+            for mode, original_id in [("countrydle", 1), ("flagdle", 1), ("continental", 2)]:
+                assert conn.exec_driver_sql(
+                    f"SELECT country_id FROM {mode}_days WHERE id = 1"
+                ).scalar_one() == original_id
+                assert conn.exec_driver_sql(
+                    f"SELECT country_id FROM {mode}_days WHERE id = 2"
+                ).scalar_one() == kosovo_id
+    finally:
+        engine.dispose()
