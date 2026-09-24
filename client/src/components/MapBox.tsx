@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Polyline, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
@@ -39,23 +39,66 @@ const PRIME_MERIDIAN_LINES: [number, number][][] = [
 
 const REFERENCE_LABEL_ICON = L.divIcon({
   className: 'map-reference-label',
-  html: '<span class="text-zinc-400 font-mono text-[9px] select-none pointer-events-none">0</span>',
-  iconSize: [8, 12],
-  iconAnchor: [4, 6],
+  html: '<span class="text-zinc-300 font-mono text-xs leading-4 select-none pointer-events-none">0°</span>',
+  iconSize: [20, 16],
+  iconAnchor: [0, 0],
 });
 
-const REFERENCE_LABEL_POSITIONS: [number, number][] = [
-  [0, -36],
-  [0, -145],
-  [72, 0],
-  [-38, 0],
-  [0, 0],
-];
+function ReferenceLineLabels() {
+  const map = useMap();
+
+  useEffect(() => {
+    const labels = Array.from({ length: 5 }, () => L.marker([0, 0], {
+      icon: REFERENCE_LABEL_ICON,
+      interactive: false,
+      keyboard: false,
+    }));
+
+    const update = () => {
+      const { x: width, y: height } = map.getSize();
+      const longitude = Math.max(-360, Math.min(360, Math.round(map.getCenter().lng / 360) * 360));
+      const crossing = map.latLngToContainerPoint([0, longitude]);
+      const meridianVisible = crossing.x >= 0 && crossing.x <= width;
+      const equatorVisible = crossing.y >= 0 && crossing.y <= height;
+      const labelX = crossing.x + 32 <= width - 12 ? crossing.x + 12 : crossing.x - 32;
+      const labelY = crossing.y >= 36 ? crossing.y - 24 : crossing.y + 8;
+
+      const place = (index: number, x: number, y: number, visible: boolean) => {
+        const label = labels[index];
+        if (!visible) {
+          label.remove();
+          return;
+        }
+        label.setLatLng(map.containerPointToLatLng([x, y]));
+        if (!map.hasLayer(label)) label.addTo(map);
+      };
+
+      const bounds = map.getBounds();
+      // Leave room for the status bar and question dock over the map.
+      place(0, labelX, 52, meridianVisible && bounds.getNorth() <= 85);
+      place(1, labelX, height - 160, meridianVisible && bounds.getSouth() >= -85);
+      place(2, 12, labelY, equatorVisible && bounds.getWest() >= -540);
+      place(3, width - 32, labelY, equatorVisible && bounds.getEast() <= 540);
+      place(4, labelX, labelY, meridianVisible && equatorVisible
+        && crossing.x > 52 && crossing.x < width - 52
+        && crossing.y > 100 && crossing.y < height - 184);
+    };
+
+    update();
+    map.on('move zoom resize', update);
+    return () => {
+      map.off('move zoom resize', update);
+      labels.forEach((label) => label.remove());
+    };
+  }, [map]);
+
+  return null;
+}
 
 const REFERENCE_LINE_STYLE: PathOptions = {
   color: '#a1a1aa',
   weight: 1.5,
-  opacity: 0.65,
+  opacity: 0.85,
   dashArray: '6, 6',
   interactive: false,
 };
@@ -544,14 +587,6 @@ export function ControlledMapBox({
         .leaflet-top, .leaflet-bottom, .leaflet-control {
             z-index: 1050 !important;
         }
-        .custom-map-badge {
-            background: transparent !important;
-            border: none !important;
-            display: inline-flex !important;
-            width: auto !important;
-            height: auto !important;
-            transform: translate(-50%, -50%);
-        }
       `}</style>
       <MapContainer 
         center={center} 
@@ -596,16 +631,7 @@ export function ControlledMapBox({
               />
             ))}
 
-            {/* Reference line labels */}
-            {REFERENCE_LABEL_POSITIONS.map((position, idx) => (
-              <Marker
-                key={`reference-label-${idx}`}
-                position={position}
-                icon={REFERENCE_LABEL_ICON}
-                interactive={false}
-                keyboard={false}
-              />
-            ))}
+            <ReferenceLineLabels />
           </>
         )}
         
