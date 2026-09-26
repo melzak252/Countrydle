@@ -551,6 +551,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                       count: gameState.remaining_questions,
                       defaultValue: `Ask a yes/no question about the country... (${gameState.remaining_questions} left)`,
                     })}
+                    mode={activeContinent}
                   />
                 ) : (
                   <GuessInput

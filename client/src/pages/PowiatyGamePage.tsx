@@ -423,6 +423,7 @@ export default function PowiatyGamePage() {
                     isLoading={isLoading}
                     remainingQuestions={gameState.remaining_questions}
                     placeholder={t('powiatyPage.askPlaceholder', { count: gameState.remaining_questions })}
+                    mode="powiaty"
                   />
                 ) : (
                   <GuessInput

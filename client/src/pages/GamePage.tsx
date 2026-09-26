@@ -426,6 +426,7 @@ export default function GamePage() {
                     isLoading={isLoading}
                     remainingQuestions={gameState.remaining_questions}
                     placeholder={t('gamePage.askPlaceholder', { count: gameState.remaining_questions })}
+                    mode="country"
                   />
                 ) : (
                   <GuessInput

@@ -10,6 +10,7 @@ interface QuestionInputProps {
   disabled?: boolean;
   minLength?: number;
   maxLength?: number;
+  mode?: string;
 }
 
 function SlowQuestionNotice({ message }: { message: string }) {
@@ -23,7 +24,88 @@ function SlowQuestionNotice({ message }: { message: string }) {
   </div> : null;
 }
 
-export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder, disabled = false, minLength = 1, maxLength = 100 }: QuestionInputProps) {
+export function getQuickQuestions(currentMode: string, t: (key: string) => string) {
+    const norm = currentMode.toLowerCase();
+    if (norm.includes('wojewodztw')) {
+      return [
+        { icon: '🌊', label: t('inputs.quickWojCoastline'), question: t('inputs.questionWojCoastline') },
+        { icon: '⛰️', label: t('inputs.quickWojMountains'), question: t('inputs.questionWojMountains') },
+        { icon: '🌐', label: t('inputs.quickWojBorderCountry'), question: t('inputs.questionWojBorderCountry') },
+        { icon: '🧭', label: t('inputs.quickWojEast'), question: t('inputs.questionWojEast') },
+        { icon: '🧭', label: t('inputs.quickWojWest'), question: t('inputs.questionWojWest') },
+        { icon: '🏙️', label: t('inputs.quickWojPopulation1M'), question: t('inputs.questionWojPopulation1M') },
+      ];
+    }
+    if (norm.includes('powiat')) {
+      return [
+        { icon: '🏙️', label: t('inputs.quickPowCityCounty'), question: t('inputs.questionPowCityCounty') },
+        { icon: '🌳', label: t('inputs.quickPowLandCounty'), question: t('inputs.questionPowLandCounty') },
+        { icon: '🌊', label: t('inputs.quickPowCoastline'), question: t('inputs.questionPowCoastline') },
+        { icon: '⛰️', label: t('inputs.quickPowMountains'), question: t('inputs.questionPowMountains') },
+        { icon: '🧭', label: t('inputs.quickPowSouth'), question: t('inputs.questionPowSouth') },
+        { icon: '🌐', label: t('inputs.quickPowBorderCountry'), question: t('inputs.questionPowBorderCountry') },
+      ];
+    }
+    if (norm.includes('us_state') || norm.includes('usstate') || norm.includes('us-state')) {
+      return [
+        { icon: '🌊', label: t('inputs.quickUsCoastal'), question: t('inputs.questionUsCoastal') },
+        { icon: '🌽', label: t('inputs.quickUsMidwest'), question: t('inputs.questionUsMidwest') },
+        { icon: '🦞', label: t('inputs.quickUsNewEngland'), question: t('inputs.questionUsNewEngland') },
+        { icon: '🌵', label: t('inputs.quickUsSouth'), question: t('inputs.questionUsSouth') },
+        { icon: '🏔️', label: t('inputs.quickUsWest'), question: t('inputs.questionUsWest') },
+        { icon: '⚔️', label: t('inputs.quickUsConfederacy'), question: t('inputs.questionUsConfederacy') },
+      ];
+    }
+    if (norm === 'europe') {
+      return [
+        { icon: '🇪🇺', label: t('inputs.quickEu'), question: t('inputs.questionEu') },
+        { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
+        { icon: '👑', label: t('inputs.quickMonarchy'), question: t('inputs.questionMonarchy') },
+        { icon: '💶', label: t('inputs.quickContEuro'), question: t('inputs.questionContEuro') },
+        { icon: '🛡️', label: t('inputs.quickContNato'), question: t('inputs.questionContNato') },
+        { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
+      ];
+    }
+    if (norm === 'asia') {
+      return [
+        { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
+        { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
+        { icon: '🚗', label: t('inputs.quickLeftHandDrive'), question: t('inputs.questionLeftHandDrive') },
+        { icon: '👑', label: t('inputs.quickMonarchy'), question: t('inputs.questionMonarchy') },
+        { icon: '🕌', label: t('inputs.quickAsiaIslam'), question: t('inputs.questionAsiaIslam') },
+        { icon: '🌏', label: t('inputs.quickAsiaSoutheast'), question: t('inputs.questionAsiaSoutheast') },
+      ];
+    }
+    if (norm === 'africa') {
+      return [
+        { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
+        { icon: '🏜️', label: t('inputs.quickAfricaNorth'), question: t('inputs.questionAfricaNorth') },
+        { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
+        { icon: '🧭', label: t('inputs.quickAfricaSouthEquator'), question: t('inputs.questionAfricaSouthEquator') },
+        { icon: '🗣️', label: t('inputs.quickAfricaFrench'), question: t('inputs.questionAfricaFrench') },
+        { icon: '🗣️', label: t('inputs.quickAfricaEnglish'), question: t('inputs.questionAfricaEnglish') },
+      ];
+    }
+    if (norm === 'americas') {
+      return [
+        { icon: '🌎', label: t('inputs.quickAmericasSouth'), question: t('inputs.questionAmericasSouth') },
+        { icon: '🏝️', label: t('inputs.quickAmericasCaribbean'), question: t('inputs.questionAmericasCaribbean') },
+        { icon: '🌊', label: t('inputs.quickAmericasPacific'), question: t('inputs.questionAmericasPacific') },
+        { icon: '🗣️', label: t('inputs.quickAmericasSpanish'), question: t('inputs.questionAmericasSpanish') },
+        { icon: '🧭', label: t('inputs.quickAmericasSouthEquator'), question: t('inputs.questionAmericasSouthEquator') },
+        { icon: '🚗', label: t('inputs.quickLeftHandDrive'), question: t('inputs.questionLeftHandDrive') },
+      ];
+    }
+    return [
+      { icon: '🌍', label: t('inputs.quickEurope'), question: t('inputs.questionEurope') },
+      { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
+      { icon: '👑', label: t('inputs.quickMonarchy'), question: t('inputs.questionMonarchy') },
+      { icon: '🚗', label: t('inputs.quickLeftHandDrive'), question: t('inputs.questionLeftHandDrive') },
+      { icon: '🇪🇺', label: t('inputs.quickEu'), question: t('inputs.questionEu') },
+      { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
+    ];
+  };
+export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder, disabled = false, minLength = 1, maxLength = 100, mode = 'country' }: QuestionInputProps) {
   const { t } = useTranslation();
   const inputId = useId();
   
@@ -39,14 +121,8 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
   const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
 
-  const quickQuestions = [
-    { icon: '🌍', label: t('inputs.quickEurope'), question: t('inputs.questionEurope') },
-    { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
-    { icon: '👑', label: t('inputs.quickMonarchy'), question: t('inputs.questionMonarchy') },
-    { icon: '🚗', label: t('inputs.quickLeftHandDrive'), question: t('inputs.questionLeftHandDrive') },
-    { icon: '🇪🇺', label: t('inputs.quickEu'), question: t('inputs.questionEu') },
-    { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
-  ];
+
+  const quickQuestions = getQuickQuestions(mode, t);
 
   return (
     <form onSubmit={handleSubmit} className="w-full">

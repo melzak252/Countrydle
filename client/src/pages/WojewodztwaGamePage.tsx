@@ -423,6 +423,7 @@ export default function WojewodztwaGamePage() {
                     isLoading={isLoading}
                     remainingQuestions={gameState.remaining_questions}
                     placeholder={t('wojewodztwaPage.askPlaceholder', { count: gameState.remaining_questions })}
+                    mode="wojewodztwa"
                   />
                 ) : (
                   <GuessInput

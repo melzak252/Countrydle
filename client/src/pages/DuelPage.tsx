@@ -1029,6 +1029,7 @@ function DuelRoom({ code }: { code?: string }) {
                       placeholder={copy.questionPlaceholder}
                       minLength={3}
                       maxLength={500}
+                      mode={viewMode}
                     />
                   ) : (
                     <GuessInput
