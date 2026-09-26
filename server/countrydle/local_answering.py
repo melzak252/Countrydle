@@ -1630,11 +1630,33 @@ def generate_factual_explanation(
 
 
 def execute_local_plan(
-    plan: dict,
+    plan: dict | list,
     country_name: str,
     improved_question: str,
 ) -> LocalAnswer | None:
     if not DEFAULT_DB_PATH.exists():
+        return None
+    if isinstance(plan, list):
+        if not plan:
+            return None
+        if len(plan) == 1 and isinstance(plan[0], dict) and "args" not in plan[0]:
+            plan = plan[0]
+        else:
+            try:
+                from planner_protocol import compile_planner_response, PLANNER_OPERATORS
+                from countrydle.local_planner import SUPPORTED_RELATIONS
+                relations = set(SUPPORTED_RELATIONS) | {"coordinates.latitude", "coordinates.longitude", "region", "subregion", "hemisphere"}
+                operators = PLANNER_OPERATORS | {"any", "all"}
+                plan = compile_planner_response(
+                    {"route": "local", "plan": plan},
+                    relations=relations,
+                    operators=operators,
+                    target_entity="target_country",
+                    allow_named_entities=True,
+                )
+            except Exception:
+                plan = plan[-1] if isinstance(plan[-1], dict) else None
+    if not isinstance(plan, dict):
         return None
     with sqlite3.connect(DEFAULT_DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
