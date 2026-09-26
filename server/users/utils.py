@@ -18,18 +18,41 @@ from utils.email import fm, fm_noreply
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+REMEMBER_ME_EXPIRE_DAYS = int(os.getenv("REMEMBER_ME_EXPIRE_DAYS", "90"))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+def set_access_cookie(response: Response, request: Request, email: str, *, remember_me: bool = False):
+    lifetime = timedelta(days=REMEMBER_ME_EXPIRE_DAYS) if remember_me else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expiration = datetime.now(UTC) + lifetime
+    token = jwt.encode(
+        {"sub": email, "exp": expiration, "remember_me": remember_me},
+        SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="lax",
+        path="/",
+        expires=expiration,
+        max_age=int(lifetime.total_seconds()),
+    )
 
 
-def verify_access_token(token: str):
+def clear_access_cookie(response: Response, request: Request):
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="lax",
+        path="/",
+    )
+
+
+def _decode_access_token(token: str):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -45,7 +68,11 @@ def verify_access_token(token: str):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    return username
+    return payload
+
+
+def verify_access_token(token: str):
+    return _decode_access_token(token)["sub"]
 
 
 def create_verification_token(email: str):
@@ -70,13 +97,13 @@ def verify_email_token(token: str):
 
 
 async def get_current_user(
+    request: Request,
     response: Response,
     access_token: str = Cookie(None),
     session: AsyncSession = Depends(get_db),
 ) -> User:
-    email = verify_access_token(access_token)
-
-    user = await UserRepository(session).get_by_email(email)
+    claims = _decode_access_token(access_token)
+    user = await UserRepository(session).get_by_email(claims["sub"])
 
     if not user:
         raise HTTPException(
@@ -85,22 +112,9 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Refresh the token and cookie
-    new_access_token = create_access_token(data={"sub": user.email})
-
-    # Calculate expiration time for the cookie
-    expiration = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    response.set_cookie(
-        key="access_token",
-        value=new_access_token,
-        httponly=True,
-        secure=False,  # Set to False for local development (HTTP)
-        samesite="lax",
-        path="/",
-        expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
+    # The signed preference must survive renewal; otherwise /users/me shortens
+    # a remembered login back to the ordinary idle timeout.
+    set_access_cookie(response, request, user.email, remember_me=claims.get("remember_me") is True)
 
     return user
 
@@ -127,6 +141,7 @@ async def get_current_or_guest_user(
     if access_token:
         try:
             return await get_current_user(
+                request=request,
                 response=response,
                 access_token=access_token,
                 session=session,

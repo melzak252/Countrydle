@@ -59,8 +59,8 @@ export const authService = {
     const response = await api.get(`/verify-email?token=${token}`);
     return response.data;
   },
-  googleLogin: async (credential: string) => {
-    const response = await api.post('/google-signin', { credential });
+  googleLogin: async (credential: string, rememberMe = false) => {
+    const response = await api.post('/google-signin', { credential, remember_me: rememberMe });
     return response.data;
   },
   updateProfile: async (data: { username: string; email?: string }) => {
