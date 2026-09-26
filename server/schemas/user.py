@@ -68,3 +68,4 @@ class ChangePassword(BaseModel):
 
 class GoogleSignIn(BaseModel):
     credential: str
+    remember_me: bool = False

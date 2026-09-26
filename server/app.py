@@ -31,6 +31,7 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     FastAPI,
+    Form,
     HTTPException,
     Request,
     Response,
@@ -42,10 +43,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from users import router as users_router
 from users.utils import (
-    create_access_token,
+    clear_access_cookie,
+    set_access_cookie,
     send_verification_email,
     verify_email_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 
 from utils.email import fm_noreply
@@ -277,9 +278,11 @@ async def get_server_time():
 
 @app.post("/login", response_model=UserDisplay)
 async def login(
+    request: Request,
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(get_db),
+    remember_me: bool = Form(False),
 ):
     user = await UserRepository(session).get_user(form_data.username)
 
@@ -294,20 +297,7 @@ async def login(
     #         detail="User's email is not verified! Verify your email before login!",
     #     )
 
-    access_token = create_access_token(data={"sub": user.email})
-
-    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=False,  # Set to False for local development (HTTP)
-        samesite="lax",
-        path="/",
-        expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )
+    set_access_cookie(response, request, user.email, remember_me=remember_me)
 
     return user
 
@@ -315,6 +305,7 @@ async def login(
 
 @app.post("/google-signin", response_model=UserDisplay)
 async def google_signin(
+    request: Request,
     credential: GoogleSignIn,
     response: Response,
     background_tasks: BackgroundTasks,
@@ -335,35 +326,14 @@ async def google_signin(
             fm_noreply.send_message, message, template_name="google_login_alert.html"
         )
 
-    access_token = create_access_token(data={"sub": user.email})
-
-    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=False,  # Set to False for local development (HTTP)
-        samesite="lax",
-        path="/",
-        expires=expiration.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )
+    set_access_cookie(response, request, user.email, remember_me=credential.remember_me)
     return user
 
 
 
 @app.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(response: Response):
-    response.set_cookie(
-        key="access_token",
-        value="",
-        httponly=True,
-        secure=False,  # Set to False for local development (HTTP)
-        expires=datetime.datetime.now().isoformat(),
-        samesite="lax",
-        path="/",
-    )
+async def logout(request: Request, response: Response):
+    clear_access_cookie(response, request)
     return {"success": True}
 
 

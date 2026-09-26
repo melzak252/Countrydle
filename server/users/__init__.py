@@ -3,7 +3,7 @@ from db import get_db
 from db.models import User
 from schemas.user import ChangePassword, UserDisplay, UserUpdate
 from dotenv import load_dotenv
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.repositories.user import UserRepository
@@ -13,7 +13,7 @@ from db.repositories.us_statedle import USStatedleStateRepository
 from db.repositories.wojewodztwodle import WojewodztwodleStateRepository
 from schemas.statistics import UserProfileStatistics
 
-from .utils import create_access_token, get_current_user, send_verification_email
+from .utils import clear_access_cookie, get_current_user, send_verification_email
 
 load_dotenv()
 router = APIRouter()
@@ -51,6 +51,7 @@ async def get_user_stats_by_username(
 
 @router.post("/update")
 async def change_username(
+    request: Request,
     updated_user: UserUpdate,
     response: Response,
     background_tasks: BackgroundTasks,
@@ -96,30 +97,12 @@ async def change_username(
     if not up_user.verified:
 
         await send_verification_email(user, background_tasks)
-        response.set_cookie(
-            key="access_token",
-            value="",
-            httponly=True,
-            secure=True,  # Set to True in production
-            samesite="Lax",
-            path="/",
-        )
+        clear_access_cookie(response, request)
         return {
             "email_sent": True,
             "message": "Account updated successfully! You will be logged out!",
         }
 
-    access_token = create_access_token(data={"sub": user.email})
-
-
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,  # Set to True in production
-        samesite="Lax",
-        path="/",
-    )
 
     return {"email_sent": False, "message": "Account updated successfully!"}
 

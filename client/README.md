@@ -31,6 +31,28 @@ Create a duel at `/friends`; invitations open `/duel/:code`.
 - The HUD displays cumulative counts as `Q:<questions> G:<guesses>`, not used/max quotas. The active-turn composer and rules explain that both action types are unlimited.
 - A final reply allows one guess or a pass, not another question.
 
+## Remembered login
+
+The login page offers an unchecked-by-default **Remember me** checkbox for both
+password and Google login. `POST /login` accepts the optional form field
+`remember_me`; `POST /google-signin` accepts the same boolean in its JSON body.
+Omitting it keeps the ordinary `ACCESS_TOKEN_EXPIRE_MINUTES` lifetime (60 minutes
+by default). Google registration also keeps the ordinary lifetime.
+
+Remembered logins use `REMEMBER_ME_EXPIRE_DAYS` (90 days by default). The HttpOnly
+`access_token` cookie and signed JWT expire together. Authenticated requests
+renew the selected idle window, including `/users/me` and profile updates;
+activity never downgrades a remembered login to one hour. Cookies use
+`SameSite=Lax`, `Path=/`, and `Secure` on HTTPS requests. TLS-terminating deployments
+must pass the original HTTPS scheme through a trusted proxy.
+
+Logout removes the cookie on this device. Browser cookie deletion, private
+browsing, and inactivity beyond the selected window still require login again.
+Tokens remain in HttpOnly cookies, not localStorage; the existing localStorage
+entry contains only user display data. Use remembered login only on private
+devices: as with existing stateless JWT authentication, logout does not revoke
+copies of a token obtained elsewhere before its expiry.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

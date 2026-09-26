@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuthStore();
@@ -35,6 +36,7 @@ export default function LoginPage() {
       const formData = new FormData();
       formData.append('username', username);
       formData.append('password', password);
+      formData.append('remember_me', String(rememberMe));
       
       const user = await authService.login(formData);
       login(user);
@@ -51,7 +53,7 @@ export default function LoginPage() {
         try {
             setLoading(true);
             // Use access_token instead of credential (id_token)
-            const user = await authService.googleLogin(tokenResponse.access_token);
+            const user = await authService.googleLogin(tokenResponse.access_token, rememberMe);
             login(user);
             navigate('/game');
         } catch (err: any) {
@@ -102,6 +104,25 @@ export default function LoginPage() {
               className="w-full rounded-sm border border-white/15 bg-obsidian-900 px-3 py-3 text-base text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
               required
             />
+          </div>
+
+          <div>
+            <label htmlFor="login-remember-me" className="flex cursor-pointer items-center gap-3 text-sm font-medium text-sand-100">
+              <input
+                id="login-remember-me"
+                name="remember_me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={loading}
+                aria-describedby="login-remember-me-help"
+                className="h-4 w-4 accent-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400"
+              />
+              Remember me
+            </label>
+            <p id="login-remember-me-help" className="mt-2 text-sm leading-6 text-zinc-400">
+              Stay signed in between visits, including with Google. Only use this on a private device.
+            </p>
           </div>
           
           <button
