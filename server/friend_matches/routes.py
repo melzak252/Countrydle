@@ -128,6 +128,7 @@ async def join(code: str, body: JoinRequest, request: Request, response: Respons
         raise HTTPException(status_code=409, detail="This join request was already used. Refresh the match.")
 
 
+
 @router.get("/friend-matches/{match_id}")
 async def view(match_id: UUID, request: Request, response: Response):
     private_response(request, response)

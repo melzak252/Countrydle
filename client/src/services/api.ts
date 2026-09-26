@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Question, Guess, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -71,8 +71,8 @@ export const authService = {
 
 
 export const gameService = {
-  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {
-    const response = await api.get(`/countrydle/statistics/leaderboard?type=${type}`);
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>('/countrydle/statistics/leaderboard', { params: { type } });
     return response.data;
   },
   getUserStats: async (username: string): Promise<any> => {
@@ -130,8 +130,8 @@ export const powiatService = {
     const response = await api.post('/powiatdle/guess', { guess, powiat_id, elapsed_seconds });
     return response.data;
   },
-  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {
-    const response = await api.get(`/powiatdle/leaderboard?type=${type}`);
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>('/powiatdle/leaderboard', { params: { type } });
     return response.data;
   },
   getHistory: async (): Promise<any[]> => {
@@ -165,8 +165,8 @@ export const usStateService = {
     const response = await api.post('/us_statedle/guess', { guess, us_state_id, elapsed_seconds });
     return response.data;
   },
-  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {
-    const response = await api.get(`/us_statedle/leaderboard?type=${type}`);
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>('/us_statedle/leaderboard', { params: { type } });
     return response.data;
   },
   getHistory: async (): Promise<any[]> => {
@@ -200,8 +200,8 @@ export const wojewodztwoService = {
     const response = await api.post('/wojewodztwodle/guess', { guess, wojewodztwo_id, elapsed_seconds });
     return response.data;
   },
-  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<any[]> => {
-    const response = await api.get(`/wojewodztwodle/leaderboard?type=${type}`);
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>('/wojewodztwodle/leaderboard', { params: { type } });
     return response.data;
   },
   getHistory: async (): Promise<any[]> => {
@@ -235,8 +235,8 @@ export const createContinentalService = (continent: string) => ({
     const response = await api.post(`/continental/${continent}/guess`, { guess, country_id, elapsed_seconds });
     return response.data;
   },
-  getLeaderboard: async (type: 'monthly' | 'average' = 'monthly'): Promise<unknown[]> => {
-    const response = await api.get(`/continental/${continent}/leaderboard?type=${type}`);
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>(`/continental/${continent}/leaderboard`, { params: { type } });
     return response.data;
   },
   getHistory: async (): Promise<unknown[]> => {
@@ -258,6 +258,10 @@ export const asiaService = createContinentalService('asia');
 export const africaService = createContinentalService('africa');
 export const americasService = createContinentalService('americas');
 export const flagdleService = {
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>('/flagdle/leaderboard', { params: { type } });
+    return response.data;
+  },
   getState: async (): Promise<FlagdleStateResponse> => {
     const response = await api.get('/flagdle/state');
     return response.data;

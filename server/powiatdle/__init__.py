@@ -31,7 +31,7 @@ from schemas.powiatdle import (
 )
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import powiatdle.utils as putils
-from game_logic import GameConfig, GameRules, GameState
+from game_logic import GameConfig, GameRules, GameState, is_valid_synced_game_state
 from utils.geo import enhance_guess_with_hint
 
 
@@ -123,6 +123,21 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
+    if not is_valid_synced_game_state(
+        POWIATDLE_CONFIG,
+        guesses_made=sync_data.state.guesses_made,
+        remaining_guesses=sync_data.state.remaining_guesses,
+        is_game_over=sync_data.state.is_game_over,
+        won=sync_data.state.won,
+        correct_guesses=[
+            guess.powiat_id == day_powiat.powiat_id for guess in sync_data.guesses
+        ],
+        questions_asked=sync_data.state.questions_asked,
+        remaining_questions=sync_data.state.remaining_questions,
+        synced_questions=len(sync_data.questions),
+    ):
+        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
+
     if sync_data.questions:
         from db.models import PowiatdleQuestion
         await session.execute(
@@ -157,12 +172,8 @@ async def sync_guest_data(
     state.won = sync_data.state.won
     
     if state.won:
-        streak = (await PowiatdleStateRepository(session).get_current_streak(user.id)) + 1
-        elapsed = None
-        for g in sync_data.guesses:
-            if g.elapsed_seconds is not None:
-                elapsed = g.elapsed_seconds
-                break
+        streak = (await PowiatdleStateRepository(session).get_current_streak(user.id, day_powiat.date)) + 1
+        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
         state.points = await PowiatdleStateRepository(session).calc_points(
             state, elapsed_seconds=elapsed, streak=streak
         )
@@ -504,6 +515,12 @@ async def make_guess(
         )
 
     state = await PowiatdleStateRepository(session).get_state(user, day_powiat)
+    if state is None:
+        state = await PowiatdleStateRepository(session).create_state(
+            user, day_powiat,
+            max_questions=POWIATDLE_CONFIG.max_questions,
+            max_guesses=POWIATDLE_CONFIG.max_guesses,
+        )
 
     current_game_state = db_state_to_game_state(state)
     if not game_rules.can_make_guess(current_game_state):
@@ -530,7 +547,7 @@ async def make_guess(
     state.is_game_over = new_game_state.is_game_over
 
     if state.won:
-        streak = (await PowiatdleStateRepository(session).get_current_streak(user.id)) + 1
+        streak = (await PowiatdleStateRepository(session).get_current_streak(user.id, day_powiat.date)) + 1
         state.points = await PowiatdleStateRepository(session).calc_points(
             state, elapsed_seconds=guess.elapsed_seconds, streak=streak
         )

@@ -13,10 +13,11 @@ from db.models.continental import (
     ContinentalGuess,
     ContinentalQuestion,
 )
-from game_logic import calculate_points, CONTINENTAL_CONFIG
+from game_logic import calculate_points, count_consecutive_daily_wins, CONTINENTAL_CONFIG
 from schemas.continental import ContinentalGuessCreate
 from schemas.countrydle import LeaderboardEntry
 from continental.utils import get_continent_country_ids
+from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from country_eligibility import require_eligible_target
 
 
@@ -173,32 +174,32 @@ class ContinentalStateRepository:
         await self.session.refresh(state)
         return state
 
-    async def get_current_streak(self, user_id: int | None, continent: ContinentCode | None = None) -> int:
+    async def get_current_streak(
+        self,
+        user_id: int | None,
+        puzzle_date: date,
+        continent: ContinentCode | None = None,
+    ) -> int:
         if not user_id:
             return 0
         query = (
-            select(ContinentalState)
+            select(ContinentalDay.date, ContinentalState.won)
             .join(ContinentalDay, ContinentalState.day_id == ContinentalDay.id)
             .where(
                 and_(
                     ContinentalState.user_id == user_id,
                     ContinentalState.is_game_over == True,
+                    ContinentalDay.date < puzzle_date,
                 )
             )
         )
         if continent:
             query = query.where(ContinentalDay.continent == continent)
 
-        query = query.order_by(ContinentalState.id.desc())
-        res = await self.session.execute(query)
-        states = res.scalars().all()
-        streak = 0
-        for s in states:
-            if s.won:
-                streak += 1
-            else:
-                break
-        return streak
+        query = query.order_by(ContinentalDay.date.desc())
+        result = await self.session.execute(query)
+        completed_games = [(row.date, row.won) for row in result.all()]
+        return count_consecutive_daily_wins(completed_games, puzzle_date)
 
     async def calc_points(
         self,
@@ -221,6 +222,8 @@ class ContinentalStateRepository:
         guess: ContinentalGuess,
         elapsed_seconds: Optional[int] = None,
         continent: ContinentCode | None = None,
+        *,
+        puzzle_date: date,
     ) -> ContinentalState:
         state.guesses_made += 1
         state.remaining_guesses = max(0, CONTINENTAL_CONFIG.max_guesses - state.guesses_made)
@@ -228,7 +231,7 @@ class ContinentalStateRepository:
         if guess.answer:
             state.won = True
             state.is_game_over = True
-            streak = await self.get_current_streak(state.user_id, continent)
+            streak = await self.get_current_streak(state.user_id, puzzle_date, continent)
             state.points = await self.calc_points(
                 state, elapsed_seconds=elapsed_seconds, streak=streak + 1
             )
@@ -241,78 +244,14 @@ class ContinentalStateRepository:
     async def get_leaderboard(
         self, continent: ContinentCode, type: str = "monthly"
     ) -> List[LeaderboardEntry]:
-        if type == "monthly":
-            current_month = date.today().replace(day=1)
-            stmt = (
-                select(
-                    User.id,
-                    User.username,
-                    func.coalesce(func.sum(ContinentalState.points), 0).label("points"),
-                    func.coalesce(func.sum(cast(ContinentalState.won, Integer)), 0).label("wins"),
-                )
-                .join(User, User.id == ContinentalState.user_id)
-                .join(ContinentalDay, ContinentalState.day_id == ContinentalDay.id)
-                .where(
-                    and_(
-                        ContinentalDay.continent == continent,
-                        User.username.not_like("test_%"),
-                        User.username.not_like("pytest_%"),
-                        ContinentalDay.date >= current_month,
-                        or_(ContinentalState.questions_asked > 0, ContinentalState.guesses_made > 0),
-                    )
-                )
-                .group_by(User.id, User.username)
-                .order_by(desc("points"), desc("wins"))
-            )
-            result = await self.session.execute(stmt)
-            return [
-                LeaderboardEntry(
-                    id=row.id,
-                    username=row.username,
-                    points=row.points,
-                    wins=row.wins,
-                    streak=0,
-                )
-                for row in result.all()
-            ]
-        elif type == "average":
-            stmt = (
-                select(
-                    User.id,
-                    User.username,
-                    func.coalesce(func.sum(ContinentalState.points), 0).label("points"),
-                    func.coalesce(func.sum(cast(ContinentalState.won, Integer)), 0).label("wins"),
-                    func.count(ContinentalState.id).label("games_played"),
-                )
-                .join(User, User.id == ContinentalState.user_id)
-                .join(ContinentalDay, ContinentalState.day_id == ContinentalDay.id)
-                .where(
-                    and_(
-                        ContinentalDay.continent == continent,
-                        User.username.not_like("test_%"),
-                        User.username.not_like("pytest_%"),
-                        or_(ContinentalState.questions_asked > 0, ContinentalState.guesses_made > 0),
-                    )
-                )
-                .group_by(User.id, User.username)
-                .having(func.count(ContinentalState.id) >= 3)
-            )
-            result = await self.session.execute(stmt)
-            leaderboard = []
-            for row in result.all():
-                avg_points = round(row.points / row.games_played, 2)
-                leaderboard.append(
-                    {
-                        "id": row.id,
-                        "username": row.username,
-                        "points": avg_points,
-                        "wins": row.wins,
-                        "streak": 0,
-                    }
-                )
-            leaderboard.sort(key=lambda x: (x["points"], x["wins"]), reverse=True)
-            return [LeaderboardEntry(**entry) for entry in leaderboard]
-        return []
+        return await aggregate_leaderboard(
+            self.session,
+            ContinentalState,
+            ContinentalDay,
+            type,
+            minimum_average_games=3,
+            day_filters=(ContinentalDay.continent == continent,),
+        )
 
 
 class ContinentalGuessRepository:

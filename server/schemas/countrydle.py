@@ -172,10 +172,9 @@ class LeaderboardEntry(BaseModel):
     id: int
     username: str
     points: int
-    streak: int
     wins: int
-    average_points: float | None = None
-    games_played: int | None = None
+    games_played: int
+    average_points: float
 
 
 class UserState(BaseModel):

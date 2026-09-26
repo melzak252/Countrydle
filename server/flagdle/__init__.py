@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 from countrydle.local_planner import analyze_question_for_local_plan
 from countrydle.local_answering import execute_local_plan
 from schemas.countrydle import QuestionBase, FullQuestionDisplay, InvalidQuestionDisplay
+from schemas.countrydle import LeaderboardEntry
 import urllib.request
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -20,7 +21,7 @@ from db.repositories.flagdle import (
     FlagdleGuessRepository,
     FlagdleStateRepository,
 )
-from game_logic import FLAGDLE_CONFIG, GameRules, GameState
+from game_logic import FLAGDLE_CONFIG, GameRules, GameState, is_valid_synced_game_state
 from schemas.country import CountryDisplay
 from schemas.flagdle import (
     FlagdleCountryDisplay,
@@ -67,6 +68,14 @@ def _get_or_fetch_flag_svg(iso2: str) -> bytes:
         # Simple generic fallback SVG
         fallback = f'<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#1e293b"/><text x="450" y="300" fill="#94a3b8" font-size="40" font-family="sans-serif" text-anchor="middle">Flag of {code.upper()}</text></svg>'
         return fallback.encode("utf-8")
+
+
+@router.get("/leaderboard", response_model=List[LeaderboardEntry])
+async def get_leaderboard(
+    type: str = Query("monthly", pattern="^(monthly|average)$"),
+    session: AsyncSession = Depends(get_db),
+):
+    return await FlagdleStateRepository(session).get_leaderboard(type)
 
 
 @router.get("/countries", response_model=List[FlagdleCountryDisplay])
@@ -348,7 +357,7 @@ async def make_guess(
         state.won = won
 
         if won:
-            streak = (await state_repo.get_current_streak(user.id)) + 1
+            streak = (await state_repo.get_current_streak(user.id, today_flag.date)) + 1
             state.points = await state_repo.calc_points(
                 state, elapsed_seconds=guess_in.elapsed_seconds, streak=streak
             )
@@ -584,6 +593,24 @@ async def sync_guest_data(
             await state_repo.update_state(state)
         return await get_state(request=request, user=user, session=session)
 
+    correct_guesses = [
+        (
+            guess.country_id == target_country.id
+            if guess.country_id is not None
+            else bool(target_country and guess.guess.strip().casefold() == target_country.name.casefold())
+        )
+        for guess in sync_data.guesses
+    ]
+    if not is_valid_synced_game_state(
+        FLAGDLE_CONFIG,
+        guesses_made=sync_data.state.guesses_made,
+        remaining_guesses=sync_data.state.remaining_guesses,
+        is_game_over=sync_data.state.is_game_over,
+        won=sync_data.state.won,
+        correct_guesses=correct_guesses,
+    ):
+        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
+
     for guess in sync_data.guesses:
         await CountryRepository(session).validate_guess(guess.country_id, guess.guess)
 
@@ -644,12 +671,8 @@ async def sync_guest_data(
     state.won = sync_data.state.won
 
     if state.won:
-        streak = (await state_repo.get_current_streak(user.id)) + 1
-        elapsed = None
-        for g in sync_data.guesses:
-            if g.elapsed_seconds is not None:
-                elapsed = g.elapsed_seconds
-                break
+        streak = (await state_repo.get_current_streak(user.id, day_flag.date)) + 1
+        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
         state.points = await state_repo.calc_points(state, elapsed_seconds=elapsed, streak=streak)
 
     linked_questions = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)

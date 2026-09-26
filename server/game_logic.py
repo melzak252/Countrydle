@@ -1,4 +1,60 @@
 from dataclasses import dataclass
+from datetime import date, timedelta
+
+
+def count_consecutive_daily_wins(
+    completed_games: list[tuple[date, bool]], puzzle_date: date
+) -> int:
+    """Count consecutive wins on days preceding the puzzle being scored."""
+    expected_date = puzzle_date - timedelta(days=1)
+    streak = 0
+    for played_date, won in completed_games:
+        if played_date >= puzzle_date:
+            continue
+        if played_date != expected_date or not won:
+            break
+        streak += 1
+        expected_date -= timedelta(days=1)
+    return streak
+
+
+def is_valid_synced_game_state(
+    config: "GameConfig",
+    *,
+    guesses_made: int,
+    remaining_guesses: int,
+    is_game_over: bool,
+    won: bool,
+    correct_guesses: list[bool],
+    questions_asked: int | None = None,
+    remaining_questions: int | None = None,
+    synced_questions: int | None = None,
+) -> bool:
+    guess_count = len(correct_guesses)
+    won_from_guesses = bool(guess_count and correct_guesses[-1]) and not any(
+        correct_guesses[:-1]
+    )
+    expected_game_over = won_from_guesses or guess_count == config.max_guesses
+    if (
+        guesses_made != guess_count
+        or not 0 <= guess_count <= config.max_guesses
+        or remaining_guesses != config.max_guesses - guess_count
+        or any(correct_guesses[:-1])
+        or won != won_from_guesses
+        or is_game_over != expected_game_over
+    ):
+        return False
+
+    if synced_questions is not None:
+        if (
+            questions_asked != synced_questions
+            or not 0 <= synced_questions <= config.max_questions
+            or remaining_questions != config.max_questions - synced_questions
+        ):
+            return False
+    return True
+
+
 
 @dataclass(frozen=True)
 class GameConfig:

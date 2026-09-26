@@ -28,7 +28,7 @@ from db.repositories.continental import (
 )
 from db.repositories.country import CountryRepository
 from db.repositories.user import UserRepository
-from game_logic import CONTINENTAL_CONFIG, GameRules, GameState
+from game_logic import CONTINENTAL_CONFIG, GameRules, GameState, is_valid_synced_game_state
 from qdrant.utils import add_question_to_qdrant
 from schemas.continental import (
     ContinentalEndStateResponse,
@@ -102,6 +102,21 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(continent, user, session)
 
+    if not is_valid_synced_game_state(
+        CONTINENTAL_CONFIG,
+        guesses_made=sync_data.state.guesses_made,
+        remaining_guesses=sync_data.state.remaining_guesses,
+        is_game_over=sync_data.state.is_game_over,
+        won=sync_data.state.won,
+        correct_guesses=[
+            guess.country_id == day.country_id for guess in sync_data.guesses
+        ],
+        questions_asked=sync_data.state.questions_asked,
+        remaining_questions=sync_data.state.remaining_questions,
+        synced_questions=len(sync_data.questions),
+    ):
+        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
+
     country_repo = CountryRepository(session)
     for guess in sync_data.guesses:
         await country_repo.validate_guess(guess.country_id, guess.guess, continent.value)
@@ -138,13 +153,8 @@ async def sync_guest_data(
     state.won = sync_data.state.won
 
     if state.won:
-        user_points = await UserRepository(session).get_user_points(user.id)
-        current_streak = ((user_points.streak if user_points else 0) + 1)
-        elapsed = None
-        for g in sync_data.guesses:
-            if g.elapsed_seconds is not None:
-                elapsed = g.elapsed_seconds
-                break
+        current_streak = (await state_repo.get_current_streak(user.id, day.date, continent)) + 1
+        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
         state.points = await state_repo.calc_points(
             state, elapsed_seconds=elapsed, streak=current_streak
         )
@@ -526,7 +536,7 @@ async def make_guess(
     new_guess = await ContinentalGuessRepository(session).add_guess(guess_create)
 
     state = await state_repo.guess_made(
-        state, new_guess, elapsed_seconds=guess.elapsed_seconds, continent=continent
+        state, new_guess, elapsed_seconds=guess.elapsed_seconds, continent=continent, puzzle_date=day.date
     )
 
     if state.is_game_over:

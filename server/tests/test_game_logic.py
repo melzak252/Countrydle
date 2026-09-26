@@ -1,9 +1,13 @@
+from datetime import date, timedelta
+
 import pytest
 from game_logic import (
     GameConfig,
     GameRules,
     GameState,
     calculate_points,
+    count_consecutive_daily_wins,
+    is_valid_synced_game_state,
     COUNTRYDLE_CONFIG,
     WOJEWODZTWDLE_CONFIG,
     POWIATDLE_CONFIG,
@@ -235,3 +239,41 @@ def test_all_game_mode_configs():
             streak=2,
         )
         assert score > 1000
+
+
+def test_consecutive_daily_streak_stops_at_gap_and_excludes_scored_day():
+    today = date(2026, 9, 26)
+    completed_games = [
+        (today, True),
+        (today - timedelta(days=1), True),
+        (today - timedelta(days=3), True),
+    ]
+
+    assert count_consecutive_daily_wins(completed_games, today) == 1
+
+
+def test_synced_win_requires_actual_last_guess_and_consistent_budgets():
+    config = GameConfig(max_questions=8, max_guesses=3)
+
+    assert not is_valid_synced_game_state(
+        config,
+        guesses_made=0,
+        remaining_guesses=3,
+        is_game_over=True,
+        won=True,
+        correct_guesses=[],
+        questions_asked=0,
+        remaining_questions=8,
+        synced_questions=0,
+    )
+    assert is_valid_synced_game_state(
+        config,
+        guesses_made=2,
+        remaining_guesses=1,
+        is_game_over=True,
+        won=True,
+        correct_guesses=[False, True],
+        questions_asked=1,
+        remaining_questions=7,
+        synced_questions=1,
+    )
