@@ -125,6 +125,86 @@ fragments.
 
 ---
 
+## Daily question execution and accounting
+
+- The configured Gemini/OpenAI model names are unchanged. `planner_protocol.py` supplies a nonrecursive JSON Schema: the provider emits an array of predicate/logical nodes with zero-based child indices. Prompts request children before parents and the root last; the compiler still accepts any valid node order. It validates routing, operator arity, allowed relations/entities, a single connected tree, and quantifier item scope before creating the existing executor AST or caching it. Malformed JSON, cycles, reused/unused nodes, and unexpected fields are errors, not repaired interpretations.
+- The planner wire format has one decision: `route="local"` requires a plan, `route="fallback"` handles a clear predicate whose facts or required operations are unavailable locally, and `route="clarify"` rejects an underspecified question. Non-local routes require `plan=null`. The existing application/API fields `valid` and `supported` are derived from this decision; callers and HTTP responses retain their contract.
+- Plan cache entries are isolated by game mode, normalized question, configured model, and planner contract version. Provider failures and malformed responses are not cached. A cached interpretation is still evaluated against the current target's facts.
+- Planners allow 2,048 total output tokens. Gemini 2.5 Flash Lite planners use a bounded 1,024-token thinking budget to preserve compound predicates. Countrydle's daily/explicit-target fallback also allows 2,048 total output tokens and a 1,024-token thinking budget for Gemini 2.5 models. This adds latency and billed thought tokens without changing the configured model or adding retries. Other models retain their provider-default thinking settings. Existing usage diagnostics include actual `thought_tokens` when reported by Gemini.
+- Generic-mode `any`/`all` binds neighboring entity rows only for configured same-type lists: `borders_powiat`, `borders_voivodeship` in Wojewodztwodle, and `borders_state`. `item.is_city_county`, for example, reads the neighboring county's classification, not its name or the hidden target's classification. Other lists and literal arrays remain primitive values accessible through `item.name`. Nested quantifiers retain the original target and restore the enclosing item scope. Missing facts remain unknown; decisive `and`/`or`/`any`/`all` results short-circuit without turning unknown into false.
+- Question validity is independent of local fact and operator coverage: a precise historical, biographical, landmark, or character-position question can be valid but require fallback. Underspecified criteria require clarification; the planner must not invent a numeric threshold. Present membership and past membership remain distinct even when the organization is dissolved.
+- Numeric predicates distinguish strict comparisons from `greater_than_or_equal` / `less_than_or_equal`. `has_space` and `has_hyphen` are unary text predicates; a hyphen is not an en/em dash. Country text predicates preserve punctuation and whitespace instead of normalizing punctuation into an empty search string. SQLite numeric boolean values compare numerically with JSON booleans; factual explanations use the stored property rather than the truth of a possibly inverted comparison.
+- A valid question outside the local relations can continue through Qdrant retrieval and the existing answer model. Retrieval uses the planner's rewritten question when provided, otherwise the original player text; an omitted optional rewrite must not bypass fragment lookup.
+- Countrydle does not pass planner coverage notes to the answer model as factual evidence. Missing SQLite coverage is not proof that a historical association or geographic concept does not exist. Fallback preserves the original predicate and may use reliable general knowledge when retrieved fragments are irrelevant; genuinely undetermined answers remain `null`.
+- Country list relations require membership/nonemptiness operators, not scalar `equals`. Unknown historical-union names remain unknown; active organizations such as Benelux use `membership`, not the closed set of dissolved `historical_union` associations. Logical `and` is never rewritten to `or`. Explanations describe the evaluated entity and bound neighbor facts, including under negation.
+- Cardinal region aliases retain their regional scope (`East Africa` → `Eastern Africa`), without conflating Southern Africa with the country South Africa. Generic ocean access covers recorded ocean coastlines; a coastline on a sea does not automatically imply a direct coastline on its parent ocean. Area/population comparisons explain the facts of both countries.
+- Geographic plan literals match a whole supported category, not a substring: an unknown qualifier is never dropped to obtain a broader region. North/South America use complete continent coverage, and Middle East/Scandinavia retain their own stored classifications. Unrepresented directional quadrants use fallback rather than a guessed union of broad regions.
+- Current `membership` and dissolved `historical_union` facts are separate. Historical associations are not copied into current memberships by the population script. Language prevalence is not inferred from legal official-language status; underspecified proximity, fame, and importance require clarification rather than an invented criterion.
+- Country island status comes from the builder's sourced classification, not absence of land borders: shared-island countries can have borders, while Australia is a continent. The builder also restores active Benelux membership on rebuild.
+- Synchronous model, embedding, Qdrant, and local SQLite work runs off the event loop. HTTP/SDK clients reuse connections and close during application shutdown; SQLAlchemy async sessions remain on the event-loop thread.
+- Only a valid question with an actual boolean answer consumes a question: both `true` and `false` count. `null`, invalid questions, malformed provider answers, and technical failures do not enter the counted history or spend a turn. Provider strings such as `"false"` are not coerced into accepted answers.
+- Countrydle returns HTTP `503` for valid-but-unverified answers and operational/provider failures, without recording a question or charging a turn. These are distinct from genuinely invalid questions, which retain the existing HTTP `200`, `valid=false` rejection response.
+- Authenticated question persistence and quota consumption share a PostgreSQL transaction, with a refreshed, locked quota check after provider work. Concurrent requests cannot both consume the last slot. Guest imports keep guess insertion and state updates in the same locked transaction, preventing duplicate imports. Offloading provider work does not itself release request-scoped database connections; read transactions may still remain open while the provider responds.
+- Guest question totals are rebuilt from resolved history, not trusted local counters. Synchronization only claims resolved, unowned question records from the requested day. The client retains snapshots when synchronization fails and does not delete a newer snapshot written while a request was in flight.
+- Flagdle keeps unlimited verified questions, including after the guessing game ends; unresolved attempts still do not count as participation.
+
+Set `QUESTION_TEST_DATABASE_URL` to an explicitly disposable PostgreSQL database
+(`FRIEND_TEST_DATABASE_URL` is also accepted). Accounting regressions create and
+remove isolated schemas, never using `DATABASE_URL` as a fallback:
+
+```bash
+python -m pytest -q tests/test_question_accounting.py tests/test_question_nonblocking.py tests/test_planner_contract.py tests/test_plan_cache.py
+```
+
+These regressions use controlled provider responses; they do not measure live
+model accuracy or latency. SQLite regressions require the normal local fact data
+and country-additions provisioning.
+
+## County border facts
+
+Powiatdle uses the repository snapshot `powiatdle/local_kb/borders.json`, derived
+from full-resolution [GUGiK/PRG county polygons](https://www.geoportal.gov.pl/pl/dane/panstwowy-rejestr-granic-prg/).
+Counties are joined by their four-digit TERYT codes, not map feature IDs or
+potentially ambiguous names. A border requires a shared line of positive length;
+point contacts do not count. Polygon holes and detached parts are preserved.
+The snapshot records the WFS URL, response timestamp and source SHA-256.
+
+**Before deploying this change against an existing SQLite database**, run from
+`server/` with that environment's actual fact database mounted:
+
+```bash
+python scripts/build_powiat_facts_sqlite.py --refresh-borders --output data/powiat_facts.sqlite
+```
+
+This validates the snapshot against the complete county catalog, then replaces
+county borders, derived borders with other voivodeships, the name-alias index and
+coverage markers. Other facts and manual edits to them are preserved. The default
+builder without `--refresh-borders` recreates the whole database instead; use it
+only when a full rebuild is intended. Deploying code alone does not update an
+existing mounted SQLite file.
+
+Exact county references accept catalog-derived Polish inflections such as
+`częstochowskim` and `pszczyńskim`. City counties remain distinct from the
+surrounding land counties. Ambiguous or unrecognized names and unverified border
+lists are not interpreted as negative facts by the local evaluator; the existing
+fallback policy applies. Verified empty cross-voivodeship lists can answer `false`.
+
+Questions about a neighboring county's properties use a quantified predicate,
+not merely `exists(borders_powiat)`: the latter only proves that some neighbor
+exists. A city-or-city-neighbor question combines the target's `is_city_county`
+with `any` neighbor whose `is_city_county` is true. Rural county names retain
+their adjective and `Powiat` prefix; a county's seat must not replace its identity.
+
+To regenerate the snapshot from a new official response:
+
+```bash
+curl --fail --location --output /tmp/prg-powiaty.gml \
+  'https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms%3AA02_Granice_powiatow&count=380&srsName=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A2180'
+python scripts/build_powiat_borders.py --input /tmp/prg-powiaty.gml
+python scripts/build_powiat_facts_sqlite.py --refresh-borders
+python -m pytest -q tests/test_powiat_borders.py tests/test_powiat_names.py tests/test_powiat_border_source.py
+```
+
 ## Answer Reports
 
 After a game ends (win or loss), players can report a saved question result from its history card in any game mode. Reporting controls are hidden while the game is in progress. A report requires a comment of 1–2,000 characters after trimming whitespace; reporting does not change the answer, score, or remaining turns.
@@ -144,7 +224,17 @@ The admin **Test pytań** tab evaluates a question against an explicitly selecte
 - `GET /admin/question-tests/entities?mode=...` lists entity names and actual PostgreSQL IDs, with continent-specific membership where applicable.
 - `POST /admin/question-tests` accepts `{ "mode": "powiatdle", "entity_id": 123, "question": "Czy ten powiat ma tablice ST?" }`. The entity ID must be a positive integer; questions are trimmed, nonempty, and limited to 100 characters. Both endpoints require admin authentication.
 - Evaluation reuses the daily question pipeline with fresh, uncached planning and current facts/models. Flagdle remains local-only. The response includes validity, answer, interpretation, explanation, source, context, structured plan, server version, and duration. Operational failures return an error rather than a fabricated answer.
+- `diagnostics` exposes measured planner, local evaluation, retrieval, and fallback durations in milliseconds. Model diagnostics include provider/model, planner contract version, cache hit status, and token usage when supplied by the provider. Missing measurements remain `null`; token counts are not estimated from text. The **Czasy etapów i zużycie tokenów (JSON)** disclosure displays these values without prompts, messages, credentials, or raw provider responses.
 - Tests do not create daily targets or save questions, attempts, progress, points, report status, or Qdrant data. They do not replay a historical server version and require no new database migration.
+
+### Admin cache monitoring
+
+The admin **Cache** tab displays planner-cache hits, misses, hit rate, stored plans, and capacity from the existing aggregate `GET /cache-stats` endpoint. It is read-only: no entries, question text, or cache-clearing controls are exposed.
+
+- Automatic refresh runs 15 seconds after each completed request while the tab is open. It can be paused; manual refresh remains available. Requests time out after 10 seconds and are cancelled when leaving the tab.
+- Empty counters show no hit rate rather than an artificial success/failure score. Failed refreshes retain the last successful values with a stale-data warning and the last-read timestamp.
+- Statistics are process-local, not aggregated across workers. Counts and entries reset on process restart or cache clearing, not at midnight; entries have no TTL. At capacity, LRU eviction replaces the least recently used plans.
+- A hit avoids planner generation, but a cached plan may still require AI fallback. A miss does not guarantee a paid model call. Admin question tests and friend-duel questions bypass this cache, and these counters do not measure Google's token caching or billing.
 
 ---
 

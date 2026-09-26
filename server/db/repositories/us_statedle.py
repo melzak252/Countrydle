@@ -96,6 +96,11 @@ class USStatedleStateRepository:
         max_questions: int = 8,
         max_guesses: int = 3,
     ) -> USStatedleState:
+        from db.repositories.question_accounting import lock_question_state
+        existing = await lock_question_state(self.session, USStatedleState, user.id, day.id)
+        if existing is not None:
+            await self.session.commit()
+            return existing
         new_state = USStatedleState(
             user_id=user.id,
             day_id=day.id,
@@ -161,10 +166,13 @@ class USStatedleGuessRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_guess(self, guess_create: USStateGuessCreate) -> USStatedleGuess:
+    async def add_guess(self, guess_create: USStateGuessCreate, *, commit: bool = True) -> USStatedleGuess:
         new_guess = USStatedleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
         self.session.add(new_guess)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         await self.session.refresh(new_guess)
         return new_guess
 
@@ -196,8 +204,7 @@ class USStatedleQuestionRepository:
         data.pop("required_info", None)
         new_question = USStatedleQuestion(**data)
         self.session.add(new_question)
-        await self.session.commit()
-        await self.session.refresh(new_question)
+        await self.session.flush()
         return new_question
 
 
@@ -210,6 +217,8 @@ class USStatedleQuestionRepository:
                 and_(
                     USStatedleQuestion.user_id == user.id,
                     USStatedleQuestion.day_id == day.id,
+                    USStatedleQuestion.valid.is_(True),
+                    USStatedleQuestion.answer.is_not(None),
                 )
             )
             .order_by(USStatedleQuestion.asked_at.asc())

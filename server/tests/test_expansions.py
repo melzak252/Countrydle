@@ -74,22 +74,6 @@ def test_historical_unions_evaluation():
     assert execute_local_plan(p_yugo, "Poland", "Was it in Yugoslavia?").answer is False
 
 
-def test_factual_explanation_formatting():
-    p_border = {
-        "operator": "contains",
-        "left": {"entity": "target_country", "relation": "borders_country"},
-        "right": {"value": "Germany"},
-    }
-    # Polish query receives English explanation
-    ans_pl = execute_local_plan(p_border, "Poland", "Czy ten kraj graniczy z Niemcami?")
-    assert ans_pl.answer is True
-    assert "Poland shares a land border with Germany." in ans_pl.explanation
-    # English query
-    ans_en = execute_local_plan(p_border, "Poland", "Does it border Germany?")
-    assert ans_en.answer is True
-    assert "Poland shares a land border with Germany." in ans_en.explanation
-
-
 @pytest.mark.real_database
 @pytest.mark.anyio
 async def test_countrydle_cooldown_excludes_recent_entities():

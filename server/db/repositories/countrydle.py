@@ -346,6 +346,11 @@ class CountrydleStateRepository:
         max_questions: int = MAX_QUESTIONS,
         max_guesses: int = MAX_GUESSES,
     ) -> CountrydleState:
+        from db.repositories.question_accounting import lock_question_state
+        existing = await lock_question_state(self.session, CountrydleState, user.id, day.id)
+        if existing is not None:
+            await self.session.commit()
+            return existing
 
         new_entry = CountrydleState(
             user_id=user.id,

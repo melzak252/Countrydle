@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+from db.models.flagdle import FlagdleState
+from db.repositories.question_accounting import consume_question, lock_question_state
 from datetime import date, datetime
 import logging
 from typing import List, Optional, Union
@@ -135,6 +138,7 @@ async def get_state(
     request: Request,
     user: Optional[User] = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    response: Response = None,
 ):
     """Fetches or initializes the daily Flagdle state (anti-cheat protected)."""
     day_repo = FlagdleDayRepository(session)
@@ -194,6 +198,9 @@ async def get_state(
         )
     else:
         # Guest session
+        if response is not None:
+            from utils.guest_session import get_guest_identity
+            get_guest_identity(request, response)
         cookie = request.cookies.get("guest_flagdle")
         guest_state = read_guest_game_token(cookie, "flagdle", today_flag.id)
 
@@ -431,81 +438,61 @@ async def ask_flag_question(
     user: Optional[User] = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
-    """Allows players to ask yes/no questions about flag design, colors, symbols, and country."""
-    day_repo = FlagdleDayRepository(session)
-    today_flag = await day_repo.get_today_flag()
-    if not today_flag:
-        today_flag = await day_repo.generate_new_day_flag()
-
-    target_country = today_flag.country
-    if not target_country:
-        target_country = await CountryRepository(session).get(today_flag.country_id)
-
-    plan = analyze_question_for_local_plan(question.question)
+    """Allows unlimited verified flag questions without counting unresolved attempts."""
+    user_id = user.id if user else None
+    day_id = 0
     now = datetime.now()
+    try:
+        day_repo = FlagdleDayRepository(session)
+        today_flag = await day_repo.get_today_flag()
+        if not today_flag:
+            today_flag = await day_repo.generate_new_day_flag()
+        day_id = today_flag.id
+        target_country = today_flag.country
+        if not target_country:
+            target_country = await CountryRepository(session).get(today_flag.country_id)
 
-    if not plan.valid:
-        return InvalidQuestionDisplay(
-            id=0,
-            original_question=question.question,
-            valid=False,
-            answer=None,
-            user_id=user.id if user else None,
-            day_id=today_flag.id,
-            asked_at=now,
-            explanation=plan.explanation or "Please ask a valid yes/no question about the flag or country.",
+        plan = await asyncio.to_thread(analyze_question_for_local_plan, question.question)
+        answer = None
+        explanation = plan.explanation or "Please ask a valid yes/no question about the flag or country."
+        if plan.valid:
+            if plan.plan and target_country:
+                answer = await asyncio.to_thread(
+                    execute_local_plan, plan.plan, target_country.name,
+                    plan.improved_question or question.question,
+                )
+            explanation = "Could not verify this question with local flag facts. Ask about flag colors, stripes, symbols, or country geography."
+        if answer is None or type(answer.answer) is not bool:
+            return InvalidQuestionDisplay(
+                id=0, original_question=question.question, valid=False, answer=None,
+                user_id=user_id, day_id=day_id, asked_at=now, explanation=explanation,
+            )
+
+        result = FullQuestionDisplay(
+            id=int(now.timestamp()), original_question=question.question,
+            question=answer.question, valid=True, answer=answer.answer,
+            user_id=user_id, day_id=day_id, asked_at=now,
+            explanation=answer.explanation, context=f"flag_kb:{answer.relation}",
         )
-
-    ans = None
-    if plan.plan and target_country:
-        ans = execute_local_plan(
-            plan.plan,
-            target_country.name,
-            plan.improved_question or question.question,
-            plan.explanation,
-            original_question=question.question,
-        )
-
-    if ans is None:
-        return InvalidQuestionDisplay(
-            id=0,
-            original_question=question.question,
-            valid=False,
-            answer=None,
-            user_id=user.id if user else None,
-            day_id=today_flag.id,
-            asked_at=now,
-            explanation="Could not verify this question with local flag facts. Ask about flag colors, stripes, symbols, or country geography.",
-        )
-
-    if user is None:
-        await record_guest_action(session, request, response, "flagdle", today_flag.id, question=True)
+        if user is None:
+            await record_guest_action(session, request, response, "flagdle", day_id, question=True)
+        else:
+            await consume_question(
+                session, FlagdleState, user_id, day_id, None, FLAGDLE_CONFIG.max_guesses,
+            )
         await session.commit()
-    else:
-        state_repo = FlagdleStateRepository(session)
-        state = await state_repo.get_state(user, today_flag)
-        if state is None:
-            state = await state_repo.create_state(user, today_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
-        from sqlalchemy import update
-        from db.models.flagdle import FlagdleState
-        await session.execute(
-            update(FlagdleState).where(FlagdleState.id == state.id)
-            .values(questions_asked=FlagdleState.questions_asked + 1)
+        return result
+    except HTTPException:
+        await session.rollback()
+        raise
+    except Exception:
+        await session.rollback()
+        logger.exception("Could not answer flag question")
+        return InvalidQuestionDisplay(
+            id=0, original_question=question.question, valid=False, answer=None,
+            user_id=user_id, day_id=day_id, asked_at=now,
+            explanation="Could not verify this question right now. Your turn was not deducted.",
         )
-        await session.commit()
-
-    return FullQuestionDisplay(
-        id=int(now.timestamp()),
-        original_question=question.question,
-        question=ans.question,
-        valid=True,
-        answer=ans.answer,
-        user_id=user.id if user else None,
-        day_id=today_flag.id,
-        asked_at=now,
-        explanation=ans.explanation,
-        context=f"flag_kb:{ans.relation}",
-    )
 
 @router.get("/reveal", response_model=CountryDisplay)
 async def reveal_country(
@@ -585,6 +572,7 @@ async def sync_guest_data(
     if state is None:
         state = await state_repo.create_state(user, day_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
 
+    state = await lock_question_state(session, FlagdleState, user.id, day_flag.id)
     # Server state takes strict precedence if user already played on server
     if state.guesses_made > 0:
         linked = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)
@@ -662,7 +650,7 @@ async def sync_guest_data(
             revealed_tile=revealed_tile,
             elapsed_seconds=g.elapsed_seconds,
         )
-        await guess_repo.add_guess(guess_create)
+        await guess_repo.add_guess(guess_create, commit=False)
 
     state.remaining_guesses = sync_data.state.remaining_guesses
     state.guesses_made = sync_data.state.guesses_made

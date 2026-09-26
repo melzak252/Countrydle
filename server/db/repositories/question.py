@@ -26,15 +26,7 @@ class CountrydleQuestionsRepository:
         new_entry = CountrydleQuestion(**data)
 
         self.session.add(new_entry)
-
-
-        try:
-            await self.session.commit()  # Commit the transaction
-            await self.session.refresh(new_entry)  # Refresh the instance to get the ID
-        except Exception as ex:
-            await self.session.rollback()
-            raise ex
-
+        await self.session.flush()
         return new_entry
 
     async def get_user_day_questions(
@@ -43,6 +35,7 @@ class CountrydleQuestionsRepository:
         questions_result = await self.session.execute(
             select(CountrydleQuestion)
             .where(CountrydleQuestion.user_id == user.id, CountrydleQuestion.day_id == day.id)
+            .where(CountrydleQuestion.valid.is_(True), CountrydleQuestion.answer.is_not(None))
             .order_by(CountrydleQuestion.id.asc())
         )
         return list(questions_result.scalars().all())
@@ -54,7 +47,11 @@ class CountrydleQuestionsRepository:
                 func.count(CountrydleQuestion.id).label("count"),
                 func.sum(CountrydleQuestion.answer.cast(Integer)).label("correct"),
                 func.sum((CountrydleQuestion.answer == False).cast(Integer)).label("incorrect"),
-            ).where(and_(CountrydleQuestion.user_id == user.id, CountrydleQuestion.valid == True))
+            ).where(and_(
+                CountrydleQuestion.user_id == user.id,
+                CountrydleQuestion.valid.is_(True),
+                CountrydleQuestion.answer.is_not(None),
+            ))
         )
         row = questions_result.first()
         print(row)

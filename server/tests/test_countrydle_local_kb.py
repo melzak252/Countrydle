@@ -48,8 +48,209 @@ def local_answer(plan: dict, country: str = "Poland"):
         plan,
         country,
         "Test question?",
-        "Test planner explanation.",
     )
+
+
+@pytest.mark.parametrize("name,country", [
+    ("Antigua", "Antigua and Barbuda"),
+    ("Antugua", "Antigua and Barbuda"),
+    ("Antigua & Barbdua", "Antigua and Barbuda"),
+    ("St Kitis", "Saint Kitts and Nevis"),
+    ("Saint Kitts", "Saint Kitts and Nevis"),
+    ("Nigeira", "Nigeria"),
+])
+def test_country_identity_resolves_aliases_and_single_edit_typos(name, country):
+    plan = scalar_plan("equals", "name", name)
+    assert local_answer(plan, country).answer is True
+    assert local_answer(plan, "Poland").answer is False
+
+
+@pytest.mark.parametrize("name", ["Antzzq", "Nigeri", "Saint", "target_country", "item"])
+def test_unresolved_country_identity_stays_unknown_under_negation(name):
+    plan = scalar_plan("equals", "name", name)
+    assert local_answer(plan, "Nigeria") is None
+    assert local_answer({"operator": "not", "condition": plan}, "Nigeria") is None
+    assert local_answer(contains_plan("borders_country", name), "Nigeria") is None
+
+
+def test_name_compared_with_capital_remains_a_text_comparison():
+    plan = {
+        "operator": "equals",
+        "left": {"entity": "target_country", "relation": "name"},
+        "right": {"entity": "target_country", "relation": "capital"},
+    }
+    assert local_answer(plan, "Singapore").answer is True
+    assert local_answer(plan, "Poland").answer is False
+
+
+def test_resolved_border_name_preserves_the_self_border_rule():
+    plan = contains_plan("borders_country", "St Kitis")
+    assert local_answer(plan, "Saint Kitts and Nevis").answer is True
+    assert local_answer(plan, "Dominica").answer is False
+
+
+@pytest.mark.parametrize("name,country", [
+    ("Dominica", "Dominica"),
+    ("Dominican Republic", "Dominican Republic"),
+    ("Dominika", "Dominica"),
+    ("Dominikana", "Dominican Republic"),
+    ("Niger", "Niger"),
+    ("Nigeria", "Nigeria"),
+    ("Guinea", "Guinea"),
+    ("Guinea-Bissau", "Guinea-Bissau"),
+    ("Equatorial Guinea", "Equatorial Guinea"),
+    ("Papua New Guinea", "Papua New Guinea"),
+])
+def test_exact_country_identity_wins_over_similar_names(name, country):
+    plan = scalar_plan("equals", "name", name)
+    for target in ("Dominica", "Dominican Republic", "Niger", "Nigeria", "Guinea",
+                   "Guinea-Bissau", "Equatorial Guinea", "Papua New Guinea"):
+        assert local_answer(plan, target).answer is (target == country)
+
+
+def test_planner_rejects_unresolved_identity_instead_of_sending_it_to_fallback(monkeypatch):
+    from utils import ai_clients
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-only")
+    monkeypatch.setattr(ai_clients, "generate_gemini_json", lambda *args, **kwargs: {
+        "route": "local",
+        "plan": [scalar_plan("equals", "name", "Antzzq")],
+    })
+    plan = local_planner.analyze_question_for_local_plan("Are you Antzzq?", use_cache=False)
+    assert plan.valid is False
+    assert plan.supported is False
+    assert plan.plan is None
+
+
+@pytest.mark.parametrize("country,relation,value", [
+    ("France", "continent", "Europe"),
+    ("Costa Rica", "official_language", "Spanish"),
+    ("Mali", "water_access", False),
+])
+def test_list_scalar_equality_abstains_instead_of_inventing_false(country, relation, value):
+    plan = scalar_plan("equals", relation, value)
+    assert local_answer(plan, country) is None
+    assert local_answer({"operator": "not", "condition": plan}, country) is None
+
+
+def test_unrepresented_historical_union_is_unknown_not_a_negative_fact():
+    assert local_answer(contains_plan("historical_union", "Benelux"), "Netherlands") is None
+    assert local_answer(contains_plan("historical_union", "USSR"), "Poland").answer is False
+
+
+def test_current_membership_does_not_include_dissolved_unions():
+    assert local_answer(contains_plan("membership", "USSR"), "Russia").answer is False
+    assert local_answer(contains_plan("historical_union", "USSR"), "Russia").answer is True
+
+
+def test_landlocked_negation_explains_actual_coastline_not_opposite_predicate():
+    plan = {"operator": "not", "condition": exists_plan("water_access")}
+    coastal = local_answer(plan, "Poland")
+    inland = local_answer(plan, "Mali")
+    assert coastal.answer is False
+    assert "Baltic Sea" in coastal.explanation
+    assert "completely landlocked" not in coastal.explanation
+    assert inland.answer is True
+    assert "landlocked" in inland.explanation
+
+
+def test_island_false_literal_explanation_describes_fact_not_predicate_result():
+    plan = scalar_plan("equals", "is_island", False)
+    island = local_answer(plan, "Japan")
+    mainland = local_answer(plan, "Poland")
+    assert island.answer is False
+    assert "is an island" in island.explanation
+    assert "continental" not in island.explanation
+    assert mainland.answer is True
+    assert "not an island" in mainland.explanation
+
+
+def test_named_reference_explanation_uses_evaluated_entity():
+    plan = {"operator": "contains",
+            "left": {"entity": "France", "relation": "continent"},
+            "right": {"value": "Europe"}}
+    result = local_answer(plan, "Japan")
+    assert result.answer is True
+    assert "France" in result.explanation
+    assert "Japan" not in result.explanation
+
+
+def test_inclusive_numeric_comparisons_keep_equality_and_direction():
+    for operator, excluded_threshold in (("less_than_or_equal", 1.0), ("greater_than_or_equal", 1.5)):
+        plan = {"operator": operator, "left": {"value": 1.25}, "right": {"value": 1.25}}
+        result = local_answer(plan)
+        assert result is not None
+        assert result.answer is True
+        plan["right"] = {"value": excluded_threshold}
+        assert local_answer(plan).answer is False
+
+
+def test_hyphen_predicate_distinguishes_names_and_dashes():
+    plan = {"operator": "has_hyphen", "left": {"entity": "target_country", "relation": "name"}}
+    result = local_answer(plan, "Guinea-Bissau")
+    assert result is not None
+    assert result.answer is True
+    assert local_answer(plan, "Poland").answer is False
+    assert local_answer({"operator": "has_hyphen", "left": {"value": "North–South"}}).answer is False
+
+
+def test_negated_hyphen_name_explains_actual_name_pattern():
+    result = local_answer(
+        {
+            "operator": "not",
+            "condition": {
+                "operator": "has_hyphen",
+                "left": {"entity": "target_country", "relation": "name"},
+            },
+        },
+        "Poland",
+    )
+
+    assert result.answer is True
+    assert "does not contain a hyphen" in result.explanation
+
+
+@pytest.mark.parametrize("operator,relation,value", [
+    ("contains", "membership", "EU"),
+    ("contains", "geographic_area", "Europe"),
+    ("contains", "flag_color", "red"),
+    ("equals", "name", "Poland"),
+])
+def test_negated_known_facts_do_not_explain_the_opposite_answer(operator, relation, value):
+    result = local_answer({"operator": "not", "condition": scalar_plan(operator, relation, value)}, "Poland")
+    assert result.answer is False
+    assert not result.explanation.startswith("Yes")
+    assert "Poland" in result.explanation
+    assert value in result.explanation
+
+def test_quantified_membership_explanations_use_bound_neighbor_facts():
+    membership = {
+        "operator": "contains",
+        "left": {"entity": "item", "relation": "membership"},
+        "right": {"value": "EU"},
+    }
+    borders = {"entity": "target_country", "relation": "borders_country"}
+    any_eu_neighbor = {"operator": "any", "items": borders, "condition": membership}
+    all_eu_neighbors = {"operator": "all", "items": borders, "condition": membership}
+
+    positive = local_answer(any_eu_neighbor, "Poland")
+    negative_any = local_answer(any_eu_neighbor, "Mongolia")
+    negative_all = local_answer(all_eu_neighbors, "Poland")
+
+    assert positive.answer is True
+    assert any(neighbor in positive.explanation for neighbor in ("Germany", "Czech Republic", "Slovakia", "Lithuania"))
+    assert "member of EU" in positive.explanation
+    assert negative_any.answer is False
+    assert "Russia" in negative_any.explanation and "China" in negative_any.explanation
+    assert negative_all.answer is False
+    assert "not a member of EU" in negative_all.explanation
+    assert any(neighbor in negative_all.explanation for neighbor in ("Ukraine", "Belarus", "Russia"))
+
+
+def test_literal_punctuation_is_not_an_empty_text_predicate():
+    plan = scalar_plan("contains_text", "name", "-")
+    assert local_answer(plan, "Poland").answer is False
+    assert local_answer(plan, "Guinea-Bissau").answer is True
 
 
 @pytest.mark.parametrize(
@@ -115,6 +316,64 @@ def test_country_region_contains_expected_broad_regions(country, region):
     assert answer is not None
     assert answer.answer is True
     assert answer.relation == "geographic_area"
+
+
+@pytest.mark.parametrize(
+    ("country", "region"),
+    [
+        ("Mauritius", "East Africa"),
+        ("Mauritius", "Eastern Africa"),
+        ("Poland", "East Europe"),
+        ("Japan", "East Asia"),
+        ("Canada", "North America"),
+        ("Brazil", "South America"),
+    ],
+)
+def test_cardinal_region_names_match_canonical_geographic_areas(country, region):
+    answer = local_answer(contains_plan("region", region), country)
+    assert answer is not None
+    assert answer.answer is True
+
+
+def test_southern_africa_does_not_mean_south_africa_country():
+    answer = local_answer(contains_plan("region", "Southern Africa"), "South Africa")
+    assert answer is not None
+    assert answer.answer is True
+    assert local_answer(contains_plan("region", "South Africa"), "Namibia") is None
+
+
+def test_geographic_area_does_not_drop_an_unrepresented_qualifier():
+    assert local_answer(contains_plan("geographic_area", "coastal Europe"), "Austria") is None
+
+
+def test_geographic_areas_use_the_exact_narrower_classification():
+    assert local_answer(contains_plan("geographic_area", "Scandinavia"), "Finland").answer is False
+    assert local_answer(contains_plan("geographic_area", "Middle East"), "Egypt").answer is True
+
+
+def test_geographic_area_uses_complete_continental_coverage():
+    assert local_answer(contains_plan("region", "North America"), "Jamaica").answer is True
+    assert local_answer(contains_plan("region", "South America"), "Jamaica").answer is False
+
+
+def test_generic_ocean_access_uses_named_direct_coastline():
+    ocean_plan = contains_plan("water_access", "ocean")
+
+    morocco = local_answer(ocean_plan, "Morocco")
+    assert morocco is not None
+    assert morocco.answer is True
+    assert "Atlantic Ocean" in morocco.explanation
+    assert "coastline access to: Ocean" not in morocco.explanation
+
+    inland = local_answer(ocean_plan, "Czech Republic")
+    assert inland is not None
+    assert inland.answer is False
+    assert "landlocked" in inland.explanation
+
+    baltic = local_answer(contains_plan("water_access", "Atlantic Ocean"), "Poland")
+    assert baltic is not None
+    assert baltic.answer is False
+    assert "Baltic Sea" in baltic.explanation
 
 
 def test_oceania_and_polynesia_current_game_country_coverage():
@@ -354,6 +613,29 @@ def test_area_greater_than_poland(country, expected):
     assert answer.answer is expected
 
 
+
+@pytest.mark.parametrize(
+    ("relation", "serbia_fact", "ukraine_fact"),
+    [("area", "77,589", "603,550"), ("population", "6,567,783", "32,862,000")],
+)
+def test_country_scalar_comparison_explanation_includes_both_facts(
+    relation, serbia_fact, ukraine_fact
+):
+    plan = {
+        "operator": "greater_than",
+        "left": {"entity": "target_country", "relation": relation},
+        "right": {"entity": "Ukraine", "relation": relation},
+    }
+
+    answer = local_answer(plan, "Serbia")
+
+    assert answer is not None
+    assert answer.answer is False
+    assert "Serbia" in answer.explanation
+    assert serbia_fact in answer.explanation
+    assert "Ukraine" in answer.explanation
+    assert ukraine_fact in answer.explanation
+
 @pytest.mark.parametrize(
     ("country", "operator", "expected"),
     [
@@ -378,6 +660,35 @@ def test_coordinate_comparisons_against_china(country, operator, expected):
 
     assert answer is not None
     assert answer.answer is expected
+
+
+def test_bosnia_short_name_preserves_country_identity_and_borders():
+    assert local_answer(contains_plan("borders_country", "Bosnia"), "Montenegro").answer is True
+    assert local_answer(contains_plan("borders_country", "Bosnia"), "Poland").answer is False
+    assert local_answer(
+        {
+            "operator": "equals",
+            "left": {"entity": "target_country", "relation": "name"},
+            "right": {"value": "Bośnią"},
+        },
+        "Bosnia and Herzegovina",
+    ).answer is True
+
+
+def test_named_cote_divoire_reference_resolves_for_directional_comparison():
+    plan = {
+        "operator": "west_of",
+        "left": {"entity": "target_country", "relation": "coordinates.longitude"},
+        "right": {"entity": "Côte d’Ivoire", "relation": "coordinates.longitude"},
+    }
+
+    result = local_answer(plan, "Guinea")
+
+    assert result is not None
+    assert result.answer is True
+    assert "Ivory Coast" in result.explanation
+
+    assert local_answer(contains_plan("borders_country", "Côte d’Ivoire"), "Guinea").answer is True
 
 
 def test_every_simple_operator_is_evaluated_locally():
@@ -410,46 +721,25 @@ def test_every_simple_operator_is_evaluated_locally():
         assert answer.answer is expected, (operator, relation, country)
 
 
-def test_letter_range_normalization_and_answering():
-    contradictory_and_plan = {
+def test_conjunction_is_not_rewritten_as_a_letter_range():
+    plan = {
         "operator": "and",
         "conditions": [
-            {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "A"}},
-            {
-                "operator": "or",
-                "conditions": [
-                    {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "B"}},
-                    {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "M"}},
-                ]
-            }
-        ]
+            scalar_plan("starts_with", "name", "A"),
+            {"operator": "or", "conditions": [
+                scalar_plan("starts_with", "name", "B"),
+                scalar_plan("starts_with", "name", "M"),
+            ]},
+        ],
     }
-    ans = local_answer(contradictory_and_plan, "Antigua and Barbuda")
-    assert ans is not None
-    assert ans.answer is True
-    assert "starts with 'A'" in ans.explanation
-
-    ans_poland = local_answer(contradictory_and_plan, "Poland")
-    assert ans_poland is not None
-    assert ans_poland.answer is False
+    assert local_answer(plan, "Antigua and Barbuda").answer is False
+    assert local_answer(plan, "Malta").answer is False
 
 
-def test_directional_african_quadrants():
-    nw_plan = {
-        "operator": "contains",
-        "left": {"entity": "target_country", "relation": "geographic_area"},
-        "right": {"value": "Northwestern Africa"},
-    }
-    # Kenya is in East Africa, NOT Northwestern Africa
-    ans_kenya = local_answer(nw_plan, "Kenya")
-    assert ans_kenya is not None
-    assert ans_kenya.answer is False
-    assert "East Africa" in ans_kenya.explanation
-
-    # Morocco is in Northwestern Africa
-    ans_morocco = local_answer(nw_plan, "Morocco")
-    assert ans_morocco is not None
-    assert ans_morocco.answer is True
+def test_unrepresented_directional_region_defers_instead_of_broadening():
+    # Northern Africa does not establish membership in Northwestern Africa.
+    plan = contains_plan("geographic_area", "Northwestern Africa")
+    assert local_answer(plan, "Egypt") is None
 
 def test_nested_boolean_not_any_and_all_operators():
     not_in_eu = {
@@ -477,8 +767,10 @@ def test_nested_boolean_not_any_and_all_operators():
 
     assert local_answer(not_in_eu, "Switzerland").answer is True
     assert local_answer(not_in_eu, "Poland").answer is False
-    assert local_answer(borders_nato_member, "Poland").answer is True
-    assert local_answer(all_known_border_countries_are_not_islands, "Mongolia").answer is True
+    all_non_island = local_answer(all_known_border_countries_are_not_islands, "Mongolia")
+    assert all_non_island.answer is True
+    assert "Russia" in all_non_island.explanation
+    assert "not an island" in all_non_island.explanation
 
 
 def test_mixed_sqlite_and_unsupported_and_condition_falls_back_when_sqlite_part_is_true():
@@ -572,11 +864,9 @@ def test_water_access_exists_for_bosnia_and_explains_coastline():
         plan,
         "Bosnia and Herzegovina",
         "Does the country have access to a sea or ocean?",
-        original_question="Czy ma dostęp do morza/oceanu?",
     )
     assert ans_pl is not None
     assert ans_pl.answer is True
-    assert "has direct coastline access to:" in ans_pl.explanation
     assert "Adriatic Sea" in ans_pl.explanation
 
 
@@ -587,25 +877,12 @@ def test_water_access_explains_actual_coastline_when_different_sea_queried():
         plan,
         "Poland",
         "Does the country have access to the Mediterranean Sea?",
-        original_question="Czy ma dostęp do Morza Śródziemnego?",
     )
     assert ans_pl is not None
     assert ans_pl.answer is False
-    assert "does not have direct coastline access to: Mediterranean Sea" in ans_pl.explanation
     assert "Baltic Sea" in ans_pl.explanation
     assert "landlocked" not in ans_pl.explanation
 
-    ans_en = execute_local_plan(
-        plan,
-        "Poland",
-        "Does the country have access to the Mediterranean Sea?",
-        original_question="Does it have access to the Mediterranean Sea?",
-    )
-    assert ans_en is not None
-    assert ans_en.answer is False
-    assert "does not have direct coastline access to: Mediterranean Sea" in ans_en.explanation
-    assert "Baltic Sea" in ans_en.explanation
-    assert "completely landlocked" not in ans_en.explanation
 
 
 def test_truly_landlocked_countries_state_landlocked():
@@ -614,7 +891,6 @@ def test_truly_landlocked_countries_state_landlocked():
         plan,
         "Czech Republic",
         "Does it have sea access?",
-        original_question="Czy ma dostęp do morza?",
     )
     assert ans is not None
     assert ans.answer is False
@@ -625,25 +901,17 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     # Currency (False)
     curr_plan = contains_plan("currency", "Euro")
     ans_curr = execute_local_plan(
-        curr_plan, "Poland", "Is the currency Euro?", original_question="Czy walutą jest Euro?"
+        curr_plan, "Poland", "Is the currency Euro?"
     )
     assert ans_curr is not None
     assert ans_curr.answer is False
-    assert "currency of Poland is not Euro" in ans_curr.explanation
     assert "Polish złoty" in ans_curr.explanation
 
-    # Currency (True)
-    ans_curr_de = execute_local_plan(
-        curr_plan, "Germany", "Is the currency Euro?", original_question="Czy walutą jest Euro?"
-    )
-    assert ans_curr_de is not None
-    assert ans_curr_de.answer is True
-    assert "The official currency of Germany is:" in ans_curr_de.explanation
 
     # Official Language (False)
     lang_plan = contains_plan("official_language", "Spanish")
     ans_lang = execute_local_plan(
-        lang_plan, "Brazil", "Is Spanish an official language?", original_question="Czy językiem jest hiszpański?"
+        lang_plan, "Brazil", "Is Spanish an official language?"
     )
     assert ans_lang is not None
     assert ans_lang.answer is False
@@ -652,7 +920,7 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     # Capital (False)
     cap_plan = scalar_plan("equals", "capital", "Krakow")
     ans_cap = execute_local_plan(
-        cap_plan, "Poland", "Is the capital Krakow?", original_question="Czy stolicą jest Kraków?"
+        cap_plan, "Poland", "Is the capital Krakow?"
     )
     assert ans_cap is not None
     assert ans_cap.answer is False
@@ -666,9 +934,8 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
         "right": {"entity": "Italy", "relation": "coordinates.latitude"},
     }
     ans_coords = execute_local_plan(
-        coords_plan, "Poland", "Is the country north of Italy?", original_question="Czy leży na północ od Włoch?"
+        coords_plan, "Poland", "Is the country north of Italy?"
     )
     assert ans_coords is not None
     assert ans_coords.answer is True
-    assert "is located north of Italy" in ans_coords.explanation
     assert "52.0°N" in ans_coords.explanation

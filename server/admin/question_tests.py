@@ -1,4 +1,5 @@
 """Admin-only evaluation of explicit targets, without daily/player persistence."""
+import asyncio
 import logging
 from time import perf_counter
 from types import SimpleNamespace
@@ -20,6 +21,7 @@ from schemas.admin import (
     AdminQuestionTestMode,
     AdminQuestionTestRequest,
     AdminQuestionTestResponse,
+    QuestionDiagnostics,
 )
 from us_statedle import utils as state_utils
 from users.utils import get_admin_user
@@ -68,10 +70,15 @@ def _plan_diagnostics(plan) -> dict:
     }
 
 
-def _evaluate_flag(question: str, entity):
-    plan = flagdle.analyze_question_for_local_plan(
-        question, strict_errors=True, use_cache=False,
-    )
+def _evaluate_flag(question: str, entity_name: str, evidence: dict):
+    planner_evidence = evidence.setdefault("planner", {})
+    started = perf_counter()
+    try:
+        plan = flagdle.analyze_question_for_local_plan(
+            question, strict_errors=True, use_cache=False, evidence=planner_evidence,
+        )
+    finally:
+        planner_evidence["duration_ms"] = (perf_counter() - started) * 1000
     if not plan.valid:
         return SimpleNamespace(
             valid=False, answer=None, question=plan.improved_question,
@@ -83,10 +90,13 @@ def _evaluate_flag(question: str, entity):
     if plan.plan:
         if not country_facts.DEFAULT_DB_PATH.is_file():
             raise RuntimeError("Local flag facts are unavailable")
-        answer = flagdle.execute_local_plan(
-            plan.plan, entity.name, plan.improved_question or question,
-            plan.explanation, original_question=question,
-        )
+        started = perf_counter()
+        try:
+            answer = flagdle.execute_local_plan(
+                plan.plan, entity_name, plan.improved_question or question,
+            )
+        finally:
+            evidence["local_duration_ms"] = (perf_counter() - started) * 1000
     if answer is None:
         return SimpleNamespace(
             valid=False, answer=None, question=plan.improved_question,
@@ -121,6 +131,7 @@ async def evaluate_question_test(
     session: AsyncSession = Depends(get_db),
 ):
     started = perf_counter()
+    evidence = {}
     model, _, utilities, entity_fk = _MODE_PIPELINES.get(request.mode, _COUNTRY_PIPELINE)
     try:
         with session.no_autoflush:
@@ -130,18 +141,18 @@ async def evaluate_question_test(
                 raise HTTPException(status_code=404, detail="Entity not found for this game mode.")
 
             if request.mode == "flagdle":
-                answer, plan, source = _evaluate_flag(request.question, entity)
+                answer, plan, source = await asyncio.to_thread(_evaluate_flag, request.question, entity.name, evidence)
             else:
                 # Daily question schemas require an integer day_id. This is a plain,
                 # unattached adapter, never an ORM record or a returned game/day ID.
                 target = SimpleNamespace(id=0, **{entity_fk: entity.id})
                 answer, plan = await utilities.analyze_and_answer_locally(
-                    request.question, target, None, session, strict_errors=True,
+                    request.question, target, None, session, strict_errors=True, evidence=evidence,
                 )
                 source = "local_kb" if answer is not None and answer.valid else "local_planner"
                 if answer is None:
                     enhanced = utilities.question_enhanced_from_plan(request.question, plan)
-                    answer, _ = await utilities.ask_question(enhanced, target, None, session)
+                    answer, _ = await utilities.ask_question(enhanced, target, None, session, evidence=evidence)
                     source = "fallback"
 
             if answer.valid and type(answer.answer) is not bool:
@@ -154,6 +165,7 @@ async def evaluate_question_test(
                 server_version=SERVER_VERSION,
                 duration_ms=round((perf_counter() - started) * 1000),
                 plan=_plan_diagnostics(plan),
+                diagnostics=QuestionDiagnostics.model_validate(evidence),
             )
     except HTTPException:
         raise

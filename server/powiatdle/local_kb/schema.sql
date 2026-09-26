@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS powiat_name_aliases;
+DROP TABLE IF EXISTS powiat_border_coverage;
 DROP TABLE IF EXISTS powiat_landform_regions;
 DROP TABLE IF EXISTS powiat_major_roads;
 DROP TABLE IF EXISTS powiat_major_rivers;
@@ -23,6 +25,18 @@ CREATE TABLE powiats (
     rural_gmina_count INTEGER,
     urban_rural_gmina_count INTEGER,
     md_file TEXT NOT NULL
+);
+
+CREATE TABLE powiat_name_aliases (
+    alias TEXT NOT NULL,
+    powiat_id INTEGER NOT NULL,
+    PRIMARY KEY (alias, powiat_id),
+    FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE
+);
+
+CREATE TABLE powiat_border_coverage (
+    powiat_id INTEGER PRIMARY KEY,
+    FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE
 );
 
 CREATE TABLE powiat_borders_powiats (

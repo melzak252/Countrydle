@@ -6,6 +6,7 @@ import re
 import threading
 import unicodedata
 from collections import OrderedDict
+from typing import Any
 
 
 def strip_accents(text: str) -> str:
@@ -28,13 +29,13 @@ class PlanCache:
 
     def __init__(self, max_size: int = 10000):
         self.max_size = max_size
-        self._cache: OrderedDict[tuple[str, str], Any] = OrderedDict()
+        self._cache: OrderedDict[tuple[str, str, str], Any] = OrderedDict()
         self._lock = threading.Lock()
         self._hits = 0
         self._misses = 0
 
-    def get(self, mode: str, question: str) -> Any | None:
-        key = normalize_question_key(mode, question)
+    def get(self, mode: str, question: str, *, version: str) -> Any | None:
+        key = (version, *normalize_question_key(mode, question))
         with self._lock:
             if key in self._cache:
                 self._cache.move_to_end(key)
@@ -43,13 +44,9 @@ class PlanCache:
             self._misses += 1
             return None
 
-    def set(self, mode: str, question: str, plan: Any) -> None:
-        # Avoid caching transient network/credential errors
-        fallback_reason = getattr(plan, "fallback_reason", None) or ""
-        if "gemini_api_key" in fallback_reason.lower() or "http error" in fallback_reason.lower():
-            return
-
-        key = normalize_question_key(mode, question)
+    def set(self, mode: str, question: str, plan: Any, *, version: str) -> None:
+        # Only validated provider responses reach the cache; failures never do.
+        key = (version, *normalize_question_key(mode, question))
         with self._lock:
             if key in self._cache:
                 self._cache.move_to_end(key)

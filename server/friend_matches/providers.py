@@ -242,12 +242,11 @@ def _evaluate(mode: str, entity: dict, question: str) -> dict | _Fallback:
             if mode in ("countrydle", *CONTINENTAL_MODES):
                 from countrydle import local_answering as country
 
-                executed_plan = country.normalize_geographic_area_plan(conn, plan.plan) or plan.plan
-                executed_plan = country.normalize_letter_range_plan(executed_plan) or executed_plan
+                executed_plan = country.normalize_geographic_area_plan(conn, plan.plan)
                 answer = country.evaluate_plan_node(conn, executed_plan, row)
                 relations = sorted(country.plan_relations(executed_plan))
                 explanation = country.generate_factual_explanation(
-                    conn, row, executed_plan, answer, plan.improved_question or question, plan.explanation
+                    conn, row, executed_plan, answer
                 ) if answer is not None else None
             else:
                 executed_plan = plan.plan
@@ -258,10 +257,6 @@ def _evaluate(mode: str, entity: dict, question: str) -> dict | _Fallback:
             if answer is not None:
                 return _result(answer, explanation, "local_kb", plan, evidence)
     enhanced = engine.module.question_enhanced_from_plan(question, plan)
-    # The country converter already does this. Other modes can return no
-    # improved wording for unsupported questions; preserve the player's text.
-    if not enhanced.question:
-        enhanced.question = question
     return _Fallback(engine, target, enhanced, plan, evidence)
 
 

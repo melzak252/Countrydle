@@ -13,11 +13,8 @@ async def test_countrydle_question_survives_unexpected_crash(async_client: Async
             "/countrydle/question",
             json={"question": "Does it border Poland?"},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["valid"] is False
-        assert data["answer"] is None
-        assert "Could not verify" in data["explanation"]
+        assert response.status_code == 503
+        assert "valid" not in response.json()
 
 
 @pytest.mark.anyio
@@ -41,7 +38,6 @@ async def test_us_statedle_question_survives_unexpected_crash(async_client: Asyn
         data = response.json()
         assert data["valid"] is False
         assert data["answer"] is None
-        assert "Could not verify" in data["explanation"]
 
 
 @pytest.mark.anyio

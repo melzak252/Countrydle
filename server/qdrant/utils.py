@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import List, Tuple, Any
 from dataclasses import dataclass
@@ -171,7 +172,8 @@ async def get_fragments_matching_question(
     session: AsyncSession,
     limit: int = 1,
 ) -> Tuple[list[Fragment], List[float]]:
-    return get_fragments_matching_question_sync(
+    return await asyncio.to_thread(
+        get_fragments_matching_question_sync,
         question, filter_key, filter_value, collection_name, limit
     )
 
@@ -197,7 +199,7 @@ async def add_question_to_qdrant(
             "explanation": question.explanation,
         },
     )
-    qdrant.client.upsert(collection_name=collection_name, points=[point])
+    await asyncio.to_thread(qdrant.client.upsert, collection_name=collection_name, points=[point])
     print(f"Successfully added question ID {question.id} to '{collection_name}'.")
 
 

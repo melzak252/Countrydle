@@ -2,7 +2,7 @@ import os
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
 from sqlalchemy import or_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,6 +67,7 @@ async def record_guest_action(
     *,
     question: bool = False,
     won: bool | None = None,
+    max_questions: int | None = None,
 ) -> None:
     """Stage an accepted action in the action repository's transaction, without committing."""
     identity = get_guest_identity(request, response)
@@ -78,7 +79,7 @@ async def record_guest_action(
         guesses_made=int(not question),
         won=bool(won),
     )
-    await session.execute(
+    result = await session.execute(
         statement.on_conflict_do_update(
             constraint="uq_guest_participation_mode_day_identity",
             set_={
@@ -86,8 +87,12 @@ async def record_guest_action(
                 "guesses_made": GuestParticipation.guesses_made + statement.excluded.guesses_made,
                 "won": or_(GuestParticipation.won, statement.excluded.won),
             },
-        )
+            where=(GuestParticipation.questions_asked < max_questions)
+            if question and max_questions is not None else None,
+        ).returning(GuestParticipation.questions_asked)
     )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=400, detail="No more questions left or game over!")
 
 
 async def link_guest_participation(

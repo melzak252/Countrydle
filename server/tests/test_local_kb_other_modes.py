@@ -63,6 +63,23 @@ def scalar(config: LocalModeConfig, operator: str, relation: str, value) -> dict
     return {"operator": operator, "left": left(config, relation), "right": value}
 
 
+def test_inclusive_numeric_comparisons_keep_equality_and_direction():
+    for operator, excluded_year in (("less_than_or_equal", 1791), ("greater_than_or_equal", 1793)):
+        result = answer(US_STATE_CONFIG, "Kentucky", scalar(US_STATE_CONFIG, operator, "admission_year", 1792))
+        assert result is not None
+        assert result.answer is True
+        assert answer(US_STATE_CONFIG, "Kentucky", scalar(US_STATE_CONFIG, operator, "admission_year", excluded_year)).answer is False
+
+
+def test_hyphen_predicate_distinguishes_names_and_dashes():
+    plan = {"operator": "has_hyphen", "left": left(VOIVODESHIP_CONFIG, "name")}
+    result = answer(VOIVODESHIP_CONFIG, "Kujawsko-Pomorskie", plan)
+    assert result is not None
+    assert result.answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Pomorskie", plan).answer is False
+    assert answer(VOIVODESHIP_CONFIG, "Pomorskie", {"operator": "has_hyphen", "left": {"value": "North–South"}}).answer is False
+
+
 @pytest.mark.parametrize(
     ("state", "relation", "value"),
     [
@@ -96,16 +113,104 @@ def test_us_state_numeric_text_and_derived_coast_checks():
     assert answer(US_STATE_CONFIG, "New York", contains(US_STATE_CONFIG, "region", "East Coast")).answer is True
     assert answer(US_STATE_CONFIG, "Michigan", contains(US_STATE_CONFIG, "water_access", "Great Lakes")).answer is True
     assert answer(US_STATE_CONFIG, "California", contains(US_STATE_CONFIG, "region", "East Coast")).answer is False
-    # Coordinate comparisons
-    west_74_plan = scalar(US_STATE_CONFIG, "west_of", "longitude", -74.0)
-    res_nh = answer(US_STATE_CONFIG, "New Hampshire", west_74_plan)
-    assert res_nh is not None
-    assert res_nh.answer is False
-    assert "east of 74.0° W" in res_nh.explanation
 
-    res_cal = answer(US_STATE_CONFIG, "California", west_74_plan)
-    assert res_cal is not None
-    assert res_cal.answer is True
+
+def test_longitude_greater_than_uses_ast_not_question_direction():
+    plan = replace(
+        question_plan(scalar(US_STATE_CONFIG, "greater_than", "longitude", -74)),
+        original_question="Is it further west than 74 degrees west?",
+        improved_question="Is it further west than 74 degrees west?",
+    )
+
+    result = execute_plan(US_STATE_CONFIG, "California", plan)
+
+    assert result is not None
+    assert result.answer is False
+
+
+def test_coordinate_wrapped_literal_evaluates_numeric_comparison():
+    result = answer(
+        US_STATE_CONFIG,
+        "California",
+        scalar(US_STATE_CONFIG, "less_than", "longitude", {"value": -74}),
+    )
+
+    assert result is not None
+    assert result.answer is True
+
+
+@pytest.mark.parametrize(
+    ("operator", "relation", "threshold", "expected"),
+    [
+        ("east_of", "longitude", -74, False),
+        ("south_of", "latitude", 0, False),
+        ("west_of", "longitude", 0, True),
+        ("north_of", "latitude", {"value": 0}, True),
+    ],
+)
+def test_coordinate_directions_and_zero_thresholds(
+    operator, relation, threshold, expected
+):
+    node = scalar(US_STATE_CONFIG, operator, relation, threshold)
+    # An explicit right operand takes precedence, including when it is zero.
+    node["value"] = 1000
+
+    result = answer(US_STATE_CONFIG, "California", node)
+
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize(
+    ("operator", "relation", "expected"),
+    [
+        ("east_of", "longitude", False),
+        ("south_of", "latitude", False),
+        ("equals", "longitude", True),
+    ],
+)
+def test_coordinate_entity_reference_equality_boundary(
+    operator, relation, expected
+):
+    result = answer(
+        US_STATE_CONFIG,
+        "California",
+        scalar(US_STATE_CONFIG, operator, relation, left(US_STATE_CONFIG, relation)),
+    )
+
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize(
+    "threshold",
+    [
+        {"entity": US_STATE_CONFIG.target_entity, "relation": "made_up_coordinate"},
+        {"value": None},
+        {"value": "unknown"},
+    ],
+)
+def test_coordinate_unknown_threshold_does_not_produce_local_answer(threshold):
+    result = answer(
+        US_STATE_CONFIG,
+        "California",
+        scalar(US_STATE_CONFIG, "east_of", "longitude", threshold),
+    )
+
+    assert result is None
+
+
+def test_border_operator_resolves_entity_reference_and_explains_name():
+    result = answer(
+        US_STATE_CONFIG,
+        "California",
+        {"operator": "borders_state", "right": left(US_STATE_CONFIG, "name")},
+    )
+
+    assert result is not None
+    assert result.answer is True
+    assert "borders California" in result.explanation
+    assert "target_state" not in result.explanation
 
 
 @pytest.mark.parametrize(
@@ -200,12 +305,12 @@ def test_generic_boolean_any_all_and_self_neighbor_semantics():
     any_border_starts_with_a = {
         "operator": "any",
         "items": left(US_STATE_CONFIG, "borders_state"),
-        "condition": {"operator": "starts_with", "left": {"entity": "item"}, "value": "A"},
+        "condition": {"operator": "starts_with", "left": {"entity": "item", "relation": "name"}, "value": "A"},
     }
     all_california_waters_are_oceans = {
         "operator": "all",
         "items": left(US_STATE_CONFIG, "water_access"),
-        "condition": {"operator": "contains_text", "left": {"entity": "item"}, "value": "Ocean"},
+        "condition": {"operator": "contains_text", "left": {"entity": "item", "relation": "name"}, "value": "Ocean"},
     }
     self_neighbor = contains(VOIVODESHIP_CONFIG, "borders_voivodeship", "Małopolskie")
 

@@ -235,6 +235,11 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
             <div className="min-w-0 sm:col-span-2"><dt className="text-xs text-sand-100/55">Aktualna wersja serwera</dt><dd className="break-words font-mono text-xs text-sand-100/80">{completed.result.server_version}</dd></div>
           </dl>
           <details className="min-w-0 border-t border-white/10 pt-3">
+            <summary className="cursor-pointer text-sm text-emerald-300">Czasy etapów i zużycie tokenów (JSON)</summary>
+            <p className="mt-2 text-xs text-sand-100/55">Czasy w milisekundach. Tokeny pochodzą z odpowiedzi dostawcy, nie z szacowania tekstu. Brak wartości oznacza brak pomiaru lub niewykonany etap.</p>
+            <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-sm bg-obsidian-950 p-3 text-xs text-sand-100/75">{JSON.stringify(completed.result.diagnostics, null, 2)}</pre>
+          </details>
+          <details className="min-w-0 border-t border-white/10 pt-3">
             <summary className="cursor-pointer text-sm text-emerald-300">Kontekst odpowiedzi</summary>
             <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-sm bg-obsidian-950 p-3 text-xs text-sand-100/75">{completed.result.context || 'Brak kontekstu.'}</pre>
           </details>

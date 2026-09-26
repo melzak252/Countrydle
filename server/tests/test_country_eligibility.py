@@ -134,6 +134,8 @@ async def test_guest_sync_rejects_disabled_country_before_importing_progress(mon
     day_repo, method, state_repo = repositories[mode]
     monkeypatch.setattr(day_repo, method, AsyncMock(return_value=day))
     monkeypatch.setattr(state_repo, "get_state", AsyncMock(return_value=state))
+    module = importlib.import_module(mode)
+    monkeypatch.setattr(module, "lock_question_state", AsyncMock(return_value=state))
     monkeypatch.setattr(CountryRepository, "get", AsyncMock(
         return_value=SimpleNamespace(id=1, name="Israel", official_name="State of Israel")))
     data = SimpleNamespace(date=date.today().isoformat(), questions=[],
@@ -143,7 +145,7 @@ async def test_guest_sync_rejects_disabled_country_before_importing_progress(mon
     if mode == "continental":
         kwargs["continent"] = ContinentCode.EUROPE
     with pytest.raises(HTTPException) as exc:
-        await importlib.import_module(mode).sync_guest_data(**kwargs)
+        await module.sync_guest_data(**kwargs)
     assert exc.value.status_code == 400
     assert state.guesses_made == 0
 

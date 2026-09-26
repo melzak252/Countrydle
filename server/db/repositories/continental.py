@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 import random
 from typing import List, Optional, Set
-from sqlalchemy import and_, or_, cast, desc, func, Integer, select, update
+from sqlalchemy import and_, or_, cast, desc, func, Integer, select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -152,6 +152,11 @@ class ContinentalStateRepository:
         )
         state = result.scalar_one_or_none()
         if not state:
+            from db.repositories.question_accounting import lock_question_state
+            state = await lock_question_state(self.session, ContinentalState, user.id, day.id)
+            if state is not None:
+                await self.session.commit()
+                return state
             state = ContinentalState(
                 user_id=user.id,
                 day_id=day.id,
@@ -258,7 +263,7 @@ class ContinentalGuessRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_guess(self, guess_create: ContinentalGuessCreate) -> ContinentalGuess:
+    async def add_guess(self, guess_create: ContinentalGuessCreate, *, commit: bool = True) -> ContinentalGuess:
         new_guess = ContinentalGuess(
             user_id=guess_create.user_id,
             day_id=guess_create.day_id,
@@ -268,7 +273,10 @@ class ContinentalGuessRepository:
             elapsed_seconds=guess_create.elapsed_seconds,
         )
         self.session.add(new_guess)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         await self.session.refresh(new_guess)
         return new_guess
 
@@ -306,8 +314,7 @@ class ContinentalQuestionRepository:
             context=getattr(question_create, "context", None),
         )
         self.session.add(new_quest)
-        await self.session.commit()
-        await self.session.refresh(new_quest)
+        await self.session.flush()
         return new_quest
 
     async def get_user_questions(
@@ -321,25 +328,11 @@ class ContinentalQuestionRepository:
                 and_(
                     ContinentalQuestion.user_id == user_id,
                     ContinentalQuestion.day_id == day_id,
+                    ContinentalQuestion.valid.is_(True),
+                    ContinentalQuestion.answer.is_not(None),
                 )
             )
             .order_by(ContinentalQuestion.id.asc())
         )
         return list(result.scalars().all())
 
-    async def claim_guest_questions(
-        self, user_id: int, day_id: int, question_ids: List[int]
-    ) -> None:
-        if not question_ids:
-            return
-        await self.session.execute(
-            update(ContinentalQuestion)
-            .where(
-                and_(
-                    ContinentalQuestion.id.in_(question_ids),
-                    ContinentalQuestion.user_id == None,
-                    ContinentalQuestion.day_id == day_id,
-                )
-            )
-            .values(user_id=user_id)
-        )

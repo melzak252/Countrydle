@@ -160,6 +160,28 @@ def mock_common_database_repositories(monkeypatch, request):
             guessed_at=datetime.now(),
         )
 
+    async def countrydle_add_guess(self, guess_create, *, commit=True):
+        from datetime import datetime
+        return SimpleNamespace(
+            id=1,
+            guess=guess_create.guess,
+            country_id=guess_create.country_id,
+            day_id=guess_create.day_id,
+            user_id=guess_create.user_id,
+            answer=guess_create.answer,
+            guessed_at=datetime.now(),
+        )
+
+    async def get_us_state(self, state_id):
+        return SimpleNamespace(id=state_id, name="California", code="CA")
+
+    async def get_wojewodztwo(self, wojewodztwo_id):
+        return SimpleNamespace(id=wojewodztwo_id, nazwa="Małopolskie")
+
+    monkeypatch.setattr("db.repositories.guess.CountrydleGuessRepository.add_guess", countrydle_add_guess)
+    monkeypatch.setattr("db.repositories.us_state.USStateRepository.get", get_us_state)
+    monkeypatch.setattr("db.repositories.wojewodztwo.WojewodztwoRepository.get", get_wojewodztwo)
+
     monkeypatch.setattr("db.repositories.user.UserRepository.register_user", register_user)
     monkeypatch.setattr("db.repositories.user.UserRepository.get_user", get_user)
     monkeypatch.setattr("db.repositories.user.UserRepository.get_by_email", get_by_email)
