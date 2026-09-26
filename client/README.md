@@ -73,6 +73,43 @@ promise error-free AI answers, local-only guest activity, or lossless sync.
 Content-only updates should be checked in the browser at desktop/mobile widths,
 including FAQ search, topic filters, and keyboard accordion controls.
 
+## Advertising consent and public discovery
+
+`main.tsx` is the only AdSense loader. Set `VITE_GOOGLE_ADSENSE_ID` when building
+the frontend; without it, no AdSense script or account meta tag is added. Keep
+`public/ads.txt` aligned with that publisher account. Do not add another AdSense
+tag to `index.html`.
+
+Advertising consent is managed by Google's certified Privacy & messaging CMP,
+not by the former `cookie-consent` localStorage banner. Existing values of that
+old key are not treated as consent. `PrivacySettingsButton.tsx` invokes Google's
+supported callback queue and `showRevocationMessage()` API. It is available in
+the footer, desktop More menu, mobile menu, and Cookie Policy, including access
+from fullscreen games whose footer is hidden. If Google's API is unavailable,
+the button reports that no choices were changed.
+
+**Account prerequisite:** In AdSense → Privacy & messaging → European
+regulations, configure and publish the message for `countrydle.online`. Set the
+privacy policy URL to `https://countrydle.online/privacy-policy`, provide the
+required consent/refusal choices and languages, then verify a fresh EEA visit,
+acceptance, refusal, and reopening through Privacy settings. The existing
+AdSense tag loads published Google messages; repository changes do not publish
+messages or approve the website. Google's documented preview URL is
+`https://countrydle.online/?fc=alwaysshow&fctype=gdpr`; it also requires a
+published message. Rybbit configuration is separate from advertising consent.
+
+The router updates one production-origin canonical URL from the normalized
+pathname, excluding query parameters and fragments. `/sitemap.xml` is served
+by FastAPI from current public routes and database blog records dated no later
+than the current UTC date. Both Nginx configurations and the Vite proxy forward
+that public URL to the backend; there is no checked-in static article sitemap.
+`robots.txt` continues to advertise the same public sitemap URL.
+
+Verify with the frontend production build, browser navigation between public
+pages, the privacy settings unavailable/provider paths, and
+`pytest tests/test_sitemap.py -q` in the backend environment. Check
+`/sitemap.xml` through the frontend proxy as well as the backend.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

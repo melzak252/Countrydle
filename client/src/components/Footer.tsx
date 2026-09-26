@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CountrydleLogo from './CountrydleLogo';
+import { PrivacySettingsButton } from './PrivacySettingsButton';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -27,6 +28,7 @@ export default function Footer() {
           <Link to="/privacy-policy" className="hover:text-zinc-300 transition-colors text-zinc-500 text-[11px]">{t('footer.privacyPolicy')}</Link>
           <Link to="/terms" className="hover:text-zinc-300 transition-colors text-zinc-500 text-[11px]">{t('footer.termsOfService')}</Link>
           <Link to="/cookie-policy" className="hover:text-zinc-300 transition-colors text-zinc-500 text-[11px]">{t('footer.cookiePolicy')}</Link>
+          <PrivacySettingsButton className="hover:text-zinc-300 transition-colors text-zinc-500 text-[11px]" />
         </div>
 
         <div className="text-zinc-600 font-mono text-[11px]">

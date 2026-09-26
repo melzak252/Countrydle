@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "September 22, 2026";
+  const lastUpdated = "September 26, 2026";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4 text-white">1. Introduction</h2>
             <p className="text-zinc-300 leading-relaxed">
-              At JMelzacki, we take your privacy seriously. This Privacy Policy explains how we collect, use, and share your personal information when you visit our website <strong>Countrydle</strong> and play the game. By using the Website or playing the Game, you agree to the collection and use of your personal information as described in this policy.
+              At JMelzacki, we take your privacy seriously. This Privacy Policy explains how we collect, use, and share information when you visit <strong>Countrydle</strong> and play the game. It describes our information practices; using the Website or playing the Game does not by itself mean that you consent to optional advertising.
             </p>
           </section>
 
@@ -74,14 +74,11 @@ export default function PrivacyPolicyPage() {
           <section className="mb-8 border-l-4 border-blue-500 pl-6 py-2 bg-blue-500/5 rounded-r-lg">
             <h2 className="text-2xl font-semibold mb-4 text-white">3. Google AdSense and Advertising</h2>
             <p className="text-zinc-300 leading-relaxed mb-4">
-              We use <strong>Google AdSense</strong> to serve advertisements on our website.
+              We use <strong>Google AdSense</strong> to serve advertisements on our website. Advertising choices, including whether personalized advertising is allowed, are handled separately through the Google-certified consent message and its Privacy settings where those settings are available.
             </p>
-            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4">
-              <li>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to our website or other websites.</li>
-              <li>Google's use of advertising cookies enables it and its partners to serve ads to our users based on their visit to our site and/or other sites on the Internet.</li>
-              <li>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline transition-colors">Google Ads Settings</a>.</li>
-              <li>Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline transition-colors">www.aboutads.info</a>.</li>
-            </ul>
+            <p className="text-zinc-300 leading-relaxed">
+              Essential cookies needed for site functionality are distinct from optional advertising cookies. Google and other advertising providers may use cookies or similar technologies as permitted by your choices and applicable settings.
+            </p>
           </section>
 
           <section className="mb-8">

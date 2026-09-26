@@ -205,13 +205,19 @@ async def get_version():
 
 @app.get("/sitemap.xml", response_class=Response)
 async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
-    """Dynamically generated XML sitemap for search engine crawlers and AdSense reviewers."""
+    """Generate the public sitemap from public routes and published blog records."""
+    from datetime import datetime, timezone
+    from xml.sax.saxutils import escape
+
     from db.models.blog import DailyBlogPost
     from sqlalchemy import desc, select
+
     posts = []
     try:
         res = await session.execute(
-            select(DailyBlogPost.slug, DailyBlogPost.date).order_by(desc(DailyBlogPost.date))
+            select(DailyBlogPost.slug, DailyBlogPost.date)
+            .where(DailyBlogPost.date <= datetime.now(timezone.utc).date())
+            .order_by(desc(DailyBlogPost.date))
         )
         posts = res.all()
     except Exception as exc:
@@ -221,12 +227,18 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
         "<url><loc>https://countrydle.online/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>",
         "<url><loc>https://countrydle.online/game</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/flagdle</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/europe</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/asia</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/africa</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/americas</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/us-states</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
-        "<url><loc>https://countrydle.online/powiaty</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/wojewodztwa</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/powiaty</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/friends</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>",
         "<url><loc>https://countrydle.online/blog</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/leaderboard</loc><changefreq>daily</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/archive</loc><changefreq>daily</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/patch-notes</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>",
         "<url><loc>https://countrydle.online/faq</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/about</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>",
@@ -235,9 +247,11 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
         "<url><loc>https://countrydle.online/cookie-policy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
     ]
 
-    for p in posts:
+    for post in posts:
         urls_xml.append(
-            f"<url><loc>https://countrydle.online/blog/{p.slug}</loc><lastmod>{p.date}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>"
+            f"<url><loc>https://countrydle.online/blog/{escape(post.slug)}</loc>"
+            f"<lastmod>{escape(post.date.isoformat())}</lastmod>"
+            "<changefreq>monthly</changefreq><priority>0.8</priority></url>"
         )
 
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  ' + "\n  ".join(urls_xml) + "\n</urlset>"

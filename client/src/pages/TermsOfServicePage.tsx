@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 export default function TermsOfServicePage() {
-  const lastUpdated = "February 15, 2026";
+  const lastUpdated = "September 26, 2026";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -26,9 +26,9 @@ export default function TermsOfServicePage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">2. Account Registration</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-white">2. Accounts and Guest Play</h2>
             <p className="text-zinc-300 leading-relaxed mb-4">
-              To participate in the Game, users must create an account by providing a valid email address or logging in using Google’s third-party service ("Google Login"). By registering, you agree to:
+              You may play Countrydle as a guest. Creating an account is optional and allows you to sign in using an email address or Google Login. If you create an account, you agree to:
             </p>
             <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4">
               <li>Provide accurate, current, and complete information.</li>
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4">
               <li>Not to use bots, scripts, or any automated tools to play the game.</li>
               <li>Not to exploit bugs or vulnerabilities in the game engine.</li>
-              <li>To play only one game per day as intended by the game rules.</li>
+              <li>Daily play is available in nine independent game modes, each with its own daily limit and reset at midnight UTC. Friend duels are separate player-versus-player games.</li>
               <li>Cheating or manipulation may result in immediate suspension or banning.</li>
             </ul>
           </section>
@@ -61,7 +61,7 @@ export default function TermsOfServicePage() {
           <section className="mb-8 border-l-4 border-yellow-500 pl-6 py-2 bg-yellow-500/5 rounded-r-lg">
             <h2 className="text-2xl font-semibold mb-4 text-white">5. Advertisements</h2>
             <p className="text-zinc-300 leading-relaxed">
-              Our website displays advertisements served by Google AdSense. By using the website, you acknowledge and agree that cookies may be used to serve personalized ads as detailed in our Privacy Policy.
+              Our website displays advertisements served by Google AdSense. Advertising choices, including whether personalized advertising is allowed, are handled separately through the Google-certified consent message and its Privacy settings. Essential cookies needed for site functionality are distinct from optional advertising cookies.
             </p>
           </section>
 

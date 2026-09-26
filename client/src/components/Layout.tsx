@@ -3,7 +3,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import Header from './Header';
 import Footer from './Footer';
-import CookieConsent from './CookieConsent';
 import VersionDisplay from './VersionDisplay';
 
 export default function Layout() {
@@ -37,7 +36,6 @@ export default function Layout() {
         <Outlet />
       </main>
       {!isGameFullscreen && <Footer />}
-      <CookieConsent />
       <VersionDisplay />
     </div>
   );

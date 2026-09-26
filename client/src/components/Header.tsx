@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
 import CountrydleLogo from './CountrydleLogo';
+import { PrivacySettingsButton } from './PrivacySettingsButton';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -145,10 +146,11 @@ export default function Header() {
             <div
               className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1 shadow-xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
-                if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
+                if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
             >
               {more.map(([path, title]) => <NavLink key={path} to={path} className={linkClass}>{title}</NavLink>)}
+              <PrivacySettingsButton className="block w-full px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
             </div>
           </details>
           <NavLink to="/leaderboard" className={linkClass}>{t('header.leaderboard')}</NavLink>
@@ -199,6 +201,7 @@ export default function Header() {
         </div>
         <div className="grid grid-cols-2 py-3" onClick={closeMenu}>
           {[[ '/leaderboard', t('header.leaderboard') ], ['/blog', t('header.blog', 'Blog')], ...more].map(([path, label]) => <NavLink key={path} to={path} className={linkClass}>{label}</NavLink>)}
+          <PrivacySettingsButton className="block px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
         </div>
         <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-4">
           {isAuthenticated ? <>

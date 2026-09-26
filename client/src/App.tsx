@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -38,6 +38,26 @@ import {
   useFlagdleGameStore,
 } from './stores/gameStore';
 import { useEffect } from 'react';
+
+function CanonicalUrl() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const normalizedPath = `/${pathname.split('/').filter(Boolean).join('/')}`;
+    const canonicalUrl = `https://countrydle.online${normalizedPath}`;
+    const canonicals = document.head.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]');
+    const canonical = canonicals[0] ?? document.createElement('link');
+
+    canonical.rel = 'canonical';
+    canonical.href = canonicalUrl;
+    if (!canonical.parentElement) document.head.appendChild(canonical);
+    canonicals.forEach((element) => {
+      if (element !== canonical) element.remove();
+    });
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   const { user, setUser, isAuthenticated } = useAuthStore();
@@ -106,6 +126,7 @@ function App() {
           color: '#fff',
         },
       }} />
+      <CanonicalUrl />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />

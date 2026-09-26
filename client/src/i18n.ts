@@ -91,14 +91,9 @@ const resources = {
         copyBtn: 'Copy Card',
         readBlogCta: 'Read Wikipedia trivia & deduction breakdown on our Daily Blog',
       },
-      cookie: {
-        title: 'We use cookies',
-        message:
-          'We use cookies to enhance your browsing experience, serve personalized content (including ads via Google AdSense), and analyze our traffic. By clicking "Accept All", you consent to our use of cookies. Read our <policyLink>{{policy}}</policyLink> for more details.',
-        policy: 'Cookie Policy',
-        close: 'Close',
-        decline: 'Decline',
-        acceptAll: 'Accept All',
+      privacySettings: {
+        label: 'Privacy settings',
+        unavailable: 'Google privacy settings could not be opened. They may be unavailable or blocked by your browser. No choices were changed; please try again later.',
       },
       instructions: {
         title: 'How to Play & Info',
