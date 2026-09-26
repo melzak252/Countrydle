@@ -70,7 +70,11 @@ LOCAL_CONFIG = LocalModeConfig(
         "Use regional_labels for broad, historical, cultural, or physical-geography regions "
         "of a powiat, such as Mazowsze, Podlasie, Kujawy, Małopolska, Śląsk, Kaszuby, "
         "Roztocze, Polesie, or named mountain/upland/lowland/lake-district regions. "
-        "The relation is list-valued, so use contains_exact/exists rather than equals."
+        "The relation is list-valued, so use contains_exact/exists rather than equals.\n"
+        "- For voivodeship and borders_voivodeship, use the canonical Polish voivodeship adjective name "
+        "(Dolnośląskie, Kujawsko-Pomorskie, Lubelskie, Lubuskie, Łódzkie, Małopolskie, Mazowieckie, "
+        "Opolskie, Podkarpackie, Podlaskie, Pomorskie, Śląskie, Świętokrzyskie, Warmińsko-Mazurskie, "
+        "Wielkopolskie, Zachodniopomorskie)."
     ),
 )
 

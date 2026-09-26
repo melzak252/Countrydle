@@ -293,6 +293,15 @@ def test_voivodeship_lodzkie_does_not_border_pomorskie_question():
     assert "borders_voivodeship" in result.relations
 
 
+def test_slaskie_borders_lodzkie_with_city_and_inflected_names():
+    for name in ("Łódzkie", "Łódź", "lodzkie", "łódzkim", "województwo łódzkie"):
+        plan = question_plan(contains(VOIVODESHIP_CONFIG, "borders_voivodeship", name))
+        ans = execute_plan(VOIVODESHIP_CONFIG, "Śląskie", plan)
+        assert ans is not None
+        assert ans.answer is True, f"Failed for {name}: {ans.explanation}"
+        assert "Łódzkie" in ans.explanation
+        assert "nie graniczy" not in ans.explanation
+
 def test_voivodeship_partial_contains_keeps_old_substring_behavior():
     result = answer(VOIVODESHIP_CONFIG, "Łódzkie", contains_partial(VOIVODESHIP_CONFIG, "borders_voivodeship", "Pomorskie"))
 
