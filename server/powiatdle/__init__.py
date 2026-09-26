@@ -344,6 +344,9 @@ async def _do_ask_question(
         state = await PowiatdleStateRepository(session).get_state(user, day_powiat)
         require_question_available(state, POWIATDLE_CONFIG.max_questions)
 
+    # End the day/quota read transaction before planner or provider work.
+    await session.commit()
+
     question_create, planned_question = await putils.analyze_and_answer_locally(
         question.question, day_powiat, user, session
     )

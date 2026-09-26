@@ -709,6 +709,9 @@ async def _do_ask_question(
             session, CountrydleState, user.id, daily_country.id, COUNTRYDLE_CONFIG.max_questions,
         )
 
+    # End the quota/day read transaction before planner or provider work.
+    await session.commit()
+
     question_create, planned_question = await gutils.analyze_and_answer_locally(
         original_question=question.question, day_country=daily_country, user=user, session=session,
     )

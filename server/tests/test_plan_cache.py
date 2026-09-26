@@ -36,8 +36,45 @@ def test_plan_cache_evicts_least_recently_used_interpretation():
     assert cache.get("mode", "q1", version="v2") == "p1"
     cache.set("mode", "q3", "p3", version="v2")
     assert cache.get("mode", "q1", version="v2") == "p1"
-    assert cache.get("mode", "q2", version="v2") is None
+    assert cache.stats()["size"] == 2
+    assert cache.get("mode", "q2", version="v2") == "p2"
     assert cache.get("mode", "q3", version="v2") == "p3"
+
+def test_plan_cache_persists_plans_across_instances(tmp_path):
+    database = tmp_path / "plan_cache.sqlite"
+    first = PlanCache(max_size=5, db_path=database)
+    first.set("countrydle", "Is it coastal?", {"route": "local", "plan": [{"operator": "exists"}]}, version="v2")
+
+    second = PlanCache(max_size=5, db_path=database)
+    assert second.get("countrydle", "is it coastal", version="v2") == {
+        "route": "local", "plan": [{"operator": "exists"}],
+    }
+    assert second.get("countrydle", "is it coastal", version="v3") is None
+
+
+def test_plan_cache_persists_question_plan_fields(tmp_path):
+    from local_kb_question import QuestionPlan
+
+    database = tmp_path / "plan_cache.sqlite"
+    plan = QuestionPlan(
+        original_question="Is it coastal?", valid=True, supported=False,
+        improved_question="Is it on the coast?", explanation=None, plan=None,
+        fallback_reason="coastline facts are unavailable",
+    )
+    PlanCache(db_path=database).set("countrydle", plan.original_question, plan, version="v2")
+
+    loaded = PlanCache(db_path=database).get("countrydle", plan.original_question, version="v2")
+    assert loaded == plan
+
+
+def test_plan_cache_reads_l2_after_another_instance_writes(tmp_path):
+    database = tmp_path / "plan_cache.sqlite"
+    reader = PlanCache(db_path=database)
+    assert reader.get("mode", "question", version="v2") is None
+
+    PlanCache(db_path=database).set("mode", "question", "persisted", version="v2")
+
+    assert reader.get("mode", "question", version="v2") == "persisted"
 
 
 @pytest.mark.parametrize("country", [True, False])
@@ -61,8 +98,8 @@ def test_cached_plan_remains_target_independent_and_skips_provider(monkeypatch, 
     with httpx.Client(transport=httpx.MockTransport(generate)) as client:
         monkeypatch.setattr(ai_clients, "_http_client", client)
         analyze = analyze_question_for_local_plan if country else lambda q, **kwargs: analyze_question(q, LOCAL_CONFIG, **kwargs)
-        first = analyze("Does it have a coastline?")
-        second = analyze("  DOES it have a coastline? ")
+        first = analyze("Does it have shoreline access?")
+        second = analyze("  DOES it have shoreline access? ")
         if country:
             assert execute_local_plan(first.plan, "Portugal", first.original_question).answer is True
             assert execute_local_plan(second.plan, "Switzerland", second.original_question).answer is False

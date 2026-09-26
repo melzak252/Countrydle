@@ -39,8 +39,33 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
   const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
 
+  const quickQuestions = [
+    { icon: '🌍', label: t('inputs.quickEurope'), question: t('inputs.questionEurope') },
+    { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
+    { icon: '👑', label: t('inputs.quickMonarchy'), question: t('inputs.questionMonarchy') },
+    { icon: '🚗', label: t('inputs.quickLeftHandDrive'), question: t('inputs.questionLeftHandDrive') },
+    { icon: '🇪🇺', label: t('inputs.quickEu'), question: t('inputs.questionEu') },
+    { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="w-full">
+      <div className="mb-2">
+        <p className="mb-1.5 text-[11px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label={t('inputs.quickQuestions')}>
+          {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
+            <button
+              key={label}
+              type="button"
+              disabled={unavailable}
+              onClick={() => setQuestion(suggestedQuestion)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+            >
+              <span aria-hidden="true">{icon}</span>{label}
+            </button>
+          ))}
+        </div>
+      </div>
       <label htmlFor={inputId} className="sr-only">{'Yes-or-no question'}</label>
       <div className="relative rounded-2xl border border-white/10 bg-zinc-900/90 p-1 shadow-lg shadow-black/20 transition-colors focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
         <input

@@ -50,7 +50,16 @@ async def while_loop_progresses(operation, blocking):
 def mode_context(monkeypatch, mode, repository, id_field, name_field):
     module = importlib.import_module(f"{mode}.utils")
     loop_thread = threading.get_ident()
-    session = object()
+
+    class Session:
+        def __init__(self):
+            self.commits = 0
+
+        async def commit(self):
+            assert threading.get_ident() == loop_thread
+            self.commits += 1
+
+    session = Session()
 
     class Repository:
         def __init__(self, supplied_session):
@@ -76,6 +85,7 @@ async def test_daily_planner_allows_other_coroutines_and_keeps_database_on_loop(
     plan = SimpleNamespace(valid=True, supported=False, plan=None)
 
     def planner(*args, evidence=None, **kwargs):
+        assert session.commits == 1
         blocking()
         if evidence is not None:
             evidence.update(provider="gemini", cache_hit=False)
@@ -108,6 +118,7 @@ async def test_daily_fallback_allows_other_coroutines_and_preserves_false_answer
         raise RuntimeError("Retrieval unavailable")
 
     def answer(*args, evidence=None):
+        assert session.commits == 1
         blocking()
         if evidence is not None:
             evidence.update(provider="test-provider", usage={"input_tokens": 12, "output_tokens": 3})

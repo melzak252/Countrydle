@@ -47,6 +47,7 @@ SUPPORTED_RELATIONS = [
     "flag_color",
     "flag_symbol",
     "historical_union",
+    "hemisphere",
 ]
 
 @dataclass(frozen=True)
@@ -408,6 +409,38 @@ def analyze_question_for_local_plan(
     load_dotenv_if_present()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or DEFAULT_MODEL
     version = f"{PLANNER_VERSION}:{model}"
+    from countrydle.template_compiler import check_open_ended_question, compile_template_plan
+    clarify_msg = check_open_ended_question(question)
+    if clarify_msg is not None:
+        plan = QuestionPlan(
+            original_question=question,
+            valid=False,
+            supported=False,
+            improved_question=None,
+            explanation=clarify_msg,
+            plan=None,
+        )
+        if use_cache:
+            plan_cache.set("countrydle", question, plan, version=version)
+        if evidence is not None:
+            evidence.update(provider="template_clarify", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
+        return plan
+    deterministic = compile_template_plan(question)
+    if deterministic is not None:
+        ast, improved = deterministic
+        plan = QuestionPlan(
+            original_question=question,
+            valid=True,
+            supported=True,
+            improved_question=improved,
+            explanation="Deterministic template match.",
+            plan=ast,
+        )
+        if use_cache:
+            plan_cache.set("countrydle", question, plan, version=version)
+        if evidence is not None:
+            evidence.update(provider="template", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
+        return plan
     cached = plan_cache.get("countrydle", question, version=version) if use_cache else None
     if evidence is not None:
         evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)

@@ -30,6 +30,9 @@ class ReadOnlySession:
     async def execute(self, statement):
         assert statement.is_select, "Evaluation must not mutate SQL records"
         return self.session.execute(statement)
+    async def commit(self):
+        pass
+
 
     @property
     def no_autoflush(self):

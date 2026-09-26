@@ -939,3 +939,46 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     assert ans_coords is not None
     assert ans_coords.answer is True
     assert "52.0°N" in ans_coords.explanation
+
+
+@pytest.mark.parametrize("hemisphere, expected", [
+    ("Northern", True),
+    ("Southern", True),
+    ("Eastern", True),
+    ("Western", True),
+])
+def test_kiribati_is_located_in_all_four_hemispheres(hemisphere, expected):
+    plan = contains_plan("hemisphere", hemisphere)
+    ans = execute_local_plan(plan, "Kiribati", f"Is the country in the {hemisphere} Hemisphere?")
+    assert ans is not None
+    assert ans.answer is expected
+    assert "Kiribati is located in the" in ans.explanation
+
+
+def test_entirely_in_hemisphere_accurately_classifies_crossing_and_pure_countries():
+    def entirely_hemi(target_hemi, opposite_hemi):
+        return {
+            "operator": "and",
+            "conditions": [
+                contains_plan("hemisphere", target_hemi),
+                {"operator": "not", "condition": contains_plan("hemisphere", opposite_hemi)}
+            ]
+        }
+
+    # Kiribati spans both Northern and Southern -> not entirely Northern
+    assert execute_local_plan(entirely_hemi("Northern", "Southern"), "Kiribati", "Entirely Northern?").answer is False
+    # Poland is purely Northern
+    assert execute_local_plan(entirely_hemi("Northern", "Southern"), "Poland", "Entirely Northern?").answer is True
+    # Portugal (with Azores/Madeira) is purely Northern and purely Western
+    assert execute_local_plan(entirely_hemi("Northern", "Southern"), "Portugal", "Entirely Northern?").answer is True
+    assert execute_local_plan(entirely_hemi("Western", "Eastern"), "Portugal", "Entirely Western?").answer is True
+    # France spans 0° Greenwich meridian -> not entirely Western, but entirely Northern
+    assert execute_local_plan(entirely_hemi("Northern", "Southern"), "France", "Entirely Northern?").answer is True
+    assert execute_local_plan(entirely_hemi("Western", "Eastern"), "France", "Entirely Western?").answer is False
+    # Australia is Southern, not Northern
+    assert execute_local_plan(contains_plan("hemisphere", "Northern"), "Australia", "In Northern?").answer is False
+    assert execute_local_plan(contains_plan("hemisphere", "Southern"), "Australia", "In Southern?").answer is True
+    # Kenya spans both Northern and Southern
+    assert execute_local_plan(contains_plan("hemisphere", "Northern"), "Kenya", "In Northern?").answer is True
+    assert execute_local_plan(contains_plan("hemisphere", "Southern"), "Kenya", "In Southern?").answer is True
+    assert execute_local_plan(entirely_hemi("Northern", "Southern"), "Kenya", "Entirely Northern?").answer is False

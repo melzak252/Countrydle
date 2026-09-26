@@ -87,6 +87,10 @@ async def analyze_and_answer_locally(
     *, strict_errors: bool = False, evidence: dict | None = None,
 ):
     state: USState = await USStateRepository(session).get(day_state.us_state_id)
+    if hasattr(session, "commit") and callable(session.commit):
+        commit_res = session.commit()
+        if asyncio.iscoroutine(commit_res):
+            await commit_res
     planner_kwargs = {"strict_errors": True, "use_cache": False} if strict_errors else {}
     if evidence is not None:
         planner_evidence = evidence.setdefault("planner", {})
@@ -360,6 +364,10 @@ async def ask_question(
             evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     state: USState = await USStateRepository(session).get(day_state.us_state_id)
+    if hasattr(session, "commit") and callable(session.commit):
+        commit_res = session.commit()
+        if asyncio.iscoroutine(commit_res):
+            await commit_res
     answer_kwargs = {}
     if evidence is not None:
         fallback_evidence = evidence.setdefault("fallback", {})

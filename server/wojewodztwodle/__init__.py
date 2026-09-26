@@ -354,6 +354,9 @@ async def _do_ask_question(
         state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
         require_question_available(state, WOJEWODZTWDLE_CONFIG.max_questions)
 
+    # End the day/quota read transaction before planner or provider work.
+    await session.commit()
+
     question_create, planned_question = await wutils.analyze_and_answer_locally(
         question.question, day_state, user, session
     )

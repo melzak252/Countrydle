@@ -878,8 +878,11 @@ SCALAR_RELATION_FIELDS = {
     "coordinates.longitude": "longitude",
     "latitude": "latitude",
     "longitude": "longitude",
+    "min_latitude": "min_latitude",
+    "max_latitude": "max_latitude",
+    "min_longitude": "min_longitude",
+    "max_longitude": "max_longitude",
 }
-
 
 LIST_RELATION_QUERIES = {
     "continent": "SELECT continent FROM country_continents WHERE country_id=?",
@@ -895,6 +898,7 @@ LIST_RELATION_QUERIES = {
     "flag_color": "SELECT color FROM country_flag_colors WHERE country_id=?",
     "flag_symbol": "SELECT symbol FROM country_flag_symbols WHERE country_id=?",
     "historical_union": "SELECT union_name FROM country_historical_unions WHERE country_id=?",
+    "hemisphere": "SELECT hemisphere FROM country_hemispheres WHERE country_id=?",
 }
 
 def _country_name_key(name: str) -> str:
@@ -1404,6 +1408,15 @@ def generate_factual_explanation(
             else:
                 return f"{name} is completely landlocked with no direct coastline."
 
+
+    if rel == "hemisphere" and target_val:
+        db_hemis = [r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))]
+        h_str = ", ".join(sorted(db_hemis))
+        plural = "s" if len(db_hemis) > 1 else ""
+        if answer:
+            return f"{name} is located in the {target_val} Hemisphere (territory spans: {h_str} hemisphere{plural})."
+        else:
+            return f"{name} is not located in the {target_val} Hemisphere. Its territory spans: {h_str} hemisphere{plural}."
     if rel == "is_island":
         if country["is_island"]:
             return f"{name} is an island nation."
