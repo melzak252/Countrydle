@@ -15,7 +15,7 @@ const FAQ_DATA: FAQItem[] = [
     id: 'how-it-works',
     category: 'gameplay',
     question: 'How does Countrydle work?',
-    answer: 'Countrydle is a daily geography deduction game. Every day at midnight UTC, a secret target location is chosen. You have a budget of questions (e.g. 10 for countries, 5 for voivodeships) and guesses (usually 2 to 3) to deduce the mystery location. You ask natural-language yes/no questions to eliminate regions, borders, and characteristics before submitting your final guess.'
+    answer: 'Daily puzzles change at midnight UTC. In the question-based modes, ask natural-language yes/no questions to narrow down the target, then submit a guess. Countrydle allows 10 questions and 3 guesses; each continental mode and US Statedle allow 8 and 3; Województwodle allows 5 and 2; Powiatdle allows 15 and 3. Flagdle is a separate flag-reveal challenge with 12 guesses. Friend duels are live matches rather than daily puzzles.'
   },
   {
     id: 'valid-questions',
@@ -27,27 +27,39 @@ const FAQ_DATA: FAQItem[] = [
     id: 'typos-and-invalid',
     category: 'gameplay',
     question: 'Do typos or open-ended questions consume my question limit?',
-    answer: 'No! If you ask an open-ended question (e.g., "What is the capital?"), make a typo, or enter an unparseable sentence, the system flags it as invalid and provides an explanatory warning. Your question count is NOT deducted, allowing you to rephrase your thought without penalty.'
+    answer: 'Questions classified as invalid do not use a question. Open-ended requests such as "What is the capital?" are intended to be rejected, but AI classification is not infallible. A typo may still be understood and accepted, in which case the question counts normally. Read the feedback and rephrase when needed; a spelling mistake does not guarantee a free question.'
   },
   {
     id: 'scoring-and-limits',
     category: 'gameplay',
     question: 'How does scoring work and what happens when I run out of guesses?',
-    answer: 'Points are awarded dynamically across five performance factors: 1) Base win bonus (+500 pts), 2) Question efficiency (up to +1,500 pts rewarding bold deductions with fewer questions asked), 3) Guess efficiency (up to +500 pts for 1st-try accuracy), 4) Speed bonus (up to +300 pts for fast solves under 5 minutes), and 5) Daily streak bonus (+50 pts/day up to +500 pts). Total scores range up to ~3,300+ points. Running out of questions does not end the game: you can still use any remaining guesses. The game ends when you guess correctly or exhaust your guesses.'
+    answer: 'In the question-based daily modes, a win earns +500 base points, up to +1,500 for question efficiency, up to +500 for guess efficiency, up to +300 for speed over a 5-minute window, and +50 per consecutive day solved in that mode, capped at +500. Powiatdle adds +500 and US Statedle adds +200. Guest scores are previews; account streak bonuses use saved results. Flagdle has a separate formula. Running out of questions does not end a daily game while guesses remain: a correct guess or exhausting the guesses ends it.'
   },
 
   // Category 2: Modes & Archive
   {
     id: 'game-modes',
     category: 'modes',
-    question: 'What are the four different game modes?',
-    answer: 'Countrydle offers four distinct geographic scopes: 1) World Countries (195 playable countries across all continents), 2) US Statedle (all 50 American states), 3) Województwodle (Poland\'s 16 administrative voivodeships), and 4) Powiatdle (380 Polish counties tested via registration plates, rivers, and roads).'
+    question: 'Which game modes are available?',
+    answer: 'There are nine daily modes: Countrydle (195 countries worldwide), Flagdle, Europedle, Asiadle, Africadle, Americadle, US Statedle (50 states), Województwodle (16 Polish voivodeships), and Powiatdle (380 Polish counties). The four continental modes focus on Europe, Asia, Africa, and the Americas. Play with a Friend offers separate live two-player duels.'
+  },
+  {
+    id: 'flagdle',
+    category: 'modes',
+    question: 'How is Flagdle different?',
+    answer: 'Flagdle asks you to identify a country from a partially revealed flag, with 12 guesses and more of the flag revealed as you play. Its score uses +500 for a win, a guess bonus from +1,500 on the first guess to +50 on the twelfth, a speed bonus of up to +300 that decays over 3 minutes, and a streak bonus of up to +500. There is no question-efficiency scoring component.'
+  },
+  {
+    id: 'friend-duels',
+    category: 'modes',
+    question: 'How do friend duels work? Are questions and guesses unlimited?',
+    answer: 'Create an invite from Play with a Friend and share it with your opponent. Each player chooses a secret location. Take turns asking a question or making a guess; players answer each other’s questions. There is no total question or guess limit, but each action spends one turn and turn timers still apply. If the starting player solves first, the other player gets a final guess to draw or can pass. That final reply does not allow another question.'
   },
   {
     id: 'play-past-games',
     category: 'modes',
     question: 'Can I play previous daily puzzles?',
-    answer: 'You can view the full history and solutions of past daily puzzles by visiting the Archive page in the header menu. It lists previous dates and answers across all four game modes so you can check what you missed.'
+    answer: 'You can browse past answers, but the Archive does not replay past puzzles. It currently covers Countrydle, US Statedle, Województwodle, and Powiatdle, not all nine daily modes. Countrydle entries link to daily blog recaps. Open Archive from the navigation menu to see the available dates and solutions.'
   },
 
   // Category 3: Knowledge Base & Truth
@@ -55,19 +67,19 @@ const FAQ_DATA: FAQItem[] = [
     id: 'data-sources',
     category: 'data',
     question: 'Where does Countrydle get its geography facts and maps?',
-    answer: 'Our knowledge base is strictly verified from authoritative public sources: Natural Earth and OpenStreetMap for boundary geometries and coastlines; Główny Urząd Statystyczny (GUS) for official Polish county demographics and registration codes; and the US Census Bureau for American state statistics.'
+    answer: 'Sources vary by mode and field. Country facts combine REST Countries, Factbook-derived profiles, and curated additions. Regional facts use local article text and infoboxes, classification tables, and manual lists or corrections. Some geography facts are extracted from Wikipedia text using AI. Maps use bundled boundary assets and Natural Earth-derived globe data, separately from the answer tables. These sources can contain errors or outdated information; they are not all direct official-statistics feeds.'
   },
   {
     id: 'hallucination-prevention',
     category: 'data',
-    question: 'How do you guarantee answers are factually accurate without AI hallucinations?',
-    answer: 'Countrydle does not let generative AI invent answers. Instead, AI is used strictly as a semantic compiler that translates your natural language question into a structured query plan. That plan executes directly against curated, local SQLite relational tables, delivering 100% verified factual truth.'
+    question: 'How are answers generated, and can they be wrong?',
+    answer: 'Yes, answers can be wrong. AI first interprets your question and, where supported, turns it into a plan evaluated against local fact tables. Questions outside that coverage may use generative AI with retrieved article text or general knowledge. Incorrect interpretation, incomplete data, and AI fallback can all produce mistakes. Database-backed answers reduce some risks, but do not guarantee factual truth.'
   },
   {
     id: 'historical-unions',
     category: 'data',
     question: 'Can I ask about historical blocs or former unions?',
-    answer: 'Yes! Our database includes major historical unions and former alliances such as the USSR, Warsaw Pact, Yugoslavia, Gran Colombia, and former colonial spheres (e.g., British Empire, Spanish Empire).'
+    answer: 'Countrydle includes historical membership associations such as the USSR, Warsaw Pact, Yugoslavia, Gran Colombia, and the British and Spanish Empires. These are simplified associations, not a complete historical atlas. Coverage and interpretation can be incomplete, especially when borders or membership changed over time.'
   },
 
   // Category 4: Accounts & Privacy
@@ -75,19 +87,37 @@ const FAQ_DATA: FAQItem[] = [
     id: 'need-account',
     category: 'account',
     question: 'Do I need to create an account to play?',
-    answer: 'Not at all! Countrydle is 100% free and open for guest play. Your daily progress, guesses, and question history are saved automatically in your browser\'s local storage.'
+    answer: 'No account is required for daily games or friend duels. Guest daily progress is stored in this browser, so changing devices, clearing site data, or using private browsing can make it unavailable. History retention varies by mode; Flagdle question history is not reliably retained after a reload. Accepted guest gameplay activity is also recorded server-side using a short-lived pseudonymous browser identifier.'
   },
   {
     id: 'guest-sync',
     category: 'account',
     question: 'What happens to my guest progress if I sign up or log in later?',
-    answer: 'Our platform features seamless guest synchronization. When you register or log in, your ongoing daily game state, questions, and guesses are automatically synced to your new profile without losing your current game.'
+    answer: 'After you sign in, the game tries to sync this browser’s current daily-puzzle progress. Password registration first asks you to log in; Google registration signs you in directly. If your account already has progress for that puzzle, the account state takes precedence instead of merging both versions. Sync depends on browser storage and a successful request, and a failed sync can lose local progress. Flagdle syncs guesses, not question text. Do not rely on login to combine different attempts or guarantee a lossless transfer.'
   },
   {
     id: 'streaks-and-profile',
     category: 'account',
     question: 'How do daily streaks and leaderboards work?',
-    answer: 'Registered players earn points and daily streaks for every solved puzzle. Your profile tracks your total points, total wins, games played, and active win streak, ranking you on monthly and average-performance global leaderboards.'
+    answer: 'Daily-game leaderboards are separate by mode. Monthly rankings use points earned in the current UTC calendar month; all-time average rankings require at least 5 completed games in the original modes and Flagdle, or 3 in a continental mode. Streak bonuses reward consecutive days solved in the same mode. Rankings sort by points or average score, then wins; elapsed time affects the score rather than acting as a separate tie-break.'
+  },
+  {
+    id: 'profile-coverage',
+    category: 'account',
+    question: 'Which games appear in my profile?',
+    answer: 'Profiles cover all nine daily modes: Countrydle, Flagdle, the four continental modes, US Statedle, Województwodle, and Powiatdle. Choose a game to view its own points, wins, activity, win rate, streaks, averages, and completed-game history. Friend matches have a separate section with finished-match outcomes and no points or leaderboard ranking. Unreleased daily answers stay hidden.'
+  },
+  {
+    id: 'remember-me',
+    category: 'account',
+    question: 'How does Remember me keep me signed in?',
+    answer: 'Select Remember me before signing in with a password or Google. By default, the remembered session lasts for 90 days of inactivity, while ordinary login lasts 60 minutes. Authenticated requests renew the selected window; these durations can be changed by the server configuration. Logout clears the login cookie on this device. Clearing cookies or using private browsing can require another login. Use Remember me only on a private device.'
+  },
+  {
+    id: 'privacy-and-cookies',
+    category: 'account',
+    question: 'What data and cookies does guest play use?',
+    answer: 'Guest daily progress is stored in your browser, and accepted gameplay activity is also recorded on the server under a short-lived pseudonymous browser identifier. Account login uses an HttpOnly cookie. The site loads Google AdSense, and analytics such as Rybbit may be enabled by deployment settings. See the Privacy Policy and Cookie Policy for more information; guest play does not mean that all activity stays only on your device.'
   }
 ];
 
@@ -126,7 +156,7 @@ export default function FAQPage() {
           {t('faq.title', 'Frequently Asked Questions')}
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
-          {t('faq.subtitle', 'Everything you need to know about deduction rules, scoring, geography datasets, and game mechanics.')}
+          {t('faq.subtitle', 'Rules, modes, scoring, answer limitations, and account help.')}
         </p>
       </header>
 
