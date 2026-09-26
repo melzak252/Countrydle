@@ -1,7 +1,7 @@
 from datetime import date
 
 from typing import List, Optional
-from sqlalchemy import select, func, and_, or_, cast, Integer, desc
+from sqlalchemy import select, func, and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.us_state import USState
@@ -14,7 +14,6 @@ from db.models.us_statedle import (
 from db.models.user import User
 from schemas.us_statedle import USStateGuessCreate, USStateQuestionCreate
 from schemas.countrydle import LeaderboardEntry
-from schemas.statistics import GameStatistics, GameHistoryEntry
 from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from game_logic import count_consecutive_daily_wins
 
@@ -155,64 +154,6 @@ class USStatedleStateRepository:
             USStatedleDay,
             type,
             minimum_average_games=5,
-        )
-    async def get_user_statistics(self, user: User) -> GameStatistics:
-        # Calculate total points and wins
-        stmt = select(
-            func.coalesce(func.sum(USStatedleState.points), 0).label("points"),
-            func.coalesce(func.sum(cast(USStatedleState.won, Integer)), 0).label(
-                "wins"
-            ),
-            func.count(USStatedleState.id).label("games_played"),
-        ).where(USStatedleState.user_id == user.id)
-        result = await self.session.execute(stmt)
-        row = result.first()
-
-        points = row.points if row else 0
-        wins = row.wins if row else 0
-        games_played = row.games_played if row else 0
-
-        # Get history
-        history_stmt = (
-            select(USStatedleState)
-            .options(joinedload(USStatedleState.day).joinedload(USStatedleDay.us_state))
-            .where(
-                and_(
-                    USStatedleState.user_id == user.id,
-                    USStatedleState.is_game_over == True,
-                )
-            )
-            .order_by(USStatedleState.id.desc())
-        )
-        history_result = await self.session.execute(history_stmt)
-        history_states = history_result.scalars().all()
-
-        from datetime import date
-
-        history_entries = [
-            GameHistoryEntry(
-                date=str(state.day.date),
-                won=state.won,
-                points=state.points,
-                attempts=state.guesses_made,
-                target_name=state.day.us_state.name if state.day.date != date.today() else "???",
-            )
-            for state in history_states
-        ]
-
-        current_streak = 0
-        for s in history_states:
-            if s.won:
-                current_streak += 1
-            else:
-                break
-
-        return GameStatistics(
-            points=points,
-            wins=wins,
-            games_played=games_played,
-            streak=current_streak,
-            history=history_entries,
         )
 
 

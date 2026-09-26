@@ -148,9 +148,20 @@ The admin **Test pytań** tab evaluates a question against an explicitly selecte
 
 ---
 
+## Player profiles
+
+`GET /users/{username}/stats` exposes daily statistics for Countrydle, Powiatdle,
+US Statedle, Województwodle, Flagdle, and each continent, plus casual friend-match
+results. Daily mode objects include active games, completed games, wins, points,
+win rate, current and best streaks, averages, and completed-game history ordered
+newest puzzle date first. Today's and future targets are hidden from public
+profiles using the UTC puzzle date. Friend-match history includes only finished
+solved, forfeit, and draw results; it has no points or leaderboard ranking.
+
 ## Active participation counts
 
 Blog player statistics and the admin overview use `db/repositories/participation.py`.
+
 A player must have an accepted question or guess for that puzzle; merely opening
 the game or having a daily state created by the streak job does not count.
 Blog statistics are scoped to the article's Countrydle puzzle date and are
