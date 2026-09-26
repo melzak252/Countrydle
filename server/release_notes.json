@@ -1,5 +1,5 @@
 {
-  "version": "1.11.0",
-  "title": "Game-specific quick question chips for all challenges",
-  "body": "TAILORED STARTER CHIPS FOR EVERY GAME\n- Quick starter question chips are now customized for every individual game mode in both English and Polish.\n- Polish Voivodeships (Województwodle): coastline, mountain ranges, foreign borders, regional compass divisions, and population thresholds.\n- Polish Counties (Powiatdle): city vs. land counties, Baltic access, mountain ranges, southern Poland, and international borders.\n- US States (US Statedle): coastal states, Midwest, New England, the American South, Mountain/West, and historical Confederate states.\n- Continental Challenges: tailored regional, demographic, and geographical starter questions for Europe, Asia, Africa, and the Americas.\n- Multiplayer Duels: starter chips automatically adapt to the duel room's active game map."
+  "version": "1.11.1",
+  "title": "Improved Polish voivodeship and border question resolution",
+  "body": "ACCURATE VOIVODESHIP BORDER RESOLUTION\n- Added canonical voivodeship name and inflection resolution covering all 16 Polish voivodeships.\n- Questions referencing inflected forms (such as łódzkim, małopolskim, or śląskim), prefixes, or regional capitals (Łódź, Kraków, Katowice, Warszawa) now reliably match the correct voivodeship borders.\n- Factual explanations clearly cite canonical voivodeship names when describing neighboring regions."
 }
