@@ -12,6 +12,8 @@ class PatchNoteRepository:
 
     async def list_published(self, limit: int, offset: int) -> Tuple[List[PatchNote], int]:
         total = await self.session.scalar(select(func.count()).select_from(PatchNote)) or 0
+        if offset >= total:
+            return [], total
         statement = select(PatchNote).order_by(PatchNote.published_at.desc(), PatchNote.id.desc()).offset(offset).limit(limit)
         result = await self.session.execute(statement)
         return list(result.scalars().all()), total

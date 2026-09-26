@@ -69,6 +69,17 @@ async def test_empty_history_and_invalid_pagination(patch_notes_store):
 
 
 @pytest.mark.anyio
+async def test_past_end_page_retains_total_without_offset_overflow(patch_notes_store):
+    client, sessions = patch_notes_store
+    async with sessions.begin() as session:
+        session.add(PatchNote(version="1.0.0", title="Release", body="Published notes"))
+    page = 2 ** 63
+    response = await client.get(f"/patch-notes?page={page}")
+    assert response.status_code == 200
+    assert response.json() == {"items": [], "total": 1, "page": page, "limit": 10}
+
+
+@pytest.mark.anyio
 async def test_repeat_and_conflicting_publications_preserve_original_release(patch_notes_store):
     _, sessions = patch_notes_store
     payload = {"version": "1.8.0", "title": "Title", "body": "Body"}
