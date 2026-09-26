@@ -178,3 +178,18 @@ export interface FlagdleStateResponse {
   flag_asset_url?: string | null;
   country?: Country | null;
 }
+
+export interface PatchNote {
+  id: number;
+  version: string;
+  title: string;
+  body: string;
+  published_at: string;
+}
+
+export interface PatchNotesResponse {
+  items: PatchNote[];
+  total: number;
+  page: number;
+  limit: number;
+}

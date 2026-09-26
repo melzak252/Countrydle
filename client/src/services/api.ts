@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -459,6 +459,20 @@ export const timeService = {
     const response = await api.get('/time');
     return response.data;
   }
+};
+
+export const patchNotesService = {
+  getPatchNotes: async (
+    page = 1,
+    limit = 10,
+    signal?: AbortSignal,
+  ): Promise<PatchNotesResponse> => {
+    const response = await api.get<PatchNotesResponse>('/patch-notes', {
+      params: { page, limit },
+      signal,
+    });
+    return response.data;
+  },
 };
 
 export default api;

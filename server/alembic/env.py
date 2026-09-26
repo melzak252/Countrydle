@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import make_url
 
 from alembic import context
 
@@ -36,7 +37,10 @@ target_metadata = Base.metadata
 # ... etc.
 
 def get_url():
-    return os.getenv("DATABASE_URL", "postgresql://postgres:root@localhost:5432/guess_country").replace("+asyncpg", "")
+    url = make_url(os.getenv("DATABASE_URL", "postgresql://postgres:root@localhost:5432/guess_country"))
+    if url.drivername in {"postgresql", "postgresql+asyncpg"}:
+        url = url.set(drivername="postgresql+psycopg2")
+    return url
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

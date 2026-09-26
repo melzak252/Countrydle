@@ -21,6 +21,7 @@ const resources = {
         faq: 'FAQ',
         more: 'More',
         contact: 'Contact',
+        patchNotes: 'Patch notes',
       },
       footer: {
         rights: 'All rights reserved.',
@@ -66,6 +67,20 @@ const resources = {
         deductionStrategy: 'Optimal Deduction Masterclass',
         noPosts: 'No daily blog posts found matching your search.',
         latestBadge: 'Yesterday\'s Solution',
+      },
+      patchNotes: {
+        badge: 'Release history',
+        title: 'Patch notes',
+        subtitle: 'See what has changed in Countrydle with each release.',
+        entries: 'Release history',
+        loading: 'Loading release history…',
+        empty: 'No release notes have been published yet.',
+        error: 'We couldn’t load the release history. Check your connection and try again.',
+        retry: 'Try again',
+        pagination: 'Release history pages',
+        previous: 'Previous',
+        next: 'Next',
+        page: 'Page {{page}} of {{totalPages}}',
       },
       share: {
         solvedTitle: 'Daily Challenge Solved!',
