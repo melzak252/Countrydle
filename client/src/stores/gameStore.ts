@@ -145,15 +145,16 @@ const normalizeGameState = (
     };
 };
 
-const guessMapping: any = {
-    country: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
-    powiaty: (g: any) => ({ guess: g.guess, powiat_id: g.powiat_id }),
-    us_states: (g: any) => ({ guess: g.guess, us_state_id: g.us_state_id }),
-    wojewodztwa: (g: any) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id }),
-    europe: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
-    asia: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
-    africa: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
-    americas: (g: any) => ({ guess: g.guess, country_id: g.country_id }),
+type SyncedGuess = Pick<Guess, 'guess' | 'country_id' | 'powiat_id' | 'us_state_id' | 'wojewodztwo_id' | 'elapsed_seconds'>;
+const guessMapping: Record<MapGameType, (guess: Guess) => SyncedGuess> = {
+    country: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
+    powiaty: (g: Guess) => ({ guess: g.guess, powiat_id: g.powiat_id, elapsed_seconds: g.elapsed_seconds }),
+    us_states: (g: Guess) => ({ guess: g.guess, us_state_id: g.us_state_id, elapsed_seconds: g.elapsed_seconds }),
+    wojewodztwa: (g: Guess) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id, elapsed_seconds: g.elapsed_seconds }),
+    europe: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
+    asia: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
+    africa: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
+    americas: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
 };
 
 type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'europe' | 'asia' | 'africa' | 'americas';
@@ -745,8 +746,12 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         country_id: countryId,
         elapsed_seconds: elapsed,
       });
+      if (!isGuest && (guessRes.answer || get().guesses.length + 1 >= 12)) {
+        await get().fetchGameState();
+        return;
+      }
 
-      const nextGuesses = [...get().guesses, guessRes];
+      const nextGuesses = [...get().guesses, { ...guessRes, elapsed_seconds: elapsed }];
       const isWon = guessRes.answer;
       const isGameOver = isWon || nextGuesses.length >= 12;
       const nextStage = isGameOver ? 12 : Math.min(12, nextGuesses.length + 1);
@@ -759,6 +764,15 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         is_game_over: isGameOver,
         won: isWon,
       };
+      if (isWon) {
+        const guessBonuses = [1500, 1300, 1100, 950, 800, 650, 500, 400, 300, 200, 100, 50];
+        const speedBonus = elapsed > 0
+          ? Math.floor(300 * Math.pow(Math.max(0, (180 - elapsed) / 180), 1.5))
+          : 0;
+        nextState.points = 500 + guessBonuses[nextGuesses.length - 1] + speedBonus + 50;
+      } else {
+        nextState.points = 0;
+      }
 
       if (dailyDate) {
         localStorage.setItem(
@@ -821,6 +835,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         guesses: (snapshot.guesses || []).map((g: FlagdleGuess) => ({
           guess: g.guess,
           country_id: g.country_id,
+          elapsed_seconds: g.elapsed_seconds,
         })),
       });
       localStorage.removeItem(localKey);

@@ -6,7 +6,16 @@ export interface User {
   is_admin: boolean;
   avatar_url?: string;
 }
+export type LeaderboardPeriod = 'monthly' | 'average';
 
+export interface LeaderboardEntry {
+  id: number;
+  username: string;
+  points: number;
+  wins: number;
+  games_played: number;
+  average_points: number;
+}
 
 export interface Country {
   id: number;
@@ -138,6 +147,7 @@ export interface FlagdleGuess {
   id: number;
   guess: string;
   country_id?: number | null;
+  elapsed_seconds?: number;
   answer: boolean;
   distance_km?: number | null;
   bearing_degrees?: number | null;

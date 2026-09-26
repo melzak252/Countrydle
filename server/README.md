@@ -156,14 +156,6 @@ the game or having a daily state created by the streak job does not count.
 Blog statistics are scoped to the article's Countrydle puzzle date and are
 recomputed when an existing article is fetched, without rewriting its text.
 
-Monthly leaderboards require at least one question or guess in the selected mode
-during the current month. Active players with zero points remain eligible; empty
-daily states do not qualify. Average leaderboards also exclude empty states from
-their game counts and eligibility thresholds, while retaining their existing
-historical period, completion rules, minimum games, and scoring. Leaderboards
-remain account-based; guest participation contributes to statistics, not anonymous
-ranked entries.
-
 Guests are identified by a signed, HttpOnly, SameSite=Lax `guest_identity` cookie
 with a two-day lifetime (Secure on HTTPS). Opening a solo game's state endpoint
 establishes the cookie but creates no participation row. Accepted actions update
@@ -188,6 +180,53 @@ The PostgreSQL regression tests require an explicitly disposable
 ```bash
 python -m pytest -q tests/test_guest_participation.py tests/test_guest_participation_routes.py tests/test_participation_reporting.py tests/test_blog.py
 ```
+
+### Leaderboards
+
+The leaderboard page covers Countrydle, Powiatdle, US States, Województwa,
+Europe, Asia, Africa, Americas, and Flagdle. A compact game picker groups the
+nine daily challenges into World & flags, Continents, and Regional games.
+Username search covers every eligible player, not just the current 25-row page,
+and preserves global ranks. Signed-in players can use **Find me** to jump to
+their highlighted row.
+
+Daily-game endpoints accept `type=monthly|average`:
+
+- `/countrydle/statistics/leaderboard`
+- `/powiatdle/leaderboard`, `/us_statedle/leaderboard`, `/wojewodztwodle/leaderboard`
+- `/continental/{europe|asia|africa|americas}/leaderboard`
+- `/flagdle/leaderboard`
+
+Rows contain `id`, `username`, total `points`, `wins`, `games_played`, and
+`average_points`. Monthly rankings include actual play in the current UTC
+calendar month, including active zero-point players; empty daily states do not
+qualify. Average rankings use completed, active games across all time, with at
+least five games required for the classic modes and Flagdle, or three for each
+continental mode. The selected score determines rank, then wins, then user ID.
+Continental totals are isolated by continent.
+
+Friend games are casual: no points awards and no public leaderboard or ranked
+win-rate competition. Their match results remain part of the friend-game flow,
+separate from daily-game scoring and rankings.
+
+Rankings remain account-based. Guest participation contributes to statistics,
+not anonymous ranked entries.
+
+### Daily-game scoring and guest sync
+
+Streak bonuses count consecutive winning puzzle dates in the same game (and
+the same continent), ending yesterday. The current win is excluded from the
+history before its bonus is calculated; losses and missing dates break the
+streak. Playing another mode does not increase that mode's scoring bonus.
+
+Guest sync validates attempt counts, budgets, the final winning guess, and
+terminal state before awarding points. Timing comes from the final submitted
+attempt, and the client retains it through login. Flagdle shows calculated
+guest points and refreshes authenticated results from the persisted server
+state. Repeating a completed sync does not award points again.
+
+These corrections apply to new scoring and sync operations; historical
+awards are not recalculated.
 
 ---
 

@@ -62,7 +62,7 @@ from countrydle.fact_editor import (
 from version import SERVER_VERSION
 
 import countrydle.utils as gutils
-from game_logic import GameConfig, GameRules, GameState
+from game_logic import GameConfig, GameRules, GameState, is_valid_synced_game_state
 import json
 from utils.geo import enhance_guess_with_hint
 
@@ -150,6 +150,21 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
+    if not is_valid_synced_game_state(
+        COUNTRYDLE_CONFIG,
+        guesses_made=sync_data.state.guesses_made,
+        remaining_guesses=sync_data.state.remaining_guesses,
+        is_game_over=sync_data.state.is_game_over,
+        won=sync_data.state.won,
+        correct_guesses=[
+            guess.country_id == day_country.country_id for guess in sync_data.guesses
+        ],
+        questions_asked=sync_data.state.questions_asked,
+        remaining_questions=sync_data.state.remaining_questions,
+        synced_questions=len(sync_data.questions),
+    ):
+        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
+
     country_repo = CountryRepository(session)
     for guess in sync_data.guesses:
         await country_repo.validate_guess(guess.country_id, guess.guess)
@@ -191,14 +206,10 @@ async def sync_guest_data(
     state.won = sync_data.state.won
     
     if state.won:
-        from db.repositories.user import UserRepository
-        user_points = await UserRepository(session).get_user_points(user.id)
-        current_streak = ((user_points.streak if user_points else 0) + 1)
-        elapsed = None
-        for g in sync_data.guesses:
-            if g.elapsed_seconds is not None:
-                elapsed = g.elapsed_seconds
-                break
+        current_streak = (
+            await CountrydleStateRepository(session).get_current_streak(user.id, day_country.date)
+        ) + 1
+        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
         state.points = await CountrydleStateRepository(session).calc_points(
             state, elapsed_seconds=elapsed, streak=current_streak
         )
@@ -983,7 +994,7 @@ async def make_guess(
 
     # Update State using Repository logic (handles points, game over, etc.)
     await CountrydleStateRepository(session).guess_made(
-        state, new_guess, elapsed_seconds=guess.elapsed_seconds
+        state, new_guess, puzzle_date=daily_country.date, elapsed_seconds=guess.elapsed_seconds
     )
 
     hint = enhance_guess_with_hint(

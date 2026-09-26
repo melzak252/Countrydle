@@ -10,10 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.country import Country
 from db.models.flagdle import FlagdleDay, FlagdleState, FlagdleGuess
 from db.models.user import User
-from game_logic import calculate_flagdle_points
+from game_logic import calculate_flagdle_points, count_consecutive_daily_wins
 from schemas.flagdle import FlagdleGuessCreate
 from country_eligibility import require_eligible_target
 from db.repositories.country import CountryRepository
+from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
+from schemas.countrydle import LeaderboardEntry
 
 
 class FlagdleDayRepository:
@@ -120,26 +122,22 @@ class FlagdleStateRepository:
         await self.session.refresh(state)
         return state
 
-    async def get_current_streak(self, user_id: int) -> int:
+    async def get_current_streak(self, user_id: int, puzzle_date: date) -> int:
         stmt = (
-            select(FlagdleState)
+            select(FlagdleDay.date, FlagdleState.won)
+            .join(FlagdleDay, FlagdleState.day_id == FlagdleDay.id)
             .where(
                 and_(
                     FlagdleState.user_id == user_id,
                     FlagdleState.is_game_over == True,
+                    FlagdleDay.date < puzzle_date,
                 )
             )
-            .order_by(FlagdleState.id.desc())
+            .order_by(FlagdleDay.date.desc())
         )
-        res = await self.session.execute(stmt)
-        states = res.scalars().all()
-        streak = 0
-        for s in states:
-            if s.won:
-                streak += 1
-            else:
-                break
-        return streak
+        result = await self.session.execute(stmt)
+        completed_games = [(row.date, row.won) for row in result.all()]
+        return count_consecutive_daily_wins(completed_games, puzzle_date)
 
     async def calc_points(
         self,
@@ -153,6 +151,15 @@ class FlagdleStateRepository:
             elapsed_seconds=elapsed_seconds,
             streak=streak,
         )
+    async def get_leaderboard(self, type: str = "monthly") -> List[LeaderboardEntry]:
+        return await aggregate_leaderboard(
+            self.session,
+            FlagdleState,
+            FlagdleDay,
+            type,
+            minimum_average_games=5,
+        )
+
 
 
 class FlagdleGuessRepository:

@@ -426,6 +426,53 @@ async def test_guest_sync_endpoint(client, mock_auth):
 
 
 @pytest.mark.anyio
+async def test_guest_sync_rejects_unearned_terminal_win(client, mock_auth):
+    mock_day = MagicMock()
+    mock_day.id = 1
+    mock_day.continent = ContinentCode.EUROPE
+    mock_day.country_id = 100
+
+    mock_state = MagicMock()
+    mock_state.questions_asked = 0
+    mock_state.guesses_made = 0
+
+    with patch(
+        "db.repositories.continental.ContinentalDayRepository.get_day_by_date",
+        new_callable=AsyncMock,
+        return_value=mock_day,
+    ), patch(
+        "db.repositories.continental.ContinentalStateRepository.get_state",
+        new_callable=AsyncMock,
+        return_value=mock_state,
+    ), patch(
+        "db.repositories.user.UserRepository.update_points",
+        new_callable=AsyncMock,
+    ) as update_points, patch(
+        "db.repositories.continental.ContinentalStateRepository.update_state",
+        new_callable=AsyncMock,
+    ) as update_state:
+        response = await client.post(
+            "/continental/europe/sync",
+            json={
+                "date": "2026-09-22",
+                "state": {
+                    "remaining_questions": 8,
+                    "remaining_guesses": 3,
+                    "questions_asked": 0,
+                    "guesses_made": 0,
+                    "is_game_over": True,
+                    "won": True,
+                },
+                "questions": [],
+                "guesses": [],
+            },
+        )
+
+    assert response.status_code == 400
+    update_points.assert_not_awaited()
+    update_state.assert_not_awaited()
+
+@pytest.mark.anyio
 async def test_scheduler_anti_collision():
     """Verify daily rotation scheduler never picks the same country twice on the same day."""
     from continental.scheduler import generate_continental_days

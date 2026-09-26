@@ -13,10 +13,12 @@ from db.models import CountrydleGuess
 from db.repositories.user import UserRepository
 from db.models.user import UserPoints
 from schemas.countrydle import LeaderboardEntry, UserStatistics
+from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from schemas.statistics import GameStatistics, GameHistoryEntry
 from db.models.question import CountrydleQuestion
 from db.repositories.question import CountrydleQuestionsRepository
 from db.repositories.guess import CountrydleGuessRepository
+from game_logic import count_consecutive_daily_wins
 
 MAX_GUESSES = 3
 MAX_QUESTIONS = 10
@@ -159,110 +161,13 @@ class CountrydleRepository:
         return countries_with_count
 
     async def get_leaderboard(self, type: str = "monthly"):
-        cs = aliased(CountrydleState)
-        up = aliased(UserPoints)
-        cd = aliased(CountrydleDay)
-
-        if type == "monthly":
-            current_month = date.today().replace(day=1)
-            stmt = (
-                select(
-                    User.id,
-                    User.username,
-                    func.coalesce(func.sum(cs.points), 0).label("points"),
-                    func.coalesce(func.sum(cs.won.cast(Integer)), 0).label("wins"),
-                    func.coalesce(up.streak, 0).label("streak"),
-                )
-                .join(cs, User.id == cs.user_id)
-                .join(cd, cs.day_id == cd.id)
-                .outerjoin(up, User.id == up.user_id)
-                .where(
-                    and_(
-                        User.username.not_like("test_%"),
-                        User.username.not_like("pytest_%"),
-                        User.username.not_like("guess_c_%"),
-                        User.username.not_like("ask_q_%"),
-                        cd.date >= current_month,
-                        or_(cs.questions_asked > 0, cs.guesses_made > 0),
-                    )
-                )
-                .group_by(
-                    User.id,
-                    User.username,
-                    up.streak,
-                )
-                .order_by(
-                    func.coalesce(func.sum(cs.points), 0).desc(),
-                    func.coalesce(func.sum(cs.won.cast(Integer)), 0).desc(),
-                    func.coalesce(up.streak, 0).desc(),
-                )
-            )
-
-            result = await self.session.execute(stmt)
-
-            leaderboard = [
-                LeaderboardEntry(
-                    id=row.id,
-                    username=row.username,
-                    points=row.points,
-                    streak=row.streak,
-                    wins=row.wins,
-                )
-                for row in result.all()
-            ]
-
-            return leaderboard
-
-        elif type == "average":
-            stmt = (
-                select(
-                    User.id,
-                    User.username,
-                    func.coalesce(func.sum(cs.points), 0).label("points"),
-                    func.coalesce(func.sum(cs.won.cast(Integer)), 0).label("wins"),
-                    func.count(cs.id).label("games_played"),
-                    func.coalesce(up.streak, 0).label("streak"),
-                )
-                .join(cs, User.id == cs.user_id)
-                .outerjoin(up, User.id == up.user_id)
-                .where(
-                    and_(
-                        User.username.not_like("test_%"),
-                        User.username.not_like("pytest_%"),
-                        User.username.not_like("guess_c_%"),
-                        User.username.not_like("ask_q_%"),
-                        cs.is_game_over == True,
-                        or_(cs.questions_asked > 0, cs.guesses_made > 0),
-                    )
-                )
-                .group_by(
-                    User.id,
-                    User.username,
-                    up.streak,
-                )
-                .having(func.count(cs.id) >= 5)
-            )
-
-            result = await self.session.execute(stmt)
-
-            leaderboard = []
-            for row in result.all():
-                avg_points = row.points / row.games_played if row.games_played > 0 else 0
-                leaderboard.append({
-                    "id": row.id,
-                    "username": row.username,
-                    "points": row.points,
-                    "streak": row.streak,
-                    "wins": row.wins,
-                    "average_points": round(avg_points, 2),
-                    "games_played": row.games_played,
-                })
-
-            leaderboard.sort(key=lambda x: x["average_points"], reverse=True)
-
-            return [LeaderboardEntry(**entry) for entry in leaderboard]
-
-        return []
+        return await aggregate_leaderboard(
+            self.session,
+            CountrydleState,
+            CountrydleDay,
+            type,
+            minimum_average_games=5,
+        )
 
     async def get_user_statistics(self, user: User) -> UserStatistics:
         up = await UserRepository(self.session).get_user_points(user.id)
@@ -370,8 +275,22 @@ class CountrydleStateRepository:
         result = await self.session.execute(
             select(CountrydleState).where(CountrydleState.id == csid)
         )
-
         return result.scalars().first()
+
+    async def get_current_streak(self, user_id: int, puzzle_date: date) -> int:
+        stmt = (
+            select(CountrydleDay.date, CountrydleState.won)
+            .join(CountrydleState, CountrydleState.day_id == CountrydleDay.id)
+            .where(
+                CountrydleState.user_id == user_id,
+                CountrydleState.is_game_over == True,
+                CountrydleDay.date < puzzle_date,
+            )
+            .order_by(CountrydleDay.date.desc())
+        )
+        result = await self.session.execute(stmt)
+        completed_games = [(row.date, row.won) for row in result.all()]
+        return count_consecutive_daily_wins(completed_games, puzzle_date)
 
     async def calc_points(
         self,
@@ -393,6 +312,7 @@ class CountrydleStateRepository:
         self,
         state: CountrydleState,
         guess: CountrydleGuess,
+        puzzle_date: date,
         elapsed_seconds: int | None = None,
     ) -> CountrydleState:
         state.guesses_made += 1
@@ -408,8 +328,7 @@ class CountrydleStateRepository:
 
         points = 0
         if state.won:
-            user_points = await UserRepository(self.session).get_user_points(state.user_id)
-            current_streak = ((user_points.streak if user_points else 0) + 1)
+            current_streak = (await self.get_current_streak(state.user_id, puzzle_date)) + 1
             points = await self.calc_points(
                 state, elapsed_seconds=elapsed_seconds, streak=current_streak
             )
