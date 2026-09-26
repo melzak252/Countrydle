@@ -39,6 +39,7 @@ export default function Header() {
   ];
   const more = [
     ['/archive', t('header.archive')],
+    ['/patch-notes', t('header.patchNotes', 'Patch notes')],
     ['/about', t('header.about')],
     ['/faq', t('header.faq')],
     ['/contact', t('header.contact')],

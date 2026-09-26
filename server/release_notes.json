@@ -1,0 +1,5 @@
+{
+  "version": "1.8.0",
+  "title": "Admin question tester",
+  "body": "Administrators can evaluate questions against an explicitly selected country or regional target without changing daily puzzles or player records. The tester reuses the game question-answering pipelines and displays structured evaluation diagnostics."
+}

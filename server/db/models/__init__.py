@@ -25,3 +25,4 @@ from .blog import DailyBlogPost
 from .answer_report import AnswerReport
 from .friend_match import FriendMatch, FriendSeat, FriendMove, FriendAction, FriendAdvisory, FriendReport
 from .guest_participation import GuestParticipation
+from .patch_note import PatchNote

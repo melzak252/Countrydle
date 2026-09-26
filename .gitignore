@@ -23,3 +23,6 @@ qdrant_data/
 qdrant_data_*/
 
 databases
+
+# Private operator instructions: never commit or publish.
+/DEPLOY.local.md

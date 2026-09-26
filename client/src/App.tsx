@@ -24,6 +24,7 @@ import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
+import PatchNotesPage from './pages/PatchNotesPage';
 import { useAuthStore } from './stores/authStore';
 import {
   useCountryGameStore,
@@ -113,6 +114,7 @@ function App() {
           <Route path="game" element={<GamePage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="archive" element={<ArchivePage />} />
+          <Route path="patch-notes" element={<PatchNotesPage />} />
           <Route path="profile/:username" element={<ProfilePage />} />
           <Route path="setup-profile" element={<SetupProfilePage />} />
           <Route path="powiaty" element={<PowiatyGamePage />} />
