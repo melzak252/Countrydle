@@ -1,9 +1,9 @@
 """Local SQLite-based answering for Countrydle questions.
 
 This module is intentionally conservative: it only answers questions that can be
-mapped with high confidence to one of the local knowledge-base relations. When a
-question is unsupported or ambiguous, callers should fall back to the old
-OpenAI + Qdrant pipeline.
+mapped with high confidence to one of the local knowledge-base relations. Unknown
+facts and ill-typed predicates return no local answer so the caller can use the
+general-knowledge fallback without turning missing knowledge into false.
 """
 
 from __future__ import annotations
@@ -32,6 +32,8 @@ class LocalAnswer:
 
 
 POLISH_COUNTRY_ALIASES = {
+    "dominika": "Dominica",
+    "dominikana": "Dominican Republic",
     "niemcy": "Germany",
     "niemcami": "Germany",
     "niemiec": "Germany",
@@ -59,6 +61,13 @@ POLISH_COUNTRY_ALIASES = {
 }
 
 COUNTRY_NAME_SYNONYMS = {
+    "antigua": "Antigua and Barbuda",
+    "saint kitts": "Saint Kitts and Nevis",
+    "bosnia": "Bosnia and Herzegovina",
+    "bosni": "Bosnia and Herzegovina",
+    "bosnie": "Bosnia and Herzegovina",
+    "bosnia herzegovina": "Bosnia and Herzegovina",
+    "bosnia i hercegowina": "Bosnia and Herzegovina",
     "drc": "Democratic Republic of the Congo",
     "the drc": "Democratic Republic of the Congo",
     "dr congo": "Democratic Republic of the Congo",
@@ -83,6 +92,8 @@ COUNTRY_NAME_SYNONYMS = {
     "uk": "United Kingdom",
     "uae": "United Arab Emirates",
     "car": "Central African Republic",
+    "cote d ivoire": "Ivory Coast",
+
 }
 
 
@@ -99,6 +110,11 @@ WATER_BODY_PARENT_MAP: dict[str, set[str]] = {
     "Ligurian Sea": {"Mediterranean Sea"},
     "Tyrrhenian Sea": {"Mediterranean Sea"},
     "Sea of Crete": {"Mediterranean Sea"},
+    "Atlantic Ocean": {"Ocean"},
+    "Pacific Ocean": {"Ocean"},
+    "Indian Ocean": {"Ocean"},
+    "Arctic Ocean": {"Ocean"},
+    "Southern Ocean": {"Ocean"},
 }
 
 VALUE_ALIASES = {
@@ -335,6 +351,15 @@ SUBREGION_ALIASES = {
     "northern europe": "Northern Europe",
     "southern europe": "Southern Europe",
     "southeast europe": "Southeast Europe",
+    "east europe": "Eastern Europe",
+    "north europe": "Northern Europe",
+    "south europe": "Southern Europe",
+    "east asia": "Eastern Asia",
+    "west asia": "Western Asia",
+    "south asia": "Southern Asia",
+    "east africa": "Eastern Africa",
+    "north africa": "Northern Africa",
+    "west africa": "Western Africa",
     "eastern asia": "Eastern Asia",
     "western asia": "Western Asia",
     "southern asia": "Southern Asia",
@@ -347,8 +372,8 @@ SUBREGION_ALIASES = {
     "central america": "Central America",
     "north america": "North America",
     "south america": "South America",
-    "middle east": "Western Asia",
-    "scandinavia": "Northern Europe",
+    "middle east": "Middle East",
+    "scandinavia": "Scandinavia",
     "baltic states": "Baltic states",
     "baltics": "Baltic states",
     "balkans": "Balkans",
@@ -373,10 +398,12 @@ GEOGRAPHIC_AREA_ALIASES = {
 }
 
 
-def normalize(text: str) -> str:
+def normalize(text: str, *, preserve_separators: bool = False) -> str:
     text = unicodedata.normalize("NFKD", text)
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
     text = text.casefold()
+    if preserve_separators:
+        return text
     text = re.sub(r"[^a-z0-9]+", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
@@ -581,17 +608,23 @@ class LocalCountryFacts:
     def _answer_water_access(self, conn, country, original, q):
         if not any(word in q for word in ("sea", "ocean", "morze", "ocean", "dostep", "coast", "coastline", "wybrzez", "nad ")):
             return None
-        waters = {r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))}
-        for w in list(waters):
-            if w in WATER_BODY_PARENT_MAP:
-                waters.update(WATER_BODY_PARENT_MAP[w])
+        direct_waters = {r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))}
+        waters = set(direct_waters)
         all_waters = [r[0] for r in conn.execute("SELECT DISTINCT water_body FROM country_water_access")]
         for w in list(all_waters):
             if w in WATER_BODY_PARENT_MAP:
                 all_waters.extend(WATER_BODY_PARENT_MAP[w])
         all_waters = list(dict.fromkeys(all_waters))
         target = first_mentioned_value(q, all_waters, VALUE_ALIASES)
-        if target:
+        if target == "Ocean":
+            answer = "Ocean" in waters
+            explanation = (
+                f"{country['app_country_name']} has direct coastline access to: "
+                f"{', '.join(sorted(direct_waters))}."
+                if answer
+                else f"{country['app_country_name']} does not have direct coastline access to an ocean."
+            )
+        elif target:
             answer = target in waters
             explanation = f"{country['app_country_name']} {'has' if answer else 'does not have'} direct access to {target}."
         elif any(word in q for word in ("sea access", "dostep do morza", "dostep do wod", "coast", "coastline", "wybrzez")):
@@ -600,7 +633,7 @@ class LocalCountryFacts:
         else:
             return None
         return LocalAnswer(
-            question=f"Does the country have direct access to {target or 'a sea/ocean'}?",
+            question=f"Does the country have direct access to {'an ocean' if target == 'Ocean' else target or 'a sea/ocean'}?",
             answer=answer,
             explanation=explanation,
             relation="water_access",
@@ -857,32 +890,67 @@ LIST_RELATION_QUERIES = {
     "water_access": "SELECT water_body FROM country_water_access WHERE country_id=?",
     "currency": "SELECT currency_name FROM country_currencies WHERE country_id=? UNION SELECT currency_code FROM country_currencies WHERE country_id=? AND currency_code IS NOT NULL",
     "official_language": "SELECT language_name FROM country_languages WHERE country_id=?",
-    "membership": "SELECT organization FROM country_memberships WHERE country_id=? UNION SELECT union_name FROM country_historical_unions WHERE country_id=?",
+    "membership": "SELECT organization FROM country_memberships WHERE country_id=?",
     "major_rivers": "SELECT river_name FROM country_major_rivers WHERE country_id=?",
     "flag_color": "SELECT color FROM country_flag_colors WHERE country_id=?",
     "flag_symbol": "SELECT symbol FROM country_flag_symbols WHERE country_id=?",
     "historical_union": "SELECT union_name FROM country_historical_unions WHERE country_id=?",
 }
 
+def _country_name_key(name: str) -> str:
+    return re.sub(r"\bst\b", "saint", normalize(name.replace("&", " and ")))
+
+
+def _one_edit_apart(left: str, right: str) -> bool:
+    """One insertion, deletion, substitution or adjacent transposition."""
+    if abs(len(left) - len(right)) > 1:
+        return False
+    for i, (a, b) in enumerate(zip(left, right)):
+        if a == b:
+            continue
+        if len(left) != len(right):
+            return left[i + 1:] == right[i:] if len(left) > len(right) else left[i:] == right[i + 1:]
+        return left[i + 1:] == right[i + 1:] or (
+            i + 1 < len(left)
+            and left[i] == right[i + 1] and left[i + 1] == right[i]
+            and left[i + 2:] == right[i + 2:]
+        )
+    return abs(len(left) - len(right)) == 1
+
+
 def find_country(conn: sqlite3.Connection, name: str) -> sqlite3.Row | None:
-    if name == "target_country" or name == "item":
-        raise ValueError("Special entities must be resolved by caller")
+    if not isinstance(name, str) or name in {"target_country", "item"}:
+        return None
     direct = conn.execute("SELECT * FROM countries WHERE app_country_name=?", (name,)).fetchone()
     if direct:
         return direct
-    wanted = normalize(name)
+    wanted = _country_name_key(name)
     alias = COUNTRY_NAME_SYNONYMS.get(wanted) or POLISH_COUNTRY_ALIASES.get(wanted)
     if alias:
         direct = conn.execute("SELECT * FROM countries WHERE app_country_name=?", (alias,)).fetchone()
         if direct:
             return direct
-    official = conn.execute("SELECT * FROM countries WHERE official_name=? COLLATE NOCASE", (name,)).fetchone()
-    if official:
-        return official
+    candidates = {}
+    rows = {}
     for row in conn.execute("SELECT * FROM countries"):
-        if normalize(row["app_country_name"]) == wanted or normalize(row["official_name"] or "") == wanted:
-            return row
-    return None
+        country = row["app_country_name"]
+        rows[country] = row
+        for label in (country, row["official_name"] or ""):
+            key = _country_name_key(label)
+            if key:
+                candidates.setdefault(key, set()).add(country)
+    for label, country in (COUNTRY_NAME_SYNONYMS | POLISH_COUNTRY_ALIASES).items():
+        if country in rows:
+            candidates.setdefault(_country_name_key(label), set()).add(country)
+    matches = candidates.get(wanted)
+    if matches is None:
+        # Short acronyms and shared prefixes are not safe typo candidates.
+        matches = set()
+        if len(wanted) >= 5:
+            for key, countries in candidates.items():
+                if len(key) >= 5 and _one_edit_apart(wanted, key):
+                    matches.update(countries)
+    return rows[next(iter(matches))] if len(matches) == 1 else None
 
 
 def resolve_entity(
@@ -1013,6 +1081,8 @@ def evaluate_plan_node(
         "equals",
         "greater_than",
         "less_than",
+        "greater_than_or_equal",
+        "less_than_or_equal",
         "west_of",
         "east_of",
         "north_of",
@@ -1021,6 +1091,7 @@ def evaluate_plan_node(
         "ends_with",
         "contains_text",
         "has_space",
+        "has_hyphen",
         "word_count_equals",
         "word_count_greater_than",
         "word_count_less_than",
@@ -1030,7 +1101,11 @@ def evaluate_plan_node(
     }:
         left = resolve_ref(conn, node.get("left", {}), target_country, item_value)
         right = resolve_ref(conn, node.get("right", {}), target_country, item_value)
-        if left is None or (operator != "has_space" and right is None):
+        if left is None or (operator not in {"has_space", "has_hyphen"} and right is None):
+            return None
+        # Relation cardinality is part of the operator contract. A list is not
+        # a scalar even when it is empty or has only one value.
+        if operator != "contains" and (isinstance(left, list) or isinstance(right, list)):
             return None
         left_ref = node.get("left", {})
         if (
@@ -1041,43 +1116,51 @@ def evaluate_plan_node(
         ):
             return True
         if operator == "contains":
-            if not isinstance(left, list):
+            if not isinstance(left, list) or isinstance(right, (list, dict, bool)):
                 return None
             right_norm = normalize_value(right)
             relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
+            if relation == "historical_union" and not conn.execute(
+                "SELECT 1 FROM country_historical_unions WHERE union_name = ? COLLATE NOCASE LIMIT 1",
+                (right,),
+            ).fetchone():
+                return None
             if relation == "borders_country":
-                r_canon = canonical_country_name(right_norm)
-                return any(canonical_country_name(normalize_value(value)) == r_canon for value in left)
-            if relation == "geographic_area":
-                if right_norm in {"northwestern africa", "northwest africa", "polnocno zachodnia afryka", "polnocno zachodniej afryce"}:
-                    nw_areas = {"northern africa", "western africa", "west africa", "maghreb"}
-                    return any(normalize_value(val) in nw_areas for val in left)
-                if right_norm in {"northeastern africa", "northeast africa", "polnocno wschodnia afryka", "polnocno wschodniej afryce"}:
-                    ne_areas = {"northern africa", "eastern africa", "east africa", "horn of africa"}
-                    return any(normalize_value(val) in ne_areas for val in left)
-                if right_norm in {"southwestern africa", "southwest africa", "poludniowo zachodnia afryka"}:
-                    sw_areas = {"southern africa", "western africa", "middle africa"}
-                    return any(normalize_value(val) in sw_areas for val in left)
-                if right_norm in {"southeastern africa", "southeast africa", "poludniowo wschodnia afryka"}:
-                    se_areas = {"southern africa", "eastern africa", "east africa"}
-                    return any(normalize_value(val) in se_areas for val in left)
+                resolved = find_country(conn, right)
+                if resolved is None:
+                    return None
+                subject = resolve_entity(conn, left_ref["entity"], target_country, item_value)
+                if subject is not None and resolved["id"] == subject["id"]:
+                    return True
+                r_canon = canonical_country_name(resolved["app_country_name"])
+                return any(canonical_country_name(value) == r_canon for value in left)
             return any(normalize_value(value) == right_norm for value in left)
         if operator == "equals":
-            relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
-            if relation in {"name", "borders_country"}:
-                return canonical_country_name(left) == canonical_country_name(right)
+            refs = (left_ref, node.get("right", {}))
+            if (
+                any(ref.get("relation") == "name" for ref in refs)
+                and all("value" in ref or ref.get("relation") == "name" for ref in refs)
+            ):
+                left_country = find_country(conn, left)
+                right_country = find_country(conn, right)
+                if left_country is None or right_country is None:
+                    return None
+                return left_country["id"] == right_country["id"]
             return normalize_value(left) == normalize_value(right)
-        if operator in {"starts_with", "ends_with", "contains_text", "has_space"}:
-            left_text = normalize(text_value(left) or "")
-            right_text = normalize(text_value(right) or "")
+        if operator == "has_space":
+            return " " in (text_value(left) or "").strip()
+        if operator == "has_hyphen":
+            left_text = text_value(left) or ""
+            return any(char in left_text for char in "-\u2010\u2011")
+        if operator in {"starts_with", "ends_with", "contains_text"}:
+            left_text = normalize(text_value(left) or "", preserve_separators=True)
+            right_text = normalize(text_value(right) or "", preserve_separators=True)
             if operator == "starts_with":
                 return left_text.startswith(right_text)
             if operator == "ends_with":
                 return left_text.endswith(right_text)
             if operator == "contains_text":
                 return right_text in left_text
-            if operator == "has_space":
-                return " " in (text_value(left) or "").strip()
         if operator.startswith("word_count_"):
             left_num = word_count(text_value(left) or "")
             try:
@@ -1107,6 +1190,10 @@ def evaluate_plan_node(
             right_num = float(right)
         except (TypeError, ValueError):
             return None
+        if operator == "greater_than_or_equal":
+            return left_num >= right_num
+        if operator == "less_than_or_equal":
+            return left_num <= right_num
         if operator in {"greater_than", "east_of", "north_of"}:
             return left_num > right_num
         if operator in {"less_than", "west_of", "south_of"}:
@@ -1169,31 +1256,27 @@ def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) 
         and isinstance(right, dict)
         and isinstance(right.get("value"), str)
     ):
-        value = right["value"]
-        area_values = {
-            r[0]
-            for r in conn.execute("SELECT DISTINCT region_name FROM country_regions")
-        } | {
-            r[0]
-            for r in conn.execute("SELECT DISTINCT subregion_name FROM country_subregions")
-        }
-        canonical_area = first_mentioned_value(normalize(value), area_values, GEOGRAPHIC_AREA_ALIASES)
-        if canonical_area:
-            direction_words = {
-                "north", "northern", "northwest", "northwestern", "northeast", "northeastern",
-                "south", "southern", "southwest", "southwestern", "southeast", "southeastern",
-                "east", "eastern", "west", "western", "central"
-            }
-            val_words = set(normalize(value).split())
-            if canonical_area in {"Africa", "Europe", "Asia", "Americas", "Oceania"} and (val_words & direction_words):
-                pass
-            else:
-                right["value"] = canonical_area
+        value = normalize(right["value"])
+        if value in {"north america", "south america"}:
+            left["relation"] = "continent"
+            canonical_area = value.title()
         else:
-            # If right["value"] is not a recognized geographic area in the database
-            # (e.g. cultural or ethnic family like "Slavic", "Germanic", etc.),
-            # this plan cannot be truthfully evaluated against local geographic_area tables.
+            canonical_area = GEOGRAPHIC_AREA_ALIASES.get(value)
+            if canonical_area is None:
+                canonical_area = next(
+                    (
+                        row[0]
+                        for row in conn.execute(
+                            "SELECT region_name FROM country_regions "
+                            "UNION SELECT subregion_name FROM country_subregions"
+                        )
+                        if normalize(row[0]) == value
+                    ),
+                    None,
+                )
+        if canonical_area is None:
             return None
+        right["value"] = canonical_area
     if isinstance(normalized.get("condition"), dict):
         normalized["condition"] = normalize_geographic_area_plan(conn, normalized["condition"])
     if isinstance(normalized.get("conditions"), list):
@@ -1210,9 +1293,8 @@ def generate_factual_explanation(
     country: sqlite3.Row,
     plan: dict,
     answer: bool,
-    improved_question: str,
-    planner_explanation: str | None = None,
-    original_question: str | None = None,
+    *,
+    item_value: str | None = None,
 ) -> str:
     name = country["app_country_name"]
     node = plan if isinstance(plan, dict) else {}
@@ -1225,15 +1307,69 @@ def generate_factual_explanation(
         rel = left["relation"]
     if isinstance(right, dict) and "value" in right:
         target_val = right["value"]
-    elif isinstance(right, (str, int, float)):
-        target_val = right
+    if op == "not":
+        child = node.get("condition")
+        return generate_factual_explanation(
+            conn, country, child, not answer, item_value=item_value
+        )
+    if op in {"and", "or"}:
+        facts = []
+        for child in node.get("conditions", []):
+            child_answer = evaluate_plan_node(conn, child, country, item_value)
+            if child_answer is not None:
+                detail = generate_factual_explanation(
+                    conn, country, child, child_answer, item_value=item_value
+                )
+                if detail not in facts:
+                    facts.append(detail)
+        if facts:
+            return " ".join(facts)
+    if op in {"any", "all"}:
+        items_ref = node.get("items", {})
+        items = resolve_ref(conn, items_ref, country, item_value)
+        condition = node.get("condition")
+        if not isinstance(items, list) or condition is None:
+            return ""
+        entity = items_ref.get("entity") if isinstance(items_ref, dict) else None
+        subject = resolve_entity(conn, entity, country, item_value) if entity else None
+        subject_name = subject["app_country_name"] if subject is not None else name
+        neighbors = isinstance(items_ref, dict) and items_ref.get("relation") == "borders_country"
+        facts = []
+        for item in items:
+            bound_value = str(item)
+            child_answer = evaluate_plan_node(conn, condition, country, bound_value)
+            if child_answer is answer:
+                facts.append(
+                    generate_factual_explanation(
+                        conn, country, condition, child_answer, item_value=bound_value
+                    )
+                )
+                if (op == "any" and answer) or (op == "all" and not answer):
+                    break
+        if facts:
+            scope = f"Among {subject_name}'s land-border neighbors: " if neighbors else "Among the listed countries: "
+            return scope + " ".join(facts)
+        if not items:
+            return f"{subject_name} has no land-border neighbors." if neighbors else "There are no items to check."
+        return ""
+    target_country = country
+    if isinstance(left, dict) and left.get("entity"):
+        subject = resolve_entity(conn, left["entity"], target_country, item_value)
+        if subject is not None:
+            country = subject
+            name = country["app_country_name"]
 
     if rel == "borders_country" and target_val:
+        resolved = find_country(conn, target_val)
+        if resolved is not None:
+            target_val = resolved["app_country_name"]
+            if answer and resolved["id"] == country["id"]:
+                return f"In this game, {name} counts as bordering itself."
         borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
         if answer:
             return f"{name} shares a land border with {target_val}."
         else:
-            b_str = ", ".join(sorted(set(borders))) if borders else "none (island nation)"
+            b_str = ", ".join(sorted(set(borders))) if borders else "none"
             return f"{name} does not border {target_val}. Its land borders are: {b_str}."
 
     if rel == "water_access":
@@ -1242,8 +1378,14 @@ def generate_factual_explanation(
         for w in db_waters:
             if w in WATER_BODY_PARENT_MAP:
                 all_waters.update(WATER_BODY_PARENT_MAP[w])
-        all_waters_sorted = sorted(all_waters)
+        all_waters_sorted = sorted(all_waters - {"Ocean"})
         w_str = ", ".join(all_waters_sorted) if all_waters_sorted else ""
+        if normalize(str(target_val)) == "ocean":
+            if answer:
+                return f"{name} has direct coastline access to: {', '.join(db_waters)}."
+            if db_waters:
+                return f"{name} does not have direct coastline access to an ocean. Its coastline access: {', '.join(db_waters)}."
+            return f"{name} is completely landlocked with no direct coastline."
 
         if target_val:
             via_sub = [w for w in db_waters if w in WATER_BODY_PARENT_MAP and target_val in WATER_BODY_PARENT_MAP[w]]
@@ -1257,18 +1399,16 @@ def generate_factual_explanation(
                 else:
                     return f"{name} is completely landlocked with no direct coastline to any sea or ocean (no access to: {target_val})."
         else:
-            if answer:
+            if all_waters_sorted:
                 return f"{name} has direct coastline access to: {w_str}."
             else:
                 return f"{name} is completely landlocked with no direct coastline."
 
     if rel == "is_island":
-        if answer:
+        if country["is_island"]:
             return f"{name} is an island nation."
         else:
-            borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
-            b_str = f" It shares land borders with: {', '.join(sorted(set(borders)))}." if borders else ""
-            return f"{name} is a continental country, not an island.{b_str}"
+            return f"{name} is not an island nation."
 
     if rel == "continent":
         conts = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))]
@@ -1284,9 +1424,9 @@ def generate_factual_explanation(
         all_areas = sorted(set(subregs + regs))
         areas_str = ", ".join(all_areas)
         if answer:
-            return f"Yes, {name} is located in {target_val}."
+            return f"{name} is located in {target_val}."
         else:
-            return f"No, {name} is not located in {target_val}. Its geographic regions are: {areas_str}."
+            return f"{name} is not located in {target_val}. Its geographic regions are: {areas_str}."
 
     if rel == "currency":
         curr_rows = conn.execute("SELECT currency_name, currency_code FROM country_currencies WHERE country_id=?", (country["id"],)).fetchall()
@@ -1315,30 +1455,30 @@ def generate_factual_explanation(
     if rel in ("historical_union", "membership") and target_val:
         if rel == "membership":
             if answer:
-                return f"Yes, {name} is or was a member of {target_val}."
+                return f"{name} is a member of {target_val}."
             else:
-                return f"No, {name} is not a member of {target_val}."
+                return f"{name} is not a member of {target_val}."
         else:
             if answer:
-                return f"Yes, {name} was historically part of {target_val}."
+                return f"{name} was historically part of {target_val}."
             else:
-                return f"No, {name} was not part of {target_val}."
+                return f"{name} was not part of {target_val}."
 
     if rel == "flag_color" and target_val:
         colors = [r[0] for r in conn.execute("SELECT color FROM country_flag_colors WHERE country_id=?", (country["id"],))]
         c_str = ", ".join(colors)
         if answer:
-            return f"Yes, the flag of {name} includes the color {target_val}. Flag colors: {c_str}."
+            return f"The flag of {name} includes the color {target_val}. Flag colors: {c_str}."
         else:
-            return f"No, the flag of {name} does not include {target_val}. Flag colors: {c_str}."
+            return f"The flag of {name} does not include {target_val}. Flag colors: {c_str}."
 
     if rel == "flag_symbol" and target_val:
         symbols = [r[0] for r in conn.execute("SELECT symbol FROM country_flag_symbols WHERE country_id=?", (country["id"],))]
         s_str = ", ".join(symbols) if symbols else "none (plain stripes/colors)"
         if answer:
-            return f"Yes, the flag of {name} features: {target_val}."
+            return f"The flag of {name} features: {target_val}."
         else:
-            return f"No, the flag of {name} does not feature {target_val}. Elements on flag: {s_str}."
+            return f"The flag of {name} does not feature {target_val}. Elements on flag: {s_str}."
 
     if rel == "driving_side":
         side_en = "left" if country["driving_side"] == "left" else "right"
@@ -1350,6 +1490,31 @@ def generate_factual_explanation(
             return f"The capital of {name} is {cap}, not {target_val}."
         return f"The capital of {name} is {cap}."
 
+    if (
+        op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"}
+        and isinstance(left, dict)
+        and isinstance(right, dict)
+        and left.get("entity")
+        and right.get("entity")
+        and left.get("relation") == right.get("relation")
+        and left.get("relation") in {"population", "area", "area_km2"}
+    ):
+        left_country = resolve_entity(conn, left["entity"], target_country, item_value)
+        right_country = resolve_entity(conn, right["entity"], target_country, item_value)
+        if left_country is not None and right_country is not None:
+            relation = left["relation"]
+            if relation == "population":
+                left_fact = f"{left_country['population']:,}"
+                right_fact = f"{right_country['population']:,}"
+                measure = "population"
+            else:
+                left_fact = f"{left_country['area_km2']:,} km²"
+                right_fact = f"{right_country['area_km2']:,} km²"
+                measure = "area"
+            return (
+                f"{left_country['app_country_name']} has a {measure} of {left_fact}; "
+                f"{right_country['app_country_name']} has a {measure} of {right_fact}."
+            )
     if rel == "population":
         pop = country["population"]
         if target_val and op in ("greater_than", "less_than"):
@@ -1388,7 +1553,7 @@ def generate_factual_explanation(
         other_entity_name = None
         if isinstance(right, dict):
             other_entity_name = right.get("entity")
-        other_country = find_country(conn, other_entity_name) if other_entity_name else None
+        other_country = resolve_entity(conn, other_entity_name, target_country) if other_entity_name else None
         c_lat = country["latitude"]
         c_lon = country["longitude"]
         if other_country:
@@ -1423,6 +1588,9 @@ def generate_factual_explanation(
                 return f"The name {name} ends with the letter '{val_u}'."
             else:
                 return f"The name {name} ends with the letter '{last_let}', not '{val_u}'."
+    if left_rel == "name" and op == "has_hyphen":
+        return f"The name {name} {'contains' if answer else 'does not contain'} a hyphen."
+
 
     # Handle starts_with single letter questions
     if rel == "name" and op == "starts_with" and target_val:
@@ -1433,77 +1601,25 @@ def generate_factual_explanation(
         else:
             return f"The name {name} starts with the letter '{first_letter}', not '{val_u}'."
 
-    # Handle OR of starts_with (letter ranges)
-    if op == "or":
-        conds = plan.get("conditions", [])
-        if conds and all(isinstance(c, dict) and c.get("operator") == "starts_with" for c in conds):
-            letters = [str(c.get("right", {}).get("value") or "").strip().upper() for c in conds if isinstance(c.get("right"), dict)]
-            first_letter = name[0].upper()
-            if len(letters) > 1:
-                letters_sorted = sorted(set(letters))
-                first_let = letters_sorted[0]
-                last_let = letters_sorted[-1]
-                range_str = f"{first_let}–{last_let}" if len(letters_sorted) > 2 else ", ".join(letters_sorted)
-                if answer:
-                    return f"The name {name} starts with '{first_letter}' (within the range {range_str})."
-                else:
-                    return f"The name {name} starts with '{first_letter}' (outside the range {range_str})."
+    facts = []
+    for operand in (left, right):
+        if not isinstance(operand, dict) or "relation" not in operand:
+            continue
+        subject = resolve_entity(conn, operand["entity"], target_country, item_value)
+        value = resolve_ref(conn, operand, target_country, item_value)
+        if subject is not None and value is not None:
+            label = operand["relation"].replace("_", " ").replace(".", " ")
+            display_value = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
+            facts.append(f"{subject['app_country_name']}: {label} = {display_value or 'none'}.")
+    if facts:
+        return " ".join(facts)
+    return f"The compared values are {resolve_ref(conn, left, target_country, item_value)!r} and {resolve_ref(conn, right, target_country, item_value)!r}."
 
-    # Informative fallback
-    prefix = "Yes" if answer else "No"
-    if planner_explanation:
-        return f"{prefix} - {planner_explanation.rstrip('.')} for {name}."
-
-    parts = []
-    conts = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))]
-    if conts:
-        parts.append(f"located in {', '.join(conts)}")
-    if country["capital"]:
-        parts.append(f"capital: {country['capital']}")
-    if country["population"]:
-        parts.append(f"population: {country['population']:,}")
-    summary = ", ".join(parts)
-    if summary:
-        return f"{prefix} ({name} is {summary})."
-    return f"{prefix} for {name}."
-
-def normalize_letter_range_plan(plan: dict) -> dict:
-    if not isinstance(plan, dict):
-        return plan
-
-    op = plan.get("operator")
-    conditions = plan.get("conditions")
-
-    if isinstance(conditions, list):
-        plan["conditions"] = [normalize_letter_range_plan(c) for c in conditions]
-
-    # Detect impossible AND of starts_with conditions:
-    # e.g. AND [ starts_with(A), OR [ starts_with(B)... ] ]
-    if op == "and" and isinstance(conditions, list) and len(conditions) == 2:
-        c1, c2 = conditions[0], conditions[1]
-        sw_node = None
-        or_node = None
-        if c1.get("operator") == "starts_with" and c2.get("operator") == "or":
-            sw_node, or_node = c1, c2
-        elif c2.get("operator") == "starts_with" and c1.get("operator") == "or":
-            sw_node, or_node = c2, c1
-
-        if sw_node and or_node:
-            sub_conds = or_node.get("conditions", [])
-            if sub_conds and all(isinstance(sc, dict) and sc.get("operator") == "starts_with" for sc in sub_conds):
-                return {
-                    "operator": "or",
-                    "conditions": [sw_node] + sub_conds,
-                }
-
-    return plan
 
 def execute_local_plan(
     plan: dict,
     country_name: str,
     improved_question: str,
-    planner_explanation: str | None = None,
-    original_question: str | None = None,
 ) -> LocalAnswer | None:
     if not DEFAULT_DB_PATH.exists():
         return None
@@ -1512,14 +1628,15 @@ def execute_local_plan(
         country = find_country(conn, country_name)
         if country is None:
             return None
-        plan = normalize_geographic_area_plan(conn, plan) or plan
-        plan = normalize_letter_range_plan(plan) or plan
+        plan = normalize_geographic_area_plan(conn, plan)
+        if plan is None:
+            return None
         answer = evaluate_plan_node(conn, plan, country)
         if answer is None:
             return None
         relations = sorted(plan_relations(plan)) or ["local_plan"]
         explanation = generate_factual_explanation(
-            conn, country, plan, answer, improved_question, planner_explanation, original_question=original_question
+            conn, country, plan, answer
         )
         return LocalAnswer(
             question=improved_question,

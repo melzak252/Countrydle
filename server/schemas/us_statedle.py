@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from schemas.user import UserDisplay
 from schemas.answer_report import ReportableQuestion
+from schemas.countrydle import CountrydleStateSchema
 
 
 class USStateDisplay(BaseModel):
@@ -63,7 +64,7 @@ class USStateQuestionCreate(BaseModel):
     original_question: str
     question: Optional[str]
     valid: bool
-    answer: Optional[bool]
+    answer: Optional[bool] = Field(strict=True)
     explanation: str
     context: Optional[str]
     intent: Optional[str] = None
@@ -122,7 +123,7 @@ class DayUSStateDisplay(BaseModel):
 
 
 class USStatedleSyncSchema(BaseModel):
-    state: USStatedleStateSchema
+    state: CountrydleStateSchema
     questions: List[int]
     guesses: List[USStateGuessBase]
     date: str

@@ -1,7 +1,9 @@
+import asyncio
+import time
 import os
 import json
 from typing import List, Tuple
-from openai import OpenAI
+from utils.ai_clients import get_openai_client
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,6 +45,7 @@ LOCAL_CONFIG = LocalModeConfig(
         "major_highways": ("us_state_major_highways", "highway_name"),
         "regional_labels": ("us_state_regional_labels", "label"),
     },
+    entity_list_relations=frozenset({"borders_state"}),
     supported_relations=[
         "name", "region", "division", "regional_labels", "borders_state", "borders_country", "water_access",
         "is_coastal", "population", "area", "latitude", "longitude", "major_rivers",
@@ -52,9 +55,11 @@ LOCAL_CONFIG = LocalModeConfig(
     language="English or Polish",
     fk_column="state_id",
     mode_notes=(
-        "- For questions asking whether the state borders an ocean or is a coastal state (e.g. 'Do I border an ocean', 'Is it coastal', 'czy leży nad oceanem'), "
-        "ALWAYS check the scalar boolean relation is_coastal == 1 (e.g. {\"operator\": \"equals\", \"left\": {\"entity\": \"target_state\", \"relation\": \"is_coastal\"}, \"right\": 1}). "
-        "Do NOT use generic water_access for 'ocean' questions because water_access also includes inland lakes (e.g. Lake Michigan for Indiana).\n"
+        "- Generic access to any ocean/sea, being coastal, or bordering an ocean "
+        "('dostęp do oceanu', 'nad oceanem', 'coastal') means the boolean is_coastal == 1. "
+        "This applies equally to NEGATED questions: negate the is_coastal predicate. "
+        "Never compare water_access with generic 'Ocean' or 'Sea'; that list holds specific named water bodies "
+        "and also inland lakes. An inland lake alone does not imply ocean/sea access.\n"
         "- For questions asking about a specific named water body like Gulf of Mexico, Atlantic Ocean, Pacific Ocean, Lake Michigan, etc., use contains_exact on relation water_access "
         "(e.g. {\"operator\": \"contains_exact\", \"left\": {\"entity\": \"target_state\", \"relation\": \"water_access\"}, \"right\": {\"value\": \"Gulf of Mexico\"}}).\n"
         "- For broad labels such as East Coast, West Coast, Gulf Coast, Great Lakes, "
@@ -70,7 +75,7 @@ def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> U
     return USStateQuestionEnhanced(
         original_question=original_question,
         valid=plan.valid,
-        question=plan.improved_question,
+        question=plan.improved_question or original_question,
         intent=plan.explanation,
         required_info=", ".join(sorted(set(plan.plan and []))) if False else plan.fallback_reason,
         explanation=plan.explanation if not plan.valid else None,
@@ -79,12 +84,19 @@ def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> U
 
 async def analyze_and_answer_locally(
     question: str, day_state: USStatedleDay, user: User | None, session: AsyncSession,
-    *, strict_errors: bool = False,
+    *, strict_errors: bool = False, evidence: dict | None = None,
 ):
     state: USState = await USStateRepository(session).get(day_state.us_state_id)
-    plan = analyze_question(
-        question, LOCAL_CONFIG, strict_errors=True, use_cache=False
-    ) if strict_errors else analyze_question(question, LOCAL_CONFIG)
+    planner_kwargs = {"strict_errors": True, "use_cache": False} if strict_errors else {}
+    if evidence is not None:
+        planner_evidence = evidence.setdefault("planner", {})
+        planner_kwargs["evidence"] = planner_evidence
+        planner_started = time.perf_counter()
+    try:
+        plan = await asyncio.to_thread(analyze_question, question, LOCAL_CONFIG, **planner_kwargs)
+    finally:
+        if evidence is not None:
+            planner_evidence["duration_ms"] = (time.perf_counter() - planner_started) * 1000
     if not plan.valid:
         return USStateQuestionCreate(
             user_id=user.id if user else None,
@@ -100,12 +112,17 @@ async def analyze_and_answer_locally(
         ), plan
     if strict_errors and plan.supported and plan.plan and not LOCAL_CONFIG.db_path.is_file():
         raise RuntimeError("Local facts are unavailable")
+    if evidence is not None:
+        local_started = time.perf_counter()
     try:
-        answer = execute_plan(LOCAL_CONFIG, state.name, plan)
+        answer = await asyncio.to_thread(execute_plan, LOCAL_CONFIG, state.name, plan)
     except Exception:
         if strict_errors:
             raise
         return None, plan
+    finally:
+        if evidence is not None:
+            evidence["local_duration_ms"] = (time.perf_counter() - local_started) * 1000
     if answer is None:
         return None, plan
     return USStateQuestionCreate(
@@ -204,8 +221,9 @@ Output:
     ]
     model = os.getenv("QUIZ_MODEL")
 
-    client = OpenAI()
-    response = client.chat.completions.create(
+    client = await asyncio.to_thread(get_openai_client)
+    response = await asyncio.to_thread(
+        client.chat.completions.create,
         model=model,
         messages=prompts,
         response_format={"type": "json_object"},
@@ -287,7 +305,7 @@ def answer_question_for_entity(
     model = os.getenv("QUIZ_MODEL")
     answer_dict = None
     try:
-        client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
+        client = get_openai_client(request_timeout=request_timeout)
         response = client.chat.completions.create(
             model=model,
             messages=prompts,
@@ -303,6 +321,13 @@ def answer_question_for_entity(
                 messages=prompts, temperature=0, seed=42,
                 response_id=response.id, system_fingerprint=response.system_fingerprint,
             )
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                evidence["usage"] = {
+                    "input_tokens": usage.prompt_tokens,
+                    "output_tokens": usage.completion_tokens,
+                    "total_tokens": usage.total_tokens,
+                }
     except Exception as exc:
         print(f"Warning: OpenAI call failed ({exc}); falling back to Gemini.")
         from countrydle.utils import gemini_json
@@ -315,20 +340,38 @@ async def ask_question(
     day_state: USStatedleDay,
     user: User | None,
     session: AsyncSession,
+    *,
+    evidence: dict | None = None,
 ) -> Tuple[USStateQuestionCreate, List[float]]:
 
 
     fragments = []
     question_vector = []
+    if evidence is not None:
+        retrieval_started = time.perf_counter()
     try:
         fragments, question_vector = await get_fragments_matching_question(
             question.question, "us_state_id", day_state.us_state_id, "us_states", session, limit=qdrant.US_STATEDLE_CONTEXT_LIMIT
         )
     except Exception as exc:
         print(f"Warning: Vector retrieval failed ({exc}); proceeding without Qdrant context.")
+    finally:
+        if evidence is not None:
+            evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     state: USState = await USStateRepository(session).get(day_state.us_state_id)
-    answer_dict = answer_question_for_entity(question, state.name, context)
+    answer_kwargs = {}
+    if evidence is not None:
+        fallback_evidence = evidence.setdefault("fallback", {})
+        answer_kwargs["evidence"] = fallback_evidence
+        fallback_started = time.perf_counter()
+    try:
+        answer_dict = await asyncio.to_thread(
+            answer_question_for_entity, question, state.name, context, **answer_kwargs
+        )
+    finally:
+        if evidence is not None:
+            fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
 
 
     question_create = USStateQuestionCreate(

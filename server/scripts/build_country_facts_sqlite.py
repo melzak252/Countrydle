@@ -56,6 +56,34 @@ SAMPLE_COUNTRIES = {
     "Brazil",
 }
 
+# A curated island-country classification is required: REST Countries' landlocked
+# and borders fields cannot distinguish island states with shared-island borders
+# from continental countries without borders. The existing CIA World Factbook
+# geography source is archived at https://github.com/factbook/factbook.json.
+# Border-sharing profiles in that archive:
+# - Brunei: https://raw.githubusercontent.com/factbook/factbook.json/master/east-n-southeast-asia/bx.json
+# - Haiti: https://raw.githubusercontent.com/factbook/factbook.json/master/central-america-n-caribbean/ha.json
+# - Dominican Republic: https://raw.githubusercontent.com/factbook/factbook.json/master/central-america-n-caribbean/dr.json
+# - Indonesia: https://raw.githubusercontent.com/factbook/factbook.json/master/east-n-southeast-asia/id.json
+# - Ireland: https://raw.githubusercontent.com/factbook/factbook.json/master/europe/ei.json
+# - United Kingdom: https://raw.githubusercontent.com/factbook/factbook.json/master/europe/uk.json
+# - Timor-Leste: https://raw.githubusercontent.com/factbook/factbook.json/master/east-n-southeast-asia/tt.json
+# - Papua New Guinea: https://raw.githubusercontent.com/factbook/factbook.json/master/east-n-southeast-asia/pp.json
+# Australia occupies a continent and is excluded despite having no land borders:
+# https://raw.githubusercontent.com/factbook/factbook.json/master/australia-oceania/as.json
+ISLAND_COUNTRY_CCA3 = {
+    "ATG", "BHR", "BHS", "BRB", "BRN", "COM", "CPV", "CUB", "CYP", "DMA",
+    "DOM", "FJI", "FSM", "GBR", "GRD", "HTI", "IDN", "IRL", "ISL", "JAM",
+    "JPN", "KIR", "KNA", "LCA", "LKA", "MDG", "MDV", "MHL", "MLT", "MUS",
+    "NRU", "NZL", "PHL", "PNG", "PLW", "SGP", "SLB", "STP", "SYC", "TLS",
+    "TON", "TTO", "TUV", "VCT", "VUT", "WSM",
+}
+
+
+# The treaty identifies Belgium, the Netherlands and Luxembourg as Benelux
+# countries: https://www.benelux.int/en/information-for-citizens/benelux-union/about-us/benelux-treaty/
+BENELUX_MEMBERS = {"BEL", "LUX", "NLD"}
+
 EU_MEMBERS = {
     "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST", "FIN", "FRA",
     "DEU", "GRC", "HUN", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD",
@@ -181,7 +209,7 @@ FACTBOOK_MEMBERSHIP_EXCLUDED_QUALIFIERS = {
 # These high-value game relations are maintained by explicit up-to-date lists
 # below, because the Factbook organization field can include stale entries
 # (for example the United Kingdom still appears with EU in the source).
-STATIC_MEMBERSHIP_ORGANIZATIONS = {"EU", "NATO", "Schengen", "OECD", "G7", "G20"}
+STATIC_MEMBERSHIP_ORGANIZATIONS = {"EU", "NATO", "Schengen", "OECD", "G7", "G20", "Benelux"}
 
 RELIGION_GROUP_PATTERNS = [
     ("No religion", ("no religion", "none", "unaffiliated", "atheist", "agnostic", "nonreligious")),
@@ -509,7 +537,7 @@ def insert_country(
             country.get("area"),
             latlng[0] if len(latlng) > 0 else None,
             latlng[1] if len(latlng) > 1 else None,
-            1 if country.get("landlocked") is False and not country.get("borders") else 0,
+            1 if cca3 in ISLAND_COUNTRY_CCA3 else 0,
             car.get("side"),
             government_type,
             dominant_religion,
@@ -597,6 +625,8 @@ def insert_country(
         memberships.append("G7")
     if cca3 in G20_MEMBERS:
         memberships.append("G20")
+    if cca3 in BENELUX_MEMBERS:
+        memberships.append("Benelux")
 
     for organization in memberships:
         connection.execute(

@@ -1,25 +1,34 @@
 """Build local SQLite facts database for Powiatdle.
 
-Creates `data/powiat_facts.sqlite` from local markdown files. This is an MVP
-builder: scalar administrative fields are parsed from infoboxes, while borders,
-roads, rivers and landform regions are extracted with conservative regexes and
-gazetteers from local Wikipedia markdown.
+Administrative and descriptive facts come from local Wikipedia markdown.
+County adjacency comes exclusively from the full-resolution PRG snapshot.
+Use --refresh-borders to replace only county/province borders and their lookup
+metadata, preserving all other facts, including manual edits.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import json
 import re
 import sqlite3
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+APP_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = APP_DIR if (APP_DIR / "data").exists() else APP_DIR.parent
 DATA_DIR = ROOT_DIR / "data"
 DEFAULT_OUTPUT = DATA_DIR / "powiat_facts.sqlite"
-SCHEMA_PATH = ROOT_DIR / "server" / "powiatdle" / "local_kb" / "schema.sql"
+SCHEMA_PATH = APP_DIR / "powiatdle" / "local_kb" / "schema.sql"
+DEFAULT_BORDERS = APP_DIR / "powiatdle" / "local_kb" / "borders.json"
+
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
+
+from powiat_names import build_powiat_aliases
 
 
 COUNTRY_ALIASES = {
@@ -77,24 +86,8 @@ def clean_text(value: str | None) -> str | None:
     return value.strip(" |\t\r\n")
 
 
-def normalize_name(value: str) -> str:
-    value = clean_text(value) or ""
-    value = re.sub(r"\s*\([^)]*\)", "", value)
-    value = re.sub(r"^(powiat|miasto)\s+", "", value, flags=re.I)
-    return value.strip().lower()
 
 
-def genitive_variants(powiat_name: str) -> set[str]:
-    base = re.sub(r"^Powiat\s+", "", powiat_name).strip().lower()
-    variants = {base}
-    for suffix in ("ski", "cki", "dzki"):
-        if base.endswith(suffix):
-            variants.add(base[:-1] + "ego")
-    if base.endswith("ki"):
-        variants.add(base[:-1] + "ego")
-    if base.endswith("y"):
-        variants.add(base[:-1] + "ego")
-    return variants
 
 
 def load_rows(csv_path: Path) -> list[PowiatRow]:
@@ -179,60 +172,8 @@ def extract_section(text: str, heading_regex: str) -> str:
     return text[start : start + next_heading.start()] if next_heading else text[start:]
 
 
-def choose_candidate(candidates: list[str], prefer_voivodeship: str, voivodeship_by_name: dict[str, str]) -> str | None:
-    if not candidates:
-        return None
-    for candidate in candidates:
-        if voivodeship_by_name.get(candidate) == prefer_voivodeship:
-            return candidate
-    if len(candidates) > 1:
-        # Ambiguous county names exist in several voivodeships (e.g. bielski,
-        # nowodworski, średzki). If the source text does not disambiguate and
-        # none is in the same voivodeship, skip instead of creating a false edge.
-        return None
-    return candidates[0]
 
 
-def extract_neighbors(
-    text: str,
-    name_by_norm: dict[str, list[str]],
-    genitive_by_norm: dict[str, list[str]],
-    prefer_voivodeship: str,
-    voivodeship_by_name: dict[str, str],
-    include_prose: bool = False,
-) -> list[str]:
-    section = extract_section(text, r"^(#{2,4})\s+Sąsiednie powiaty\b.*$")
-    neighbors: set[str] = set()
-    for line in section.splitlines() if section else []:
-        if not line.lstrip().startswith("*"):
-            continue
-        item = re.sub(r"^\s*\*\s*", "", line)
-        item = re.sub(r"\([^)]*\)", "", item)
-        item = clean_text(item) or ""
-        candidate = choose_candidate(name_by_norm.get(normalize_name(item), []), prefer_voivodeship, voivodeship_by_name)
-        if candidate:
-            neighbors.add(candidate)
-            continue
-        # Try after removing adjectives like "powiat" already handled.
-        words = re.sub(r"\b(miasto na prawach powiatu|powiat)\b", "", item, flags=re.I)
-        candidate = choose_candidate(name_by_norm.get(normalize_name(words), []), prefer_voivodeship, voivodeship_by_name)
-        if candidate:
-            neighbors.add(candidate)
-    if not include_prose:
-        return sorted(neighbors)
-
-    # City-county pages often describe neighboring powiats in prose, e.g.
-    # "powiatów sąsiadujących z Krakowem: krakowskiego, wielickiego...".
-    prose = text[:7000].lower().replace("\n", " ")
-    for sentence in re.split(r"(?<=[.!?])\s+", prose):
-        if "powiat" not in sentence or not re.search(r"sąsiad|sasiad|granic", sentence):
-            continue
-        for variant, canonical in genitive_by_norm.items():
-            if re.search(r"(?<![\wąćęłńóśźż])" + re.escape(variant) + r"(?![\wąćęłńóśźż])", sentence, flags=re.I):
-                candidate = choose_candidate(canonical, prefer_voivodeship, voivodeship_by_name)
-                if candidate:
-                    neighbors.add(candidate)
-    return sorted(neighbors)
 
 
 def extract_countries(text: str) -> list[str]:
@@ -296,33 +237,102 @@ def insert_many(conn: sqlite3.Connection, table: str, powiat_id: int, column: st
     )
 
 
-def build_database(output_path: Path) -> None:
+def replace_border_facts(conn: sqlite3.Connection, borders_path: Path) -> dict[str, int]:
+    snapshot = json.loads(borders_path.read_text(encoding="utf-8"))
+    columns = ("id", "name", "voivodeship", "is_city_county", "terc")
+    catalog = [
+        dict(zip(columns, row))
+        for row in conn.execute("SELECT id, name, voivodeship, is_city_county, terc FROM powiats")
+    ]
+    by_code = {}
+    for row in catalog:
+        terc = str(row["terc"] or "").strip()
+        if not re.fullmatch(r"\d{4}(?:\d{3})?", terc):
+            raise ValueError(f"Invalid county TERC: {row['name']}")
+        code = terc[:4]
+        if code in by_code:
+            raise ValueError(f"Duplicate county TERYT: {code}")
+        if not row["voivodeship"]:
+            raise ValueError(f"Missing county voivodeship: {row['name']}")
+        by_code[code] = row
+    expected = snapshot["counties"]
+    if (
+        snapshot.get("schema_version") != 1
+        or not by_code
+        or len(expected) != len(set(expected))
+        or set(expected) != by_code.keys()
+    ):
+        raise ValueError("Border snapshot and county catalog do not match")
+    edges = set()
+    for pair in snapshot["borders"]:
+        if len(pair) != 2:
+            raise ValueError(f"Invalid county border: {pair!r}")
+        left, right = sorted(pair)
+        if left == right or left not in by_code or right not in by_code or (left, right) in edges:
+            raise ValueError(f"Unknown, duplicate or self border: {pair!r}")
+        edges.add((left, right))
+    if {code for edge in edges for code in edge} != by_code.keys():
+        raise ValueError("Border snapshot leaves counties without verified neighbors")
+
+    border_rows = []
+    province_rows = set()
+    for left, right in sorted(edges):
+        for source, target in ((by_code[left], by_code[right]), (by_code[right], by_code[left])):
+            border_rows.append((source["id"], target["name"]))
+            if source["voivodeship"] != target["voivodeship"]:
+                province_rows.add((source["id"], target["voivodeship"]))
+    aliases = build_powiat_aliases(catalog)
+
+    # Validate everything before changing an existing database. These two tables
+    # also upgrade databases created before verified adjacency was introduced.
+    with conn:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS powiat_name_aliases ("
+            "alias TEXT NOT NULL, powiat_id INTEGER NOT NULL, PRIMARY KEY (alias, powiat_id), "
+            "FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)"
+        )
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS powiat_border_coverage ("
+            "powiat_id INTEGER PRIMARY KEY, "
+            "FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)"
+        )
+        for table in (
+            "powiat_borders_powiats", "powiat_borders_voivodeships",
+            "powiat_name_aliases", "powiat_border_coverage",
+        ):
+            conn.execute(f"DELETE FROM {table}")
+        conn.executemany("INSERT INTO powiat_borders_powiats VALUES (?, ?)", border_rows)
+        conn.executemany("INSERT INTO powiat_borders_voivodeships VALUES (?, ?)", sorted(province_rows))
+        conn.executemany(
+            "INSERT INTO powiat_name_aliases VALUES (?, ?)",
+            [(alias, identifier) for alias, ids in sorted(aliases.items()) for identifier in sorted(ids)],
+        )
+        conn.executemany("INSERT INTO powiat_border_coverage VALUES (?)", [(row["id"],) for row in catalog])
+    return {
+        "counties": len(catalog),
+        "directed_borders": len(border_rows),
+        "province_borders": len(province_rows),
+    }
+
+
+def refresh_borders(output_path: Path, borders_path: Path = DEFAULT_BORDERS) -> dict[str, int]:
+    conn = sqlite3.connect(output_path.resolve().as_uri() + "?mode=rw", uri=True)
+    try:
+        return replace_border_facts(conn, borders_path)
+    finally:
+        conn.close()
+
+
+def build_database(output_path: Path, borders_path: Path = DEFAULT_BORDERS) -> None:
     rows = load_rows(DATA_DIR / "powiaty.csv")
-    name_by_norm: dict[str, list[str]] = {}
-    for row in rows:
-        name_by_norm.setdefault(normalize_name(row.name), []).append(row.name)
-    genitive_by_norm: dict[str, list[str]] = {}
-    for row in rows:
-        if row.name.startswith("Powiat "):
-            for variant in genitive_variants(row.name):
-                genitive_by_norm.setdefault(variant, []).append(row.name)
 
     conn = init_db(output_path)
     cur = conn.cursor()
-    voivodeship_by_name: dict[str, str] = {}
-    neighbors_by_name: dict[str, list[str]] = {}
-
-    for row in rows:
-        md_path = ROOT_DIR / row.md_file.replace("\\", "/")
-        text = md_path.read_text(encoding="utf-8")
-        voivodeship_by_name[row.name] = table_value(text, "Województwo") or ""
-
-    parsed_payloads = []
     for row in rows:
         md_path = ROOT_DIR / row.md_file.replace("\\", "/")
         text = md_path.read_text(encoding="utf-8")
         is_city = "miasto na prawach powiatu" in text[:800].lower()
-        voivodeship = voivodeship_by_name[row.name]
+        voivodeship = table_value(text, "Województwo") or ""
         area = parse_float_pl(table_value(text, "Powierzchnia"))
         population = parse_population(table_value(text, "Populacja"), area)
         density = parse_float_pl(table_value(text, "gęstość"))
@@ -334,23 +344,6 @@ def build_database(output_path: Path) -> None:
         rural = parse_int(table_value(text, "Liczba gmin wiejskich")) or 0
         urban = parse_int(table_value(text, "Liczba gmin miejskich")) or 0
         gmina_count = urban + rural + urban_rural if (urban or rural or urban_rural) else (1 if is_city else None)
-        neighbors = [
-            n
-            for n in extract_neighbors(
-                text,
-                name_by_norm,
-                genitive_by_norm,
-                voivodeship,
-                voivodeship_by_name,
-                include_prose=is_city,
-            )
-            if n != row.name
-        ]
-        neighbors_by_name[row.name] = neighbors
-        parsed_payloads.append((row, text, is_city, voivodeship, seat, area, population, density, urbanization, gmina_count, urban, rural, urban_rural))
-
-    for payload in parsed_payloads:
-        row, text, is_city, voivodeship, seat, area, population, density, urbanization, gmina_count, urban, rural, urban_rural = payload
         cur.execute(
             """
             INSERT INTO powiats (
@@ -377,10 +370,6 @@ def build_database(output_path: Path) -> None:
                 row.md_file,
             ),
         )
-        neighbors = neighbors_by_name[row.name]
-        insert_many(conn, "powiat_borders_powiats", row.id, "border_powiat_name", neighbors)
-        border_voivodeships = sorted({voivodeship_by_name[n] for n in neighbors if voivodeship_by_name.get(n) and voivodeship_by_name[n] != voivodeship})
-        insert_many(conn, "powiat_borders_voivodeships", row.id, "voivodeship", border_voivodeships)
         insert_many(conn, "powiat_borders_countries", row.id, "country_name", extract_countries(text))
         plates = parse_plates(table_value(text, "Tablice rejestracyjne")) or MANUAL_PLATES.get(row.name, [])
         insert_many(conn, "powiat_registration_plates", row.id, "plate_code", plates)
@@ -388,16 +377,21 @@ def build_database(output_path: Path) -> None:
         insert_many(conn, "powiat_major_rivers", row.id, "river_name", extract_gazetteer(text, RIVER_GAZETTEER))
         insert_many(conn, "powiat_landform_regions", row.id, "region_name", extract_gazetteer(text, LANDFORM_GAZETTEER))
 
-    conn.commit()
+    counts = replace_border_facts(conn, borders_path)
     conn.close()
-    print(f"Created {output_path} with {len(rows)} powiats")
+    print(json.dumps({"output": str(output_path), **counts}, ensure_ascii=False))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build Powiatdle local facts SQLite database")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--borders", type=Path, default=DEFAULT_BORDERS)
+    parser.add_argument("--refresh-borders", action="store_true", help="Preserve all non-border facts")
     args = parser.parse_args()
-    build_database(args.output)
+    if args.refresh_borders:
+        print(json.dumps({"output": str(args.output), **refresh_borders(args.output, args.borders)}, ensure_ascii=False))
+    else:
+        build_database(args.output, args.borders)
 
 
 if __name__ == "__main__":

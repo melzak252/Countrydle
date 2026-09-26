@@ -17,13 +17,16 @@ class CountrydleGuessRepository:
 
         return result.scalars().first()
 
-    async def add_guess(self, guess: GuessCreate) -> CountrydleGuess:
+    async def add_guess(self, guess: GuessCreate, *, commit: bool = True) -> CountrydleGuess:
         new_entry = CountrydleGuess(**guess.model_dump(exclude={"country_id", "elapsed_seconds"}))
         self.session.add(new_entry)
 
         try:
-            await self.session.commit()  # Commit the transaction
-            await self.session.refresh(new_entry)  # Refresh the instance to get the ID
+            if commit:
+                await self.session.commit()
+            else:
+                await self.session.flush()
+            await self.session.refresh(new_entry)
         except Exception as ex:
             await self.session.rollback()
             raise ex

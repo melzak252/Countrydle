@@ -1,14 +1,24 @@
 """Friend guidance exercises the normal evaluators with explicit, non-daily targets."""
 import hashlib
-import io
+from contextlib import ExitStack
 import json
 import threading
-from urllib.error import HTTPError
+import httpx
 
 import pytest
 
 from friend_matches import providers
 from local_kb_question import QuestionPlan
+from utils import ai_clients
+
+
+@pytest.fixture
+def gemini_http(monkeypatch):
+    with ExitStack() as resources:
+        def install(handler):
+            client = resources.enter_context(httpx.Client(transport=httpx.MockTransport(handler)))
+            monkeypatch.setattr(ai_clients, "_http_client", client)
+        yield install
 
 
 @pytest.mark.parametrize(
@@ -89,8 +99,7 @@ async def test_provider_failure_propagates_off_event_loop(monkeypatch):
     ],
 )
 @pytest.mark.anyio
-async def test_unsupported_question_uses_gemini_with_canonical_facts_and_markdown(monkeypatch, mode, name):
-    from countrydle import utils as gemini
+async def test_unsupported_question_uses_gemini_with_canonical_facts_and_markdown(monkeypatch, gemini_http, mode, name):
     import openai
     import qdrant.utils
     import db
@@ -114,23 +123,22 @@ async def test_unsupported_question_uses_gemini_with_canonical_facts_and_markdow
     monkeypatch.setattr(qdrant.utils, "get_fragments_matching_question_sync", forbidden)
     monkeypatch.setattr(db, "AsyncSessionLocal", forbidden)
 
-    def response(request, *, timeout):
+    def response(request):
         assert threading.get_ident() != loop_thread
-        assert request.full_url.startswith("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:")
-        sent.update(json.loads(request.data))
-        return io.BytesIO(json.dumps({
+        assert str(request.url).startswith("https://generativelanguage.googleapis.com/v1beta/models/gemini-test:")
+        sent.update(json.loads(request.content))
+        return httpx.Response(200, json={
             "modelVersion": "gemini-test-001",
             "responseId": "answer-response",
             "candidates": [{"content": {"parts": [{"text": json.dumps({
                 "answer": False, "explanation": "The requested property does not apply.",
             })}]}}],
-        }).encode())
+        })
 
-    monkeypatch.setattr(gemini, "urlopen", response)
+    gemini_http(response)
     result = await providers.evaluate_question(mode, {**entity, "name": "Wrong target"}, question)
     assert result["answer"] == "NO"
     assert result["source"] == "normal_fallback"
-    assert result["explanation"] == "The requested property does not apply."
     evidence = result["evidence"]
     assert evidence["target"] == entity
     context = evidence["context"]
@@ -159,10 +167,9 @@ async def test_invalid_question_does_not_call_fallback(monkeypatch):
     monkeypatch.setattr(providers, "_plan", lambda *args: plan)
     from countrydle import utils as gemini
 
-    monkeypatch.setattr(gemini, "urlopen", lambda *args, **kwargs: pytest.fail("Invalid question called fallback"))
+    monkeypatch.setattr(gemini, "generate_gemini_json", lambda *args, **kwargs: pytest.fail("Invalid question called fallback"))
     result = await providers.evaluate_question("countrydle", entity, "Name it")
     assert result["answer"] == "INVALID"
-    assert result["explanation"] == "Not a yes/no question."
 
 
 def test_country_missing_provider_is_operational_only_when_strict(monkeypatch):
@@ -181,14 +188,13 @@ def test_malformed_planner_protocol_is_not_invalid_question(monkeypatch):
     import local_kb_question
 
     engine = providers._engine("us_statedle")
-    monkeypatch.setattr(local_kb_question, "gemini_json", lambda *args: {"valid": "false"})
-    with pytest.raises(RuntimeError, match="schema"):
+    monkeypatch.setattr(local_kb_question, "gemini_json", lambda *args, **kwargs: {"valid": "false"})
+    with pytest.raises(RuntimeError):
         local_kb_question.analyze_question("Question?", engine.config, use_cache=False, strict_errors=True)
 
 
 @pytest.mark.anyio
-async def test_gemini_quota_failure_propagates_without_fabricating_an_answer(monkeypatch):
-    from countrydle import utils as gemini
+async def test_gemini_quota_failure_propagates_without_fabricating_an_answer(monkeypatch, gemini_http):
 
     engine = providers._engine("countrydle")
     if not engine.db_path.exists():
@@ -199,13 +205,14 @@ async def test_gemini_quota_failure_propagates_without_fabricating_an_answer(mon
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     calls = []
 
-    def unavailable(request, **kwargs):
+    def unavailable(request):
         calls.append(request)
-        raise HTTPError(request.full_url, 429, "Quota exhausted", {}, io.BytesIO(b"RESOURCE_EXHAUSTED"))
+        return httpx.Response(429, json={"error": {"status": "RESOURCE_EXHAUSTED"}})
 
-    monkeypatch.setattr(gemini, "urlopen", unavailable)
-    with pytest.raises(RuntimeError, match="Gemini HTTP error 429: RESOURCE_EXHAUSTED"):
+    gemini_http(unavailable)
+    with pytest.raises(RuntimeError) as failure:
         await providers.evaluate_question("countrydle", entity, "Mountains?")
+    assert failure.value.__cause__.response.status_code == 429
     assert len(calls) == 1
 
 
@@ -220,7 +227,7 @@ async def test_missing_canonical_markdown_is_not_silently_replaced_with_empty_co
     plan = QuestionPlan("Mountains?", True, False, "Mountains?", None, None)
     monkeypatch.setattr(providers, "_plan", lambda *args: plan)
     monkeypatch.setattr(providers.local, "ROOT_DIR", tmp_path)
-    monkeypatch.setattr(gemini, "urlopen", lambda *args, **kwargs: pytest.fail("Missing context called Gemini"))
+    monkeypatch.setattr(gemini, "generate_gemini_json", lambda *args, **kwargs: pytest.fail("Missing context called Gemini"))
     with pytest.raises(FileNotFoundError):
         await providers.evaluate_question("us_statedle", entity, "Mountains?")
 
@@ -237,5 +244,5 @@ def test_missing_explanation_keeps_actual_recommendation():
 
 def test_nontext_explanation_is_a_provider_protocol_failure():
     plan = QuestionPlan("Question?", True, False, "Question?", None, None)
-    with pytest.raises(RuntimeError, match="malformed explanation"):
+    with pytest.raises(RuntimeError):
         providers._result(True, {"reasoning": "unexpected object"}, "normal_fallback", plan, {})

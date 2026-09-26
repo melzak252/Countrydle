@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
 import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
 import QuestionTestsPanel from '../components/QuestionTestsPanel';
+import CacheStatsPanel from '../components/CacheStatsPanel';
 import type { AnswerReport } from '../types';
 import { 
   adminService, 
@@ -33,7 +34,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'friendAnswers' | 'questionTests';
+type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'friendAnswers' | 'questionTests' | 'cache';
 type GameType = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
 
 export default function AdminDashboard() {
@@ -202,7 +203,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && <div className="flex items-center gap-3">
+        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && activeTab !== 'cache' && <div>
           <button
             onClick={() => {
               if (activeTab === 'overview') fetchOverview();
@@ -223,6 +224,7 @@ export default function AdminDashboard() {
         {[
           { id: 'overview', label: 'Today & Analytics', icon: Activity },
           { id: 'liveFeed', label: 'Live Player Feed', icon: Clock },
+            { id: 'cache', label: 'Cache', icon: Database },
           { id: 'users', label: 'User Directory', icon: Users },
           { id: 'questions', label: 'Questions Log', icon: HelpCircle },
           { id: 'facts', label: 'Knowledge Base Editor', icon: Database },
@@ -256,6 +258,7 @@ export default function AdminDashboard() {
       }} />}
       {activeTab === 'questionTests' && <QuestionTestsPanel report={questionTestReport} onClearReport={() => setQuestionTestReport(null)} />}
       {activeTab === 'friendAnswers' && <FriendAnswerReviewsPanel />}
+      {activeTab === 'cache' && <CacheStatsPanel />}
 
       {/* TAB 1: OVERVIEW & TODAY'S STATS */}
       {activeTab === 'overview' && (

@@ -1,3 +1,8 @@
+from db.models import CountrydleState
+from db.repositories.question_accounting import (
+    consume_question, is_answered, unresolved_question, check_question_available,
+    lock_question_state, claim_guest_questions,
+)
 from typing import Union
 
 from db import get_db
@@ -26,7 +31,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, R
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
 )
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
 from db.repositories.guess import (
@@ -140,6 +144,7 @@ async def sync_guest_data(
         max_questions=COUNTRYDLE_CONFIG.max_questions,
         max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
+    state = await lock_question_state(session, CountrydleState, user.id, day_country.id)
     
     # BEST SOLUTION: Prioritize Server State
     # If the user already has any progress on the server (at least 1 question or guess),
@@ -154,18 +159,10 @@ async def sync_guest_data(
     for guess in sync_data.guesses:
         await country_repo.validate_guess(guess.country_id, guess.guess)
 
-    # 3. Update questions - only claim those that belong to this day and have no user assigned
-    if sync_data.questions:
-        from db.models import CountrydleQuestion
-        await session.execute(
-            update(CountrydleQuestion)
-            .where(
-                CountrydleQuestion.id.in_(sync_data.questions), 
-                CountrydleQuestion.user_id == None,
-                CountrydleQuestion.day_id == day_country.id
-            )
-            .values(user_id=user.id)
-        )
+    from db.models import CountrydleQuestion
+    await claim_guest_questions(
+        session, CountrydleQuestion, state, sync_data.questions, COUNTRYDLE_CONFIG.max_questions,
+    )
 
     # 4. Create guesses
     for guess in sync_data.guesses:
@@ -180,12 +177,10 @@ async def sync_guest_data(
             user_id=user.id,
             answer=is_correct,
         )
-        await CountrydleGuessRepository(session).add_guess(guess_create)
+        await CountrydleGuessRepository(session).add_guess(guess_create, commit=False)
 
     # 5. Update state
-    state.remaining_questions = sync_data.state.remaining_questions
     state.remaining_guesses = sync_data.state.remaining_guesses
-    state.questions_asked = sync_data.state.questions_asked
     state.guesses_made = sync_data.state.guesses_made
     state.is_game_over = sync_data.state.is_game_over
     state.won = sync_data.state.won
@@ -255,12 +250,17 @@ async def get_end_state(
 async def get_state(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    request: Request = None,
+    response: Response = None,
 ):
     day_country = await CountrydleRepository(session).get_today_country()
     if not day_country:
         day_country = await CountrydleRepository(session).generate_new_day_country()
 
     if user is None:
+        if request is not None and response is not None:
+            from utils.guest_session import get_guest_identity
+            get_guest_identity(request, response)
         return CountrydleStateResponse(
             user=None,
             date=str(day_country.date),
@@ -669,22 +669,16 @@ async def ask_question(
     try:
         return await _do_ask_question(question, user, session, request, response)
     except HTTPException:
+        await session.rollback()
         raise
     except Exception as exc:
+        await session.rollback()
         import logging, traceback
         logging.getLogger("countrydle").error("Handled error in ask_question: %s\n%s", exc, traceback.format_exc())
-        from datetime import datetime
-        return InvalidQuestionDisplay(
-            id=0,
-            original_question=question.question,
-            question=question.question,
-            valid=False,
-            answer=None,
-            explanation="Could not verify this question right now. Your turn was not deducted.",
-            user_id=user.id if user else None,
-            day_id=0,
-            asked_at=datetime.now(),
-        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not verify this question right now. Your turn was not deducted.",
+        ) from exc
 
 
 async def _do_ask_question(
@@ -698,158 +692,67 @@ async def _do_ask_question(
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()
 
-    if user is None:
-        local_question_create, planned_question = await gutils.analyze_and_answer_locally(
-            original_question=question.question,
-            day_country=daily_country,
-            user=None,
-            session=session,
+    if user is not None:
+        await check_question_available(
+            session, CountrydleState, user.id, daily_country.id, COUNTRYDLE_CONFIG.max_questions,
         )
-        if local_question_create is not None:
-            if local_question_create.valid:
-                await record_guest_action(session, request, response, "countrydle", daily_country.id, question=True)
-            new_quest = await CountrydleQuestionsRepository(session).create_question(
-                local_question_create
-            )
-            if not local_question_create.valid:
-                return InvalidQuestionDisplay.model_validate(new_quest)
-            return FullQuestionDisplay.model_validate(new_quest)
 
-        enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
-        if not enh_question.valid:
+    question_create, planned_question = await gutils.analyze_and_answer_locally(
+        original_question=question.question, day_country=daily_country, user=user, session=session,
+    )
+    question_vector = None
+    if question_create is None:
+        enhanced = gutils.question_enhanced_from_plan(question.question, planned_question)
+        if not enhanced.valid:
             question_create = QuestionCreate(
-                user_id=None,
+                user_id=user.id if user else None,
                 day_id=daily_country.id,
-                original_question=enh_question.original_question,
-                valid=enh_question.valid,
-                question=enh_question.question,
+                original_question=question.question,
+                question=enhanced.question,
+                valid=False,
                 answer=None,
-                explanation=enh_question.explanation or "No explanation provided.",
+                explanation=enhanced.explanation,
                 context=None,
             )
-
-            new_quest = await CountrydleQuestionsRepository(session).create_question(
-                question_create
+        else:
+            question_create, question_vector = await gutils.ask_question(
+                question=enhanced, day_country=daily_country, user=user, session=session,
             )
-            return InvalidQuestionDisplay.model_validate(new_quest)
-
-        question_create, question_vector = await gutils.ask_question(
-            question=enh_question,
-            day_country=daily_country,
-            user=None,
-            session=session,
-        )
-
-        if question_create.valid:
-            await record_guest_action(session, request, response, "countrydle", daily_country.id, question=True)
-        new_quest = await CountrydleQuestionsRepository(session).create_question(
-            question_create
-        )
-
-        if question_vector:
-            await add_question_to_qdrant(
-                new_quest,
-                question_vector,
-                filter_key="country_id",
-                filter_value=daily_country.country_id,
-                collection_name="countries_questions",
-            )
-
-
-        return FullQuestionDisplay.model_validate(new_quest)
-
-    state = await CountrydleStateRepository(session).get_player_countrydle_state(
-        user,
-        daily_country,
-        max_questions=COUNTRYDLE_CONFIG.max_questions,
-        max_guesses=COUNTRYDLE_CONFIG.max_guesses,
-    )
-
-    # Use Game Logic
-    current_game_state = db_state_to_game_state(state)
-
-    if not game_rules.can_ask_question(current_game_state):
+    if question_create.valid and question_create.answer is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User has no more questions left or game is over!",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not verify this question right now. Your turn was not deducted.",
         )
 
-    local_question_create, planned_question = await gutils.analyze_and_answer_locally(
-        original_question=question.question,
-        day_country=daily_country,
-        user=user,
-        session=session,
-    )
-    if local_question_create is not None:
-        new_quest = await CountrydleQuestionsRepository(session).create_question(
-            local_question_create
-        )
-        if not local_question_create.valid:
-            return InvalidQuestionDisplay.model_validate(new_quest)
+    if not is_answered(question_create):
+        return unresolved_question(question_create, InvalidQuestionDisplay)
 
+    question_create.user_id = user.id if user else None
+    question_create.day_id = daily_country.id
+    if user is None:
+        await record_guest_action(
+            session, request, response, "countrydle", daily_country.id,
+            question=True, max_questions=COUNTRYDLE_CONFIG.max_questions,
+        )
+    else:
+        await consume_question(
+            session, CountrydleState, user.id, daily_country.id,
+            COUNTRYDLE_CONFIG.max_questions, COUNTRYDLE_CONFIG.max_guesses,
+        )
+    new_question = await CountrydleQuestionsRepository(session).create_question(question_create)
+    result = FullQuestionDisplay.model_validate(new_question)
+    await session.commit()
+    if question_vector:
+        # Indexing is auxiliary: an already committed answer remains successful.
         try:
-            new_game_state = game_rules.process_question(current_game_state)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
-        state.remaining_questions = (
-            COUNTRYDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        state = await CountrydleStateRepository(session).update_countrydle_state(state)
-
-        return FullQuestionDisplay.model_validate(new_quest)
-
-    enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
-    if not enh_question.valid:
-        question_create = QuestionCreate(
-            user_id=user.id,
-            day_id=daily_country.id,
-            original_question=enh_question.original_question,
-            valid=enh_question.valid,
-            question=enh_question.question,
-            answer=None,
-            explanation=enh_question.explanation,
-            context=None,
-        )
-        new_quest = await CountrydleQuestionsRepository(session).create_question(
-            question_create
-        )
-
-        return InvalidQuestionDisplay.model_validate(new_quest)
-
-    question_create, question_vector = await gutils.ask_question(
-        question=enh_question,
-        day_country=daily_country,
-        user=user,
-        session=session,
-    )
-
-    new_quest = await CountrydleQuestionsRepository(session).create_question(
-        question_create
-    )
-
-    await add_question_to_qdrant(
-        new_quest,
-        question_vector,
-        filter_key="country_id",
-        filter_value=daily_country.country_id,
-        collection_name="countries_questions",
-    )
-
-    # Update Logic State
-    try:
-        new_game_state = game_rules.process_question(current_game_state)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    state.remaining_questions = (
-        COUNTRYDLE_CONFIG.max_questions - new_game_state.questions_used
-    )
-    state.questions_asked += 1
-    state = await CountrydleStateRepository(session).update_countrydle_state(state)
-
-    return FullQuestionDisplay.model_validate(new_quest)
+            await add_question_to_qdrant(
+                new_question, question_vector, filter_key="country_id",
+                filter_value=daily_country.country_id, collection_name="countries_questions",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("countrydle").exception("Could not index accepted countrydle question")
+    return result
 
 
 @router.get("/reveal", response_model=CountryDisplay)

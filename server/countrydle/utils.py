@@ -1,9 +1,9 @@
+import asyncio
 import os
-import json
 import time
 from typing import List, Tuple
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+import httpx
+from utils.ai_clients import generate_gemini_json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,15 +20,23 @@ from countrydle.local_planner import QuestionPlan, analyze_question_for_local_pl
 GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
 
+FALLBACK_ANSWER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "explanation": {"type": "string", "minLength": 1},
+        "answer": {"type": ["boolean", "null"]},
+    },
+    "required": ["answer", "explanation"],
+    "additionalProperties": False,
+}
+
+
 def gemini_json(
     system_prompt: str, user_prompt: str, max_output_tokens: int = 1024, *,
     evidence: dict | None = None, request_timeout: float = 60, max_attempts: int = 3,
+    response_schema: dict | None = None, thinking_budget: int | None = None,
 ) -> dict:
-    """Call Gemini and return a strict JSON object.
-
-    Used for the Countrydle fallback pipeline so we can move away from OpenAI
-    while keeping the old two-step enhance/answer architecture as fallback.
-    """
+    """Call Gemini through the shared connection pool, retaining fallback retry policy."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
@@ -39,53 +47,30 @@ def gemini_json(
         or os.getenv("GEMINI_MODEL")
         or GEMINI_DEFAULT_MODEL
     )
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0,
-            "maxOutputTokens": max_output_tokens,
-            "responseMimeType": "application/json",
-        },
-    }
-    request = Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
     retryable_statuses = {429, 500, 502, 503, 504}
-    last_error: RuntimeError | None = None
     for attempt in range(max_attempts):
         try:
-            with urlopen(request, timeout=request_timeout) as response:
-                data = json.loads(response.read().decode("utf-8"))
-                break
-        except HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="replace")
-            last_error = RuntimeError(f"Gemini HTTP error {exc.code}: {body[:500]}")
-            if exc.code not in retryable_statuses or attempt == max_attempts - 1:
-                raise last_error from exc
+            parsed = generate_gemini_json(
+                prompt, model=model, api_key=api_key, max_output_tokens=max_output_tokens,
+                timeout=request_timeout, evidence=evidence, response_schema=response_schema,
+                thinking_budget=thinking_budget if model.startswith("gemini-2.5") else None,
+            )
+            break
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            if status not in retryable_statuses or attempt == max_attempts - 1:
+                raise RuntimeError(f"Gemini HTTP error {status}") from exc
             time.sleep(2**attempt)
     else:
-        raise last_error or RuntimeError("Gemini request failed")
+        raise RuntimeError("Gemini request failed")
     if evidence is not None:
         evidence.update(
             provider="gemini", model=model,
-            model_version=data.get("modelVersion"), response_id=data.get("responseId"),
             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
             temperature=0, max_output_tokens=max_output_tokens,
         )
 
-    answer = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
-    try:
-        parsed = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
-    if not isinstance(parsed, dict):
-        raise ValueError("Gemini returned JSON that is not an object")
     return parsed
 
 
@@ -149,7 +134,7 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
     question_prompt = f"""User's Question: {question}"""
 
-    answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768)
+    answer_dict = await asyncio.to_thread(gemini_json, system_prompt, question_prompt, max_output_tokens=768)
 
     return QuestionEnhanced(
         original_question=question,
@@ -163,14 +148,11 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
 
 def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> QuestionEnhanced:
-    """Reuse the single local analyzer/planner output as the fallback enhanced question."""
+    """Preserve the question; planner coverage notes are not factual evidence."""
     return QuestionEnhanced(
         original_question=original_question,
         valid=plan.valid,
         question=plan.improved_question or original_question,
-        intent=plan.explanation,
-        required_info=plan.fallback_reason
-        or "More context is needed to answer this question confidently.",
         explanation=plan.explanation if not plan.valid else None,
     )
 
@@ -182,12 +164,22 @@ async def analyze_and_answer_locally(
     session: AsyncSession,
     *,
     strict_errors: bool = False,
+    evidence: dict | None = None,
 ) -> tuple[QuestionCreate | None, QuestionPlan]:
     """Run one Gemini validator/planner call and answer locally when possible."""
     country: Country = await CountryRepository(session).get(day_country.country_id)
-    planned_question = analyze_question_for_local_plan(
-        original_question, strict_errors=True, use_cache=False
-    ) if strict_errors else analyze_question_for_local_plan(original_question)
+    planner_kwargs = {"strict_errors": True, "use_cache": False} if strict_errors else {}
+    if evidence is not None:
+        planner_evidence = evidence.setdefault("planner", {})
+        planner_kwargs["evidence"] = planner_evidence
+        planner_started = time.perf_counter()
+    try:
+        planned_question = await asyncio.to_thread(
+            analyze_question_for_local_plan, original_question, **planner_kwargs
+        )
+    finally:
+        if evidence is not None:
+            planner_evidence["duration_ms"] = (time.perf_counter() - planner_started) * 1000
 
     if not planned_question.valid:
         return QuestionCreate(
@@ -206,13 +198,18 @@ async def analyze_and_answer_locally(
     if not planned_question.supported or not planned_question.plan:
         return None, planned_question
 
-    local_answer = execute_local_plan(
-        planned_question.plan,
-        country.name,
-        planned_question.improved_question or original_question,
-        planned_question.explanation,
-        original_question=original_question,
-    )
+    if evidence is not None:
+        local_started = time.perf_counter()
+    try:
+        local_answer = await asyncio.to_thread(
+            execute_local_plan,
+            planned_question.plan,
+            country.name,
+            planned_question.improved_question or original_question,
+        )
+    finally:
+        if evidence is not None:
+            evidence["local_duration_ms"] = (time.perf_counter() - local_started) * 1000
     if local_answer is None:
         return None, planned_question
 
@@ -238,30 +235,25 @@ def answer_prompts(
 You are the 'Game Master' for Countrydle. Your task is to answer a True/False question about a specific country based on provided context and your general knowledge.
 
 ### Target Country: {entity_name}
-### Question Intent: {question.intent}
-### Required Information: {question.required_info}
 
 ### Context Fragments:
 {context}
 
-### Your Instructions:
-1. **Analyze the Context**: Look for specific facts in the provided context that directly confirm or deny the question.
-2. **Use General Knowledge**: If the context is missing the specific fact, use your internal knowledge to provide an accurate answer.
-3. **Handle Super-regions (e.g., Eurasia)**: If the question asks about a large landmass or super-region (like Eurasia, The Americas, Oceania), and the country is located in any part of that region (e.g., Europe or Asia for Eurasia), the answer must be `true`.
-4. **Transcontinental Logic**: For countries spanning multiple continents (e.g., Turkey, Russia, Egypt, Kazakhstan), if the question asks if they are in either of those continents, the answer is `true`.
-5. **Handle Uncertainty**: If the answer cannot be determined with high confidence, set `answer` to `null`.
-6. **Special Rule (Self-Bordering)**: If asked if the country borders/neighbors [X], and the target country IS [X], the answer is ALWAYS `true`. Treat a country as bordering itself for the purpose of this game.
-7. **Temporal Cutoff**: For any events or data from April 2024 onwards, set `answer` to `null`.
-8. **Informative Explanations**: Write the `explanation` as factual information about the country that answers the question and provides details. Avoid starting with 'Yes' or 'No' or simply repeating the answer. The explanation should be an informative statement about the country that justifies the True/False answer (e.g., instead of 'Yes, it is in Europe', use '{entity_name} is a country located in Southeastern Europe, bordering the Black Sea.').
-9. **Handle Logical 'OR' and Lists**: If a question contains 'or' or provides a list of options (e.g., 'Is it in Europe or Asia?', 'Is it Poland, Germany, or France?'), the answer is `true` if the target country matches **at least one** of those options. Do not answer `false` just because it doesn't match all of them.
-
-10. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), you should still answer about the country in the third person (e.g., "{entity_name} is in Europe") to maintain a factual and informative tone.
-
+1. **Analyze the Context**: Evaluate the exact predicate asked, using evidence that directly confirms or denies it. If retrieval is silent or irrelevant, use reliable general knowledge when available; do not abstain solely because a fact is absent from the fragments.
+2. **Compute the Predicate**: Resolve the requested entity, property, quantifier, comparison, and any arithmetic exactly. Use the resulting fact to select `true` or `false`, and ensure the explanation directly supports that same answer. Never let an explanation that establishes one result accompany the opposite boolean.
+3. **Preserve Geographic Scope**: Interpret quantifiers, qualifiers, and negation literally. An unqualified question about whether a country is in a region normally asks whether any of its territory lies there; “partly” or “any part” requires some territory there; “entirely,” “fully,” or “only” requires all of its territory there; “mostly” or “majority” requires more than half using the measure asked about. Apply negation exactly. Never let the general transcontinental rule override a more specific qualifier.
+4. **Handle Uncertainty**: If the exact answer cannot be determined with high confidence from reliable evidence or stable general knowledge, set `answer` to `null`. Use established broad counts and historical membership when they answer the question, even if retrieval is irrelevant. Null is only for genuinely undetermined facts, not facts omitted from context.
+5. **Special Rule (Self-Bordering)**: If the unnegated question asks whether the country borders/neighbors [X], and the target country IS [X], the answer is `true`. Treat a country as bordering itself for this game, while respecting explicit negation.
+6. **Temporal Questions**: Answer the period the question asks about. Do not impose an arbitrary date cutoff. If asked about a current fact and you cannot establish it reliably, abstain with `null`.
+7. **Focused Explanations**: Give only a concise fact directly relevant to the question that supports the answer. Do not add unrelated facts or claims about current officeholders unless they are needed to answer the question; avoid asserting that a potentially stale fact is current.
+8. **Handle Logical 'OR' and Lists**: Treat 'or' as inclusive, so an unnegated question is true if any branch is true. Apply negation and the exact qualifiers in each branch; do not let this rule override them.
+9. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), answer about the country in the third person.
 ### Output Format (Strict JSON):
 {{
-    "explanation": "Informative factual statement about the country.",
+    "explanation": "One concise fact directly relevant to the question, or a brief reason the answer is uncertain.",
     "answer": true | false | null
 }}
+For a well-defined historical question, use available historical knowledge rather than abstaining solely because of its date.
 """
 
     question_prompt = f"""User's Original Question: {question.original_question}
@@ -276,14 +268,24 @@ def answer_question_for_entity(
     """Run the normal answer model for an explicit target, without daily state."""
     system_prompt, question_prompt = answer_prompts(question, entity_name, context)
 
-    if evidence is None and request_timeout is None:
-        answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768)
-    else:
-        answer_dict = gemini_json(
-            system_prompt, question_prompt, max_output_tokens=768, evidence=evidence,
-            request_timeout=60 if request_timeout is None else request_timeout,
-            max_attempts=3 if request_timeout is None else 1,
-        )
+    answer_dict = gemini_json(
+        system_prompt, question_prompt, max_output_tokens=2048, evidence=evidence,
+        request_timeout=60 if request_timeout is None else request_timeout,
+        max_attempts=3 if request_timeout is None else 1,
+        response_schema=FALLBACK_ANSWER_SCHEMA, thinking_budget=1024,
+    )
+    if not isinstance(answer_dict, dict):
+        raise ValueError("Gemini answer must be a JSON object")
+    if "answer" not in answer_dict:
+        raise ValueError("Gemini answer is missing the answer field")
+    answer = answer_dict["answer"]
+    if answer is not None and type(answer) is not bool:
+        raise ValueError("Gemini answer must be true, false, or null")
+    if answer_dict.keys() - {"answer", "explanation"}:
+        raise ValueError("Gemini answer contains unexpected fields")
+    explanation = answer_dict.get("explanation")
+    if not isinstance(explanation, str) or not explanation.strip():
+        raise ValueError("Gemini answer must include a non-empty explanation")
     return answer_dict
 
 
@@ -292,10 +294,14 @@ async def ask_question(
     day_country: CountrydleDay,
     user: User | None,
     session: AsyncSession,
+    *,
+    evidence: dict | None = None,
 ) -> Tuple[QuestionCreate, List[float]]:
 
     fragments = []
     question_vector = []
+    if evidence is not None:
+        retrieval_started = time.perf_counter()
     try:
         fragments, question_vector = await get_fragments_matching_question(
             question.question,
@@ -307,10 +313,24 @@ async def ask_question(
         )
     except Exception as exc:
         print(f"Warning: Vector retrieval failed ({exc}); answering directly with Gemini general knowledge.")
+    finally:
+        if evidence is not None:
+            evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
 
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     country: Country = await CountryRepository(session).get(day_country.country_id)
-    answer_dict = answer_question_for_entity(question, country.name, context)
+    answer_kwargs = {}
+    if evidence is not None:
+        fallback_evidence = evidence.setdefault("fallback", {})
+        answer_kwargs["evidence"] = fallback_evidence
+        fallback_started = time.perf_counter()
+    try:
+        answer_dict = await asyncio.to_thread(
+            answer_question_for_entity, question, country.name, context, **answer_kwargs
+        )
+    finally:
+        if evidence is not None:
+            fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
 
     question_create = QuestionCreate(
         user_id=user.id if user else None,
@@ -318,8 +338,8 @@ async def ask_question(
         original_question=question.original_question,
         valid=question.valid,
         question=question.question,
-        answer=answer_dict.get("answer"),
-        explanation=answer_dict.get("explanation") or "No explanation provided.",
+        answer=answer_dict["answer"],
+        explanation=answer_dict["explanation"],
         context=context,
     )
 
@@ -335,7 +355,7 @@ async def ask_question_locally(
     """Try to answer a Countrydle question from the local SQLite KB.
 
     Returns None when the question cannot be mapped confidently to a local
-    relation, so callers can fall back to the existing OpenAI + Qdrant flow.
+    relation, so callers can fall back to the existing Gemini + Qdrant flow.
     """
     local_question, _planned_question = await analyze_and_answer_locally(
         original_question=original_question,
@@ -405,6 +425,6 @@ async def give_guess(
 
     guess_prompt = f"Guess: {guess}"
 
-    answer_dict = gemini_json(system_prompt, guess_prompt, max_output_tokens=128)
+    answer_dict = await asyncio.to_thread(gemini_json, system_prompt, guess_prompt, max_output_tokens=128)
 
     return answer_dict

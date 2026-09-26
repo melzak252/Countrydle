@@ -1,8 +1,12 @@
+from db.models.continental import ContinentalState
+from db.repositories.question_accounting import (
+    consume_question, is_answered, unresolved_question, check_question_available,
+    lock_question_state, claim_guest_questions,
+)
 from datetime import date, datetime
 from typing import List, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from sqlalchemy import and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import countrydle.utils as gutils
@@ -94,6 +98,7 @@ async def sync_guest_data(
         max_questions=CONTINENTAL_CONFIG.max_questions,
         max_guesses=CONTINENTAL_CONFIG.max_guesses,
     )
+    state = await lock_question_state(session, ContinentalState, user.id, day.id)
 
     # If user already has progress on server, ignore guest sync
     if state.questions_asked > 0 or state.guesses_made > 0:
@@ -108,10 +113,9 @@ async def sync_guest_data(
         if not is_eligible_candidate(guess.guess, continent):
             raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
 
-    # Claim questions belonging to this day that have no user assigned
-    if sync_data.questions:
-        question_repo = ContinentalQuestionRepository(session)
-        await question_repo.claim_guest_questions(user.id, day.id, sync_data.questions)
+    await claim_guest_questions(
+        session, ContinentalQuestion, state, sync_data.questions, CONTINENTAL_CONFIG.max_questions,
+    )
 
     # Add guesses
     guess_repo = ContinentalGuessRepository(session)
@@ -128,11 +132,9 @@ async def sync_guest_data(
             answer=is_correct,
             elapsed_seconds=g.elapsed_seconds,
         )
-        await guess_repo.add_guess(guess_create)
+        await guess_repo.add_guess(guess_create, commit=False)
 
-    state.remaining_questions = sync_data.state.remaining_questions
     state.remaining_guesses = sync_data.state.remaining_guesses
-    state.questions_asked = sync_data.state.questions_asked
     state.guesses_made = sync_data.state.guesses_made
     state.is_game_over = sync_data.state.is_game_over
     state.won = sync_data.state.won
@@ -166,6 +168,8 @@ async def get_state(
     continent: ContinentCode,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    request: Request = None,
+    response: Response = None,
 ):
     day_repo = ContinentalDayRepository(session)
     day = await day_repo.get_today_day(continent)
@@ -175,6 +179,9 @@ async def get_state(
     target_country = await CountryRepository(session).get(day.country_id)
 
     if user is None:
+        if request is not None and response is not None:
+            from utils.guest_session import get_guest_identity
+            get_guest_identity(request, response)
         guest_state = ContinentalStateSchema(
             remaining_questions=CONTINENTAL_CONFIG.max_questions,
             remaining_guesses=CONTINENTAL_CONFIG.max_guesses,
@@ -267,12 +274,21 @@ async def ask_question(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    user_id = user.id if user else None
     try:
         return await _do_ask_question(continent, question, user, session, request, response)
     except HTTPException:
+        await session.rollback()
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to process question: {exc}") from exc
+        await session.rollback()
+        import logging
+        logging.getLogger("countrydle").exception("Could not answer continental question")
+        return InvalidContinentalQuestionDisplay(
+            id=0, original_question=question.question, valid=False, answer=None,
+            user_id=user_id, day_id=0, asked_at=datetime.now(),
+            explanation="Could not verify this question right now. Your turn was not deducted.",
+        )
 
 
 async def _do_ask_question(
@@ -288,127 +304,57 @@ async def _do_ask_question(
     if not day:
         day = await day_repo.generate_new_day(continent)
 
-    question_repo = ContinentalQuestionRepository(session)
-
-    # Guest user flow (unauthenticated)
-    if user is None:
-        local_question_create, planned_question = await gutils.analyze_and_answer_locally(
-            original_question=question.question,
-            day_country=day,
-            user=None,
-            session=session,
+    if user is not None:
+        await check_question_available(
+            session, ContinentalState, user.id, day.id, CONTINENTAL_CONFIG.max_questions,
         )
-        if local_question_create is not None:
-            if local_question_create.valid:
-                await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, question=True)
-            new_quest = await question_repo.create_question(local_question_create)
-            if not local_question_create.valid:
-                return InvalidContinentalQuestionDisplay.model_validate(new_quest)
-            return ContinentalQuestionDisplay.model_validate(new_quest)
 
-        enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
-        if not enh_question.valid:
+    question_create, planned_question = await gutils.analyze_and_answer_locally(
+        original_question=question.question, day_country=day, user=user, session=session,
+    )
+    question_vector = None
+    if question_create is None:
+        enhanced = gutils.question_enhanced_from_plan(question.question, planned_question)
+        if not enhanced.valid:
             question_create = QuestionCreate(
-                user_id=None,
-                day_id=day.id,
-                original_question=enh_question.original_question,
-                valid=enh_question.valid,
-                question=enh_question.question,
-                answer=None,
-                explanation=enh_question.explanation or "No explanation provided.",
-                context=None,
+                user_id=user.id if user else None, day_id=day.id,
+                original_question=question.question, question=enhanced.question,
+                valid=False, answer=None, explanation=enhanced.explanation, context=None,
             )
-            new_quest = await question_repo.create_question(question_create)
-            return InvalidContinentalQuestionDisplay.model_validate(new_quest)
-
-        question_create, question_vector = await gutils.ask_question(
-            question=enh_question,
-            day_country=day,
-            user=None,
-            session=session,
-        )
-        if question_create.valid:
-            await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, question=True)
-        new_quest = await question_repo.create_question(question_create)
-        if question_vector:
-            await add_question_to_qdrant(
-                new_quest,
-                question_vector,
-                filter_key="country_id",
-                filter_value=day.country_id,
-                collection_name="countries_questions",
+        else:
+            question_create, question_vector = await gutils.ask_question(
+                question=enhanced, day_country=day, user=user, session=session,
             )
-        return ContinentalQuestionDisplay.model_validate(new_quest)
 
-    # Authenticated user flow
-    state_repo = ContinentalStateRepository(session)
-    state = await state_repo.get_state(
-        user,
-        day,
-        max_questions=CONTINENTAL_CONFIG.max_questions,
-        max_guesses=CONTINENTAL_CONFIG.max_guesses,
-    )
+    if not is_answered(question_create):
+        return unresolved_question(question_create, InvalidContinentalQuestionDisplay)
 
-    current_game_state = db_state_to_game_state(state)
-    if not game_rules.can_ask_question(current_game_state):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User has no more questions left or game is over!",
+    question_create.user_id = user.id if user else None
+    question_create.day_id = day.id
+    if user is None:
+        await record_guest_action(
+            session, request, response, f"continental:{continent.value}", day.id,
+            question=True, max_questions=CONTINENTAL_CONFIG.max_questions,
         )
-
-    local_question_create, planned_question = await gutils.analyze_and_answer_locally(
-        original_question=question.question,
-        day_country=day,
-        user=user,
-        session=session,
-    )
-    if local_question_create is not None:
-        new_quest = await question_repo.create_question(local_question_create)
-        if not local_question_create.valid:
-            return InvalidContinentalQuestionDisplay.model_validate(new_quest)
-
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = CONTINENTAL_CONFIG.max_questions - new_game_state.questions_used
-        state.questions_asked += 1
-        await state_repo.update_state(state)
-        return ContinentalQuestionDisplay.model_validate(new_quest)
-
-    enh_question = gutils.question_enhanced_from_plan(question.question, planned_question)
-    if not enh_question.valid:
-        question_create = QuestionCreate(
-            user_id=user.id,
-            day_id=day.id,
-            original_question=enh_question.original_question,
-            valid=enh_question.valid,
-            question=enh_question.question,
-            answer=None,
-            explanation=enh_question.explanation or "No explanation provided.",
-            context=None,
+    else:
+        await consume_question(
+            session, ContinentalState, user.id, day.id,
+            CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
         )
-        new_quest = await question_repo.create_question(question_create)
-        return InvalidContinentalQuestionDisplay.model_validate(new_quest)
-
-    question_create, question_vector = await gutils.ask_question(
-        question=enh_question,
-        day_country=day,
-        user=user,
-        session=session,
-    )
-    new_quest = await question_repo.create_question(question_create)
+    new_question = await ContinentalQuestionRepository(session).create_question(question_create)
+    result = ContinentalQuestionDisplay.model_validate(new_question)
+    await session.commit()
     if question_vector:
-        await add_question_to_qdrant(
-            new_quest,
-            question_vector,
-            filter_key="country_id",
-            filter_value=day.country_id,
-            collection_name="countries_questions",
-        )
-
-    new_game_state = game_rules.process_question(current_game_state)
-    state.remaining_questions = CONTINENTAL_CONFIG.max_questions - new_game_state.questions_used
-    state.questions_asked += 1
-    await state_repo.update_state(state)
-    return ContinentalQuestionDisplay.model_validate(new_quest)
+        # Indexing is auxiliary: an already committed answer remains successful.
+        try:
+            await add_question_to_qdrant(
+                new_question, question_vector, filter_key="country_id",
+                filter_value=day.country_id, collection_name="countries_questions",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("countrydle").exception("Could not index accepted continental question")
+    return result
 
 
 @router.post("/{continent}/guess", response_model=ContinentalGuessDisplay)

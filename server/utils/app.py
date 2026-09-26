@@ -14,6 +14,7 @@ import utils
 from friend_matches import start_workers, stop_workers
 from countrydle.local_answering import DEFAULT_DB_PATH
 from scripts.country_additions import provision_country_additions
+from utils.ai_clients import close_ai_clients
 
 
 async def init_models(engine: AsyncEngine):
@@ -67,6 +68,7 @@ async def lifespan(app: FastAPI):
             await stop_workers()
             utils.scheduler.shutdown(wait=True)
             close_qdrant_client()
+            await asyncio.to_thread(close_ai_clients)
             await engine.dispose()
             logging.info("Application shutdown complete.")
         except Exception as e:

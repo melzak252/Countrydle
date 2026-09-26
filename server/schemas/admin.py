@@ -126,6 +126,32 @@ class AdminQuestionTestRequest(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
+class QuestionTokenUsage(BaseModel):
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    thought_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+
+
+class QuestionModelDiagnostics(BaseModel):
+    # Explicit allowlist: prompts, messages, credentials and raw responses stay private.
+    provider: str | None = None
+    model: str | None = None
+    model_version: str | None = None
+    contract_version: str | None = None
+    duration_ms: float | None = Field(default=None, ge=0)
+    cache_hit: bool | None = None
+    usage: QuestionTokenUsage | None = None
+
+
+class QuestionDiagnostics(BaseModel):
+    planner: QuestionModelDiagnostics | None = None
+    local_duration_ms: float | None = Field(default=None, ge=0)
+    retrieval_duration_ms: float | None = Field(default=None, ge=0)
+    fallback: QuestionModelDiagnostics | None = None
+
+
 class AdminQuestionTestResponse(BaseModel):
     mode: AdminQuestionTestMode
     entity: AdminQuestionTestEntity
@@ -139,3 +165,4 @@ class AdminQuestionTestResponse(BaseModel):
     server_version: str
     duration_ms: int
     plan: Dict[str, Any] | None
+    diagnostics: QuestionDiagnostics

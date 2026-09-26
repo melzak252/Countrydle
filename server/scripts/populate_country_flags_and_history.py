@@ -295,6 +295,10 @@ def main():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_historical_unions ON country_historical_unions(union_name);")
 
     # Clear previous entries to allow idempotent re-runs
+    cursor.execute(
+        "DELETE FROM country_memberships WHERE organization IN "
+        "(SELECT union_name FROM country_historical_unions)"
+    )
     cursor.execute("DELETE FROM country_flag_colors;")
     cursor.execute("DELETE FROM country_flag_symbols;")
     cursor.execute("DELETE FROM country_historical_unions;")
@@ -326,8 +330,6 @@ def main():
                 continue
             cid, _ = cca3_map[cca3]
             cursor.execute("INSERT OR IGNORE INTO country_historical_unions(country_id, union_name) VALUES (?, ?)", (cid, union_name))
-            # Also insert into country_memberships so membership queries naturally find them
-            cursor.execute("INSERT OR IGNORE INTO country_memberships(country_id, organization) VALUES (?, ?)", (cid, union_name))
             unions_count += 1
 
     conn.commit()

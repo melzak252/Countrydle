@@ -1,7 +1,9 @@
+import asyncio
+import time
 import os
 import json
 from typing import List, Tuple
-from openai import OpenAI
+from utils.ai_clients import get_openai_client
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +39,7 @@ LOCAL_CONFIG = LocalModeConfig(
         "landform_regions": ("powiat_landform_regions", "region_name"),
         "regional_labels": ("powiat_landform_regions", "region_name"),
     },
+    entity_list_relations=frozenset({"borders_powiat"}),
     supported_relations=[
         "name", "voivodeship", "is_city_county", "seat", "borders_powiat", "borders_voivodeship",
         "borders_country", "population", "area", "population_density", "urbanization", "registration_plates",
@@ -44,10 +47,30 @@ LOCAL_CONFIG = LocalModeConfig(
         "major_rivers", "major_roads", "landform_regions", "regional_labels",
     ],
     mode_notes=(
+        "is_city_county is a boolean classification: 1 means miasto na prawach powiatu "
+        "(powiat grodzki), 0 means powiat ziemski. These are precise administrative categories.\n"
+        "When a question names a specific neighboring county, use contains_exact on borders_powiat "
+        "with its canonical Polish nominative name, not an inflected phrase copied from the question. "
+        "Land-county names retain the adjective and 'Powiat' prefix; never replace them with "
+        "the seat's city name. City counties use the city name. If uncertain about the nominative, "
+        "preserve the specified county adjective for the catalog's inflection resolver.\n"
+        "A city and its surrounding land county are different entities. Preserve an explicit "
+        "voivodeship qualifier for county names shared by multiple voivodeships; never guess one.\n"
+        "When a question instead describes a neighbor's administrative type, use any over "
+        "target_powiat.borders_powiat with a predicate on item.is_city_county "
+        "(1 for a city with county rights, 0 for a land county). The target and its neighbor "
+        "have independent classifications. exists(borders_powiat) only checks for ANY neighbor "
+        "and cannot answer this. Neither target_powiat.is_city_county nor a self-border test "
+        "can substitute for the neighbor's classification.\n"
+        "Example for at least one neighboring LAND county (not a named county):\n"
+        '{"route":"local","plan":['
+        '{"operator":"equals","left":{"entity":"item","relation":"is_city_county"},"right":{"value":0}},'
+        '{"operator":"any","items":{"entity":"target_powiat","relation":"borders_powiat"},"args":[0]}'
+        "]}\n"
         "Use regional_labels for broad, historical, cultural, or physical-geography regions "
         "of a powiat, such as Mazowsze, Podlasie, Kujawy, Małopolska, Śląsk, Kaszuby, "
         "Roztocze, Polesie, or named mountain/upland/lowland/lake-district regions. "
-        "The relation is list-valued, so use contains/exists rather than equals."
+        "The relation is list-valued, so use contains_exact/exists rather than equals."
     ),
 )
 
@@ -56,7 +79,7 @@ def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> P
     return PowiatQuestionEnhanced(
         original_question=original_question,
         valid=plan.valid,
-        question=plan.improved_question,
+        question=plan.improved_question or original_question,
         intent=plan.explanation,
         required_info=plan.fallback_reason,
         explanation=plan.explanation if not plan.valid else None,
@@ -65,12 +88,19 @@ def question_enhanced_from_plan(original_question: str, plan: QuestionPlan) -> P
 
 async def analyze_and_answer_locally(
     question: str, day_powiat: PowiatdleDay, user: User | None, session: AsyncSession,
-    *, strict_errors: bool = False,
+    *, strict_errors: bool = False, evidence: dict | None = None,
 ):
     powiat: Powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
-    plan = analyze_question(
-        question, LOCAL_CONFIG, strict_errors=True, use_cache=False
-    ) if strict_errors else analyze_question(question, LOCAL_CONFIG)
+    planner_kwargs = {"strict_errors": True, "use_cache": False} if strict_errors else {}
+    if evidence is not None:
+        planner_evidence = evidence.setdefault("planner", {})
+        planner_kwargs["evidence"] = planner_evidence
+        planner_started = time.perf_counter()
+    try:
+        plan = await asyncio.to_thread(analyze_question, question, LOCAL_CONFIG, **planner_kwargs)
+    finally:
+        if evidence is not None:
+            planner_evidence["duration_ms"] = (time.perf_counter() - planner_started) * 1000
     if not plan.valid:
         return PowiatQuestionCreate(
             user_id=user.id if user else None,
@@ -86,12 +116,17 @@ async def analyze_and_answer_locally(
         ), plan
     if strict_errors and plan.supported and plan.plan and not LOCAL_CONFIG.db_path.is_file():
         raise RuntimeError("Local facts are unavailable")
+    if evidence is not None:
+        local_started = time.perf_counter()
     try:
-        answer = execute_plan(LOCAL_CONFIG, powiat.nazwa, plan)
+        answer = await asyncio.to_thread(execute_plan, LOCAL_CONFIG, powiat.nazwa, plan)
     except Exception:
         if strict_errors:
             raise
         return None, plan
+    finally:
+        if evidence is not None:
+            evidence["local_duration_ms"] = (time.perf_counter() - local_started) * 1000
     if answer is None:
         return None, plan
     return PowiatQuestionCreate(
@@ -167,8 +202,9 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
     ]
     model = os.getenv("QUIZ_MODEL")
 
-    client = OpenAI()
-    response = client.chat.completions.create(
+    client = await asyncio.to_thread(get_openai_client)
+    response = await asyncio.to_thread(
+        client.chat.completions.create,
         model=model,
         messages=prompts,
         response_format={"type": "json_object"},
@@ -247,7 +283,7 @@ def answer_question_for_entity(
     model = os.getenv("QUIZ_MODEL")
     answer_dict = None
     try:
-        client = OpenAI(timeout=request_timeout, max_retries=0) if request_timeout is not None else OpenAI()
+        client = get_openai_client(request_timeout=request_timeout)
         response = client.chat.completions.create(
             model=model,
             messages=prompts,
@@ -263,6 +299,13 @@ def answer_question_for_entity(
                 messages=prompts, temperature=0, seed=42,
                 response_id=response.id, system_fingerprint=response.system_fingerprint,
             )
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                evidence["usage"] = {
+                    "input_tokens": usage.prompt_tokens,
+                    "output_tokens": usage.completion_tokens,
+                    "total_tokens": usage.total_tokens,
+                }
     except Exception as exc:
         print(f"Warning: OpenAI call failed ({exc}); falling back to Gemini.")
         from countrydle.utils import gemini_json
@@ -275,19 +318,37 @@ async def ask_question(
     day_powiat: PowiatdleDay,
     user: User | None,
     session: AsyncSession,
+    *,
+    evidence: dict | None = None,
 ) -> Tuple[PowiatQuestionCreate, List[float]]:
 
     fragments = []
     question_vector = []
+    if evidence is not None:
+        retrieval_started = time.perf_counter()
     try:
         fragments, question_vector = await get_fragments_matching_question(
             question.question, "powiat_id", day_powiat.powiat_id, "powiaty", session, limit=qdrant.POWIATDLE_CONTEXT_LIMIT
         )
     except Exception as exc:
         print(f"Warning: Vector retrieval failed ({exc}); proceeding without Qdrant context.")
+    finally:
+        if evidence is not None:
+            evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     powiat: Powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
-    answer_dict = answer_question_for_entity(question, powiat.nazwa, context)
+    answer_kwargs = {}
+    if evidence is not None:
+        fallback_evidence = evidence.setdefault("fallback", {})
+        answer_kwargs["evidence"] = fallback_evidence
+        fallback_started = time.perf_counter()
+    try:
+        answer_dict = await asyncio.to_thread(
+            answer_question_for_entity, question, powiat.nazwa, context, **answer_kwargs
+        )
+    finally:
+        if evidence is not None:
+            fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
 
 
     question_create = PowiatQuestionCreate(

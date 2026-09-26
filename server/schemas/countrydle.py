@@ -26,7 +26,7 @@ class QuestionEnhanced(BaseModel):
 
 
 class QuestionCreate(QuestionEnhanced):
-    answer: bool | None
+    answer: bool | None = Field(strict=True)
     user_id: int | None
     day_id: int
     context: str | None

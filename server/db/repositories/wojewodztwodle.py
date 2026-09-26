@@ -26,6 +26,12 @@ class WojewodztwodleDayRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_day_wojewodztwo_by_date(self, day_date) -> Optional[WojewodztwodleDay]:
+        result = await self.session.execute(
+            select(WojewodztwodleDay).where(WojewodztwodleDay.date == day_date)
+        )
+        return result.scalar_one_or_none()
+
     async def generate_new_day_wojewodztwo(self, cooldown_days: int = 10) -> WojewodztwodleDay:
         import random
         recent_subq = (
@@ -88,6 +94,11 @@ class WojewodztwodleStateRepository:
         max_questions: int = 5,
         max_guesses: int = 2,
     ) -> WojewodztwodleState:
+        from db.repositories.question_accounting import lock_question_state
+        existing = await lock_question_state(self.session, WojewodztwodleState, user.id, day.id)
+        if existing is not None:
+            await self.session.commit()
+            return existing
         new_state = WojewodztwodleState(
             user_id=user.id,
             day_id=day.id,
@@ -300,11 +311,14 @@ class WojewodztwodleGuessRepository:
         self.session = session
 
     async def add_guess(
-        self, guess_create: WojewodztwoGuessCreate
+        self, guess_create: WojewodztwoGuessCreate, *, commit: bool = True
     ) -> WojewodztwodleGuess:
         new_guess = WojewodztwodleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
         self.session.add(new_guess)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         await self.session.refresh(new_guess)
         return new_guess
 
@@ -337,8 +351,7 @@ class WojewodztwodleQuestionRepository:
         data.pop("required_info", None)
         new_question = WojewodztwodleQuestion(**data)
         self.session.add(new_question)
-        await self.session.commit()
-        await self.session.refresh(new_question)
+        await self.session.flush()
         return new_question
 
 
@@ -351,6 +364,8 @@ class WojewodztwodleQuestionRepository:
                 and_(
                     WojewodztwodleQuestion.user_id == user.id,
                     WojewodztwodleQuestion.day_id == day.id,
+                    WojewodztwodleQuestion.valid.is_(True),
+                    WojewodztwodleQuestion.answer.is_not(None),
                 )
             )
             .order_by(WojewodztwodleQuestion.asked_at.asc())

@@ -45,6 +45,12 @@ class PowiatdleDayRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_day_powiat_by_date(self, day_date) -> Optional[PowiatdleDay]:
+        result = await self.session.execute(
+            select(PowiatdleDay).where(PowiatdleDay.date == day_date)
+        )
+        return result.scalar_one_or_none()
+
     async def generate_new_day_powiat(self, cooldown_days: int = 90) -> PowiatdleDay:
         import random
         recent_subq = (
@@ -104,6 +110,11 @@ class PowiatdleStateRepository:
         max_questions: int = 15,
         max_guesses: int = 3,
     ) -> PowiatdleState:
+        from db.repositories.question_accounting import lock_question_state
+        existing = await lock_question_state(self.session, PowiatdleState, user.id, day.id)
+        if existing is not None:
+            await self.session.commit()
+            return existing
         new_state = PowiatdleState(
             user_id=user.id,
             day_id=day.id,
@@ -311,10 +322,13 @@ class PowiatdleGuessRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_guess(self, guess_create: PowiatGuessCreate) -> PowiatdleGuess:
+    async def add_guess(self, guess_create: PowiatGuessCreate, *, commit: bool = True) -> PowiatdleGuess:
         new_guess = PowiatdleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
         self.session.add(new_guess)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         await self.session.refresh(new_guess)
         return new_guess
 
@@ -344,8 +358,7 @@ class PowiatdleQuestionRepository:
         data.pop("required_info", None)
         new_question = PowiatdleQuestion(**data)
         self.session.add(new_question)
-        await self.session.commit()
-        await self.session.refresh(new_question)
+        await self.session.flush()
         return new_question
 
 
@@ -358,6 +371,8 @@ class PowiatdleQuestionRepository:
                 and_(
                     PowiatdleQuestion.user_id == user.id,
                     PowiatdleQuestion.day_id == day.id,
+                    PowiatdleQuestion.valid.is_(True),
+                    PowiatdleQuestion.answer.is_not(None),
                 )
             )
             .order_by(PowiatdleQuestion.asked_at.asc())

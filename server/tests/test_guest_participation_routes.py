@@ -69,6 +69,22 @@ async def solo_client(participation_db):
         app.dependency_overrides.update(previous)
 
 
+@pytest.mark.parametrize("mode", [
+    "countrydle", "us_statedle", "powiatdle", "wojewodztwodle", "continental/europe", "flagdle",
+])
+async def test_guest_state_establishes_identity_before_questions_without_counting_a_move(
+    solo_client, participation_db, mode
+):
+    response = await solo_client.get(f"/{mode}/state")
+    assert response.status_code == 200, response.text
+    identity = solo_client.cookies.get(GUEST_IDENTITY_COOKIE)
+    assert identity is not None
+    await solo_client.get(f"/{mode}/state")
+    assert solo_client.cookies.get(GUEST_IDENTITY_COOKIE) == identity
+    async with participation_db() as session:
+        assert await session.scalar(select(func.count()).select_from(GuestParticipation)) == 0
+
+
 @pytest.mark.parametrize("mode,payload", [
     ("countrydle", {"guess": "Germany", "country_id": 2}),
     ("us_statedle", {"guess": "Alaska", "us_state_id": 2}),

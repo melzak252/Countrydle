@@ -1,6 +1,7 @@
 """Read-only explicit-target evaluation, with deterministic planner/provider boundaries."""
 from dataclasses import replace
 from importlib import import_module
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -87,7 +88,7 @@ def patch_country_local(monkeypatch, question_plan=None):
     monkeypatch.setattr("countrydle.utils.analyze_question_for_local_plan", lambda *args, **kwargs: question_plan)
     monkeypatch.setattr("flagdle.analyze_question_for_local_plan", lambda *args, **kwargs: question_plan)
 
-    def execute(ast, name, question, explanation, **kwargs):
+    def execute(ast, name, question):
         if not question_plan.supported:
             return None
         return SimpleNamespace(
@@ -204,27 +205,36 @@ async def test_invalid_question_is_distinct_from_model_failure(admin_client, mon
 async def test_unsupported_plan_uses_daily_retrieval_and_answer_model(admin_client, monkeypatch, mode, entity_id, utility):
     client, _ = admin_client
     module = import_module(utility)
-    question_plan = plan(supported=False)
+    question_plan = replace(plan(supported=False), improved_question=None)
     planner_name = "analyze_question_for_local_plan" if mode == "countrydle" else "analyze_question"
     monkeypatch.setattr(module, planner_name, lambda *args, **kwargs: question_plan)
 
-    async def fragments(*args, **kwargs):
+    async def fragments(query, *args, **kwargs):
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("Embedding input must contain question text")
         return [SimpleNamespace(text="Retrieved geographic evidence.")], [0.1]
 
     monkeypatch.setattr(module, "get_fragments_matching_question", fragments)
 
+    def answer_from_context(prompt):
+        return {
+            "answer": False if "Retrieved geographic evidence." in prompt else None,
+            "explanation": "The retrieved evidence rules this out." if "Retrieved geographic evidence." in prompt else "Insufficient evidence.",
+        }
+
     if mode == "countrydle":
-        monkeypatch.setattr(module, "gemini_json", lambda *args, **kwargs: {
-            "answer": False, "explanation": "The geographic evidence rules this out.",
-        })
+        monkeypatch.setattr(module, "gemini_json", lambda prompt, *args, **kwargs: answer_from_context(prompt))
     else:
-        provider_response = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
-            content='{"answer": false, "explanation": "The geographic evidence rules this out."}',
-        ))])
-        client_provider = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
-            create=lambda **kwargs: provider_response,
-        )))
-        monkeypatch.setattr(module, "OpenAI", lambda *args, **kwargs: client_provider)
+        def completion(**kwargs):
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(
+                    content=json.dumps(answer_from_context(kwargs["messages"][0]["content"])),
+                ))],
+                model="test-model", id="test-response", system_fingerprint=None, usage=None,
+            )
+
+        client_provider = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=completion)))
+        monkeypatch.setattr(module, "get_openai_client", lambda **kwargs: client_provider)
     response = await client.post("/admin/question-tests", json={
         "mode": mode, "entity_id": entity_id, "question": "Is it in Europe?",
     })
@@ -326,3 +336,28 @@ async def test_missing_local_facts_never_creates_sqlite_database(
     })
     assert response.status_code == 503
     assert not missing_path.exists()
+
+
+async def test_diagnostics_exclude_private_provider_evidence(admin_client, monkeypatch):
+    client, _ = admin_client
+    patch_country_local(monkeypatch)
+
+    def interpret(*args, evidence, **kwargs):
+        evidence.update(
+            provider="gemini", model="test-model", cache_hit=False,
+            prompt="PRIVATE_SYSTEM_PROMPT", messages=[{"content": "PRIVATE_MESSAGES"}],
+            api_key="PRIVATE_API_KEY", raw_response="PRIVATE_RAW_RESPONSE",
+            usage={"input_tokens": 0, "output_tokens": 4, "total_tokens": 4, "secret": "PRIVATE_USAGE"},
+        )
+        return plan()
+
+    monkeypatch.setattr("countrydle.utils.analyze_question_for_local_plan", interpret)
+    response = await client.post("/admin/question-tests", json={
+        "mode": "countrydle", "entity_id": 31, "question": "Is it in Europe?",
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()["answer"] is True
+    diagnostics = response.json()["diagnostics"]
+    assert diagnostics["planner"]["usage"]["input_tokens"] == 0
+    assert "PRIVATE_" not in response.text
+    assert "prompt" not in diagnostics["planner"] and "messages" not in diagnostics["planner"]

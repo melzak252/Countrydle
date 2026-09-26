@@ -1,3 +1,8 @@
+from db.models import WojewodztwodleState
+from db.repositories.question_accounting import (
+    consume_question, is_answered, unresolved_question, require_question_available,
+    lock_question_state, claim_guest_questions,
+)
 from typing import Union, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
@@ -85,8 +90,9 @@ async def normalize_state_limits(state, session: AsyncSession):
         state.remaining_questions != expected_questions
         or state.remaining_guesses != expected_guesses
     ):
-        state.remaining_questions = expected_questions
-        state.remaining_guesses = expected_guesses
+        state = await lock_question_state(session, WojewodztwodleState, state.user_id, state.day_id)
+        state.remaining_questions = max(0, WOJEWODZTWDLE_CONFIG.max_questions - state.questions_asked)
+        state.remaining_guesses = max(0, WOJEWODZTWDLE_CONFIG.max_guesses - state.guesses_made)
         await WojewodztwodleStateRepository(session).update_state(state)
     return state
 
@@ -99,7 +105,6 @@ async def sync_guest_data(
     session: AsyncSession = Depends(get_db),
 ):
     from datetime import datetime
-    from sqlalchemy import update
     
     try:
         game_date = datetime.strptime(sync_data.date, "%Y-%m-%d").date()
@@ -118,6 +123,7 @@ async def sync_guest_data(
             max_questions=WOJEWODZTWDLE_CONFIG.max_questions,
             max_guesses=WOJEWODZTWDLE_CONFIG.max_guesses,
         )
+    state = await lock_question_state(session, WojewodztwodleState, user.id, day_state.id)
     
     if state.questions_asked > 0 or state.guesses_made > 0:
         linked = await link_guest_participation(session, request, "wojewodztwodle", day_state.id, user.id)
@@ -125,17 +131,10 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
-    if sync_data.questions:
-        from db.models import WojewodztwodleQuestion
-        await session.execute(
-            update(WojewodztwodleQuestion)
-            .where(
-                WojewodztwodleQuestion.id.in_(sync_data.questions), 
-                WojewodztwodleQuestion.user_id == None,
-                WojewodztwodleQuestion.day_id == day_state.id
-            )
-            .values(user_id=user.id)
-        )
+    from db.models import WojewodztwodleQuestion
+    await claim_guest_questions(
+        session, WojewodztwodleQuestion, state, sync_data.questions, WOJEWODZTWDLE_CONFIG.max_questions,
+    )
 
     for guess in sync_data.guesses:
         is_correct = False
@@ -149,11 +148,9 @@ async def sync_guest_data(
             user_id=user.id,
             answer=is_correct,
         )
-        await WojewodztwodleGuessRepository(session).add_guess(guess_create)
+        await WojewodztwodleGuessRepository(session).add_guess(guess_create, commit=False)
 
-    state.remaining_questions = sync_data.state.remaining_questions
     state.remaining_guesses = sync_data.state.remaining_guesses
-    state.questions_asked = sync_data.state.questions_asked
     state.guesses_made = sync_data.state.guesses_made
     state.is_game_over = sync_data.state.is_game_over
     state.won = sync_data.state.won
@@ -187,6 +184,8 @@ async def get_history(session: AsyncSession = Depends(get_db)):
 async def get_state(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    request: Request = None,
+    response: Response = None,
 ):
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
     if not day_state:
@@ -195,6 +194,9 @@ async def get_state(
         ).generate_new_day_wojewodztwo()
 
     if user is None:
+        if request is not None and response is not None:
+            from utils.guest_session import get_guest_identity
+            get_guest_identity(request, response)
         return WojewodztwodleStateResponse(
             user=None,
             date=str(day_state.date),
@@ -303,11 +305,14 @@ async def ask_question(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    user_id = user.id if user else None
     try:
         return await _do_ask_question(question, user, session, request, response)
     except HTTPException:
+        await session.rollback()
         raise
     except Exception as exc:
+        await session.rollback()
         import logging, traceback
         logging.getLogger("countrydle").error("Handled error in wojewodztwodle ask_question: %s\n%s", exc, traceback.format_exc())
         from datetime import datetime
@@ -319,7 +324,7 @@ async def ask_question(
             answer=None,
             explanation="Nie udało się zweryfikować tego pytania w tym momencie. Twoja próba nie została zużyta.",
             asked_at=datetime.now(),
-            user_id=user.id if user else None,
+            user_id=user_id,
             day_id=0,
         )
 
@@ -332,91 +337,57 @@ async def _do_ask_question(
     response: Response,
 ):
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
-    
-    from qdrant.utils import add_question_to_qdrant
-
-    if user is None:
-        question_create, planned_question = await wutils.analyze_and_answer_locally(
-            question.question, day_state, None, session
-        )
-
-        if question_create is None:
-            enh_question = wutils.question_enhanced_from_plan(
-                question.question, planned_question
-            )
-            question_create, question_vector = await wutils.ask_question(
-                enh_question,
-                day_state,
-                None,
-                session,
-            )
-        else:
-            question_vector = None
-
-        if question_create.valid:
-            await record_guest_action(session, request, response, "wojewodztwodle", day_state.id, question=True)
-        new_quest = await WojewodztwodleQuestionRepository(session).create_question(
-            question_create
-        )
-
-        if question_vector:
-            await add_question_to_qdrant(
-                new_quest,
-                question_vector,
-                filter_key="wojewodztwo_id",
-                filter_value=day_state.wojewodztwo_id,
-                collection_name="wojewodztwa_questions",
-            )
-
-
-        return new_quest
-
-    state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
-
-    current_game_state = db_state_to_game_state(state)
-    if not game_rules.can_ask_question(current_game_state):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No more questions left or game over!",
-        )
+    if user is not None:
+        state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
+        require_question_available(state, WOJEWODZTWDLE_CONFIG.max_questions)
 
     question_create, planned_question = await wutils.analyze_and_answer_locally(
         question.question, day_state, user, session
     )
-
+    question_vector = None
     if question_create is None:
-        enh_question = wutils.question_enhanced_from_plan(question.question, planned_question)
-        question_create, question_vector = await wutils.ask_question(
-            enh_question,
-            day_state,
-            user,
-            session,
+        enhanced = wutils.question_enhanced_from_plan(question.question, planned_question)
+        if not enhanced.valid:
+            question_create = WojewodztwoQuestionCreate(
+                user_id=user.id if user else None, day_id=day_state.id,
+                original_question=question.question, question=enhanced.question,
+                valid=False, answer=None, explanation=enhanced.explanation, context=None,
+            )
+        else:
+            question_create, question_vector = await wutils.ask_question(
+                enhanced, day_state, user, session
+            )
+
+    if not is_answered(question_create):
+        return unresolved_question(question_create, WojewodztwoQuestionDisplay)
+
+    question_create.user_id = user.id if user else None
+    question_create.day_id = day_state.id
+    if user is None:
+        await record_guest_action(
+            session, request, response, "wojewodztwodle", day_state.id,
+            question=True, max_questions=WOJEWODZTWDLE_CONFIG.max_questions,
         )
     else:
-        question_vector = None
-
-    new_quest = await WojewodztwodleQuestionRepository(session).create_question(
-        question_create
-    )
-
+        await consume_question(
+            session, WojewodztwodleState, user.id, day_state.id,
+            WOJEWODZTWDLE_CONFIG.max_questions, WOJEWODZTWDLE_CONFIG.max_guesses,
+        )
+    new_question = await WojewodztwodleQuestionRepository(session).create_question(question_create)
+    result = WojewodztwoQuestionDisplay.model_validate(new_question)
+    await session.commit()
     if question_vector:
-        await add_question_to_qdrant(
-            new_quest,
-            question_vector,
-            filter_key="wojewodztwo_id",
-            filter_value=day_state.wojewodztwo_id,
-            collection_name="wojewodztwa_questions",
-        )
-
-    if question_create.valid:
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = (
-            WOJEWODZTWDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        await WojewodztwodleStateRepository(session).update_state(state)
-
-    return new_quest
+        # Indexing is auxiliary: an already committed answer remains successful.
+        try:
+            from qdrant.utils import add_question_to_qdrant
+            await add_question_to_qdrant(
+                new_question, question_vector, filter_key="wojewodztwo_id",
+                filter_value=day_state.wojewodztwo_id, collection_name="wojewodztwa_questions",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("countrydle").exception("Could not index accepted wojewodztwodle question")
+    return result
 
 
 @router.get("/reveal", response_model=WojewodztwoDisplay)

@@ -70,7 +70,6 @@ def test_country_fact_editor_adds_and_deletes_list_value_used_by_answerer(editab
         contains_plan("water_access", "Test Sea"),
         "Poland",
         "Does Poland have access to Test Sea?",
-        "Test plan",
     )
     assert before is not None
     assert before.answer is False
@@ -80,7 +79,6 @@ def test_country_fact_editor_adds_and_deletes_list_value_used_by_answerer(editab
         contains_plan("water_access", "Test Sea"),
         "Poland",
         "Does Poland have access to Test Sea?",
-        "Test plan",
     )
     assert after_add is not None
     assert after_add.answer is True
@@ -90,7 +88,6 @@ def test_country_fact_editor_adds_and_deletes_list_value_used_by_answerer(editab
         contains_plan("water_access", "Test Sea"),
         "Poland",
         "Does Poland have access to Test Sea?",
-        "Test plan",
     )
     assert after_delete is not None
     assert after_delete.answer is False

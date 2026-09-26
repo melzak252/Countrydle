@@ -257,7 +257,6 @@ def test_countrydle_plan_eval_rows_are_recorded(
         plan,
         country,
         question,
-        "Pytest Countrydle pipeline evaluation.",
     )
     record_eval_row(record_countrydle_eval, question, country, expected_answer, local_answer, "sqlite_plan")
     assert (local_answer.answer if local_answer is not None else None) is expected_answer
@@ -275,7 +274,6 @@ def test_countrydle_fallback_eval_rows_are_recorded(
         plan,
         country,
         question,
-        "Pytest Countrydle fallback-path evaluation.",
     )
     record_eval_row(record_countrydle_eval, question, country, expected_answer, local_answer, "fallback_route_only")
     assert local_answer is None

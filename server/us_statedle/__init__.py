@@ -1,3 +1,8 @@
+from db.models import USStatedleState
+from db.repositories.question_accounting import (
+    consume_question, is_answered, unresolved_question, require_question_available,
+    lock_question_state, claim_guest_questions,
+)
 from typing import Union, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
@@ -83,8 +88,9 @@ async def normalize_state_limits(state, session: AsyncSession):
         state.remaining_questions != expected_questions
         or state.remaining_guesses != expected_guesses
     ):
-        state.remaining_questions = expected_questions
-        state.remaining_guesses = expected_guesses
+        state = await lock_question_state(session, USStatedleState, state.user_id, state.day_id)
+        state.remaining_questions = max(0, USSTATEDLE_CONFIG.max_questions - state.questions_asked)
+        state.remaining_guesses = max(0, USSTATEDLE_CONFIG.max_guesses - state.guesses_made)
         await USStatedleStateRepository(session).update_state(state)
     return state
 
@@ -97,7 +103,6 @@ async def sync_guest_data(
     session: AsyncSession = Depends(get_db),
 ):
     from datetime import datetime
-    from sqlalchemy import update
     
     try:
         game_date = datetime.strptime(sync_data.date, "%Y-%m-%d").date()
@@ -116,6 +121,7 @@ async def sync_guest_data(
             max_questions=USSTATEDLE_CONFIG.max_questions,
             max_guesses=USSTATEDLE_CONFIG.max_guesses,
         )
+    state = await lock_question_state(session, USStatedleState, user.id, day_state.id)
     
     if state.questions_asked > 0 or state.guesses_made > 0:
         linked = await link_guest_participation(session, request, "us_statedle", day_state.id, user.id)
@@ -123,17 +129,10 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
-    if sync_data.questions:
-        from db.models import USStatedleQuestion
-        await session.execute(
-            update(USStatedleQuestion)
-            .where(
-                USStatedleQuestion.id.in_(sync_data.questions), 
-                USStatedleQuestion.user_id == None,
-                USStatedleQuestion.day_id == day_state.id
-            )
-            .values(user_id=user.id)
-        )
+    from db.models import USStatedleQuestion
+    await claim_guest_questions(
+        session, USStatedleQuestion, state, sync_data.questions, USSTATEDLE_CONFIG.max_questions,
+    )
 
     for guess in sync_data.guesses:
         is_correct = False
@@ -147,11 +146,9 @@ async def sync_guest_data(
             user_id=user.id,
             answer=is_correct,
         )
-        await USStatedleGuessRepository(session).add_guess(guess_create)
+        await USStatedleGuessRepository(session).add_guess(guess_create, commit=False)
 
-    state.remaining_questions = sync_data.state.remaining_questions
     state.remaining_guesses = sync_data.state.remaining_guesses
-    state.questions_asked = sync_data.state.questions_asked
     state.guesses_made = sync_data.state.guesses_made
     state.is_game_over = sync_data.state.is_game_over
     state.won = sync_data.state.won
@@ -184,12 +181,17 @@ async def get_history(session: AsyncSession = Depends(get_db)):
 async def get_state(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    request: Request = None,
+    response: Response = None,
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     if not day_state:
         day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
 
     if user is None:
+        if request is not None and response is not None:
+            from utils.guest_session import get_guest_identity
+            get_guest_identity(request, response)
         return USStatedleStateResponse(
             user=None,
             date=str(day_state.date),
@@ -294,11 +296,14 @@ async def ask_question(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    user_id = user.id if user else None
     try:
         return await _do_ask_question(question, user, session, request, response)
     except HTTPException:
+        await session.rollback()
         raise
     except Exception as exc:
+        await session.rollback()
         import logging, traceback
         logging.getLogger("countrydle").error("Handled error in us_statedle ask_question: %s\n%s", exc, traceback.format_exc())
         from datetime import datetime
@@ -310,7 +315,7 @@ async def ask_question(
             answer=None,
             explanation="Could not verify this question right now. Your turn was not deducted.",
             asked_at=datetime.now(),
-            user_id=user.id if user else None,
+            user_id=user_id,
             day_id=0,
         )
 
@@ -323,116 +328,57 @@ async def _do_ask_question(
     response: Response,
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
-    
-    from qdrant.utils import add_question_to_qdrant
-
-    if user is None:
-        question_create, planned_question = await uutils.analyze_and_answer_locally(
-            question.question, day_state, None, session
-        )
-
-        if question_create is None:
-            try:
-                enh_question = uutils.question_enhanced_from_plan(
-                    question.question, planned_question
-                )
-                question_create, question_vector = await uutils.ask_question(
-                    enh_question,
-                    day_state,
-                    None,
-                    session,
-                )
-            except Exception:
-                question_create = USStateQuestionCreate(
-                    user_id=None,
-                    day_id=day_state.id,
-                    original_question=question.question,
-                    question=planned_question.improved_question or question.question,
-                    valid=False,
-                    answer=None,
-                    explanation="Unable to answer this question with available knowledge.",
-                    context="error:unsupported",
-                )
-                question_vector = None
-        else:
-            question_vector = None
-
-        if question_create.valid:
-            await record_guest_action(session, request, response, "us_statedle", day_state.id, question=True)
-        new_quest = await USStatedleQuestionRepository(session).create_question(
-            question_create
-        )
-
-        if question_vector:
-            await add_question_to_qdrant(
-                new_quest,
-                question_vector,
-                filter_key="us_state_id",
-                filter_value=day_state.us_state_id,
-                collection_name="us_states_questions",
-            )
-
-        return new_quest
-
-    state = await USStatedleStateRepository(session).get_state(user, day_state)
-
-    current_game_state = db_state_to_game_state(state)
-    if not game_rules.can_ask_question(current_game_state):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No more questions left or game over!",
-        )
+    if user is not None:
+        state = await USStatedleStateRepository(session).get_state(user, day_state)
+        require_question_available(state, USSTATEDLE_CONFIG.max_questions)
 
     question_create, planned_question = await uutils.analyze_and_answer_locally(
         question.question, day_state, user, session
     )
-
+    question_vector = None
     if question_create is None:
-        try:
-            enh_question = uutils.question_enhanced_from_plan(question.question, planned_question)
+        enhanced = uutils.question_enhanced_from_plan(question.question, planned_question)
+        if not enhanced.valid:
+            question_create = USStateQuestionCreate(
+                user_id=user.id if user else None, day_id=day_state.id,
+                original_question=question.question, question=enhanced.question,
+                valid=False, answer=None, explanation=enhanced.explanation, context=None,
+            )
+        else:
             question_create, question_vector = await uutils.ask_question(
-                enh_question,
-                day_state,
-                user,
-                session,
+                enhanced, day_state, user, session
+            )
+
+    if not is_answered(question_create):
+        return unresolved_question(question_create, USStateQuestionDisplay)
+
+    question_create.user_id = user.id if user else None
+    question_create.day_id = day_state.id
+    if user is None:
+        await record_guest_action(
+            session, request, response, "us_statedle", day_state.id,
+            question=True, max_questions=USSTATEDLE_CONFIG.max_questions,
+        )
+    else:
+        await consume_question(
+            session, USStatedleState, user.id, day_state.id,
+            USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
+        )
+    new_question = await USStatedleQuestionRepository(session).create_question(question_create)
+    result = USStateQuestionDisplay.model_validate(new_question)
+    await session.commit()
+    if question_vector:
+        # Indexing is auxiliary: an already committed answer remains successful.
+        try:
+            from qdrant.utils import add_question_to_qdrant
+            await add_question_to_qdrant(
+                new_question, question_vector, filter_key="us_state_id",
+                filter_value=day_state.us_state_id, collection_name="us_states_questions",
             )
         except Exception:
-            question_create = USStateQuestionCreate(
-                user_id=user.id,
-                day_id=day_state.id,
-                original_question=question.question,
-                question=planned_question.improved_question or question.question,
-                valid=False,
-                answer=None,
-                explanation="Unable to answer this question with available knowledge.",
-                context="error:unsupported",
-            )
-            question_vector = None
-    else:
-        question_vector = None
-
-    new_quest = await USStatedleQuestionRepository(session).create_question(
-        question_create
-    )
-
-    if question_vector:
-        await add_question_to_qdrant(
-            new_quest,
-            question_vector,
-            filter_key="us_state_id",
-            filter_value=day_state.us_state_id,
-            collection_name="us_states_questions",
-        )
-
-    # Update state
-    if question_create.valid:
-        new_game_state = game_rules.process_question(current_game_state)
-        state.remaining_questions = (
-            USSTATEDLE_CONFIG.max_questions - new_game_state.questions_used
-        )
-        state.questions_asked += 1
-        await USStatedleStateRepository(session).update_state(state)
-    return new_quest
+            import logging
+            logging.getLogger("countrydle").exception("Could not index accepted us_statedle question")
+    return result
 
 
 @router.get("/reveal", response_model=USStateDisplay)

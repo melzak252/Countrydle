@@ -140,7 +140,11 @@ async def test_us_statedle_guess_correct(async_client, mock_user_override):
         patch(
             "db.repositories.us_statedle.USStatedleStateRepository.update_state",
             new_callable=AsyncMock,
-        ) as mock_update_state,
+        ),
+        patch(
+            "db.repositories.us_statedle.USStatedleStateRepository.get_current_streak",
+            new_callable=AsyncMock, return_value=0,
+        ),
     ):
         # Mock Day
         mock_day = MagicMock()
@@ -152,6 +156,7 @@ async def test_us_statedle_guess_correct(async_client, mock_user_override):
         mock_state = MagicMock()
         mock_state.remaining_guesses = 3
         mock_state.remaining_questions = 10
+        mock_state.questions_asked = 0
         mock_state.guesses_made = 0
         mock_state.won = False
         mock_state.is_game_over = False
@@ -174,7 +179,9 @@ async def test_us_statedle_guess_correct(async_client, mock_user_override):
         assert response.status_code == 200
         data = response.json()
         assert data["answer"] is True
-        assert mock_update_state.called
+        assert mock_state.won is True
+        assert mock_state.is_game_over is True
+        assert mock_state.guesses_made == 1
 
 
 @pytest.mark.anyio
@@ -195,7 +202,11 @@ async def test_wojewodztwodle_guess_correct(async_client, mock_user_override):
         patch(
             "db.repositories.wojewodztwodle.WojewodztwodleStateRepository.update_state",
             new_callable=AsyncMock,
-        ) as mock_update_state,
+        ),
+        patch(
+            "db.repositories.wojewodztwodle.WojewodztwodleStateRepository.get_current_streak",
+            new_callable=AsyncMock, return_value=0,
+        ),
     ):
         # Mock Day
         mock_day = MagicMock()
@@ -207,6 +218,7 @@ async def test_wojewodztwodle_guess_correct(async_client, mock_user_override):
         mock_state = MagicMock()
         mock_state.remaining_guesses = 3
         mock_state.remaining_questions = 10
+        mock_state.questions_asked = 0
         mock_state.guesses_made = 0
         mock_state.won = False
         mock_state.is_game_over = False
@@ -229,4 +241,6 @@ async def test_wojewodztwodle_guess_correct(async_client, mock_user_override):
         assert response.status_code == 200
         data = response.json()
         assert data["answer"] is True
-        assert mock_update_state.called
+        assert mock_state.won is True
+        assert mock_state.is_game_over is True
+        assert mock_state.guesses_made == 1

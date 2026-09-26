@@ -99,6 +99,12 @@ class FlagdleStateRepository:
     async def create_state(
         self, user: Optional[User], day_flag: FlagdleDay, max_guesses: int = 12
     ) -> FlagdleState:
+        if user is not None:
+            from db.repositories.question_accounting import lock_question_state
+            existing = await lock_question_state(self.session, FlagdleState, user.id, day_flag.id)
+            if existing is not None:
+                await self.session.commit()
+                return existing
         state = FlagdleState(
             user_id=user.id if user else None,
             day_id=day_flag.id,
@@ -176,7 +182,7 @@ class FlagdleGuessRepository:
         )
         return list(result.scalars().all())
 
-    async def add_guess(self, guess_create: FlagdleGuessCreate) -> FlagdleGuess:
+    async def add_guess(self, guess_create: FlagdleGuessCreate, *, commit: bool = True) -> FlagdleGuess:
         guess = FlagdleGuess(
             guess=guess_create.guess,
             country_id=guess_create.country_id,
@@ -195,6 +201,9 @@ class FlagdleGuessRepository:
             elapsed_seconds=guess_create.elapsed_seconds,
         )
         self.session.add(guess)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         await self.session.refresh(guess)
         return guess

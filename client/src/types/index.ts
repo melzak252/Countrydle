@@ -67,6 +67,22 @@ export interface QuestionTestRequest {
   question: string;
 }
 
+export interface QuestionModelDiagnostics {
+  provider: string | null;
+  model: string | null;
+  model_version: string | null;
+  contract_version: string | null;
+  duration_ms: number | null;
+  cache_hit: boolean | null;
+  usage: {
+    input_tokens: number | null;
+    output_tokens: number | null;
+    thought_tokens: number | null;
+    cached_input_tokens: number | null;
+    total_tokens: number | null;
+  } | null;
+}
+
 export interface QuestionTestResult {
   mode: QuestionTestMode;
   entity: QuestionTestEntity;
@@ -80,6 +96,20 @@ export interface QuestionTestResult {
   server_version: string;
   duration_ms: number;
   plan: Record<string, unknown> | null;
+  diagnostics: {
+    planner: QuestionModelDiagnostics | null;
+    local_duration_ms: number | null;
+    retrieval_duration_ms: number | null;
+    fallback: QuestionModelDiagnostics | null;
+  };
+}
+
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  size: number;
+  max_size: number;
+  hit_ratio_percent: number;
 }
 
 export interface Guess {
