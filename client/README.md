@@ -1,3 +1,26 @@
+## Daily game question chat
+
+`src/components/QuestionChat.tsx` renders the shared conversation for the world,
+continental, US state, powiat, and voivodeship game pages. Pages provide questions
+in chronological order and retain ownership of scrolling and game state.
+Player questions appear on the right; replies and answer status appear on the left.
+Valid explanations are not mounted until the game is over; invalid-question
+feedback is available immediately. Post-game answer reports retain their mode and
+question identifiers. `QuestionInput.tsx` supplies the shared rounded composer.
+
+Rejected questions, duplicate guesses, and submission failures appear as chat
+notices with the submitted text, a reason, and a next step instead of expiring
+toasts. Notices open the question chat and remain for the current in-memory game
+session, including same-day state refreshes and later successful submissions.
+They clear on a new puzzle, game reset, or page reload. Notices are separate from
+accepted questions/guesses: they do not consume attempts or enter guest sync.
+Failed submissions retain their input for editing. Network/server failures do not
+claim that a submission was rejected; they advise checking history before retrying.
+Warnings are attributed to Countrydle and start expanded; their title toggles the
+reason and next-step details with mouse, touch, or keyboard. Conversation ordering
+treats timezone-naive API question timestamps as UTC, keeping warnings between
+the questions that precede and follow them rather than grouping warnings last.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

@@ -4,14 +4,13 @@ import QuestionInput from '../components/QuestionInput';
 import GuessInput from '../components/GuessInput';
 import PowiatyMap from '../components/PowiatyMap';
 import GameInstructions from '../components/GameInstructions';
-import AnswerReportForm from '../components/AnswerReportForm';
+import QuestionChat from '../components/QuestionChat';
 import {
   Loader2,
   ChevronDown,
   ChevronUp,
   X,
   Check,
-  AlertTriangle,
   Trophy,
   Compass,
   MessageSquare,
@@ -36,6 +35,8 @@ export default function PowiatyGamePage() {
     gameState,
     questions,
     guesses,
+    notices,
+    addNotice,
     entities: powiaty,
     correctEntity: correctPowiat,
     isLoading,
@@ -73,19 +74,20 @@ export default function PowiatyGamePage() {
   const questionsContainerRef = useRef<HTMLDivElement>(null);
   const guessesContainerRef = useRef<HTMLDivElement>(null);
   const prevQuestionsCount = useRef(questions.length);
+  const prevNoticesCount = useRef(notices.length);
   const prevGuessesCount = useRef(guesses.length);
 
-  // Auto-scroll ONLY when a new question actually arrives
+  // Auto-scroll the question stream when a question or warning arrives
   useEffect(() => {
-    if (questions.length > prevQuestionsCount.current) {
-      prevQuestionsCount.current = questions.length;
-      if (questionsContainerRef.current) {
-        questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
-      }
-    } else {
-      prevQuestionsCount.current = questions.length;
+    const hasNewQuestion = questions.length > prevQuestionsCount.current;
+    const hasNewNotice = notices.length > prevNoticesCount.current;
+    if (!questionsContainerRef.current) return;
+    prevQuestionsCount.current = questions.length;
+    prevNoticesCount.current = notices.length;
+    if (hasNewQuestion || hasNewNotice) {
+      questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
     }
-  }, [questions.length]);
+  }, [questions.length, notices.length, activeChatTab, isChatOpen]);
 
   // Auto-scroll ONLY when a new guess actually arrives
   useEffect(() => {
@@ -126,9 +128,22 @@ export default function PowiatyGamePage() {
   };
 
   const handleGuess = async (name: string, id: number) => {
-    setActiveChatTab('guesses');
     setIsChatOpen(true);
-    return await makeGuess(name, id);
+    const accepted = await makeGuess(name, id);
+    setActiveChatTab(accepted === false ? 'questions' : 'guesses');
+    return accepted;
+  };
+
+  const handleDuplicateGuess = (input: string) => {
+    addNotice({
+      action: 'guess',
+      input,
+      title: 'Already guessed',
+      reason: 'This location is already in your guess history. It was not submitted again.',
+      nextStep: 'Choose a different location from the suggestions.',
+    });
+    setActiveChatTab('questions');
+    setIsChatOpen(true);
   };
 
   const totalQuestions = 15;
@@ -224,7 +239,7 @@ export default function PowiatyGamePage() {
           <div
             onWheel={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-92 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
+            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-92 md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/85"
           >
             {/* Mobile Drag Handle (Tap to collapse) */}
             <button
@@ -237,28 +252,28 @@ export default function PowiatyGamePage() {
             </button>
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 py-2 shrink-0">
+            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-4 py-3 shrink-0">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setActiveChatTab('questions')}
-                  className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'questions'
-                      ? 'border-b-2 border-emerald-400 bg-white/5 font-semibold text-sand-100'
+                      ? 'bg-emerald-400/15 font-semibold text-sand-100'
                       : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
                   }`}
                 >
                   <MessageSquare size={12} className={activeChatTab === 'questions' ? 'text-emerald-400' : ''} />
-                  <span>Inquiries</span>
+                  <span>Questions</span>
                   <span className="font-mono text-[10px] text-zinc-500">({questions.length}/{totalQuestions})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveChatTab('guesses')}
-                  className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'guesses'
-                      ? 'border-b-2 border-emerald-400 bg-white/5 font-semibold text-sand-100'
+                      ? 'bg-emerald-400/15 font-semibold text-sand-100'
                       : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
                   }`}
                 >
@@ -281,92 +296,8 @@ export default function PowiatyGamePage() {
 
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
-              <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar overscroll-contain">
-                {sortedQuestions.length === 0 ? (
-                  <div className="py-7 text-center text-zinc-400 space-y-2 border border-dashed border-white/10 rounded-sm p-4">
-                    <MessageSquare size={20} className="mx-auto text-zinc-600" />
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-sand-200">Dialogue channel ready</p>
-                    <p className="text-xs leading-relaxed text-zinc-500 max-w-[240px] mx-auto">
-                      Submit a yes-or-no inquiry below about the mystery Polish county (powiat).
-                    </p>
-                  </div>
-                ) : (
-                  sortedQuestions.map((q, index) => {
-                    const showExplanation = Boolean(q.explanation) && (!q.valid || isGameOver);
-                    const isYes = q.valid && q.answer === true;
-                    const isNo = q.valid && q.answer === false;
-                    const isInvalid = !q.valid;
-                    const answerLabel = isInvalid ? 'Invalid question' : isYes ? 'Yes' : isNo ? 'No' : 'Unknown';
-                    const answerColor = isInvalid
-                      ? 'border-amber-400/40 bg-amber-950/75 text-amber-200'
-                      : isYes
-                      ? 'border-emerald-500/40 bg-emerald-950/80 text-emerald-200'
-                      : isNo
-                      ? 'border-rose-500/40 bg-rose-950/80 text-rose-200'
-                      : 'border-zinc-700 bg-zinc-850 text-zinc-300';
-
-                    return (
-                      <div key={q.id} className="space-y-1.5 border-b border-white/5 pb-2.5 last:border-0 last:pb-0">
-                        {/* Player Inquiry (Right-aligned chat bubble) */}
-                        <div className="flex flex-col items-end">
-                          <div className="flex items-center justify-end mb-0.5 px-1">
-                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
-                              #{String(index + 1).padStart(2, '0')} · You
-                            </span>
-                          </div>
-                          <div className="max-w-[85%] rounded-2xl rounded-tr-xs border border-emerald-500/30 bg-emerald-600/25 px-3.5 py-2 text-xs font-medium text-sand-100 leading-relaxed text-right shadow-sm">
-                            {q.original_question}
-                          </div>
-                        </div>
-
-                        {/* Dispatch Response (Left-aligned chat bubble, NO nested boxes) */}
-                        <div className="flex flex-col items-start pt-0.5">
-                          <div className="flex items-center gap-1.5 mb-0.5 px-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-emerald-400 font-semibold">
-                              Atlas Dispatch
-                            </span>
-                          </div>
-
-                          {/* Unified Response Bubble */}
-                          <div className={`max-w-[85%] rounded-2xl rounded-tl-xs border px-3.5 py-2 text-xs shadow-sm space-y-1.5 ${answerColor}`}>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider">
-                                {isYes && <Check size={14} strokeWidth={2.5} />}
-                                {isNo && <X size={14} strokeWidth={2.5} />}
-                                {isInvalid && <AlertTriangle size={14} />}
-                                <span>{answerLabel}</span>
-                              </span>
-                              {showExplanation && (
-                                <span className="font-mono text-[9px] opacity-70">
-                                  {isInvalid ? 'details' : 'clue'}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Explanation inside the same bubble under a subtle divider line */}
-                            {showExplanation && q.explanation && (
-                              <div className="pt-1.5 border-t border-current/15 text-[11px] leading-relaxed font-normal opacity-90">
-                                {isInvalid && (
-                                  <p className="font-mono text-[10px] uppercase tracking-wider text-amber-300 font-semibold mb-0.5">
-                                    {t('history.invalidReason')}
-                                  </p>
-                                )}
-                                <p>{q.explanation}</p>
-                              </div>
-                            )}
-
-                            {isGameOver && q.id > 0 && (
-                              <div className="pt-1 border-t border-current/10">
-                                <AnswerReportForm mode="powiatdle" questionId={q.id} reportToken={q.report_token} />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+              <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar overscroll-contain">
+                <QuestionChat questions={sortedQuestions} notices={notices} mode="powiatdle" isGameOver={isGameOver} />
               </div>
             )}
 
@@ -500,6 +431,7 @@ export default function PowiatyGamePage() {
                     alreadyGuessedNames={guesses.map((g) => g.guess)}
                     alreadyGuessedIds={guesses.map((g) => g.powiat_id).filter(Boolean)}
                     onGuess={async (id, name) => handleGuess(name, Number(id))}
+                    onWarning={handleDuplicateGuess}
                     onUnknownGuess={async (name) => handleGuess(name, 0)}
                     isLoading={isLoading}
                     remainingGuesses={gameState.remaining_guesses}
