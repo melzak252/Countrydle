@@ -90,7 +90,7 @@ async def test_valid_abstention_does_not_record_or_consume_daily_question(monkey
     with pytest.raises(HTTPException) as error:
         await _do_ask_question(
             QuestionBase(question="Is the country's population above 20 million?"),
-            SimpleNamespace(id=10), object(), request, Response(),
+            SimpleNamespace(id=10), AsyncMock(), request, Response(),
         )
 
     assert error.value.status_code == 503
@@ -116,7 +116,7 @@ async def test_invalid_question_stays_in_existing_rejection_flow(monkeypatch):
     monkeypatch.setattr(utils, "analyze_question_for_local_plan", lambda *args, **kwargs: invalid_plan)
 
     question, plan = await utils.analyze_and_answer_locally(
-        "Tell me about the country.", SimpleNamespace(id=4, country_id=31), None, object(),
+        "Tell me about the country.", SimpleNamespace(id=4, country_id=31), None, AsyncMock(),
     )
 
     assert question.valid is False

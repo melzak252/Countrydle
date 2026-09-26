@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS countries (
     area_km2 REAL,
     latitude REAL,
     longitude REAL,
+    min_latitude REAL,
+    max_latitude REAL,
+    min_longitude REAL,
+    max_longitude REAL,
     is_island INTEGER,
     driving_side TEXT,
     government_type TEXT,
@@ -88,6 +92,13 @@ CREATE TABLE IF NOT EXISTS country_major_rivers (
     FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS country_hemispheres (
+    country_id INTEGER NOT NULL,
+    hemisphere TEXT NOT NULL,
+    PRIMARY KEY (country_id, hemisphere),
+    FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_countries_name ON countries(app_country_name);
 CREATE INDEX IF NOT EXISTS idx_countries_cca3 ON countries(cca3);
 CREATE INDEX IF NOT EXISTS idx_country_region ON country_regions(region_name);
@@ -95,3 +106,4 @@ CREATE INDEX IF NOT EXISTS idx_country_subregion ON country_subregions(subregion
 CREATE INDEX IF NOT EXISTS idx_borders_country ON country_borders(border_country_name);
 CREATE INDEX IF NOT EXISTS idx_water_body ON country_water_access(water_body);
 CREATE INDEX IF NOT EXISTS idx_memberships_org ON country_memberships(organization);
+CREATE INDEX IF NOT EXISTS idx_country_hemispheres ON country_hemispheres(hemisphere);

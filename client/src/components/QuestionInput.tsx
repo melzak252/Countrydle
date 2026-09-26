@@ -39,10 +39,35 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
   const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
 
+  const quickQuestions = [
+    { icon: '🌍', label: t('inputs.quickEurope'), question: t('inputs.questionEurope') },
+    { icon: '🌊', label: t('inputs.quickCoastline'), question: t('inputs.questionCoastline') },
+    { icon: '👑', label: t('inputs.quickMonarchy'), question: t('inputs.questionMonarchy') },
+    { icon: '🚗', label: t('inputs.quickLeftHandDrive'), question: t('inputs.questionLeftHandDrive') },
+    { icon: '🇪🇺', label: t('inputs.quickEu'), question: t('inputs.questionEu') },
+    { icon: '🏝️', label: t('inputs.quickIsland'), question: t('inputs.questionIsland') },
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="w-full">
+      <div className="mb-2">
+        <p className="mb-1.5 text-[11px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label={t('inputs.quickQuestions')}>
+          {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
+            <button
+              key={label}
+              type="button"
+              disabled={unavailable}
+              onClick={() => setQuestion(suggestedQuestion)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+            >
+              <span aria-hidden="true">{icon}</span>{label}
+            </button>
+          ))}
+        </div>
+      </div>
       <label htmlFor={inputId} className="sr-only">{'Yes-or-no question'}</label>
-      <div className="relative">
+      <div className="relative rounded-2xl border border-white/10 bg-zinc-900/90 p-1 shadow-lg shadow-black/20 transition-colors focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
         <input
           id={inputId}
           autoComplete="off"
@@ -54,14 +79,14 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
           placeholder={placeholder || defaultPlaceholder}
           minLength={minLength}
           maxLength={maxLength}
-          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-3 pr-14 text-base sm:text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40"
+          className="w-full rounded-xl border-0 bg-transparent py-3 pl-4 pr-14 text-base text-sand-100 placeholder:text-zinc-500 focus:outline-none focus:ring-0 disabled:opacity-40 sm:text-sm"
           disabled={unavailable}
         />
         <button
           type="submit"
           aria-label={'Ask question'}
           disabled={question.trim().length < minLength || unavailable}
-          className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-sm text-emerald-400 transition-colors hover:bg-emerald-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+          className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-transparent text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40 enabled:bg-emerald-500 enabled:text-white enabled:hover:bg-emerald-400"
         >
 
           {isLoading ? (
