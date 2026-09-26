@@ -31,6 +31,13 @@ Create a duel at `/friends`; invitations open `/duel/:code`.
 - The HUD displays cumulative counts as `Q:<questions> G:<guesses>`, not used/max quotas. The active-turn composer and rules explain that both action types are unlimited.
 - A final reply allows one guess or a pass, not another question.
 
+## Result sharing icons
+
+`src/components/ShareResultCard.tsx` uses inline SVG brand marks for WhatsApp and X,
+from [Simple Icons](https://github.com/simple-icons/simple-icons) (CC0), rather than
+text placeholders or font-dependent glyphs. The decorative icons inherit button
+colors; accessible names remain on the share buttons. Sharing URLs are unchanged.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
