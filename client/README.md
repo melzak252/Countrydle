@@ -60,6 +60,19 @@ entry contains only user display data. Use remembered login only on private
 devices: as with existing stateless JWT authentication, logout does not revoke
 copies of a token obtained elsewhere before its expiry.
 
+## About and FAQ content
+
+`src/pages/AboutPage.tsx` and `src/pages/FAQPage.tsx` describe the nine daily modes,
+friend duels, mode-specific scoring, AI/data limitations, guest persistence and
+sync, archive/profile coverage, and remembered login. Translated headings live in
+`src/i18n.ts`; update those alongside the page fallbacks.
+
+Keep these claims aligned with `server/game_logic.py`, the per-mode API routes,
+authentication settings, data builders, and actual analytics/ad loading. Do not
+promise error-free AI answers, local-only guest activity, or lossless sync.
+Content-only updates should be checked in the browser at desktop/mobile widths,
+including FAQ search, topic filters, and keyboard accordion controls.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
