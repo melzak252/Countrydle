@@ -64,6 +64,29 @@ def test_unlimited_wrong_guesses_spend_one_turn_each_and_cannot_double_move():
     assert game.status == "active"
 
 
+def test_questions_and_guesses_remain_available_after_many_turns_for_both_players():
+    game, seats = active_game()
+    for _ in range(30):
+        for asker, owner in ((seats[0], seats[1]), (seats[1], seats[0])):
+            question = transition(game, seats, asker, action("ask", question="Is it in Europe?"), NOW)
+            transition(game, seats, owner, action("answer", question_id=question.id, answer="yes"), NOW, move=question)
+            wrong_guess = transition(game, seats, owner, action("guess", entity_id="DEU"), NOW, entity=GERMANY)
+            assert wrong_guess.correct is False
+            assert game.status == "active"
+            assert game.active_player_id == asker.id
+            # Give the other player the next question turn.
+            transition(game, seats, asker, action("pass"), NOW)
+
+    assert [seat.question_count for seat in seats] == [30, 30]
+    assert [seat.guess_count for seat in seats] == [30, 30]
+    assert game.phase == "thinking"
+    transition(game, seats, seats[0], action("guess", entity_id="POL"), NOW, entity=POLAND)
+    assert game.phase == "reply"
+    transition(game, seats, seats[1], action("guess", entity_id="POL"), NOW, entity=POLAND)
+    assert game.status == "finished"
+    assert game.result == "draw"
+
+
 def test_only_secret_owner_answers_and_answer_is_not_a_second_turn():
     game, seats = active_game()
     question = transition(game, seats, seats[0], action("ask", question="Is it in Europe?"), NOW)

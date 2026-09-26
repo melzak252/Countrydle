@@ -22,6 +22,14 @@ their reason and next step as accessible alerts without making the entire
 conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
+## Friend duels
+
+Create a duel at `/friends`; invitations open `/duel/:code`.
+
+- Questions and guesses have no per-match limit. Daily-mode quotas do not apply.
+- Each question or guess spends one turn; turn timers and final-reply rules still apply.
+- The HUD displays cumulative counts as `Q:<questions> G:<guesses>`, not used/max quotas. The active-turn composer and rules explain that both action types are unlimited.
+- A final reply allows one guess or a pass, not another question.
 
 # React + TypeScript + Vite
 
