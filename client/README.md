@@ -23,6 +23,13 @@ conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
 
+## Result sharing icons
+
+`src/components/ShareResultCard.tsx` uses inline SVG brand marks for WhatsApp and X,
+from [Simple Icons](https://github.com/simple-icons/simple-icons) (CC0), rather than
+text placeholders or font-dependent glyphs. The decorative icons inherit button
+colors; accessible names remain on the share buttons. Sharing URLs are unchanged.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
