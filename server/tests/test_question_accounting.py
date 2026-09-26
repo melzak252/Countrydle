@@ -474,7 +474,7 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
         date=str(date.today()), questions=[],
         guesses=[SimpleNamespace(guess="Germany", country_id=2, us_state_id=1, powiat_id=1,
                                  wojewodztwo_id=1, elapsed_seconds=None)],
-        state=SimpleNamespace(guesses_made=1, remaining_guesses=2, is_game_over=False, won=False),
+        state=SimpleNamespace(guesses_made=1, remaining_guesses=1 if mode.name == "wojewodztwodle" else 2, is_game_over=False, won=False),
     )
 
     async def sync():
