@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useId } from 'react';
 import { Search, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'react-hot-toast';
 
 interface LocationOption<Id extends string | number> {
   id: Id;
@@ -13,6 +12,7 @@ interface GuessInputProps<Id extends string | number> {
   countries: LocationOption<Id>[];
   onGuess: (countryId: Id, name: string) => Promise<void | boolean>;
   onUnknownGuess?: (name: string) => Promise<void | boolean>;
+  onWarning?: (input: string) => void;
   isLoading: boolean;
   remainingGuesses?: number;
   placeholder?: string;
@@ -37,6 +37,7 @@ export default function GuessInput<Id extends string | number = number>({
   onGuess,
   isLoading,
   onUnknownGuess,
+  onWarning,
   remainingGuesses,
   placeholder,
   className,
@@ -54,6 +55,7 @@ export default function GuessInput<Id extends string | number = number>({
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const disabled = externallyDisabled || isLoading || (remainingGuesses !== undefined && remainingGuesses <= 0);
 
@@ -93,14 +95,21 @@ export default function GuessInput<Id extends string | number = number>({
     : [], [searchableCountries, normalizedQuery]);
   const suggestionsVisible = showSuggestions && !disabled && filteredCountries.length > 0;
 
+  const warnDuplicate = (input: string) => {
+    setShowSuggestions(false);
+    if (onWarning) onWarning(input);
+    else setDuplicateWarning(`You already guessed ${input}. This attempt was not submitted. Choose a different location.`);
+  };
+
   const handleSelect = async (country: LocationOption<Id>) => {
     if (disabled) return;
     if (!countries.some(available => available.id === country.id)) return;
     if (excludedIdsSet.has(String(country.id)) || normalizedExcludedNames.has(normalizeName(displayName(country)))) {
-      toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+      warnDuplicate(displayName(country));
       return;
     }
     if (await onGuess(country.id, displayName(country)) === false) return;
+    setDuplicateWarning(null);
     setQuery('');
     setShowSuggestions(false);
     setActiveIndex(-1);
@@ -112,7 +121,7 @@ export default function GuessInput<Id extends string | number = number>({
 
     // Guard against duplicate manual submission
     if (normalizedExcludedNames.has(normalizedQuery)) {
-      toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+      warnDuplicate(query.trim());
       return;
     }
 
@@ -120,7 +129,7 @@ export default function GuessInput<Id extends string | number = number>({
     const match = selected || searchableCountries.find(item => item.name === normalizedQuery) || filteredCountries[0];
     if (match) {
       if (excludedIdsSet.has(String(match.country.id))) {
-        toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+        warnDuplicate(displayName(match.country));
         return;
       }
       await handleSelect(match.country);
@@ -128,11 +137,12 @@ export default function GuessInput<Id extends string | number = number>({
     }
 
     if (normalizedExcludedNames.has(normalizeName(query.trim()))) {
-      toast.error(t('game.alreadyGuessed', 'You already guessed this location!'));
+      warnDuplicate(query.trim());
       return;
     }
 
     if (!onUnknownGuess || await onUnknownGuess(query.trim()) === false) return;
+    setDuplicateWarning(null);
     setQuery('');
     setShowSuggestions(false);
     setActiveIndex(-1);
@@ -192,6 +202,7 @@ export default function GuessInput<Id extends string | number = number>({
           <ArrowRight size={14} aria-hidden="true" />
         </button>
       </form>
+      {duplicateWarning && <p role="status" className="mt-2 text-sm leading-relaxed text-amber-200">{duplicateWarning}</p>}
 
       {suggestionsVisible && (
         <div id={listId} role="listbox" aria-label={'Matching locations'} className={`absolute left-0 right-0 ${dropup ? 'bottom-full mb-1.5' : 'top-full mt-1'} z-50 max-h-72 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900/95 shadow-xl backdrop-blur-md divide-y divide-white/5`}>

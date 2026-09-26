@@ -13,12 +13,14 @@ import {
 } from '../services/api';
 import { useAuthStore } from './authStore';
 import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHistory';
-import toast from 'react-hot-toast';
 import { mapClickColor, toggleMapMarking } from '../lib/mapMarkings';
+import { gameplayFailure, type GameplayNotice, type GameplayNoticeInput } from '../lib/gameplayNotices';
+import toast from 'react-hot-toast';
 
 export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange';
 
 interface GameData {
+  notices: GameplayNotice[];
   gameState: GameState | null;
   questions: Question[];
   guesses: Guess[];
@@ -40,8 +42,9 @@ interface GameData {
 interface GameActions {
   fetchGameState: () => Promise<void>;
   fetchEntities: () => Promise<void>;
-  askQuestion: (questionText: string) => Promise<void>;
-  makeGuess: (guessText: string, entityId?: number) => Promise<void>;
+  askQuestion: (questionText: string) => Promise<void | boolean>;
+  makeGuess: (guessText: string, entityId?: number) => Promise<void | boolean>;
+  addNotice: (notice: GameplayNoticeInput) => void;
   syncGuestData: () => Promise<void>;
   resetGame: () => void;
   toggleEntitySelection: (name: string) => void;
@@ -169,6 +172,10 @@ const createGameStore = (gameType: MapGameType) => {
   }[gameType];
 
   return create<GameData & GameActions>((set, get) => ({
+    notices: [],
+    addNotice: (notice: GameplayNoticeInput) => set(state => ({
+      notices: [...state.notices, { ...notice, id: crypto.randomUUID(), createdAt: new Date().toISOString() }],
+    })),
     gameState: null,
     questions: [],
     guesses: [],
@@ -224,15 +231,16 @@ const createGameStore = (gameType: MapGameType) => {
                     
                     // Fetch the state again to get the merged data
                     const syncedData = await service.getState();
-                    set({
+                    set(state => ({
                         gameState: syncedData.state,
                         questions: syncedData.questions,
                         guesses: syncedData.guesses,
                         dailyDate: syncedData.date,
+                        notices: state.dailyDate === syncedData.date ? state.notices : [],
                         isGuest: false,
                         correctEntity: syncedData.country || syncedData.powiat || syncedData.us_state || syncedData.wojewodztwo || null,
                         isLoading: false,
-                    });
+                    }));
                     return;
                 } catch (syncError) {
                     console.error(`[${gameType}] Failed to sync guest data during fetchGameState:`, syncError);
@@ -282,16 +290,17 @@ const createGameStore = (gameType: MapGameType) => {
         const currentStartTime = get().gameStartTime;
         const newStartTime = currentStartTime || (!gameState?.is_game_over ? Date.now() : null);
 
-        set({
+        set(state => ({
           gameState,
           questions,
           guesses,
           dailyDate: data.date,
+          notices: state.dailyDate === data.date ? state.notices : [],
           isGuest: isActuallyGuest,
           correctEntity,
           isLoading: false,
           gameStartTime: newStartTime,
-        });
+        }));
       } catch (e: any) {
         console.error(e);
         set({ error: e.message || 'Failed to load game state', isLoading: false });
@@ -320,9 +329,17 @@ const createGameStore = (gameType: MapGameType) => {
         const question = await service.askQuestion(questionText);
         
         if (question && question.valid === false) {
-          toast.error(question.explanation || 'Please ask a valid yes/no question.');
+          get().addNotice({
+            action: 'question',
+            input: questionText,
+            title: 'Question not answered',
+            reason: typeof question.explanation === 'string' && question.explanation.trim()
+              ? question.explanation
+              : 'The game could not produce a reliable yes-or-no answer to this question.',
+            nextStep: 'Try a more specific yes-or-no question about a geographic fact, such as location, borders, or coastline.',
+          });
           set({ isLoading: false });
-          return;
+          return false;
         }
         const { isGuest, dailyDate, gameState, questions, guesses, correctEntity } = get();
         
@@ -349,13 +366,21 @@ const createGameStore = (gameType: MapGameType) => {
         } else {
           await get().fetchGameState();
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
          console.error(e);
-         if (e.response?.status === 400 && e.response?.data?.detail?.includes("over")) {
+         get().addNotice(gameplayFailure('question', questionText, e));
+         if (typeof e === 'object' && e !== null && 'response' in e) {
+           const response = e.response;
+           if (typeof response === 'object' && response !== null && 'status' in response &&
+             response.status === 400 && 'data' in response &&
+             typeof response.data === 'object' && response.data !== null && 'detail' in response.data &&
+             typeof response.data.detail === 'string' && response.data.detail.includes('over')) {
              await get().fetchGameState();
-         } else {
-             set({ error: e.response?.data?.detail || 'Failed to ask question', isLoading: false });
+             return false;
+           }
          }
+         set({ error: e instanceof Error ? e.message : 'Failed to ask question', isLoading: false });
+         return false;
       }
     },
 
@@ -427,13 +452,21 @@ const createGameStore = (gameType: MapGameType) => {
         } else {
           await get().fetchGameState();
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
           console.error(e);
-          if (e.response?.status === 400 && e.response?.data?.detail?.includes("over")) {
+          get().addNotice(gameplayFailure('guess', guessText, e));
+          if (typeof e === 'object' && e !== null && 'response' in e) {
+            const response = e.response;
+            if (typeof response === 'object' && response !== null && 'status' in response &&
+              response.status === 400 && 'data' in response &&
+              typeof response.data === 'object' && response.data !== null && 'detail' in response.data &&
+              typeof response.data.detail === 'string' && response.data.detail.includes('over')) {
               await get().fetchGameState();
-          } else {
-              set({ error: e.response?.data?.detail || 'Failed to make guess', isLoading: false });
+              return false;
+            }
           }
+          set({ error: e instanceof Error ? e.message : 'Failed to make guess', isLoading: false });
+          return false;
       }
     },
     
@@ -477,10 +510,11 @@ const createGameStore = (gameType: MapGameType) => {
         }
     },
 
-    resetGame: () => set({ 
-        gameState: null, 
-        questions: [], 
-        guesses: [], 
+    resetGame: () => set({
+        gameState: null,
+        questions: [],
+        guesses: [],
+        notices: [],
         entityMarkings: {},
         activeMarkerColor: 'green',
         selectedEntityNames: [], 
