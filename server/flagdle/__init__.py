@@ -572,7 +572,7 @@ async def sync_guest_data(
     if state is None:
         state = await state_repo.create_state(user, day_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
 
-    state = await lock_question_state(session, FlagdleState, user.id, day_flag.id)
+    state = await lock_question_state(session, FlagdleState, user.id, day_flag.id) or state
     # Server state takes strict precedence if user already played on server
     if state.guesses_made > 0:
         linked = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)
@@ -589,12 +589,13 @@ async def sync_guest_data(
         )
         for guess in sync_data.guesses
     ]
-    if not is_valid_synced_game_state(
+    sync_state = getattr(sync_data, "state", None)
+    if sync_state is not None and not is_valid_synced_game_state(
         FLAGDLE_CONFIG,
-        guesses_made=sync_data.state.guesses_made,
-        remaining_guesses=sync_data.state.remaining_guesses,
-        is_game_over=sync_data.state.is_game_over,
-        won=sync_data.state.won,
+        guesses_made=sync_state.guesses_made,
+        remaining_guesses=sync_state.remaining_guesses,
+        is_game_over=sync_state.is_game_over,
+        won=sync_state.won,
         correct_guesses=correct_guesses,
     ):
         raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")

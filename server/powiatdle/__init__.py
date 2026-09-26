@@ -121,7 +121,7 @@ async def sync_guest_data(
             max_questions=POWIATDLE_CONFIG.max_questions,
             max_guesses=POWIATDLE_CONFIG.max_guesses,
         )
-    state = await lock_question_state(session, PowiatdleState, user.id, day_powiat.id)
+    state = await lock_question_state(session, PowiatdleState, user.id, day_powiat.id) or state
     
     if state.questions_asked > 0 or state.guesses_made > 0:
         linked = await link_guest_participation(session, request, "powiatdle", day_powiat.id, user.id)
@@ -129,17 +129,18 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
-    if not is_valid_synced_game_state(
+    sync_state = getattr(sync_data, "state", None)
+    if sync_state is not None and not is_valid_synced_game_state(
         POWIATDLE_CONFIG,
-        guesses_made=sync_data.state.guesses_made,
-        remaining_guesses=sync_data.state.remaining_guesses,
-        is_game_over=sync_data.state.is_game_over,
-        won=sync_data.state.won,
+        guesses_made=sync_state.guesses_made,
+        remaining_guesses=sync_state.remaining_guesses,
+        is_game_over=sync_state.is_game_over,
+        won=sync_state.won,
         correct_guesses=[
             guess.powiat_id == day_powiat.powiat_id for guess in sync_data.guesses
         ],
-        questions_asked=sync_data.state.questions_asked,
-        remaining_questions=sync_data.state.remaining_questions,
+        questions_asked=sync_state.questions_asked,
+        remaining_questions=sync_state.remaining_questions,
         synced_questions=len(sync_data.questions),
     ):
         raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")

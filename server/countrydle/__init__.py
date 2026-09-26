@@ -144,7 +144,7 @@ async def sync_guest_data(
         max_questions=COUNTRYDLE_CONFIG.max_questions,
         max_guesses=COUNTRYDLE_CONFIG.max_guesses,
     )
-    state = await lock_question_state(session, CountrydleState, user.id, day_country.id)
+    state = await lock_question_state(session, CountrydleState, user.id, day_country.id) or state
     
     # BEST SOLUTION: Prioritize Server State
     # If the user already has any progress on the server (at least 1 question or guess),
@@ -155,17 +155,18 @@ async def sync_guest_data(
             await session.commit()
         return await get_state(user, session)
 
-    if not is_valid_synced_game_state(
+    sync_state = getattr(sync_data, "state", None)
+    if sync_state is not None and not is_valid_synced_game_state(
         COUNTRYDLE_CONFIG,
-        guesses_made=sync_data.state.guesses_made,
-        remaining_guesses=sync_data.state.remaining_guesses,
-        is_game_over=sync_data.state.is_game_over,
-        won=sync_data.state.won,
+        guesses_made=sync_state.guesses_made,
+        remaining_guesses=sync_state.remaining_guesses,
+        is_game_over=sync_state.is_game_over,
+        won=sync_state.won,
         correct_guesses=[
             guess.country_id == day_country.country_id for guess in sync_data.guesses
         ],
-        questions_asked=sync_data.state.questions_asked,
-        remaining_questions=sync_data.state.remaining_questions,
+        questions_asked=sync_state.questions_asked,
+        remaining_questions=sync_state.remaining_questions,
         synced_questions=len(sync_data.questions),
     ):
         raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
