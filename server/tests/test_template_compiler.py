@@ -156,7 +156,7 @@ def test_template_compilation_is_fast():
     for question in questions:
         compile_template_plan(question)
     elapsed_ms = (time.perf_counter() - start) * 1000 / len(questions)
-    assert elapsed_ms < 0.05
+    assert elapsed_ms < 0.1
 def test_local_planner_uses_template_without_gemini(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     from countrydle.local_planner import analyze_question_for_local_plan

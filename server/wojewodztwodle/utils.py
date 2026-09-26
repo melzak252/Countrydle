@@ -49,7 +49,12 @@ LOCAL_CONFIG = LocalModeConfig(
         "landform_regions", "regional_labels",
     ],
     mode_notes=(
-        "For informal location labels such as 'zachodnia Polska', 'wschodnia Polska', "
+        "- For borders_voivodeship, use the canonical Polish voivodeship adjective name: "
+        "Dolnośląskie, Kujawsko-Pomorskie, Lubelskie, Lubuskie, Łódzkie, Małopolskie, "
+        "Mazowieckie, Opolskie, Podkarpackie, Podlaskie, Pomorskie, Śląskie, "
+        "Świętokrzyskie, Warmińsko-Mazurskie, Wielkopolskie, Zachodniopomorskie. "
+        "Never use city names (like Łódź, Kraków, Warszawa) for borders_voivodeship.\n"
+        "- For informal location labels such as 'zachodnia Polska', 'wschodnia Polska', "
         "'północna Polska', 'południowa Polska', 'centralna Polska', 'nadmorska Polska', "
         "or historical/common areas such as Śląsk, Małopolska, Pomorze, Mazury, Podlasie, "
         "prefer relation regional_labels. Use macroregion only for exact broad macroregion wording."

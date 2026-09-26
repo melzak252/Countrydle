@@ -13,6 +13,7 @@ from planner_protocol import (
     compile_planner_response, planner_response_schema,
 )
 from powiat_names import resolve_powiat_name
+from voivodeship_names import resolve_voivodeship_name
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -346,6 +347,10 @@ def evaluate(
             return True
         if config.mode_name == "Powiatdle" and rel_name == "borders_powiat":
             right_val = resolve_powiat_name(conn, right_val)
+        if rel_name == "borders_voivodeship" or (config.mode_name == "Powiatdle" and rel_name == "voivodeship"):
+            resolved_v = resolve_voivodeship_name(right_val)
+            if resolved_v is not None:
+                right_val = resolved_v
         if right_val is None:
             return None
         if is_self_reference(right_val, row, config):
@@ -421,6 +426,22 @@ def evaluate(
         right = resolve_powiat_name(conn, right)
         if right is None:
             return None
+        if left_row is not None and right == left_row[config.name_column]:
+            return True
+    if (
+        isinstance(left_node, dict)
+        and (
+            left_node.get("relation") == "borders_voivodeship"
+            or (config.mode_name == "Powiatdle" and left_node.get("relation") == "voivodeship")
+            or (config.mode_name == "Wojewodztwodle" and left_node.get("relation") == "name")
+        )
+        and op in {"contains", "contains_exact", "contains_partial", "equals"}
+    ):
+        if left_row is not None and is_self_reference(right, left_row, config):
+            return True
+        resolved_v = resolve_voivodeship_name(right)
+        if resolved_v is not None:
+            right = resolved_v
         if left_row is not None and right == left_row[config.name_column]:
             return True
     if left is None or (op not in {"has_space", "has_hyphen", "exists"} and right is None):
@@ -570,12 +591,13 @@ def generate_mode_explanation(
         if rel == "is_coastal":
             return f"Województwo {name} ma bezpośredni dostęp do Morza Bałtyckiego." if row[config.scalar_relations[rel]] else f"Województwo {name} nie ma dostępu do morza (jest województwem śródlądowym)."
         if rel == "borders_voivodeship" and val:
+            display_val = resolve_voivodeship_name(val) or val
             entity_name = f"Województwo {name}" if config.target_entity == "target_voivodeship" else name
             if answer:
-                return f"{entity_name} graniczy z: {val}."
+                return f"{entity_name} graniczy z: {display_val}."
             borders = get_relation_value(conn, config, row, rel)
             neighbors = f" Graniczy z: {', '.join(borders)}." if borders else ""
-            return f"{entity_name} nie graniczy z {val}.{neighbors}"
+            return f"{entity_name} nie graniczy z {display_val}.{neighbors}"
         if rel == "borders_country" and val:
             borders = [r[0] for r in conn.execute("SELECT country_name FROM voivodeship_borders_countries WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
             return f"{name} graniczy z obcym państwem: {val}." if answer else f"{name} nie graniczy z {val}."

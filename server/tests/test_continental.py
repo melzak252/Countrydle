@@ -296,6 +296,10 @@ async def test_guest_sync_rejects_unearned_terminal_win(client, mock_auth):
         new_callable=AsyncMock,
         return_value=mock_state,
     ), patch(
+        "continental.lock_question_state",
+        new_callable=AsyncMock,
+        return_value=None,
+    ), patch(
         "db.repositories.user.UserRepository.update_points",
         new_callable=AsyncMock,
     ) as update_points, patch(
