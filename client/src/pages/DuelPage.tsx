@@ -692,7 +692,7 @@ function DuelRoom({ code }: { code?: string }) {
             <span className={`font-semibold ${myTurn && !finished ? 'text-emerald-400' : 'text-sand-100'}`}>
               {snapshot.status === 'lobby'
                 ? self?.ready ? copy.ready : copy.notReady
-                : <><span className="hidden sm:inline">Q:{self?.question_count ?? 0} G:{self?.guess_count ?? 0}</span><span className="sm:hidden">{self?.question_count ?? 0}/{self?.guess_count ?? 0}</span></>}
+                : <span className="whitespace-nowrap" aria-label={`${copy.questions}: ${self?.question_count ?? 0}. ${copy.guesses}: ${self?.guess_count ?? 0}. ${copy.unlimited}`}>Q:{self?.question_count ?? 0} G:{self?.guess_count ?? 0}</span>}
             </span>
           </div>
 
@@ -1044,6 +1044,7 @@ function DuelRoom({ code }: { code?: string }) {
                     />
                   )}
                 </div>
+                {snapshot.phase === 'thinking' && <p className="text-center text-xs leading-relaxed text-zinc-400">{copy.unlimited}</p>}
               </>
             ) : (
               /* Case C: Opponent's turn */
