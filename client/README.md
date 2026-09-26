@@ -7,6 +7,24 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
+## Player profiles
+
+`/profile/:username` shows daily-game statistics for Countrydle, Flagdle,
+Europe, Asia, Africa, the Americas, Powiatdle, US States, and Województwa.
+The selector groups them as World, Continents, and Regional, with casual
+friend matches under Just for fun. Daily games played counts actual activity;
+win rate is wins divided by completed games, average points uses completed
+games, average winning guesses uses successful games, and streaks follow
+consecutive puzzle dates. Recent history is supplied newest first by the API,
+which also keeps unreleased target names concealed for public visitors.
+
+Friend matches show finished casual match counts, outcomes, win rate, and
+recent history. They have no points and do not affect public leaderboard
+rankings. Nickname editing, the server's change restriction, URL replacement,
+and separate missing-player and retryable-error states remain supported.
+Profile labels live under `profile` in `src/i18n.ts`.
+
+
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).

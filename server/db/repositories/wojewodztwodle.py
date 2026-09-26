@@ -12,7 +12,6 @@ from db.models.wojewodztwodle import (
 from db.models.user import User
 from schemas.wojewodztwodle import WojewodztwoGuessCreate, WojewodztwoQuestionCreate
 from schemas.countrydle import LeaderboardEntry
-from schemas.statistics import GameStatistics, GameHistoryEntry
 
 
 class WojewodztwodleDayRepository:
@@ -231,68 +230,6 @@ class WojewodztwodleStateRepository:
             
         return []
 
-    async def get_user_statistics(self, user: User) -> GameStatistics:
-        # Calculate total points and wins
-        stmt = select(
-            func.coalesce(func.sum(WojewodztwodleState.points), 0).label("points"),
-            func.coalesce(func.sum(cast(WojewodztwodleState.won, Integer)), 0).label(
-                "wins"
-            ),
-            func.count(WojewodztwodleState.id).label("games_played"),
-        ).where(WojewodztwodleState.user_id == user.id)
-        result = await self.session.execute(stmt)
-        row = result.first()
-
-        points = row.points if row else 0
-        wins = row.wins if row else 0
-        games_played = row.games_played if row else 0
-
-        # Get history
-        history_stmt = (
-            select(WojewodztwodleState)
-            .options(
-                joinedload(WojewodztwodleState.day).joinedload(
-                    WojewodztwodleDay.wojewodztwo
-                )
-            )
-            .where(
-                and_(
-                    WojewodztwodleState.user_id == user.id,
-                    WojewodztwodleState.is_game_over == True,
-                )
-            )
-            .order_by(WojewodztwodleState.id.desc())
-        )
-        history_result = await self.session.execute(history_stmt)
-        history_states = history_result.scalars().all()
-
-        from datetime import date
-
-        history_entries = [
-            GameHistoryEntry(
-                date=str(state.day.date),
-                won=state.won,
-                points=state.points,
-                attempts=state.guesses_made,
-                target_name=state.day.wojewodztwo.nazwa if state.day.date != date.today() else "???",
-            )
-            for state in history_states
-        ]
-
-        current_streak = 0
-        for s in history_states:
-            if s.won:
-                current_streak += 1
-            else:
-                break
-
-        return GameStatistics(
-            points=points,
-            wins=wins,
-            games_played=games_played,
-            streak=current_streak,
-            history=history_entries,
-        )
 
 
 class WojewodztwodleGuessRepository:
