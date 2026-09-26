@@ -17,7 +17,9 @@ accepted questions/guesses: they do not consume attempts or enter guest sync.
 Failed submissions retain their input for editing. Network/server failures do not
 claim that a submission was rejected; they advise checking history before retrying.
 Warnings are attributed to Countrydle and start expanded; their title toggles the
-reason and next-step details with mouse, touch, or keyboard. Conversation ordering
+reason and next-step details with mouse, touch, or keyboard. New warnings expose
+their reason and next step as accessible alerts without making the entire
+conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
 

@@ -38,7 +38,7 @@ export default function QuestionChat({ questions, mode, isGameOver, notices = []
                 <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">You · {notice.action}</span>
                 <p className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{notice.input}</p>
               </div>
-              <div className="flex items-start gap-2.5 pr-5">
+              <div role="alert" className="flex items-start gap-2.5 pr-5">
                 <div className="mt-5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-emerald-300">
                   <Compass size={15} aria-hidden="true" />
                 </div>
