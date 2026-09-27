@@ -397,9 +397,9 @@ export function ControlledMapBox({
   className,
   onCountryCode,
   interaction,
-  center = [20, 0],
-  zoom = 2,
-  minZoom = 2,
+  center = [15, 0],
+  zoom = 2.4,
+  minZoom = 2.1,
   maxZoom = 10,
   onCountryClick,
   geoJsonUrl = '/countries_50m.geojson',
@@ -570,8 +570,12 @@ export function ControlledMapBox({
     <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
       <style>{`
         .leaflet-container {
+            background-color: #06080d !important;
             transform: translate3d(0, 0, 0);
             backface-visibility: hidden;
+        }
+        .leaflet-tile {
+            background-color: #06080d !important;
         }
         .leaflet-interactive {
             vector-effect: non-scaling-stroke;
@@ -590,13 +594,13 @@ export function ControlledMapBox({
       <MapContainer 
         center={center} 
         zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#0b0f17' }}
+        style={{ height: '100%', width: '100%', background: '#06080d' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
-        maxBounds={[[-85, -180], [85, 180]]}
+        maxBounds={[[-78, -180], [82, 180]]}
         maxBoundsViscosity={1.0}
         preferCanvas={true}
-        zoomSnap={0.5}
+        zoomSnap={0.25}
         wheelPxPerZoomLevel={90}
         wheelDebounceTime={40}
         attributionControl={false}
@@ -605,6 +609,8 @@ export function ControlledMapBox({
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+            bounds={[[-78, -180], [82, 180]]}
+            errorTileUrl="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
             noWrap={true}
             keepBuffer={4}
             updateInterval={80}
