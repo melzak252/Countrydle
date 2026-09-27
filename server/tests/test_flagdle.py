@@ -289,3 +289,32 @@ async def test_flagdle_flag_asset_stream(async_client):
         # Invalid token must be 403
         bad_res = await async_client.get("/flagdle/flag-asset?token=invalid_token")
         assert bad_res.status_code == 403
+
+@pytest.mark.anyio
+async def test_flagdle_history_endpoint(async_client):
+    """GET /flagdle/history returns list of past flagdle days with country."""
+    with patch(
+        "db.repositories.flagdle.FlagdleDayRepository.get_history",
+        new_callable=AsyncMock,
+    ) as mock_get_history:
+        mock_country = MagicMock()
+        mock_country.id = 61
+        mock_country.name = "France"
+        mock_country.official_name = "French Republic"
+        mock_country.md_file = "France.md"
+
+        mock_day = MagicMock()
+        mock_day.id = 55
+        mock_day.country_id = 61
+        mock_day.country = mock_country
+        mock_day.date = date(2026, 9, 21)
+
+        mock_get_history.return_value = [mock_day]
+
+        res = await async_client.get("/flagdle/history")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) == 1
+        assert data[0]["id"] == 55
+        assert data[0]["date"] == "2026-09-21"
+        assert data[0]["country"]["name"] == "France"
