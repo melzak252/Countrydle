@@ -74,6 +74,35 @@ def test_execute_local_plan_micronesia():
     assert "name" in ans_fsm.relation
 
 
+def test_other_countries_previously_failing_polish_and_english():
+    """Verify other countries with Polish names and English variations compile and resolve."""
+    cases = [
+        ("Czy to Irlandia?", "Ireland"),
+        ("Czy to RPA?", "South Africa"),
+        ("Czy to Łotwa?", "Latvia"),
+        ("Czy to Węgry?", "Hungary"),
+        ("Czy to Rumunia?", "Romania"),
+        ("Czy to Szwajcaria?", "Switzerland"),
+        ("Is it the Gambia?", "Gambia"),
+        ("Is it the Netherlands?", "Netherlands"),
+        ("Is it Cote d'Ivoire?", "Ivory Coast"),
+        ("Is it Vatican?", "Vatican City"),
+        ("Is it Swaziland?", "Eswatini"),
+        ("Is it Burma?", "Myanmar"),
+        ("Is it Sao Tome & Principe?", "São Tomé and Príncipe"),
+    ]
+    for question, expected_country in cases:
+        plan, improved = compile_template_plan(question)
+        assert plan is not None, f"Failed template compilation for: {question}"
+        assert plan[0]["right"]["value"] == expected_country, (
+            f"Wrong country for {question}: expected {expected_country}, got {plan[0]['right']['value']}"
+        )
+
+        res = analyze_question_for_local_plan(question)
+        assert res.valid is True, f"Question marked invalid: {question}"
+        assert res.supported is True, f"Question marked unsupported: {question}"
+
+
 @pytest.mark.anyio
 async def test_countrydle_question_endpoint_micronesia(async_client):
     """POST /countrydle/question with 'Czy to mikronezja?' returns valid=True with answer."""

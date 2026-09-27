@@ -84,34 +84,12 @@ WATERS = {
 
 # Country names are canonicalized against the same 196-country facts catalog; common Polish inflections are explicit.
 _COUNTRY_NAMES = "Afghanistan|Albania|Algeria|Andorra|Angola|Antigua and Barbuda|Argentina|Armenia|Australia|Austria|Azerbaijan|Bahamas|Bahrain|Bangladesh|Barbados|Belarus|Belgium|Belize|Benin|Bhutan|Bolivia|Bosnia and Herzegovina|Botswana|Brazil|Brunei|Bulgaria|Burkina Faso|Burundi|Cambodia|Cameroon|Canada|Cape Verde|Central African Republic|Chad|Chile|China|Colombia|Comoros|Costa Rica|Croatia|Cuba|Cyprus|Czech Republic|Democratic Republic of the Congo|Denmark|Djibouti|Dominica|Dominican Republic|East Timor|Ecuador|Egypt|El Salvador|Equatorial Guinea|Eritrea|Estonia|Eswatini|Ethiopia|Federated States of Micronesia|Fiji|Finland|France|Gabon|Gambia|Georgia|Germany|Ghana|Greece|Grenada|Guatemala|Guinea|Guinea-Bissau|Guyana|Haiti|Honduras|Hungary|Iceland|India|Indonesia|Iran|Iraq|Ireland|Israel|Italy|Ivory Coast|Jamaica|Japan|Jordan|Kazakhstan|Kenya|Kiribati|Kosovo|Kuwait|Kyrgyzstan|Laos|Latvia|Lebanon|Lesotho|Liberia|Libya|Liechtenstein|Lithuania|Luxembourg|Madagascar|Malawi|Malaysia|Maldives|Mali|Malta|Marshall Islands|Mauritania|Mauritius|Mexico|Moldova|Monaco|Mongolia|Montenegro|Morocco|Mozambique|Myanmar|Namibia|Nauru|Nepal|Netherlands|New Zealand|Nicaragua|Niger|Nigeria|North Korea|North Macedonia|Norway|Oman|Pakistan|Palau|Palestine|Panama|Papua New Guinea|Paraguay|Peru|Philippines|Poland|Portugal|Qatar|Republic of the Congo|Romania|Russia|Rwanda|Saint Kitts and Nevis|Saint Lucia|Saint Vincent and the Grenadines|Samoa|San Marino|Saudi Arabia|Senegal|Serbia|Seychelles|Sierra Leone|Singapore|Slovakia|Slovenia|Solomon Islands|Somalia|South Africa|South Korea|South Sudan|Spain|Sri Lanka|Sudan|Suriname|Sweden|Switzerland|Syria|São Tomé and Príncipe|Tajikistan|Tanzania|Thailand|Togo|Tonga|Trinidad and Tobago|Tunisia|Turkey|Turkmenistan|Tuvalu|Uganda|Ukraine|United Arab Emirates|United Kingdom|United States|Uruguay|Uzbekistan|Vanuatu|Vatican City|Venezuela|Vietnam|Yemen|Zambia|Zimbabwe".split("|")
-_POLISH_COUNTRIES = {
-    "polska": "Poland", "polsce": "Poland", "polski": "Poland", "polską": "Poland", "niemcy": "Germany", "niemcami": "Germany", "niemiec": "Germany", "niemczech": "Germany",
-    "francja": "France", "francji": "France", "włochy": "Italy", "włoch": "Italy", "hiszpania": "Spain", "hiszpanii": "Spain", "czechy": "Czech Republic", "czechami": "Czech Republic",
-    "słowacja": "Slovakia", "słowacji": "Slovakia", "ukraina": "Ukraine", "ukrainy": "Ukraine", "białoruś": "Belarus", "białorusi": "Belarus", "litwa": "Lithuania", "litwy": "Lithuania",
-    "rosja": "Russia", "rosji": "Russia", "dania": "Denmark", "danii": "Denmark", "szwecja": "Sweden", "szwecji": "Sweden", "norwegia": "Norway", "norwegii": "Norway",
-    "finlandia": "Finland", "finlandii": "Finland", "holandia": "Netherlands", "holandii": "Netherlands", "niderlandy": "Netherlands", "belgia": "Belgium", "belgii": "Belgium",
-    "luksemburg": "Luxembourg", "austria": "Austria", "austrii": "Austria", "szwajcaria": "Switzerland", "szwajcarii": "Switzerland", "portugalia": "Portugal", "portugalii": "Portugal",
-    "grecja": "Greece", "grecji": "Greece", "turcja": "Turkey", "turcji": "Turkey", "chiny": "China", "chin": "China", "indie": "India", "indii": "India", "japonia": "Japan", "japonii": "Japan",
-    "meksyk": "Mexico", "meksyku": "Mexico", "kanada": "Canada", "kanady": "Canada", "brazylia": "Brazil", "argentyna": "Argentina", "egipt": "Egypt", "egiptu": "Egypt", "izrael": "Israel", "iran": "Iran", "iranu": "Iran", "irak": "Iraq", "iraku": "Iraq",
-    "wielka brytania": "United Kingdom", "wielkiej brytanii": "United Kingdom", "stany zjednoczone": "United States", "usa": "United States", "korea południowa": "South Korea",
-}
-_POLISH_COUNTRIES.update({
-    "francją": "France", "włochami": "Italy", "hiszpanią": "Spain", "ukrainą": "Ukraine",
-    "białorusią": "Belarus", "litwą": "Lithuania", "rosją": "Russia", "danią": "Denmark",
-    "szwecją": "Sweden", "norwegią": "Norway", "finlandią": "Finland", "holandią": "Netherlands",
-    "belgią": "Belgium", "austrią": "Austria", "szwajcarią": "Switzerland", "portugalią": "Portugal",
-    "grecją": "Greece", "turcją": "Turkey", "chinami": "China", "indiami": "India", "japonią": "Japan",
-    "meksykiem": "Mexico", "kanadą": "Canada", "brazylią": "Brazil", "argentyną": "Argentina",
-    "egiptem": "Egypt", "izraelem": "Israel",
-    "mikronezja": "Federated States of Micronesia", "mikronezji": "Federated States of Micronesia",
-    "mikronezją": "Federated States of Micronesia", "mikronezję": "Federated States of Micronesia",
-})
-_POLISH_COUNTRIES = {_norm(alias): name for alias, name in _POLISH_COUNTRIES.items()}
+from countrydle.local_answering import POLISH_COUNTRY_ALIASES, COUNTRY_NAME_SYNONYMS
+
 _CANONICAL_COUNTRIES = {_norm(name): name for name in _COUNTRY_NAMES}
-_CANONICAL_COUNTRIES["czechia"] = "Czech Republic"
-_CANONICAL_COUNTRIES["micronesia"] = "Federated States of Micronesia"
-_CANONICAL_COUNTRIES["fsm"] = "Federated States of Micronesia"
-_COUNTRY_ALIASES = {**_CANONICAL_COUNTRIES, **{_norm(alias): name for alias, name in _POLISH_COUNTRIES.items()}}
+_CANONICAL_COUNTRIES.update({_norm(k): v for k, v in COUNTRY_NAME_SYNONYMS.items()})
+_POLISH_COUNTRIES = {_norm(alias): name for alias, name in POLISH_COUNTRY_ALIASES.items()}
+_COUNTRY_ALIASES = {**_CANONICAL_COUNTRIES, **_POLISH_COUNTRIES}
 _COUNTRY_PATTERN = re.compile(
     r"(?<![a-z])(?:" + "|".join(re.escape(alias) for alias in sorted(_COUNTRY_ALIASES, key=len, reverse=True)) + r")(?![a-z])"
 )
@@ -244,11 +222,12 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                 "right": {"entity": country, "relation": "area"},
             }], f"Is the area of the country {op.replace('_', ' ')} that of {country}?"
 
-    identity = re.search(r"\b(?:is it|is this|czy to|czy jest to|is|it)\s+([a-z -]+?)\s*[?!.]*$", q)
+    identity = re.search(r"\b(?:is it|is this|czy to|czy jest to|is|it)\s+([a-z '\u2019&-]+?)\s*[?!.]*$", q)
     if identity:
         candidate = identity.group(1).strip()
-        if not candidate.startswith(("in ", "a ", "an ", "the ")):
-            country = _country(candidate)
+        if not candidate.startswith(("in ", "a ", "an ")):
+            check_name = candidate[4:].strip() if candidate.startswith("the ") else candidate
+            country = _country(check_name) or _country(candidate)
             if country:
                 return [_node("equals", "name", country)], f"Is the country {country}?"
 
