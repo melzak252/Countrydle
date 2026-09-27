@@ -15,6 +15,9 @@ from db.models.flagdle import FlagdleDay
 from db.models.guess import CountrydleGuess
 from db.models.question import CountrydleQuestion
 from db.models.user import User, UserPoints
+from db.models.powiatdle import PowiatdleQuestion, PowiatdleGuess
+from db.models.us_statedle import USStatedleQuestion, USStatedleGuess
+from db.models.wojewodztwodle import WojewodztwodleQuestion, WojewodztwodleGuess
 from db.repositories.participation import ParticipationRepository
 from db.repositories.country import CountryRepository
 from db.repositories.countrydle import CountrydleRepository
@@ -54,6 +57,8 @@ def _mode_today(stats, mode_key: str, mode_label: str, target_name: str) -> Admi
         win_rate_pct=stats.get("win_rate_pct", 0.0),
         questions=stats.get("total_questions", 0),
         guesses=stats.get("total_guesses", 0),
+        avg_questions_won=stats.get("avg_questions_won", 0.0),
+        avg_guesses_won=stats.get("avg_guesses_won", 0.0),
     )
 
 
@@ -127,6 +132,8 @@ async def get_admin_overview(
         win_rate_pct=current.get("win_rate_pct", 0.0),
         total_questions=current.get("total_questions", 0),
         total_guesses=current.get("total_guesses", 0),
+        avg_questions_won=current.get("avg_questions_won", 0.0),
+        avg_guesses_won=current.get("avg_guesses_won", 0.0),
     )
 
     history_14d = []
@@ -141,6 +148,8 @@ async def get_admin_overview(
                 win_rate_pct=stats.get("win_rate_pct", 0.0),
                 total_questions=stats.get("total_questions", 0),
                 total_guesses=stats.get("total_guesses", 0),
+                avg_questions_won=stats.get("avg_questions_won", 0.0),
+                avg_guesses_won=stats.get("avg_guesses_won", 0.0),
             )
         )
 
@@ -230,56 +239,75 @@ async def list_admin_users(
 
 @router.get("/live-feed", response_model=AdminLiveFeedResponse)
 async def get_admin_live_feed(
+    mode: Optional[str] = Query(None),
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    # Latest 35 Countrydle Questions
-    q_stmt = (
-        select(CountrydleQuestion)
-        .options(joinedload(CountrydleQuestion.user))
-        .order_by(desc(CountrydleQuestion.id))
-        .limit(35)
-    )
-    q_res = await session.execute(q_stmt)
-    q_rows = q_res.scalars().all()
+    recent_questions: list[AdminLiveQuestion] = []
+    recent_guesses: list[AdminLiveGuess] = []
 
-    recent_questions = [
-        AdminLiveQuestion(
-            id=q.id,
-            mode="countrydle",
-            username=q.user.username if q.user else "Guest",
-            question=q.original_question or q.question or "",
-            valid=q.valid,
-            answer=q.answer,
-            explanation=q.explanation,
-            asked_at=q.asked_at,
+    q_models = []
+    g_models = []
+
+    if mode is None or mode == "countrydle":
+        q_models.append(("countrydle", CountrydleQuestion))
+        g_models.append(("countrydle", CountrydleGuess))
+    if mode is None or mode == "powiatdle":
+        q_models.append(("powiatdle", PowiatdleQuestion))
+        g_models.append(("powiatdle", PowiatdleGuess))
+    if mode is None or mode == "wojewodztwodle":
+        q_models.append(("wojewodztwodle", WojewodztwodleQuestion))
+        g_models.append(("wojewodztwodle", WojewodztwodleGuess))
+    if mode is None or mode == "us_statedle":
+        q_models.append(("us_statedle", USStatedleQuestion))
+        g_models.append(("us_statedle", USStatedleGuess))
+
+    for m_key, q_cls in q_models:
+        q_stmt = (
+            select(q_cls)
+            .options(joinedload(q_cls.user))
+            .order_by(desc(q_cls.id))
+            .limit(30)
         )
-        for q in q_rows
-    ]
+        q_res = await session.execute(q_stmt)
+        for q in q_res.scalars().all():
+            recent_questions.append(
+                AdminLiveQuestion(
+                    id=q.id,
+                    mode=m_key,
+                    username=q.user.username if q.user else "Guest",
+                    question=getattr(q, "original_question", None) or getattr(q, "question", "") or "",
+                    valid=q.valid,
+                    answer=q.answer,
+                    explanation=q.explanation,
+                    asked_at=q.asked_at,
+                )
+            )
 
-    # Latest 35 Countrydle Guesses
-    g_stmt = (
-        select(CountrydleGuess)
-        .options(joinedload(CountrydleGuess.user))
-        .order_by(desc(CountrydleGuess.id))
-        .limit(35)
-    )
-    g_res = await session.execute(g_stmt)
-    g_rows = g_res.scalars().all()
-
-    recent_guesses = [
-        AdminLiveGuess(
-            id=g.id,
-            mode="countrydle",
-            username=g.user.username if g.user else "Guest",
-            guess=g.guess,
-            answer=bool(g.answer),
-            guessed_at=g.guessed_at,
+    for m_key, g_cls in g_models:
+        g_stmt = (
+            select(g_cls)
+            .options(joinedload(g_cls.user))
+            .order_by(desc(g_cls.id))
+            .limit(30)
         )
-        for g in g_rows
-    ]
+        g_res = await session.execute(g_stmt)
+        for g in g_res.scalars().all():
+            recent_guesses.append(
+                AdminLiveGuess(
+                    id=g.id,
+                    mode=m_key,
+                    username=g.user.username if g.user else "Guest",
+                    guess=getattr(g, "guess", ""),
+                    answer=bool(g.answer),
+                    guessed_at=g.guessed_at,
+                )
+            )
+
+    recent_questions.sort(key=lambda x: x.asked_at or datetime.min, reverse=True)
+    recent_guesses.sort(key=lambda x: x.guessed_at or datetime.min, reverse=True)
 
     return AdminLiveFeedResponse(
-        recent_questions=recent_questions,
-        recent_guesses=recent_guesses,
+        recent_questions=recent_questions[:45],
+        recent_guesses=recent_guesses[:45],
     )

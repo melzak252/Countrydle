@@ -40,6 +40,7 @@ export default function USStatesGamePage() {
     entities: states,
     correctEntity: correctState,
     isLoading,
+    pendingQuestion,
     fetchGameState,
     fetchEntities: fetchStates,
     askQuestion,
@@ -84,10 +85,10 @@ export default function USStatesGamePage() {
     if (!questionsContainerRef.current) return;
     prevQuestionsCount.current = questions.length;
     prevNoticesCount.current = notices.length;
-    if (hasNewQuestion || hasNewNotice) {
+    if (hasNewQuestion || hasNewNotice || pendingQuestion) {
       questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
     }
-  }, [questions.length, notices.length, activeChatTab, isChatOpen]);
+  }, [questions.length, notices.length, activeChatTab, isChatOpen, pendingQuestion]);
 
   // Auto-scroll ONLY when a new guess actually arrives
   useEffect(() => {
@@ -134,15 +135,28 @@ export default function USStatesGamePage() {
     return accepted;
   };
 
-  const handleDuplicateGuess = (input: string) => {
-    addNotice({
-      action: 'guess',
-      input,
-      title: 'Already guessed',
-      reason: 'This location is already in your guess history. It was not submitted again.',
-      nextStep: 'Choose a different location from the suggestions.',
-    });
-    setActiveChatTab('questions');
+  const handleGuessWarning = (input: string) => {
+    const isQuestion = input.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(input.trim());
+    if (isQuestion) {
+      addNotice({
+        action: 'guess',
+        input,
+        title: 'Question entered in guess box',
+        reason: 'You submitted a question while the "Guess" tab was active.',
+        nextStep: 'Switched back to the "Question" tab for you.',
+      });
+      setUserSelectedTab('question');
+      setActiveChatTab('questions');
+    } else {
+      addNotice({
+        action: 'guess',
+        input,
+        title: 'Already guessed',
+        reason: 'This location is already in your guess history. It was not submitted again.',
+        nextStep: 'Choose a different location from the suggestions.',
+      });
+      setActiveChatTab('questions');
+    }
     setIsChatOpen(true);
   };
 
@@ -295,7 +309,7 @@ export default function USStatesGamePage() {
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
               <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar overscroll-contain">
-                <QuestionChat questions={sortedQuestions} notices={notices} mode="us_statedle" isGameOver={isGameOver} />
+                <QuestionChat questions={sortedQuestions} notices={notices} mode="us_statedle" isGameOver={isGameOver} isLoading={isLoading} pendingQuestion={pendingQuestion} />
               </div>
             )}
 
@@ -430,7 +444,7 @@ export default function USStatesGamePage() {
                     alreadyGuessedNames={guesses.map((g) => g.guess)}
                     alreadyGuessedIds={guesses.map((g) => g.us_state_id).filter(Boolean)}
                     onGuess={async (id, name) => handleGuess(name, Number(id))}
-                    onWarning={handleDuplicateGuess}
+                    onWarning={handleGuessWarning}
                     onUnknownGuess={async (name) => handleGuess(name, 0)}
                     isLoading={isLoading}
                     remainingGuesses={gameState.remaining_guesses}

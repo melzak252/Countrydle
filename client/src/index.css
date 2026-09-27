@@ -36,16 +36,86 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Exclude Leaflet panes, zoom transforms, and tile layers from zeroing transitions.
-     Otherwise, zeroing duration breaks Leaflet's zoom-anim matrix calculations and
-     causes tiles and layers to jump/stutter. */
   *:not([class*="leaflet-"]):not([class*="leaflet-"] *)::before,
   *:not([class*="leaflet-"]):not([class*="leaflet-"] *)::after,
   *:not([class*="leaflet-"]):not([class*="leaflet-"] *) {
-    animation-duration: 0.01ms !important;
+    animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Calm, steady animations across the entire application */
+@keyframes spin-calm {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-calm {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+}
+
+.animate-spin {
+  animation: spin-calm 1.8s linear infinite !important;
+}
+
+.animate-spin-slow {
+  animation: spin-calm 3s linear infinite !important;
+}
+
+.animate-pulse {
+  animation: pulse-calm 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+/* Chat message entrance animation */
+@keyframes message-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message {
+  animation: message-appear 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Chat typing indicator bouncing dots */
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-3.5px);
+    opacity: 1;
+  }
+}
+
+.animate-typing-dot-1 {
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.animate-typing-dot-2 {
+  animation: typing-bounce 1.2s ease-in-out infinite 0.2s;
+}
+
+.animate-typing-dot-3 {
+  animation: typing-bounce 1.2s ease-in-out infinite 0.4s;
 }
 
 /* Custom Sleek Scrollbar */

@@ -130,6 +130,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     entities: countries,
     correctEntity: correctCountry,
     isLoading,
+    pendingQuestion,
     fetchGameState,
     fetchEntities: fetchCountries,
     askQuestion,
@@ -180,10 +181,10 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     if (!questionsContainerRef.current) return;
     prevQuestionsCount.current = questions.length;
     prevNoticesCount.current = notices.length;
-    if (hasNewQuestion || hasNewNotice) {
+    if (hasNewQuestion || hasNewNotice || pendingQuestion) {
       questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
     }
-  }, [questions.length, notices.length, activeChatTab, isChatOpen]);
+  }, [questions.length, notices.length, activeChatTab, isChatOpen, pendingQuestion]);
 
   // Auto-scroll ONLY when a new guess actually arrives
   useEffect(() => {
@@ -435,7 +436,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
               <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar overscroll-contain">
-                <QuestionChat questions={sortedQuestions} notices={notices} mode="countrydle" isGameOver={isGameOver} />
+                <QuestionChat questions={sortedQuestions} notices={notices} mode="countrydle" isGameOver={isGameOver} isLoading={isLoading} pendingQuestion={pendingQuestion} />
               </div>
             )}
 
