@@ -1,4 +1,5 @@
 import { AlertTriangle, Check, ChevronDown, Compass, HelpCircle, MessageCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { AnswerReportMode, Question } from '../types';
 import AnswerReportForm from './AnswerReportForm';
 import type { GameplayNotice } from '../lib/gameplayNotices';
@@ -9,10 +10,20 @@ interface QuestionChatProps {
   mode: AnswerReportMode;
   isGameOver: boolean;
   notices?: GameplayNotice[];
+  isLoading?: boolean;
+  pendingQuestion?: string | null;
 }
 
-export default function QuestionChat({ questions, mode, isGameOver, notices = [] }: QuestionChatProps) {
-  if (questions.length === 0 && notices.length === 0) {
+export default function QuestionChat({
+  questions,
+  mode,
+  isGameOver,
+  notices = [],
+  isLoading = false,
+  pendingQuestion = null,
+}: QuestionChatProps) {
+  const { t } = useTranslation();
+  if (questions.length === 0 && notices.length === 0 && !pendingQuestion) {
     return (
       <div className="flex min-h-52 flex-col items-center justify-center px-5 py-8 text-center">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-400/10 text-emerald-300">
@@ -33,7 +44,7 @@ export default function QuestionChat({ questions, mode, isGameOver, notices = []
         if (message.kind === 'notice') {
           const { notice } = message;
           return (
-            <li key={notice.id} className="space-y-3">
+            <li key={notice.id} className="space-y-3 animate-message">
               <div className="flex flex-col items-end pl-8">
                 <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">You · {notice.action}</span>
                 <p className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{notice.input}</p>
@@ -68,7 +79,7 @@ export default function QuestionChat({ questions, mode, isGameOver, notices = []
         const tone = !question.valid ? 'bg-amber-400/10 text-amber-200' : question.answer === true ? 'bg-emerald-400/10 text-emerald-300' : question.answer === false ? 'bg-rose-400/10 text-rose-300' : 'bg-white/5 text-zinc-300';
 
         return (
-          <li key={`question-${question.id}`} className="space-y-3">
+          <li key={`question-${question.id}`} className="space-y-3 animate-message">
             <div className="flex flex-col items-end pl-8">
               <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">You · {index + 1}</span>
               <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
@@ -101,6 +112,35 @@ export default function QuestionChat({ questions, mode, isGameOver, notices = []
           </li>
         );
       })}
+      {isLoading && pendingQuestion && (
+        <li key="pending-question-turn" className="space-y-3 animate-message">
+          <div className="flex flex-col items-end pl-8">
+            <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">
+              You · {questions.length + 1}
+            </span>
+            <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
+              {pendingQuestion}
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5 pr-5">
+            <div className="mt-5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-emerald-300">
+              <Compass size={15} className="animate-spin-slow" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="mb-1.5 px-1 text-[10px] font-medium text-zinc-400">
+                {t('inputs.thinking', { defaultValue: 'Countrydle thinks...' })}
+              </p>
+              <div className="w-fit max-w-full overflow-hidden rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-4 py-3 shadow-inner">
+                <div className="flex items-center gap-1.5 py-1 px-1">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-typing-dot-1" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-typing-dot-2" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-typing-dot-3" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      )}
     </ol>
   );
 }

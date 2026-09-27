@@ -34,6 +34,7 @@ interface GameData {
   eliminatedEntities: string[];
   mapInteractionMode: 'candidate' | 'eliminate';
   isLoading: boolean;
+  pendingQuestion: string | null;
   isGuest: boolean;
   error: string | null;
   gameStartTime: number | null;
@@ -57,6 +58,16 @@ interface GameActions {
   handleEntityMapClick: (name: string, isSecondary?: boolean) => void;
   clearMapMarkings: () => void;
 }
+function promiseWithResolvers<T = void>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
 
 const isAnsweredQuestion = (question: Question | null | undefined): question is Question & { valid: true; answer: boolean } =>
@@ -195,6 +206,7 @@ const createGameStore = (gameType: MapGameType) => {
     eliminatedEntities: [],
     mapInteractionMode: 'candidate',
     isLoading: false,
+    pendingQuestion: null,
     isGuest: false,
     error: null,
     gameStartTime: null,
@@ -331,21 +343,31 @@ const createGameStore = (gameType: MapGameType) => {
       const current = get();
       if (current.isLoading || !current.gameState || current.gameState.is_game_over
         || current.gameState.remaining_questions <= 0) return;
-      set({ isLoading: true, error: null });
+      const trimmed = questionText.trim();
+      set({ isLoading: true, error: null, pendingQuestion: trimmed });
+      const startTime = Date.now();
       try {
-        const question = await service.askQuestion(questionText);
+        const question = await service.askQuestion(trimmed);
+
+        // Ensure minimal thinking animation display (450ms) so user perceives the response
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 450) {
+          const { promise, resolve } = promiseWithResolvers<void>();
+          setTimeout(resolve, 450 - elapsed);
+          await promise;
+        }
         
         if (!isAnsweredQuestion(question)) {
           get().addNotice({
             action: 'question',
-            input: questionText,
+            input: trimmed,
             title: 'Question not answered',
             reason: typeof question?.explanation === 'string' && question.explanation.trim()
               ? question.explanation
               : 'The game could not produce a reliable yes-or-no answer to this question.',
             nextStep: 'Try a more specific yes-or-no question about a geographic fact, such as location, borders, or coastline.',
           });
-          set({ isLoading: false });
+          set({ isLoading: false, pendingQuestion: null });
           return false;
         }
         const { isGuest, dailyDate, gameState, questions, guesses, correctEntity } = get();
@@ -368,14 +390,16 @@ const createGameStore = (gameType: MapGameType) => {
           set({
             questions: newQuestions,
             gameState: newGameState,
-            isLoading: false
+            isLoading: false,
+            pendingQuestion: null,
           });
         } else {
           await get().fetchGameState();
+          set({ isLoading: false, pendingQuestion: null });
         }
       } catch (e: unknown) {
          console.error(e);
-         get().addNotice(gameplayFailure('question', questionText, e));
+         get().addNotice(gameplayFailure('question', trimmed, e));
          if (typeof e === 'object' && e !== null && 'response' in e) {
            const response = e.response;
            if (typeof response === 'object' && response !== null && 'status' in response &&
@@ -383,10 +407,11 @@ const createGameStore = (gameType: MapGameType) => {
              typeof response.data === 'object' && response.data !== null && 'detail' in response.data &&
              typeof response.data.detail === 'string' && response.data.detail.includes('over')) {
              await get().fetchGameState();
+             set({ isLoading: false, pendingQuestion: null });
              return false;
            }
          }
-         set({ error: e instanceof Error ? e.message : 'Failed to ask question', isLoading: false });
+         set({ error: e instanceof Error ? e.message : 'Failed to ask question', isLoading: false, pendingQuestion: null });
          return false;
       }
     },
