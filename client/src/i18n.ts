@@ -229,6 +229,11 @@ const resources = {
       },
       tabs: {
         countries: 'Countries',
+        flagdle: 'Flagdle',
+        europe: 'Europe',
+        asia: 'Asia',
+        africa: 'Africa',
+        americas: 'Americas',
         powiaty: 'Polish Counties',
         usStates: 'US States',
         wojewodztwa: 'Polish Voivodeships',
@@ -373,6 +378,9 @@ const resources = {
         answer: 'Answer',
         unknown: 'Unknown',
         empty: 'No past games recorded yet.',
+        groupGlobal: 'Global',
+        groupContinents: 'Continents',
+        groupRegional: 'Regional',
       },
       history: {
         empty: 'No questions asked yet. Start by asking something!',

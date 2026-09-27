@@ -1,14 +1,55 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
-import { Loader2, Calendar, Globe, Map, Flag, MapPin, ArrowRight } from 'lucide-react';
+import {
+  gameService,
+  flagdleService,
+  europeService,
+  asiaService,
+  africaService,
+  americasService,
+  powiatService,
+  usStateService,
+  wojewodztwoService,
+} from '../services/api';
+import { Loader2, Calendar, Globe, Map, Flag, MapPin, ArrowRight, Compass } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 
-type GameType = 'country' | 'powiat' | 'us_state' | 'wojewodztwo';
+type GameType =
+  | 'country'
+  | 'flagdle'
+  | 'europe'
+  | 'asia'
+  | 'africa'
+  | 'americas'
+  | 'us_state'
+  | 'wojewodztwo'
+  | 'powiat';
+
+interface TabItem {
+  id: GameType;
+  label: string;
+  icon: typeof Globe;
+}
+
+interface TabGroup {
+  name: string;
+  items: TabItem[];
+}
+
+interface HistoryEntry {
+  id: number;
+  date: string;
+  country?: { name?: string };
+  powiat?: { nazwa?: string };
+  us_state?: { name?: string };
+  wojewodztwo?: { nazwa?: string };
+  name?: string;
+  nazwa?: string;
+}
 
 export default function ArchivePage() {
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [gameType, setGameType] = useState<GameType>('country');
   const { t } = useTranslation();
@@ -16,38 +57,73 @@ export default function ArchivePage() {
   useEffect(() => {
     setLoading(true);
     const fetchHistory = async () => {
-        try {
-            let data: any = [];
-            if (gameType === 'country') {
-                const res = await gameService.getHistory();
-                data = res.daily_countries || [];
-            }
-            else if (gameType === 'powiat') data = await powiatService.getHistory();
-            else if (gameType === 'us_state') data = await usStateService.getHistory();
-            else if (gameType === 'wojewodztwo') data = await wojewodztwoService.getHistory();
-            setHistory(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
+      try {
+        let data: unknown = [];
+        if (gameType === 'country') {
+          const res = (await gameService.getHistory()) as { daily_countries?: HistoryEntry[] };
+          data = res?.daily_countries || [];
+        } else if (gameType === 'flagdle') {
+          data = await flagdleService.getHistory();
+        } else if (gameType === 'europe') {
+          data = await europeService.getHistory();
+        } else if (gameType === 'asia') {
+          data = await asiaService.getHistory();
+        } else if (gameType === 'africa') {
+          data = await africaService.getHistory();
+        } else if (gameType === 'americas') {
+          data = await americasService.getHistory();
+        } else if (gameType === 'powiat') {
+          data = await powiatService.getHistory();
+        } else if (gameType === 'us_state') {
+          data = await usStateService.getHistory();
+        } else if (gameType === 'wojewodztwo') {
+          data = await wojewodztwoService.getHistory();
         }
+        setHistory(Array.isArray(data) ? (data as HistoryEntry[]) : []);
+      } catch (e) {
+        console.error(e);
+        setHistory([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchHistory();
   }, [gameType]);
 
-  const tabs = [
-    { id: 'country', label: t('tabs.countries'), icon: Globe },
-    { id: 'powiat', label: t('tabs.powiaty'), icon: Map },
-    { id: 'us_state', label: t('tabs.usStates'), icon: Flag },
-    { id: 'wojewodztwo', label: t('tabs.wojewodztwa'), icon: MapPin },
+  const groups: TabGroup[] = [
+    {
+      name: t('archive.groupGlobal', 'Global'),
+      items: [
+        { id: 'country', label: t('tabs.countries', 'Countries'), icon: Globe },
+        { id: 'flagdle', label: t('tabs.flagdle', 'Flagdle'), icon: Flag },
+      ],
+    },
+    {
+      name: t('archive.groupContinents', 'Continents'),
+      items: [
+        { id: 'europe', label: t('tabs.europe', 'Europe'), icon: Compass },
+        { id: 'asia', label: t('tabs.asia', 'Asia'), icon: Compass },
+        { id: 'africa', label: t('tabs.africa', 'Africa'), icon: Compass },
+        { id: 'americas', label: t('tabs.americas', 'Americas'), icon: Compass },
+      ],
+    },
+    {
+      name: t('archive.groupRegional', 'Regional'),
+      items: [
+        { id: 'us_state', label: t('tabs.usStates', 'US States'), icon: Flag },
+        { id: 'wojewodztwo', label: t('tabs.wojewodztwa', 'Polish Voivodeships'), icon: MapPin },
+        { id: 'powiat', label: t('tabs.powiaty', 'Polish Counties'), icon: Map },
+      ],
+    },
   ];
 
-  const getEntityName = (entry: any) => {
-      if (gameType === 'country') return entry.country?.name;
-      if (gameType === 'powiat') return entry.powiat?.nazwa;
-      if (gameType === 'us_state') return entry.us_state?.name;
-      if (gameType === 'wojewodztwo') return entry.wojewodztwo?.nazwa;
-      return t('archive.unknown');
+  const allTabs = groups.flatMap((g) => g.items);
+
+  const getEntityName = (entry: HistoryEntry) => {
+    if (gameType === 'powiat') return entry.powiat?.nazwa || entry.nazwa || t('archive.unknown');
+    if (gameType === 'wojewodztwo') return entry.wojewodztwo?.nazwa || entry.nazwa || t('archive.unknown');
+    if (gameType === 'us_state') return entry.us_state?.name || entry.name || t('archive.unknown');
+    return entry.country?.name || entry.name || t('archive.unknown');
   };
 
   return (
@@ -63,23 +139,32 @@ export default function ArchivePage() {
         </p>
       </header>
 
-      <div role="group" aria-label="Game mode" className="flex flex-wrap gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            aria-pressed={gameType === tab.id}
-            onClick={() => setGameType(tab.id as GameType)}
-            className={cn(
-              "flex items-center gap-2 rounded-sm border px-3 py-2.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
-              gameType === tab.id
-                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
-                : "border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/20 hover:text-sand-100"
-            )}
-          >
-            <tab.icon size={16} aria-hidden="true" />
-            <span className="font-medium">{tab.label}</span>
-          </button>
+      <div className="space-y-4">
+        {groups.map((group) => (
+          <div key={group.name} className="space-y-1.5">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+              {group.name}
+            </span>
+            <div role="group" aria-label={group.name} className="flex flex-wrap gap-2">
+              {group.items.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={gameType === tab.id}
+                  onClick={() => setGameType(tab.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
+                    gameType === tab.id
+                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
+                      : "border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/20 hover:text-sand-100"
+                  )}
+                >
+                  <tab.icon size={16} aria-hidden="true" />
+                  <span className="font-medium">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
@@ -91,7 +176,7 @@ export default function ArchivePage() {
         <div className="overflow-hidden rounded-md border border-white/10 bg-obsidian-900">
           <div role="region" aria-label="Past answers" tabIndex={0} className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
             <table className="w-full table-fixed text-left text-sm">
-              <caption className="sr-only">Past answers — {tabs.find((tab) => tab.id === gameType)?.label}</caption>
+              <caption className="sr-only">Past answers — {allTabs.find((tab) => tab.id === gameType)?.label}</caption>
               <thead className="border-b border-white/10 text-xs uppercase tracking-[0.12em] text-zinc-400">
                 <tr>
                   <th scope="col" className="w-32 px-4 py-4 font-medium sm:w-44 sm:px-6">{t('archive.date')}</th>

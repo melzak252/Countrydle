@@ -370,3 +370,34 @@ async def test_scheduler_anti_collision():
 
         for d_date, c_ids in by_date.items():
             assert len(c_ids) == len(set(c_ids)), f"Duplicate country on date {d_date}: {c_ids}"
+
+@pytest.mark.anyio
+async def test_continental_history_endpoint(async_client):
+    """GET /continental/{continent}/history returns past continental days."""
+    with patch(
+        "db.repositories.continental.ContinentalDayRepository.get_history",
+        new_callable=AsyncMock,
+    ) as mock_get_history:
+        mock_country = MagicMock()
+        mock_country.id = 143
+        mock_country.name = "Romania"
+        mock_country.official_name = "Romania"
+        mock_country.md_file = "Romania.md"
+
+        mock_day = MagicMock()
+        mock_day.id = 12
+        mock_day.continent = ContinentCode.EUROPE
+        mock_day.country_id = 143
+        mock_day.country = mock_country
+        mock_day.date = date(2026, 9, 20)
+
+        mock_get_history.return_value = [mock_day]
+
+        res = await async_client.get("/continental/europe/history")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) == 1
+        assert data[0]["id"] == 12
+        assert data[0]["continent"] == "europe"
+        assert data[0]["country"]["name"] == "Romania"
+        assert data[0]["date"] == "2026-09-20"

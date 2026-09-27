@@ -262,6 +262,10 @@ export const flagdleService = {
     const response = await api.get<LeaderboardEntry[]>('/flagdle/leaderboard', { params: { type } });
     return response.data;
   },
+  getHistory: async (): Promise<unknown[]> => {
+    const response = await api.get('/flagdle/history');
+    return response.data;
+  },
   getState: async (): Promise<FlagdleStateResponse> => {
     const response = await api.get('/flagdle/state');
     return response.data;

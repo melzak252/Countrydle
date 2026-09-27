@@ -27,6 +27,7 @@ from db.repositories.flagdle import (
 from game_logic import FLAGDLE_CONFIG, GameRules, GameState, is_valid_synced_game_state
 from schemas.country import CountryDisplay
 from schemas.flagdle import (
+    DayFlagdleDisplay,
     FlagdleCountryDisplay,
     FlagdleGuessBase,
     FlagdleGuessCreate,
@@ -80,6 +81,11 @@ async def get_leaderboard(
 ):
     return await FlagdleStateRepository(session).get_leaderboard(type)
 
+
+@router.get("/history", response_model=List[DayFlagdleDisplay])
+async def get_history(session: AsyncSession = Depends(get_db)):
+    days = await FlagdleDayRepository(session).get_history()
+    return [DayFlagdleDisplay.model_validate(d) for d in days]
 
 @router.get("/countries", response_model=List[FlagdleCountryDisplay])
 async def get_countries(session: AsyncSession = Depends(get_db)):
