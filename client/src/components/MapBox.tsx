@@ -292,76 +292,38 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 const geoJsonCache = new Map<string, FeatureCollection>();
 const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
 
-function withWrappedPacificFeatures(collection: FeatureCollection): FeatureCollection {
+function wrapWorldGeoJson(collection: FeatureCollection): FeatureCollection {
   if (!collection || !Array.isArray(collection.features)) return collection;
 
-  const additionalFeatures: Feature[] = [];
-
-  for (const feature of collection.features) {
-    if (!feature.geometry || feature.geometry.type === 'GeometryCollection') continue;
-    const geom = feature.geometry;
-    let minLng = 999;
-    let maxLng = -999;
-
-    const inspect = (coords: unknown) => {
-      if (!Array.isArray(coords)) return;
-      if (typeof coords[0] === 'number') {
-        minLng = Math.min(minLng, coords[0]);
-        maxLng = Math.max(maxLng, coords[0]);
-      } else {
-        for (const sub of coords) inspect(sub);
-      }
-    };
-    inspect(geom.coordinates);
-
-    // Polynesian / West Pacific islands (lng < -100) -> wrap right (+360°)
-    // This places Samoa, Tonga, Kiribati, Cook Islands right next to Fiji (+178°) on the right edge!
-    if (minLng < -100) {
-      const shiftRight = (coords: unknown): unknown => {
-        if (!Array.isArray(coords)) return coords;
-        if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
-          return [coords[0] + 360, coords[1]];
-        }
-        return coords.map(shiftRight);
-      };
-
-      additionalFeatures.push({
-        ...feature,
-        id: feature.id ? `${feature.id}-wrap-right` : undefined,
-        properties: { ...feature.properties, _isWorldWrap: true },
-        geometry: {
-          type: geom.type,
-          coordinates: shiftRight(geom.coordinates),
-        } as unknown as GeoJSON.Geometry,
-      });
+  const shiftCoords = (coords: unknown, offset: number): unknown => {
+    if (!Array.isArray(coords)) return coords;
+    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+      return [coords[0] + offset, coords[1]];
     }
+    return coords.map((c) => shiftCoords(c, offset));
+  };
 
-    // Oceania / East Pacific islands & coasts (lng > 100) -> wrap left (-360°)
-    // This places Fiji, NZ, and Australia next to Polynesia on the left edge!
-    if (maxLng > 100) {
-      const shiftLeft = (coords: unknown): unknown => {
-        if (!Array.isArray(coords)) return coords;
-        if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
-          return [coords[0] - 360, coords[1]];
-        }
-        return coords.map(shiftLeft);
-      };
-
-      additionalFeatures.push({
+  const makeCopy = (offset: number, suffix: string): Feature[] => {
+    return collection.features.map((feature) => {
+      if (!feature.geometry || feature.geometry.type === 'GeometryCollection') return feature;
+      return {
         ...feature,
-        id: feature.id ? `${feature.id}-wrap-left` : undefined,
-        properties: { ...feature.properties, _isWorldWrap: true },
+        id: feature.id ? `${feature.id}-${suffix}` : undefined,
+        properties: { ...feature.properties },
         geometry: {
-          type: geom.type,
-          coordinates: shiftLeft(geom.coordinates),
+          type: feature.geometry.type,
+          coordinates: shiftCoords(feature.geometry.coordinates, offset),
         } as unknown as GeoJSON.Geometry,
-      });
-    }
-  }
+      };
+    });
+  };
+
+  const leftCopy = makeCopy(-360, 'left');
+  const rightCopy = makeCopy(360, 'right');
 
   return {
     ...collection,
-    features: [...collection.features, ...additionalFeatures],
+    features: [...leftCopy, ...collection.features, ...rightCopy],
   };
 }
 
@@ -378,7 +340,7 @@ function loadGeoJson(url: string): Promise<FeatureCollection> {
         return res.json();
       })
       .then(data => {
-        const processed = withWrappedPacificFeatures(data);
+        const processed = url.includes('countries') ? wrapWorldGeoJson(data) : data;
         geoJsonCache.set(url, processed);
         geoJsonPromiseCache.delete(url);
         return processed;
@@ -676,18 +638,19 @@ export function ControlledMapBox({
         style={{ height: '100%', width: '100%', background: '#1c1c1c' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
+        preferCanvas={true}
         zoomSnap={0.25}
-        wheelPxPerZoomLevel={80}
+        wheelPxPerZoomLevel={90}
         wheelDebounceTime={30}
-        worldCopyJump={true}
+        worldCopyJump={false}
         attributionControl={false}
         ref={setMap}
       >
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            keepBuffer={4}
-            updateInterval={80}
+            keepBuffer={6}
+            updateInterval={100}
             updateWhenZooming={false}
             updateWhenIdle={false}
         />
