@@ -1175,8 +1175,11 @@ def evaluate_plan_node(
         right = resolve_ref(conn, node.get("right", {}), target_country, item_value)
         if left is None or (operator not in {"has_space", "has_hyphen"} and right is None):
             return None
-        # Relation cardinality is part of the operator contract. A list is not
-        # a scalar even when it is empty or has only one value.
+        left_ref = node.get("left", {})
+        relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
+        if operator == "equals" and relation == "currency" and isinstance(left, list):
+            c_canon = CURRENCY_ALIASES.get(normalize_value(right), normalize_value(right))
+            return any(CURRENCY_ALIASES.get(normalize_value(v), normalize_value(v)) == c_canon for v in left)
         if operator != "contains" and (isinstance(left, list) or isinstance(right, list)):
             return None
         left_ref = node.get("left", {})

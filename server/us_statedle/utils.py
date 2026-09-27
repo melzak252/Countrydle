@@ -70,7 +70,8 @@ LOCAL_CONFIG = LocalModeConfig(
         "- For the original 13 colonies, use: admission_order <= 13.\n"
         "- For major_highways, use short designations like 'I-95', 'I-80', 'I-10', 'I-5'.\n"
         "- For major_rivers, use the simple river name without the suffix 'River' (e.g. 'Mississippi', 'Colorado', 'Missouri', 'Ohio').\n"
-        "- For nickname, omit the leading 'The' (e.g. 'Golden State', 'Lone Star State')."
+        "- For nickname, omit the leading 'The' (e.g. 'Golden State', 'Lone Star State').\n"
+        "- The area relation stores area in square miles (area_sq_mi). If a question asks in square kilometers (km2 / km² / tys. km2), convert to square miles by dividing by 2.59 (e.g. 200,000 km² ≈ 77,220 sq mi)."
     ),
 )
 
