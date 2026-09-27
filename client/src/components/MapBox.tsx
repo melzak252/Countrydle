@@ -282,7 +282,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 
 const geoJsonCache = new Map<string, FeatureCollection>();
 const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
-
+const paddedCanvasRenderer = typeof L !== 'undefined' ? L.canvas({ padding: 0.75 }) : undefined;
 function loadGeoJson(url: string): Promise<FeatureCollection> {
   const cached = geoJsonCache.get(url);
   if (cached) {
@@ -397,9 +397,9 @@ export function ControlledMapBox({
   className,
   onCountryCode,
   interaction,
-  center = [15, 0],
-  zoom = 2.4,
-  minZoom = 2.1,
+  center = [18, 10],
+  zoom = 2.8,
+  minZoom = 2.5,
   maxZoom = 10,
   onCountryClick,
   geoJsonUrl = '/countries_50m.geojson',
@@ -424,7 +424,8 @@ export function ControlledMapBox({
   const activeHoverLayerRef = useRef<L.Layer | null>(null);
 
   const getStyle = (feature: Feature | undefined) => {
-    return getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
+    const base = getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
+    return paddedCanvasRenderer ? { ...base, renderer: paddedCanvasRenderer } : base;
   };
 
   // Close lingering tooltips when mouse moves out of the map container
@@ -602,7 +603,7 @@ export function ControlledMapBox({
         preferCanvas={true}
         zoomSnap={0.25}
         wheelPxPerZoomLevel={90}
-        wheelDebounceTime={40}
+        wheelDebounceTime={20}
         attributionControl={false}
         ref={setMap}
       >
@@ -612,9 +613,9 @@ export function ControlledMapBox({
             bounds={[[-78, -180], [82, 180]]}
             errorTileUrl="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
             noWrap={true}
-            keepBuffer={4}
-            updateInterval={80}
-            updateWhenZooming={false}
+            keepBuffer={12}
+            updateInterval={20}
+            updateWhenZooming={true}
             updateWhenIdle={false}
         />
         
