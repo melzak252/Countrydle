@@ -382,6 +382,11 @@ async def make_guess(
     candidate_name = guess.guess.strip()
     if not is_eligible_candidate(candidate_name, continent):
         mode_title = CONTINENT_TITLE_MAP.get(continent, continent.value.title() + "dle")
+        if candidate_name.endswith("?") or any(candidate_name.lower().startswith(w) for w in ("is ", "czy ", "does ", "what ", "which ", "are ", "can ", "has ")):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"'{guess.guess}' looks like a question. Please use the Question input to ask questions, or select an eligible country in {mode_title} to make a guess.",
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Candidate '{guess.guess}' is not an eligible country in {mode_title}.",

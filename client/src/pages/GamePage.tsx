@@ -136,15 +136,28 @@ export default function GamePage() {
     return accepted;
   };
 
-  const handleDuplicateGuess = (input: string) => {
-    addNotice({
-      action: 'guess',
-      input,
-      title: 'Already guessed',
-      reason: 'This location is already in your guess history. It was not submitted again.',
-      nextStep: 'Choose a different location from the suggestions.',
-    });
-    setActiveChatTab('questions');
+  const handleGuessWarning = (input: string) => {
+    const isQuestion = input.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(input.trim());
+    if (isQuestion) {
+      addNotice({
+        action: 'guess',
+        input,
+        title: 'Question entered in guess box',
+        reason: 'You submitted a question while the "Guess" tab was active.',
+        nextStep: 'Switched back to the "Question" tab for you.',
+      });
+      setUserSelectedTab('question');
+      setActiveChatTab('questions');
+    } else {
+      addNotice({
+        action: 'guess',
+        input,
+        title: 'Already guessed',
+        reason: 'This location is already in your guess history. It was not submitted again.',
+        nextStep: 'Choose a different location from the suggestions.',
+      });
+      setActiveChatTab('questions');
+    }
     setIsChatOpen(true);
   };
 
@@ -435,7 +448,7 @@ export default function GamePage() {
                     alreadyGuessedNames={guesses.map((g) => g.guess)}
                     alreadyGuessedIds={guesses.map((g) => g.country_id).filter(Boolean)}
                     onGuess={async (id, name) => handleGuess(name, Number(id))}
-                    onWarning={handleDuplicateGuess}
+                    onWarning={handleGuessWarning}
                     onUnknownGuess={async (name) => handleGuess(name, 0)}
                     isLoading={isLoading}
                     remainingGuesses={gameState.remaining_guesses}

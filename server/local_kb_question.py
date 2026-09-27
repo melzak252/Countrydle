@@ -97,6 +97,40 @@ def analyze_question(
     load_dotenv()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or "gemini-2.5-flash-lite"
     version = f"{PLANNER_VERSION}:{model}"
+    from generic_template_compiler import check_generic_open_ended_question, compile_generic_template_plan
+    clarify_msg = check_generic_open_ended_question(question)
+    if clarify_msg is not None:
+        plan = QuestionPlan(
+            original_question=question,
+            valid=False,
+            supported=False,
+            improved_question=None,
+            explanation=clarify_msg,
+            plan=None,
+        )
+        if use_cache:
+            plan_cache.set(config.mode_name, question, plan, version=version)
+        if evidence is not None:
+            evidence.update(provider="template_clarify", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
+        return plan
+
+    deterministic = compile_generic_template_plan(question, config.mode_name)
+    if deterministic is not None:
+        ast, improved = deterministic
+        plan = QuestionPlan(
+            original_question=question,
+            valid=True,
+            supported=True,
+            improved_question=improved,
+            explanation="Deterministic template match.",
+            plan=ast,
+        )
+        if use_cache:
+            plan_cache.set(config.mode_name, question, plan, version=version)
+        if evidence is not None:
+            evidence.update(provider="template", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
+        return plan
+
     cached = plan_cache.get(config.mode_name, question, version=version) if use_cache else None
     if evidence is not None:
         evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)
@@ -215,18 +249,9 @@ User question: {question}
         relations=allowed_relations, operators=operators, target_entity=config.target_entity,
     )
     data = gemini_json(prompt, response_schema=schema, evidence=evidence)
-    try:
-        ast = compile_planner_response(
-            data, relations=allowed_relations, operators=operators, target_entity=config.target_entity,
-        )
-    except Exception as exc:
-        if strict_errors:
-            raise
-        ast = None
-        data = {
-            "route": "fallback",
-            "fallback_reason": f"Plan compilation failed: {exc}",
-        }
+    ast = compile_planner_response(
+        data, relations=allowed_relations, operators=operators, target_entity=config.target_entity,
+    )
     if evidence is not None:
         evidence.update(
             provider="gemini",

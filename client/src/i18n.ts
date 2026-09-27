@@ -384,6 +384,7 @@ const resources = {
         questionPlaceholder: 'Ask a yes/no question (e.g., "Is it in Europe?") - {{count}} left',
         guessPlaceholder: 'Guess the country... ({{count}} left)',
         slowQuestionMessage: 'I need a moment to check additional information...',
+        looksLikeQuestion: 'This looks like a question, not a country name. Switch to the "Question" tab to ask questions.',
         quickQuestions: 'Quick questions',
         quickEurope: 'Europe',
         questionEurope: 'Is it in Europe?',
@@ -468,6 +469,7 @@ const resources = {
   pl: {
     translation: {
       inputs: {
+        looksLikeQuestion: 'To wygląda na pytanie, a nie nazwę państwa. Przełącz się na zakładkę „Pytanie”, aby zadać pytanie.',
         quickQuestions: 'Szybkie pytania',
         quickEurope: 'Europa',
         questionEurope: 'Czy leży w Europie?',

@@ -117,7 +117,7 @@ def test_compilation_rejects_non_tree_or_unbound_plans(monkeypatch, nodes):
         "route": "local", "plan": nodes,
     })
     with pytest.raises(RuntimeError):
-        local.analyze_question("Is it coastal?", LOCAL_CONFIG)
+        local.analyze_question("Is it in the West?", LOCAL_CONFIG)
     assert plan_cache.stats()["size"] == 0
 
 
