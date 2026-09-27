@@ -125,6 +125,17 @@ export default function GuessInput<Id extends string | number = number>({
       return;
     }
 
+    const looksLikeQuestion = query.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(query.trim());
+    if (looksLikeQuestion) {
+      setShowSuggestions(false);
+      if (onWarning) {
+        onWarning(query.trim());
+      } else {
+        setDuplicateWarning(t('inputs.looksLikeQuestion', { defaultValue: 'This looks like a question. Switch to the "Question" tab to ask questions.' }));
+      }
+      return;
+    }
+
     const selected = suggestionsVisible && activeIndex >= 0 ? filteredCountries[activeIndex] : undefined;
     const match = selected || searchableCountries.find(item => item.name === normalizedQuery) || filteredCountries[0];
     if (match) {

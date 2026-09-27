@@ -32,6 +32,12 @@ class CountryRepository:
         return result.scalars().first()
 
     async def validate_guess(self, country_id: int | None, name: str, mode: str | None = None) -> None:
+        trimmed = (name or "").strip()
+        if trimmed.endswith("?") or any(trimmed.lower().startswith(w) for w in ("is ", "czy ", "does ", "what ", "which ", "are ", "can ", "has ")):
+            raise HTTPException(
+                status_code=400,
+                detail=f"'{name}' looks like a question. Please use the Question input to ask questions, or select a country to make a guess.",
+            )
         if not is_country_eligible(name, mode):
             raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
         if country_id is not None and country_id > 0:
