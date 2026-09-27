@@ -229,7 +229,7 @@ Allowed plan operators:
 - "has_space": left text contains a space
 - "has_hyphen": left text contains a hyphen (łącznik), not an en/em dash; no right operand
 - "word_count_equals", "word_count_greater_than", "word_count_less_than"
-- "char_count_equals", "char_count_greater_than", "char_count_less_than"
+ - "char_count_equals", "char_count_greater_than", "char_count_less_than": compares the number of letters/characters in the text (ignoring spaces and hyphens). Use for questions asking if the country name has X letters.
 
 Super-region rules:
 - Eurasia is not a stored continent value. Represent it as Europe OR Asia.

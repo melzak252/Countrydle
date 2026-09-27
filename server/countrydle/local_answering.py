@@ -1087,8 +1087,8 @@ def text_value(value) -> str | None:
 def is_self_country_reference(value, target_country: sqlite3.Row) -> bool:
     if value is None:
         return False
-    value_norm = normalize(value)
-    target_norm = normalize(target_country["app_country_name"])
+    value_norm = normalize(str(value))
+    target_norm = normalize(str(target_country["app_country_name"]))
     return value_norm == target_norm or value_norm in {
         "itself",
         "it self",
@@ -1107,8 +1107,7 @@ def word_count(value: str) -> int:
 
 
 def char_count(value: str) -> int:
-    return len(re.sub(r"\s+", "", value))
-
+    return len(re.sub(r"[\s\-\u2010\u2011]+", "", value))
 
 def evaluate_plan_node(
     conn: sqlite3.Connection,
@@ -1234,7 +1233,12 @@ def evaluate_plan_node(
             return " " in (text_value(left) or "").strip()
         if operator == "has_hyphen":
             left_text = text_value(left) or ""
-            return any(char in left_text for char in "-\u2010\u2011")
+            if any(char in left_text for char in "-\u2010\u2011"):
+                return True
+            for syn, canon in COUNTRY_NAME_SYNONYMS.items():
+                if canon == target_country["app_country_name"] and any(char in syn for char in "-\u2010\u2011"):
+                    return True
+            return False
         if operator in {"starts_with", "ends_with", "contains_text"}:
             left_text = normalize(text_value(left) or "", preserve_separators=True)
             right_text = normalize(text_value(right) or "", preserve_separators=True)
@@ -1277,6 +1281,13 @@ def evaluate_plan_node(
             return left_num >= right_num
         if operator == "less_than_or_equal":
             return left_num <= right_num
+        if operator in {"north_of", "south_of", "west_of", "east_of"}:
+            right_entity = node.get("right", {}).get("entity") if isinstance(node.get("right"), dict) else None
+            if (
+                right_entity in {"target_country", target_country["app_country_name"], target_country["official_name"]}
+                or is_self_country_reference(right_entity, target_country)
+            ):
+                return None
         if operator in {"greater_than", "east_of", "north_of"}:
             return left_num > right_num
         if operator in {"less_than", "west_of", "south_of"}:
