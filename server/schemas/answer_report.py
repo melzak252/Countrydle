@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_f
 from report_tokens import create_report_token
 
 
-AnswerReportMode = Literal["countrydle", "us_statedle", "powiatdle", "wojewodztwodle"]
+AnswerReportMode = Literal["countrydle", "us_statedle", "powiatdle", "wojewodztwodle", "continental"]
 AnswerReportStatus = Literal["open", "reviewed", "all"]
 
 

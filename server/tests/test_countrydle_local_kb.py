@@ -575,6 +575,31 @@ def test_historical_political_questions_are_not_local_sqlite_relations(question_
     assert local_answer(contains_plan(question_relation, question_value), "Poland") is None
 
 
+def test_founding_member_and_accession_questions_do_not_match_template_plan():
+    from countrydle.template_compiler import compile_template_plan
+
+    founding_questions = [
+        "zy ten kraj jest jednym z krajów-założycieli Unii Europejskiej?",
+        "Czy ten kraj jest krajem założycielskim UE?",
+        "Czy to państwo jest założycielem UE?",
+        "Is the country a founding member of the EU?",
+        "Is it one of the founding members of the European Union?",
+        "Is it a founding member of NATO?",
+        "Did the country join the EU in 2004?",
+        "When did it join the EU?",
+    ]
+    for question in founding_questions:
+        assert compile_template_plan(question) is None, f"Question {question!r} should not match local template plan"
+
+
+def test_founding_member_question_does_not_generate_local_plan_without_gemini(monkeypatch):
+    monkeypatch.setattr(local_planner, "load_dotenv_if_present", lambda: None)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    plan = local_planner.analyze_question_for_local_plan("zy ten kraj jest jednym z krajów-założycieli Unii Europejskiej?", use_cache=False)
+    assert plan.supported is False
+    assert plan.plan is None
+
 @pytest.mark.parametrize(
         ("country", "expected"),
         [

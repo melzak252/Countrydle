@@ -306,6 +306,11 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
     for relation, choices in (("continent", CONTINENTS), ("geographic_area", AREAS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
         value = _choices(choices, q)
         if value and any(x in q for x in ("in ", " in the ", "in the", "lezy", "nalezy", "nalezalo", "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ")):
+            if relation == "membership":
+                if any(x in q for x in ("founding", "founder", "zaloz", "założ", "original", "pierwotn", "when", "kiedy", "accession", "akcesj")):
+                    continue
+                if re.search(r"\b(19\d\d|20\d\d)\b", q):
+                    continue
             return [_node("contains", relation, value)], f"Is the country in {value}?"
     if water_body and water_body != "Sea" and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
         return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"

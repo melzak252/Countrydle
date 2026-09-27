@@ -11,10 +11,12 @@ from app import app
 from db import get_db
 from db.base import Base
 from db.models import (
-    Country, CountrydleDay, CountrydleQuestion, Powiat, PowiatdleDay,
-    PowiatdleQuestion, USState, USStatedleDay, USStatedleQuestion, User,
-    Wojewodztwo, WojewodztwodleDay, WojewodztwodleQuestion,
+    ContinentCode, ContinentalDay, ContinentalQuestion, Country, CountrydleDay,
+    CountrydleQuestion, Powiat, PowiatdleDay, PowiatdleQuestion, USState,
+    USStatedleDay, USStatedleQuestion, User, Wojewodztwo, WojewodztwodleDay,
+    WojewodztwodleQuestion,
 )
+from schemas.continental import ContinentalQuestionDisplay, InvalidContinentalQuestionDisplay
 from schemas.countrydle import FullQuestionDisplay, InvalidQuestionDisplay
 from schemas.powiatdle import PowiatQuestionDisplay
 from schemas.us_statedle import USStateQuestionDisplay
@@ -27,6 +29,7 @@ MODES = {
     "us_statedle": (USState, USStatedleDay, USStatedleQuestion, USStateQuestionDisplay, "us_state_id", {"name": "Alaska"}),
     "powiatdle": (Powiat, PowiatdleDay, PowiatdleQuestion, PowiatQuestionDisplay, "powiat_id", {"nazwa": "krakowski"}),
     "wojewodztwodle": (Wojewodztwo, WojewodztwodleDay, WojewodztwodleQuestion, WojewodztwoQuestionDisplay, "wojewodztwo_id", {"nazwa": "mazowieckie"}),
+    "continental": (Country, ContinentalDay, ContinentalQuestion, ContinentalQuestionDisplay, "country_id", {"name": "Italy", "md_file": "italy.md"}),
 }
 
 
@@ -64,11 +67,17 @@ async def reports_api(monkeypatch):
     def enable_foreign_keys(connection, _):
         connection.execute("PRAGMA foreign_keys=ON")
 
+    seen_tables = {User.__table__}
     tables = [User.__table__]
     for entity, day, question, *_ in MODES.values():
-        tables.extend([entity.__table__, day.__table__, question.__table__])
+        for t in (entity.__table__, day.__table__, question.__table__):
+            if t not in seen_tables:
+                seen_tables.add(t)
+                tables.append(t)
     if "answer_reports" in Base.metadata.tables:
-        tables.append(Base.metadata.tables["answer_reports"])
+        t = Base.metadata.tables["answer_reports"]
+        if t not in seen_tables:
+            tables.append(t)
     Base.metadata.create_all(engine, tables=tables)
     with Session(engine, expire_on_commit=False) as session:
         owner = User(id=1, username="owner", email="owner@example.com", is_admin=False)
@@ -78,10 +87,16 @@ async def reports_api(monkeypatch):
         session.commit()
         questions = {}
         for mode, (entity_cls, day_cls, question_cls, _, fk, fields) in MODES.items():
-            entity = entity_cls(id=1, **fields)
-            session.add(entity)
-            session.flush()
-            day = day_cls(id=1, date=date(2026, 9, 20), **{fk: 1})
+            eid = 2 if mode == "continental" else 1
+            entity = session.get(entity_cls, eid)
+            if entity is None:
+                entity = entity_cls(id=eid, **fields)
+                session.add(entity)
+                session.flush()
+            day_kwargs = {fk: eid}
+            if mode == "continental":
+                day_kwargs["continent"] = ContinentCode.EUROPE
+            day = day_cls(id=1, date=date(2026, 9, 20), **day_kwargs)
             session.add(day)
             session.flush()
             question = question_cls(
@@ -263,5 +278,7 @@ async def test_synthetic_question_is_not_reportable(reports_api):
         assert schema.model_validate(data).model_dump()["report_token"] is None
     invalid = InvalidQuestionDisplay.model_validate(api.questions["countrydle"])
     assert invalid.model_dump()["report_token"] == token_for(api, "countrydle")
+    invalid_continental = InvalidContinentalQuestionDisplay.model_validate(api.questions["continental"])
+    assert invalid_continental.model_dump()["report_token"] == token_for(api, "continental")
     login(api.owner)
     assert (await api.client.post("/answer-reports", json=payload(question_id=0))).status_code == 422

@@ -436,7 +436,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
               <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar overscroll-contain">
-                <QuestionChat questions={sortedQuestions} notices={notices} mode="countrydle" isGameOver={isGameOver} isLoading={isLoading} pendingQuestion={pendingQuestion} />
+                <QuestionChat questions={sortedQuestions} notices={notices} mode="continental" isGameOver={isGameOver} isLoading={isLoading} pendingQuestion={pendingQuestion} />
               </div>
             )}
 

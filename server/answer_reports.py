@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
 from db.models import (
-    AnswerReport, Country, CountrydleDay, CountrydleQuestion, Powiat,
-    PowiatdleDay, PowiatdleQuestion, USState, USStatedleDay, USStatedleQuestion,
-    User, Wojewodztwo, WojewodztwodleDay, WojewodztwodleQuestion,
+    AnswerReport, ContinentalDay, ContinentalQuestion, Country, CountrydleDay,
+    CountrydleQuestion, Powiat, PowiatdleDay, PowiatdleQuestion, USState,
+    USStatedleDay, USStatedleQuestion, User, Wojewodztwo, WojewodztwodleDay,
+    WojewodztwodleQuestion,
 )
 from report_tokens import verify_report_token
 from schemas.answer_report import (
@@ -26,6 +27,7 @@ MODELS = {
     "us_statedle": (USStatedleQuestion, USStatedleDay, USState, USStatedleDay.us_state_id, USState.name),
     "powiatdle": (PowiatdleQuestion, PowiatdleDay, Powiat, PowiatdleDay.powiat_id, Powiat.nazwa),
     "wojewodztwodle": (WojewodztwodleQuestion, WojewodztwodleDay, Wojewodztwo, WojewodztwodleDay.wojewodztwo_id, Wojewodztwo.nazwa),
+    "continental": (ContinentalQuestion, ContinentalDay, Country, ContinentalDay.country_id, Country.name),
 }
 
 

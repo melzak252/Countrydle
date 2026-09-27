@@ -38,7 +38,7 @@ export interface Question {
   report_token?: string | null;
 }
 
-export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
+export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'continental';
 export type AnswerReportStatus = 'open' | 'reviewed' | 'all';
 
 export interface AnswerReport {
@@ -63,7 +63,7 @@ export interface AnswerReport {
   };
 }
 
-export type QuestionTestMode = AnswerReportMode | 'europe' | 'asia' | 'africa' | 'americas' | 'flagdle';
+export type QuestionTestMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'europe' | 'asia' | 'africa' | 'americas' | 'flagdle';
 
 export interface QuestionTestEntity {
   id: number;
