@@ -412,8 +412,11 @@ export const adminService = {
     const response = await api.get(`/admin/users?${params.toString()}`);
     return response.data;
   },
-  getLiveFeed: async () => {
-    const response = await api.get('/admin/live-feed');
+  getLiveFeed: async (mode?: string) => {
+    const params = new URLSearchParams();
+    if (mode && mode !== 'all') params.append('mode', mode);
+    const qs = params.toString();
+    const response = await api.get(`/admin/live-feed${qs ? `?${qs}` : ''}`);
     return response.data;
   },
   getCountrydleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {

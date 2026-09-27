@@ -12,7 +12,8 @@ class AdminModeToday(BaseModel):
     win_rate_pct: float
     questions: int
     guesses: int
-
+    avg_questions_won: Optional[float] = 0.0
+    avg_guesses_won: Optional[float] = 0.0
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -23,7 +24,8 @@ class AdminDaySummary(BaseModel):
     win_rate_pct: float
     total_questions: int
     total_guesses: int
-
+    avg_questions_won: Optional[float] = 0.0
+    avg_guesses_won: Optional[float] = 0.0
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -33,7 +35,8 @@ class AdminOverviewToday(BaseModel):
     win_rate_pct: float
     total_questions: int
     total_guesses: int
-
+    avg_questions_won: Optional[float] = 0.0
+    avg_guesses_won: Optional[float] = 0.0
     model_config = ConfigDict(from_attributes=True)
 
 
