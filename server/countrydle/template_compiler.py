@@ -76,6 +76,7 @@ HISTORICAL = {
 WATERS = {
     "Ocean": ("ocean", "oceanem", "oceanu"), "Sea": ("sea", "morze", "morzem"), "Baltic Sea": ("Baltic Sea", "Bałtyk", "Bałtyku", "Morze Bałtyckie"),
     "Mediterranean Sea": ("Mediterranean Sea", "Mediterranean", "Morze Śródziemne", "Morza Śródziemnego", "Morzem Śródziemnym", "Śródziemne", "Śródziemnego", "Śródziemnym", "srodziemnego", "srodziemne", "srodziemnym", "srodzoemnego"),
+    "Black Sea": ("Black Sea", "Morze Czarne", "Morza Czarnego", "Morzem Czarnym", "Czarne", "Czarnego"),
     "North Sea": ("North Sea", "Morze Północne"), "Red Sea": ("Red Sea", "Morze Czerwone"), "Caribbean Sea": ("Caribbean Sea", "Morze Karaibskie"),
     "Indian Ocean": ("Indian Ocean", "Ocean Indyjski"), "Atlantic Ocean": ("Atlantic Ocean", "Ocean Atlantycki"),
     "Pacific Ocean": ("Pacific Ocean", "Ocean Spokojny"), "Arctic Ocean": ("Arctic Ocean", "Ocean Arktyczny"), "Adriatic Sea": ("Adriatic Sea", "Morze Adriatyckie"),
