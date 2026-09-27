@@ -19,22 +19,13 @@ function isCorrectCountryFeature(feature: Feature | undefined, targetName?: stri
     && name.localeCompare(targetName, undefined, { sensitivity: 'base' }) === 0;
 }
 
-// Equator spans across 3 world widths (-540° to +540°) for seamless world wrapping
 const EQUATOR_COORDINATES: [number, number][] = [
-  [0, -540],
-  [0, -360],
   [0, -180],
-  [0, 0],
   [0, 180],
-  [0, 360],
-  [0, 540],
 ];
 
-// Prime Meridian (Greenwich Line) at longitude 0°, with wrapped duplicates at -360° and +360°
 const PRIME_MERIDIAN_LINES: [number, number][][] = [
   [[-85, 0], [85, 0]],
-  [[-85, -360], [85, -360]],
-  [[-85, 360], [85, 360]],
 ];
 
 const REFERENCE_LABEL_ICON = L.divIcon({
@@ -56,7 +47,7 @@ function ReferenceLineLabels() {
 
     const update = () => {
       const { x: width, y: height } = map.getSize();
-      const longitude = Math.max(-360, Math.min(360, Math.round(map.getCenter().lng / 360) * 360));
+      const longitude = 0;
       const crossing = map.latLngToContainerPoint([0, longitude]);
       const meridianVisible = crossing.x >= 0 && crossing.x <= width;
       const equatorVisible = crossing.y >= 0 && crossing.y <= height;
@@ -77,8 +68,8 @@ function ReferenceLineLabels() {
       // Leave room for the status bar and question dock over the map.
       place(0, labelX, 52, meridianVisible && bounds.getNorth() <= 85);
       place(1, labelX, height - 160, meridianVisible && bounds.getSouth() >= -85);
-      place(2, 12, labelY, equatorVisible && bounds.getWest() >= -540);
-      place(3, width - 32, labelY, equatorVisible && bounds.getEast() <= 540);
+      place(2, 12, labelY, equatorVisible && bounds.getWest() >= -180);
+      place(3, width - 32, labelY, equatorVisible && bounds.getEast() <= 180);
       place(4, labelX, labelY, meridianVisible && equatorVisible
         && crossing.x > 52 && crossing.x < width - 52
         && crossing.y > 100 && crossing.y < height - 184);
@@ -291,7 +282,7 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 
 const geoJsonCache = new Map<string, FeatureCollection>();
 const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
-
+const paddedCanvasRenderer = typeof L !== 'undefined' ? L.canvas({ padding: 0.75 }) : undefined;
 function loadGeoJson(url: string): Promise<FeatureCollection> {
   const cached = geoJsonCache.get(url);
   if (cached) {
@@ -406,9 +397,9 @@ export function ControlledMapBox({
   className,
   onCountryCode,
   interaction,
-  center = [20, 0],
-  zoom = 2,
-  minZoom = 2,
+  center = [16, 12],
+  zoom = 3.2,
+  minZoom = 2.7,
   maxZoom = 10,
   onCountryClick,
   geoJsonUrl = '/countries_50m.geojson',
@@ -433,7 +424,8 @@ export function ControlledMapBox({
   const activeHoverLayerRef = useRef<L.Layer | null>(null);
 
   const getStyle = (feature: Feature | undefined) => {
-    return getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
+    const base = getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
+    return paddedCanvasRenderer ? { ...base, renderer: paddedCanvasRenderer } : base;
   };
 
   // Close lingering tooltips when mouse moves out of the map container
@@ -576,8 +568,21 @@ export function ControlledMapBox({
   }
 
   return (
-    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
+    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-[#232227] border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
       <style>{`
+        .leaflet-container, .leaflet-tile-pane, .leaflet-map-pane, .leaflet-pane {
+            background-color: #232227 !important;
+            background: #232227 !important;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+        .leaflet-tile {
+            background-color: #232227 !important;
+        }
+        .leaflet-interactive {
+            vector-effect: non-scaling-stroke;
+            transition: fill 0.12s ease-out, stroke 0.12s ease-out;
+        }
         .leaflet-interactive:focus {
             outline: none;
         }
@@ -590,21 +595,28 @@ export function ControlledMapBox({
       `}</style>
       <MapContainer 
         center={center} 
-        zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#242424' }}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%', background: '#232227', backgroundColor: '#232227' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
+        maxBounds={[[-80, -215], [84, 215]]}
+        maxBoundsViscosity={0.85}
+        preferCanvas={true}
+        zoomSnap={0.25}
+        wheelPxPerZoomLevel={90}
+        wheelDebounceTime={20}
         attributionControl={false}
-        wheelDebounceTime={80}
-        wheelPxPerZoomLevel={120}
         ref={setMap}
       >
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            keepBuffer={8}
-            updateInterval={100}
-            updateWhenZooming={false}
+            bounds={[[-78, -180], [82, 180]]}
+            errorTileUrl="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            noWrap={true}
+            keepBuffer={12}
+            updateInterval={20}
+            updateWhenZooming={true}
             updateWhenIdle={false}
         />
         
