@@ -9,6 +9,7 @@ const MODE_LABELS: Record<AnswerReportMode, string> = {
   us_statedle: 'US Statedle',
   powiatdle: 'Powiatdle',
   wojewodztwodle: 'Województwodle',
+  continental: 'Europedle / Continental',
 };
 
 type ReportQuery = {

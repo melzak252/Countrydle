@@ -298,6 +298,12 @@ Flag and historical union rules:
   of whether the organization still exists.
   A past-tense question about an active organization needs historical membership
   knowledge: use fallback unless the actual historical predicate is represented.
+- Founding members, creators, original signatories, accession dates:
+  Do NOT confuse being a founding member, creator, or original signatory of an organization
+  (such as founding member of the European Union / Inner Six, NATO founding member, UN founding member)
+  with general present membership. The local database tracks ONLY whether a country is currently
+  a member, NOT its accession date or founder status. Questions asking whether a country was a founding
+  member, creator, or when/in what year it joined MUST use route="fallback", plan=null.
 - Flag colors/symbols are presence lists, not surface-area percentages. Questions
   about a majority color, proportions, layout or exclusive colors require fallback.
 Reference format:
@@ -355,6 +361,9 @@ User: Does it have no coastline?
 User: Were the 2004 Summer Olympics held in this country?
 {{"route":"fallback","plan":null,"fallback_reason":"The local relations do not store event venues."}}
 The event and year are precise. Missing event data means unsupported, NOT invalid.
+User: Czy to państwo jest jednym z krajów-założycieli Unii Europejskiej?
+{{"route":"fallback","plan":null,"fallback_reason":"Founding member status and accession history are not stored in local relations."}}
+
 
 User: Did it have an important role in the Cold War?
 {{"route":"clarify","plan":null,"explanation":"Please define a measurable criterion for an important role, or ask about a specific event or alliance."}}

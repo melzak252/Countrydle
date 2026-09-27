@@ -5,17 +5,30 @@ import { Loader2, Play, RefreshCw } from 'lucide-react';
 import { adminService } from '../services/api';
 import type { AnswerReport, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
 
-const MODE_LABELS: Record<QuestionTestMode, string> = {
+const MODE_LABELS: Record<QuestionTestMode | 'continental', string> = {
   countrydle: 'Countrydle',
   us_statedle: 'US Statedle',
   powiatdle: 'Powiatdle',
   wojewodztwodle: 'Województwodle',
+  continental: 'Europedle / Continental',
   europe: 'Europa',
   asia: 'Azja',
   africa: 'Afryka',
   americas: 'Ameryki',
   flagdle: 'Flagdle',
 };
+
+function initialTestMode(report: AnswerReport | null): QuestionTestMode {
+  if (!report) return 'countrydle';
+  if (report.mode === 'continental') return 'countrydle';
+  return report.mode;
+}
+
+function matchesReportMode(mode: QuestionTestMode, reportMode: AnswerReport['mode']): boolean {
+  if (mode === reportMode) return true;
+  if (reportMode === 'continental' && (mode === 'countrydle' || mode === 'europe' || mode === 'asia' || mode === 'africa' || mode === 'americas')) return true;
+  return false;
+}
 const SOURCE_LABELS: Record<QuestionTestResult['source'], string> = {
   local_kb: 'Lokalna baza wiedzy',
   local_planner: 'Lokalny planer',
@@ -53,7 +66,7 @@ type CompletedTest = {
 };
 
 export default function QuestionTestsPanel({ report, onClearReport }: { report: AnswerReport | null; onClearReport: () => void }) {
-  const [mode, setMode] = useState<QuestionTestMode>(report?.mode ?? 'countrydle');
+  const [mode, setMode] = useState<QuestionTestMode>(initialTestMode(report));
   const [question, setQuestion] = useState(report?.details.original_question ?? '');
   const [entityId, setEntityId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
@@ -67,7 +80,7 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
   const loadingEntities = entities === null || entities.mode !== mode;
   const availableEntities = loadingEntities ? [] : entities.items;
   const selectedEntity = availableEntities.find((entity) => entity.id === entityId);
-  const matchingTargets = report && mode === report.mode
+  const matchingTargets = report && matchesReportMode(mode, report.mode)
     ? availableEntities.filter((entity) => entity.name === report.details.target_name)
     : [];
   const normalizedSearch = search.trim().toLocaleLowerCase('pl');
@@ -94,7 +107,7 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
       .then((items) => {
         if (cancelled) return;
         setEntities({ mode, items, error: null });
-        const matches = report?.mode === mode ? items.filter((entity) => entity.name === report.details.target_name) : [];
+        const matches = report && matchesReportMode(mode, report.mode) ? items.filter((entity) => entity.name === report.details.target_name) : [];
         if (matches.length === 1) setEntityId(matches[0].id);
       })
       .catch((cause: unknown) => {
@@ -118,7 +131,7 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
     setBusy(true);
     clearResult();
     const request: QuestionTestRequest = { mode, entity_id: selectedEntity.id, question: trimmedQuestion };
-    const comparableReportId = report && report.mode === mode
+    const comparableReportId = report && matchesReportMode(mode, report.mode)
       && matchingTargets.length === 1 && matchingTargets[0].id === selectedEntity.id
       && report.details.original_question.trim() === request.question ? report.id : null;
     try {
@@ -178,7 +191,7 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
           </div>}
           {!loadingEntities && !entities?.error && availableEntities.length === 0 && <p role="status" className="text-sm text-sand-100/65">Brak obiektów w tym trybie.</p>}
           {!loadingEntities && availableEntities.length > 0 && filteredEntities.length === 0 && <p role="status" className="text-sm text-sand-100/65">Brak wyników wyszukiwania. Zmień filtr; wcześniej wybrany obiekt pozostaje wybrany.</p>}
-          {report && mode === report.mode && !loadingEntities && !entities?.error && matchingTargets.length !== 1 && <p role="status" className="text-sm text-amber-300">
+          {report && matchesReportMode(mode, report.mode) && !loadingEntities && !entities?.error && matchingTargets.length !== 1 && <p role="status" className="text-sm text-amber-300">
             Nie znaleziono jednoznacznego dopasowania nazwy „{report.details.target_name}”. Wybierz obiekt ręcznie. Automatyczne porównanie ze zgłoszeniem nie jest możliwe bez jednoznacznego celu.
           </p>}
           <label className="flex min-w-0 flex-col gap-1.5 text-xs text-sand-100/65">

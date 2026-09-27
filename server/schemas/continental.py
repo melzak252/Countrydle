@@ -5,6 +5,7 @@ from db.models.continental import ContinentCode
 from schemas.country import CountryDisplay
 from schemas.countrydle import LeaderboardEntry
 from schemas.user import UserDisplay
+from schemas.answer_report import ReportableQuestion
 
 
 class ContinentalStateSchema(BaseModel):
@@ -56,7 +57,8 @@ class ContinentalQuestionBase(BaseModel):
     question: str = Field(max_length=200)
 
 
-class ContinentalQuestionDisplay(BaseModel):
+class ContinentalQuestionDisplay(ReportableQuestion):
+    report_mode = "continental"
     id: int
     original_question: str
     question: Optional[str] = None
@@ -64,19 +66,18 @@ class ContinentalQuestionDisplay(BaseModel):
     answer: Optional[bool] = None
     explanation: Optional[str] = None
     asked_at: datetime
-    report_token: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class InvalidContinentalQuestionDisplay(BaseModel):
+class InvalidContinentalQuestionDisplay(ReportableQuestion):
+    report_mode = "continental"
     id: int
     original_question: str
     valid: bool = False
     explanation: str
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class ContinentalStateResponse(BaseModel):
     user: Optional[UserDisplay] = None
