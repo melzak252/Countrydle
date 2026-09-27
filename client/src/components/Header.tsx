@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { ChevronDown, Menu, X, LogOut } from 'lucide-react';
+import { ChevronDown, Menu, X, LogOut, Archive, Sparkles, ShieldCheck, Info, HelpCircle, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
@@ -45,6 +45,24 @@ export default function Header() {
     ['/faq', t('header.faq')],
     ['/contact', t('header.contact')],
     ...(user?.is_admin ? [['/admin', 'Admin']] : []),
+  ];
+  const moreCategories = [
+    {
+      category: t('header.groupExplore', 'Records & Updates'),
+      items: [
+        { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
+        { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
+        ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
+      ],
+    },
+    {
+      category: t('header.groupAbout', 'Information & Help'),
+      items: [
+        { path: '/about', name: t('header.about', 'About'), icon: Info },
+        { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
+        { path: '/contact', name: t('header.contact', 'Contact'), icon: Mail },
+      ],
+    },
   ];
   const closeMenu = () => setIsMenuOpen(false);
   const handleLogout = async () => {
@@ -144,13 +162,44 @@ export default function Header() {
               {t('header.more', 'More')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1 shadow-xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              className="absolute left-0 top-full w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
             >
-              {more.map(([path, title]) => <NavLink key={path} to={path} className={linkClass}>{title}</NavLink>)}
-              <PrivacySettingsButton className="block w-full px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
+              <div className="grid grid-cols-2 gap-3 p-3">
+                {moreCategories.map((group) => (
+                  <div key={group.category} className="space-y-1.5">
+                    <span className="block px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                      {group.category}
+                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <NavLink
+                            key={item.path}
+                            to={item.path}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs transition-colors ${
+                                isActive
+                                  ? 'bg-emerald-500/10 text-emerald-300 font-medium'
+                                  : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                              }`
+                            }
+                          >
+                            <Icon size={13} className="text-zinc-400 shrink-0" aria-hidden="true" />
+                            <span className="truncate">{item.name}</span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-1.5 bg-white/[0.02]">
+                <PrivacySettingsButton className="flex items-center gap-2 w-full px-2.5 py-1.5 text-left text-xs text-zinc-400 hover:text-sand-50 hover:bg-white/5 transition-colors rounded-sm" />
+              </div>
             </div>
           </details>
           <NavLink to="/leaderboard" className={linkClass}>{t('header.leaderboard')}</NavLink>
