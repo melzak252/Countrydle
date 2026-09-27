@@ -75,7 +75,7 @@ HISTORICAL = {
 }
 WATERS = {
     "Ocean": ("ocean", "oceanem", "oceanu"), "Sea": ("sea", "morze", "morzem"), "Baltic Sea": ("Baltic Sea", "Bałtyk", "Bałtyku", "Morze Bałtyckie"),
-    "Mediterranean Sea": ("Mediterranean Sea", "Morze Śródziemne"), "Black Sea": ("Black Sea", "Morze Czarne", "Morza Czarnego"),
+    "Mediterranean Sea": ("Mediterranean Sea", "Mediterranean", "Morze Śródziemne", "Morza Śródziemnego", "Morzem Śródziemnym", "Śródziemne", "Śródziemnego", "Śródziemnym", "srodziemnego", "srodziemne", "srodziemnym", "srodzoemnego"),
     "North Sea": ("North Sea", "Morze Północne"), "Red Sea": ("Red Sea", "Morze Czerwone"), "Caribbean Sea": ("Caribbean Sea", "Morze Karaibskie"),
     "Indian Ocean": ("Indian Ocean", "Ocean Indyjski"), "Atlantic Ocean": ("Atlantic Ocean", "Ocean Atlantycki"),
     "Pacific Ocean": ("Pacific Ocean", "Ocean Spokojny"), "Arctic Ocean": ("Arctic Ocean", "Ocean Arktyczny"), "Adriatic Sea": ("Adriatic Sea", "Morze Adriatyckie"),
@@ -295,6 +295,9 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
     if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza", "linia brzegowa", "linie brzegowa")):
         if water_body and water_body != "Sea":
             return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
+        after_sea = re.search(r"\b(?:morza|morze|sea)\s+([a-z]+)", q)
+        if after_sea and after_sea.group(1) not in {"i", "lub", "czy", "and", "or", "oceanu", "ocean", "otwartego"}:
+            return None
         return [_node("exists", "water_access")], "Does the country have access to the sea?"
     if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
         return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"

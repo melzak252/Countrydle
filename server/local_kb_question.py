@@ -215,9 +215,18 @@ User question: {question}
         relations=allowed_relations, operators=operators, target_entity=config.target_entity,
     )
     data = gemini_json(prompt, response_schema=schema, evidence=evidence)
-    ast = compile_planner_response(
-        data, relations=allowed_relations, operators=operators, target_entity=config.target_entity,
-    )
+    try:
+        ast = compile_planner_response(
+            data, relations=allowed_relations, operators=operators, target_entity=config.target_entity,
+        )
+    except Exception as exc:
+        if strict_errors:
+            raise
+        ast = None
+        data = {
+            "route": "fallback",
+            "fallback_reason": f"Plan compilation failed: {exc}",
+        }
     if evidence is not None:
         evidence.update(
             provider="gemini",

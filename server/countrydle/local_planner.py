@@ -477,10 +477,17 @@ def analyze_question_for_local_plan(
         timeout=30, evidence=evidence, response_schema=schema,
         thinking_budget=PLANNER_THINKING_BUDGET if model.startswith("gemini-2.5-flash-lite") else None,
     )
-    ast = compile_planner_response(
-        parsed, relations=relations, operators=operators, target_entity="target_country",
+    try:
+        ast = compile_planner_response(
+            parsed, relations=relations, operators=operators, target_entity="target_country",
         allow_named_entities=True,
     )
+    except Exception as exc:
+        ast = None
+        parsed = {
+            "route": "fallback",
+            "fallback_reason": f"Plan compilation failed: {exc}",
+        }
     names = tuple(_country_name_literals(ast))
     if names and local_answering.DEFAULT_DB_PATH.exists():
         with sqlite3.connect(local_answering.DEFAULT_DB_PATH) as conn:
