@@ -252,7 +252,7 @@ export function ControlledUSStatesMap({
 
     if (feature.properties) {
       layer.bindTooltip(`${feature.properties.name}`, {
-        sticky: true,
+        sticky: false,
         direction: 'auto',
         opacity: 0.95,
       });
@@ -318,7 +318,7 @@ export function ControlledUSStatesMap({
         minZoom={3}
         maxZoom={10}
         attributionControl={false}
-        wheelDebounceTime={80}
+        wheelDebounceTime={40}
         wheelPxPerZoomLevel={120}
         ref={setMap}
       >
@@ -327,7 +327,7 @@ export function ControlledUSStatesMap({
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
             keepBuffer={8}
             updateInterval={100}
-            updateWhenZooming={false}
+            updateWhenZooming={true}
             updateWhenIdle={false}
         />
         

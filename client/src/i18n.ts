@@ -91,6 +91,12 @@ const resources = {
         copyBtn: 'Copy Card',
         readBlogCta: 'Read Wikipedia trivia & deduction breakdown on our Daily Blog',
       },
+      chat: {
+        copyQuestion: 'Copy question',
+        questionCopied: 'Question copied to clipboard.',
+        copyFailed: 'Could not copy the question. Select its text and copy it manually.',
+      },
+
       privacySettings: {
         label: 'Privacy settings',
         unavailable: 'Google privacy settings could not be opened. They may be unavailable or blocked by your browser. No choices were changed; please try again later.',
@@ -477,6 +483,12 @@ const resources = {
   },
   pl: {
     translation: {
+      chat: {
+        copyQuestion: 'Kopiuj pytanie',
+        questionCopied: 'Pytanie skopiowane do schowka.',
+        copyFailed: 'Nie udało się skopiować pytania. Zaznacz jego tekst i skopiuj ręcznie.',
+      },
+
       inputs: {
         looksLikeQuestion: 'To wygląda na pytanie, a nie nazwę państwa. Przełącz się na zakładkę „Pytanie”, aby zadać pytanie.',
         thinking: 'Countrydle myśli...',

@@ -548,7 +548,7 @@ export function ControlledMapBox({
         ? ` (${feature.properties.ADMIN})`
         : '';
       layer.bindTooltip(`<b>${name}</b>${sub}`, {
-        sticky: true,
+        sticky: false,
         direction: 'auto',
         opacity: 0.95,
       });
@@ -572,8 +572,6 @@ export function ControlledMapBox({
         .leaflet-container, .leaflet-tile-pane, .leaflet-map-pane, .leaflet-pane {
             background-color: #232227 !important;
             background: #232227 !important;
-            transform: translate3d(0, 0, 0);
-            backface-visibility: hidden;
         }
         .leaflet-tile {
             background-color: #232227 !important;
