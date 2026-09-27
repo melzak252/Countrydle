@@ -292,6 +292,79 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 const geoJsonCache = new Map<string, FeatureCollection>();
 const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
 
+function withWrappedPacificFeatures(collection: FeatureCollection): FeatureCollection {
+  if (!collection || !Array.isArray(collection.features)) return collection;
+
+  const additionalFeatures: Feature[] = [];
+
+  for (const feature of collection.features) {
+    if (!feature.geometry || feature.geometry.type === 'GeometryCollection') continue;
+    const geom = feature.geometry;
+    let minLng = 999;
+    let maxLng = -999;
+
+    const inspect = (coords: unknown) => {
+      if (!Array.isArray(coords)) return;
+      if (typeof coords[0] === 'number') {
+        minLng = Math.min(minLng, coords[0]);
+        maxLng = Math.max(maxLng, coords[0]);
+      } else {
+        for (const sub of coords) inspect(sub);
+      }
+    };
+    inspect(geom.coordinates);
+
+    // Polynesian / West Pacific islands (lng < -100) -> wrap right (+360°)
+    // This places Samoa, Tonga, Kiribati, Cook Islands right next to Fiji (+178°) on the right edge!
+    if (minLng < -100) {
+      const shiftRight = (coords: unknown): unknown => {
+        if (!Array.isArray(coords)) return coords;
+        if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+          return [coords[0] + 360, coords[1]];
+        }
+        return coords.map(shiftRight);
+      };
+
+      additionalFeatures.push({
+        ...feature,
+        id: feature.id ? `${feature.id}-wrap-right` : undefined,
+        properties: { ...feature.properties, _isWorldWrap: true },
+        geometry: {
+          type: geom.type,
+          coordinates: shiftRight(geom.coordinates),
+        } as unknown as GeoJSON.Geometry,
+      });
+    }
+
+    // Oceania / East Pacific islands & coasts (lng > 100) -> wrap left (-360°)
+    // This places Fiji, NZ, and Australia next to Polynesia on the left edge!
+    if (maxLng > 100) {
+      const shiftLeft = (coords: unknown): unknown => {
+        if (!Array.isArray(coords)) return coords;
+        if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+          return [coords[0] - 360, coords[1]];
+        }
+        return coords.map(shiftLeft);
+      };
+
+      additionalFeatures.push({
+        ...feature,
+        id: feature.id ? `${feature.id}-wrap-left` : undefined,
+        properties: { ...feature.properties, _isWorldWrap: true },
+        geometry: {
+          type: geom.type,
+          coordinates: shiftLeft(geom.coordinates),
+        } as unknown as GeoJSON.Geometry,
+      });
+    }
+  }
+
+  return {
+    ...collection,
+    features: [...collection.features, ...additionalFeatures],
+  };
+}
+
 function loadGeoJson(url: string): Promise<FeatureCollection> {
   const cached = geoJsonCache.get(url);
   if (cached) {
@@ -305,9 +378,10 @@ function loadGeoJson(url: string): Promise<FeatureCollection> {
         return res.json();
       })
       .then(data => {
-        geoJsonCache.set(url, data);
+        const processed = withWrappedPacificFeatures(data);
+        geoJsonCache.set(url, processed);
         geoJsonPromiseCache.delete(url);
-        return data;
+        return processed;
       })
       .catch(err => {
         geoJsonPromiseCache.delete(url);
@@ -578,6 +652,14 @@ export function ControlledMapBox({
   return (
     <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
       <style>{`
+        .leaflet-container {
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+        .leaflet-interactive {
+            vector-effect: non-scaling-stroke;
+            transition: fill 0.12s ease-out, stroke 0.12s ease-out;
+        }
         .leaflet-interactive:focus {
             outline: none;
         }
@@ -591,19 +673,21 @@ export function ControlledMapBox({
       <MapContainer 
         center={center} 
         zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#242424' }}
+        style={{ height: '100%', width: '100%', background: '#1c1c1c' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
+        zoomSnap={0.25}
+        wheelPxPerZoomLevel={80}
+        wheelDebounceTime={30}
+        worldCopyJump={true}
         attributionControl={false}
-        wheelDebounceTime={80}
-        wheelPxPerZoomLevel={120}
         ref={setMap}
       >
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            keepBuffer={8}
-            updateInterval={100}
+            keepBuffer={4}
+            updateInterval={80}
             updateWhenZooming={false}
             updateWhenIdle={false}
         />
