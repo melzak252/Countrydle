@@ -601,7 +601,6 @@ export function ControlledMapBox({
         maxZoom={maxZoom}
         maxBounds={[[-80, -215], [84, 215]]}
         maxBoundsViscosity={0.85}
-        preferCanvas={true}
         zoomSnap={0.25}
         wheelPxPerZoomLevel={90}
         wheelDebounceTime={20}
