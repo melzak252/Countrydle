@@ -282,7 +282,6 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 
 const geoJsonCache = new Map<string, FeatureCollection>();
 const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
-const paddedCanvasRenderer = typeof L !== 'undefined' ? L.canvas({ padding: 0.75 }) : undefined;
 function loadGeoJson(url: string): Promise<FeatureCollection> {
   const cached = geoJsonCache.get(url);
   if (cached) {
@@ -425,7 +424,7 @@ export function ControlledMapBox({
 
   const getStyle = (feature: Feature | undefined) => {
     const base = getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
-    return paddedCanvasRenderer ? { ...base, renderer: paddedCanvasRenderer } : base;
+    return base;
   };
 
   // Close lingering tooltips when mouse moves out of the map container
