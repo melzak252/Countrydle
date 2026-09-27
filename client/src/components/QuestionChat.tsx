@@ -1,4 +1,5 @@
-import { AlertTriangle, Check, Compass, HelpCircle, MessageCircle, X } from 'lucide-react';
+import { AlertTriangle, Check, Compass, Copy, HelpCircle, MessageCircle, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { AnswerReportMode, Question } from '../types';
 import AnswerReportForm from './AnswerReportForm';
@@ -14,6 +15,30 @@ interface QuestionChatProps {
   pendingQuestion?: string | null;
 }
 
+interface PlayerQuestionBubbleProps {
+  question: string;
+  copyLabel: string;
+  onCopy: (question: string) => Promise<void>;
+}
+
+function PlayerQuestionBubble({ question, copyLabel, onCopy }: PlayerQuestionBubbleProps) {
+  return (
+    <div className="inline-flex max-w-full items-start gap-2 rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
+      <span className="min-w-0 flex-1 select-text">{question}</span>
+      <button
+        type="button"
+        aria-label={copyLabel}
+        title={copyLabel}
+        onClick={() => void onCopy(question)}
+        className="mt-0.5 shrink-0 rounded p-1 text-sand-100/65 transition-colors hover:bg-white/10 hover:text-sand-100"
+      >
+        <Copy size={14} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+
 export default function QuestionChat({
   questions,
   mode,
@@ -23,9 +48,19 @@ export default function QuestionChat({
   pendingQuestion = null,
 }: QuestionChatProps) {
   const { t } = useTranslation();
+  const copyLabel = t('chat.copyQuestion', { defaultValue: 'Copy question' });
+  const copyQuestion = async (question: string) => {
+    try {
+      await navigator.clipboard.writeText(question);
+      toast.success(t('chat.questionCopied', { defaultValue: 'Question copied to clipboard.' }));
+    } catch {
+      toast.error(t('chat.copyFailed', { defaultValue: 'Could not copy the question. Select its text and copy it manually.' }));
+    }
+  };
+
   if (questions.length === 0 && notices.length === 0 && !pendingQuestion) {
     return (
-      <div className="flex min-h-52 flex-col items-center justify-center px-5 py-8 text-center">
+      <div className="flex min-h-52 flex-col items-center justify-center px-5 py-8 text-center select-text">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-400/10 text-emerald-300">
           <MessageCircle size={23} aria-hidden="true" />
         </div>
@@ -39,7 +74,7 @@ export default function QuestionChat({
   const messages = getConversationMessages(questions, notices);
 
   return (
-    <ol aria-label="Question conversation" className="space-y-4 py-1">
+    <ol aria-label="Question conversation" className="space-y-4 py-1 select-text">
       {messages.map(message => {
         if (message.kind === 'notice') {
           const { notice } = message;
@@ -47,7 +82,7 @@ export default function QuestionChat({
             <li key={notice.id} className="space-y-2 animate-message">
               <div className="flex flex-col items-end pl-6">
                 <span className="mb-1 px-1 text-[10px] font-medium text-zinc-500">You · {notice.action}</span>
-                <p className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{notice.input}</p>
+                <PlayerQuestionBubble question={notice.input} copyLabel={copyLabel} onCopy={copyQuestion} />
               </div>
               <div role="alert" className="flex flex-col items-start pr-6">
                 <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">
@@ -79,9 +114,7 @@ export default function QuestionChat({
           <li key={`question-${question.id}`} className="space-y-2 animate-message">
             <div className="flex flex-col items-end pl-6">
               <span className="mb-1 px-1 text-[10px] font-medium text-zinc-500">You · {index + 1}</span>
-              <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
-                {question.original_question}
-              </div>
+              <PlayerQuestionBubble question={question.original_question} copyLabel={copyLabel} onCopy={copyQuestion} />
             </div>
             <div className="flex flex-col items-start pr-6">
               <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">
@@ -117,9 +150,7 @@ export default function QuestionChat({
             <span className="mb-1 px-1 text-[10px] font-medium text-zinc-500">
               You · {questions.length + 1}
             </span>
-            <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
-              {pendingQuestion}
-            </div>
+            <PlayerQuestionBubble question={pendingQuestion} copyLabel={copyLabel} onCopy={copyQuestion} />
           </div>
           <div className="flex flex-col items-start pr-6">
             <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">

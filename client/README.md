@@ -8,6 +8,11 @@ Valid explanations are not mounted until the game is over; invalid-question
 feedback is available immediately. Post-game answer reports retain their mode and
 question identifiers. `QuestionInput.tsx` supplies the shared rounded composer.
 
+Player questions, including pending and rejected submissions, remain text-selectable
+and each has a copy control that copies the original text. Map tooltips stay anchored
+to the hovered feature instead of following the pointer; regional map tiles update
+during zooming for steadier interactions.
+
 Rejected questions, duplicate guesses, and submission failures appear as chat
 notices with the submitted text, a reason, and a next step instead of expiring
 toasts. Notices open the question chat and remain for the current in-memory game
