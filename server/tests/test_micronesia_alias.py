@@ -108,6 +108,8 @@ def test_other_countries_previously_failing_polish_and_english():
         ("Is it Vatican?", "Vatican City"),
         ("Is it Swaziland?", "Eswatini"),
         ("Is it Burma?", "Myanmar"),
+        ("Is it Czech?", "Czech Republic"),
+        ("Is it Czechia?", "Czech Republic"),
     ]
     for question, expected_country in cases:
         plan, improved = compile_template_plan(question)
