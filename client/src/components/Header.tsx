@@ -236,8 +236,6 @@ export default function Header() {
               </div>
             </div>
           </details>
-          <NavLink to="/leaderboard" className={linkClass}>{t('header.leaderboard')}</NavLink>
-          <NavLink to="/blog" className={linkClass}>{t('header.blog', 'Blog')}</NavLink>
         </nav>
         <div className="hidden items-center gap-3 xl:flex">
           <CountdownTimer />
