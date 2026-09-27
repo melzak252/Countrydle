@@ -5,14 +5,22 @@ from fastapi import HTTPException
 
 
 def excluded_country_names(mode: str | None = None) -> tuple[str, ...]:
-    return ("Israel", "Azerbaijan") if mode == "europe" else ("Israel",)
+    if mode == "europe":
+        return ("Israel", "Azerbaijan", "Kazakhstan", "Georgia")
+    if mode == "asia":
+        return ("Israel", "Egypt")
+    return ("Israel",)
 
 
 def is_country_eligible(name: str, mode: str | None = None) -> bool:
     normalized = name.strip().casefold()
     if normalized in {"israel", "state of israel"}:
         return False
-    return mode != "europe" or normalized not in {"azerbaijan", "republic of azerbaijan"}
+    if mode == "europe":
+        return normalized not in {"azerbaijan", "republic of azerbaijan", "kazakhstan", "georgia"}
+    if mode == "asia":
+        return normalized not in {"egypt", "arab republic of egypt"}
+    return True
 
 
 def require_eligible_target(day, mode: str | None = None):

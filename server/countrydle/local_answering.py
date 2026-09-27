@@ -95,6 +95,66 @@ COUNTRY_NAME_SYNONYMS = {
     "cote d ivoire": "Ivory Coast",
 
 }
+CURRENCY_ALIASES = {
+    "us dollar": "united states dollar",
+    "us dollars": "united states dollar",
+    "usd": "united states dollar",
+    "dollar": "united states dollar",
+    "dolar": "united states dollar",
+    "dolar amerykanski": "united states dollar",
+    "dolarze": "united states dollar",
+    "dolarach": "united states dollar",
+    "euro": "euro",
+    "eur": "euro",
+    "polish zloty": "polish zloty",
+    "zloty": "polish zloty",
+    "pln": "polish zloty",
+    "zlote": "polish zloty",
+    "zlotych": "polish zloty",
+    "pound": "british pound",
+    "british pound": "british pound",
+    "gbp": "british pound",
+    "funt": "british pound",
+}
+
+HEMISPHERE_ALIASES = {
+    "northern": "northern",
+    "north": "northern",
+    "polnocna": "northern",
+    "polnocnej": "northern",
+    "southern": "southern",
+    "south": "southern",
+    "poludniowa": "southern",
+    "poludniowej": "southern",
+    "eastern": "eastern",
+    "east": "eastern",
+    "wschodnia": "eastern",
+    "wschodniej": "eastern",
+    "western": "western",
+    "west": "western",
+    "zachodnia": "western",
+    "zachodniej": "western",
+}
+RELIGION_ALIASES = {
+    "catholicism": "catholic",
+    "katolicyzm": "catholic",
+    "protestantism": "protestant",
+    "protestantyzm": "protestant",
+    "orthodoxy": "orthodox",
+    "prawoslawie": "orthodox",
+    "christianity": "christian",
+    "chrzescijanstwo": "christian",
+    "islam": "islam",
+    "sunni": "sunni",
+    "shia": "shia",
+    "judaism": "jewish",
+    "hinduism": "hindu",
+    "buddhism": "buddhist",
+}
+
+def normalize_hemisphere(val: Any) -> str:
+    cleaned = re.sub(r"\b(hemisphere|polkula|polkuli|polkule)\b", "", normalize_value(val)).strip()
+    return HEMISPHERE_ALIASES.get(cleaned, cleaned)
 
 
 def canonical_country_name(name: Any) -> str:
@@ -263,6 +323,15 @@ ORG_ALIASES = {
 
 
 RELIGION_ALIASES = {
+    "catholicism": "Catholic",
+    "katolicyzm": "Catholic",
+    "katolicka": "Catholic",
+    "katolicki": "Catholic",
+    "orthodoxy": "Orthodox",
+    "prawoslawie": "Orthodox",
+    "protestantism": "Protestant",
+    "protestantyzm": "Protestant",
+    "chrzescijanstwo": "Christianity",
     "catholic": "Catholic",
     "roman catholic": "Catholic",
     "orthodox": "Orthodox",
@@ -1119,11 +1188,11 @@ def evaluate_plan_node(
             and is_self_country_reference(right, target_country)
         ):
             return True
+        relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
         if operator == "contains":
             if not isinstance(left, list) or isinstance(right, (list, dict, bool)):
                 return None
             right_norm = normalize_value(right)
-            relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
             if relation == "historical_union" and not conn.execute(
                 "SELECT 1 FROM country_historical_unions WHERE union_name = ? COLLATE NOCASE LIMIT 1",
                 (right,),
@@ -1138,6 +1207,12 @@ def evaluate_plan_node(
                     return True
                 r_canon = canonical_country_name(resolved["app_country_name"])
                 return any(canonical_country_name(value) == r_canon for value in left)
+            if relation == "currency":
+                c_canon = CURRENCY_ALIASES.get(right_norm, right_norm)
+                return any(CURRENCY_ALIASES.get(normalize_value(value), normalize_value(value)) == c_canon for value in left)
+            if relation == "hemisphere":
+                h_canon = normalize_hemisphere(right_norm)
+                return any(normalize_hemisphere(normalize_value(value)) == h_canon for value in left)
             return any(normalize_value(value) == right_norm for value in left)
         if operator == "equals":
             refs = (left_ref, node.get("right", {}))
@@ -1150,6 +1225,10 @@ def evaluate_plan_node(
                 if left_country is None or right_country is None:
                     return None
                 return left_country["id"] == right_country["id"]
+            if relation == "dominant_religion":
+                c_left = RELIGION_ALIASES.get(normalize_value(left).lower(), normalize_value(left))
+                c_right = RELIGION_ALIASES.get(normalize_value(right).lower(), normalize_value(right))
+                return normalize_value(c_left) == normalize_value(c_right)
             return normalize_value(left) == normalize_value(right)
         if operator == "has_space":
             return " " in (text_value(left) or "").strip()
@@ -1413,10 +1492,11 @@ def generate_factual_explanation(
         db_hemis = [r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))]
         h_str = ", ".join(sorted(db_hemis))
         plural = "s" if len(db_hemis) > 1 else ""
+        target_display = re.sub(r"\s*hemisphere\s*", "", str(target_val), flags=re.I).strip().capitalize()
         if answer:
-            return f"{name} is located in the {target_val} Hemisphere (territory spans: {h_str} hemisphere{plural})."
+            return f"{name} is located in the {target_display} Hemisphere (territory spans: {h_str} hemisphere{plural})."
         else:
-            return f"{name} is not located in the {target_val} Hemisphere. Its territory spans: {h_str} hemisphere{plural}."
+            return f"{name} is not located in the {target_display} Hemisphere. Its territory spans: {h_str} hemisphere{plural}."
     if rel == "is_island":
         if country["is_island"]:
             return f"{name} is an island nation."

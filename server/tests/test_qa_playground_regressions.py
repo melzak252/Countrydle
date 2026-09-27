@@ -15,7 +15,7 @@ def test_qa_playground_dataset_integrity():
     assert REPORT_PATH.exists(), f"QA report missing at {REPORT_PATH}"
 
     lines = [json.loads(line) for line in FINDINGS_PATH.read_text(encoding="utf-8").splitlines() if line.strip()]
-    assert len(lines) >= 165, f"Expected at least 165 findings records, got {len(lines)}"
+    assert len(lines) >= 280, f"Expected at least 280 findings records, got {len(lines)}"
 
     modes = {r["mode"] for r in lines}
     assert {"countrydle", "wojewodztwodle", "powiatdle", "us_statedle"}.issubset(modes)
@@ -42,6 +42,12 @@ def test_qa_playground_dataset_integrity():
     ("powiatdle", "Czy to powiat ziemski?", "Powiat krakowski", True),
     ("us_statedle", "Does it border Texas?", "New Mexico", True),
     ("us_statedle", "Is it coastal?", "California", True),
+    ("countrydle", "Is Catholicism the dominant religion?", "Poland", True),
+    ("countrydle", "Is it neither in Europe nor in Asia?", "Brazil", True),
+    ("countrydle", "Does the country have territory in both Africa and Asia?", "Egypt", True),
+    ("countrydle", "Does any of the country territory lie in Europe?", "Kazakhstan", True),
+    ("countrydle", "Does the country have territory in all four hemispheres?", "Kiribati", True),
+    ("countrydle", "Is the US dollar an official currency in El Salvador?", "El Salvador", True),
 ])
 def test_qa_playground_golden_evaluations(mode, question, target, expected):
     from scripts.qa_playground import evaluate_case

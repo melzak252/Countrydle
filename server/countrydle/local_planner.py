@@ -168,6 +168,8 @@ Important rules:
   uniqueness and rejection belong to the deterministic resolver, not the model.
   Do not reject a candidate merely because its spelling is unfamiliar.
   Open-ended requests such as "What country is it?" remain invalid.
+- When a question explicitly names a country as subject (e.g. "Does Czechia use the euro?", "Was Poland a constituent republic of the Soviet Union?"), do NOT reject it as invalid or clarify. Treat it as asking whether the hidden target country has that property.
+- Questions asking whether a country was a constituent republic, part of, or in the Soviet Union / USSR must check historical_union contains "USSR", NOT government_type equals "Republic". A country being a republic today does not imply Soviet membership.
 - Use official_language for official, co-official, and otherwise legally
   recognized official country languages.
   Legal status does not establish how often a language is spoken. Questions about

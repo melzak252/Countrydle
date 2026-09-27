@@ -159,12 +159,12 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         return None
     q = _norm(question)
     diagonal = re.search(r"\b(north[- ]west|north[- ]east|south[- ]west|south[- ]east|northwest|northeast|southwest|southeast)\b", q)
-    logical = re.search(r"\b(and|or|i|lub)\b", q)
+    logical = re.search(r"\b(and|or|i|lub|neither|nor|ani|not|brak)\b", q)
     if logical:
         country_match = _COUNTRY_PATTERN.search(q)
         if country_match is None or any(
             match.start() < country_match.start() or match.end() > country_match.end()
-            for match in re.finditer(r"\b(and|or|i|lub)\b", q)
+            for match in re.finditer(r"\b(and|or|i|lub|neither|nor|ani|not|brak)\b", q)
         ):
             return None
     if any(term in q for term in ("sea level", "poziom morza", "poziomu morza", "away from", "daleko od")):
@@ -289,7 +289,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
 
     if re.search(r"\b(landlocked|inland|srodladow\w*|no coastline|no access to (?:the )?(?:sea|ocean)|brak dostepu do morza|nie ma dostepu do morza)\b", q):
         return [_node("exists", "water_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
-    if any(x in q for x in ("island", "wyspa", "wyspiarsk")):
+    if any(x in q for x in ("island", "wyspa", "wyspiarsk")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
         return [_node("equals", "is_island", True)], "Is the country an island?"
     water_body = _choices(WATERS, q)
     if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza", "linia brzegowa", "linie brzegowa")):

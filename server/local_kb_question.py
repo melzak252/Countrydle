@@ -137,6 +137,7 @@ Task:
 5. If the question needs clarification or is unrelated/open-ended, return route="clarify", plan=null and a short explanation.
 
 Use common names, not long official names. Normalize Polish and informal names when obvious.
+When a user explicitly names an entity in the question (e.g. "Czy Kraków jest miastem na prawach powiatu?", "Czy Małopolskie graniczy ze Słowacją?"), do NOT reject it as invalid or clarify. Treat it as testing whether that property holds for the candidate or hidden target.
 Do NOT answer the question. Only create the plan.
 
 {PLANNER_RULES.replace("TARGET", config.target_entity)}
@@ -414,6 +415,15 @@ def evaluate(
 
     left = resolve_ref(conn, config, row, left_node, item_value)
     right = resolve_ref(conn, config, row, right_node, item_value)
+    if config.mode_name == "Wojewodztwodle" and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
+        is_coast = bool(row["is_coastal"])
+        if op == "exists":
+            return is_coast
+        if right in {True, 1, "true", "True"} or norm(right) in {"morze", "baltyk", "morze baltyckie", "baltyckie", "sea", "baltic sea", "baltic"}:
+            return is_coast
+        if right in {False, 0, "false", "False"}:
+            return not is_coast
+
     left_row = _reference_row(config, row, left_node, item_value)
     if (
         config.mode_name == "Powiatdle"
@@ -464,11 +474,19 @@ def evaluate(
             return len(left) > 0
         return bool(left)
     if op in {"contains", "contains_exact", "equals"}:
-        if op != "equals" and isinstance(left, list):
+        if isinstance(left, list):
             return any(norm(v) == norm(right) for v in left)
         if isinstance(left, (bool, int, float)) and isinstance(right, (bool, int, float)):
             return left == right
-        return norm(left) == norm(right)
+        n_left = norm(left)
+        n_right = norm(right)
+        if n_left == n_right:
+            return True
+        if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
+            clean_left = re.sub(r"\s*\([^)]*\)", "", n_left).strip()
+            clean_right = re.sub(r"\s*\([^)]*\)", "", n_right).strip()
+            return clean_left == clean_right
+        return False
     if op == "contains_partial":
         if isinstance(left, list):
             return any(norm(v) == norm(right) or norm(right) in norm(v) for v in left)
@@ -505,12 +523,18 @@ def evaluate(
         num = int(right)
     except (TypeError, ValueError):
         return None
-    if op == "word_count_equals":
-        return len(words) == num
-    if op == "word_count_greater_than":
-        return len(words) > num
-    if op == "word_count_less_than":
-        return len(words) < num
+    if op in {"word_count_equals", "word_count_greater_than", "word_count_less_than"}:
+        count = len(left) if isinstance(left, list) else len(words)
+        try:
+            num = int(right)
+        except (TypeError, ValueError):
+            return None
+        if op == "word_count_equals":
+            return count == num
+        if op == "word_count_greater_than":
+            return count > num
+        if op == "word_count_less_than":
+            return count < num
     if op == "char_count_equals":
         return chars == num
     if op == "char_count_greater_than":
