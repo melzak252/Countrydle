@@ -568,15 +568,16 @@ export function ControlledMapBox({
   }
 
   return (
-    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
+    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-[#232227] border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
       <style>{`
-        .leaflet-container {
-            background-color: #06080d !important;
+        .leaflet-container, .leaflet-tile-pane, .leaflet-map-pane, .leaflet-pane {
+            background-color: #232227 !important;
+            background: #232227 !important;
             transform: translate3d(0, 0, 0);
             backface-visibility: hidden;
         }
         .leaflet-tile {
-            background-color: #06080d !important;
+            background-color: #232227 !important;
         }
         .leaflet-interactive {
             vector-effect: non-scaling-stroke;
@@ -594,12 +595,12 @@ export function ControlledMapBox({
       `}</style>
       <MapContainer 
         center={center} 
-        zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#06080d' }}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%', background: '#232227', backgroundColor: '#232227' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
-        maxBounds={[[-78, -180], [82, 180]]}
-        maxBoundsViscosity={1.0}
+        maxBounds={[[-80, -215], [84, 215]]}
+        maxBoundsViscosity={0.85}
         preferCanvas={true}
         zoomSnap={0.25}
         wheelPxPerZoomLevel={90}
