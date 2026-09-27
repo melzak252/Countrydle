@@ -311,7 +311,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         return [_node("equals", "driving_side", "left")], "Does the country drive on the left?"
     if any(x in q for x in ("right-driving", "drive on the right", "drive on right", "drive right", "drives right", "drives on right", "right drive", "right side of the road", "ruch prawostronny", "prawostronny", "prawej stronie")):
         return [_node("equals", "driving_side", "right")], "Does the country drive on the right?"
-    if any(x in q for x in ("monarchy", "monarch", "monarchia")):
+    if any(x in q for x in ("monarchy", "monarch", "monarchia")) and not any(m in q for m in ("absolute", "absolutn", "constitutional", "konstytucyjn")):
         return [_node("equals", "government_type", "Monarchy")], "Is the country a monarchy?"
     if any(x in q for x in ("republic", "republika")):
         return [_node("equals", "government_type", "Republic")], "Is the country a republic?"

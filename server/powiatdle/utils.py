@@ -74,7 +74,9 @@ LOCAL_CONFIG = LocalModeConfig(
         "- For voivodeship and borders_voivodeship, use the canonical Polish voivodeship adjective name "
         "(Dolnośląskie, Kujawsko-Pomorskie, Lubelskie, Lubuskie, Łódzkie, Małopolskie, Mazowieckie, "
         "Opolskie, Podkarpackie, Podlaskie, Pomorskie, Śląskie, Świętokrzyskie, Warmińsko-Mazurskie, "
-        "Wielkopolskie, Zachodniopomorskie)."
+        "Wielkopolskie, Zachodniopomorskie).\n"
+        "- For registration plate code length (e.g. 'Czy tablice mają 2 litery?', 'Czy tablice mają 3 litery?'), "
+        "use operator char_count_equals with left relation registration_plates and right value 2 or 3."
     ),
 )
 

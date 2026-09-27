@@ -66,7 +66,11 @@ LOCAL_CONFIG = LocalModeConfig(
         "Pacific Northwest, Southwest, Great Plains, Appalachia, Deep South, Rust Belt, "
         "Mid-Atlantic or Upper Midwest, prefer relation regional_labels.\n"
         "- Census region and division are scalar official categories; informal/coastal/"
-        "cultural regions should use regional_labels."
+        "cultural regions should use regional_labels.\n"
+        "- For the original 13 colonies, use: admission_order <= 13.\n"
+        "- For major_highways, use short designations like 'I-95', 'I-80', 'I-10', 'I-5'.\n"
+        "- For major_rivers, use the simple river name without the suffix 'River' (e.g. 'Mississippi', 'Colorado', 'Missouri', 'Ohio').\n"
+        "- For nickname, omit the leading 'The' (e.g. 'Golden State', 'Lone Star State')."
     ),
 )
 

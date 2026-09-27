@@ -188,6 +188,7 @@ Important rules:
   Other. Use Mixed when the question asks whether the country is religiously mixed.
 - Use government_type only for the stored broad government-form categories:
   Republic, Monarchy, Communist state, Theocracy, Military junta, Transitional
+  The database does NOT distinguish constitutional monarchy from absolute monarchy. If a question specifically asks whether a country is an ABSOLUTE monarchy or CONSTITUTIONAL monarchy, return route="fallback" rather than mapping to generic Monarchy.
   government, Other. Democracy is NOT a synonym for Republic; constitutional
   monarchies can be democracies. Detailed political classifications absent from
   these broad categories must use fallback, not a substitute category.

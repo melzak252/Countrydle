@@ -351,3 +351,29 @@ def test_generic_mixed_sqlite_and_unsupported_conditions_fallback_only_when_need
 )
 def test_invalid_generic_local_plans_do_not_answer(bad_plan):
     assert answer(US_STATE_CONFIG, "California", bad_plan) is None
+
+
+def test_us_states_river_highway_and_nickname_normalization():
+    # Rivers with/without "River" suffix
+    assert answer(US_STATE_CONFIG, "Mississippi", contains(US_STATE_CONFIG, "major_rivers", "Mississippi River")).answer is True
+    assert answer(US_STATE_CONFIG, "Mississippi", contains(US_STATE_CONFIG, "major_rivers", "Mississippi")).answer is True
+    assert answer(US_STATE_CONFIG, "Colorado", contains(US_STATE_CONFIG, "major_rivers", "Colorado River")).answer is True
+
+    # Highways with "Interstate X" vs "I-X"
+    assert answer(US_STATE_CONFIG, "New York", contains(US_STATE_CONFIG, "major_highways", "Interstate 95")).answer is True
+    assert answer(US_STATE_CONFIG, "California", contains(US_STATE_CONFIG, "major_highways", "Interstate 80")).answer is True
+
+    # Nicknames with/without leading "The"
+    assert answer(US_STATE_CONFIG, "California", equals(US_STATE_CONFIG, "nickname", "Golden State")).answer is True
+    assert answer(US_STATE_CONFIG, "California", equals(US_STATE_CONFIG, "nickname", "The Golden State")).answer is True
+    assert answer(US_STATE_CONFIG, "Texas", equals(US_STATE_CONFIG, "nickname", "Lone Star State")).answer is True
+
+
+def test_powiat_registration_plate_code_length():
+    # Kraków has 2-letter codes (KR, KK, JR)
+    assert answer(POWIAT_CONFIG, "Kraków", scalar(POWIAT_CONFIG, "char_count_equals", "registration_plates", 2)).answer is True
+    assert answer(POWIAT_CONFIG, "Kraków", scalar(POWIAT_CONFIG, "char_count_equals", "registration_plates", 3)).answer is False
+
+    # Powiat krakowski has 3-letter codes (KRA)
+    assert answer(POWIAT_CONFIG, "Powiat krakowski", scalar(POWIAT_CONFIG, "char_count_equals", "registration_plates", 3)).answer is True
+    assert answer(POWIAT_CONFIG, "Powiat krakowski", scalar(POWIAT_CONFIG, "char_count_equals", "registration_plates", 2)).answer is False

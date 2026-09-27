@@ -412,6 +412,31 @@ def evaluate(
                 return any(norm(w) == "gulf of mexico" for w in waters)
             if coast in {"great lakes", "wielkie jeziora"}:
                 return any(norm(w).startswith("lake ") for w in waters)
+        if relation == "major_highways" and right_node is not None:
+            raw_hw = resolve_ref(conn, config, row, right_node, item_value)
+            if isinstance(raw_hw, str):
+                hw_match = re.search(r"\b(?:interstate|i)[\s-]+(\d+)\b", raw_hw, re.I)
+                if hw_match:
+                    normalized_hw = f"I-{hw_match.group(1)}"
+                    highways = get_relation_value(conn, config, row, "major_highways") or []
+                    return any(norm(h) == norm(normalized_hw) for h in highways)
+
+        if relation == "major_rivers" and right_node is not None:
+            raw_riv = resolve_ref(conn, config, row, right_node, item_value)
+            if isinstance(raw_riv, str):
+                clean_riv = re.sub(r"\b(river|rzeka|rzeki)\b", "", raw_riv, flags=re.I).strip()
+                rivers = get_relation_value(conn, config, row, "major_rivers") or []
+                return any(norm(clean_riv) == norm(r) or norm(clean_riv) in norm(r) or norm(r) in norm(clean_riv) for r in rivers)
+
+        if relation == "nickname" and right_node is not None:
+            raw_nick = resolve_ref(conn, config, row, right_node, item_value)
+            if isinstance(raw_nick, str):
+                actual_nick = row["nickname"] or ""
+                clean_actual = re.sub(r"^the\s+", "", norm(actual_nick)).strip()
+                clean_queried = re.sub(r"^the\s+", "", norm(raw_nick)).strip()
+                if op in {"contains_text", "contains_partial"}:
+                    return clean_queried in clean_actual
+                return clean_actual == clean_queried
 
     left = resolve_ref(conn, config, row, left_node, item_value)
     right = resolve_ref(conn, config, row, right_node, item_value)
@@ -536,10 +561,16 @@ def evaluate(
         if op == "word_count_less_than":
             return count < num
     if op == "char_count_equals":
+        if isinstance(left, list):
+            return any(len(str(item).strip()) == num for item in left)
         return chars == num
     if op == "char_count_greater_than":
+        if isinstance(left, list):
+            return any(len(str(item).strip()) > num for item in left)
         return chars > num
     if op == "char_count_less_than":
+        if isinstance(left, list):
+            return any(len(str(item).strip()) < num for item in left)
         return chars < num
     return None
 
