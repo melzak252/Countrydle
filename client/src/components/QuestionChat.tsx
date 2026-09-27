@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, ChevronDown, Compass, HelpCircle, MessageCircle, X } from 'lucide-react';
+import { AlertTriangle, Check, Compass, HelpCircle, MessageCircle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { AnswerReportMode, Question } from '../types';
 import AnswerReportForm from './AnswerReportForm';
@@ -39,33 +39,30 @@ export default function QuestionChat({
   const messages = getConversationMessages(questions, notices);
 
   return (
-    <ol aria-label="Question conversation" className="space-y-6 py-1">
+    <ol aria-label="Question conversation" className="space-y-4 py-1">
       {messages.map(message => {
         if (message.kind === 'notice') {
           const { notice } = message;
           return (
-            <li key={notice.id} className="space-y-3 animate-message">
-              <div className="flex flex-col items-end pl-8">
-                <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">You · {notice.action}</span>
-                <p className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{notice.input}</p>
+            <li key={notice.id} className="space-y-2 animate-message">
+              <div className="flex flex-col items-end pl-6">
+                <span className="mb-1 px-1 text-[10px] font-medium text-zinc-500">You · {notice.action}</span>
+                <p className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{notice.input}</p>
               </div>
-              <div role="alert" className="flex items-start gap-2.5 pr-5">
-                <div className="mt-5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-emerald-300">
-                  <Compass size={15} aria-hidden="true" />
+              <div role="alert" className="flex flex-col items-start pr-6">
+                <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">
+                  <Compass size={13} className="text-emerald-400" aria-hidden="true" />
+                  <span>Countrydle</span>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="mb-1.5 px-1 text-[10px] font-medium text-zinc-400">Countrydle</p>
-                  <details open className="group rounded-2xl rounded-tl-md border border-amber-300/20 bg-amber-300/[0.06] text-sm leading-relaxed [overflow-wrap:anywhere]">
-                    <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 font-semibold text-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 [&::-webkit-details-marker]:hidden">
-                      <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
-                      <span className="min-w-0 flex-1">{notice.title}</span>
-                      <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
-                    </summary>
-                    <div className="px-4 pb-3">
-                      <p className="text-zinc-200">{notice.reason}</p>
-                      <p className="mt-3 text-zinc-400"><span className="font-medium text-zinc-300">What to do: </span>{notice.nextStep}</p>
-                    </div>
-                  </details>
+                <div className="w-fit max-w-[92%] rounded-2xl rounded-tl-md border border-amber-400/25 bg-amber-400/[0.08] px-3.5 py-2.5 text-xs text-amber-200 space-y-1 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-300 text-xs">
+                    <AlertTriangle size={13} className="shrink-0 text-amber-400" aria-hidden="true" />
+                    <span>{notice.title}</span>
+                  </div>
+                  <p className="text-zinc-300 leading-snug">{notice.reason}</p>
+                  {notice.nextStep && (
+                    <p className="text-amber-200/75 text-[11px] pt-1 border-t border-amber-400/15">{notice.nextStep}</p>
+                  )}
                 </div>
               </div>
             </li>
@@ -79,63 +76,61 @@ export default function QuestionChat({
         const tone = !question.valid ? 'bg-amber-400/10 text-amber-200' : question.answer === true ? 'bg-emerald-400/10 text-emerald-300' : question.answer === false ? 'bg-rose-400/10 text-rose-300' : 'bg-white/5 text-zinc-300';
 
         return (
-          <li key={`question-${question.id}`} className="space-y-3 animate-message">
-            <div className="flex flex-col items-end pl-8">
-              <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">You · {index + 1}</span>
-              <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
+          <li key={`question-${question.id}`} className="space-y-2 animate-message">
+            <div className="flex flex-col items-end pl-6">
+              <span className="mb-1 px-1 text-[10px] font-medium text-zinc-500">You · {index + 1}</span>
+              <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
                 {question.original_question}
               </div>
             </div>
-            <div className="flex items-start gap-2.5 pr-5">
-              <div className="mt-5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-emerald-300">
-                <Compass size={15} aria-hidden="true" />
+            <div className="flex flex-col items-start pr-6">
+              <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">
+                <Compass size={13} className="text-emerald-400" aria-hidden="true" />
+                <span>Countrydle</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="mb-1.5 px-1 text-[10px] font-medium text-zinc-400">Countrydle</p>
-                <div className="w-fit max-w-full overflow-hidden rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045]">
-                  <div className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-sm font-semibold ${tone}`}>
-                      <Icon size={16} strokeWidth={2.5} aria-hidden="true" />
-                      {answer}
-                    </span>
-                    {showExplanation && (
-                      <div className="mt-3 text-sm leading-relaxed text-zinc-300 [overflow-wrap:anywhere]">
-                        {!question.valid && <p className="mb-1 font-medium text-amber-200">Try rephrasing your question</p>}
-                        <p>{question.explanation}</p>
-                      </div>
-                    )}
-                  </div>
-                  {isGameOver && question.id > 0 && <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} />}
+              <div className="w-fit max-w-[92%] overflow-hidden rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-3.5 py-2.5 space-y-1.5 shadow-sm">
+                <div>
+                  <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${tone}`}>
+                    <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
+                    {answer}
+                  </span>
                 </div>
+                {showExplanation && (
+                  <div className="text-xs leading-relaxed text-zinc-300 [overflow-wrap:anywhere] pt-0.5">
+                    {!question.valid && <p className="mb-0.5 font-medium text-amber-200">Try rephrasing your question</p>}
+                    <p className="text-zinc-400">{question.explanation}</p>
+                  </div>
+                )}
+                {isGameOver && question.id > 0 && (
+                  <div className="pt-2 border-t border-white/10">
+                    <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} />
+                  </div>
+                )}
               </div>
             </div>
           </li>
         );
       })}
       {isLoading && pendingQuestion && (
-        <li key="pending-question-turn" className="space-y-3 animate-message">
-          <div className="flex flex-col items-end pl-8">
-            <span className="mb-1.5 px-1 text-[10px] font-medium text-zinc-500">
+        <li key="pending-question-turn" className="space-y-2 animate-message">
+          <div className="flex flex-col items-end pl-6">
+            <span className="mb-1 px-1 text-[10px] font-medium text-zinc-500">
               You · {questions.length + 1}
             </span>
-            <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-4 py-3 text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
+            <div className="max-w-full rounded-2xl rounded-br-md border border-emerald-300/15 bg-emerald-400/[0.12] px-3.5 py-2 text-xs sm:text-sm leading-relaxed text-sand-100 [overflow-wrap:anywhere]">
               {pendingQuestion}
             </div>
           </div>
-          <div className="flex items-start gap-2.5 pr-5">
-            <div className="mt-5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-emerald-300">
-              <Compass size={15} className="animate-spin-slow" aria-hidden="true" />
+          <div className="flex flex-col items-start pr-6">
+            <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">
+              <Compass size={13} className="text-emerald-400 animate-spin-slow" aria-hidden="true" />
+              <span>{t('inputs.thinking', { defaultValue: 'Countrydle is thinking...' })}</span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="mb-1.5 px-1 text-[10px] font-medium text-zinc-400">
-                {t('inputs.thinking', { defaultValue: 'Countrydle thinks...' })}
-              </p>
-              <div className="w-fit max-w-full overflow-hidden rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-4 py-3 shadow-inner">
-                <div className="flex items-center gap-1.5 py-1 px-1">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-typing-dot-1" />
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-typing-dot-2" />
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-typing-dot-3" />
-                </div>
+            <div className="w-fit rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-3.5 py-2 shadow-inner">
+              <div className="flex items-center gap-1.5 py-0.5 px-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-typing-dot-1" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-typing-dot-2" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-typing-dot-3" />
               </div>
             </div>
           </div>
