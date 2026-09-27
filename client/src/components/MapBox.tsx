@@ -19,22 +19,13 @@ function isCorrectCountryFeature(feature: Feature | undefined, targetName?: stri
     && name.localeCompare(targetName, undefined, { sensitivity: 'base' }) === 0;
 }
 
-// Equator spans across 3 world widths (-540° to +540°) for seamless world wrapping
 const EQUATOR_COORDINATES: [number, number][] = [
-  [0, -540],
-  [0, -360],
   [0, -180],
-  [0, 0],
   [0, 180],
-  [0, 360],
-  [0, 540],
 ];
 
-// Prime Meridian (Greenwich Line) at longitude 0°, with wrapped duplicates at -360° and +360°
 const PRIME_MERIDIAN_LINES: [number, number][][] = [
   [[-85, 0], [85, 0]],
-  [[-85, -360], [85, -360]],
-  [[-85, 360], [85, 360]],
 ];
 
 const REFERENCE_LABEL_ICON = L.divIcon({
@@ -56,7 +47,7 @@ function ReferenceLineLabels() {
 
     const update = () => {
       const { x: width, y: height } = map.getSize();
-      const longitude = Math.max(-360, Math.min(360, Math.round(map.getCenter().lng / 360) * 360));
+      const longitude = 0;
       const crossing = map.latLngToContainerPoint([0, longitude]);
       const meridianVisible = crossing.x >= 0 && crossing.x <= width;
       const equatorVisible = crossing.y >= 0 && crossing.y <= height;
@@ -77,8 +68,8 @@ function ReferenceLineLabels() {
       // Leave room for the status bar and question dock over the map.
       place(0, labelX, 52, meridianVisible && bounds.getNorth() <= 85);
       place(1, labelX, height - 160, meridianVisible && bounds.getSouth() >= -85);
-      place(2, 12, labelY, equatorVisible && bounds.getWest() >= -540);
-      place(3, width - 32, labelY, equatorVisible && bounds.getEast() <= 540);
+      place(2, 12, labelY, equatorVisible && bounds.getWest() >= -180);
+      place(3, width - 32, labelY, equatorVisible && bounds.getEast() <= 180);
       place(4, labelX, labelY, meridianVisible && equatorVisible
         && crossing.x > 52 && crossing.x < width - 52
         && crossing.y > 100 && crossing.y < height - 184);
@@ -292,41 +283,6 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
 const geoJsonCache = new Map<string, FeatureCollection>();
 const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
 
-function wrapWorldGeoJson(collection: FeatureCollection): FeatureCollection {
-  if (!collection || !Array.isArray(collection.features)) return collection;
-
-  const shiftCoords = (coords: unknown, offset: number): unknown => {
-    if (!Array.isArray(coords)) return coords;
-    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
-      return [coords[0] + offset, coords[1]];
-    }
-    return coords.map((c) => shiftCoords(c, offset));
-  };
-
-  const makeCopy = (offset: number, suffix: string): Feature[] => {
-    return collection.features.map((feature) => {
-      if (!feature.geometry || feature.geometry.type === 'GeometryCollection') return feature;
-      return {
-        ...feature,
-        id: feature.id ? `${feature.id}-${suffix}` : undefined,
-        properties: { ...feature.properties },
-        geometry: {
-          type: feature.geometry.type,
-          coordinates: shiftCoords(feature.geometry.coordinates, offset),
-        } as unknown as GeoJSON.Geometry,
-      };
-    });
-  };
-
-  const leftCopy = makeCopy(-360, 'left');
-  const rightCopy = makeCopy(360, 'right');
-
-  return {
-    ...collection,
-    features: [...leftCopy, ...collection.features, ...rightCopy],
-  };
-}
-
 function loadGeoJson(url: string): Promise<FeatureCollection> {
   const cached = geoJsonCache.get(url);
   if (cached) {
@@ -340,10 +296,9 @@ function loadGeoJson(url: string): Promise<FeatureCollection> {
         return res.json();
       })
       .then(data => {
-        const processed = url.includes('countries') ? wrapWorldGeoJson(data) : data;
-        geoJsonCache.set(url, processed);
+        geoJsonCache.set(url, data);
         geoJsonPromiseCache.delete(url);
-        return processed;
+        return data;
       })
       .catch(err => {
         geoJsonPromiseCache.delete(url);
@@ -635,22 +590,24 @@ export function ControlledMapBox({
       <MapContainer 
         center={center} 
         zoom={zoom} 
-        style={{ height: '100%', width: '100%', background: '#1c1c1c' }}
+        style={{ height: '100%', width: '100%', background: '#0b0f17' }}
         minZoom={minZoom}
         maxZoom={maxZoom}
+        maxBounds={[[-85, -180], [85, 180]]}
+        maxBoundsViscosity={1.0}
         preferCanvas={true}
-        zoomSnap={0.25}
+        zoomSnap={0.5}
         wheelPxPerZoomLevel={90}
-        wheelDebounceTime={30}
-        worldCopyJump={false}
+        wheelDebounceTime={40}
         attributionControl={false}
         ref={setMap}
       >
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            keepBuffer={6}
-            updateInterval={100}
+            noWrap={true}
+            keepBuffer={4}
+            updateInterval={80}
             updateWhenZooming={false}
             updateWhenIdle={false}
         />
