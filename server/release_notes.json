@@ -1,5 +1,5 @@
 {
-  "version": "1.11.1",
-  "title": "Improved Polish voivodeship and border question resolution",
-  "body": "ACCURATE VOIVODESHIP BORDER RESOLUTION\n- Added canonical voivodeship name and inflection resolution covering all 16 Polish voivodeships.\n- Questions referencing inflected forms (such as łódzkim, małopolskim, or śląskim), prefixes, or regional capitals (Łódź, Kraków, Katowice, Warszawa) now reliably match the correct voivodeship borders.\n- Factual explanations clearly cite canonical voivodeship names when describing neighboring regions."
+  "version": "1.12.0",
+  "title": "Hardened question understanding, currency synonyms, and QA harness",
+  "body": "SMARTER QUESTION & BORDER UNDERSTANDING\n- Powiatdle now understands voivodeship shorthand in county queries (e.g. asking if a county belongs to or borders a voivodeship using short prefixes or inflections).\n- Improved currency resolution so queries using common abbreviations like \"USD\" or \"US dollar\" correctly match official currency records.\n- Enhanced directional comparisons and hyphenated name matching across all game modes.\n\nACCURATE US STATE & COUNTY ATTRIBUTES\n- Normalized US state river names, highway designations (\"Interstate X\" and \"I-X\"), and official state nicknames.\n- Fixed plate code length checks for Polish counties.\n- Preserved accurate metric area conversions when comparing state sizes.\n\nROBUST TEMPLATE & PLANNER SAFEGUARDS\n- Hardened sea and coastline template matching for Polish and English queries.\n- Added guards to catch wire compilation errors and preserve safe fallbacks.\n- Integrated automated adversarial QA testing harness to continuously defend question-answering accuracy."
 }
