@@ -76,7 +76,10 @@ LOCAL_CONFIG = LocalModeConfig(
         "Opolskie, Podkarpackie, Podlaskie, Pomorskie, Śląskie, Świętokrzyskie, Warmińsko-Mazurskie, "
         "Wielkopolskie, Zachodniopomorskie).\n"
         "- For registration plate code length (e.g. 'Czy tablice mają 2 litery?', 'Czy tablice mają 3 litery?'), "
-        "use operator char_count_equals with left relation registration_plates and right value 2 or 3."
+        "use operator char_count_equals with left relation registration_plates and right value 2 or 3.\n"
+        "- Shorthand questions consisting only of a voivodeship name or adjective, with or without a question mark "
+        "(e.g. 'mazowieckie?', 'lubuskie', 'warmińsko mazurskie?'), are valid yes/no questions asking whether the target "
+        "powiat lies in that voivodeship (relation voivodeship equals the canonical voivodeship name)."
     ),
 )
 
