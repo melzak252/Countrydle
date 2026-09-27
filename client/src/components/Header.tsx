@@ -46,23 +46,16 @@ export default function Header() {
     ['/contact', t('header.contact')],
     ...(user?.is_admin ? [['/admin', 'Admin']] : []),
   ];
-  const moreCategories = [
-    {
-      category: t('header.groupExplore', 'Records & Updates'),
-      items: [
-        { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
-        { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
-        ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
-      ],
-    },
-    {
-      category: t('header.groupAbout', 'Information & Help'),
-      items: [
-        { path: '/about', name: t('header.about', 'About'), icon: Info },
-        { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
-        { path: '/contact', name: t('header.contact', 'Contact'), icon: Mail },
-      ],
-    },
+  const exploreItems = [
+    { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
+    { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
+    ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
+  ];
+
+  const aboutItems = [
+    { path: '/about', name: t('header.about', 'About'), icon: Info },
+    { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
+    { path: '/contact', name: t('header.contact', 'Contact'), icon: Mail },
   ];
   const closeMenu = () => setIsMenuOpen(false);
   const handleLogout = async () => {
@@ -146,6 +139,7 @@ export default function Header() {
             </div>
           </details>
 
+          {/* Explore Dropdown */}
           <details
             className="group relative"
             onMouseLeave={(event) => {
@@ -159,43 +153,83 @@ export default function Header() {
             }}
           >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              {t('header.more', 'More')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+              {t('header.explore', 'Explore')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
             >
-              <div className="grid grid-cols-2 gap-3 p-3">
-                {moreCategories.map((group) => (
-                  <div key={group.category} className="space-y-1.5">
-                    <span className="block px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                      {group.category}
-                    </span>
-                    <div className="flex flex-col gap-0.5">
-                      {group.items.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <NavLink
-                            key={item.path}
-                            to={item.path}
-                            className={({ isActive }) =>
-                              `flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs transition-colors ${
-                                isActive
-                                  ? 'bg-emerald-500/10 text-emerald-300 font-medium'
-                                  : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                              }`
-                            }
-                          >
-                            <Icon size={13} className="text-zinc-400 shrink-0" aria-hidden="true" />
-                            <span className="truncate">{item.name}</span>
-                          </NavLink>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="flex flex-col gap-0.5">
+                {exploreItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs transition-colors ${
+                          isActive
+                            ? 'bg-emerald-500/10 text-emerald-300 font-medium'
+                            : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                        }`
+                      }
+                    >
+                      <Icon size={14} className="text-zinc-400 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{item.name}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
+
+          <NavLink to="/leaderboard" className={linkClass}>{t('header.leaderboard')}</NavLink>
+          <NavLink to="/blog" className={linkClass}>{t('header.blog', 'Blog')}</NavLink>
+
+          {/* About Dropdown */}
+          <details
+            className="group relative"
+            onMouseLeave={(event) => {
+              event.currentTarget.open = false;
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+              }
+            }}
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+              {t('header.about', 'About')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+            </summary>
+            <div
+              className="absolute left-0 top-full w-48 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
+              }}
+            >
+              <div className="p-1.5 flex flex-col gap-0.5">
+                {aboutItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs transition-colors ${
+                          isActive
+                            ? 'bg-emerald-500/10 text-emerald-300 font-medium'
+                            : 'text-sand-100 hover:bg-white/5 hover:text-white'
+                        }`
+                      }
+                    >
+                      <Icon size={14} className="text-zinc-400 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{item.name}</span>
+                    </NavLink>
+                  );
+                })}
               </div>
               <div className="p-1.5 bg-white/[0.02]">
                 <PrivacySettingsButton className="flex items-center gap-2 w-full px-2.5 py-1.5 text-left text-xs text-zinc-400 hover:text-sand-50 hover:bg-white/5 transition-colors rounded-sm" />
