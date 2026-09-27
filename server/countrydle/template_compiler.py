@@ -103,10 +103,14 @@ _POLISH_COUNTRIES.update({
     "grecją": "Greece", "turcją": "Turkey", "chinami": "China", "indiami": "India", "japonią": "Japan",
     "meksykiem": "Mexico", "kanadą": "Canada", "brazylią": "Brazil", "argentyną": "Argentina",
     "egiptem": "Egypt", "izraelem": "Israel",
+    "mikronezja": "Federated States of Micronesia", "mikronezji": "Federated States of Micronesia",
+    "mikronezją": "Federated States of Micronesia", "mikronezję": "Federated States of Micronesia",
 })
 _POLISH_COUNTRIES = {_norm(alias): name for alias, name in _POLISH_COUNTRIES.items()}
 _CANONICAL_COUNTRIES = {_norm(name): name for name in _COUNTRY_NAMES}
 _CANONICAL_COUNTRIES["czechia"] = "Czech Republic"
+_CANONICAL_COUNTRIES["micronesia"] = "Federated States of Micronesia"
+_CANONICAL_COUNTRIES["fsm"] = "Federated States of Micronesia"
 _COUNTRY_ALIASES = {**_CANONICAL_COUNTRIES, **{_norm(alias): name for alias, name in _POLISH_COUNTRIES.items()}}
 _COUNTRY_PATTERN = re.compile(
     r"(?<![a-z])(?:" + "|".join(re.escape(alias) for alias in sorted(_COUNTRY_ALIASES, key=len, reverse=True)) + r")(?![a-z])"

@@ -58,6 +58,10 @@ POLISH_COUNTRY_ALIASES = {
     "stany zjednoczone": "United States",
     "wielka brytania": "United Kingdom",
     "uk": "United Kingdom",
+    "mikronezja": "Federated States of Micronesia",
+    "mikronezji": "Federated States of Micronesia",
+    "mikronezją": "Federated States of Micronesia",
+    "mikronezję": "Federated States of Micronesia",
 }
 
 COUNTRY_NAME_SYNONYMS = {
@@ -93,6 +97,8 @@ COUNTRY_NAME_SYNONYMS = {
     "uae": "United Arab Emirates",
     "car": "Central African Republic",
     "cote d ivoire": "Ivory Coast",
+    "micronesia": "Federated States of Micronesia",
+    "fsm": "Federated States of Micronesia",
 
 }
 CURRENCY_ALIASES = {
