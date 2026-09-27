@@ -95,9 +95,22 @@ _COUNTRY_PATTERN = re.compile(
 )
 
 
+def _clean_country_input(text: str) -> str:
+    cleaned = re.sub(r"\bst\.\s*", "saint ", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bst\s+", "saint ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"(?<=\b[a-zA-Z])\.(?=[a-zA-Z](\.|\b))", "", cleaned).rstrip(".")
+    return cleaned.strip()
+
+
 def _country(text: str):
-    value = _norm(text.strip())
-    return _POLISH_COUNTRIES.get(value) or _CANONICAL_COUNTRIES.get(value)
+    raw = _norm(text.strip())
+    cleaned = _norm(_clean_country_input(text))
+    return (
+        _POLISH_COUNTRIES.get(raw)
+        or _CANONICAL_COUNTRIES.get(raw)
+        or _POLISH_COUNTRIES.get(cleaned)
+        or _CANONICAL_COUNTRIES.get(cleaned)
+    )
 
 
 def _country_in(text: str):
@@ -222,7 +235,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                 "right": {"entity": country, "relation": "area"},
             }], f"Is the area of the country {op.replace('_', ' ')} that of {country}?"
 
-    identity = re.search(r"\b(?:is it|is this|czy to|czy jest to|is|it)\s+([a-z '\u2019&-]+?)\s*[?!.]*$", q)
+    identity = re.search(r"\b(?:is it|is this|czy to|czy jest to|is|it)\s+([a-z0-9 '\u2019&.-]+?)\s*[?!.]*$", q)
     if identity:
         candidate = identity.group(1).strip()
         if not candidate.startswith(("in ", "a ", "an ")):

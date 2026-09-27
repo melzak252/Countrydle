@@ -244,6 +244,7 @@ COUNTRY_NAME_SYNONYMS = {
     "saint kitts": "Saint Kitts and Nevis",
     "saint vincent": "Saint Vincent and the Grenadines",
     "trinidad": "Trinidad and Tobago",
+    "tobago": "Trinidad and Tobago",
     "bosnia": "Bosnia and Herzegovina",
     "bosni": "Bosnia and Herzegovina",
     "bosnie": "Bosnia and Herzegovina",
@@ -328,6 +329,7 @@ COUNTRY_NAME_SYNONYMS = {
     "vietnam": "Vietnam",
     "south africa": "South Africa",
     "rsa": "South Africa",
+    "nz": "New Zealand",
 }
 CURRENCY_ALIASES = {
     "us dollar": "united states dollar",
@@ -1205,7 +1207,9 @@ LIST_RELATION_QUERIES = {
 }
 
 def _country_name_key(name: str) -> str:
-    return re.sub(r"\bst\b", "saint", normalize(name.replace("&", " and ")))
+    cleaned = re.sub(r"\bst\.\s*", "saint ", name, flags=re.IGNORECASE)
+    cleaned = re.sub(r"(?<=\b[a-zA-Z])\.(?=[a-zA-Z](\.|\b))", "", cleaned).rstrip(".")
+    return re.sub(r"\bst\b", "saint", normalize(cleaned.replace("&", " and ")))
 
 
 def _one_edit_apart(left: str, right: str) -> bool:
