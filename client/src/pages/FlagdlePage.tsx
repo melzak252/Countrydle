@@ -685,11 +685,11 @@ export default function FlagdlePage() {
                 </div>
               </div>
             </div>
-            <div className="rounded-sm border border-emerald-500/25 bg-emerald-950/20 p-3.5 flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-zinc-300">
-                <Flag size={14} className="text-amber-400 shrink-0" />
-                <span>Finished a round? You can report any question or answer from your history cards to help us continuously train and refine our AI model.</span>
-              </div>
+            <div className="rounded-sm border border-amber-500/20 bg-amber-500/[0.04] p-3.5 flex items-start gap-3 text-xs">
+              <Flag size={15} className="text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-zinc-300 leading-relaxed">
+                <strong className="text-amber-300">Spot a mistake?</strong> After the game, click the flag icon on any answer card in your history to report it with notes — it helps us see mistakes and patch them quickly.
+              </p>
             </div>
 
             <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
