@@ -1,5 +1,5 @@
 {
-  "version": "1.14.3",
-  "title": "Accurate ocean and water access detection in US Statedle",
-  "body": "US STATEDLE QUESTION UNDERSTANDING\n- Specific ocean questions (Atlantic, Pacific, Arctic, Indian, Southern, and Gulf of Mexico) now accurately evaluate access to the requested water body instead of falling back to generic coastal status.\n- Added recognition for common Atlantic Ocean typos (including \"Antlantic\") in English and Polish so queries do not incorrectly produce false-positive matches for Pacific coastal states.\n- Questions referencing unrecognized ocean names safely fall back to the knowledge base."
+  "version": "1.14.4",
+  "title": "Direct contact and support email updates",
+  "body": "CONTACT & SUPPORT\n- Updated the direct contact and feedback email address on the Contact page to melzacki.jakub@gmail.com.\n- Aligned automated security and login alerts to use the direct support contact address."
 }
