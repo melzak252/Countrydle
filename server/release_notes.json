@@ -1,5 +1,5 @@
 {
-  "version": "1.14.2",
-  "title": "Selectable questions and steadier map interactions",
-  "body": "QUESTION CHAT\n- Player questions, including pending and rejected submissions, remain text-selectable and can be copied with a button.\n- Copy controls, success feedback, and manual-copy guidance are localized in English and Polish.\n\nMAP INTERACTIONS\n- World, regional, and US map tooltips stay anchored to the hovered feature instead of following the pointer.\n- Regional and US map tiles continue updating during zooming for smoother visual feedback."
+  "version": "1.14.3",
+  "title": "Accurate ocean and water access detection in US Statedle",
+  "body": "US STATEDLE QUESTION UNDERSTANDING\n- Specific ocean questions (Atlantic, Pacific, Arctic, Indian, Southern, and Gulf of Mexico) now accurately evaluate access to the requested water body instead of falling back to generic coastal status.\n- Added recognition for common Atlantic Ocean typos (including \"Antlantic\") in English and Polish so queries do not incorrectly produce false-positive matches for Pacific coastal states.\n- Questions referencing unrecognized ocean names safely fall back to the knowledge base."
 }
