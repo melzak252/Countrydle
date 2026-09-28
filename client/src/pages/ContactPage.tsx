@@ -3,6 +3,8 @@ import { Mail, MessageSquare, Bug, Lightbulb, Send, CheckCircle2, Github } from 
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
+const CONTACT_EMAIL = 'melzacki.jakub@gmail.com';
+
 export default function ContactPage() {
   const { t } = useTranslation();
   const [topic, setTopic] = useState<'feedback' | 'bug' | 'feature' | 'data'>('feedback');
@@ -21,7 +23,7 @@ export default function ContactPage() {
     // In a production static/SPA setup, compose mailto or handle via backend
     const subject = encodeURIComponent(`[Countrydle ${topic.toUpperCase()}] from ${name || 'Player'}`);
     const body = encodeURIComponent(`Topic: ${topic}\nFrom: ${name} (${email || 'anonymous'})\n\nMessage:\n${message}`);
-    window.location.href = `mailto:jakub.melzacki@jmelzacki.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
 
     setSubmitted(true);
     toast.success('Your message client has been opened!');
@@ -53,10 +55,10 @@ export default function ContactPage() {
               For general inquiries, partnerships, and account support:
             </p>
             <a
-              href="mailto:jakub.melzacki@jmelzacki.com"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="inline-block break-all text-sm text-emerald-300 underline decoration-emerald-400/30 underline-offset-4 transition-colors hover:text-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400"
             >
-              jakub.melzacki@jmelzacki.com
+              {CONTACT_EMAIL}
             </a>
           </section>
 
@@ -91,7 +93,7 @@ export default function ContactPage() {
                 <CheckCircle2 size={28} className="text-emerald-400" aria-hidden="true" />
                 <h3 className="text-xl font-medium text-sand-100">Message Prepared!</h3>
                 <p className="text-sm leading-7 text-zinc-400">
-                  Thank you for helping us improve Countrydle. If your mail app didn't open automatically, you can email us directly at <strong className="break-all font-medium text-sand-100">jakub.melzacki@jmelzacki.com</strong>.
+                  Thank you for helping us improve Countrydle. If your mail app didn't open automatically, you can email us directly at <strong className="break-all font-medium text-sand-100">{CONTACT_EMAIL}</strong>.
                 </p>
               </div>
               <button

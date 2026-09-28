@@ -78,6 +78,10 @@ promise error-free AI answers, local-only guest activity, or lossless sync.
 Content-only updates should be checked in the browser at desktop/mobile widths,
 including FAQ search, topic filters, and keyboard accordion controls.
 
+## Contact and feedback
+
+The `/contact` page uses `melzacki.jakub@gmail.com` for direct support and feedback submissions. Keep this address aligned with support contacts in server email templates.
+
 ## Advertising consent and public discovery
 
 `main.tsx` is the only AdSense loader. Set `VITE_GOOGLE_ADSENSE_ID` when building
