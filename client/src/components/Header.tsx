@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { ChevronDown, Menu, X, LogOut, Archive, Sparkles, ShieldCheck, Info, HelpCircle, Mail } from 'lucide-react';
+import { ChevronDown, Menu, X, LogOut, Archive, Sparkles, ShieldCheck, Info, HelpCircle, Mail, Cpu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
@@ -40,6 +40,7 @@ export default function Header() {
   ];
   const more = [
     ['/archive', t('header.archive')],
+    ['/how-it-works', t('header.howItWorks', 'How Questions Work')],
     ['/patch-notes', t('header.patchNotes', 'Patch notes')],
     ['/about', t('header.about')],
     ['/faq', t('header.faq')],
@@ -48,10 +49,10 @@ export default function Header() {
   ];
   const exploreItems = [
     { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
+    { path: '/how-it-works', name: t('header.howItWorks', 'How Questions Work'), icon: Cpu },
     { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
     ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];
-
   const aboutItems = [
     { path: '/about', name: t('header.about', 'About'), icon: Info },
     { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },

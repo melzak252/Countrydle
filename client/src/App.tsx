@@ -19,6 +19,7 @@ import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import ArchivePage from './pages/ArchivePage';
 import AdminDashboard from './pages/AdminDashboard';
+import HowItWorksPage from './pages/HowItWorksPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
@@ -152,6 +153,7 @@ function App() {
           <Route path="terms" element={<TermsOfServicePage />} />
           <Route path="cookie-policy" element={<CookiePolicyPage />} />
           <Route path="about" element={<AboutPage />} />
+          <Route path="how-it-works" element={<HowItWorksPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="faq" element={<FAQPage />} />
           <Route path="blog" element={<BlogListPage />} />
