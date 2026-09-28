@@ -1,14 +1,11 @@
-"""Deterministic template compiler for Powiatdle, Wojewodztwodle, and US Statedle.
+"""Deterministic template compiler for Powiatdle, Wojewodztwodle, and US Statedle."""
 
-Compiles high-frequency player question patterns into canonical AST plans in < 5ms,
-bypassing LLM planner calls and eliminating API costs and latency.
-"""
-from __future__ import annotations
-
+from functools import lru_cache
 import re
-import unicodedata
 from typing import Any
+import unicodedata
 
+from slot_template_engine import match_slot_template
 from voivodeship_names import resolve_voivodeship_name, CANONICAL_VOIVODESHIPS
 
 
@@ -360,11 +357,15 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
 
 def compile_generic_template_plan(question: str, mode_name: str) -> tuple[dict[str, Any], str] | None:
     """Entry point dispatching to mode-specific template compiler."""
+    slot_res = match_slot_template(question, mode_name)
+    if slot_res is not None:
+        return slot_res
+
     norm_mode = mode_name.lower().strip()
-    if norm_mode == "powiatdle":
+    if norm_mode in ("powiatdle", "powiat"):
         return compile_powiatdle_template(question)
-    elif norm_mode == "wojewodztwodle":
+    elif norm_mode in ("wojewodztwodle", "wojewodztwo"):
         return compile_wojewodztwodle_template(question)
-    elif norm_mode == "usstatedle":
+    elif norm_mode in ("usstatedle", "us_statedle", "us_state"):
         return compile_us_statedle_template(question)
     return None
