@@ -258,20 +258,48 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
                     "Does the state border Mexico?",
                 )
 
-    # 2. Coastal state (is_coastal == True)
-    if any(k in norm_q for k in ("coastal", "coast", "ocean", "oceanu", "morza", "morze", "wybrzez", "linia brzegowa")):
+    # 2. Coastal state (is_coastal == True) or specific water bodies
+    _ATLANTIC_PATTERNS = (
+        "atlantic", "atlantyck", "atlantyk", "antlantic", "atlantik",
+        "atlanitc", "atlanic", "atlntic", "atlatnic", "antlantyk", "antlantyck",
+    )
+    _PACIFIC_PATTERNS = ("pacific", "spokojn", "pacyfik", "pacifik", "pacyfic")
+    _ARCTIC_PATTERNS = ("arctic", "arktyczn", "arktyk", "arktic")
+    _INDIAN_PATTERNS = ("indian", "indyjsk")
+    _SOUTHERN_PATTERNS = ("southern", "antarktyczn")
+    _GULF_PATTERNS = ("gulf", "zatok")
+    _COASTAL_TRIGGERS = (
+        "coastal", "coast", "ocean", "oceanu", "morza", "morze", "wybrzez", "linia brzegowa", "nadmorsk",
+        *_ATLANTIC_PATTERNS, *_PACIFIC_PATTERNS, *_ARCTIC_PATTERNS, *_INDIAN_PATTERNS, *_SOUTHERN_PATTERNS, *_GULF_PATTERNS,
+    )
+    if any(k in norm_q for k in _COASTAL_TRIGGERS):
         # Check specific bodies first
-        if "atlantic" in norm_q or "atlantyck" in norm_q:
+        if any(k in norm_q for k in _ATLANTIC_PATTERNS):
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Atlantic Ocean"}},
                 "Does the state have access to the Atlantic Ocean?",
             )
-        if "pacific" in norm_q or "spokojn" in norm_q or "pacyfik" in norm_q:
+        if any(k in norm_q for k in _PACIFIC_PATTERNS):
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Pacific Ocean"}},
                 "Does the state have access to the Pacific Ocean?",
             )
-        if "gulf" in norm_q or "zatok" in norm_q:
+        if any(k in norm_q for k in _ARCTIC_PATTERNS):
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Arctic Ocean"}},
+                "Does the state have access to the Arctic Ocean?",
+            )
+        if any(k in norm_q for k in _INDIAN_PATTERNS):
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Indian Ocean"}},
+                "Does the state have access to the Indian Ocean?",
+            )
+        if any(k in norm_q for k in _SOUTHERN_PATTERNS):
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Southern Ocean"}},
+                "Does the state have access to the Southern Ocean?",
+            )
+        if any(k in norm_q for k in _GULF_PATTERNS):
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Gulf of Mexico"}},
                 "Does the state have access to the Gulf of Mexico?",
@@ -292,13 +320,21 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "regional_labels"}, "right": {"value": "Great Lakes"}},
                 "Is the state located in the Great Lakes region?",
             )
+
+        # Guard: check if an unrecognized specific ocean is being asked, e.g. "foo ocean", "oceanu bar"
+        specific_ocean_en = re.search(r"\b([a-z]+)\s+ocean\b", norm_q)
+        if specific_ocean_en and specific_ocean_en.group(1) not in {"an", "the", "any", "some", "open", "to", "border", "borders", "touch", "touches", "have", "has", "with"}:
+            return None
+        specific_ocean_pl = re.search(r"\boceanu?\s+([a-z]+)\b", norm_q)
+        if specific_ocean_pl and specific_ocean_pl.group(1) not in {"otwartego", "otwartym", "swiatowego", "czy", "i", "lub"}:
+            return None
+
         # Generic ocean / coastal access
-        if any(k in norm_q for k in ("ocean", "coastal", "dostep do morza", "dostep do oceanu", "graniczy z oceanem")):
+        if any(k in norm_q for k in ("ocean", "coastal", "dostep do morza", "dostep do oceanu", "graniczy z oceanem", "nadmorsk")):
             return (
                 {"operator": "equals", "left": {"entity": "target_state", "relation": "is_coastal"}, "right": {"value": True}},
                 "Does the state border an ocean?",
             )
-
     # 3. Original 13 colonies
     if "13" in norm_q and any(k in norm_q for k in ("colon", "kolon")):
         return (

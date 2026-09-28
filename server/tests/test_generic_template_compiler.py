@@ -78,10 +78,16 @@ def test_us_statedle_templates_match_and_execute_fast():
         ("czy ten stan graniczy z meksykiem?", "borders_country", "Mexico"),
         ("is it a coastal state?", "is_coastal", True),
         ("does it border the Atlantic Ocean?", "water_access", "Atlantic Ocean"),
+        ("does it have access to Antlantic Ocean?", "water_access", "Atlantic Ocean"),
+        ("czy ma dostęp do oceanu antlantyckiego?", "water_access", "Atlantic Ocean"),
+        ("czy leży nad atlantykiem?", "water_access", "Atlantic Ocean"),
+        ("czy leży nad antlantykiem?", "water_access", "Atlantic Ocean"),
+        ("does it have access to the Pacific Ocean?", "water_access", "Pacific Ocean"),
+        ("does it have access to the Arctic Ocean?", "water_access", "Arctic Ocean"),
+        ("does it have access to Indian Ocean?", "water_access", "Indian Ocean"),
         ("was it one of the original 13 colonies?", "admission_order", 13),
         ("is it on the East Coast?", "regional_labels", "East Coast"),
     ]
-
     for question, expected_relation, expected_value in cases:
         t0 = time.perf_counter()
         res = compile_generic_template_plan(question, "usstatedle")
@@ -108,3 +114,27 @@ def test_analyze_question_uses_template_without_llm_call():
     assert plan.supported is True
     assert plan.explanation == "Deterministic template match."
     assert duration_ms < 50.0, f"Expected fast template match, took {duration_ms:.1f}ms"
+
+def test_washington_atlantic_access_is_false():
+    """Verify Washington has Pacific access but NOT Atlantic Ocean access (even with 'Antlantic' typo)."""
+    from local_kb_question import execute_plan
+
+    # 1. Antlantic typo
+    plan_typo = analyze_question("Does it have access to Antlantic Ocean?", US_CONFIG, use_cache=False)
+    assert plan_typo.valid is True
+    ans_wa_typo = execute_plan(US_CONFIG, "Washington", plan_typo)
+    assert ans_wa_typo.answer is False
+    assert "Atlantic Ocean" in ans_wa_typo.question
+
+    ans_me_typo = execute_plan(US_CONFIG, "Maine", plan_typo)
+    assert ans_me_typo.answer is True
+
+    # 2. Standard Atlantic
+    plan_clean = analyze_question("Does it have access to Atlantic Ocean?", US_CONFIG, use_cache=False)
+    ans_wa_clean = execute_plan(US_CONFIG, "Washington", plan_clean)
+    assert ans_wa_clean.answer is False
+
+    # 3. Pacific access is True for Washington
+    plan_pac = analyze_question("Does it have access to Pacific Ocean?", US_CONFIG, use_cache=False)
+    ans_wa_pac = execute_plan(US_CONFIG, "Washington", plan_pac)
+    assert ans_wa_pac.answer is True
