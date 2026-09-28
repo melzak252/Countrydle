@@ -17,61 +17,11 @@ from countrydle.local_answering import execute_local_plan
 from countrydle.local_planner import QuestionPlan, analyze_question_for_local_plan
 
 
-GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
-
-
-FALLBACK_ANSWER_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "explanation": {"type": "string", "minLength": 1},
-        "answer": {"type": ["boolean", "null"]},
-    },
-    "required": ["answer", "explanation"],
-    "additionalProperties": False,
-}
-
-
-def gemini_json(
-    system_prompt: str, user_prompt: str, max_output_tokens: int = 1024, *,
-    evidence: dict | None = None, request_timeout: float = 60, max_attempts: int = 3,
-    response_schema: dict | None = None, thinking_budget: int | None = None,
-) -> dict:
-    """Call Gemini through the shared connection pool, retaining fallback retry policy."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
-
-    model = (
-        os.getenv("GEMINI_QUIZ_MODEL")
-        or os.getenv("LOCAL_QUESTION_MODEL")
-        or os.getenv("GEMINI_MODEL")
-        or GEMINI_DEFAULT_MODEL
-    )
-    prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}"
-    retryable_statuses = {429, 500, 502, 503, 504}
-    for attempt in range(max_attempts):
-        try:
-            parsed = generate_gemini_json(
-                prompt, model=model, api_key=api_key, max_output_tokens=max_output_tokens,
-                timeout=request_timeout, evidence=evidence, response_schema=response_schema,
-                thinking_budget=thinking_budget if model.startswith("gemini-2.5") else None,
-            )
-            break
-        except httpx.HTTPStatusError as exc:
-            status = exc.response.status_code
-            if status not in retryable_statuses or attempt == max_attempts - 1:
-                raise RuntimeError(f"Gemini HTTP error {status}") from exc
-            time.sleep(2**attempt)
-    else:
-        raise RuntimeError("Gemini request failed")
-    if evidence is not None:
-        evidence.update(
-            provider="gemini", model=model,
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-            temperature=0, max_output_tokens=max_output_tokens,
-        )
-
-    return parsed
+from utils.ai_clients import (
+    GEMINI_DEFAULT_MODEL,
+    FALLBACK_ANSWER_SCHEMA,
+    gemini_json,
+)
 
 
 async def enhance_question(question: str) -> QuestionEnhanced:

@@ -3,7 +3,7 @@ import time
 import os
 import json
 from typing import List, Tuple
-from utils.ai_clients import get_openai_client
+from utils.ai_clients import gemini_json, FALLBACK_ANSWER_SCHEMA
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -187,30 +187,7 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
     question_prompt = f"""User's Question: {question}"""
 
-    prompts = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question_prompt},
-    ]
-    model = os.getenv("QUIZ_MODEL")
-
-    client = await asyncio.to_thread(get_openai_client)
-    response = await asyncio.to_thread(
-        client.chat.completions.create,
-        model=model,
-        messages=prompts,
-        response_format={"type": "json_object"},
-        temperature=0.0,
-        seed=42,
-    )
-
-    answer = response.choices[0].message.content
-
-    try:
-        answer_dict: dict = json.loads(answer)
-    except json.JSONDecodeError:
-        print(answer)
-        raise
-
+    answer_dict = await asyncio.to_thread(gemini_json, system_prompt, question_prompt, max_output_tokens=768)
     return WojewodztwoQuestionEnhanced(
         original_question=question,
         valid=answer_dict["valid"],
@@ -266,41 +243,24 @@ def answer_question_for_entity(
     """Run the normal answer model for an explicit target, without daily state."""
     system_prompt, question_prompt = answer_prompts(question, entity_name, context)
 
-
-    prompts = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question_prompt},
-    ]
-    model = os.getenv("QUIZ_MODEL")
-    answer_dict = None
-    try:
-        client = get_openai_client(request_timeout=request_timeout)
-        response = client.chat.completions.create(
-            model=model,
-            messages=prompts,
-            response_format={"type": "json_object"},
-            temperature=0.0,
-            seed=42,
-        )
-        answer = response.choices[0].message.content
-        answer_dict = json.loads(answer)
-        if evidence is not None:
-            evidence.update(
-                provider="openai", model=response.model, requested_model=model,
-                messages=prompts, temperature=0, seed=42,
-                response_id=response.id, system_fingerprint=response.system_fingerprint,
-            )
-            usage = getattr(response, "usage", None)
-            if usage is not None:
-                evidence["usage"] = {
-                    "input_tokens": usage.prompt_tokens,
-                    "output_tokens": usage.completion_tokens,
-                    "total_tokens": usage.total_tokens,
-                }
-    except Exception as exc:
-        print(f"Warning: OpenAI call failed ({exc}); falling back to Gemini.")
-        from countrydle.utils import gemini_json
-        answer_dict = gemini_json(system_prompt, question_prompt, max_output_tokens=768, evidence=evidence)
+    answer_dict = gemini_json(
+        system_prompt, question_prompt, max_output_tokens=2048, evidence=evidence,
+        request_timeout=60 if request_timeout is None else request_timeout,
+        max_attempts=3 if request_timeout is None else 1,
+        response_schema=FALLBACK_ANSWER_SCHEMA, thinking_budget=1024,
+    )
+    if not isinstance(answer_dict, dict):
+        raise ValueError("Gemini answer must be a JSON object")
+    if "answer" not in answer_dict:
+        raise ValueError("Gemini answer is missing the answer field")
+    answer = answer_dict["answer"]
+    if answer is not None and type(answer) is not bool:
+        raise ValueError("Gemini answer must be true, false, or null")
+    if answer_dict.keys() - {"answer", "explanation"}:
+        raise ValueError("Gemini answer contains unexpected fields")
+    explanation = answer_dict.get("explanation")
+    if not isinstance(explanation, str) or not explanation.strip():
+        raise ValueError("Gemini answer must include a non-empty explanation")
     return answer_dict
 
 

@@ -272,9 +272,8 @@ async def test_local_fact_execution_does_not_block_loop(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("mode,repository,id_field,name_field", MODES[1:])
-@pytest.mark.parametrize("openai_unavailable", [False, True])
 async def test_real_answer_helper_keeps_provider_fallback_nonblocking_and_reports_usage(
-    monkeypatch, mode, repository, id_field, name_field, openai_unavailable,
+    monkeypatch, mode, repository, id_field, name_field,
 ):
     module, day, session = mode_context(monkeypatch, mode, repository, id_field, name_field)
     blocking = BlockingCall()
@@ -282,28 +281,17 @@ async def test_real_answer_helper_keeps_provider_fallback_nonblocking_and_report
     async def no_fragments(*args, **kwargs):
         return [], []
 
-    def completion(**kwargs):
-        if openai_unavailable:
-            raise RuntimeError("OpenAI unavailable")
-        blocking()
-        return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(
-                content='{"answer": false, "explanation": "It is inland."}',
-            ))],
-            model="configured-test-model", id="response-test", system_fingerprint=None,
-            usage=SimpleNamespace(prompt_tokens=12, completion_tokens=3, total_tokens=15),
-        )
-
     def gemini(*args, evidence=None, **kwargs):
         blocking()
         if evidence is not None:
-            evidence.update(provider="gemini", model="test-gemini")
+            evidence.update(
+                provider="gemini", model="test-gemini",
+                usage={"input_tokens": 12, "output_tokens": 3, "total_tokens": 15},
+            )
         return {"answer": False, "explanation": "It is inland."}
 
-    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=completion)))
-    monkeypatch.setattr(module, "get_openai_client", lambda **kwargs: client)
+    monkeypatch.setattr(module, "gemini_json", gemini)
     monkeypatch.setattr(module, "get_fragments_matching_question", no_fragments)
-    monkeypatch.setattr("countrydle.utils.gemini_json", gemini)
     question = SimpleNamespace(
         original_question="Is it coastal?", question="Is it coastal?", valid=True,
         intent="Coastline check", required_info="Coastline",
@@ -314,10 +302,7 @@ async def test_real_answer_helper_keeps_provider_fallback_nonblocking_and_report
     )
     assert result.answer is False
     assert evidence["fallback"]["duration_ms"] > 0
-    if openai_unavailable:
-        assert evidence["fallback"]["provider"] == "gemini"
-    else:
-        assert evidence["fallback"]["provider"] == "openai"
-        assert evidence["fallback"]["usage"] == {
-            "input_tokens": 12, "output_tokens": 3, "total_tokens": 15,
-        }
+    assert evidence["fallback"]["provider"] == "gemini"
+    assert evidence["fallback"]["usage"] == {
+        "input_tokens": 12, "output_tokens": 3, "total_tokens": 15,
+    }

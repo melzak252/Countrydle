@@ -225,19 +225,7 @@ async def test_unsupported_plan_uses_daily_retrieval_and_answer_model(admin_clie
             "explanation": "The retrieved evidence rules this out." if "Retrieved geographic evidence." in prompt else "Insufficient evidence.",
         }
 
-    if mode == "countrydle":
-        monkeypatch.setattr(module, "gemini_json", lambda prompt, *args, **kwargs: answer_from_context(prompt))
-    else:
-        def completion(**kwargs):
-            return SimpleNamespace(
-                choices=[SimpleNamespace(message=SimpleNamespace(
-                    content=json.dumps(answer_from_context(kwargs["messages"][0]["content"])),
-                ))],
-                model="test-model", id="test-response", system_fingerprint=None, usage=None,
-            )
-
-        client_provider = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=completion)))
-        monkeypatch.setattr(module, "get_openai_client", lambda **kwargs: client_provider)
+    monkeypatch.setattr(module, "gemini_json", lambda prompt, *args, **kwargs: answer_from_context(prompt))
     response = await client.post("/admin/question-tests", json={
         "mode": mode, "entity_id": entity_id, "question": "Is it in Europe?",
     })
