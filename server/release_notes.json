@@ -1,5 +1,5 @@
 {
-  "version": "1.15.1",
-  "title": "Subregion question resolution and answer report mode recovery",
-  "body": "SUBREGION QUESTION UNDERSTANDING\n- Specific subregions (such as Southeast Asia, Central Asia, South Asia, East Asia, and European regions) now take priority over broad continent matching in English and Polish.\n- Added comprehensive Polish inflections (e.g. \"Azji Południowo-wschodniej\") and English spelling variants so regional questions evaluate accurately against curated subregion data.\n- Fixed diagonal direction matching so regional queries containing directional words are no longer dropped.\n\nANSWER REPORT ACCURACY & MODE RESOLUTION\n- Answer reports now cryptographically verify signed report tokens and automatically resolve the correct game mode if a mismatch occurs.\n- Prevents answer reports from inadvertently linking to questions in different game modes."
+  "version": "1.15.2",
+  "title": "Comprehensive subregion question matching across Africa, Asia, and the Americas",
+  "body": "REGIONAL QUESTION UNDERSTANDING\n- Added full coverage for African subregions (Southern Africa, Northern Africa, Western Africa, Eastern Africa, and Middle/Central Africa) in English and Polish.\n- Supported both Polish adjective-noun word orders for all Asian and European subregions (e.g. \"południowa Azja\" and \"Azja Południowa\").\n- Added inflected forms for Middle East (\"Bliskiego Wschodu\", \"Bliskim Wschodem\"), Central America (\"Ameryka Środkowa\"), and Baltic states (\"państwo bałtyckie\").\n- Expanded regional trigger phrases to recognize questions asking about country origin and statehood."
 }
