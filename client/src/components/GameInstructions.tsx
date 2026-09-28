@@ -8,7 +8,6 @@ import {
   ArrowRight,
   MousePointerClick,
   Flag,
-  Zap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -75,13 +74,17 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
         className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-md border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl space-y-6 my-auto text-sand-100"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Row */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 text-left">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-400">
-              <Zap size={13} aria-hidden="true" />
-              {isPl ? 'Przewodnik Nowego Gracza' : 'New Player Guide'}
-            </span>
+        {/* Header with Title & Close Button */}
+        <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
+              <span>🗺️ {isPl ? `Jak grać w ${gameName}?` : `How to play ${gameName}`}</span>
+            </h2>
+            <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
+              {isPl
+                ? 'Zadawaj pytania Tak/Nie, eliminuj obszary na mapie i odgadnij ukryty cel w ograniczonej liczbie prób.'
+                : 'Ask strategic Yes/No questions, narrow down possibilities on the map, and deduce the secret location in limited attempts.'}
+            </p>
           </div>
           <button
             type="button"
@@ -92,18 +95,6 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
           >
             <X size={16} />
           </button>
-        </div>
-
-        {/* Title */}
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
-            <span>🗺️ {isPl ? `Jak grać w ${gameName}?` : `How to play ${gameName}`}</span>
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-            {isPl
-              ? 'Zadawaj pytania Tak/Nie, eliminuj obszary na mapie i odgadnij ukryty cel w ograniczonej liczbie prób.'
-              : 'Ask strategic Yes/No questions, narrow down possibilities on the map, and deduce the secret location in limited attempts.'}
-          </p>
         </div>
 
         {/* 3 Core Gameplay Steps */}

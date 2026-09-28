@@ -351,12 +351,12 @@ const getStyleFromState = (
 
   if (marker === 'red') {
     return {
-      fillColor: '#18181b',
-      weight: 1.5,
-      opacity: 0.8,
-      color: '#f43f5e',
-      dashArray: '3, 4',
-      fillOpacity: 0.85,
+      fillColor: '#b91c1c',
+      weight: 2.5,
+      opacity: 1,
+      color: '#ef4444',
+      fillOpacity: 0.45,
+      dashArray: undefined,
     };
   }
 

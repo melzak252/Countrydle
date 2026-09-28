@@ -604,10 +604,15 @@ export default function FlagdlePage() {
             className="relative z-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-md border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 text-left">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-400">
-                Flagdle Guide
-              </span>
+            <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
+                  <span>🚩 How to Play Flagdle</span>
+                </h2>
+                <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
+                  Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
@@ -617,15 +622,6 @@ export default function FlagdlePage() {
               >
                 <X size={16} />
               </button>
-            </div>
-
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
-                <span>🚩 How to Play Flagdle</span>
-              </h2>
-              <p className="mt-2 text-sm sm:text-base text-zinc-400 leading-relaxed max-w-2xl">
-                Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
-              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
