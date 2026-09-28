@@ -1419,6 +1419,31 @@ def evaluate_plan_node(
             c_canon = CURRENCY_ALIASES.get(normalize_value(right), normalize_value(right))
             return any(CURRENCY_ALIASES.get(normalize_value(v), normalize_value(v)) == c_canon for v in left)
         if operator != "contains" and (isinstance(left, list) or isinstance(right, list)):
+            if (
+                operator in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"}
+                and isinstance(left, list)
+                and type(right) is not bool
+                and (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
+            ):
+                if relation == "borders_country":
+                    canonical = set()
+                    for item in left:
+                        c_row = find_country(conn, str(item))
+                        canonical.add(c_row["app_country_name"] if c_row is not None else str(item))
+                    left_num = float(len(canonical))
+                else:
+                    left_num = float(len(left))
+                right_num = float(right)
+                if operator == "equals":
+                    return left_num == right_num
+                if operator == "greater_than_or_equal":
+                    return left_num >= right_num
+                if operator == "less_than_or_equal":
+                    return left_num <= right_num
+                if operator == "greater_than":
+                    return left_num > right_num
+                if operator == "less_than":
+                    return left_num < right_num
             return None
         left_ref = node.get("left", {})
         if (
@@ -1694,18 +1719,24 @@ def generate_factual_explanation(
             country = subject
             name = country["app_country_name"]
 
-    if rel == "borders_country" and target_val:
-        resolved = find_country(conn, target_val)
-        if resolved is not None:
-            target_val = resolved["app_country_name"]
-            if answer and resolved["id"] == country["id"]:
-                return f"In this game, {name} counts as bordering itself."
-        borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
-        if answer:
-            return f"{name} shares a land border with {target_val}."
-        else:
-            b_str = ", ".join(sorted(set(borders))) if borders else "none"
-            return f"{name} does not border {target_val}. Its land borders are: {b_str}."
+    if rel == "borders_country":
+        if isinstance(target_val, (int, float)) or (isinstance(target_val, str) and str(target_val).isdigit()):
+            raw_b = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
+            canonical_b = sorted(set(find_country(conn, b)["app_country_name"] for b in raw_b if find_country(conn, b)))
+            b_str = f" ({', '.join(canonical_b)})" if canonical_b else ""
+            return f"{country['app_country_name']} borders {len(canonical_b)} neighboring countries{b_str}."
+        if target_val:
+            resolved = find_country(conn, target_val)
+            if resolved is not None:
+                target_val = resolved["app_country_name"]
+                if answer and resolved["id"] == country["id"]:
+                    return f"In this game, {name} counts as bordering itself."
+            borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
+            if answer:
+                return f"{name} shares a land border with {target_val}."
+            else:
+                b_str = ", ".join(sorted(set(borders))) if borders else "none"
+                return f"{name} does not border {target_val}. Its land borders are: {b_str}."
 
     if rel == "water_access":
         db_waters = sorted(set(r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))))

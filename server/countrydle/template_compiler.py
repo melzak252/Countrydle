@@ -5,6 +5,8 @@ from functools import lru_cache
 import re
 import unicodedata
 
+from slot_template_engine import match_slot_template
+
 @lru_cache(maxsize=512)
 def _norm(value: str) -> str:
     folded = value.casefold().replace("ł", "l")
@@ -153,6 +155,9 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
     """Compile a recognized question to ``(AST, improved English question)``."""
     if not isinstance(question, str) or not question.strip():
         return None
+    slot_res = match_slot_template(question, "countrydle")
+    if slot_res is not None:
+        return slot_res
     q = _norm(question)
     diagonal = re.search(r"\b(north[- ]west|north[- ]east|south[- ]west|south[- ]east|northwest|northeast|southwest|southeast)\b", q)
     logical = re.search(r"\b(and|or|i|lub|neither|nor|ani|not|brak)\b", q)

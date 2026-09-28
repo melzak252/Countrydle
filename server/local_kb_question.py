@@ -489,6 +489,7 @@ def evaluate(
         and isinstance(left_node, dict)
         and left_node.get("relation") == "borders_powiat"
         and op in {"contains", "contains_exact", "contains_partial", "equals"}
+        and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
         if left_row is not None and is_self_reference(right, left_row, config):
             return True
@@ -505,6 +506,7 @@ def evaluate(
             or (config.mode_name == "Wojewodztwodle" and left_node.get("relation") == "name")
         )
         and op in {"contains", "contains_exact", "contains_partial", "equals"}
+        and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
         if left_row is not None and is_self_reference(right, left_row, config):
             return True
@@ -534,6 +536,8 @@ def evaluate(
         return bool(left)
     if op in {"contains", "contains_exact", "equals"}:
         if isinstance(left, list):
+            if type(right) is not bool and (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit())):
+                return float(len(left)) == float(right)
             return any(norm(v) == norm(right) for v in left)
         if isinstance(left, (bool, int, float)) and isinstance(right, (bool, int, float)):
             return left == right
@@ -551,10 +555,13 @@ def evaluate(
             return any(norm(v) == norm(right) or norm(right) in norm(v) for v in left)
         return norm(right) in norm(left)
     if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "west_of", "east_of", "north_of", "south_of"}:
-        try:
-            lnum, rnum = float(left), float(right)
-        except (TypeError, ValueError):
-            return None
+        if isinstance(left, list) and type(right) is not bool and (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit())):
+            lnum, rnum = float(len(left)), float(right)
+        else:
+            try:
+                lnum, rnum = float(left), float(right)
+            except (TypeError, ValueError):
+                return None
         if op == "greater_than_or_equal":
             return lnum >= rnum
         if op == "less_than_or_equal":
@@ -680,15 +687,27 @@ def generate_mode_explanation(
         if rel == "is_coastal":
             return f"Województwo {name} ma bezpośredni dostęp do Morza Bałtyckiego." if row[config.scalar_relations[rel]] else f"Województwo {name} nie ma dostępu do morza (jest województwem śródlądowym)."
         if rel == "borders_voivodeship" and val:
-            display_val = resolve_voivodeship_name(val) or val
+            borders = get_relation_value(conn, config, row, rel) or []
             entity_name = f"Województwo {name}" if config.target_entity == "target_voivodeship" else name
+            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
+                b_str = f" ({', '.join(borders)})" if borders else ""
+                return f"{entity_name} graniczy z {len(borders)} sąsiednimi województwami{b_str}."
+            display_val = resolve_voivodeship_name(val) or val
             if answer:
                 return f"{entity_name} graniczy z: {display_val}."
-            borders = get_relation_value(conn, config, row, rel)
             neighbors = f" Graniczy z: {', '.join(borders)}." if borders else ""
             return f"{entity_name} nie graniczy z {display_val}.{neighbors}"
+        if rel == "borders_powiat" and val:
+            borders = get_relation_value(conn, config, row, rel) or []
+            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
+                b_str = f" ({', '.join(borders)})" if borders else ""
+                name_display = name if name.startswith("Powiat") else f"Powiat {name}"
+                return f"{name_display} graniczy z {len(borders)} sąsiednimi powiatami{b_str}."
         if rel == "borders_country" and val:
             borders = [r[0] for r in conn.execute("SELECT country_name FROM voivodeship_borders_countries WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
+            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
+                b_str = f" ({', '.join(borders)})" if borders else ""
+                return f"{name} graniczy z {len(borders)} państwami{b_str}."
             return f"{name} graniczy z obcym państwem: {val}." if answer else f"{name} nie graniczy z {val}."
         if rel == "seat":
             return f"Siedzibą {name} jest {row['seat']}."
@@ -707,6 +726,9 @@ def generate_mode_explanation(
             return f"{name} is a coastal state with ocean/gulf coastline." if row[config.scalar_relations[rel]] else f"{name} is an inland state with no ocean coastline."
         if rel == "borders_state" and val:
             borders = [r[0] for r in conn.execute("SELECT border_state_name FROM us_state_borders_states WHERE state_id=?", (row["id"],))]
+            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
+                b_str = f" ({', '.join(borders)})" if borders else ""
+                return f"{name} borders {len(borders)} neighboring states{b_str}."
             return f"{name} borders {val}." if answer else f"{name} does not border {val}. Bordering states: {', '.join(borders)}."
         if rel in ("region", "division"):
             return f"{name} is located in the {row['region']} region ({row['division']} division)."
