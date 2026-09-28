@@ -22,6 +22,7 @@ import { friendError, friendMatchApi, friendRequestId, uncertainFriendRequest } 
 import type { FriendEntity, FriendMode, FriendSnapshot } from '../types/friendMatch';
 import GuessInput from '../components/GuessInput';
 import QuestionInput from '../components/QuestionInput';
+import GameActionComposer from '../components/GameActionComposer';
 import FriendDuelMap from '../components/friendDuel/FriendDuelMap';
 import DuelHistory from '../components/friendDuel/DuelHistory';
 import FriendQuestionModal from '../components/friendDuel/FriendQuestionModal';
@@ -786,8 +787,8 @@ function DuelRoom({ code }: { code?: string }) {
       {(snapshot.status === 'active' || finished) && (
         <div className={`pointer-events-none ${
           isHistoryOpen
-            ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-96 md:max-w-[calc(100vw-2rem)]'
-            : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-96 md:max-w-[calc(100vw-2rem)]'
+            ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+            : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
         }`}>
           {!isHistoryOpen ? (
             <button
@@ -808,7 +809,7 @@ function DuelRoom({ code }: { code?: string }) {
             <div
               onWheel={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-96 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
+              className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[82dvh] max-md:max-h-[88dvh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
             >
               {/* Mobile Drag Handle (Tap to collapse) */}
               <button
@@ -853,6 +854,99 @@ function DuelRoom({ code }: { code?: string }) {
                   }
                 />
               </div>
+              {snapshot.status === 'active' && (
+                mustAnswer && pendingQuestion ? (
+                  <div ref={answerPanel} className="shrink-0 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
+                    <div className="flex items-center gap-2 font-mono text-[11px] text-amber-300">
+                      <Zap size={14} className="text-amber-400 animate-pulse" />
+                      <span>Question received — choose answer in modal</span>
+                    </div>
+                  </div>
+                ) : myTurn ? (
+                  <GameActionComposer
+                    activeAction={activeActionTab}
+                    onActionChange={action => setActiveActionTab(action)}
+                    questionDisabled={snapshot.phase === 'reply'}
+                    trailingActions={canGuess && (
+                      <button
+                        type="button"
+                        className="ml-1 cursor-pointer font-mono text-[10px] uppercase tracking-wider text-zinc-400 hover:text-amber-300 disabled:opacity-40"
+                        disabled={busy}
+                        onClick={() => { void room.act('pass', {}); }}
+                      >
+                        {copy.pass}
+                      </button>
+                    )}
+                    helperText={snapshot.phase === 'thinking' ? copy.unlimited : undefined}
+                  >
+                    {activeActionTab === 'question' ? (
+                      <QuestionInput
+                        onAsk={question => room.act('ask', { question: question.trim() })}
+                        isLoading={busy}
+                        disabled={!myTurn || snapshot.phase !== 'thinking'}
+                        placeholder={copy.questionPlaceholder}
+                        minLength={3}
+                        maxLength={500}
+                        mode={viewMode}
+                      />
+                    ) : (
+                      <GuessInput
+                        dropup={true}
+                        countries={entities}
+                        alreadyGuessedNames={snapshot.history.filter(h => h.player_id === snapshot.you && h.type === 'guess' && h.entity).map(h => h.entity!.name)}
+                        alreadyGuessedIds={snapshot.history.filter(h => h.player_id === snapshot.you && h.type === 'guess' && h.entity).map(h => h.entity!.id)}
+                        onGuess={id => room.act('guess', { entity_id: id })}
+                        isLoading={busy || entitiesLoading}
+                        disabled={!canGuess}
+                        placeholder={copy.search}
+                        noMatchesLabel={copy.noMatches}
+                      />
+                    )}
+                  </GameActionComposer>
+                ) : (
+                  <div className="shrink-0 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3 font-mono text-xs">
+                      <div className="flex items-center gap-2 text-zinc-400">
+                        <Clock size={14} className="text-zinc-500 animate-spin-slow" />
+                        <span>
+                          {copy.waiting}: {opponent?.name || 'Friend'} {snapshot.phase === 'answering' ? copy.awaitingAnswer : copy.theirTurn}
+                        </span>
+                      </div>
+                      {snapshot.draw_offer_by === snapshot.you ? (
+                        <span className="text-[10px] uppercase tracking-wider text-amber-300">{copy.drawOffered}</span>
+                      ) : snapshot.draw_offer_by ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="rounded-sm bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-obsidian-950"
+                            disabled={busy}
+                            onClick={() => { void room.act('accept_draw', {}); }}
+                          >
+                            {copy.acceptDraw}
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-sm border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300"
+                            disabled={busy}
+                            onClick={() => { void room.act('decline_draw', {}); }}
+                          >
+                            {copy.declineDraw}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="cursor-pointer text-[10px] uppercase tracking-wider text-zinc-500 hover:text-sand-100"
+                          disabled={busy}
+                          onClick={() => { void room.act('offer_draw', {}); }}
+                        >
+                          {copy.offerDraw}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           )}
         </div>
@@ -953,147 +1047,6 @@ function DuelRoom({ code }: { code?: string }) {
         </div>
       )}
 
-      {/* 5. Floating Bottom Action Dock */}
-      {snapshot.status === 'active' && (
-        <div className="pointer-events-none max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-[1000] max-md:w-full max-md:px-0 md:absolute md:bottom-4 md:left-1/2 md:z-[990] md:w-full md:max-w-md md:-translate-x-1/2 md:px-3">
-          <div className="pointer-events-auto flex flex-col gap-2 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all max-md:rounded-none max-md:border-t max-md:border-white/15 max-md:p-2.5 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:p-3">
-            {/* Case A: Must Answer Opponent's Question */}
-            {mustAnswer && pendingQuestion ? (
-              <div ref={answerPanel} className="flex items-center justify-between gap-3 px-2 py-1">
-                <div className="flex items-center gap-2 font-mono text-[11px] text-amber-300">
-                  <Zap size={14} className="text-amber-400 animate-pulse" />
-                  <span>Question received — choose answer in modal</span>
-                </div>
-              </div>
-            ) : myTurn ? (
-              /* Case B: Your Turn to Ask Question or Make Guess */
-              <>
-                <div className="flex items-center justify-between border-b border-white/10 mb-1 pb-1">
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setActiveActionTab('question')}
-                      disabled={snapshot.phase === 'reply'}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                        activeActionTab === 'question'
-                          ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                          : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 disabled:opacity-40'
-                      }`}
-                    >
-                      <span>Question</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveActionTab('guess')}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                        activeActionTab === 'guess'
-                          ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                          : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                      }`}
-                    >
-                      <span>Guess</span>
-                    </button>
-
-                    {canGuess && (
-                      <button
-                        type="button"
-                        className="font-mono text-[10px] uppercase tracking-wider text-zinc-400 hover:text-amber-300 disabled:opacity-40 cursor-pointer ml-1"
-                        disabled={busy}
-                        onClick={() => { void room.act('pass', {}); }}
-                      >
-                        {copy.pass}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Mobile Chat Shortcut Trigger */}
-                  <button
-                    type="button"
-                    onClick={() => setIsHistoryOpen(true)}
-                    className="md:hidden flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 hover:bg-white/5 rounded-sm"
-                    aria-label="Open chat"
-                  >
-                    <MessageSquare size={12} />
-                    <span>Chat</span>
-                    <span className="text-sand-200">({snapshot.history.length})</span>
-                  </button>
-                </div>
-
-                <div className="pt-0.5">
-                  {activeActionTab === 'question' ? (
-                    <QuestionInput
-                      onAsk={question => room.act('ask', { question: question.trim() })}
-                      isLoading={busy}
-                      disabled={!myTurn || snapshot.phase !== 'thinking'}
-                      placeholder={copy.questionPlaceholder}
-                      minLength={3}
-                      maxLength={500}
-                      mode={viewMode}
-                    />
-                  ) : (
-                    <GuessInput
-                      dropup={true}
-                      countries={entities}
-                      alreadyGuessedNames={snapshot.history.filter(h => h.player_id === snapshot.you && h.type === 'guess' && h.entity).map(h => h.entity!.name)}
-                      alreadyGuessedIds={snapshot.history.filter(h => h.player_id === snapshot.you && h.type === 'guess' && h.entity).map(h => h.entity!.id)}
-                      onGuess={id => room.act('guess', { entity_id: id })}
-                      isLoading={busy || entitiesLoading}
-                      disabled={!canGuess}
-                      placeholder={copy.search}
-                      noMatchesLabel={copy.noMatches}
-                    />
-                  )}
-                </div>
-                {snapshot.phase === 'thinking' && <p className="text-center text-xs leading-relaxed text-zinc-400">{copy.unlimited}</p>}
-              </>
-            ) : (
-              /* Case C: Opponent's turn */
-              <div className="flex items-center justify-between gap-3 px-2 py-1 font-mono text-xs">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <Clock size={14} className="text-zinc-500 animate-spin-slow" />
-                  <span>
-                    {copy.waiting}: {opponent?.name || 'Friend'} {snapshot.phase === 'answering' ? copy.awaitingAnswer : copy.theirTurn}
-                  </span>
-                </div>
-
-                {/* Draw actions */}
-                {snapshot.draw_offer_by === snapshot.you ? (
-                  <span className="text-[10px] uppercase tracking-wider text-amber-300">{copy.drawOffered}</span>
-                ) : snapshot.draw_offer_by ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="rounded-sm bg-amber-400 text-obsidian-950 font-bold px-2 py-0.5 text-[10px] uppercase tracking-wider"
-                      disabled={busy}
-                      onClick={() => { void room.act('accept_draw', {}); }}
-                    >
-                      {copy.acceptDraw}
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-sm border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300"
-                      disabled={busy}
-                      onClick={() => { void room.act('decline_draw', {}); }}
-                    >
-                      {copy.declineDraw}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-sand-100 cursor-pointer"
-                    disabled={busy}
-                    onClick={() => { void room.act('offer_draw', {}); }}
-                  >
-                    {copy.offerDraw}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* 6. Results Modal on Game Over */}
       {finished && !isResultDismissed && (

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import QuestionInput from '../components/QuestionInput';
 import GuessInput from '../components/GuessInput';
+import GameActionComposer from '../components/GameActionComposer';
 import MapBox from '../components/MapBox';
 import GameInstructions from '../components/GameInstructions';
 import QuestionChat from '../components/QuestionChat';
@@ -232,8 +233,8 @@ export default function GamePage() {
 
       <div className={`pointer-events-none ${
         isChatOpen
-          ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-92 md:max-w-[calc(100vw-2rem)]'
-          : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-92 md:max-w-[calc(100vw-2rem)]'
+          ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+          : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
       }`}>
         {!isChatOpen ? (
           /* Collapsed Pill Button */
@@ -255,7 +256,7 @@ export default function GamePage() {
           <div
             onWheel={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-92 md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/85"
+            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[82dvh] max-md:max-h-[88dvh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/85"
           >
             {/* Mobile Drag Handle (Tap to collapse) */}
             <button
@@ -381,59 +382,13 @@ export default function GamePage() {
                 )}
               </div>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* 4. Floating Action Inputs Dock on the Map */}
-      <div className="pointer-events-none max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-[1000] max-md:w-full max-md:px-0 md:absolute md:bottom-4 md:left-1/2 md:z-[990] md:w-full md:max-w-md md:-translate-x-1/2 md:px-3">
-        <div className="pointer-events-auto flex flex-col gap-2 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all max-md:rounded-none max-md:border-t max-md:border-white/15 max-md:p-2.5 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:p-3">
-          {/* Action Tabs Switcher */}
-          {!isGameOver ? (
-            <>
-              <div className="flex items-center justify-between border-b border-white/10 mb-1 pb-1">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setUserSelectedTab('question')}
-                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                      activeInputTab === 'question'
-                        ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                        : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                    }`}
-                  >
-                    <span>Question</span>
-                    <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_questions}/10)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setUserSelectedTab('guess')}
-                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                      activeInputTab === 'guess'
-                        ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                        : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                    }`}
-                  >
-                    <span>Guess</span>
-                    <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_guesses}/3)</span>
-                  </button>
-                </div>
-
-                {/* Mobile Chat Shortcut Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setIsChatOpen(true)}
-                  className="md:hidden flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 hover:bg-white/5 rounded-sm"
-                  aria-label="Open chat"
-                >
-                  <MessageSquare size={12} />
-                  <span>Chat</span>
-                  <span className="text-sand-200">({questions.length})</span>
-                </button>
-              </div>
-              {/* Active Input Component */}
-              <div className="pt-0.5">
+            {!isGameOver ? (
+              <GameActionComposer
+                activeAction={activeInputTab}
+                onActionChange={action => setUserSelectedTab(action)}
+                questionCount={`${gameState.remaining_questions}/10`}
+                guessCount={`${gameState.remaining_guesses}/3`}
+              >
                 {activeInputTab === 'question' ? (
                   <QuestionInput
                     onAsk={handleAsk}
@@ -456,31 +411,29 @@ export default function GamePage() {
                     placeholder={t('gamePage.guessPlaceholder', { count: gameState.remaining_guesses })}
                   />
                 )}
+              </GameActionComposer>
+            ) : (
+              <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <Trophy size={16} className="text-amber-400" />
+                  <span className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
+                    {gameState.won ? 'Fieldwork solved' : 'Investigation concluded'}
+                  </span>
+                  <span className="font-mono text-xs text-emerald-400">{gameState.points} pts</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsResultDismissed(false)}
+                  className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
+                >
+                  View Result Card
+                </button>
               </div>
-            </>
-          ) : (
-            /* Game Finished Bottom Bar */
-            <div className="flex items-center justify-between gap-3 px-2 py-1">
-              <div className="flex items-center gap-3">
-                <Trophy size={16} className="text-amber-400" />
-                <span className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
-                  {gameState.won ? 'Fieldwork solved' : 'Investigation concluded'}
-                </span>
-                <span className="font-mono text-xs text-emerald-400">
-                  {gameState.points} pts
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsResultDismissed(false)}
-                className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
-              >
-                View Result Card
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
+
 
       {/* 5. Game Over Modal Overlay */}
       {isGameOver && showResultModal && (
