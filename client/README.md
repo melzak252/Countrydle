@@ -6,7 +6,12 @@ in chronological order and retain ownership of scrolling and game state.
 Player questions appear on the right; replies and answer status appear on the left.
 Valid explanations are not mounted until the game is over; invalid-question
 feedback is available immediately. Post-game answer reports retain their mode and
-question identifiers. `QuestionInput.tsx` supplies the shared rounded composer.
+question identifiers. `QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
+`GameActionComposer.tsx` hosts the active form in the chat footer.
+
+In daily games, the top `Questions`/`Guesses` tabs choose both displayed history and
+active input; no second selector appears by the composer. On mobile, open the chat
+drawer to reach it. Friend-duel controls remain in their chat footer.
 
 Player questions, including pending and rejected submissions, remain text-selectable
 and each has a copy control that copies the original text. Map tooltips stay anchored

@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { getContinentalStore } from '../stores/gameStore';
 import QuestionInput from '../components/QuestionInput';
 import GuessInput from '../components/GuessInput';
+import GameActionComposer from '../components/GameActionComposer';
 import { ControlledMapBox } from '../components/MapBox';
 import GameInstructions from '../components/GameInstructions';
 import QuestionChat from '../components/QuestionChat';
@@ -152,7 +153,12 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   const isMobile = useIsMobile();
   const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeChatTab, setActiveChatTab] = useState<'questions' | 'guesses'>('questions');
+  const activeInputTab: 'question' | 'guess' = userSelectedTab ?? (
+    gameState && gameState.remaining_questions <= 0 && gameState.remaining_guesses > 0
+      ? 'guess'
+      : 'question'
+  );
+  const activeChatTab = activeInputTab === 'question' ? 'questions' : 'guesses';
   const [isResultDismissed, setIsResultDismissed] = useState(false);
 
   useEffect(() => {
@@ -214,14 +220,9 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   const sortedQuestions = [...questions].sort((a, b) => a.id - b.id);
   const isGameOver = Boolean(gameState.is_game_over);
   const showResultModal = isGameOver && !isResultDismissed;
-  const activeInputTab: 'question' | 'guess' = userSelectedTab ?? (
-    (gameState.remaining_questions <= 0 && gameState.remaining_guesses > 0)
-      ? 'guess'
-      : 'question'
-  );
 
   const handleAsk = async (q: string) => {
-    setActiveChatTab('questions');
+    setUserSelectedTab('question');
     setIsChatOpen(true);
     return await askQuestion(q);
   };
@@ -229,7 +230,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   const handleGuess = async (name: string, id: number) => {
     setIsChatOpen(true);
     const accepted = await makeGuess(name, id);
-    setActiveChatTab(accepted === false ? 'questions' : 'guesses');
+    setUserSelectedTab(accepted === false ? 'question' : 'guess');
     return accepted;
   };
 
@@ -243,18 +244,16 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
         reason: 'You submitted a question while the "Guess" tab was active.',
         nextStep: 'Switched back to the "Question" tab for you.',
       });
-      setUserSelectedTab('question');
-      setActiveChatTab('questions');
     } else {
       addNotice({
         action: 'guess',
         input,
         title: 'Already guessed',
         reason: 'This location is already in your guess history. It was not submitted again.',
-        nextStep: 'Choose a different location from the suggestions.',
+        nextStep: 'Switch to the Guesses tab and choose a different location.',
       });
-      setActiveChatTab('questions');
     }
+    setUserSelectedTab('question');
     setIsChatOpen(true);
   };
 
@@ -355,8 +354,8 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
       <div className={`pointer-events-none ${
         isChatOpen
-          ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-92 md:max-w-[calc(100vw-2rem)]'
-          : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-80 md:sm:w-92 md:max-w-[calc(100vw-2rem)]'
+          ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+          : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
       }`}>
         {!isChatOpen ? (
           /* Collapsed Pill Button */
@@ -378,7 +377,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
           <div
             onWheel={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[72vh] max-md:max-h-[75vh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[48vh] md:sm:h-[52vh] md:max-h-[48vh] md:sm:max-h-[52vh] md:w-80 md:sm:w-92 md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/85"
+            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[82dvh] max-md:max-h-[88dvh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/85"
           >
             {/* Mobile Drag Handle (Tap to collapse) */}
             <button
@@ -392,10 +391,11 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
             {/* Notebook Tabbed Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-4 py-3 shrink-0">
-              <div className="flex items-center gap-2">
+              <div role="group" aria-label="Choose question or guess" className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveChatTab('questions')}
+                  aria-pressed={activeChatTab === 'questions'}
+                  onClick={() => setUserSelectedTab('question')}
                   className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'questions'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
@@ -409,7 +409,8 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
                 <button
                   type="button"
-                  onClick={() => setActiveChatTab('guesses')}
+                  aria-pressed={activeChatTab === 'guesses'}
+                  onClick={() => setUserSelectedTab('guess')}
                   className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'guesses'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
@@ -504,58 +505,12 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                 )}
               </div>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* 4. Floating Action Inputs Dock on the Map */}
-      <div className="pointer-events-none max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-[1000] max-md:w-full max-md:px-0 md:absolute md:bottom-4 md:left-1/2 md:z-[990] md:w-full md:max-w-md md:-translate-x-1/2 md:px-3">
-        <div className="pointer-events-auto flex flex-col gap-2 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all max-md:rounded-none max-md:border-t max-md:border-white/15 max-md:p-2.5 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:p-3">
-          {/* Action Tabs Switcher */}
-          {!isGameOver ? (
-            <>
-              <div className="flex items-center justify-between border-b border-white/10 mb-1 pb-1">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setUserSelectedTab('question')}
-                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                      activeInputTab === 'question'
-                        ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                        : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                    }`}
-                  >
-                    <span>Question</span>
-                    <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_questions}/8)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setUserSelectedTab('guess')}
-                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer rounded-sm ${
-                      activeInputTab === 'guess'
-                        ? 'border-b-2 border-emerald-400 text-sand-100 font-semibold bg-white/5'
-                        : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
-                    }`}
-                  >
-                    <span>Guess</span>
-                    <span className="font-mono text-[10px] text-zinc-500">({gameState.remaining_guesses}/3)</span>
-                  </button>
-                </div>
-
-                {/* Mobile Chat Shortcut Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setIsChatOpen(true)}
-                  className="md:hidden flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 hover:bg-white/5 rounded-sm"
-                  aria-label="Open chat"
-                >
-                  <MessageSquare size={12} />
-                  <span>Chat</span>
-                  <span className="text-sand-200">({questions.length})</span>
-                </button>
-              </div>
-              <div className="pt-0.5">
+            {!isGameOver ? (
+              <GameActionComposer
+                activeAction={activeInputTab}
+                onActionChange={setUserSelectedTab}
+                showActionTabs={false}
+              >
                 {activeInputTab === 'question' ? (
                   <QuestionInput
                     onAsk={handleAsk}
@@ -584,30 +539,29 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                     })}
                   />
                 )}
+              </GameActionComposer>
+            ) : (
+              <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <Trophy size={16} className="text-amber-400" />
+                  <span className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
+                    {gameState.won ? 'Fieldwork solved' : 'Investigation concluded'}
+                  </span>
+                  <span className="font-mono text-xs text-emerald-400">{gameState.points} pts</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsResultDismissed(false)}
+                  className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
+                >
+                  View Result Card
+                </button>
               </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-between gap-3 px-2 py-1">
-              <div className="flex items-center gap-3">
-                <Trophy size={16} className="text-amber-400" />
-                <span className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
-                  {gameState.won ? 'Fieldwork solved' : 'Investigation concluded'}
-                </span>
-                <span className="font-mono text-xs text-emerald-400">
-                  {gameState.points} pts
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsResultDismissed(false)}
-                className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
-              >
-                View Result Card
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
+
 
       {/* 5. Game Over Modal Overlay */}
       {isGameOver && showResultModal && (
