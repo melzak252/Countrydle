@@ -22,6 +22,7 @@ const resources = {
         more: 'More',
         contact: 'Contact',
         patchNotes: 'Patch notes',
+        howItWorks: 'How Questions Work',
       },
       footer: {
         rights: 'All rights reserved.',
@@ -32,6 +33,7 @@ const resources = {
         privacyPolicy: 'Privacy Policy',
         termsOfService: 'Terms of Service',
         cookiePolicy: 'Cookie Policy',
+        howItWorks: 'How Questions Work',
       },
       about: {
         badge: 'Educational Geography Platform',
@@ -483,6 +485,12 @@ const resources = {
   },
   pl: {
     translation: {
+      header: {
+        howItWorks: 'Jak działają pytania',
+      },
+      footer: {
+        howItWorks: 'Jak działają pytania',
+      },
       chat: {
         copyQuestion: 'Kopiuj pytanie',
         questionCopied: 'Pytanie skopiowane do schowka.',
