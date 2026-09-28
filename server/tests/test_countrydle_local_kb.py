@@ -1007,3 +1007,28 @@ def test_entirely_in_hemisphere_accurately_classifies_crossing_and_pure_countrie
     assert execute_local_plan(contains_plan("hemisphere", "Northern"), "Kenya", "In Northern?").answer is True
     assert execute_local_plan(contains_plan("hemisphere", "Southern"), "Kenya", "In Southern?").answer is True
     assert execute_local_plan(entirely_hemi("Northern", "Southern"), "Kenya", "Entirely Northern?").answer is False
+
+def test_subregions_not_collapsed_to_continents():
+    from countrydle.template_compiler import compile_template_plan
+
+    q_pl = "Czy ten kraj leży w Azji Południowo-wschodniej?"
+    plan_pl = compile_template_plan(q_pl)
+    assert plan_pl is not None
+    assert plan_pl[0][0]["left"]["relation"] == "geographic_area"
+    assert plan_pl[0][0]["right"]["value"] == "Southeast Asia"
+    ans_th = execute_local_plan(plan_pl[0][0], "Thailand", q_pl)
+    assert ans_th.answer is True
+    ans_jp = execute_local_plan(plan_pl[0][0], "Japan", q_pl)
+    assert ans_jp.answer is False
+
+    for q_en in ("Is it in Southeast Asia?", "Is it in South East Asia?", "Is it in South-East Asia?"):
+        plan_en = compile_template_plan(q_en)
+        assert plan_en is not None
+        assert plan_en[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_en[0][0]["right"]["value"] == "Southeast Asia"
+
+    for q_ce in ("Is it in Central Europe?", "Czy leży w Europie Środkowej?"):
+        plan_ce = compile_template_plan(q_ce)
+        assert plan_ce is not None
+        assert plan_ce[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_ce[0][0]["right"]["value"] == "Central Europe"

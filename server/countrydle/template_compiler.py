@@ -54,13 +54,23 @@ CONTINENTS = {
 AREAS = {
     "Balkans": ("Balkans", "Bałkany", "Bałkanach", "Bałkanów"), "Middle East": ("Middle East", "Bliski Wschód", "Bliskim Wschodzie"),
     "Scandinavia": ("Scandinavia", "Skandynawia", "Skandynawii"), "Caribbean": ("Caribbean", "Karaiby", "Karaibach"),
-    "Baltic states": ("Baltic states", "państwa bałtyckie", "krajach bałtyckich"), "Central Europe": ("Central Europe", "Europa Środkowa", "Europie Środkowej"),
-    "Eastern Europe": ("Eastern Europe", "Eastern Europe", "Europa Wschodnia", "Europie Wschodniej"), "Western Europe": ("Western Europe", "Europa Zachodnia", "Europie Zachodniej"),
-    "Northern Europe": ("Northern Europe", "Europa Północna", "Europie Północnej"), "Southern Europe": ("Southern Europe", "Europa Południowa", "Europie Południowej"),
+    "Baltic states": ("Baltic states", "państwa bałtyckie", "krajach bałtyckich"),
+    "Central Europe": ("Central Europe", "Europa Środkowa", "Europie Środkowej", "Europą Środkową"),
+    "Eastern Europe": ("Eastern Europe", "Europa Wschodnia", "Europie Wschodniej", "Europą Wschodnią"),
+    "Western Europe": ("Western Europe", "Europa Zachodnia", "Europie Zachodniej", "Europą Zachodnią"),
+    "Northern Europe": ("Northern Europe", "Europa Północna", "Europie Północnej", "Europą Północną"),
+    "Southern Europe": ("Southern Europe", "Europa Południowa", "Europie Południowej", "Europą Południową"),
     "Maghreb": ("Maghreb",), "Sahel": ("Sahel",), "Horn of Africa": ("Horn of Africa", "Róg Afryki"),
     "Arabian Peninsula": ("Arabian Peninsula", "Półwysep Arabski"), "Indochina": ("Indochina", "Indochiny"),
-    "Central Asia": ("Central Asia", "Azja Środkowa", "Azji Środkowej"), "Southeast Asia": ("Southeast Asia", "Azja Południowo-Wschodnia"),
-    "South Asia": ("South Asia", "Azja Południowa"), "East Asia": ("East Asia", "Azja Wschodnia"),
+    "Central Asia": ("Central Asia", "Azja Środkowa", "Azji Środkowej", "Azją Środkową", "Centralna Azja", "Centralnej Azji"),
+    "Southeast Asia": (
+        "Southeast Asia", "South East Asia", "South-East Asia", "South-Eastern Asia", "South Eastern Asia", "Southeastern Asia",
+        "Azja Południowo-Wschodnia", "Azji Południowo-Wschodniej", "Azja Południowo-wschodnia", "Azji Południowo-wschodniej",
+        "Azją Południowo-Wschodnią", "Azją Południowo-wschodnią",
+    ),
+    "South Asia": ("South Asia", "Southern Asia", "Azja Południowa", "Azji Południowej", "Azją Południową"),
+    "East Asia": ("East Asia", "Eastern Asia", "Azja Wschodnia", "Azji Wschodniej", "Azją Wschodnią"),
+    "Western Asia": ("Western Asia", "West Asia", "Azja Zachodnia", "Azji Zachodniej", "Azją Zachodnią"),
 }
 MEMBERSHIPS = {
     "EU": ("EU", "UE", "European Union", "Unia Europejska"), "NATO": ("NATO",), "UN": ("UN", "ONZ", "United Nations", "Narody Zjednoczone"),
@@ -180,12 +190,11 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
 
     if diagonal:
         country = _country_in(q)
-        if not country:
-            return None
-        directions = diagonal.group(1).replace("-", " ").replace("northwest", "north west").replace("northeast", "north east").replace("southwest", "south west").replace("southeast", "south east").split()
-        ast = [_direction({"north": "north_of", "south": "south_of", "west": "west_of", "east": "east_of"}[d], country) for d in directions]
-        ast.append({"operator": "and", "args": [0, 1]})
-        return ast, f"Is the country {directions[0]}-{directions[1]} of {country}?"
+        if country:
+            directions = diagonal.group(1).replace("-", " ").replace("northwest", "north west").replace("northeast", "north east").replace("southwest", "south west").replace("southeast", "south east").split()
+            ast = [_direction({"north": "north_of", "south": "south_of", "west": "west_of", "east": "east_of"}[d], country) for d in directions]
+            ast.append({"operator": "and", "args": [0, 1]})
+            return ast, f"Is the country {directions[0]}-{directions[1]} of {country}?"
 
     is_pop = any(term in q for term in ("population", "populacj", "inhabitants", "mieszkanc", "ludnosc", "people", "ludzi")) or bool(re.search(r"\bpop\b", q))
     is_area = any(term in q for term in ("area", "powierzchni", "sq km", "km2", "km 2", "square km", "square kilometer", "kilometrow")) or bool(re.search(r"\bkm\b", q))
@@ -304,7 +313,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
     if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
         return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
 
-    for relation, choices in (("continent", CONTINENTS), ("geographic_area", AREAS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
+    for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
         value = _choices(choices, q)
         if value and any(x in q for x in ("in ", " in the ", "in the", "lezy", "nalezy", "nalezalo", "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ")):
             if relation == "membership":

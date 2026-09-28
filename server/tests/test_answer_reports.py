@@ -282,3 +282,25 @@ async def test_synthetic_question_is_not_reportable(reports_api):
     assert invalid_continental.model_dump()["report_token"] == token_for(api, "continental")
     login(api.owner)
     assert (await api.client.post("/answer-reports", json=payload(question_id=0))).status_code == 422
+
+
+@pytest.mark.anyio
+async def test_guest_token_auto_resolves_mode_on_mismatch_and_rejects_invalid(reports_api):
+    api = reports_api
+    login(None)
+    # 1. Guest without token is rejected
+    res_no_tok = await api.client.post("/answer-reports", json=payload("countrydle"))
+    assert res_no_tok.status_code == 403
+
+    # 2. Guest with invalid token is rejected
+    res_bad_tok = await api.client.post("/answer-reports", json=payload("countrydle", report_token="bad-token"))
+    assert res_bad_tok.status_code == 403
+
+    # 3. Guest with continental token sent with mode=countrydle auto-resolves to continental
+    token = token_for(api, "continental")
+    res_mismatch = await api.client.post("/answer-reports", json=payload("countrydle", report_token=token))
+    assert res_mismatch.status_code == 201
+    login(api.admin)
+    report = (await api.client.get("/admin/answer-reports")).json()["items"][0]
+    assert report["mode"] == "continental"
+    assert report["details"]["target_name"] == next(iter(MODES["continental"][5].values()))
