@@ -1,5 +1,5 @@
 {
-  "version": "1.14.4",
-  "title": "Direct contact and support email updates",
-  "body": "CONTACT & SUPPORT\n- Updated the direct contact and feedback email address on the Contact page to melzacki.jakub@gmail.com.\n- Aligned automated security and login alerts to use the direct support contact address."
+  "version": "1.15.0",
+  "title": "Interactive How Questions Work showcase and unified Gemini fallback",
+  "body": "HOW QUESTIONS WORK ARCHITECTURAL SHOWCASE\n- Added an interactive \"How Questions Work\" page (/how-questions-work) exploring Countrydle's hybrid question-answering pipeline.\n- Features an interactive 8-step question flow graph with live sample questions, AST execution diagrams, and vector search retrieval inspects.\n- Added dedicated navigation links under About in the header and footer.\n\nUNIFIED GEMINI QUESTION FALLBACK\n- Switched secondary RAG question fallback from OpenAI GPT-4o-mini to Gemini 2.5 Flash Lite across all game modes (Countrydle, Powiatdle, Województwodle, and US Statedle).\n- OpenAI API usage is now restricted strictly to text-embedding-3-small vector embeddings."
 }
