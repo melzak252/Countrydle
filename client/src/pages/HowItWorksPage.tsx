@@ -237,7 +237,7 @@ const QUESTION_EXAMPLES: QuestionExample[] = [
     stageBadge: 'Semantic Vector RAG',
     stageColor: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
     latency: '1,840 ms',
-    operator: 'vector_search(qdrant) + gpt-4o-mini',
+    operator: 'vector_search(qdrant) + gemini-2.5-flash-lite',
     relation: 'rag:wikipedia_corpus',
     planJson: JSON.stringify(
       {
@@ -248,7 +248,7 @@ const QUESTION_EXAMPLES: QuestionExample[] = [
       null,
       2
     ),
-    sqlQuery: '-- Qdrant Vector Collection: "countries"\n-- Query vector: OpenAI text-embedding-3-small (1536 dims)\n-- Filter: payload.country_id = ?\n-- Model reasoning: gpt-4o-mini with mandatory verbatim source citation',
+    sqlQuery: '-- Qdrant Vector Collection: "countries"\n-- Embeddings: OpenAI text-embedding-3-small (1536 dims)\n-- Filter: payload.country_id = ?\n-- Fallback reasoning: Gemini 2.5 Flash Lite with strict citation and response_schema',
     targetEntity: 'France (Target)',
     verdict: true,
     explanationEn: 'Yes. France won the 1998 FIFA World Cup on home soil, defeating Brazil 3–0 in the final.',
@@ -385,13 +385,13 @@ const PIPELINE_STEPS: PipelineStep[] = [
     step: '07',
     nameEn: 'Verifiable Fallback RAG Pipeline',
     namePl: 'Weryfikowalny Fallback Wektorowy RAG',
-    tag: 'Qdrant + gpt-4o-mini',
+    tag: 'Qdrant + Gemini 2.5 Flash Lite',
     tagColor: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
     icon: Search,
     summaryEn: 'If a question asks about specialized cultural or sports history outside SQLite tables (e.g. "Did this country win the 1998 World Cup?"), the question triggers a Qdrant semantic vector search against indexed Wikipedia summaries.',
     summaryPl: 'Gdy pytanie dotyczy kultury lub sportu spoza tabel SQLite, następuje wyszukiwanie wektorowe w Qdrant na zindeksowanych artykułach Wikipedii.',
-    antiHallucinationEn: 'The reasoning model (gpt-4o-mini) is strictly constrained: it MUST quote the exact sentence from the retrieved text snippet as proof. If the text does not mention the fact, it refuses to confirm.',
-    antiHallucinationPl: 'Model gpt-4o-mini ma ścisły nakaz cytowania dokładnego zdania z pobranego fragmentu jako dowodu. Bez wyraźnego potwierdzenia w tekście nie zatwierdzi odpowiedzi.',
+    antiHallucinationEn: 'The reasoning model (Gemini 2.5 Flash Lite) is strictly constrained: it MUST quote the exact sentence from the retrieved text snippet as proof. If the text does not mention the fact, it refuses to confirm.',
+    antiHallucinationPl: 'Model wnioskujący (Gemini 2.5 Flash Lite) ma ścisły nakaz cytowania dokładnego zdania z pobranego fragmentu jako dowodu. Bez wyraźnego potwierdzenia w tekście nie zatwierdzi odpowiedzi.',
     codeSnippet: 'docs = qdrant.search(collection="countries", query_vector=emb, limit=3)\nresponse = rag_model.generate(system_prompt=STRICT_CITATION, context=docs)',
   },
   {
