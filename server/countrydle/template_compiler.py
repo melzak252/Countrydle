@@ -52,25 +52,109 @@ CONTINENTS = {
     "Oceania": ("Oceania", "Oceanii"),
 }
 AREAS = {
-    "Balkans": ("Balkans", "Bałkany", "Bałkanach", "Bałkanów"), "Middle East": ("Middle East", "Bliski Wschód", "Bliskim Wschodzie"),
-    "Scandinavia": ("Scandinavia", "Skandynawia", "Skandynawii"), "Caribbean": ("Caribbean", "Karaiby", "Karaibach"),
-    "Baltic states": ("Baltic states", "państwa bałtyckie", "krajach bałtyckich"),
-    "Central Europe": ("Central Europe", "Europa Środkowa", "Europie Środkowej", "Europą Środkową"),
-    "Eastern Europe": ("Eastern Europe", "Europa Wschodnia", "Europie Wschodniej", "Europą Wschodnią"),
-    "Western Europe": ("Western Europe", "Europa Zachodnia", "Europie Zachodniej", "Europą Zachodnią"),
-    "Northern Europe": ("Northern Europe", "Europa Północna", "Europie Północnej", "Europą Północną"),
-    "Southern Europe": ("Southern Europe", "Europa Południowa", "Europie Południowej", "Europą Południową"),
-    "Maghreb": ("Maghreb",), "Sahel": ("Sahel",), "Horn of Africa": ("Horn of Africa", "Róg Afryki"),
-    "Arabian Peninsula": ("Arabian Peninsula", "Półwysep Arabski"), "Indochina": ("Indochina", "Indochiny"),
-    "Central Asia": ("Central Asia", "Azja Środkowa", "Azji Środkowej", "Azją Środkową", "Centralna Azja", "Centralnej Azji"),
+    # Europe
+    "Balkans": ("Balkans", "Bałkany", "Bałkanach", "Bałkanów", "Balkan"),
+    "Baltic states": ("Baltic states", "państwa bałtyckie", "państwo bałtyckie", "państwach bałtyckich", "krajach bałtyckich", "kraje bałtyckie", "kraj bałtycki"),
+    "Central Europe": (
+        "Central Europe", "Europa Środkowa", "Europie Środkowej", "Europą Środkową", "Europy Środkowej",
+        "Środkowa Europa", "Środkowej Europie", "Środkową Europą", "Środkowej Europy",
+    ),
+    "Eastern Europe": (
+        "Eastern Europe", "Europa Wschodnia", "Europie Wschodniej", "Europą Wschodnią", "Europy Wschodniej",
+        "Wschodnia Europa", "Wschodniej Europie", "Wschodnią Europą", "Wschodniej Europy",
+    ),
+    "Western Europe": (
+        "Western Europe", "Europa Zachodnia", "Europie Zachodniej", "Europą Zachodnią", "Europy Zachodniej",
+        "Zachodnia Europa", "Zachodniej Europie", "Zachodnią Europą", "Zachodniej Europy",
+    ),
+    "Northern Europe": (
+        "Northern Europe", "Europa Północna", "Europie Północnej", "Europą Północną", "Europy Północnej",
+        "Północna Europa", "Północnej Europie", "Północną Europą", "Północnej Europy",
+    ),
+    "Southern Europe": (
+        "Southern Europe", "Europa Południowa", "Europie Południowej", "Europą Południową", "Europy Południowej",
+        "Południowa Europa", "Południowej Europie", "Południową Europą", "Południowej Europy",
+    ),
+    "Scandinavia": ("Scandinavia", "Skandynawia", "Skandynawii", "Skandynawią"),
+    "Iberia": ("Iberia", "Iberian Peninsula", "Półwysep Iberyjski", "Półwyspie Iberyjskim", "Półwyspu Iberyjskiego"),
+
+    # Middle East & Asia
+    "Middle East": (
+        "Middle East", "the Middle East", "Mid East", "Mideast", "Middle-East",
+        "Bliski Wschód", "Bliskim Wschodzie", "Bliskiego Wschodu", "Bliskim Wschodem",
+    ),
+    "Arabian Peninsula": ("Arabian Peninsula", "Półwysep Arabski", "Półwyspie Arabskim", "Półwyspu Arabskiego"),
+    "Indochina": ("Indochina", "Indochiny", "Indochinach", "Indochin"),
+    "Central Asia": (
+        "Central Asia", "Azja Środkowa", "Azji Środkowej", "Azją Środkową",
+        "Środkowa Azja", "Środkowej Azji", "Środkową Azją",
+        "Centralna Azja", "Centralnej Azji", "Centralną Azją",
+    ),
     "Southeast Asia": (
         "Southeast Asia", "South East Asia", "South-East Asia", "South-Eastern Asia", "South Eastern Asia", "Southeastern Asia",
         "Azja Południowo-Wschodnia", "Azji Południowo-Wschodniej", "Azja Południowo-wschodnia", "Azji Południowo-wschodniej",
         "Azją Południowo-Wschodnią", "Azją Południowo-wschodnią",
+        "Południowo-Wschodnia Azja", "Południowo-Wschodniej Azji", "Południowo-wschodnia Azja", "Południowo-wschodniej Azji",
+        "Południowo-Wschodnią Azją", "Południowo-wschodnią Azją",
     ),
-    "South Asia": ("South Asia", "Southern Asia", "Azja Południowa", "Azji Południowej", "Azją Południową"),
-    "East Asia": ("East Asia", "Eastern Asia", "Azja Wschodnia", "Azji Wschodniej", "Azją Wschodnią"),
-    "Western Asia": ("Western Asia", "West Asia", "Azja Zachodnia", "Azji Zachodniej", "Azją Zachodnią"),
+    "South Asia": (
+        "South Asia", "Southern Asia",
+        "Azja Południowa", "Azji Południowej", "Azją Południową",
+        "Południowa Azja", "Południowej Azji", "Południową Azją",
+    ),
+    "East Asia": (
+        "East Asia", "Eastern Asia",
+        "Azja Wschodnia", "Azji Wschodniej", "Azją Wschodnią",
+        "Wschodnia Azja", "Wschodniej Azji", "Wschodnią Azją",
+    ),
+    "Western Asia": (
+        "Western Asia", "West Asia",
+        "Azja Zachodnia", "Azji Zachodniej", "Azją Zachodnią",
+        "Zachodnia Azja", "Zachodniej Azji", "Zachodnią Azją",
+    ),
+
+    # Africa
+    "Northern Africa": (
+        "Northern Africa", "North Africa",
+        "Afryka Północna", "Afryce Północnej", "Afryki Północnej", "Afryką Północną",
+        "Północna Afryka", "Północnej Afryce", "Północnej Afryki", "Północną Afryką",
+        "północ Afryki", "północy Afryki",
+    ),
+    "Southern Africa": (
+        "Southern Africa",
+        "Afryka Południowa", "Afryce Południowej", "Afryki Południowej", "Afryką Południową",
+        "Południowa Afryka", "Południowej Afryce", "Południowej Afryki", "Południową Afryką",
+        "południe Afryki", "południu Afryki",
+    ),
+    "Western Africa": (
+        "Western Africa", "West Africa",
+        "Afryka Zachodnia", "Afryce Zachodniej", "Afryki Zachodniej", "Afryką Zachodnią",
+        "Zachodnia Afryka", "Zachodniej Afryce", "Zachodniej Afryki", "Zachodnią Afryką",
+        "zachód Afryki", "zachodzie Afryki",
+    ),
+    "Eastern Africa": (
+        "Eastern Africa", "East Africa",
+        "Afryka Wschodnia", "Afryce Wschodniej", "Afryki Wschodniej", "Afryką Wschodnią",
+        "Wschodnia Afryka", "Wschodniej Afryce", "Wschodniej Afryki", "Wschodnią Afryką",
+        "wschód Afryki", "wschodzie Afryki",
+    ),
+    "Middle Africa": (
+        "Middle Africa", "Central Africa",
+        "Afryka Środkowa", "Afryce Środkowej", "Afryki Środkowej", "Afryką Środkową",
+        "Środkowa Afryka", "Środkowej Afryce", "Środkowej Afryki", "Środkową Afryką",
+        "środek Afryki", "środku Afryki", "centralna Afryka", "centralnej Afryce",
+    ),
+    "Horn of Africa": ("Horn of Africa", "Róg Afryki", "Rogiem Afryki", "Rogu Afryki"),
+    "Maghreb": ("Maghreb", "Maghrebie", "Maghrebu"),
+    "Sahel": ("Sahel", "Sahelu"),
+
+    # Americas
+    "Central America": (
+        "Central America",
+        "Ameryka Środkowa", "Ameryce Środkowej", "Ameryki Środkowej", "Ameryką Środkową",
+        "Środkowa Ameryka", "Środkowej Ameryce", "Środkowej Ameryki", "Środkową Ameryką",
+    ),
+    "Caribbean": ("Caribbean", "Karaiby", "Karaibach", "Karaibów"),
 }
 MEMBERSHIPS = {
     "EU": ("EU", "UE", "European Union", "Unia Europejska"), "NATO": ("NATO",), "UN": ("UN", "ONZ", "United Nations", "Narody Zjednoczone"),
@@ -315,7 +399,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
 
     for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
         value = _choices(choices, q)
-        if value and any(x in q for x in ("in ", " in the ", "in the", "lezy", "nalezy", "nalezalo", "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ")):
+        if value and any(x in q for x in ("in ", " in the ", "in the", "lezy", "nalezy", "nalezalo", "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ", "kraj", "panstwo", "z ")):
             if relation == "membership":
                 if any(x in q for x in ("founding", "founder", "zaloz", "założ", "original", "pierwotn", "when", "kiedy", "accession", "akcesj")):
                     continue

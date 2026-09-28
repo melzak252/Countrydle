@@ -672,6 +672,7 @@ SUBREGION_ALIASES = {
     "south eastern asia": "South-Eastern Asia",
     "south-eastern asia": "South-Eastern Asia",
     "central asia": "Central Asia",
+    "central africa": "Middle Africa",
     "caribean": "Caribbean",
     "caribbean": "Caribbean",
     "central america": "Central America",

@@ -1032,3 +1032,52 @@ def test_subregions_not_collapsed_to_continents():
         assert plan_ce is not None
         assert plan_ce[0][0]["left"]["relation"] == "geographic_area"
         assert plan_ce[0][0]["right"]["value"] == "Central Europe"
+
+    # South Asia (both Polish word orders)
+    for q_sa in ("Czy leży w południowej Azji?", "Czy leży w Azji Południowej?", "Is it in South Asia?"):
+        plan_sa = compile_template_plan(q_sa)
+        assert plan_sa is not None
+        assert plan_sa[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_sa[0][0]["right"]["value"] == "South Asia"
+    assert execute_local_plan(plan_sa[0][0], "India", "In South Asia?").answer is True
+    assert execute_local_plan(plan_sa[0][0], "Poland", "In South Asia?").answer is False
+
+    # Middle East
+    for q_me in ("Czy leży na Bliskim Wschodzie?", "Czy to kraj Bliskiego Wschodu?", "Is it in the Middle East?"):
+        plan_me = compile_template_plan(q_me)
+        assert plan_me is not None
+        assert plan_me[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_me[0][0]["right"]["value"] == "Middle East"
+    assert execute_local_plan(plan_me[0][0], "Saudi Arabia", "In Middle East?").answer is True
+    assert execute_local_plan(plan_me[0][0], "Thailand", "In Middle East?").answer is False
+
+    # African subregions
+    for q_saf in ("Czy leży na południu Afryki?", "Czy leży w Afryce Południowej?", "Czy leży w południowej Afryce?", "Is it in Southern Africa?"):
+        plan_saf = compile_template_plan(q_saf)
+        assert plan_saf is not None
+        assert plan_saf[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_saf[0][0]["right"]["value"] == "Southern Africa"
+    assert execute_local_plan(plan_saf[0][0], "South Africa", "In Southern Africa?").answer is True
+    assert execute_local_plan(plan_saf[0][0], "Egypt", "In Southern Africa?").answer is False
+
+    for q_naf in ("Czy leży na północy Afryki?", "Czy leży w Afryce Północnej?", "Is it in Northern Africa?", "Is it in North Africa?"):
+        plan_naf = compile_template_plan(q_naf)
+        assert plan_naf is not None
+        assert plan_naf[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_naf[0][0]["right"]["value"] == "Northern Africa"
+    assert execute_local_plan(plan_naf[0][0], "Egypt", "In Northern Africa?").answer is True
+
+    # Central America
+    for q_ca in ("Czy leży w Ameryce Środkowej?", "Is it in Central America?"):
+        plan_ca = compile_template_plan(q_ca)
+        assert plan_ca is not None
+        assert plan_ca[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_ca[0][0]["right"]["value"] == "Central America"
+    assert execute_local_plan(plan_ca[0][0], "Costa Rica", "In Central America?").answer is True
+
+    # Broad continent queries still map to continent
+    for q_cont, expected_cont in (("Czy leży w Afryce?", "Africa"), ("Is it in Africa?", "Africa"), ("Czy leży w Azji?", "Asia"), ("Is it in Asia?", "Asia")):
+        plan_cont = compile_template_plan(q_cont)
+        assert plan_cont is not None
+        assert plan_cont[0][0]["left"]["relation"] == "continent"
+        assert plan_cont[0][0]["right"]["value"] == expected_cont
