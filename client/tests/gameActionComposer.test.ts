@@ -25,3 +25,15 @@ test('chat composer places the active game input below question and guess contro
   expect(markup).toContain('(2/3)');
   expect(markup).toContain('aria-pressed="true"');
 });
+
+test('composer can omit controls selected in the chat header', () => {
+  const markup = renderToStaticMarkup(createElement(GameActionComposer, {
+    activeAction: 'question',
+    onActionChange: () => {},
+    showActionTabs: false,
+    children: createElement('form', { 'aria-label': 'Question input' }),
+  }));
+
+  expect(markup).not.toContain('aria-label="Choose question or guess"');
+  expect(markup).toContain('<form aria-label="Question input"></form>');
+});

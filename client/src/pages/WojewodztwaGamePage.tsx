@@ -57,7 +57,12 @@ export default function WojewodztwaGamePage() {
   const isMobile = useIsMobile();
   const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeChatTab, setActiveChatTab] = useState<'questions' | 'guesses'>('questions');
+  const activeInputTab: 'question' | 'guess' = userSelectedTab ?? (
+    gameState && gameState.remaining_questions <= 0 && gameState.remaining_guesses > 0
+      ? 'guess'
+      : 'question'
+  );
+  const activeChatTab = activeInputTab === 'question' ? 'questions' : 'guesses';
   const [isResultDismissed, setIsResultDismissed] = useState(false);
 
   useEffect(() => {
@@ -117,14 +122,9 @@ export default function WojewodztwaGamePage() {
   const sortedQuestions = [...questions].sort((a, b) => a.id - b.id);
   const isGameOver = Boolean(gameState.is_game_over);
   const showResultModal = isGameOver && !isResultDismissed;
-  const activeInputTab: 'question' | 'guess' = userSelectedTab ?? (
-    (gameState.remaining_questions <= 0 && gameState.remaining_guesses > 0)
-      ? 'guess'
-      : 'question'
-  );
 
   const handleAsk = async (q: string) => {
-    setActiveChatTab('questions');
+    setUserSelectedTab('question');
     setIsChatOpen(true);
     return await askQuestion(q);
   };
@@ -132,7 +132,7 @@ export default function WojewodztwaGamePage() {
   const handleGuess = async (name: string, id: number) => {
     setIsChatOpen(true);
     const accepted = await makeGuess(name, id);
-    setActiveChatTab(accepted === false ? 'questions' : 'guesses');
+    setUserSelectedTab(accepted === false ? 'question' : 'guess');
     return accepted;
   };
 
@@ -146,18 +146,16 @@ export default function WojewodztwaGamePage() {
         reason: 'You submitted a question while the "Guess" tab was active.',
         nextStep: 'Switched back to the "Question" tab for you.',
       });
-      setUserSelectedTab('question');
-      setActiveChatTab('questions');
     } else {
       addNotice({
         action: 'guess',
         input,
         title: 'Already guessed',
         reason: 'This location is already in your guess history. It was not submitted again.',
-        nextStep: 'Choose a different location from the suggestions.',
+        nextStep: 'Switch to the Guesses tab and choose a different location.',
       });
-      setActiveChatTab('questions');
     }
+    setUserSelectedTab('question');
     setIsChatOpen(true);
   };
 
@@ -268,10 +266,11 @@ export default function WojewodztwaGamePage() {
 
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-4 py-3 shrink-0">
-              <div className="flex items-center gap-2">
+              <div role="group" aria-label="Choose question or guess" className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveChatTab('questions')}
+                  aria-pressed={activeChatTab === 'questions'}
+                  onClick={() => setUserSelectedTab('question')}
                   className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'questions'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
@@ -285,7 +284,8 @@ export default function WojewodztwaGamePage() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveChatTab('guesses')}
+                  aria-pressed={activeChatTab === 'guesses'}
+                  onClick={() => setUserSelectedTab('guess')}
                   className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'guesses'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
@@ -383,9 +383,8 @@ export default function WojewodztwaGamePage() {
             {!isGameOver ? (
               <GameActionComposer
                 activeAction={activeInputTab}
-                onActionChange={action => setUserSelectedTab(action)}
-                questionCount={`${gameState.remaining_questions}/${totalQuestions}`}
-                guessCount={`${gameState.remaining_guesses}/${totalGuesses}`}
+                onActionChange={setUserSelectedTab}
+                showActionTabs={false}
               >
                 {activeInputTab === 'question' ? (
                   <QuestionInput
