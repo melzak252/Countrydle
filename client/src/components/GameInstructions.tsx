@@ -11,6 +11,9 @@ import {
   ShieldCheck,
   Zap,
   Check,
+  MousePointerClick,
+  Flag,
+  Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -116,22 +119,29 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
                   <MessageSquare size={16} className="shrink-0" />
-                  <span>{isPl ? 'Krok 1: Pytania Tak/Nie' : 'Step 1: Ask Yes/No Questions'}</span>
+                  <span>{isPl ? 'Krok 1: Pytania Tak/Nie w Czacie' : 'Step 1: Ask Yes/No in Chat'}</span>
                 </div>
-                <span className="font-mono text-[10px] text-zinc-500">0% Hallucination</span>
+                <span className="font-mono text-[10px] text-zinc-400 border border-white/10 rounded px-1.5 py-0.5 bg-white/5">
+                  {isPl ? 'Sprawdzone Fakty' : 'Verified Facts'}
+                </span>
               </div>
               <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                 {isPl
-                  ? 'Zadawaj pytania o położenie geograficzne, granice, dostęp do morza, populację, rzeki czy historię. Pytania są sprawdzane w relacyjnej bazie faktów bez zmyślania odpowiedzi.'
-                  : 'Ask about hemisphere, neighboring borders, ocean access, population, mountain ranges, or flags. Queries are verified against offline fact tables with 0 hallucinations.'}
+                  ? 'Wpisz pytanie w oknie czatu w lewym dolnym rogu ekranu. Pytaj o położenie geograficzne, sąsiadów, dostęp do wody, ludność czy flagę. Wszystkie odpowiedzi są weryfikowane przez naszą lokalną bazę wiedzy.'
+                  : 'Type your question into the chat input located in the bottom-left corner of your screen. Ask about geographic location, borders, sea access, population, or flags. All answers are verified against our curated fact database.'}
               </p>
             </div>
-            <div className="pt-2 border-t border-white/5 flex items-center gap-1.5 text-[11px] font-mono text-emerald-300/80">
-              <Languages size={13} className="shrink-0" />
-              <span>{isPl ? 'Działa po polsku i angielsku' : 'Ask in English or Polish'}</span>
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-emerald-300/80">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-emerald-400">↙</span>
+                <span>{isPl ? 'Czat w lewym dolnym rogu' : 'Chat in bottom-left corner'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Languages size={13} className="shrink-0" />
+                <span>{isPl ? 'Polski & English' : 'English & Polish'}</span>
+              </div>
             </div>
           </div>
-
           {/* Step 2: Instant Feedback & Clues */}
           <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2.5 flex flex-col justify-between">
             <div>
@@ -198,6 +208,56 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
             </div>
           </div>
         </div>
+        {/* Pro Tips: Map Marking & Post-Game Reporting */}
+        <div className="rounded-sm border border-emerald-500/25 bg-emerald-950/20 p-4 sm:p-5 space-y-3">
+          <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300">
+            <Sparkles size={15} className="text-emerald-400 shrink-0" />
+            <span>{isPl ? 'Przydatne Wskazówki & Sterowanie' : 'Pro Tips & Interactive Controls'}</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+            {/* Map Controls */}
+            <div className="rounded-sm border border-white/10 bg-obsidian-900/80 p-3.5 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-sand-100 font-mono">
+                <MousePointerClick size={15} className="text-emerald-400 shrink-0" />
+                <span>{isPl ? 'Oznaczanie na Mapie (LPM & PPM)' : 'Interactive Map (Left & Right Click)'}</span>
+              </div>
+              <ul className="space-y-1.5 text-xs text-zinc-300 leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0 mt-1" />
+                  <span>
+                    <strong className="text-emerald-300">{isPl ? 'Lewy przycisk myszy (LPM):' : 'Left-Click (or tap):'}</strong>{' '}
+                    {isPl ? 'Zaznacz państwo lub region na zielono jako potencjalnego kandydata.' : 'Highlight country or region in green as a candidate.'}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="h-2 w-2 rounded-full bg-rose-400 shrink-0 mt-1" />
+                  <span>
+                    <strong className="text-rose-300">{isPl ? 'Prawy przycisk myszy (PPM):' : 'Right-Click (or eliminate mode):'}</strong>{' '}
+                    {isPl ? 'Wykreśl państwo lub region na czerwono jako wykluczone.' : 'Mark country or region in red as ruled out / eliminated.'}
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Post-Game Reporting */}
+            <div className="rounded-sm border border-white/10 bg-obsidian-900/80 p-3.5 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-sand-100 font-mono">
+                <Flag size={15} className="text-amber-400 shrink-0" />
+                <span>{isPl ? 'Zgłaszaj Odpowiedzi po Grze' : 'Report Answers After the Game'}</span>
+              </div>
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                {isPl
+                  ? 'Po zakończeniu gry (wygranej lub przegranej) na kartach pytań w historii pojawia się przycisk flagi. Jeśli odpowiedź była niejasna lub wątpliwa, zgłoś ją z komentarzem — Twoja opinia pomaga nam ulepszać model i bazę faktów!'
+                  : 'After the game ends (win or loss), a report flag button appears on question history cards. If an answer seems inaccurate or ambiguous, report it with feedback — your reports directly train and improve our question planner and factual database!'}
+              </p>
+              <div className="text-[11px] font-mono text-amber-300/80 flex items-center gap-1.5 pt-0.5">
+                <span>{isPl ? 'Pomóż ulepszać model Countrydle' : 'Help us improve our model'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* Example Questions Bank */}
         <div className="space-y-2.5">
@@ -212,10 +272,10 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
             {examples.map((example, index) => (
               <div
                 key={index}
-                className="rounded-sm border border-white/10 bg-obsidian-900/90 px-3.5 py-2.5 font-mono text-xs text-sand-200 flex items-center gap-2"
+                className="rounded-sm border border-white/10 bg-obsidian-900/90 px-3.5 py-2.5 font-mono text-xs text-sand-200 flex items-start gap-2.5"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
-                <span className="truncate">"{example}"</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                <span className="break-words whitespace-normal leading-relaxed">"{example}"</span>
               </div>
             ))}
           </div>

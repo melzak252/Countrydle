@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
 import CountdownTimer from '../components/CountdownTimer';
-import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy, ArrowRight } from 'lucide-react';
+import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy, ArrowRight, Flag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import type { FlagdleCountry, FlagdleGuess } from '../types';
@@ -683,6 +683,12 @@ export default function FlagdlePage() {
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
                   Free helper questions
                 </div>
+              </div>
+            </div>
+            <div className="rounded-sm border border-emerald-500/25 bg-emerald-950/20 p-3.5 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-zinc-300">
+                <Flag size={14} className="text-amber-400 shrink-0" />
+                <span>Finished a round? You can report any question or answer from your history cards to help us continuously train and refine our AI model.</span>
               </div>
             </div>
 
