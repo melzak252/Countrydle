@@ -9,11 +9,12 @@ interface AnswerReportFormProps {
   mode: AnswerReportMode;
   questionId: number;
   reportToken?: string | null;
+  compact?: boolean;
 }
 
 type ReportStatus = 'idle' | 'pending' | 'submitted' | 'duplicate';
 
-export default function AnswerReportForm({ mode, questionId, reportToken }: AnswerReportFormProps) {
+export default function AnswerReportForm({ mode, questionId, reportToken, compact = false }: AnswerReportFormProps) {
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const submittingRef = useRef(false);
@@ -72,7 +73,7 @@ export default function AnswerReportForm({ mode, questionId, reportToken }: Answ
   };
 
   return (
-    <div className="border-t border-white/10 px-4 py-3">
+    <div className={`border-t border-white/10 ${compact ? 'px-3 py-1.5' : 'px-4 py-3'}`}>
       <button
         ref={triggerRef}
         type="button"

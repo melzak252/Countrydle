@@ -18,6 +18,7 @@ const question: Question = {
   original_question: 'Is it in Europe?',
   valid: true,
   answer: false,
+  explanation: 'The answer explanation.',
   user_id: 1,
   day_id: 1,
   asked_at: '2026-09-26T10:00:00Z',
@@ -32,7 +33,7 @@ const notice: GameplayNotice = {
   createdAt: '2026-09-26T10:01:00Z',
 };
 
-function renderChat() {
+function renderChat(isGameOver = false) {
   return renderToStaticMarkup(createElement(
     I18nextProvider,
     { i18n },
@@ -40,7 +41,7 @@ function renderChat() {
       questions: [question],
       notices: [notice],
       mode: 'countrydle',
-      isGameOver: false,
+      isGameOver,
       isLoading: true,
       pendingQuestion: 'Is it north of the equator?',
     }),
@@ -55,4 +56,13 @@ test('player chat questions are selectable and each has a copy action', () => {
   expect(markup).toContain('Is it in Europe?');
   expect(markup).toContain('Does it have a coastline?');
   expect(markup).toContain('Is it north of the equator?');
+});
+
+test('game-over report is compact with one separator', () => {
+  const markup = renderChat(true);
+
+  expect(markup).toContain('The answer explanation.');
+  expect(markup).toContain('Report answer');
+  expect(markup).toContain('border-t border-white/10 px-3 py-1.5');
+  expect(markup.match(/border-t border-white\/10/g)).toHaveLength(1);
 });
