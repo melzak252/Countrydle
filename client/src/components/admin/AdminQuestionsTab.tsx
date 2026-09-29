@@ -12,26 +12,42 @@ export interface AdminQuestionRecord {
   user?: {
     username?: string | null;
   } | null;
+  day?: {
+    continent?: string | null;
+    country?: {
+      name?: string | null;
+    } | null;
+  } | null;
 }
 
-export type AdminGameType = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
-
+export type AdminGameType = 'countrydle' | 'continental' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
 interface AdminQuestionsTabProps {
   mode: AdminGameType;
   questions: AdminQuestionRecord[];
   totalQuestions: number;
   page: number;
   search: string;
+  selectedContinent?: string;
+  onContinentChange?: (continent: string) => void;
   onModeChange: (mode: AdminGameType) => void;
   onSearchChange: (search: string) => void;
   onPageChange: (page: number) => void;
 }
 
-const MODES = [
+const MODES: { id: AdminGameType; label: string }[] = [
   { id: 'countrydle', label: 'Countries' },
+  { id: 'continental', label: 'Continental' },
   { id: 'powiatdle', label: 'Counties (Powiaty)' },
   { id: 'wojewodztwodle', label: 'Voivodeships' },
   { id: 'us_statedle', label: 'US States' },
+];
+
+const CONTINENT_FILTERS = [
+  { id: 'all', label: 'All Continents' },
+  { id: 'europe', label: 'Europe' },
+  { id: 'asia', label: 'Asia' },
+  { id: 'africa', label: 'Africa' },
+  { id: 'americas', label: 'Americas' },
 ];
 
 export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
@@ -40,6 +56,8 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
   totalQuestions,
   page,
   search,
+  selectedContinent = 'all',
+  onContinentChange,
   onModeChange,
   onSearchChange,
   onPageChange,
@@ -51,7 +69,9 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
       (item) =>
         (item.original_question || item.question || '').toLowerCase().includes(q) ||
         (item.explanation || '').toLowerCase().includes(q) ||
-        (item.user?.username || '').toLowerCase().includes(q)
+        (item.user?.username || '').toLowerCase().includes(q) ||
+        (item.day?.continent || '').toLowerCase().includes(q) ||
+        (item.day?.country?.name || '').toLowerCase().includes(q)
     );
   }, [questions, search]);
 
@@ -75,6 +95,27 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Continent Sub-Filter when in Continental mode */}
+        {mode === 'continental' && onContinentChange && (
+          <div className="flex flex-wrap items-center gap-1.5 w-full pt-1 border-t border-white/5">
+            <span className="text-[11px] uppercase font-mono tracking-wider text-sand-100/50 mr-1">Continent:</span>
+            {CONTINENT_FILTERS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onContinentChange(c.id)}
+                className={`px-2.5 py-1 rounded-sm text-[11px] font-semibold transition-colors border ${
+                  selectedContinent === c.id
+                    ? 'bg-sky-400/20 text-sky-200 border-sky-400/40'
+                    : 'bg-obsidian-950 text-sand-100/60 hover:text-sand-100 border-white/10'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative w-full sm:w-72">
@@ -115,6 +156,13 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
                     {q.user?.username || 'Guest'}
                   </td>
                   <td className="px-5 py-3.5 space-y-1.5 max-w-sm">
+                    {q.day?.continent && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-sm bg-sky-400/10 text-sky-300 border border-sky-400/20">
+                          {q.day.continent}{q.day.country?.name ? ` · ${q.day.country.name}` : ''}
+                        </span>
+                      </div>
+                    )}
                     <div className="font-medium text-sand-100 text-sm">
                       "{q.original_question || q.question}"
                     </div>

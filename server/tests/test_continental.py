@@ -4,11 +4,13 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app import app
+from db import get_db
 from db.models import Country, User
 from db.models.continental import (
     ContinentCode,
     ContinentalDay,
     ContinentalGuess,
+    ContinentalQuestion,
     ContinentalState,
 )
 from game_logic import calculate_points, CONTINENTAL_CONFIG
@@ -16,7 +18,7 @@ from continental.utils import (
     get_continent_country_names,
     is_eligible_candidate,
 )
-from users.utils import get_current_or_guest_user, get_current_user
+from users.utils import get_admin_user, get_current_or_guest_user, get_current_user
 
 
 @pytest.fixture
@@ -401,3 +403,144 @@ async def test_continental_history_endpoint(async_client):
         assert data[0]["continent"] == "europe"
         assert data[0]["country"]["name"] == "Romania"
         assert data[0]["date"] == "2026-09-20"
+
+@pytest.mark.anyio
+async def test_continental_admin_questions_requires_admin(async_client):
+    """GET /continental/admin/questions requires admin authentication."""
+    # Anonymous request
+    res = await async_client.get("/continental/admin/questions")
+    assert res.status_code == 401
+
+    # Non-admin user
+    non_admin = MagicMock(spec=User)
+    non_admin.id = 99
+    non_admin.is_admin = False
+    app.dependency_overrides[get_current_user] = lambda: non_admin
+    try:
+        res = await async_client.get("/continental/admin/questions")
+        assert res.status_code == 403
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.mark.anyio
+async def test_continental_admin_questions_endpoint(async_client):
+    """GET /continental/admin/questions returns questions list and handles continent filter."""
+    admin = MagicMock(spec=User)
+    admin.id = 1
+    admin.is_admin = True
+    app.dependency_overrides[get_admin_user] = lambda: admin
+
+    try:
+        with (
+            patch(
+                "db.repositories.continental.ContinentalQuestionRepository.get_all_questions",
+                new_callable=AsyncMock,
+            ) as mock_get_all,
+            patch(
+                "db.repositories.continental.ContinentalQuestionRepository.count_questions",
+                new_callable=AsyncMock,
+            ) as mock_count,
+        ):
+            mock_q = {
+                "id": 1,
+                "original_question": "Is it Italy?",
+                "question": "Is the country Italy?",
+                "valid": True,
+                "answer": True,
+                "explanation": "It is Italy.",
+            }
+            mock_get_all.return_value = [mock_q]
+            mock_count.return_value = 1
+
+            # Unfiltered query
+            res = await async_client.get("/continental/admin/questions?limit=10&offset=0")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["total"] == 1
+            assert data["limit"] == 10
+            assert data["offset"] == 0
+            assert len(data["items"]) == 1
+            mock_get_all.assert_called_with(limit=10, offset=0, continent=None)
+            mock_count.assert_called_with(continent=None)
+
+            # Filtered by continent
+            res2 = await async_client.get("/continental/admin/questions?continent=europe&limit=5&offset=10")
+            assert res2.status_code == 200
+            mock_get_all.assert_called_with(limit=5, offset=10, continent=ContinentCode.EUROPE)
+            mock_count.assert_called_with(continent=ContinentCode.EUROPE)
+    finally:
+        app.dependency_overrides.pop(get_admin_user, None)
+
+
+@pytest.mark.anyio
+async def test_continental_question_repository_get_all_and_count():
+    """Direct repository test for get_all_questions and count_questions with continent filter."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from db.base import Base
+    from db.repositories.continental import ContinentalQuestionRepository
+
+    class AsyncTestSession:
+        def __init__(self, session):
+            self.session = session
+        async def execute(self, statement):
+            return self.session.execute(statement)
+        async def flush(self):
+            self.session.flush()
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine, tables=[User.__table__, Country.__table__, ContinentalDay.__table__, ContinentalQuestion.__table__])
+    with Session(engine) as session:
+        user = User(id=1, username="testplayer", email="p@example.com")
+        c1 = Country(id=1, name="France", md_file="france.md")
+        c2 = Country(id=2, name="Japan", md_file="japan.md")
+        day_eu = ContinentalDay(id=1, continent=ContinentCode.EUROPE, country_id=1, date=date(2026, 9, 20))
+        day_asia = ContinentalDay(id=2, continent=ContinentCode.ASIA, country_id=2, date=date(2026, 9, 20))
+        q1 = ContinentalQuestion(id=1, user_id=1, day_id=1, original_question="Is it France?", valid=True, answer=True)
+        q2 = ContinentalQuestion(id=2, user_id=1, day_id=2, original_question="Is it Japan?", valid=True, answer=True)
+        session.add_all([user, c1, c2, day_eu, day_asia, q1, q2])
+        session.commit()
+
+        repo = ContinentalQuestionRepository(AsyncTestSession(session))
+        all_qs = await repo.get_all_questions()
+        assert len(all_qs) == 2
+        assert await repo.count_questions() == 2
+
+        eu_qs = await repo.get_all_questions(continent=ContinentCode.EUROPE)
+        assert len(eu_qs) == 1
+        assert eu_qs[0].id == 1
+        assert await repo.count_questions(continent=ContinentCode.EUROPE) == 1
+
+        asia_qs = await repo.get_all_questions(continent=ContinentCode.ASIA)
+        assert len(asia_qs) == 1
+        assert asia_qs[0].id == 2
+        assert await repo.count_questions(continent=ContinentCode.ASIA) == 1
+
+        # Test limit and offset
+        paginated = await repo.get_all_questions(limit=1, offset=0)
+        assert len(paginated) == 1
+    engine.dispose()
+
+
+@pytest.mark.anyio
+async def test_continental_live_feed(async_client):
+    """GET /admin/live-feed?mode=continental returns questions and guesses."""
+    admin = MagicMock(spec=User)
+    admin.id = 1
+    admin.is_admin = True
+    app.dependency_overrides[get_admin_user] = lambda: admin
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    app.dependency_overrides[get_db] = lambda: mock_session
+    try:
+        res = await async_client.get("/admin/live-feed?mode=continental")
+        assert res.status_code == 200
+        data = res.json()
+        assert "recent_questions" in data
+        assert "recent_guesses" in data
+    finally:
+        app.dependency_overrides.pop(get_admin_user, None)
+        app.dependency_overrides.pop(get_db, None)

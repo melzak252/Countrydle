@@ -336,3 +336,35 @@ class ContinentalQuestionRepository:
         )
         return list(result.scalars().all())
 
+    async def get_all_questions(
+        self,
+        limit: int | None = None,
+        offset: int = 0,
+        continent: ContinentCode | None = None,
+    ) -> List[ContinentalQuestion]:
+        query = (
+            select(ContinentalQuestion)
+            .options(
+                joinedload(ContinentalQuestion.user),
+                joinedload(ContinentalQuestion.day).joinedload(ContinentalDay.country),
+            )
+            .order_by(ContinentalQuestion.asked_at.desc(), ContinentalQuestion.id.desc())
+        )
+        if continent is not None:
+            query = query.join(ContinentalDay, ContinentalQuestion.day_id == ContinentalDay.id).where(
+                ContinentalDay.continent == continent
+            )
+        if limit is not None:
+            query = query.limit(limit).offset(offset)
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def count_questions(self, continent: ContinentCode | None = None) -> int:
+        query = select(func.count(ContinentalQuestion.id))
+        if continent is not None:
+            query = query.join(ContinentalDay, ContinentalQuestion.day_id == ContinentalDay.id).where(
+                ContinentalDay.continent == continent
+            )
+        result = await self.session.execute(query)
+        return int(result.scalar_one())
+

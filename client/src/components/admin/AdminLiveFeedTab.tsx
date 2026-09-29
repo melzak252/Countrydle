@@ -36,6 +36,7 @@ interface AdminLiveFeedTabProps {
 const MODES = [
   { id: 'all', label: 'All Modes' },
   { id: 'countrydle', label: 'Countrydle' },
+  { id: 'continental', label: 'Continental' },
   { id: 'powiatdle', label: 'Powiatdle' },
   { id: 'wojewodztwodle', label: 'Województwa' },
   { id: 'us_statedle', label: 'US States' },
@@ -53,6 +54,8 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({ data, isLoad
     switch (mode) {
       case 'countrydle':
         return 'text-sky-300 bg-sky-400/10 border-sky-400/20';
+      case 'continental':
+        return 'text-teal-300 bg-teal-400/10 border-teal-400/20';
       case 'powiatdle':
         return 'text-emerald-300 bg-emerald-400/10 border-emerald-400/20';
       case 'wojewodztwodle':

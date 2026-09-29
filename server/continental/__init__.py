@@ -50,7 +50,7 @@ from schemas.continental import (
 from schemas.country import CountryDisplay
 from schemas.countrydle import LeaderboardEntry, QuestionCreate
 from schemas.user import UserDisplay
-from users.utils import get_current_or_guest_user, get_current_user
+from users.utils import get_admin_user, get_current_or_guest_user, get_current_user
 from utils.geo import enhance_guess_with_hint
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
@@ -71,6 +71,21 @@ def db_state_to_game_state(db_state) -> GameState:
         is_lost=db_state.is_game_over and not db_state.won,
     )
 
+
+@router.get("/admin/questions")
+async def get_admin_questions(
+    continent: ContinentCode | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    repository = ContinentalQuestionRepository(session)
+    if limit is None:
+        return await repository.get_all_questions(continent=continent)
+    items = await repository.get_all_questions(limit=limit, offset=offset, continent=continent)
+    total = await repository.count_questions(continent=continent)
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 @router.post("/{continent}/sync", response_model=ContinentalStateResponse)
 async def sync_guest_data(

@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from db import get_db
 from db.models.blog import DailyBlogPost
-from db.models.continental import ContinentCode, ContinentalDay
+from db.models.continental import ContinentCode, ContinentalDay, ContinentalGuess, ContinentalQuestion
 from db.models.country import Country
 from db.models.countrydle import CountrydleState
 from db.models.flagdle import FlagdleDay
@@ -262,6 +262,9 @@ async def get_admin_live_feed(
         q_models.append(("us_statedle", USStatedleQuestion))
         g_models.append(("us_statedle", USStatedleGuess))
 
+    if mode is None or mode == "continental":
+        q_models.append(("continental", ContinentalQuestion))
+        g_models.append(("continental", ContinentalGuess))
     for m_key, q_cls in q_models:
         q_stmt = (
             select(q_cls)

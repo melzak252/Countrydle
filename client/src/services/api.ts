@@ -454,6 +454,12 @@ export const adminService = {
     const response = await api.get('/wojewodztwodle/admin/questions', { params: { limit, offset } });
     return normalizeAdminQuestionsResponse(response.data, limit, offset);
   },
+  getContinentalQuestions: async (limit = 50, offset = 0, continent?: string): Promise<AdminQuestionsResponse> => {
+    const params: Record<string, any> = { limit, offset };
+    if (continent && continent !== 'all') params.continent = continent;
+    const response = await api.get('/continental/admin/questions', { params });
+    return normalizeAdminQuestionsResponse(response.data, limit, offset);
+  },
   getCountryFacts: async (countryIdOrName: number | string, gameType = 'countrydle'): Promise<CountryFactsResponse> => {
     const params = typeof countryIdOrName === 'number'
       ? { game_type: gameType, entity_id: countryIdOrName, country_id: countryIdOrName }

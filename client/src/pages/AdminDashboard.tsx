@@ -85,6 +85,7 @@ export default function AdminDashboard() {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [questionPage, setQuestionPage] = useState(1);
   const [questionSearch, setQuestionSearch] = useState('');
+  const [continentalFilter, setContinentalFilter] = useState('all');
 
   // Facts Editor State
   const [factMode, setFactMode] = useState<AdminGameType>('countrydle');
@@ -147,12 +148,12 @@ export default function AdminDashboard() {
     try {
       const limit = 30;
       const offset = (questionPage - 1) * limit;
-      let data = { items: [] as any[], total: 0 };
+      let data: { items: unknown[]; total: number } = { items: [], total: 0 };
       if (questionsMode === 'countrydle') data = await adminService.getCountrydleQuestions(limit, offset);
+      else if (questionsMode === 'continental') data = await adminService.getContinentalQuestions(limit, offset, continentalFilter);
       else if (questionsMode === 'us_statedle') data = await adminService.getUSStatedleQuestions(limit, offset);
       else if (questionsMode === 'powiatdle') data = await adminService.getPowiatdleQuestions(limit, offset);
       else if (questionsMode === 'wojewodztwodle') data = await adminService.getWojewodztwodleQuestions(limit, offset);
-
       setQuestions(data.items || []);
       setTotalQuestions(data.total || 0);
     } catch (err) {
@@ -258,7 +259,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeTab === 'questions') fetchQuestions();
-  }, [activeTab, questionsMode, questionPage]);
+  }, [activeTab, questionsMode, questionPage, continentalFilter]);
 
   useEffect(() => {
     if (activeTab === 'facts') fetchFactEntities();
@@ -388,12 +389,18 @@ export default function AdminDashboard() {
       {activeTab === 'questions' && (
         <AdminQuestionsTab
           mode={questionsMode}
+          selectedContinent={continentalFilter}
+          onContinentChange={(c) => {
+            setContinentalFilter(c);
+            setQuestionPage(1);
+          }}
           questions={questions}
           totalQuestions={totalQuestions}
           page={questionPage}
           search={questionSearch}
           onModeChange={(m) => {
             setQuestionsMode(m);
+            setContinentalFilter('all');
             setQuestionPage(1);
           }}
           onSearchChange={setQuestionSearch}
