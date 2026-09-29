@@ -253,7 +253,8 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'users') fetchUsers();
+    if (activeTab === 'overview') fetchOverview();
+    else if (activeTab === 'users') fetchUsers();
     else if (activeTab === 'liveFeed') fetchLiveFeed();
   }, [activeTab, userPage]);
 

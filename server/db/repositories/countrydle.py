@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 import random
 from typing import List
 from pydantic import BaseModel
@@ -46,7 +46,7 @@ class CountrydleRepository:
         result = await self.session.execute(
             select(CountrydleDay)
             .options(joinedload(CountrydleDay.country))
-            .where(CountrydleDay.date == date.today())
+            .where(CountrydleDay.date == datetime.now(timezone.utc).date())
             .order_by(CountrydleDay.id.desc())
         )
 
@@ -57,7 +57,7 @@ class CountrydleRepository:
         result = await self.session.execute(
             select(CountrydleDay)
             .options(joinedload(CountrydleDay.country))
-            .where(CountrydleDay.date == date.today())
+            .where(CountrydleDay.date == datetime.now(timezone.utc).date())
             .order_by(CountrydleDay.id.desc())
         )
         return require_eligible_target(result.scalars().first())

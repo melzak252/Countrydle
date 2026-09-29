@@ -340,6 +340,8 @@ async def _do_ask_question(
     response: Response,
 ):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
+    if not day_state:
+        day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
     if user is not None:
         state = await USStatedleStateRepository(session).get_state(user, day_state)
         require_question_available(state, USSTATEDLE_CONFIG.max_questions)

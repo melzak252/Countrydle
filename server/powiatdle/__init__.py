@@ -340,6 +340,8 @@ async def _do_ask_question(
     response: Response,
 ):
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
+    if not day_powiat:
+        day_powiat = await PowiatdleDayRepository(session).generate_new_day_powiat()
     if user is not None:
         state = await PowiatdleStateRepository(session).get_state(user, day_powiat)
         require_question_available(state, POWIATDLE_CONFIG.max_questions)

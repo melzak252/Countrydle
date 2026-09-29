@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 import random
 from typing import List, Optional
 from sqlalchemy import select, func, and_
@@ -23,7 +23,7 @@ class FlagdleDayRepository:
         self.session = session
 
     async def get_today_flag(self) -> Optional[FlagdleDay]:
-        today = date.today()
+        today = datetime.now(timezone.utc).date()
         result = await self.session.execute(
             select(FlagdleDay)
             .options(joinedload(FlagdleDay.country))

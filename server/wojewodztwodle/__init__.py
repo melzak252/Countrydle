@@ -350,6 +350,8 @@ async def _do_ask_question(
     response: Response,
 ):
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
+    if not day_state:
+        day_state = await WojewodztwodleDayRepository(session).generate_new_day_wojewodztwo()
     if user is not None:
         state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
         require_question_available(state, WOJEWODZTWDLE_CONFIG.max_questions)

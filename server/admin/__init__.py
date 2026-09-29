@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import case, desc, func, or_, select
@@ -47,6 +47,12 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 router.include_router(question_tests_router)
 
 
+def get_today_date() -> date:
+    if not isinstance(date, type):
+        return date.today()
+    return datetime.now(timezone.utc).date()
+
+
 def _mode_today(stats, mode_key: str, mode_label: str, target_name: str) -> AdminModeToday:
     return AdminModeToday(
         mode_key=mode_key,
@@ -67,7 +73,7 @@ async def get_admin_overview(
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    today = date.today()
+    today = get_today_date()
 
     # Resolve targets without creating puzzles for additional modes.
     c_day = await CountrydleRepository(session).get_today_country()
@@ -125,7 +131,7 @@ async def get_admin_overview(
 
     # Unique players across challenges; wins and win rate remain per-game metrics.
     daily_stats = await participation.get_daily_stats(today - timedelta(days=13), today)
-    current = daily_stats.get(today, {})
+    current = await participation.get_stats(today)
     today_overview = AdminOverviewToday(
         total_players=current.get("total_players", 0),
         total_winners=current.get("winners_count", 0),
