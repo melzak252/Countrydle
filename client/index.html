@@ -14,6 +14,10 @@
     <meta name="author" content="Jakub Melzacki" />
     <meta name="robots" content="index, follow" />
 
+    <!-- Google AdSense Official Verification & Ad Delivery -->
+    <meta name="google-adsense-account" content="ca-pub-3937273134876300" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3937273134876300" crossorigin="anonymous"></script>
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://countrydle.online/" />
@@ -160,91 +164,19 @@
   <body>
     <div id="root"></div>
 
-    <!-- Pre-rendered educational content fallback for search crawlers and AdSense reviewers -->
     <noscript>
-      <div style="max-width: 900px; margin: 0 auto; padding: 2.5rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a1a;">
-        <h1>Countrydle — The Daily Geography Deduction Game</h1>
-        <p>
-          Welcome to <strong>Countrydle</strong>, an educational platform combining spatial reasoning with daily puzzle deduction. Every day at midnight UTC, a secret target location is chosen across four distinct challenges. Players ask natural-language yes/no questions to systematically eliminate continents, coastlines, borders, and demographics.
+      <div style="max-width: 640px; margin: 2.5rem auto; padding: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; text-align: center; color: #f4f4f5; background: #09090b; border: 1px solid #27272a; border-radius: 8px;">
+        <h1 style="font-size: 1.5rem; margin-bottom: 0.75rem; color: #10b981;">Countrydle — Daily Geography Deduction Game</h1>
+        <p style="margin-bottom: 1rem; color: #a1a1aa;">
+          Countrydle requires JavaScript to render interactive geographic maps, process deduction queries, and load daily challenges. Please enable JavaScript in your browser to play.
         </p>
-
-        <h2>Our Four Game Modes</h2>
-        <ul>
-          <li><strong>World Countries (Countrydle)</strong>: Deduce one of 195 playable countries across all seven continents. Inquire about hemispheres, sea access, shared borders, driving orientation, and national flag designs within a 10-question budget.</li>
-          <li><strong>Polish Voivodeships (Województwodle)</strong>: Explore Poland's 16 administrative voivodeships. Deduce through macroregions, internal borders, neighboring nations, and Baltic Sea access.</li>
-          <li><strong>Polish Counties (Powiatdle)</strong>: Master 380 Polish powiaty using territorial vehicle registration plates (e.g., KR, WZ, PO), major expressways (A1, A4, S7), and river systems.</li>
-          <li><strong>US States (US Statedle)</strong>: Identify the secret state among all 50 American states using US Census divisions, regional tags (New England, Mountain, Pacific), and statehood admission orders.</li>
-        </ul>
-
-        <h2>Competitive Scoring System</h2>
-        <p>
-          Countrydle features a dynamic 5-factor scoring model that rewards skill and deduction speed:
-        </p>
-        <ul>
-          <li><strong>Base Win (+500 pts)</strong>: Guaranteed points for correctly solving today's mystery location.</li>
-          <li><strong>Question Efficiency (Up to +1,500 pts)</strong>: Exponential curve rewarding players who deduce the location with fewer questions.</li>
-          <li><strong>Guess Precision (Up to +500 pts)</strong>: Maximum points awarded for first-try correct guesses.</li>
-          <li><strong>Speed Bonus (Up to +300 pts)</strong>: Decays over 5 minutes, breaking leaderboard ties down to the exact second.</li>
-          <li><strong>Daily Streak Bonus (Up to +500 pts)</strong>: +50 points per consecutive day played, scaling up to a 10-day streak cap.</li>
-        </ul>
-
-        <h2>Frequently Asked Questions</h2>
-        <h3>1. How does Countrydle work?</h3>
-        <p>Countrydle is a daily geography deduction game. Every day at midnight UTC, a secret target location is chosen. You have a budget of questions and guesses to deduce the mystery location using yes/no questions.</p>
-
-        <h3>2. What kind of questions can I ask?</h3>
-        <p>You can ask any factual yes/no question regarding geography, borders, physical features, or demographics, such as hemisphere placement, maritime sea access, neighboring nations, population thresholds, or flag colors.</p>
-
-        <h3>3. Do typos consume question limits?</h3>
-        <p>No. Unparseable sentences, open-ended questions, or syntax errors trigger an explanatory warning without deducting your turn count.</p>
-
-        <h3>4. How do you guarantee factual accuracy without hallucinations?</h3>
-        <p>Countrydle translates natural language into structured AST query plans that execute directly against curated local SQLite tables. AI is used solely as a semantic parser, ensuring 100% verified factual truth.</p>
-
-        <h3>5. Can I play as a guest?</h3>
-        <p>Yes. Guest play is completely free with progress saved automatically in your browser's local storage. You can seamlessly synchronize your guest progress upon registration.</p>
-
-        <h2>Daily Blog &amp; Geography Lore</h2>
-        <p>
-          Explore our daily post-game recaps featuring in-depth Wikipedia curiosities, optimal deduction walkthroughs, and player statistics:
-        </p>
-        <ul>
-          <li><a href="/blog/2026-09-19-gambia">Yesterday's Countrydle: The Gambia — River Geography &amp; Encircling Borders</a></li>
-          <li><a href="/blog/2026-09-18-senegal">Yesterday's Countrydle: Senegal — West Africa's Atlantic Powerhouse</a></li>
-          <li><a href="/blog/2026-09-17-ivory-coast">Yesterday's Countrydle: Ivory Coast — Cocoa Capital &amp; Gulf of Guinea Coast</a></li>
-          <li><a href="/blog/2026-09-16-myanmar">Yesterday's Countrydle: Myanmar — Irrawaddy Basin &amp; Pagodas</a></li>
-          <li><a href="/blog/2026-09-15-zambia">Yesterday's Countrydle: Zambia — Victoria Falls &amp; Zambezi River</a></li>
-          <li><a href="/blog/2026-09-14-nepal">Yesterday's Countrydle: Nepal — The Roof of the World</a></li>
-          <li><a href="/blog/2026-09-13-mexico">Yesterday's Countrydle: Mexico — Land of Biodiversity &amp; Civilizations</a></li>
-        </ul>
-
-        <h2>Verified Data Provenance</h2>
-        <p>
-          All geographic coordinates, regional divisions, demographic figures, and boundary vectors are compiled from authoritative public institutions:
-        </p>
-        <ul>
-          <li><strong>Natural Earth &amp; OpenStreetMap</strong>: Global boundary vectors and island classifications.</li>
-          <li><strong>Główny Urząd Statystyczny (GUS)</strong>: Official Polish territorial registries, demographics, and vehicle codes.</li>
-          <li><strong>United States Census Bureau</strong>: State populations, land areas, and geographic divisions.</li>
-          <li><strong>CIA World Factbook</strong>: International maritime coastlines and national characteristics.</li>
-        </ul>
-
-        <h2>Site Navigation &amp; Legal Compliance</h2>
-        <p>
-          <a href="/">Home</a> |
-          <a href="/game">World Map</a> |
-          <a href="/us-states">US States</a> |
-          <a href="/powiaty">Powiaty</a> |
-          <a href="/wojewodztwa">Województwa</a> |
-          <a href="/leaderboard">Leaderboard</a> |
-          <a href="/archive">Archive</a> |
-          <a href="/blog">Daily Blog</a> |
-          <a href="/about">About Us</a> |
-          <a href="/faq">FAQ</a> |
-          <a href="/contact">Contact</a> |
-          <a href="/privacy-policy">Privacy Policy</a> |
-          <a href="/terms">Terms of Service</a> |
-          <a href="/cookie-policy">Cookie Policy</a>
+        <p style="font-size: 0.875rem; color: #71717a;">
+          <a href="/about" style="color: #10b981; text-decoration: underline;">About Countrydle</a> &bull;
+          <a href="/how-it-works" style="color: #10b981; text-decoration: underline;">How Questions Work</a> &bull;
+          <a href="/faq" style="color: #10b981; text-decoration: underline;">FAQ</a> &bull;
+          <a href="/blog" style="color: #10b981; text-decoration: underline;">Daily Geography Blog</a> &bull;
+          <a href="/privacy-policy" style="color: #10b981; text-decoration: underline;">Privacy Policy</a> &bull;
+          <a href="/terms" style="color: #10b981; text-decoration: underline;">Terms of Service</a>
         </p>
       </div>
     </noscript>

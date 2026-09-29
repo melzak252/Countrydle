@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import AdSenseUnit from '../components/AdSenseUnit';
 
 export default function AboutPage() {
   const { t } = useTranslation();
@@ -134,6 +135,8 @@ export default function AboutPage() {
           <p className="mt-5 text-sm text-zinc-400">Built for the global geography community</p>
         </div>
       </section>
+
+      <AdSenseUnit slot="about-page-footer" className="max-w-2xl mx-auto pt-6" />
     </div>
   );
 }

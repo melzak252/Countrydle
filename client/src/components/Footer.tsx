@@ -23,6 +23,7 @@ export default function Footer() {
           <Link to="/how-it-works" className="hover:text-white transition-colors">{t('footer.howItWorks', 'How Questions Work')}</Link>
           <Link to="/about" className="hover:text-white transition-colors">{t('footer.about', 'About')}</Link>
           <Link to="/faq" className="hover:text-white transition-colors">{t('footer.faq', 'FAQ')}</Link>
+          <Link to="/explore" className="hover:text-white transition-colors">{t('footer.explore', 'Geography Guides')}</Link>
           <Link to="/blog" className="hover:text-white transition-colors">{t('footer.blog', 'Blog')}</Link>
           <Link to="/contact" className="hover:text-white transition-colors">{t('footer.contact', 'Contact')}</Link>
           <span className="text-zinc-800 hidden sm:inline">•</span>

@@ -3,6 +3,9 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+RUN apk add --no-cache python3 chromium
+ENV CHROME_BIN=/usr/bin/chromium-browser
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

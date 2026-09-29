@@ -20,6 +20,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { blogService } from '../services/api';
+import AdSenseUnit from '../components/AdSenseUnit';
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -224,6 +225,8 @@ export default function BlogPostPage() {
             </div>
           </section>
         )}
+
+        <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-2xl mx-auto" />
 
         <section className="flex flex-col items-start justify-between gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
           <div className="max-w-lg">

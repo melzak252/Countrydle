@@ -26,6 +26,8 @@ import FAQPage from './pages/FAQPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
 import PatchNotesPage from './pages/PatchNotesPage';
+import ExplorePage from './pages/ExplorePage';
+import ModeGuidePage from './pages/ModeGuidePage';
 import { useAuthStore } from './stores/authStore';
 import {
   useCountryGameStore,
@@ -156,6 +158,8 @@ function App() {
           <Route path="how-it-works" element={<HowItWorksPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="faq" element={<FAQPage />} />
+          <Route path="explore" element={<ExplorePage />} />
+          <Route path="explore/modes/:modeId" element={<ModeGuidePage />} />
           <Route path="blog" element={<BlogListPage />} />
           <Route path="blog/:slug" element={<BlogPostPage />} />
           <Route path="admin" element={user?.is_admin ? <AdminDashboard /> : <Navigate to="/" replace />} />

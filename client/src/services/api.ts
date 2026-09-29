@@ -313,6 +313,46 @@ export const blogService = {
   },
 };
 
+export const exploreService = {
+  getModes: async () => {
+    const response = await api.get('/explore/modes');
+    return response.data;
+  },
+  getCountries: async (params?: { search?: string; region?: string; limit?: number }) => {
+    const p = new URLSearchParams();
+    if (params?.search) p.append('search', params.search);
+    if (params?.region) p.append('region', params.region);
+    if (params?.limit) p.append('limit', params.limit.toString());
+    const response = await api.get(`/explore/countries?${p.toString()}`);
+    return response.data;
+  },
+  getCountryDetail: async (identifier: string) => {
+    const response = await api.get(`/explore/countries/${encodeURIComponent(identifier)}`);
+    return response.data;
+  },
+  getUSStates: async (params?: { search?: string; region?: string }) => {
+    const p = new URLSearchParams();
+    if (params?.search) p.append('search', params.search);
+    if (params?.region) p.append('region', params.region);
+    const response = await api.get(`/explore/us-states?${p.toString()}`);
+    return response.data;
+  },
+  getUSStateDetail: async (name: string) => {
+    const response = await api.get(`/explore/us-states/${encodeURIComponent(name)}`);
+    return response.data;
+  },
+  getVoivodeships: async (search?: string) => {
+    const p = new URLSearchParams();
+    if (search) p.append('search', search);
+    const response = await api.get(`/explore/voivodeships?${p.toString()}`);
+    return response.data;
+  },
+  getVoivodeshipDetail: async (name: string) => {
+    const response = await api.get(`/explore/voivodeships/${encodeURIComponent(name)}`);
+    return response.data;
+  },
+};
+
 export type AdminQuestionsResponse = {
   items: any[];
   total: number;

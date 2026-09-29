@@ -25,6 +25,7 @@ from answer_reports import router as answer_reports_router, admin_router as admi
 from friend_matches import router as friend_matches_router
 from patch_notes import router as patch_notes_router
 from admin.template_divergences import router as template_divergences_router
+from explore import router as explore_router
 from db import get_db
 
 from db.repositories.user import UserRepository
@@ -192,6 +193,7 @@ app.include_router(admin_answer_reports_router)
 app.include_router(friend_matches_router)
 app.include_router(patch_notes_router)
 app.include_router(template_divergences_router)
+app.include_router(explore_router)
 
 
 
@@ -247,8 +249,12 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
         "<url><loc>https://countrydle.online/privacy-policy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
         "<url><loc>https://countrydle.online/terms</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
         "<url><loc>https://countrydle.online/cookie-policy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
+        "<url><loc>https://countrydle.online/explore</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/countrydle</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/us-states</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/wojewodztwa</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/powiaty</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
     ]
-
     for post in posts:
         urls_xml.append(
             f"<url><loc>https://countrydle.online/blog/{escape(post.slug)}</loc>"

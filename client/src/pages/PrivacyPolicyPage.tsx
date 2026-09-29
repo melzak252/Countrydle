@@ -72,12 +72,26 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8 border-l-4 border-blue-500 pl-6 py-2 bg-blue-500/5 rounded-r-lg">
-            <h2 className="text-2xl font-semibold mb-4 text-white">3. Google AdSense and Advertising</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-white">3. Google AdSense, Cookies, and Advertising</h2>
             <p className="text-zinc-300 leading-relaxed mb-4">
-              We use <strong>Google AdSense</strong> to serve advertisements on our website. Advertising choices, including whether personalized advertising is allowed, are handled separately through the Google-certified consent message and its Privacy settings where those settings are available.
+              We use <strong>Google AdSense</strong> to display advertisements to support our free educational platform. To comply with Google's Program Policies, we disclose the following regarding advertising cookies and tracking technologies:
             </p>
-            <p className="text-zinc-300 leading-relaxed">
-              Essential cookies needed for site functionality are distinct from optional advertising cookies. Google and other advertising providers may use cookies or similar technologies as permitted by your choices and applicable settings.
+            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4 mb-4">
+              <li>
+                <strong>Third-party vendor cookies:</strong> Third party vendors, including Google, use cookies to serve ads based on a user's prior visits to our website or other websites across the Internet.
+              </li>
+              <li>
+                <strong>Advertising cookies:</strong> Google's use of advertising cookies enables it and its partners to serve personalized advertisements to our users based on their visits to our site and/or other sites on the Internet.
+              </li>
+              <li>
+                <strong>Opting out of personalized advertising:</strong> Users may opt out of personalized advertising at any time by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300">Google Ads Settings</a>. Alternatively, users can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300">www.aboutads.info</a>.
+              </li>
+              <li>
+                <strong>Consent Management Platform (CMP):</strong> For visitors in the European Economic Area (EEA), United Kingdom (UK), and Switzerland, we implement a Google-certified Consent Management Platform (CMP) integrated with the IAB Transparency and Consent Framework (TCF v2.2) to collect and manage cookie consent preferences. You can adjust your consent choices at any time using the "Privacy Settings" button in our site footer.
+              </li>
+            </ul>
+            <p className="text-zinc-300 leading-relaxed text-sm">
+              Essential cookies strictly necessary for core game mechanics (e.g. daily progress, streaks, local session preservation) operate independently from optional advertising cookies.
             </p>
           </section>
 

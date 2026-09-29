@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { ChevronDown, Menu, X, LogOut, Archive, Sparkles, ShieldCheck, Info, HelpCircle, Mail, Cpu } from 'lucide-react';
+import { ChevronDown, Menu, X, LogOut, Archive, Sparkles, ShieldCheck, Info, HelpCircle, Mail, Cpu, BookOpen, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
@@ -41,15 +41,19 @@ export default function Header() {
   const more = [
     ['/archive', t('header.archive')],
     ['/how-it-works', t('header.howItWorks', 'How Questions Work')],
+    ['/explore', i18n.language.startsWith('pl') ? 'Przewodnik geograficzny' : 'Geography Guides'],
     ['/patch-notes', t('header.patchNotes', 'Patch notes')],
     ['/about', t('header.about')],
     ['/faq', t('header.faq')],
     ['/contact', t('header.contact')],
+    ['/privacy-policy', t('footer.privacyPolicy', 'Privacy Policy')],
+    ['/terms', t('footer.termsOfService', 'Terms of Service')],
     ...(user?.is_admin ? [['/admin', 'Admin']] : []),
   ];
   const exploreItems = [
     { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
     { path: '/how-it-works', name: t('header.howItWorks', 'How Questions Work'), icon: Cpu },
+    { path: '/explore', name: i18n.language.startsWith('pl') ? 'Przewodnik geograficzny' : 'Geography Guides', icon: BookOpen },
     { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
     ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];
@@ -57,6 +61,8 @@ export default function Header() {
     { path: '/about', name: t('header.about', 'About'), icon: Info },
     { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
     { path: '/contact', name: t('header.contact', 'Contact'), icon: Mail },
+    { path: '/privacy-policy', name: t('footer.privacyPolicy', 'Privacy Policy'), icon: ShieldCheck },
+    { path: '/terms', name: t('footer.termsOfService', 'Terms of Service'), icon: FileText },
   ];
   const closeMenu = () => setIsMenuOpen(false);
   const handleLogout = async () => {

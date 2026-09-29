@@ -1,11 +1,11 @@
 {
   "name": "client_new",
   "private": true,
-  "version": "1.16.2",
+  "version": "1.17.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && python3 scripts/prerender.py",
     "lint": "eslint .",
     "preview": "vite preview"
   },

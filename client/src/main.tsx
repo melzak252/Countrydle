@@ -9,7 +9,7 @@ const GOOGLE_CLIENT_ID = "624396927539-luhujtnrft1igdoug3bim8ac9nmvf3sk.apps.goo
 
 const loadOptionalScripts = () => {
   const adsenseId = import.meta.env.VITE_GOOGLE_ADSENSE_ID;
-  if (adsenseId) {
+  if (adsenseId && !document.querySelector('meta[name="google-adsense-account"]')) {
     const meta = document.createElement('meta');
     meta.name = 'google-adsense-account';
     meta.content = adsenseId;

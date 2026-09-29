@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import AdSenseUnit from '../components/AdSenseUnit';
 import {
   Cpu,
   Database,
@@ -1204,6 +1205,8 @@ export default function HowItWorksPage() {
           </a>
         </div>
       </footer>
+
+      <AdSenseUnit slot="how-it-works-footer" className="max-w-2xl mx-auto pt-4" />
     </div>
   );
 }

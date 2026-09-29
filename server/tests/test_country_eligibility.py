@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
 import importlib.util
 import sqlite3
 from pathlib import Path
@@ -95,14 +95,15 @@ async def test_ineligible_guess_rejected_by_id_or_name(country_session, country_
 @pytest.mark.real_database
 @pytest.mark.anyio
 async def test_active_ineligible_target_is_blocked_but_history_is_readable(country_session):
-    country_session.add(CountrydleDay(country_id=1, date=date.today()))
-    country_session.add(CountrydleDay(country_id=1, date=date.today() - timedelta(days=1)))
+    today_utc = datetime.now(timezone.utc).date()
+    country_session.add(CountrydleDay(country_id=1, date=today_utc))
+    country_session.add(CountrydleDay(country_id=1, date=today_utc - timedelta(days=1)))
     await country_session.commit()
     repo = CountrydleRepository(country_session)
     with pytest.raises(HTTPException) as exc:
         await repo.get_today_country()
     assert exc.value.status_code == 503
-    yesterday = await repo.get_day_country_by_date(date.today() - timedelta(days=1))
+    yesterday = await repo.get_day_country_by_date(today_utc - timedelta(days=1))
     assert yesterday.country_id == 1
 
 
