@@ -142,10 +142,10 @@ function App() {
           <Route path="powiaty" element={<PowiatyGamePage />} />
           <Route path="us-states" element={<USStatesGamePage />} />
           <Route path="wojewodztwa" element={<WojewodztwaGamePage />} />
-          <Route path="europe" element={<ContinentalGamePage continent="europe" />} />
-          <Route path="asia" element={<ContinentalGamePage continent="asia" />} />
-          <Route path="africa" element={<ContinentalGamePage continent="africa" />} />
-          <Route path="americas" element={<ContinentalGamePage continent="americas" />} />
+          <Route path="europe" element={<ContinentalGamePage key="europe" continent="europe" />} />
+          <Route path="asia" element={<ContinentalGamePage key="asia" continent="asia" />} />
+          <Route path="africa" element={<ContinentalGamePage key="africa" continent="africa" />} />
+          <Route path="americas" element={<ContinentalGamePage key="americas" continent="americas" />} />
           <Route path="flagdle" element={<FlagdlePage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />

@@ -30,33 +30,49 @@ export default function GameActionComposer({
       {(showActionTabs || trailingActions) && (
         <div className="mb-2 flex items-center justify-between gap-2">
           {showActionTabs && (
-            <div role="group" aria-label="Choose question or guess" className="flex min-w-0 items-center gap-1">
+            <div role="group" aria-label="Choose question or guess" className="inline-flex items-center gap-1 rounded-lg bg-obsidian-900/90 p-0.5 border border-white/10 shadow-inner">
               <button
                 type="button"
                 aria-pressed={activeAction === 'question'}
                 disabled={questionDisabled}
                 onClick={() => onActionChange('question')}
-                className={`flex items-center gap-1.5 rounded-sm px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
                   activeAction === 'question'
-                    ? 'border-b-2 border-emerald-400 bg-white/5 font-semibold text-sand-100'
-                    : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 border border-transparent font-medium'
                 }`}
               >
                 <span>Question</span>
-                {questionCount && <span className="font-mono text-[10px] text-zinc-500">({questionCount})</span>}
+                {questionCount && (
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                    activeAction === 'question'
+                      ? 'bg-emerald-400/20 text-emerald-300 font-semibold'
+                      : 'bg-white/5 text-zinc-400'
+                  }`}>
+                    ({questionCount})
+                  </span>
+                )}
               </button>
               <button
                 type="button"
                 aria-pressed={activeAction === 'guess'}
                 onClick={() => onActionChange('guess')}
-                className={`flex items-center gap-1.5 rounded-sm px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-all cursor-pointer ${
                   activeAction === 'guess'
-                    ? 'border-b-2 border-emerald-400 bg-white/5 font-semibold text-sand-100'
-                    : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 border border-transparent font-medium'
                 }`}
               >
                 <span>Guess</span>
-                {guessCount && <span className="font-mono text-[10px] text-zinc-500">({guessCount})</span>}
+                {guessCount && (
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                    activeAction === 'guess'
+                      ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                      : 'bg-white/5 text-zinc-400'
+                  }`}>
+                    ({guessCount})
+                  </span>
+                )}
               </button>
             </div>
           )}

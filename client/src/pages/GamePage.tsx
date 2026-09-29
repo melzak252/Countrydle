@@ -56,13 +56,15 @@ export default function GamePage() {
 
   // HUD & Chat state
   const isMobile = useIsMobile();
-  const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
+  const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess'>('question');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const activeInputTab: 'question' | 'guess' = userSelectedTab ?? (
-    gameState && gameState.remaining_questions <= 0 && gameState.remaining_guesses > 0
-      ? 'guess'
-      : 'question'
-  );
+
+  // Always reset to 'question' tab on mount
+  useEffect(() => {
+    setUserSelectedTab('question');
+  }, []);
+
+  const activeInputTab: 'question' | 'guess' = userSelectedTab;
   const activeChatTab = activeInputTab === 'question' ? 'questions' : 'guesses';
   const [isResultDismissed, setIsResultDismissed] = useState(false);
 
@@ -267,36 +269,48 @@ export default function GamePage() {
             </button>
 
             {/* Notebook Tabbed Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-4 py-3 shrink-0">
-              <div role="group" aria-label="Choose question or guess" className="flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 sm:px-4 py-2.5 shrink-0">
+              <div role="group" aria-label="Choose question or guess" className="inline-flex items-center gap-1 rounded-lg bg-obsidian-900/90 p-1 border border-white/10 shadow-inner">
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'questions'}
                   onClick={() => setUserSelectedTab('question')}
-                  className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-all cursor-pointer ${
                     activeChatTab === 'questions'
-                      ? 'bg-emerald-400/15 font-semibold text-sand-100'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 border border-transparent font-medium'
                   }`}
                 >
-                  <MessageSquare size={12} className={activeChatTab === 'questions' ? 'text-emerald-400' : ''} />
+                  <MessageSquare size={13} className={activeChatTab === 'questions' ? 'text-emerald-400' : 'text-zinc-400'} />
                   <span>Questions</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({questions.length}/10)</span>
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                    activeChatTab === 'questions'
+                      ? 'bg-emerald-400/20 text-emerald-300 font-semibold'
+                      : 'bg-white/5 text-zinc-400'
+                  }`}>
+                    {questions.length}/10
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'guesses'}
                   onClick={() => setUserSelectedTab('guess')}
-                  className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-all cursor-pointer ${
                     activeChatTab === 'guesses'
-                      ? 'bg-emerald-400/15 font-semibold text-sand-100'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 border border-transparent font-medium'
                   }`}
                 >
-                  <Target size={12} className={activeChatTab === 'guesses' ? 'text-emerald-400' : ''} />
+                  <Target size={13} className={activeChatTab === 'guesses' ? 'text-amber-400' : 'text-zinc-400'} />
                   <span>Guesses</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({guesses.length}/3)</span>
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                    activeChatTab === 'guesses'
+                      ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                      : 'bg-white/5 text-zinc-400'
+                  }`}>
+                    {guesses.length}/3
+                  </span>
                 </button>
               </div>
 
