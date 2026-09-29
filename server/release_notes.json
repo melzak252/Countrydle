@@ -1,5 +1,5 @@
 {
-  "version": "1.15.3",
-  "title": "Compact in-chat answer report layout",
-  "body": "QUESTION CHAT IMPROVEMENTS\n- Streamlined the in-chat answer reporting form after game completion, eliminating redundant borders.\n- Applied compact padding for answer report buttons within message bubbles to keep the chat history neat and legible."
+  "version": "1.15.4",
+  "title": "Historical unions and former empires question understanding",
+  "body": "HISTORICAL UNIONS & FORMER EMPIRES\n- Added comprehensive English and Polish question matching for historical geopolitical unions and empires, including the Warsaw Pact (Układ Warszawski, Pakt Warszawski), USSR (ZSRR, Związek Radziecki, Związek Sowiecki), and Austro-Hungarian Empire (Austro-Węgry, Cesarstwo Austro-Węgierskie, Monarchia Austro-Węgierska).\n- Supported full Polish declensions (\"częścią Układu Warszawskiego\", \"częścią ZSRR\", \"częścią Austro-Węgier\", \"wchodził w skład\") and English variations (\"part of Austria-Hungary\", \"member of the Warsaw Pact\").\n- Added coverage for Gran Colombia (Wielka Kolumbia), Yugoslavia (Jugosławia), Czechoslovakia (Czechosłowacja), and the Ottoman, British, French, Spanish, and Portuguese Empires."
 }
