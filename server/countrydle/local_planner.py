@@ -440,6 +440,8 @@ def analyze_question_for_local_plan(
     deterministic = compile_template_plan(question)
     if deterministic is not None:
         ast, improved = deterministic
+        from utils.shadow_audit import schedule_shadow_audit
+        schedule_shadow_audit("countrydle", question, ast, improved)
         plan = QuestionPlan(
             original_question=question,
             valid=True,

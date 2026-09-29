@@ -63,6 +63,31 @@ export interface AnswerReport {
   };
 }
 
+export type TemplateDivergenceStatus = 'open' | 'reviewed' | 'all';
+
+export interface TemplateDivergence {
+  id: number;
+  mode: string;
+  question: string;
+  template_plan: any;
+  gemini_plan: any | null;
+  divergence_type: string;
+  details: {
+    template_relation?: string;
+    gemini_relation?: string;
+    template_operator?: string;
+    gemini_operator?: string;
+    template_value?: any;
+    gemini_value?: any;
+    template_improved_question?: string | null;
+    gemini_improved_question?: string | null;
+    gemini_explanation?: string | null;
+    reason?: string;
+  } | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
 export type QuestionTestMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'europe' | 'asia' | 'africa' | 'americas' | 'flagdle';
 
 export interface QuestionTestEntity {

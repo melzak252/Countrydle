@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CacheStats, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
+import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CacheStats, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult, TemplateDivergence, TemplateDivergenceStatus } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -404,6 +404,21 @@ export const adminService = {
   },
   reviewAnswerReport: async (id: number, reviewed: boolean): Promise<AnswerReport> => {
     const response = await api.patch<AnswerReport>(`/admin/answer-reports/${id}`, { reviewed });
+    return response.data;
+  },
+  getTemplateDivergences: async (
+    status: TemplateDivergenceStatus = 'open',
+    page = 1,
+    limit = 25,
+    mode?: string,
+  ): Promise<{ items: TemplateDivergence[]; total: number }> => {
+    const response = await api.get<{ items: TemplateDivergence[]; total: number }>('/admin/template-divergences', {
+      params: { status, page, limit, mode },
+    });
+    return response.data;
+  },
+  reviewTemplateDivergence: async (id: number, reviewed: boolean): Promise<TemplateDivergence> => {
+    const response = await api.patch<TemplateDivergence>(`/admin/template-divergences/${id}`, { reviewed });
     return response.data;
   },
   getOverview: async () => {

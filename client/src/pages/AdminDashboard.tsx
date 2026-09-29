@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
+import TemplateDivergencesPanel from '../components/admin/TemplateDivergencesPanel';
 import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
 import QuestionTestsPanel from '../components/QuestionTestsPanel';
 import CacheStatsPanel from '../components/CacheStatsPanel';
@@ -32,7 +33,7 @@ import {
 } from 'lucide-react';
 
 type AdminSection = 'gameplay' | 'qa' | 'system';
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'friendAnswers' | 'questionTests' | 'cache';
+type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache';
 
 interface TabDefinition {
   id: AdminTab;
@@ -51,6 +52,7 @@ const TABS: TabDefinition[] = [
   // QA & Knowledge Section
   { id: 'questions', label: 'Questions Log', icon: HelpCircle, section: 'qa' },
   { id: 'reports', label: 'Player Reports', icon: FileText, section: 'qa' },
+  { id: 'templateDivergences', label: 'Template Shadow Audit', icon: ShieldCheck, section: 'qa' },
   { id: 'questionTests', label: 'QA Playground', icon: Sparkles, section: 'qa' },
   { id: 'facts', label: 'Facts Editor (SQLite)', icon: Database, section: 'qa' },
 
@@ -429,6 +431,10 @@ export default function AdminDashboard() {
           }}
         />
       )}
+      {activeTab === 'templateDivergences' && (
+        <TemplateDivergencesPanel />
+      )}
+
 
       {activeTab === 'questionTests' && (
         <QuestionTestsPanel

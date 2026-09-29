@@ -304,3 +304,57 @@ async def test_guest_token_auto_resolves_mode_on_mismatch_and_rejects_invalid(re
     report = (await api.client.get("/admin/answer-reports")).json()["items"][0]
     assert report["mode"] == "continental"
     assert report["details"]["target_name"] == next(iter(MODES["continental"][5].values()))
+
+
+@pytest.mark.anyio
+async def test_admin_template_divergences_api(reports_api):
+    from db.models.template_divergence import TemplateDivergence
+    from db.base import Base
+    from users.utils import get_admin_user
+
+    api = reports_api
+    # Create table in the test sqlite engine
+    if "template_divergences" in Base.metadata.tables:
+        Base.metadata.tables["template_divergences"].create(api.session.bind, checkfirst=True)
+
+    # Insert sample divergence
+    div = TemplateDivergence(
+        id=1,
+        mode="countrydle",
+        question="Is it on te southern part of africa",
+        template_plan=[{"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "Africa"}}],
+        gemini_plan=[{"operator": "contains", "left": {"entity": "target_country", "relation": "geographic_area"}, "right": {"value": "Southern Africa"}}],
+        divergence_type="value_mismatch",
+        details={"template_value": "Africa", "gemini_value": "Southern Africa"},
+    )
+    api.session.add(div)
+    api.session.commit()
+
+    # 1. Non-admin is rejected
+    res_unauth = await api.client.get("/admin/template-divergences")
+    assert res_unauth.status_code == 401
+
+    # 2. Admin can list open divergences
+    async def mock_admin():
+        return api.admin
+    app.dependency_overrides[get_admin_user] = mock_admin
+    try:
+        res_open = await api.client.get("/admin/template-divergences?status=open")
+        assert res_open.status_code == 200
+        data = res_open.json()
+        assert data["total"] == 1
+        assert data["items"][0]["divergence_type"] == "value_mismatch"
+        assert data["items"][0]["reviewed_at"] is None
+
+        # 3. Admin can mark divergence reviewed
+        res_patch = await api.client.patch("/admin/template-divergences/1", json={"reviewed": True})
+        assert res_patch.status_code == 200
+        assert res_patch.json()["reviewed_at"] is not None
+
+        # 4. Now open list has 0, reviewed list has 1
+        res_open_after = await api.client.get("/admin/template-divergences?status=open")
+        assert res_open_after.json()["total"] == 0
+        res_rev_after = await api.client.get("/admin/template-divergences?status=reviewed")
+        assert res_rev_after.json()["total"] == 1
+    finally:
+        app.dependency_overrides.pop(get_admin_user, None)
