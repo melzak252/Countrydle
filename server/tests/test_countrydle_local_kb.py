@@ -1011,50 +1011,54 @@ def test_entirely_in_hemisphere_accurately_classifies_crossing_and_pure_countrie
 def test_subregions_not_collapsed_to_continents():
     from countrydle.template_compiler import compile_template_plan
 
-    q_pl = "Czy ten kraj leży w Azji Południowo-wschodniej?"
-    plan_pl = compile_template_plan(q_pl)
-    assert plan_pl is not None
-    assert plan_pl[0][0]["left"]["relation"] == "geographic_area"
-    assert plan_pl[0][0]["right"]["value"] == "Southeast Asia"
-    ans_th = execute_local_plan(plan_pl[0][0], "Thailand", q_pl)
-    assert ans_th.answer is True
-    ans_jp = execute_local_plan(plan_pl[0][0], "Japan", q_pl)
-    assert ans_jp.answer is False
+    # Polish subregion queries must NOT compile to templates (no fragile Polish regex, safely deferred to Gemini)
+    # and crucially must NEVER collapse into broad continent questions
+    for q_pl in (
+        "Czy ten kraj leży w Azji Południowo-wschodniej?",
+        "Czy leży w Europie Środkowej?",
+        "Czy leży w południowej Azji?",
+        "Czy leży w Azji Południowej?",
+        "Czy leży na Bliskim Wschodzie?",
+        "Czy leży na południu Afryki?",
+        "Czy leży w Afryce Południowej?",
+        "Czy leży w Afryce Północnej?",
+        "Czy leży w Ameryce Środkowej?",
+    ):
+        plan_pl = compile_template_plan(q_pl)
+        assert plan_pl is None, f"Polish subregion {q_pl} should not match template; got {plan_pl}"
 
+    # English subregion queries compile accurately to geographic_area
     for q_en in ("Is it in Southeast Asia?", "Is it in South East Asia?", "Is it in South-East Asia?"):
         plan_en = compile_template_plan(q_en)
         assert plan_en is not None
         assert plan_en[0][0]["left"]["relation"] == "geographic_area"
         assert plan_en[0][0]["right"]["value"] == "Southeast Asia"
+        ans_th = execute_local_plan(plan_en[0][0], "Thailand", q_en)
+        assert ans_th.answer is True
+        ans_jp = execute_local_plan(plan_en[0][0], "Japan", q_en)
+        assert ans_jp.answer is False
 
-    for q_ce in ("Is it in Central Europe?", "Czy leży w Europie Środkowej?"):
-        plan_ce = compile_template_plan(q_ce)
-        assert plan_ce is not None
-        assert plan_ce[0][0]["left"]["relation"] == "geographic_area"
-        assert plan_ce[0][0]["right"]["value"] == "Central Europe"
+    plan_ce = compile_template_plan("Is it in Central Europe?")
+    assert plan_ce is not None
+    assert plan_ce[0][0]["left"]["relation"] == "geographic_area"
+    assert plan_ce[0][0]["right"]["value"] == "Central Europe"
 
-    # South Asia (both Polish word orders)
-    for q_sa in ("Czy leży w południowej Azji?", "Czy leży w Azji Południowej?", "Is it in South Asia?"):
-        plan_sa = compile_template_plan(q_sa)
-        assert plan_sa is not None
-        assert plan_sa[0][0]["left"]["relation"] == "geographic_area"
-        assert plan_sa[0][0]["right"]["value"] == "South Asia"
+    plan_sa = compile_template_plan("Is it in South Asia?")
+    assert plan_sa is not None
+    assert plan_sa[0][0]["left"]["relation"] == "geographic_area"
+    assert plan_sa[0][0]["right"]["value"] == "South Asia"
     assert execute_local_plan(plan_sa[0][0], "India", "In South Asia?").answer is True
     assert execute_local_plan(plan_sa[0][0], "Poland", "In South Asia?").answer is False
 
-    # Middle East
-    for q_me in ("Czy leży na Bliskim Wschodzie?", "Czy to kraj Bliskiego Wschodu?", "Is it in the Middle East?"):
-        plan_me = compile_template_plan(q_me)
-        assert plan_me is not None
-        assert plan_me[0][0]["left"]["relation"] == "geographic_area"
-        assert plan_me[0][0]["right"]["value"] == "Middle East"
+    plan_me = compile_template_plan("Is it in the Middle East?")
+    assert plan_me is not None
+    assert plan_me[0][0]["left"]["relation"] == "geographic_area"
+    assert plan_me[0][0]["right"]["value"] == "Middle East"
     assert execute_local_plan(plan_me[0][0], "Saudi Arabia", "In Middle East?").answer is True
     assert execute_local_plan(plan_me[0][0], "Thailand", "In Middle East?").answer is False
 
-    # African subregions
     for q_saf in (
-        "Czy leży na południu Afryki?", "Czy leży w Afryce Południowej?", "Czy leży w południowej Afryce?",
-        "Is it in Southern Africa?", "Is it on te southern part of africa", "Is it in the southern part of Africa?",
+        "Is it in Southern Africa?", "Is it in the southern part of Africa?",
         "Is it in the south part of Africa?",
     ):
         plan_saf = compile_template_plan(q_saf)
@@ -1065,66 +1069,47 @@ def test_subregions_not_collapsed_to_continents():
     assert execute_local_plan(plan_saf[0][0], "Tunisia", "In Southern Africa?").answer is False
     assert execute_local_plan(plan_saf[0][0], "Egypt", "In Southern Africa?").answer is False
 
-    for q_naf in ("Czy leży na północy Afryki?", "Czy leży w Afryce Północnej?", "Is it in Northern Africa?", "Is it in North Africa?"):
+    for q_naf in ("Is it in Northern Africa?", "Is it in North Africa?"):
         plan_naf = compile_template_plan(q_naf)
         assert plan_naf is not None
         assert plan_naf[0][0]["left"]["relation"] == "geographic_area"
         assert plan_naf[0][0]["right"]["value"] == "Northern Africa"
     assert execute_local_plan(plan_naf[0][0], "Egypt", "In Northern Africa?").answer is True
 
-    # Central America
-    for q_ca in ("Czy leży w Ameryce Środkowej?", "Is it in Central America?"):
-        plan_ca = compile_template_plan(q_ca)
-        assert plan_ca is not None
-        assert plan_ca[0][0]["left"]["relation"] == "geographic_area"
-        assert plan_ca[0][0]["right"]["value"] == "Central America"
+    plan_ca = compile_template_plan("Is it in Central America?")
+    assert plan_ca is not None
+    assert plan_ca[0][0]["left"]["relation"] == "geographic_area"
+    assert plan_ca[0][0]["right"]["value"] == "Central America"
     assert execute_local_plan(plan_ca[0][0], "Costa Rica", "In Central America?").answer is True
 
-    # Broad continent queries still map to continent
-    for q_cont, expected_cont in (("Czy leży w Afryce?", "Africa"), ("Is it in Africa?", "Africa"), ("Czy leży w Azji?", "Asia"), ("Is it in Asia?", "Asia")):
+    # Pure broad continent queries in both Polish and English map safely to continent
+    for q_cont, expected_cont in (
+        ("Czy leży w Afryce?", "Africa"), ("Is it in Africa?", "Africa"),
+        ("Czy leży w Azji?", "Asia"), ("Is it in Asia?", "Asia"),
+        ("Czy leży w Europie?", "Europe"), ("Is it in Europe?", "Europe"),
+        ("Czy leży w Ameryce Północnej?", "North America"), ("Is it in North America?", "North America"),
+        ("Czy leży w Ameryce Południowej?", "South America"), ("Is it in South America?", "South America"),
+    ):
         plan_cont = compile_template_plan(q_cont)
-        assert plan_cont is not None
+        assert plan_cont is not None, f"Failed for {q_cont}"
         assert plan_cont[0][0]["left"]["relation"] == "continent"
         assert plan_cont[0][0]["right"]["value"] == expected_cont
-
 
 def test_historical_unions_matching_and_execution():
     from countrydle.template_compiler import compile_template_plan
 
-    cases = [
+    english_cases = [
         # Warsaw Pact
-        ("Czy ten kraj należał do Układu Warszawskiego?", "Poland", "Warsaw Pact", True),
         ("Was it in the Warsaw Pact?", "Poland", "Warsaw Pact", True),
-        ("Czy był w Układzie Warszawskim?", "Poland", "Warsaw Pact", True),
-        ("Czy był częścią Układu Warszawskiego?", "Poland", "Warsaw Pact", True),
-        ("Czy należał do paktu warszawskiego?", "Austria", "Warsaw Pact", False),
-
         # USSR
-        ("Czy był częścią ZSRR?", "Ukraine", "USSR", True),
         ("Was it part of the USSR?", "Poland", "USSR", False),
-        ("Czy należał do ZSRR?", "Kazakhstan", "USSR", True),
-        ("Czy był częścią Związku Radzieckiego?", "Lithuania", "USSR", True),
-        ("Czy był częścią Związku Sowieckiego?", "Poland", "USSR", False),
         ("Was it in the Soviet Union?", "Estonia", "USSR", True),
-
         # Austro-Hungarian Empire
-        ("Czy był częścią Cesarstwa Austro-Węgierskiego?", "Austria", "Austro-Hungarian Empire", True),
         ("Was it part of the Austro-Hungarian Empire?", "Hungary", "Austro-Hungarian Empire", True),
-        ("Czy należał do Cesarstwa Austro-Węgierskiego?", "Czech Republic", "Austro-Hungarian Empire", True),
-        ("Czy był częścią Austro-Węgier?", "Slovakia", "Austro-Hungarian Empire", True),
-        ("Czy należał do Austro-Węgier?", "Poland", "Austro-Hungarian Empire", False),
         ("Was it part of Austria-Hungary?", "Austria", "Austro-Hungarian Empire", True),
-
-        # Other unions
-        ("Czy był częścią Jugosławii?", "Croatia", "Yugoslavia", True),
-        ("Czy był częścią Czechosłowacji?", "Slovakia", "Czechoslovakia", True),
-        ("Czy był częścią Imperium Osmańskiego?", "Greece", "Ottoman Empire", True),
-        ("Czy był częścią Imperium Brytyjskiego?", "Canada", "British Empire", True),
-        ("Czy był częścią Imperium Francuskiego?", "Algeria", "French Empire", True),
-        ("Czy był częścią Wielkiej Kolumbii?", "Colombia", "Gran Colombia", True),
     ]
 
-    for question, country, expected_union, expected_ans in cases:
+    for question, country, expected_union, expected_ans in english_cases:
         plan = compile_template_plan(question)
         assert plan is not None, f"Failed to compile: {question}"
         node = plan[0][0]
@@ -1132,3 +1117,27 @@ def test_historical_unions_matching_and_execution():
         assert node["right"]["value"] == expected_union
         ans = execute_local_plan(node, country, question)
         assert ans.answer is expected_ans, f"Failed for {country} in {expected_union}: expected {expected_ans}, got {ans.answer}"
+
+    # Fragile Polish historical union queries must return None from template compiler (deferred to Gemini)
+    polish_unions = [
+        "Czy ten kraj należał do Układu Warszawskiego?",
+        "Czy był w Układzie Warszawskim?",
+        "Czy był częścią Układu Warszawskiego?",
+        "Czy należał do paktu warszawskiego?",
+        "Czy był częścią ZSRR?",
+        "Czy należał do ZSRR?",
+        "Czy był częścią Związku Radzieckiego?",
+        "Czy był częścią Związku Sowieckiego?",
+        "Czy był częścią Cesarstwa Austro-Węgierskiego?",
+        "Czy należał do Cesarstwa Austro-Węgierskiego?",
+        "Czy był częścią Austro-Węgier?",
+        "Czy należał do Austro-Węgier?",
+        "Czy był częścią Jugosławii?",
+        "Czy był częścią Czechosłowacji?",
+        "Czy był częścią Imperium Osmańskiego?",
+        "Czy był częścią Imperium Brytyjskiego?",
+        "Czy był częścią Imperium Francuskiego?",
+        "Czy był częścią Wielkiej Kolumbii?",
+    ]
+    for question in polish_unions:
+        assert compile_template_plan(question) is None, f"Polish union query {question} should not match template"

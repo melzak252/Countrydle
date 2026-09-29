@@ -52,187 +52,58 @@ CONTINENTS = {
     "Oceania": ("Oceania", "Oceanii"),
 }
 AREAS = {
-    # Europe
-    "Balkans": ("Balkans", "Bałkany", "Bałkanach", "Bałkanów", "Balkan"),
-    "Baltic states": ("Baltic states", "państwa bałtyckie", "państwo bałtyckie", "państwach bałtyckich", "krajach bałtyckich", "kraje bałtyckie", "kraj bałtycki"),
-    "Central Europe": (
-        "Central Europe", "Europa Środkowa", "Europie Środkowej", "Europą Środkową", "Europy Środkowej",
-        "Środkowa Europa", "Środkowej Europie", "Środkową Europą", "Środkowej Europy",
-        "central part of europe", "middle part of europe",
-        "środkowa część europy", "środkowej części europy", "w środkowej części europy",
-    ),
-    "Eastern Europe": (
-        "Eastern Europe", "Europa Wschodnia", "Europie Wschodniej", "Europą Wschodnią", "Europy Wschodniej",
-        "Wschodnia Europa", "Wschodniej Europie", "Wschodnią Europą", "Wschodniej Europy",
-        "eastern part of europe", "east part of europe", "east of europe",
-        "wschodnia część europy", "wschodniej części europy", "w wschodniej części europy", "we wschodniej części europy",
-    ),
-    "Western Europe": (
-        "Western Europe", "Europa Zachodnia", "Europie Zachodniej", "Europą Zachodnią", "Europy Zachodniej",
-        "Zachodnia Europa", "Zachodniej Europie", "Zachodnią Europą", "Zachodniej Europy",
-        "western part of europe", "west part of europe", "west of europe",
-        "zachodnia część europy", "zachodniej części europy", "w zachodniej części europy",
-    ),
-    "Northern Europe": (
-        "Northern Europe", "Europa Północna", "Europie Północnej", "Europą Północną", "Europy Północnej",
-        "Północna Europa", "Północnej Europie", "Północną Europą", "Północnej Europy",
-        "northern part of europe", "north part of europe", "north of europe",
-        "północna część europy", "północnej części europy", "w północnej części europy",
-    ),
-    "Southern Europe": (
-        "Southern Europe", "Europa Południowa", "Europie Południowej", "Europą Południową", "Europy Południowej",
-        "Południowa Europa", "Południowej Europie", "Południową Europą", "Południowej Europy",
-        "southern part of europe", "south part of europe", "south of europe",
-        "południowa część europy", "południowej części europy", "w południowej części europy",
-    ),
-    "Scandinavia": ("Scandinavia", "Skandynawia", "Skandynawii", "Skandynawią"),
-    "Iberia": ("Iberia", "Iberian Peninsula", "Półwysep Iberyjski", "Półwyspie Iberyjskim", "Półwyspu Iberyjskiego"),
-
-    # Middle East & Asia
-    "Middle East": (
-        "Middle East", "the Middle East", "Mid East", "Mideast", "Middle-East",
-        "Bliski Wschód", "Bliskim Wschodzie", "Bliskiego Wschodu", "Bliskim Wschodem",
-    ),
-    "Arabian Peninsula": ("Arabian Peninsula", "Półwysep Arabski", "Półwyspie Arabskim", "Półwyspu Arabskiego"),
-    "Indochina": ("Indochina", "Indochiny", "Indochinach", "Indochin"),
-    "Central Asia": (
-        "Central Asia", "Azja Środkowa", "Azji Środkowej", "Azją Środkową",
-        "Środkowa Azja", "Środkowej Azji", "Środkową Azją",
-        "Centralna Azja", "Centralnej Azji", "Centralną Azją",
-        "central part of asia", "middle part of asia",
-        "środkowa część azji", "środkowej części azji", "w środkowej części azji",
-    ),
-    "Southeast Asia": (
-        "Southeast Asia", "South East Asia", "South-East Asia", "South-Eastern Asia", "South Eastern Asia", "Southeastern Asia",
-        "Azja Południowo-Wschodnia", "Azji Południowo-Wschodniej", "Azja Południowo-wschodnia", "Azji Południowo-wschodniej",
-        "Azją Południowo-Wschodnią", "Azją Południowo-wschodnią",
-        "Południowo-Wschodnia Azja", "Południowo-Wschodniej Azji", "Południowo-wschodnia Azja", "Południowo-wschodniej Azji",
-        "Południowo-Wschodnią Azją", "Południowo-wschodnią Azją",
-        "southeast part of asia", "south-east part of asia", "south eastern part of asia", "southeastern part of asia",
-        "południowo-wschodnia część azji", "południowo-wschodniej części azji", "w południowo-wschodniej części azji",
-    ),
-    "South Asia": (
-        "South Asia", "Southern Asia",
-        "Azja Południowa", "Azji Południowej", "Azją Południową",
-        "Południowa Azja", "Południowej Azji", "Południową Azją",
-        "southern part of asia", "south part of asia", "south of asia",
-        "południowa część azji", "południowej części azji", "w południowej części azji",
-    ),
-    "East Asia": (
-        "East Asia", "Eastern Asia",
-        "Azja Wschodnia", "Azji Wschodniej", "Azją Wschodnią",
-        "Wschodnia Azja", "Wschodniej Azji", "Wschodnią Azją",
-        "eastern part of asia", "east part of asia", "east of asia",
-        "wschodnia część azji", "wschodniej części azji", "we wschodniej części azji",
-    ),
-    "Western Asia": (
-        "Western Asia", "West Asia",
-        "Azja Zachodnia", "Azji Zachodniej", "Azją Zachodnią",
-        "Zachodnia Azja", "Zachodniej Azji", "Zachodnią Azją",
-        "western part of asia", "west part of asia", "west of asia",
-        "zachodnia część azji", "zachodniej części azji", "w zachodniej części azji",
-    ),
-
-    # Africa
-    "Northern Africa": (
-        "Northern Africa", "North Africa",
-        "Afryka Północna", "Afryce Północnej", "Afryki Północnej", "Afryką Północną",
-        "Północna Afryka", "Północnej Afryce", "Północnej Afryki", "Północną Afryką",
-        "północ Afryki", "północy Afryki",
-        "northern part of africa", "north part of africa", "north of africa",
-        "północna część afryki", "północnej części afryki", "północną część afryki",
-        "w północnej części afryki", "polnocna czesc afryki", "polnocnej czesci afryki",
-    ),
-    "Southern Africa": (
-        "Southern Africa",
-        "Afryka Południowa", "Afryce Południowej", "Afryki Południowej", "Afryką Południową",
-        "Południowa Afryka", "Południowej Afryce", "Południowej Afryki", "Południową Afryką",
-        "południe Afryki", "południu Afryki",
-        "southern part of africa", "south part of africa", "south of africa",
-        "południowa część afryki", "południowej części afryki", "południową część afryki",
-        "w południowej części afryki", "południowa czesc afryki", "południowej czesci afryki",
-    ),
-    "Western Africa": (
-        "Western Africa", "West Africa",
-        "Afryka Zachodnia", "Afryce Zachodniej", "Afryki Zachodniej", "Afryką Zachodnią",
-        "Zachodnia Afryka", "Zachodniej Afryce", "Zachodniej Afryki", "Zachodnią Afryką",
-        "zachód Afryki", "zachodzie Afryki",
-        "western part of africa", "west part of africa", "west of africa",
-        "zachodnia część afryki", "zachodniej części afryki", "zachodnią część afryki",
-        "w zachodniej części afryki", "zachodnia czesc afryki", "zachodniej czesci afryki",
-    ),
-    "Eastern Africa": (
-        "Eastern Africa", "East Africa",
-        "Afryka Wschodnia", "Afryce Wschodniej", "Afryki Wschodniej", "Afryką Wschodnią",
-        "Wschodnia Afryka", "Wschodniej Afryce", "Wschodniej Afryki", "Wschodnią Afryką",
-        "wschód Afryki", "wschodzie Afryki",
-        "eastern part of africa", "east part of africa", "east of africa",
-        "wschodnia część afryki", "wschodniej części afryki", "wschodnią część afryki",
-        "w wschodniej części afryki", "we wschodniej części afryki", "wschodnia czesc afryki", "wschodniej czesci afryki",
-    ),
-    "Middle Africa": (
-        "Middle Africa", "Central Africa",
-        "Afryka Środkowa", "Afryce Środkowej", "Afryki Środkowej", "Afryką Środkową",
-        "Środkowa Afryka", "Środkowej Afryce", "Środkowej Afryki", "Środkową Afryką",
-        "środek Afryki", "środku Afryki", "centralna Afryka", "centralnej Afryce",
-        "central part of africa", "middle part of africa",
-        "środkowa część afryki", "środkowej części afryki", "środkową część afryki",
-        "w środkowej części afryki", "srodkowa czesc afryki", "srodkowej czesci afryki",
-    ),
-    "Horn of Africa": ("Horn of Africa", "Róg Afryki", "Rogiem Afryki", "Rogu Afryki"),
-    "Maghreb": ("Maghreb", "Maghrebie", "Maghrebu"),
-    "Sahel": ("Sahel", "Sahelu"),
-
-    # Americas
-    "Central America": (
-        "Central America",
-        "Ameryka Środkowa", "Ameryce Środkowej", "Ameryki Środkowej", "Ameryką Środkową",
-        "Środkowa Ameryka", "Środkowej Ameryce", "Środkowej Ameryki", "Środkową Ameryką",
-    ),
-    "Caribbean": ("Caribbean", "Karaiby", "Karaibach", "Karaibów"),
+    "Balkans": ("Balkans", "the Balkans"),
+    "Baltic states": ("Baltic states", "the Baltic states", "the Baltics"),
+    "Central Europe": ("Central Europe", "central part of europe", "middle part of europe"),
+    "Eastern Europe": ("Eastern Europe", "eastern part of europe", "east part of europe", "east of europe"),
+    "Western Europe": ("Western Europe", "western part of europe", "west part of europe", "west of europe"),
+    "Northern Europe": ("Northern Europe", "northern part of europe", "north part of europe", "north of europe"),
+    "Southern Europe": ("Southern Europe", "southern part of europe", "south part of europe", "south of europe"),
+    "Scandinavia": ("Scandinavia",),
+    "Iberia": ("Iberia", "Iberian Peninsula"),
+    "Middle East": ("Middle East", "the Middle East", "Mid East", "Mideast", "Middle-East"),
+    "Arabian Peninsula": ("Arabian Peninsula", "the Arabian Peninsula"),
+    "Indochina": ("Indochina",),
+    "Central Asia": ("Central Asia", "central part of asia", "middle part of asia"),
+    "Southeast Asia": ("Southeast Asia", "South East Asia", "South-East Asia", "South-Eastern Asia", "South Eastern Asia", "Southeastern Asia", "southeastern part of asia", "south eastern part of asia"),
+    "South Asia": ("South Asia", "Southern Asia", "southern part of asia", "south part of asia", "south of asia"),
+    "East Asia": ("East Asia", "Eastern Asia", "eastern part of asia", "east part of asia", "east of asia"),
+    "Western Asia": ("Western Asia", "West Asia", "western part of asia", "west part of asia", "west of asia"),
+    "Northern Africa": ("Northern Africa", "North Africa", "northern part of africa", "north part of africa", "north of africa"),
+    "Southern Africa": ("Southern Africa", "southern part of africa", "south part of africa", "south of africa"),
+    "Western Africa": ("Western Africa", "West Africa", "western part of africa", "west part of africa", "west of africa"),
+    "Eastern Africa": ("Eastern Africa", "East Africa", "eastern part of africa", "east part of africa", "east of africa"),
+    "Middle Africa": ("Middle Africa", "Central Africa", "central part of africa", "middle part of africa"),
+    "Horn of Africa": ("Horn of Africa", "the Horn of Africa"),
+    "Maghreb": ("Maghreb", "the Maghreb"),
+    "Sahel": ("Sahel", "the Sahel"),
+    "Central America": ("Central America",),
+    "Caribbean": ("Caribbean", "the Caribbean"),
 }
 MEMBERSHIPS = {
-    "EU": ("EU", "UE", "European Union", "Unia Europejska"), "NATO": ("NATO",), "UN": ("UN", "ONZ", "United Nations", "Narody Zjednoczone"),
-    "Schengen": ("Schengen", "Strefa Schengen"), "Benelux": ("Benelux",), "African Union": ("African Union", "Unia Afrykańska"),
-    "ASEAN": ("ASEAN",), "Commonwealth": ("Commonwealth", "Wspólnota Narodów"), "G7": ("G7",), "G20": ("G20",), "OECD": ("OECD",),
+    "EU": ("EU", "UE", "European Union"), "NATO": ("NATO",), "UN": ("UN", "ONZ", "United Nations"),
+    "Schengen": ("Schengen",), "Benelux": ("Benelux",), "African Union": ("African Union",),
+    "ASEAN": ("ASEAN",), "Commonwealth": ("Commonwealth",), "G7": ("G7",), "G20": ("G20",), "OECD": ("OECD",),
 }
 HISTORICAL = {
-    "USSR": (
-        "USSR", "ZSRR", "Soviet Union", "the Soviet Union",
-        "Związek Radziecki", "Związku Radzieckiego", "Związkiem Radzieckim", "Związku Radzieckim",
-        "Związek Sowiecki", "Związku Sowieckiego", "Związkiem Sowieckim", "Związku Sowieckim",
-    ),
-    "Yugoslavia": ("Yugoslavia", "Jugosławia", "Jugosławii", "Jugosławią"),
-    "Warsaw Pact": (
-        "Warsaw Pact", "the Warsaw Pact",
-        "Układ Warszawski", "Układu Warszawskiego", "Układzie Warszawskim", "Układem Warszawskim",
-        "Pakt Warszawski", "Paktu Warszawskiego", "Pakcie Warszawskim", "Paktem Warszawskim",
-    ),
-    "Czechoslovakia": ("Czechoslovakia", "Czechosłowacja", "Czechosłowacji", "Czechosłowacją"),
-    "Austro-Hungarian Empire": (
-        "Austro-Hungarian Empire", "Austro-Hungary", "Austria-Hungary", "Austro Hungarian Empire",
-        "Austro-Węgry", "Austro-Węgier", "Austro-Węgrzech", "Austro-Węgrami",
-        "Cesarstwo Austro-Węgierskie", "Cesarstwa Austro-Węgierskiego", "Cesarstwie Austro-Węgierskim", "Cesarstwem Austro-Węgierskim",
-        "Monarchia Austro-Węgierska", "Monarchii Austro-Węgierskiej", "Monarchią Austro-Węgierską",
-    ),
-    "Ottoman Empire": (
-        "Ottoman Empire", "the Ottoman Empire",
-        "Imperium Osmańskie", "Imperium Osmańskiego", "Imperium Osmańskim",
-        "Cesarstwo Osmańskie", "Cesarstwa Osmańskiego", "Cesarstwie Osmańskim",
-    ),
-    "British Empire": ("British Empire", "the British Empire", "Imperium Brytyjskie", "Imperium Brytyjskiego", "Imperium Brytyjskim"),
-    "Spanish Empire": ("Spanish Empire", "the Spanish Empire", "Imperium Hiszpańskie", "Imperium Hiszpańskiego", "Imperium Hiszpańskim"),
-    "French Empire": ("French Empire", "the French Empire", "Imperium Francuskie", "Imperium Francuskiego", "Imperium Francuskim"),
-    "Portuguese Empire": ("Portuguese Empire", "the Portuguese Empire", "Imperium Portugalskie", "Imperium Portugalskiego", "Imperium Portugalskim"),
-    "Gran Colombia": ("Gran Colombia", "Wielka Kolumbia", "Wielkiej Kolumbii", "Wielką Kolumbią"),
+    "USSR": ("USSR", "the USSR", "Soviet Union", "the Soviet Union"),
+    "Yugoslavia": ("Yugoslavia",),
+    "Warsaw Pact": ("Warsaw Pact", "the Warsaw Pact"),
+    "Czechoslovakia": ("Czechoslovakia",),
+    "Austro-Hungarian Empire": ("Austro-Hungarian Empire", "the Austro-Hungarian Empire", "Austria-Hungary", "Austro-Hungary"),
+    "Ottoman Empire": ("Ottoman Empire", "the Ottoman Empire"),
+    "British Empire": ("British Empire", "the British Empire"),
+    "Spanish Empire": ("Spanish Empire", "the Spanish Empire"),
+    "French Empire": ("French Empire", "the French Empire"),
+    "Portuguese Empire": ("Portuguese Empire", "the Portuguese Empire"),
+    "Gran Colombia": ("Gran Colombia",),
 }
 WATERS = {
-    "Ocean": ("ocean", "oceanem", "oceanu"), "Sea": ("sea", "morze", "morzem"), "Baltic Sea": ("Baltic Sea", "Bałtyk", "Bałtyku", "Morze Bałtyckie"),
-    "Mediterranean Sea": ("Mediterranean Sea", "Mediterranean", "Morze Śródziemne", "Morza Śródziemnego", "Morzem Śródziemnym", "Śródziemne", "Śródziemnego", "Śródziemnym", "srodziemnego", "srodziemne", "srodziemnym", "srodzoemnego"),
-    "Black Sea": ("Black Sea", "Morze Czarne", "Morza Czarnego", "Morzem Czarnym", "Czarne", "Czarnego"),
-    "North Sea": ("North Sea", "Morze Północne"), "Red Sea": ("Red Sea", "Morze Czerwone"), "Caribbean Sea": ("Caribbean Sea", "Morze Karaibskie"),
-    "Indian Ocean": ("Indian Ocean", "Ocean Indyjski"), "Atlantic Ocean": ("Atlantic Ocean", "Ocean Atlantycki"),
-    "Pacific Ocean": ("Pacific Ocean", "Ocean Spokojny"), "Arctic Ocean": ("Arctic Ocean", "Ocean Arktyczny"), "Adriatic Sea": ("Adriatic Sea", "Morze Adriatyckie"),
+    "Ocean": ("ocean",), "Sea": ("sea",), "Baltic Sea": ("Baltic Sea",),
+    "Mediterranean Sea": ("Mediterranean Sea", "the Mediterranean"),
+    "Black Sea": ("Black Sea",), "North Sea": ("North Sea",), "Red Sea": ("Red Sea",), "Caribbean Sea": ("Caribbean Sea",),
+    "Indian Ocean": ("Indian Ocean",), "Atlantic Ocean": ("Atlantic Ocean",),
+    "Pacific Ocean": ("Pacific Ocean",), "Arctic Ocean": ("Arctic Ocean",), "Adriatic Sea": ("Adriatic Sea",),
 }
 
 # Country names are canonicalized against the same 196-country facts catalog; common Polish inflections are explicit.
@@ -306,6 +177,8 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
     """Compile a recognized question to ``(AST, improved English question)``."""
     if not isinstance(question, str) or not question.strip():
         return None
+    if "/" in question or "\\" in question:
+        return None
     slot_res = match_slot_template(question, "countrydle")
     if slot_res is not None:
         return slot_res
@@ -337,14 +210,14 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
             ast.append({"operator": "and", "args": [0, 1]})
             return ast, f"Is the country {directions[0]}-{directions[1]} of {country}?"
 
-    is_pop = any(term in q for term in ("population", "populacj", "inhabitants", "mieszkanc", "ludnosc", "people", "ludzi")) or bool(re.search(r"\bpop\b", q))
-    is_area = any(term in q for term in ("area", "powierzchni", "sq km", "km2", "km 2", "square km", "square kilometer", "kilometrow")) or bool(re.search(r"\bkm\b", q))
+    is_pop = any(term in q for term in ("population", "inhabitants", "people")) or bool(re.search(r"\bpop\b", q))
+    is_area = any(term in q for term in ("area", "sq km", "km2", "km 2", "square km", "square kilometer")) or bool(re.search(r"\bkm\b", q))
     is_greater = any(term in q for term in (
         "greater", "larger", "bigger", "more than", "more people", "more inhabitants", "more ",
-        "over", "above", "exceed", "exceeds", "wieksz", "wiecej", "ponad", "powyzej", "przekracza"
+        "over", "above", "exceed", "exceeds"
     ))
     is_less = any(term in q for term in (
-        "less", "smaller", "fewer", "under", "below", "mniejsz", "mniej", "ponizej"
+        "less", "smaller", "fewer", "under", "below"
     ))
     if is_pop and (is_greater or is_less):
         op = "greater_than" if is_greater else "less_than"
@@ -420,19 +293,19 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                 return [_node("contains", "hemisphere", target_hemi)], f"Is the country in the {target_hemi} Hemisphere?"
 
     equator_prime_rules = (
-        (("north of the equator", "north of equator", "north to the equator", "north to equator", "na polnoc od rownika"), "greater_than", "coordinates.latitude", "north of the equator"),
-        (("south of the equator", "south of equator", "south to the equator", "south to equator", "na poludnie od rownika"), "less_than", "coordinates.latitude", "south of the equator"),
-        (("east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian", "na wschod od poludnika greenwicha", "na wschod od poludnika zerowego"), "greater_than", "coordinates.longitude", "east of the prime meridian"),
-        (("west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian", "na zachod od poludnika greenwicha", "na zachod od poludnika zerowego", "poludnika greenwich"), "less_than", "coordinates.longitude", "west of the prime meridian"),
+        (("north of the equator", "north of equator", "north to the equator", "north to equator"), "greater_than", "coordinates.latitude", "north of the equator"),
+        (("south of the equator", "south of equator", "south to the equator", "south to equator"), "less_than", "coordinates.latitude", "south of the equator"),
+        (("east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian"), "greater_than", "coordinates.longitude", "east of the prime meridian"),
+        (("west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian"), "less_than", "coordinates.longitude", "west of the prime meridian"),
     )
     for phrases, op, relation, wording in equator_prime_rules:
         if any(phrase in q for phrase in phrases):
             return [_node(op, relation, 0)], f"Is the country {wording}?"
     direction_phrases = (
-        ("north_of", ("north of", "north to", "above", "powyzej", "na polnoc od", "na polnoc do")),
-        ("south_of", ("south of", "south to", "below", "ponizej", "na poludnie od", "na poludnie do")),
-        ("west_of", ("west of", "west to", "to the left of", "left of", "left to", "na zachod od", "na lewo od", "na zachod do")),
-        ("east_of", ("east of", "east to", "to the right of", "right of", "right to", "na wschod od", "na prawo od", "na wschod do")),
+        ("north_of", ("north of", "north to", "above")),
+        ("south_of", ("south of", "south to", "below")),
+        ("west_of", ("west of", "west to", "to the left of", "left of", "left to")),
+        ("east_of", ("east of", "east to", "to the right of", "right of", "right to")),
     )
     for operator, phrases in direction_phrases:
         if any(phrase in q for phrase in phrases):
@@ -443,22 +316,24 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         return [_node("exists", "water_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
     if any(x in q for x in ("island", "wyspa", "wyspiarsk")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
         return [_node("equals", "is_island", True)], "Is the country an island?"
-    water_body = _choices(WATERS, q)
-    if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza", "linia brzegowa", "linie brzegowa")):
-        if water_body and water_body != "Sea":
-            return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
-        after_sea = re.search(r"\b(?:morza|morze|sea)\s+([a-z]+)", q)
-        if after_sea and after_sea.group(1) not in {"i", "lub", "czy", "and", "or", "oceanu", "ocean", "otwartego"}:
-            return None
-        return [_node("exists", "water_access")], "Does the country have access to the sea?"
-    if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
-        return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
+    is_directional_coast = bool(re.search(r"\b(west\w*|east\w*|north\w*|south\w*|zachod\w*|wschod\w*|polnoc\w*|poludn\w*)\b.*?\b(coast|coastline|wybrzez\w*)\b", q))
+    water_body = _choices(WATERS, q) if not is_directional_coast else None
+    if not is_directional_coast:
+        if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza")):
+            if water_body and water_body != "Sea":
+                return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
+            after_sea = re.search(r"\b(?:morza|morze|sea)\s+([a-z]+)", q)
+            if after_sea and after_sea.group(1) not in {"and", "or", "i", "lub", "oceanu", "ocean"}:
+                return None
+            return [_node("exists", "water_access")], "Does the country have access to the sea?"
+        if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
+            return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
 
     for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
         if relation == "continent":
-            # Guard: do not reduce directional or qualified continent questions (e.g. "southern part of Africa") to broad continent
-            if re.search(r"\b(north\w*|south\w*|east\w*|west\w*|central\w*|middle\w*|polnocn\w*|poludniow\w*|wschodn\w*|zachodn\w*|srodkow\w*|centraln\w*)\b", q):
-                continue
+            if re.search(r"\b(north\w*|south\w*|east\w*|west\w*|central\w*|middle\w*|polnoc\w*|poludn\w*|wschod\w*|zachod\w*|srodk\w*|centraln\w*)\b", q):
+                if not any(continent in q for continent in ("north america", "south america", "ameryka polnocna", "ameryce polnocnej", "ameryka poludniowa", "ameryce poludniowej")):
+                    continue
         value = _choices(choices, q)
         if value and any(x in q for x in (
             "in ", " in the ", "in the", "lezy", "nalezy", "nalezal", "nalezala", "nalezaly", "nalezalo",
@@ -473,7 +348,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                     continue
             wording = f"Was the country historically part of {value}?" if relation == "historical_union" else f"Is the country in {value}?"
             return [_node("contains", relation, value)], wording
-    if water_body and water_body != "Sea" and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
+    if water_body and water_body != "Sea" and not is_directional_coast and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
         return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
 
 

@@ -175,21 +175,21 @@ _SIDE_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(s) for s in _SORTED_SID
 
 # 1.7 International Organizations & Historical Unions
 MEMBERSHIPS_MAP = {
-    "eu": "EU", "ue": "EU", "european union": "EU", "unia europejska": "EU", "unii europejskiej": "EU",
-    "nato": "NATO", "un": "UN", "onz": "UN",
+    "eu": "EU", "european union": "EU",
+    "nato": "NATO", "un": "UN",
 }
 _SORTED_MEMBERSHIPS = sorted(MEMBERSHIPS_MAP.keys(), key=len, reverse=True)
 _MEMBERSHIP_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(m) for m in _SORTED_MEMBERSHIPS) + r")\b")
 
 HISTORICAL_MAP = {
-    "ussr": "USSR", "zsrr": "USSR", "soviet union": "USSR", "zwiazek radziecki": "USSR",
-    "yugoslavia": "Yugoslavia", "jugoslawia": "Yugoslavia", "jugoslawii": "Yugoslavia",
-    "czechoslovakia": "Czechoslovakia", "czechoslowacja": "Czechoslovakia", "czechoslowacji": "Czechoslovakia",
-    "warsaw pact": "Warsaw Pact", "uklad warszawski": "Warsaw Pact",
-    "british empire": "British Empire", "imperium brytyjskie": "British Empire",
-    "spanish empire": "Spanish Empire", "imperium hiszpanskie": "Spanish Empire",
-    "french empire": "French Empire", "imperium francuskie": "French Empire",
-    "ottoman empire": "Ottoman Empire", "imperium osmanskie": "Ottoman Empire",
+    "ussr": "USSR", "soviet union": "USSR",
+    "yugoslavia": "Yugoslavia",
+    "czechoslovakia": "Czechoslovakia",
+    "warsaw pact": "Warsaw Pact",
+    "british empire": "British Empire",
+    "spanish empire": "Spanish Empire",
+    "french empire": "French Empire",
+    "ottoman empire": "Ottoman Empire",
 }
 _SORTED_HISTORICAL = sorted(HISTORICAL_MAP.keys(), key=len, reverse=True)
 _HISTORICAL_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(h) for h in _SORTED_HISTORICAL) + r")\b")
@@ -625,8 +625,6 @@ def _build_country_membership(slots: dict[str, Any], mode: str):
         "was it part of the [HISTORICAL]",
         "was it in the [HISTORICAL]",
         "was the country part of the [HISTORICAL]",
-        "czy nalezalo do [HISTORICAL]",
-        "czy bylo czescia [HISTORICAL]",
     ]
 )
 def _build_country_historical(slots: dict[str, Any], mode: str):

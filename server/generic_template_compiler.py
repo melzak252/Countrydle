@@ -66,7 +66,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
     words = norm_q.split()
     if re.search(r"\b(?:nie\s+(?:ma|graniczy|lezy|jest|plynie|przeplywa|posiada)|not\b|ani\b|bez\b|brak\b)", norm_q) and not re.search(r"\bpowiat(?:em)? ziemski(?:m)?\b", norm_q):
         return None
-    if re.search(r"\b(?:oraz)\b", norm_q):
+    if re.search(r"\b(?:and|or|i|lub|albo|ani|oraz)\b", norm_q):
         return None
     # 1. City with county rights (is_city_county == 1)
     if re.search(r"\bmiasto na prawach powiatu\b", norm_q) or re.search(r"\bmiastem na prawach powiatu\b", norm_q):
@@ -175,7 +175,7 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
     words = norm_q.split()
     if re.search(r"\b(?:nie\s+(?:ma|graniczy|lezy|jest|plynie|przeplywa|posiada)|not\b|ani\b|bez\b|brak\b)", norm_q):
         return None
-    if re.search(r"\b(?:oraz)\b", norm_q):
+    if re.search(r"\b(?:and|or|i|lub|albo|ani|oraz)\b", norm_q):
         return None
     is_border_q = any(k in norm_q for k in ("graniczy", "granice", "granica", "sasiaduje"))
 
@@ -357,6 +357,10 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
 
 def compile_generic_template_plan(question: str, mode_name: str) -> tuple[dict[str, Any], str] | None:
     """Entry point dispatching to mode-specific template compiler."""
+    if not isinstance(question, str) or not question.strip():
+        return None
+    if "/" in question or "\\" in question:
+        return None
     slot_res = match_slot_template(question, mode_name)
     if slot_res is not None:
         return slot_res
