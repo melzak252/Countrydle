@@ -1,5 +1,5 @@
 {
-  "version": "1.15.2",
-  "title": "Comprehensive subregion question matching across Africa, Asia, and the Americas",
-  "body": "REGIONAL QUESTION UNDERSTANDING\n- Added full coverage for African subregions (Southern Africa, Northern Africa, Western Africa, Eastern Africa, and Middle/Central Africa) in English and Polish.\n- Supported both Polish adjective-noun word orders for all Asian and European subregions (e.g. \"południowa Azja\" and \"Azja Południowa\").\n- Added inflected forms for Middle East (\"Bliskiego Wschodu\", \"Bliskim Wschodem\"), Central America (\"Ameryka Środkowa\"), and Baltic states (\"państwo bałtyckie\").\n- Expanded regional trigger phrases to recognize questions asking about country origin and statehood."
+  "version": "1.15.3",
+  "title": "Compact in-chat answer report layout",
+  "body": "QUESTION CHAT IMPROVEMENTS\n- Streamlined the in-chat answer reporting form after game completion, eliminating redundant borders.\n- Applied compact padding for answer report buttons within message bubbles to keep the chat history neat and legible."
 }
