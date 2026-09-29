@@ -12,7 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { useDailyClock } from '../hooks/useDailyClock';
-
+import type { AnswerReportMode, Question } from '../types';
+import type { GameplayNotice } from '../lib/gameplayNotices';
+import QuestionChat from './QuestionChat';
 interface ShareResultCardProps {
   gameName: string;
   gamePath: string;
@@ -27,6 +29,9 @@ interface ShareResultCardProps {
   isGuest?: boolean;
   targetCountryCode?: string;
   onClose?: () => void;
+  questions?: Question[];
+  mode?: AnswerReportMode;
+  notices?: GameplayNotice[];
 }
 export default function ShareResultCard({
   gameName,
@@ -42,6 +47,9 @@ export default function ShareResultCard({
   isGuest: _isGuest = false,
   targetCountryCode,
   onClose,
+  questions,
+  mode,
+  notices,
 }: ShareResultCardProps) {
   const { t, i18n } = useTranslation();
   const { today, remainingSeconds } = useDailyClock();
@@ -60,6 +68,18 @@ export default function ShareResultCard({
     ? { path: '/us-states', name: 'US States' }
     : { path: '/game', name: 'Countrydle' };
   const fullUrl = `https://countrydle.online${gamePath === '/game' ? '' : gamePath}`;
+
+  const resolvedMode: AnswerReportMode = mode || (
+    gamePath.includes('us-states')
+      ? 'us_statedle'
+      : gamePath.includes('powiaty')
+      ? 'powiatdle'
+      : gamePath.includes('wojewodztwa')
+      ? 'wojewodztwodle'
+      : gamePath.includes('europe') || gamePath.includes('asia') || gamePath.includes('africa') || gamePath.includes('americas')
+      ? 'continental'
+      : 'countrydle'
+  );
 
   // Generate authentic, spoiler-free share text
   const generateShareText = () => {
@@ -310,6 +330,31 @@ export default function ShareResultCard({
           <ArrowRight size={15} />
         </Link>
       </div>
+
+      {/* 5. Question & Chat History */}
+      {questions && questions.length > 0 && (
+        <div className="space-y-3 border-t border-white/10 pt-5 text-left">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">
+                {t('chat.historyTitle', 'Question History')}
+              </span>
+              <span className="text-zinc-500 font-mono text-xs">({questions.length})</span>
+            </div>
+            <span className="text-xs text-zinc-400">
+              {t('chat.reviewHelp', 'Review explanations and report any issues')}
+            </span>
+          </div>
+          <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 sm:p-4 max-h-96 overflow-y-auto custom-scrollbar">
+            <QuestionChat
+              questions={questions}
+              notices={notices}
+              mode={resolvedMode}
+              isGameOver={true}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 6. Footer Dismiss / Switch Mode */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs">

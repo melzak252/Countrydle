@@ -456,6 +456,9 @@ export default function USStatesGamePage() {
               targetName={correctState?.name || guesses.find((g) => g.answer)?.guess}
               isGuest={isGuest}
               onClose={() => setIsResultDismissed(true)}
+              questions={sortedQuestions}
+              notices={notices}
+              mode="us_statedle"
             />
           </div>
         </div>

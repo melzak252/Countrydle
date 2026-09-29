@@ -589,6 +589,9 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               targetName={correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess}
               isGuest={isGuest}
               onClose={() => setIsResultDismissed(true)}
+              questions={sortedQuestions}
+              notices={notices}
+              mode="continental"
             />
           </div>
         </div>

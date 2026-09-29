@@ -458,6 +458,9 @@ export default function WojewodztwaGamePage() {
               targetName={correctWojewodztwo?.nazwa || guesses.find((g) => g.answer)?.guess}
               isGuest={isGuest}
               onClose={() => setIsResultDismissed(true)}
+              questions={sortedQuestions}
+              notices={notices}
+              mode="wojewodztwodle"
             />
           </div>
         </div>

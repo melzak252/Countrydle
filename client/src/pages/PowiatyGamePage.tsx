@@ -458,6 +458,9 @@ export default function PowiatyGamePage() {
               targetName={correctPowiat?.nazwa || guesses.find((g) => g.answer)?.guess}
               isGuest={isGuest}
               onClose={() => setIsResultDismissed(true)}
+              questions={sortedQuestions}
+              notices={notices}
+              mode="powiatdle"
             />
           </div>
         </div>
