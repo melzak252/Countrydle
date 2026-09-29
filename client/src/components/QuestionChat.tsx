@@ -135,9 +135,7 @@ export default function QuestionChat({
                   </div>
                 )}
                 {isGameOver && question.id > 0 && (
-                  <div className="pt-2 border-t border-white/10">
-                    <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} />
-                  </div>
+                  <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} compact />
                 )}
               </div>
             </div>
