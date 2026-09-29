@@ -265,21 +265,21 @@ export default function USStatesGamePage() {
             </button>
 
             {/* Notebook Tabbed Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 sm:px-4 py-2.5 shrink-0">
-              <div role="group" aria-label="Choose question or guess" className="inline-flex items-center gap-1 rounded-lg bg-obsidian-900/90 p-1 border border-white/10 shadow-inner">
+            <div className="flex items-center gap-2 border-b border-white/10 bg-obsidian-950/80 px-3 sm:px-4 py-2.5 shrink-0">
+              <div role="group" aria-label="Choose question or guess" className="flex-1 min-w-0 grid grid-cols-2 gap-1 rounded-lg bg-obsidian-900/90 p-1 border border-white/10 shadow-inner">
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'questions'}
                   onClick={() => setUserSelectedTab('question')}
-                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-center gap-2 rounded-md px-2 sm:px-3 py-1.5 text-xs transition-all cursor-pointer ${
                     activeChatTab === 'questions'
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 border border-transparent font-medium'
                   }`}
                 >
-                  <MessageSquare size={13} className={activeChatTab === 'questions' ? 'text-emerald-400' : 'text-zinc-400'} />
+                  <MessageSquare size={13} className={activeChatTab === 'questions' ? 'text-emerald-400 shrink-0' : 'text-zinc-400 shrink-0'} />
                   <span>Questions</span>
-                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
                     activeChatTab === 'questions'
                       ? 'bg-emerald-400/20 text-emerald-300 font-semibold'
                       : 'bg-white/5 text-zinc-400'
@@ -292,15 +292,15 @@ export default function USStatesGamePage() {
                   type="button"
                   aria-pressed={activeChatTab === 'guesses'}
                   onClick={() => setUserSelectedTab('guess')}
-                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-center gap-2 rounded-md px-2 sm:px-3 py-1.5 text-xs transition-all cursor-pointer ${
                     activeChatTab === 'guesses'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5 border border-transparent font-medium'
                   }`}
                 >
-                  <Target size={13} className={activeChatTab === 'guesses' ? 'text-amber-400' : 'text-zinc-400'} />
+                  <Target size={13} className={activeChatTab === 'guesses' ? 'text-amber-400 shrink-0' : 'text-zinc-400 shrink-0'} />
                   <span>Guesses</span>
-                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
                     activeChatTab === 'guesses'
                       ? 'bg-amber-400/20 text-amber-300 font-semibold'
                       : 'bg-white/5 text-zinc-400'
@@ -313,11 +313,11 @@ export default function USStatesGamePage() {
               <button
                 type="button"
                 onClick={() => setIsChatOpen(false)}
-                className="rounded-sm p-1 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
+                className="shrink-0 rounded-sm p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
                 title="Minimize chat"
                 aria-label="Minimize chat"
               >
-                <ChevronDown size={14} />
+                <ChevronDown size={15} />
               </button>
             </div>
 
