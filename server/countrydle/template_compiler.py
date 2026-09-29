@@ -162,12 +162,34 @@ MEMBERSHIPS = {
     "ASEAN": ("ASEAN",), "Commonwealth": ("Commonwealth", "Wspólnota Narodów"), "G7": ("G7",), "G20": ("G20",), "OECD": ("OECD",),
 }
 HISTORICAL = {
-    "USSR": ("USSR", "ZSRR", "Soviet Union", "Związek Radziecki"), "Yugoslavia": ("Yugoslavia", "Jugosławia", "Jugosławii"),
-    "Warsaw Pact": ("Warsaw Pact", "Układ Warszawski"), "Czechoslovakia": ("Czechoslovakia", "Czechosłowacja", "Czechosłowacji"),
-    "Austro-Hungarian Empire": ("Austro-Hungarian Empire", "Austro-Węgry", "Monarchia Austro-Węgierska"),
-    "Ottoman Empire": ("Ottoman Empire", "Imperium Osmańskie"), "British Empire": ("British Empire", "Imperium Brytyjskie"),
-    "Spanish Empire": ("Spanish Empire", "Imperium Hiszpańskie"), "French Empire": ("French Empire", "Imperium Francuskie"),
-    "Portuguese Empire": ("Portuguese Empire", "Imperium Portugalskie"),
+    "USSR": (
+        "USSR", "ZSRR", "Soviet Union", "the Soviet Union",
+        "Związek Radziecki", "Związku Radzieckiego", "Związkiem Radzieckim", "Związku Radzieckim",
+        "Związek Sowiecki", "Związku Sowieckiego", "Związkiem Sowieckim", "Związku Sowieckim",
+    ),
+    "Yugoslavia": ("Yugoslavia", "Jugosławia", "Jugosławii", "Jugosławią"),
+    "Warsaw Pact": (
+        "Warsaw Pact", "the Warsaw Pact",
+        "Układ Warszawski", "Układu Warszawskiego", "Układzie Warszawskim", "Układem Warszawskim",
+        "Pakt Warszawski", "Paktu Warszawskiego", "Pakcie Warszawskim", "Paktem Warszawskim",
+    ),
+    "Czechoslovakia": ("Czechoslovakia", "Czechosłowacja", "Czechosłowacji", "Czechosłowacją"),
+    "Austro-Hungarian Empire": (
+        "Austro-Hungarian Empire", "Austro-Hungary", "Austria-Hungary", "Austro Hungarian Empire",
+        "Austro-Węgry", "Austro-Węgier", "Austro-Węgrzech", "Austro-Węgrami",
+        "Cesarstwo Austro-Węgierskie", "Cesarstwa Austro-Węgierskiego", "Cesarstwie Austro-Węgierskim", "Cesarstwem Austro-Węgierskim",
+        "Monarchia Austro-Węgierska", "Monarchii Austro-Węgierskiej", "Monarchią Austro-Węgierską",
+    ),
+    "Ottoman Empire": (
+        "Ottoman Empire", "the Ottoman Empire",
+        "Imperium Osmańskie", "Imperium Osmańskiego", "Imperium Osmańskim",
+        "Cesarstwo Osmańskie", "Cesarstwa Osmańskiego", "Cesarstwie Osmańskim",
+    ),
+    "British Empire": ("British Empire", "the British Empire", "Imperium Brytyjskie", "Imperium Brytyjskiego", "Imperium Brytyjskim"),
+    "Spanish Empire": ("Spanish Empire", "the Spanish Empire", "Imperium Hiszpańskie", "Imperium Hiszpańskiego", "Imperium Hiszpańskim"),
+    "French Empire": ("French Empire", "the French Empire", "Imperium Francuskie", "Imperium Francuskiego", "Imperium Francuskim"),
+    "Portuguese Empire": ("Portuguese Empire", "the Portuguese Empire", "Imperium Portugalskie", "Imperium Portugalskiego", "Imperium Portugalskim"),
+    "Gran Colombia": ("Gran Colombia", "Wielka Kolumbia", "Wielkiej Kolumbii", "Wielką Kolumbią"),
 }
 WATERS = {
     "Ocean": ("ocean", "oceanem", "oceanu"), "Sea": ("sea", "morze", "morzem"), "Baltic Sea": ("Baltic Sea", "Bałtyk", "Bałtyku", "Morze Bałtyckie"),
@@ -399,13 +421,18 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
 
     for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
         value = _choices(choices, q)
-        if value and any(x in q for x in ("in ", " in the ", "in the", "lezy", "nalezy", "nalezalo", "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ", "kraj", "panstwo", "z ")):
+        if value and any(x in q for x in (
+            "in ", " in the ", "in the", "lezy", "nalezy", "nalezal", "nalezala", "nalezaly", "nalezalo",
+            "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ", "kraj", "panstwo", "z ",
+            "czescia", "czesc", "sklad", "wchodzil", "wchodzila", "wchodzilo",
+        )):
             if relation == "membership":
                 if any(x in q for x in ("founding", "founder", "zaloz", "założ", "original", "pierwotn", "when", "kiedy", "accession", "akcesj")):
                     continue
                 if re.search(r"\b(19\d\d|20\d\d)\b", q):
                     continue
-            return [_node("contains", relation, value)], f"Is the country in {value}?"
+            wording = f"Was the country historically part of {value}?" if relation == "historical_union" else f"Is the country in {value}?"
+            return [_node("contains", relation, value)], wording
     if water_body and water_body != "Sea" and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
         return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
 

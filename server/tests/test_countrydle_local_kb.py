@@ -1081,3 +1081,49 @@ def test_subregions_not_collapsed_to_continents():
         assert plan_cont is not None
         assert plan_cont[0][0]["left"]["relation"] == "continent"
         assert plan_cont[0][0]["right"]["value"] == expected_cont
+
+
+def test_historical_unions_matching_and_execution():
+    from countrydle.template_compiler import compile_template_plan
+
+    cases = [
+        # Warsaw Pact
+        ("Czy ten kraj należał do Układu Warszawskiego?", "Poland", "Warsaw Pact", True),
+        ("Was it in the Warsaw Pact?", "Poland", "Warsaw Pact", True),
+        ("Czy był w Układzie Warszawskim?", "Poland", "Warsaw Pact", True),
+        ("Czy był częścią Układu Warszawskiego?", "Poland", "Warsaw Pact", True),
+        ("Czy należał do paktu warszawskiego?", "Austria", "Warsaw Pact", False),
+
+        # USSR
+        ("Czy był częścią ZSRR?", "Ukraine", "USSR", True),
+        ("Was it part of the USSR?", "Poland", "USSR", False),
+        ("Czy należał do ZSRR?", "Kazakhstan", "USSR", True),
+        ("Czy był częścią Związku Radzieckiego?", "Lithuania", "USSR", True),
+        ("Czy był częścią Związku Sowieckiego?", "Poland", "USSR", False),
+        ("Was it in the Soviet Union?", "Estonia", "USSR", True),
+
+        # Austro-Hungarian Empire
+        ("Czy był częścią Cesarstwa Austro-Węgierskiego?", "Austria", "Austro-Hungarian Empire", True),
+        ("Was it part of the Austro-Hungarian Empire?", "Hungary", "Austro-Hungarian Empire", True),
+        ("Czy należał do Cesarstwa Austro-Węgierskiego?", "Czech Republic", "Austro-Hungarian Empire", True),
+        ("Czy był częścią Austro-Węgier?", "Slovakia", "Austro-Hungarian Empire", True),
+        ("Czy należał do Austro-Węgier?", "Poland", "Austro-Hungarian Empire", False),
+        ("Was it part of Austria-Hungary?", "Austria", "Austro-Hungarian Empire", True),
+
+        # Other unions
+        ("Czy był częścią Jugosławii?", "Croatia", "Yugoslavia", True),
+        ("Czy był częścią Czechosłowacji?", "Slovakia", "Czechoslovakia", True),
+        ("Czy był częścią Imperium Osmańskiego?", "Greece", "Ottoman Empire", True),
+        ("Czy był częścią Imperium Brytyjskiego?", "Canada", "British Empire", True),
+        ("Czy był częścią Imperium Francuskiego?", "Algeria", "French Empire", True),
+        ("Czy był częścią Wielkiej Kolumbii?", "Colombia", "Gran Colombia", True),
+    ]
+
+    for question, country, expected_union, expected_ans in cases:
+        plan = compile_template_plan(question)
+        assert plan is not None, f"Failed to compile: {question}"
+        node = plan[0][0]
+        assert node["left"]["relation"] == "historical_union"
+        assert node["right"]["value"] == expected_union
+        ans = execute_local_plan(node, country, question)
+        assert ans.answer is expected_ans, f"Failed for {country} in {expected_union}: expected {expected_ans}, got {ans.answer}"
