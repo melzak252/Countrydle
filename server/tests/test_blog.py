@@ -68,7 +68,8 @@ async def test_get_blog_post_by_slug_success(async_client: AsyncClient):
     mock_post.country = mock_country
 
     with patch("db.repositories.blog.BlogRepository.get_by_slug", new_callable=AsyncMock) as mock_get_slug, \
-         patch("db.repositories.blog.BlogRepository.get_day_player_stats", new_callable=AsyncMock, return_value={}):
+         patch("db.repositories.blog.BlogRepository.get_day_player_stats", new_callable=AsyncMock, return_value={"win_rate_pct": 72.5, "total_players": 150}), \
+         patch("db.repositories.blog.BlogRepository.list_posts", new_callable=AsyncMock, return_value=([], 0)):
         mock_get_slug.return_value = mock_post
 
         resp = await async_client.get("/blog/2026-09-19-poland")
@@ -77,7 +78,10 @@ async def test_get_blog_post_by_slug_success(async_client: AsyncClient):
         assert data["title"] == "Countrydle Recap: Poland"
         assert data["slug"] == "2026-09-19-poland"
         assert data["country_name"] == "Poland"
-
+        assert data["continent"] == "Europe"
+        assert data["difficulty"] == "Easy"
+        assert data["win_rate_pct"] == 72.5
+        assert data["total_players"] == 150
 
 @pytest.mark.anyio
 async def test_get_blog_post_not_found(async_client: AsyncClient):

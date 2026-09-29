@@ -95,9 +95,23 @@ export default function BlogPostPage() {
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">{post.country_name}</p>
             <h1 className="font-serif text-4xl leading-[1.12] tracking-tight text-sand-100 sm:text-5xl md:text-[3.25rem]">{post.title}</h1>
             {post.subtitle && <p className="mt-5 text-base leading-7 text-zinc-400 md:text-lg md:leading-8">{post.subtitle}</p>}
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-500">
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
               <span className="inline-flex items-center gap-1.5"><Calendar size={13} />{post.date}</span>
               <span className="inline-flex items-center gap-1.5"><Clock size={13} />{post.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
+              {post.continent && (
+                <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/20">
+                  {post.continent}
+                </span>
+              )}
+              {post.difficulty && (
+                <span className={`px-2 py-0.5 rounded font-mono text-[10px] ${
+                  post.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                  post.difficulty === 'Challenging' ? 'bg-rose-500/10 text-rose-400' :
+                  'bg-amber-500/10 text-amber-400'
+                }`}>
+                  {post.difficulty}
+                </span>
+              )}
             </div>
           </div>
           {post.country_code && (
@@ -203,6 +217,34 @@ export default function BlogPostPage() {
           <MarkdownRenderer content={post.content_markdown} />
         </article>
 
+        {/* Interactive Geography Knowledge Check */}
+        {post.fun_facts && post.fun_facts.length > 0 && (
+          <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 sm:p-8 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">
+              <Sparkles size={14} />
+              <span>Interactive Knowledge Check</span>
+            </div>
+            <h3 className="font-serif text-xl font-semibold text-sand-100">
+              Test your geography memory: {post.country_name}
+            </h3>
+            <p className="text-sm text-zinc-300">
+              Which of the following is true regarding <strong>{post.country_name}</strong>'s geography and culture?
+            </p>
+            <div className="space-y-2.5 pt-2">
+              <details className="group rounded-sm border border-white/10 bg-obsidian-900 p-4 cursor-pointer hover:border-emerald-500/30">
+                <summary className="list-none text-xs sm:text-sm font-medium text-sand-100 flex items-center justify-between">
+                  <span>Question: What distinguishes {post.country_name}'s heritage and geography?</span>
+                  <span className="text-xs font-mono text-emerald-400 group-open:hidden">Reveal Clue &rarr;</span>
+                </summary>
+                <div className="mt-3 pt-3 border-t border-white/10 text-xs sm:text-sm text-zinc-300 space-y-2">
+                  <p className="font-bold text-emerald-400">Key Fact:</p>
+                  <p>{post.fun_facts[0].description}</p>
+                </div>
+              </details>
+            </div>
+          </section>
+        )}
+
         {post.deduction_masterclass && (
           <section className="rounded-lg border border-white/10 bg-obsidian-900 p-6 sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-400">
@@ -228,6 +270,38 @@ export default function BlogPostPage() {
 
         <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-2xl mx-auto" />
 
+
+        {/* Related Recaps Carousel */}
+        {post.related_posts && post.related_posts.length > 0 && (
+          <section className="border-t border-white/10 pt-8 space-y-4">
+            <h2 className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">
+              <Globe size={14} />
+              <span>Explore More Geography Recaps</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {post.related_posts.map((rp: any) => (
+                <Link
+                  key={rp.id}
+                  to={`/blog/${rp.slug}`}
+                  className="group rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 block mb-1">
+                      {rp.country_name}
+                    </span>
+                    <h4 className="font-serif text-sm font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors line-clamp-2">
+                      {rp.title}
+                    </h4>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+                    <span>{rp.date}</span>
+                    <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="flex flex-col items-start justify-between gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
           <div className="max-w-lg">
             <h2 className="font-serif text-2xl text-sand-100 md:text-3xl">{'Today’s challenge'}</h2>

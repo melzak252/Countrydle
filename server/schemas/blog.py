@@ -14,6 +14,10 @@ class BlogPostSummary(BaseModel):
     summary: str
     country_name: str
     country_code: Optional[str] = None
+    continent: Optional[str] = None
+    difficulty: Optional[str] = None
+    win_rate_pct: Optional[float] = None
+    total_players: Optional[int] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -27,6 +31,7 @@ class BlogPostDisplay(BlogPostSummary):
     content_markdown: str
     country: Optional[CountryDisplay] = None
     player_stats: Optional[Dict[str, Any]] = None
+    related_posts: Optional[List[BlogPostSummary]] = None
     model_config = ConfigDict(from_attributes=True)
 
 
