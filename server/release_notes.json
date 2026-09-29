@@ -1,5 +1,5 @@
 {
-  "version": "1.15.5",
-  "title": "Directional subregion phrases and continent fallback protection",
-  "body": "DIRECTIONAL SUBREGION UNDERSTANDING\n- Added recognition for natural directional subregion phrasing (such as \"southern part of Africa\", \"south of Africa\", \"południowa część Afryki\") across African, European, and Asian regions.\n- Added protection against false continent-level fallbacks when a question asks about a directional portion of a continent (e.g. \"southern part of Africa\" will never reduce to \"in Africa\" for Northern African countries like Tunisia).\n- Supported common colloquial spelling variants (such as \"on te southern part of africa\")."
+  "version": "1.16.0",
+  "title": "Template shadow audit engine and divergence tracking",
+  "body": "TEMPLATE SHADOW AUDIT ENGINE\n- Implemented an asynchronous background shadow audit engine that automatically samples fast template matches and compares them with independent Gemini 2.5 Flash Lite AST plans.\n- Catches relation, operator, and value mismatches without adding any latency or overhead to player answers.\n\nADMIN AUDIT PANEL & API\n- Added a dedicated \"Template Shadow Audit\" tab in the Admin Dashboard under QA & Knowledge with status filtering (Open / Reviewed), mode filters, and one-click testing in the QA Playground.\n- Created administrative API endpoints (/admin/template-divergences) to inspect and review divergences.\n- Added PostgreSQL persistence and Alembic migration for template_divergences."
 }
