@@ -1,5 +1,5 @@
 {
-  "version": "1.16.2",
-  "title": "Fix Polish equator and hemisphere queries",
-  "body": "EQUATOR & HEMISPHERE QUESTION RESOLUTION\n- Fixed Polish colloquial equator queries: 'nad równikiem', 'powyżej równika', and 'na północ od równika' now accurately resolve to north of the equator (coordinates.latitude > 0) instead of mistranslating to 'on the equator'.\n- Added corresponding resolution for 'pod równikiem', 'poniżej równika', and 'na południe od równika' (coordinates.latitude < 0).\n- Added explicit Gemini prompt guidance clarifying that in Polish, 'nad równikiem' means situated above/north of the equator, preventing unintended 'on the equator' literal mistranslations.\n- Verified with automated tests across northern and southern hemisphere countries."
+  "version": "1.17.0",
+  "title": "AdSense readiness, build-time SSG prerendering, and Geography Explorer hub",
+  "body": "ADSENSE READINESS & SEO ENHANCEMENT\n- Introduced build-time SSG prerendering (prerender.py) generating crawlable HTML for core static pages, guides, and policies to pass Google AdSense indexing.\n- Hardened AdSense unit component with responsive layouts and non-intrusive container sizing.\n\nGEOGRAPHY EXPLORER HUB & MODE GUIDES\n- Added Geography Explorer hub (/explore) featuring searchable, filterable country and geography intelligence.\n- Created dedicated interactive Mode Guides (/modes/:mode) with comprehensive rules, strategies, and tips for all game modes.\n- Added backend explorer APIs (/api/explore) providing aggregated entity statistics, facts, and region groupings."
 }
