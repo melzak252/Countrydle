@@ -1,5 +1,5 @@
 {
-  "version": "1.15.4",
-  "title": "Historical unions and former empires question understanding",
-  "body": "HISTORICAL UNIONS & FORMER EMPIRES\n- Added comprehensive English and Polish question matching for historical geopolitical unions and empires, including the Warsaw Pact (Układ Warszawski, Pakt Warszawski), USSR (ZSRR, Związek Radziecki, Związek Sowiecki), and Austro-Hungarian Empire (Austro-Węgry, Cesarstwo Austro-Węgierskie, Monarchia Austro-Węgierska).\n- Supported full Polish declensions (\"częścią Układu Warszawskiego\", \"częścią ZSRR\", \"częścią Austro-Węgier\", \"wchodził w skład\") and English variations (\"part of Austria-Hungary\", \"member of the Warsaw Pact\").\n- Added coverage for Gran Colombia (Wielka Kolumbia), Yugoslavia (Jugosławia), Czechoslovakia (Czechosłowacja), and the Ottoman, British, French, Spanish, and Portuguese Empires."
+  "version": "1.15.5",
+  "title": "Directional subregion phrases and continent fallback protection",
+  "body": "DIRECTIONAL SUBREGION UNDERSTANDING\n- Added recognition for natural directional subregion phrasing (such as \"southern part of Africa\", \"south of Africa\", \"południowa część Afryki\") across African, European, and Asian regions.\n- Added protection against false continent-level fallbacks when a question asks about a directional portion of a continent (e.g. \"southern part of Africa\" will never reduce to \"in Africa\" for Northern African countries like Tunisia).\n- Supported common colloquial spelling variants (such as \"on te southern part of africa\")."
 }
