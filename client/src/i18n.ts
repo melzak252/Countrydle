@@ -97,6 +97,8 @@ const resources = {
         copyQuestion: 'Copy question',
         questionCopied: 'Question copied to clipboard.',
         copyFailed: 'Could not copy the question. Select its text and copy it manually.',
+        historyTitle: 'Question History',
+        reviewHelp: 'Review answers, explanations, and report incorrect assessments.',
       },
 
       privacySettings: {
@@ -495,6 +497,8 @@ const resources = {
         copyQuestion: 'Kopiuj pytanie',
         questionCopied: 'Pytanie skopiowane do schowka.',
         copyFailed: 'Nie udało się skopiować pytania. Zaznacz jego tekst i skopiuj ręcznie.',
+        historyTitle: 'Historia pytań',
+        reviewHelp: 'Sprawdź odpowiedzi, wyjaśnienia i zgłoś ewentualne błędy.',
       },
 
       inputs: {

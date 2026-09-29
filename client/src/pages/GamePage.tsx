@@ -461,6 +461,9 @@ export default function GamePage() {
               isGuest={isGuest}
               targetCountryCode={correctCountry?.iso2 || revealedFlag}
               onClose={() => setIsResultDismissed(true)}
+              questions={sortedQuestions}
+              notices={notices}
+              mode="countrydle"
             />
           </div>
         </div>
