@@ -1111,10 +1111,10 @@ class LocalCountryFacts:
             return None
         lat = country["latitude"]
         lon = country["longitude"]
-        if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika")):
+        if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika", "nad rownik", "powyzej rownik", "above equator", "above the equator")):
             answer = lat > 0
             target = "Northern Hemisphere"
-        elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika")):
+        elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika", "pod rownik", "ponizej rownik", "below equator", "below the equator")):
             answer = lat < 0
             target = "Southern Hemisphere"
         elif any(word in q for word in ("eastern", "wschodn")):

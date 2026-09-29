@@ -293,10 +293,44 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                 return [_node("contains", "hemisphere", target_hemi)], f"Is the country in the {target_hemi} Hemisphere?"
 
     equator_prime_rules = (
-        (("north of the equator", "north of equator", "north to the equator", "north to equator"), "greater_than", "coordinates.latitude", "north of the equator"),
-        (("south of the equator", "south of equator", "south to the equator", "south to equator"), "less_than", "coordinates.latitude", "south of the equator"),
-        (("east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian"), "greater_than", "coordinates.longitude", "east of the prime meridian"),
-        (("west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian"), "less_than", "coordinates.longitude", "west of the prime meridian"),
+        (
+            (
+                "north of the equator", "north of equator", "north to the equator", "north to equator",
+                "above the equator", "above equator",
+                "nad rownikiem", "powyzej rownika", "na polnoc od rownika",
+            ),
+            "greater_than",
+            "coordinates.latitude",
+            "north of the equator",
+        ),
+        (
+            (
+                "south of the equator", "south of equator", "south to the equator", "south to equator",
+                "below the equator", "below equator",
+                "pod rownikiem", "ponizej rownika", "na poludnie od rownika",
+            ),
+            "less_than",
+            "coordinates.latitude",
+            "south of the equator",
+        ),
+        (
+            (
+                "east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian",
+                "na wschod od poludnika greenwich", "na wschod od poludnika zerowego",
+            ),
+            "greater_than",
+            "coordinates.longitude",
+            "east of the prime meridian",
+        ),
+        (
+            (
+                "west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian",
+                "na zachod od poludnika greenwich", "na zachod od poludnika zerowego",
+            ),
+            "less_than",
+            "coordinates.longitude",
+            "west of the prime meridian",
+        ),
     )
     for phrases, op, relation, wording in equator_prime_rules:
         if any(phrase in q for phrase in phrases):
