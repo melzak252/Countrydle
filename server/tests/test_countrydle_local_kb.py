@@ -1052,12 +1052,17 @@ def test_subregions_not_collapsed_to_continents():
     assert execute_local_plan(plan_me[0][0], "Thailand", "In Middle East?").answer is False
 
     # African subregions
-    for q_saf in ("Czy leży na południu Afryki?", "Czy leży w Afryce Południowej?", "Czy leży w południowej Afryce?", "Is it in Southern Africa?"):
+    for q_saf in (
+        "Czy leży na południu Afryki?", "Czy leży w Afryce Południowej?", "Czy leży w południowej Afryce?",
+        "Is it in Southern Africa?", "Is it on te southern part of africa", "Is it in the southern part of Africa?",
+        "Is it in the south part of Africa?",
+    ):
         plan_saf = compile_template_plan(q_saf)
-        assert plan_saf is not None
+        assert plan_saf is not None, f"Failed for {q_saf}"
         assert plan_saf[0][0]["left"]["relation"] == "geographic_area"
         assert plan_saf[0][0]["right"]["value"] == "Southern Africa"
     assert execute_local_plan(plan_saf[0][0], "South Africa", "In Southern Africa?").answer is True
+    assert execute_local_plan(plan_saf[0][0], "Tunisia", "In Southern Africa?").answer is False
     assert execute_local_plan(plan_saf[0][0], "Egypt", "In Southern Africa?").answer is False
 
     for q_naf in ("Czy leży na północy Afryki?", "Czy leży w Afryce Północnej?", "Is it in Northern Africa?", "Is it in North Africa?"):

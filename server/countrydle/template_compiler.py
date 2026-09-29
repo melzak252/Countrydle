@@ -58,22 +58,32 @@ AREAS = {
     "Central Europe": (
         "Central Europe", "Europa Środkowa", "Europie Środkowej", "Europą Środkową", "Europy Środkowej",
         "Środkowa Europa", "Środkowej Europie", "Środkową Europą", "Środkowej Europy",
+        "central part of europe", "middle part of europe",
+        "środkowa część europy", "środkowej części europy", "w środkowej części europy",
     ),
     "Eastern Europe": (
         "Eastern Europe", "Europa Wschodnia", "Europie Wschodniej", "Europą Wschodnią", "Europy Wschodniej",
         "Wschodnia Europa", "Wschodniej Europie", "Wschodnią Europą", "Wschodniej Europy",
+        "eastern part of europe", "east part of europe", "east of europe",
+        "wschodnia część europy", "wschodniej części europy", "w wschodniej części europy", "we wschodniej części europy",
     ),
     "Western Europe": (
         "Western Europe", "Europa Zachodnia", "Europie Zachodniej", "Europą Zachodnią", "Europy Zachodniej",
         "Zachodnia Europa", "Zachodniej Europie", "Zachodnią Europą", "Zachodniej Europy",
+        "western part of europe", "west part of europe", "west of europe",
+        "zachodnia część europy", "zachodniej części europy", "w zachodniej części europy",
     ),
     "Northern Europe": (
         "Northern Europe", "Europa Północna", "Europie Północnej", "Europą Północną", "Europy Północnej",
         "Północna Europa", "Północnej Europie", "Północną Europą", "Północnej Europy",
+        "northern part of europe", "north part of europe", "north of europe",
+        "północna część europy", "północnej części europy", "w północnej części europy",
     ),
     "Southern Europe": (
         "Southern Europe", "Europa Południowa", "Europie Południowej", "Europą Południową", "Europy Południowej",
         "Południowa Europa", "Południowej Europie", "Południową Europą", "Południowej Europy",
+        "southern part of europe", "south part of europe", "south of europe",
+        "południowa część europy", "południowej części europy", "w południowej części europy",
     ),
     "Scandinavia": ("Scandinavia", "Skandynawia", "Skandynawii", "Skandynawią"),
     "Iberia": ("Iberia", "Iberian Peninsula", "Półwysep Iberyjski", "Półwyspie Iberyjskim", "Półwyspu Iberyjskiego"),
@@ -89,6 +99,8 @@ AREAS = {
         "Central Asia", "Azja Środkowa", "Azji Środkowej", "Azją Środkową",
         "Środkowa Azja", "Środkowej Azji", "Środkową Azją",
         "Centralna Azja", "Centralnej Azji", "Centralną Azją",
+        "central part of asia", "middle part of asia",
+        "środkowa część azji", "środkowej części azji", "w środkowej części azji",
     ),
     "Southeast Asia": (
         "Southeast Asia", "South East Asia", "South-East Asia", "South-Eastern Asia", "South Eastern Asia", "Southeastern Asia",
@@ -96,21 +108,29 @@ AREAS = {
         "Azją Południowo-Wschodnią", "Azją Południowo-wschodnią",
         "Południowo-Wschodnia Azja", "Południowo-Wschodniej Azji", "Południowo-wschodnia Azja", "Południowo-wschodniej Azji",
         "Południowo-Wschodnią Azją", "Południowo-wschodnią Azją",
+        "southeast part of asia", "south-east part of asia", "south eastern part of asia", "southeastern part of asia",
+        "południowo-wschodnia część azji", "południowo-wschodniej części azji", "w południowo-wschodniej części azji",
     ),
     "South Asia": (
         "South Asia", "Southern Asia",
         "Azja Południowa", "Azji Południowej", "Azją Południową",
         "Południowa Azja", "Południowej Azji", "Południową Azją",
+        "southern part of asia", "south part of asia", "south of asia",
+        "południowa część azji", "południowej części azji", "w południowej części azji",
     ),
     "East Asia": (
         "East Asia", "Eastern Asia",
         "Azja Wschodnia", "Azji Wschodniej", "Azją Wschodnią",
         "Wschodnia Azja", "Wschodniej Azji", "Wschodnią Azją",
+        "eastern part of asia", "east part of asia", "east of asia",
+        "wschodnia część azji", "wschodniej części azji", "we wschodniej części azji",
     ),
     "Western Asia": (
         "Western Asia", "West Asia",
         "Azja Zachodnia", "Azji Zachodniej", "Azją Zachodnią",
         "Zachodnia Azja", "Zachodniej Azji", "Zachodnią Azją",
+        "western part of asia", "west part of asia", "west of asia",
+        "zachodnia część azji", "zachodniej części azji", "w zachodniej części azji",
     ),
 
     # Africa
@@ -119,30 +139,45 @@ AREAS = {
         "Afryka Północna", "Afryce Północnej", "Afryki Północnej", "Afryką Północną",
         "Północna Afryka", "Północnej Afryce", "Północnej Afryki", "Północną Afryką",
         "północ Afryki", "północy Afryki",
+        "northern part of africa", "north part of africa", "north of africa",
+        "północna część afryki", "północnej części afryki", "północną część afryki",
+        "w północnej części afryki", "polnocna czesc afryki", "polnocnej czesci afryki",
     ),
     "Southern Africa": (
         "Southern Africa",
         "Afryka Południowa", "Afryce Południowej", "Afryki Południowej", "Afryką Południową",
         "Południowa Afryka", "Południowej Afryce", "Południowej Afryki", "Południową Afryką",
         "południe Afryki", "południu Afryki",
+        "southern part of africa", "south part of africa", "south of africa",
+        "południowa część afryki", "południowej części afryki", "południową część afryki",
+        "w południowej części afryki", "południowa czesc afryki", "południowej czesci afryki",
     ),
     "Western Africa": (
         "Western Africa", "West Africa",
         "Afryka Zachodnia", "Afryce Zachodniej", "Afryki Zachodniej", "Afryką Zachodnią",
         "Zachodnia Afryka", "Zachodniej Afryce", "Zachodniej Afryki", "Zachodnią Afryką",
         "zachód Afryki", "zachodzie Afryki",
+        "western part of africa", "west part of africa", "west of africa",
+        "zachodnia część afryki", "zachodniej części afryki", "zachodnią część afryki",
+        "w zachodniej części afryki", "zachodnia czesc afryki", "zachodniej czesci afryki",
     ),
     "Eastern Africa": (
         "Eastern Africa", "East Africa",
         "Afryka Wschodnia", "Afryce Wschodniej", "Afryki Wschodniej", "Afryką Wschodnią",
         "Wschodnia Afryka", "Wschodniej Afryce", "Wschodniej Afryki", "Wschodnią Afryką",
         "wschód Afryki", "wschodzie Afryki",
+        "eastern part of africa", "east part of africa", "east of africa",
+        "wschodnia część afryki", "wschodniej części afryki", "wschodnią część afryki",
+        "w wschodniej części afryki", "we wschodniej części afryki", "wschodnia czesc afryki", "wschodniej czesci afryki",
     ),
     "Middle Africa": (
         "Middle Africa", "Central Africa",
         "Afryka Środkowa", "Afryce Środkowej", "Afryki Środkowej", "Afryką Środkową",
         "Środkowa Afryka", "Środkowej Afryce", "Środkowej Afryki", "Środkową Afryką",
         "środek Afryki", "środku Afryki", "centralna Afryka", "centralnej Afryce",
+        "central part of africa", "middle part of africa",
+        "środkowa część afryki", "środkowej części afryki", "środkową część afryki",
+        "w środkowej części afryki", "srodkowa czesc afryki", "srodkowej czesci afryki",
     ),
     "Horn of Africa": ("Horn of Africa", "Róg Afryki", "Rogiem Afryki", "Rogu Afryki"),
     "Maghreb": ("Maghreb", "Maghrebie", "Maghrebu"),
@@ -420,11 +455,16 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
 
     for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
+        if relation == "continent":
+            # Guard: do not reduce directional or qualified continent questions (e.g. "southern part of Africa") to broad continent
+            if re.search(r"\b(north\w*|south\w*|east\w*|west\w*|central\w*|middle\w*|polnocn\w*|poludniow\w*|wschodn\w*|zachodn\w*|srodkow\w*|centraln\w*)\b", q):
+                continue
         value = _choices(choices, q)
         if value and any(x in q for x in (
             "in ", " in the ", "in the", "lezy", "nalezy", "nalezal", "nalezala", "nalezaly", "nalezalo",
             "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ", "kraj", "panstwo", "z ",
             "czescia", "czesc", "sklad", "wchodzil", "wchodzila", "wchodzilo",
+            "on te ", "on the ", "part of ",
         )):
             if relation == "membership":
                 if any(x in q for x in ("founding", "founder", "zaloz", "założ", "original", "pierwotn", "when", "kiedy", "accession", "akcesj")):
