@@ -1141,3 +1141,37 @@ def test_historical_unions_matching_and_execution():
     ]
     for question in polish_unions:
         assert compile_template_plan(question) is None, f"Polish union query {question} should not match template"
+
+def test_water_access_sea_and_or_ocean_evaluates_correctly():
+    # Single node: contains "Sea"
+    node_sea = {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Sea"}}
+    ans_tn = execute_local_plan(node_sea, "Tunisia", "Does it have access to the sea?")
+    assert ans_tn.answer is True
+    assert "Mediterranean Sea" in ans_tn.explanation
+
+    ans_pl = execute_local_plan(node_sea, "Poland", "Does it have access to the sea?")
+    assert ans_pl.answer is True
+    assert "Baltic Sea" in ans_pl.explanation
+
+    ans_chad = execute_local_plan(node_sea, "Chad", "Does it have access to the sea?")
+    assert ans_chad.answer is False
+    assert "landlocked" in ans_chad.explanation
+
+    # Compound node: contains "Sea" OR contains "Ocean"
+    node_or = {
+        "operator": "or",
+        "conditions": [
+            {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Sea"}},
+            {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Ocean"}}
+        ]
+    }
+    ans_or_tn = execute_local_plan(node_or, "Tunisia", "Does it have access to the sea or ocean?")
+    assert ans_or_tn.answer is True
+    assert ans_or_tn.explanation == "Tunisia has direct coastline access to: Mediterranean Sea."
+
+    ans_or_pt = execute_local_plan(node_or, "Portugal", "Does it have access to the sea or ocean?")
+    assert ans_or_pt.answer is True
+
+    ans_or_chad = execute_local_plan(node_or, "Chad", "Does it have access to the sea or ocean?")
+    assert ans_or_chad.answer is False
+    assert "landlocked" in ans_or_chad.explanation
