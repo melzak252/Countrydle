@@ -117,6 +117,8 @@ def analyze_question(
     deterministic = compile_generic_template_plan(question, config.mode_name)
     if deterministic is not None:
         ast, improved = deterministic
+        from utils.shadow_audit import schedule_shadow_audit
+        schedule_shadow_audit(config.mode_name, question, ast, improved)
         plan = QuestionPlan(
             original_question=question,
             valid=True,

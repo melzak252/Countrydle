@@ -100,14 +100,18 @@ async def test_monthly_rankings_exclude_idle_accounts_but_keep_zero_point_player
 @pytest.mark.anyio
 async def test_average_rankings_do_not_use_idle_rows_to_meet_minimum_games(leaderboard_db):
     session, day_cls, state_cls, repo, minimum = leaderboard_db
+    month_start = datetime.now(timezone.utc).date().replace(day=1)
     for i in range(minimum):
-        add_day(session, day_cls, i + 1, datetime.now(timezone.utc).date() - timedelta(days=i * 20))
+        add_day(session, day_cls, i + 1, month_start + timedelta(days=i))
         session.add_all([
             state_cls(user_id=1, day_id=i + 1, is_game_over=True),
             state_cls(user_id=2, day_id=i + 1, questions_asked=1, guesses_made=1, is_game_over=True, won=True, points=100),
             state_cls(user_id=3, day_id=i + 1, guesses_made=int(i < minimum - 1), is_game_over=True),
             state_cls(user_id=4, day_id=i + 1, questions_asked=1, is_game_over=True, won=True, points=100),
         ])
+    # Add a game from previous month: should be excluded from current month average
+    add_day(session, day_cls, minimum + 1, month_start - timedelta(days=5))
+    session.add(state_cls(user_id=2, day_id=minimum + 1, questions_asked=1, guesses_made=1, is_game_over=True, won=True, points=999))
     session.flush()
 
     result = await rankings(repo, 'average')

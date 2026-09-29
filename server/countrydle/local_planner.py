@@ -141,6 +141,10 @@ Important rules:
   longitude is positive east and negative west. The Western Hemisphere has
   negative longitude, not positive longitude. Point coordinates do not establish
   the full territorial extent of a country.
+- In Polish questions about the equator and hemispheres:
+  * "nad równikiem", "powyżej równika", "na północ od równika" means ABOVE / north of the equator (greater_than on target_country.coordinates.latitude with value 0, or hemisphere contains "Northern"). NEVER translate "nad równikiem" as "on the equator"!
+  * "pod równikiem", "poniżej równika", "na południe od równika" means BELOW / south of the equator (less_than on target_country.coordinates.latitude with value 0, or hemisphere contains "Southern").
+  * "na równiku", "przecina równik" means situated directly on / crossing the equator.
 - If a clear question can be answered only with external facts, return route="fallback"
   and plan=null. Local coverage does not determine whether the question is meaningful.
 - Direct identity questions are valid and supported, including "Is it Poland?",
@@ -168,7 +172,7 @@ Important rules:
   uniqueness and rejection belong to the deterministic resolver, not the model.
   Do not reject a candidate merely because its spelling is unfamiliar.
   Open-ended requests such as "What country is it?" remain invalid.
-- When a question explicitly names a country as subject (e.g. "Does Czechia use the euro?", "Was Poland a constituent republic of the Soviet Union?"), do NOT reject it as invalid or clarify. Treat it as asking whether the hidden target country has that property.
+- When a question explicitly names a country as subject (e.g. "Does Czechia use the euro?", "Is the US dollar an official currency in El Salvador?", "Was Poland a constituent republic of the Soviet Union?"), do NOT reject it as invalid or clarify. Treat it as asking whether the hidden target country has that property.
 - Questions asking whether a country was a constituent republic, part of, or in the Soviet Union / USSR must check historical_union contains "USSR", NOT government_type equals "Republic". A country being a republic today does not imply Soviet membership.
 - Use official_language for official, co-official, and otherwise legally
   recognized official country languages.
@@ -358,6 +362,15 @@ User: Does it have no coastline?
   {{"operator":"not","args":[0]}}
 ]}}
 
+User: Does the country have territory in all four hemispheres?
+{{"route":"local","plan":[
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Northern"}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Western"}}}},
+  {{"operator":"and","args":[0, 1, 2, 3]}}
+]}}
+
 User: Were the 2004 Summer Olympics held in this country?
 {{"route":"fallback","plan":null,"fallback_reason":"The local relations do not store event venues."}}
 The event and year are precise. Missing event data means unsupported, NOT invalid.
@@ -440,6 +453,8 @@ def analyze_question_for_local_plan(
     deterministic = compile_template_plan(question)
     if deterministic is not None:
         ast, improved = deterministic
+        from utils.shadow_audit import schedule_shadow_audit
+        schedule_shadow_audit("countrydle", question, ast, improved)
         plan = QuestionPlan(
             original_question=question,
             valid=True,

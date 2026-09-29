@@ -28,10 +28,9 @@ async def get_leaderboard(session, state_model, day_model, kind, *, minimum_aver
         activity,
         *day_filters,
     ]
-    if kind == "monthly":
-        month_start, next_month = utc_month_bounds()
-        filters.extend((day_model.date >= month_start, day_model.date < next_month))
-    else:
+    month_start, next_month = utc_month_bounds()
+    filters.extend((day_model.date >= month_start, day_model.date < next_month))
+    if kind == "average":
         filters.append(state.is_game_over.is_(True))
 
     games_played = func.count(state.id).label("games_played")

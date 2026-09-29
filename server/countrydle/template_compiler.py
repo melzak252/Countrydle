@@ -52,36 +52,58 @@ CONTINENTS = {
     "Oceania": ("Oceania", "Oceanii"),
 }
 AREAS = {
-    "Balkans": ("Balkans", "Bałkany", "Bałkanach", "Bałkanów"), "Middle East": ("Middle East", "Bliski Wschód", "Bliskim Wschodzie"),
-    "Scandinavia": ("Scandinavia", "Skandynawia", "Skandynawii"), "Caribbean": ("Caribbean", "Karaiby", "Karaibach"),
-    "Baltic states": ("Baltic states", "państwa bałtyckie", "krajach bałtyckich"), "Central Europe": ("Central Europe", "Europa Środkowa", "Europie Środkowej"),
-    "Eastern Europe": ("Eastern Europe", "Eastern Europe", "Europa Wschodnia", "Europie Wschodniej"), "Western Europe": ("Western Europe", "Europa Zachodnia", "Europie Zachodniej"),
-    "Northern Europe": ("Northern Europe", "Europa Północna", "Europie Północnej"), "Southern Europe": ("Southern Europe", "Europa Południowa", "Europie Południowej"),
-    "Maghreb": ("Maghreb",), "Sahel": ("Sahel",), "Horn of Africa": ("Horn of Africa", "Róg Afryki"),
-    "Arabian Peninsula": ("Arabian Peninsula", "Półwysep Arabski"), "Indochina": ("Indochina", "Indochiny"),
-    "Central Asia": ("Central Asia", "Azja Środkowa", "Azji Środkowej"), "Southeast Asia": ("Southeast Asia", "Azja Południowo-Wschodnia"),
-    "South Asia": ("South Asia", "Azja Południowa"), "East Asia": ("East Asia", "Azja Wschodnia"),
+    "Balkans": ("Balkans", "the Balkans"),
+    "Baltic states": ("Baltic states", "the Baltic states", "the Baltics"),
+    "Central Europe": ("Central Europe", "central part of europe", "middle part of europe"),
+    "Eastern Europe": ("Eastern Europe", "eastern part of europe", "east part of europe", "east of europe"),
+    "Western Europe": ("Western Europe", "western part of europe", "west part of europe", "west of europe"),
+    "Northern Europe": ("Northern Europe", "northern part of europe", "north part of europe", "north of europe"),
+    "Southern Europe": ("Southern Europe", "southern part of europe", "south part of europe", "south of europe"),
+    "Scandinavia": ("Scandinavia",),
+    "Iberia": ("Iberia", "Iberian Peninsula"),
+    "Middle East": ("Middle East", "the Middle East", "Mid East", "Mideast", "Middle-East"),
+    "Arabian Peninsula": ("Arabian Peninsula", "the Arabian Peninsula"),
+    "Indochina": ("Indochina",),
+    "Central Asia": ("Central Asia", "central part of asia", "middle part of asia"),
+    "Southeast Asia": ("Southeast Asia", "South East Asia", "South-East Asia", "South-Eastern Asia", "South Eastern Asia", "Southeastern Asia", "southeastern part of asia", "south eastern part of asia"),
+    "South Asia": ("South Asia", "Southern Asia", "southern part of asia", "south part of asia", "south of asia"),
+    "East Asia": ("East Asia", "Eastern Asia", "eastern part of asia", "east part of asia", "east of asia"),
+    "Western Asia": ("Western Asia", "West Asia", "western part of asia", "west part of asia", "west of asia"),
+    "Northern Africa": ("Northern Africa", "North Africa", "northern part of africa", "north part of africa", "north of africa"),
+    "Southern Africa": ("Southern Africa", "southern part of africa", "south part of africa", "south of africa"),
+    "Western Africa": ("Western Africa", "West Africa", "western part of africa", "west part of africa", "west of africa"),
+    "Eastern Africa": ("Eastern Africa", "East Africa", "eastern part of africa", "east part of africa", "east of africa"),
+    "Middle Africa": ("Middle Africa", "Central Africa", "central part of africa", "middle part of africa"),
+    "Horn of Africa": ("Horn of Africa", "the Horn of Africa"),
+    "Maghreb": ("Maghreb", "the Maghreb"),
+    "Sahel": ("Sahel", "the Sahel"),
+    "Central America": ("Central America",),
+    "Caribbean": ("Caribbean", "the Caribbean"),
 }
 MEMBERSHIPS = {
-    "EU": ("EU", "UE", "European Union", "Unia Europejska"), "NATO": ("NATO",), "UN": ("UN", "ONZ", "United Nations", "Narody Zjednoczone"),
-    "Schengen": ("Schengen", "Strefa Schengen"), "Benelux": ("Benelux",), "African Union": ("African Union", "Unia Afrykańska"),
-    "ASEAN": ("ASEAN",), "Commonwealth": ("Commonwealth", "Wspólnota Narodów"), "G7": ("G7",), "G20": ("G20",), "OECD": ("OECD",),
+    "EU": ("EU", "UE", "European Union"), "NATO": ("NATO",), "UN": ("UN", "ONZ", "United Nations"),
+    "Schengen": ("Schengen",), "Benelux": ("Benelux",), "African Union": ("African Union",),
+    "ASEAN": ("ASEAN",), "Commonwealth": ("Commonwealth",), "G7": ("G7",), "G20": ("G20",), "OECD": ("OECD",),
 }
 HISTORICAL = {
-    "USSR": ("USSR", "ZSRR", "Soviet Union", "Związek Radziecki"), "Yugoslavia": ("Yugoslavia", "Jugosławia", "Jugosławii"),
-    "Warsaw Pact": ("Warsaw Pact", "Układ Warszawski"), "Czechoslovakia": ("Czechoslovakia", "Czechosłowacja", "Czechosłowacji"),
-    "Austro-Hungarian Empire": ("Austro-Hungarian Empire", "Austro-Węgry", "Monarchia Austro-Węgierska"),
-    "Ottoman Empire": ("Ottoman Empire", "Imperium Osmańskie"), "British Empire": ("British Empire", "Imperium Brytyjskie"),
-    "Spanish Empire": ("Spanish Empire", "Imperium Hiszpańskie"), "French Empire": ("French Empire", "Imperium Francuskie"),
-    "Portuguese Empire": ("Portuguese Empire", "Imperium Portugalskie"),
+    "USSR": ("USSR", "the USSR", "Soviet Union", "the Soviet Union"),
+    "Yugoslavia": ("Yugoslavia",),
+    "Warsaw Pact": ("Warsaw Pact", "the Warsaw Pact"),
+    "Czechoslovakia": ("Czechoslovakia",),
+    "Austro-Hungarian Empire": ("Austro-Hungarian Empire", "the Austro-Hungarian Empire", "Austria-Hungary", "Austro-Hungary"),
+    "Ottoman Empire": ("Ottoman Empire", "the Ottoman Empire"),
+    "British Empire": ("British Empire", "the British Empire"),
+    "Spanish Empire": ("Spanish Empire", "the Spanish Empire"),
+    "French Empire": ("French Empire", "the French Empire"),
+    "Portuguese Empire": ("Portuguese Empire", "the Portuguese Empire"),
+    "Gran Colombia": ("Gran Colombia",),
 }
 WATERS = {
-    "Ocean": ("ocean", "oceanem", "oceanu"), "Sea": ("sea", "morze", "morzem"), "Baltic Sea": ("Baltic Sea", "Bałtyk", "Bałtyku", "Morze Bałtyckie"),
-    "Mediterranean Sea": ("Mediterranean Sea", "Mediterranean", "Morze Śródziemne", "Morza Śródziemnego", "Morzem Śródziemnym", "Śródziemne", "Śródziemnego", "Śródziemnym", "srodziemnego", "srodziemne", "srodziemnym", "srodzoemnego"),
-    "Black Sea": ("Black Sea", "Morze Czarne", "Morza Czarnego", "Morzem Czarnym", "Czarne", "Czarnego"),
-    "North Sea": ("North Sea", "Morze Północne"), "Red Sea": ("Red Sea", "Morze Czerwone"), "Caribbean Sea": ("Caribbean Sea", "Morze Karaibskie"),
-    "Indian Ocean": ("Indian Ocean", "Ocean Indyjski"), "Atlantic Ocean": ("Atlantic Ocean", "Ocean Atlantycki"),
-    "Pacific Ocean": ("Pacific Ocean", "Ocean Spokojny"), "Arctic Ocean": ("Arctic Ocean", "Ocean Arktyczny"), "Adriatic Sea": ("Adriatic Sea", "Morze Adriatyckie"),
+    "Ocean": ("ocean",), "Sea": ("sea",), "Baltic Sea": ("Baltic Sea",),
+    "Mediterranean Sea": ("Mediterranean Sea", "the Mediterranean"),
+    "Black Sea": ("Black Sea",), "North Sea": ("North Sea",), "Red Sea": ("Red Sea",), "Caribbean Sea": ("Caribbean Sea",),
+    "Indian Ocean": ("Indian Ocean",), "Atlantic Ocean": ("Atlantic Ocean",),
+    "Pacific Ocean": ("Pacific Ocean",), "Arctic Ocean": ("Arctic Ocean",), "Adriatic Sea": ("Adriatic Sea",),
 }
 
 # Country names are canonicalized against the same 196-country facts catalog; common Polish inflections are explicit.
@@ -155,6 +177,8 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
     """Compile a recognized question to ``(AST, improved English question)``."""
     if not isinstance(question, str) or not question.strip():
         return None
+    if "/" in question or "\\" in question:
+        return None
     slot_res = match_slot_template(question, "countrydle")
     if slot_res is not None:
         return slot_res
@@ -180,21 +204,20 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
 
     if diagonal:
         country = _country_in(q)
-        if not country:
-            return None
-        directions = diagonal.group(1).replace("-", " ").replace("northwest", "north west").replace("northeast", "north east").replace("southwest", "south west").replace("southeast", "south east").split()
-        ast = [_direction({"north": "north_of", "south": "south_of", "west": "west_of", "east": "east_of"}[d], country) for d in directions]
-        ast.append({"operator": "and", "args": [0, 1]})
-        return ast, f"Is the country {directions[0]}-{directions[1]} of {country}?"
+        if country:
+            directions = diagonal.group(1).replace("-", " ").replace("northwest", "north west").replace("northeast", "north east").replace("southwest", "south west").replace("southeast", "south east").split()
+            ast = [_direction({"north": "north_of", "south": "south_of", "west": "west_of", "east": "east_of"}[d], country) for d in directions]
+            ast.append({"operator": "and", "args": [0, 1]})
+            return ast, f"Is the country {directions[0]}-{directions[1]} of {country}?"
 
-    is_pop = any(term in q for term in ("population", "populacj", "inhabitants", "mieszkanc", "ludnosc", "people", "ludzi")) or bool(re.search(r"\bpop\b", q))
-    is_area = any(term in q for term in ("area", "powierzchni", "sq km", "km2", "km 2", "square km", "square kilometer", "kilometrow")) or bool(re.search(r"\bkm\b", q))
+    is_pop = any(term in q for term in ("population", "inhabitants", "people")) or bool(re.search(r"\bpop\b", q))
+    is_area = any(term in q for term in ("area", "sq km", "km2", "km 2", "square km", "square kilometer")) or bool(re.search(r"\bkm\b", q))
     is_greater = any(term in q for term in (
         "greater", "larger", "bigger", "more than", "more people", "more inhabitants", "more ",
-        "over", "above", "exceed", "exceeds", "wieksz", "wiecej", "ponad", "powyzej", "przekracza"
+        "over", "above", "exceed", "exceeds"
     ))
     is_less = any(term in q for term in (
-        "less", "smaller", "fewer", "under", "below", "mniejsz", "mniej", "ponizej"
+        "less", "smaller", "fewer", "under", "below"
     ))
     if is_pop and (is_greater or is_less):
         op = "greater_than" if is_greater else "less_than"
@@ -270,19 +293,53 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                 return [_node("contains", "hemisphere", target_hemi)], f"Is the country in the {target_hemi} Hemisphere?"
 
     equator_prime_rules = (
-        (("north of the equator", "north of equator", "north to the equator", "north to equator", "na polnoc od rownika"), "greater_than", "coordinates.latitude", "north of the equator"),
-        (("south of the equator", "south of equator", "south to the equator", "south to equator", "na poludnie od rownika"), "less_than", "coordinates.latitude", "south of the equator"),
-        (("east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian", "na wschod od poludnika greenwicha", "na wschod od poludnika zerowego"), "greater_than", "coordinates.longitude", "east of the prime meridian"),
-        (("west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian", "na zachod od poludnika greenwicha", "na zachod od poludnika zerowego", "poludnika greenwich"), "less_than", "coordinates.longitude", "west of the prime meridian"),
+        (
+            (
+                "north of the equator", "north of equator", "north to the equator", "north to equator",
+                "above the equator", "above equator",
+                "nad rownikiem", "powyzej rownika", "na polnoc od rownika",
+            ),
+            "greater_than",
+            "coordinates.latitude",
+            "north of the equator",
+        ),
+        (
+            (
+                "south of the equator", "south of equator", "south to the equator", "south to equator",
+                "below the equator", "below equator",
+                "pod rownikiem", "ponizej rownika", "na poludnie od rownika",
+            ),
+            "less_than",
+            "coordinates.latitude",
+            "south of the equator",
+        ),
+        (
+            (
+                "east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian",
+                "na wschod od poludnika greenwich", "na wschod od poludnika zerowego",
+            ),
+            "greater_than",
+            "coordinates.longitude",
+            "east of the prime meridian",
+        ),
+        (
+            (
+                "west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian",
+                "na zachod od poludnika greenwich", "na zachod od poludnika zerowego",
+            ),
+            "less_than",
+            "coordinates.longitude",
+            "west of the prime meridian",
+        ),
     )
     for phrases, op, relation, wording in equator_prime_rules:
         if any(phrase in q for phrase in phrases):
             return [_node(op, relation, 0)], f"Is the country {wording}?"
     direction_phrases = (
-        ("north_of", ("north of", "north to", "above", "powyzej", "na polnoc od", "na polnoc do")),
-        ("south_of", ("south of", "south to", "below", "ponizej", "na poludnie od", "na poludnie do")),
-        ("west_of", ("west of", "west to", "to the left of", "left of", "left to", "na zachod od", "na lewo od", "na zachod do")),
-        ("east_of", ("east of", "east to", "to the right of", "right of", "right to", "na wschod od", "na prawo od", "na wschod do")),
+        ("north_of", ("north of", "north to", "above")),
+        ("south_of", ("south of", "south to", "below")),
+        ("west_of", ("west of", "west to", "to the left of", "left of", "left to")),
+        ("east_of", ("east of", "east to", "to the right of", "right of", "right to")),
     )
     for operator, phrases in direction_phrases:
         if any(phrase in q for phrase in phrases):
@@ -293,27 +350,39 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         return [_node("exists", "water_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
     if any(x in q for x in ("island", "wyspa", "wyspiarsk")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
         return [_node("equals", "is_island", True)], "Is the country an island?"
-    water_body = _choices(WATERS, q)
-    if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza", "linia brzegowa", "linie brzegowa")):
-        if water_body and water_body != "Sea":
-            return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
-        after_sea = re.search(r"\b(?:morza|morze|sea)\s+([a-z]+)", q)
-        if after_sea and after_sea.group(1) not in {"i", "lub", "czy", "and", "or", "oceanu", "ocean", "otwartego"}:
-            return None
-        return [_node("exists", "water_access")], "Does the country have access to the sea?"
-    if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
-        return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
+    is_directional_coast = bool(re.search(r"\b(west\w*|east\w*|north\w*|south\w*|zachod\w*|wschod\w*|polnoc\w*|poludn\w*)\b.*?\b(coast|coastline|wybrzez\w*)\b", q))
+    water_body = _choices(WATERS, q) if not is_directional_coast else None
+    if not is_directional_coast:
+        if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza")):
+            if water_body and water_body != "Sea":
+                return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
+            after_sea = re.search(r"\b(?:morza|morze|sea)\s+([a-z]+)", q)
+            if after_sea and after_sea.group(1) not in {"and", "or", "i", "lub", "oceanu", "ocean"}:
+                return None
+            return [_node("exists", "water_access")], "Does the country have access to the sea?"
+        if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
+            return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
 
-    for relation, choices in (("continent", CONTINENTS), ("geographic_area", AREAS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
+    for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
+        if relation == "continent":
+            if re.search(r"\b(north\w*|south\w*|east\w*|west\w*|central\w*|middle\w*|polnoc\w*|poludn\w*|wschod\w*|zachod\w*|srodk\w*|centraln\w*)\b", q):
+                if not any(continent in q for continent in ("north america", "south america", "ameryka polnocna", "ameryce polnocnej", "ameryka poludniowa", "ameryce poludniowej")):
+                    continue
         value = _choices(choices, q)
-        if value and any(x in q for x in ("in ", " in the ", "in the", "lezy", "nalezy", "nalezalo", "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ")):
+        if value and any(x in q for x in (
+            "in ", " in the ", "in the", "lezy", "nalezy", "nalezal", "nalezala", "nalezaly", "nalezalo",
+            "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ", "kraj", "panstwo", "z ",
+            "czescia", "czesc", "sklad", "wchodzil", "wchodzila", "wchodzilo",
+            "on te ", "on the ", "part of ",
+        )):
             if relation == "membership":
                 if any(x in q for x in ("founding", "founder", "zaloz", "założ", "original", "pierwotn", "when", "kiedy", "accession", "akcesj")):
                     continue
                 if re.search(r"\b(19\d\d|20\d\d)\b", q):
                     continue
-            return [_node("contains", relation, value)], f"Is the country in {value}?"
-    if water_body and water_body != "Sea" and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
+            wording = f"Was the country historically part of {value}?" if relation == "historical_union" else f"Is the country in {value}?"
+            return [_node("contains", relation, value)], wording
+    if water_body and water_body != "Sea" and not is_directional_coast and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
         return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
 
 

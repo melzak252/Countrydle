@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
 import CountdownTimer from '../components/CountdownTimer';
-import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy, ArrowRight } from 'lucide-react';
+import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy, ArrowRight, Flag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import type { FlagdleCountry, FlagdleGuess } from '../types';
@@ -29,7 +29,22 @@ export default function FlagdlePage() {
   const [selectedCountry, setSelectedCountry] = useState<FlagdleCountry | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(false);
+  const FLAGDLE_GUIDE_KEY = 'flagdle_guide_seen';
+  const [showInstructions, setShowInstructions] = useState(() => {
+    try {
+      return localStorage.getItem(FLAGDLE_GUIDE_KEY) !== 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleCloseInstructions = () => {
+    setShowInstructions(false);
+    try {
+      localStorage.setItem(FLAGDLE_GUIDE_KEY, 'true');
+    } catch {
+      // ignore
+    }
+  };
   const [copied, setCopied] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -205,6 +220,7 @@ export default function FlagdlePage() {
 
   useEffect(() => {
     if (isGameOver) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowResultsModal(true);
     }
   }, [isGameOver]);
@@ -571,83 +587,121 @@ export default function FlagdlePage() {
 
       </main>
 
-      {/* Instructions Modal */}
+      {/* Instructions Modal — WIDER CONTAINER (max-w-4xl) */}
       {showInstructions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
-            onClick={() => setShowInstructions(false)}
+            className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
+            onClick={handleCloseInstructions}
             aria-hidden="true"
           />
 
-          <div
+          <section
             role="dialog"
             aria-modal="true"
             aria-label="How to Play Flagdle"
-            className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-6 shadow-2xl space-y-4 my-auto"
+            className="relative z-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-md border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3 -mt-1 text-left">
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald-400">
-                Flagdle Guide
-              </span>
+            <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
+                  <span>🚩 How to Play Flagdle</span>
+                </h2>
+                <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
+                  Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowInstructions(false)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                onClick={handleCloseInstructions}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
                 aria-label="Close"
+                title="Close"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-sand-100 flex items-center gap-2">
-                <span>🚩 How to Play Flagdle</span>
-              </h2>
-              <p className="mt-1 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <span>🎴 1. 12-Card Cover Grid</span>
+                  </div>
+                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                    The secret flag is covered by 12 solid tiles in a 3×4 grid. Each guess unmasks 1 tile, progressively revealing more of the national flag design underneath.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                  1 unmasked tile per guess
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                    <span>🎨 2. Color & Symbol Match</span>
+                  </div>
+                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                    Each guess compares the colors and symbols of your guessed flag against the secret target. Green chips show matching colors; crossed-out chips indicate absent colors.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                  Color &amp; symbol overlap clues
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <span>🧭 3. Distance & Direction</span>
+                  </div>
+                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                    Every guess reveals the geographic distance in kilometers and a compass bearing arrow (e.g. ↗ 3,200 km) pointing directly towards the secret target country.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                  Great-circle distance &amp; compass bearing
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-indigo-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                    <span>💬 4. Unlimited Free AI Questions</span>
+                  </div>
+                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                    Stuck on the visual clues? You can ask unlimited yes/no questions about colors, stripes, stars, or symbols without consuming any of your 12 guess turns!
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                  Free helper questions
+                </div>
+              </div>
+            </div>
+            <div className="rounded-sm border border-amber-500/20 bg-amber-500/[0.04] p-3.5 flex items-start gap-3 text-xs">
+              <Flag size={15} className="text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-zinc-300 leading-relaxed">
+                <strong className="text-amber-300">Spot a mistake?</strong> After the game, click the flag icon on any answer card in your history to report it with notes — it helps us see mistakes and patch them quickly.
               </p>
             </div>
 
-            <div className="space-y-3 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3.5 space-y-1.5">
-                <div className="font-semibold text-sand-100 flex items-center gap-2">
-                  <span>🎴 12-Card Cover Grid (3×4)</span>
-                </div>
-                <p className="text-zinc-400">
-                  The flag is covered by 12 solid cards. Each guess unmasks 1 card, progressively revealing more of the flag underneath.
-                </p>
-              </div>
-
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3.5 space-y-1.5">
-                <div className="font-semibold text-sand-100 flex items-center gap-2">
-                  <span>🎨 Color Overlap Clues</span>
-                </div>
-                <p className="text-zinc-400">
-                  Each guess analyzes the colors of your guessed flag against the secret target. Green chips show shared colors, while crossed-out chips show colors absent from the secret flag.
-                </p>
-              </div>
-
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3.5 space-y-1.5">
-                <div className="font-semibold text-sand-100 flex items-center gap-2">
-                  <span>🧭 Distance & Direction</span>
-                </div>
-                <p className="text-zinc-400">
-                  An arrow and distance badge show the great-circle distance and compass bearing from your guessed country to the secret target.
-                </p>
-              </div>
+            <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-zinc-500 font-mono text-center sm:text-left">
+                This guide won't show automatically on startup again. You can reopen it anytime via the Flagdle Guide button.
+              </p>
+              <button
+                type="button"
+                onClick={handleCloseInstructions}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 shrink-0"
+              >
+                <span>Got it, let's play!</span>
+                <ArrowRight size={16} />
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowInstructions(false)}
-              className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer"
-            >
-              Got it, let's play!
-            </button>
-          </div>
+          </section>
         </div>
       )}
     </div>

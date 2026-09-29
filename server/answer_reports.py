@@ -37,7 +37,22 @@ async def submit_answer_report(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
-    question_cls, day_cls, entity_cls, entity_fk, name_column = MODELS[payload.mode]
+    mode = payload.mode
+    if payload.report_token:
+        if not verify_report_token(mode, payload.question_id, payload.report_token):
+            resolved_mode = None
+            for candidate_mode in MODELS:
+                if verify_report_token(candidate_mode, payload.question_id, payload.report_token):
+                    resolved_mode = candidate_mode
+                    break
+            if resolved_mode:
+                mode = resolved_mode
+            elif user is None:
+                raise HTTPException(status_code=403, detail="Invalid report token")
+    elif user is None:
+        raise HTTPException(status_code=403, detail="Report token required for guest reports")
+
+    question_cls, day_cls, entity_cls, entity_fk, name_column = MODELS[mode]
     result = await session.execute(
         select(question_cls, day_cls.date, name_column)
         .join(day_cls, question_cls.day_id == day_cls.id)
@@ -48,7 +63,6 @@ async def submit_answer_report(
     if row is None:
         raise HTTPException(status_code=404, detail="Question not found")
     question, game_date, target_name = row
-
     details = AnswerReportDetails(
         original_question=question.original_question,
         question=question.question,
@@ -62,7 +76,7 @@ async def submit_answer_report(
         server_version=getattr(question, "server_version", None),
     )
     report = AnswerReport(
-        mode=payload.mode,
+        mode=mode,
         question_id=question.id,
         reporter_id=user.id if user is not None else None,
         comment=payload.comment,
@@ -76,7 +90,7 @@ async def submit_answer_report(
         # The database constraint also protects against concurrent submissions.
         existing = await session.execute(
             select(AnswerReport.id).where(
-                AnswerReport.mode == payload.mode,
+                AnswerReport.mode == mode,
                 AnswerReport.question_id == payload.question_id,
             )
         )

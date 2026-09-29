@@ -672,6 +672,7 @@ SUBREGION_ALIASES = {
     "south eastern asia": "South-Eastern Asia",
     "south-eastern asia": "South-Eastern Asia",
     "central asia": "Central Asia",
+    "central africa": "Middle Africa",
     "caribean": "Caribbean",
     "caribbean": "Caribbean",
     "central america": "Central America",
@@ -1110,10 +1111,10 @@ class LocalCountryFacts:
             return None
         lat = country["latitude"]
         lon = country["longitude"]
-        if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika")):
+        if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika", "nad rownik", "powyzej rownik", "above equator", "above the equator")):
             answer = lat > 0
             target = "Northern Hemisphere"
-        elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika")):
+        elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika", "pod rownik", "ponizej rownik", "below equator", "below the equator")):
             answer = lat < 0
             target = "Southern Hemisphere"
         elif any(word in q for word in ("eastern", "wschodn")):
@@ -1305,6 +1306,9 @@ def resolve_ref(
             for w in res:
                 if w in WATER_BODY_PARENT_MAP:
                     expanded.update(WATER_BODY_PARENT_MAP[w])
+                w_lower = normalize_value(w)
+                if "sea" in w_lower or "ocean" in w_lower or "gulf" in w_lower or "bay" in w_lower or "skagerrak" in w_lower:
+                    expanded.add("Sea")
             return list(expanded)
         return res
     return None
@@ -1478,6 +1482,12 @@ def evaluate_plan_node(
             if relation == "hemisphere":
                 h_canon = normalize_hemisphere(right_norm)
                 return any(normalize_hemisphere(normalize_value(value)) == h_canon for value in left)
+            if relation == "water_access":
+                if right_norm == "sea":
+                    return "Sea" in left or bool(left)
+                if right_norm == "ocean":
+                    return "Ocean" in left or any("ocean" in normalize_value(w) for w in left)
+                return any(normalize_value(value) == right_norm for value in left)
             return any(normalize_value(value) == right_norm for value in left)
         if operator == "equals":
             refs = (left_ref, node.get("right", {}))
@@ -1673,6 +1683,17 @@ def generate_factual_explanation(
             conn, country, child, not answer, item_value=item_value
         )
     if op in {"and", "or"}:
+        if op == "or" and answer is True:
+            true_facts = []
+            for child in node.get("conditions", []):
+                if evaluate_plan_node(conn, child, country, item_value) is True:
+                    detail = generate_factual_explanation(
+                        conn, country, child, True, item_value=item_value
+                    )
+                    if detail and detail not in true_facts:
+                        true_facts.append(detail)
+            if true_facts:
+                return " ".join(true_facts)
         facts = []
         for child in node.get("conditions", []):
             child_answer = evaluate_plan_node(conn, child, country, item_value)
@@ -1680,10 +1701,11 @@ def generate_factual_explanation(
                 detail = generate_factual_explanation(
                     conn, country, child, child_answer, item_value=item_value
                 )
-                if detail not in facts:
+                if detail and detail not in facts:
                     facts.append(detail)
         if facts:
             return " ".join(facts)
+        return ""
     if op in {"any", "all"}:
         items_ref = node.get("items", {})
         items = resolve_ref(conn, items_ref, country, item_value)
@@ -1746,13 +1768,17 @@ def generate_factual_explanation(
                 all_waters.update(WATER_BODY_PARENT_MAP[w])
         all_waters_sorted = sorted(all_waters - {"Ocean"})
         w_str = ", ".join(all_waters_sorted) if all_waters_sorted else ""
+        if normalize(str(target_val)) == "sea":
+            if answer:
+                return f"{name} has direct coastline access to: {', '.join(db_waters)}."
+            return f"{name} is completely landlocked with no direct coastline."
+
         if normalize(str(target_val)) == "ocean":
             if answer:
                 return f"{name} has direct coastline access to: {', '.join(db_waters)}."
             if db_waters:
                 return f"{name} does not have direct coastline access to an ocean. Its coastline access: {', '.join(db_waters)}."
             return f"{name} is completely landlocked with no direct coastline."
-
         if target_val:
             via_sub = [w for w in db_waters if w in WATER_BODY_PARENT_MAP and target_val in WATER_BODY_PARENT_MAP[w]]
             via_str = f" (via the {', '.join(via_sub)})"

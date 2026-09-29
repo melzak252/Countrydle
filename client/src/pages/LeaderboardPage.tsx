@@ -41,8 +41,16 @@ async function loadLeaderboard(game: GameType, period: LeaderboardPeriod): Promi
   }
 }
 
-const numberFormat = new Intl.NumberFormat('en-US');
-const averageFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+function formatNumber(value: number): string {
+  return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function formatAverage(value: number): string {
+  const rounded = Math.round(value * 10) / 10 === value ? value.toFixed(1) : value.toFixed(2);
+  const [intPart, decPart] = rounded.split('.');
+  const spacedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return decPart !== undefined ? `${spacedInt}.${decPart}` : spacedInt;
+}
 
 export default function LeaderboardPage() {
   const [gameType, setGameType] = useState<GameType>('country');
@@ -104,8 +112,8 @@ export default function LeaderboardPage() {
   const isContinentalGame = gameType === 'europe' || gameType === 'asia' || gameType === 'africa' || gameType === 'americas';
   const averageMinimum = isContinentalGame ? 3 : 5;
   const periodDescription = leaderboardType === 'monthly'
-    ? 'Ranked by total points; wins break ties. Includes actual play during the current UTC calendar month.'
-    : `Ranked by average points per completed game across all time. At least ${averageMinimum} completed games are required to qualify.`;
+    ? 'Ranked by total points during the current UTC calendar month; wins break ties.'
+    : `Ranked by average points per completed game during the current UTC calendar month. At least ${averageMinimum} completed games are required to qualify.`;
 
   useEffect(() => {
     if (!pendingFindMe.current) return;
@@ -264,25 +272,47 @@ export default function LeaderboardPage() {
             ) : (
               <>
                 <div role="region" aria-label={`${gameLabel} leaderboard`} tabIndex={0} className="overflow-x-auto rounded-sm border border-white/10 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-                  <table className="w-full table-fixed text-left text-sm">
+                  <table className="w-full min-w-[600px] table-fixed text-left text-sm">
                     <caption className="sr-only">
-                      {gameLabel} — {leaderboardType === 'monthly' ? 'monthly standings' : 'all-time average standings'}
+                      {gameLabel} — {leaderboardType === 'monthly' ? 'monthly points standings' : 'monthly average standings'}
                     </caption>
                     <thead className="border-b border-white/10 text-xs text-zinc-400">
                       <tr>
-                        <th scope="col" className="w-10 px-2 py-4 text-center font-medium sm:w-16 sm:px-4">Rank</th>
-                        <th scope="col" className="px-2 py-4 font-medium sm:px-4">Player</th>
-                        <th scope="col" className="w-24 px-2 py-4 text-right font-medium sm:w-40 sm:px-4">
-                          {leaderboardType === 'monthly' ? 'Points' : 'Avg points / game'}
+                        <th scope="col" className="w-12 px-2 py-3.5 text-center font-medium sm:w-16 sm:px-3">Rank</th>
+                        <th scope="col" className="px-2 py-3.5 font-medium sm:px-3">Player</th>
+                        <th
+                          scope="col"
+                          className={`w-24 px-2 py-3.5 text-right font-medium sm:w-28 sm:px-3 ${
+                            leaderboardType === 'monthly' ? 'text-emerald-400' : ''
+                          }`}
+                        >
+                          Points{leaderboardType === 'monthly' ? ' ★' : ''}
                         </th>
-                        <th scope="col" className="w-14 px-2 py-4 text-right font-medium sm:w-32 sm:px-4">
-                          {leaderboardType === 'monthly' ? 'Wins' : 'Games'}
+                        <th
+                          scope="col"
+                          className={`w-24 px-2 py-3.5 text-right font-medium sm:w-28 sm:px-3 ${
+                            leaderboardType === 'average' ? 'text-emerald-400' : ''
+                          }`}
+                        >
+                          Avg / Game{leaderboardType === 'average' ? ' ★' : ''}
+                        </th>
+                        <th scope="col" className="w-16 px-2 py-3.5 text-right font-medium sm:w-20 sm:px-3">
+                          Games
+                        </th>
+                        <th scope="col" className="w-14 px-2 py-3.5 text-right font-medium sm:w-20 sm:px-3">
+                          Wins
+                        </th>
+                        <th scope="col" className="w-16 px-2 py-3.5 text-right font-medium sm:w-24 sm:px-3">
+                          Win %
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
                       {pagePlayers.map((row) => {
                         const isMe = row.entry.id === currentUserId;
+                        const winRate = row.entry.games_played > 0
+                          ? Math.round((row.entry.wins / row.entry.games_played) * 100)
+                          : 0;
                         return (
                           <tr
                             key={row.entry.id}
@@ -291,8 +321,10 @@ export default function LeaderboardPage() {
                             aria-current={isMe ? 'true' : undefined}
                             className={`transition-colors hover:bg-white/[0.03] ${isMe ? 'bg-emerald-400/[0.07] ring-1 ring-inset ring-emerald-400/25' : ''}`}
                           >
-                            <td className={`px-2 py-5 text-center font-mono tabular-nums sm:px-4 ${row.rank === 1 ? 'text-emerald-300' : 'text-zinc-500'}`}>#{row.rank}</td>
-                            <td className="px-2 py-5 sm:px-4">
+                            <td className={`px-2 py-4 text-center font-mono tabular-nums sm:px-3 ${row.rank === 1 ? 'text-emerald-300' : 'text-zinc-500'}`}>
+                              #{row.rank}
+                            </td>
+                            <td className="px-2 py-4 sm:px-3">
                               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                 <span aria-hidden="true" className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/10 font-mono text-xs text-zinc-400 sm:flex">
                                   {row.entry.username.substring(0, 2).toUpperCase()}
@@ -303,16 +335,24 @@ export default function LeaderboardPage() {
                                 {isMe && <span className="shrink-0 rounded-sm bg-emerald-400/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">You</span>}
                               </div>
                             </td>
-                            <td className="px-2 py-5 text-right font-mono font-medium tabular-nums text-sand-100 sm:px-4">
-                              {leaderboardType === 'monthly' ? numberFormat.format(row.entry.points) : averageFormat.format(row.entry.average_points)}
-                              <span className="mt-1 block font-sans text-xs font-normal text-zinc-500">
-                                {leaderboardType === 'average'
-                                  ? `${numberFormat.format(row.entry.points)} total points`
-                                  : `${numberFormat.format(row.entry.games_played)} games`}
-                              </span>
+                            <td className={`px-2 py-4 text-right font-mono tabular-nums sm:px-3 ${
+                              leaderboardType === 'monthly' ? 'font-semibold text-emerald-300' : 'text-sand-100'
+                            }`}>
+                              {formatNumber(row.entry.points)}
                             </td>
-                            <td className="px-2 py-5 text-right font-mono tabular-nums text-zinc-400 sm:px-4">
-                              {numberFormat.format(leaderboardType === 'monthly' ? row.entry.wins : row.entry.games_played)}
+                            <td className={`px-2 py-4 text-right font-mono tabular-nums sm:px-3 ${
+                              leaderboardType === 'average' ? 'font-semibold text-emerald-300' : 'text-zinc-300'
+                            }`}>
+                              {formatAverage(row.entry.average_points)}
+                            </td>
+                            <td className="px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3">
+                              {formatNumber(row.entry.games_played)}
+                            </td>
+                            <td className="px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3">
+                              {formatNumber(row.entry.wins)}
+                            </td>
+                            <td className="px-2 py-4 text-right font-mono tabular-nums text-zinc-400 sm:px-3">
+                              {winRate}%
                             </td>
                           </tr>
                         );
@@ -322,7 +362,7 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <p role="status" className="text-zinc-400">
-                    Showing {firstVisibleResult}–{lastVisibleResult} of {numberFormat.format(rankedPlayers.length)} {rankedPlayers.length === 1 ? 'player' : 'players'}{hasSearch ? ' matching your search' : ''}. Global ranks are preserved.
+                    Showing {firstVisibleResult}–{lastVisibleResult} of {formatNumber(rankedPlayers.length)} {rankedPlayers.length === 1 ? 'player' : 'players'}{hasSearch ? ' matching your search' : ''}. Global ranks are preserved.
                   </p>
                   {pageCount > 1 && (
                     <nav aria-label="Leaderboard pagination" className="flex items-center gap-2">
