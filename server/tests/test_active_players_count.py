@@ -216,3 +216,17 @@ def test_sanitize_explanation_removes_target_name_and_plumbing():
     assert "provided text" not in sanitized.lower()
     assert sanitized.startswith("The country has numerous islands")
     assert "majority of the country's land area" in sanitized
+
+
+def test_own_language_question_routes_to_fallback():
+    from countrydle.local_planner import analyze_question_for_local_plan
+
+    plan_en = analyze_question_for_local_plan("Do they speak their own language?", use_cache=False)
+    assert plan_en.valid is True
+    assert plan_en.supported is False
+    assert plan_en.plan is None
+
+    plan_pl = analyze_question_for_local_plan("Czy mówią we własnym języku?", use_cache=False)
+    assert plan_pl.valid is True
+    assert plan_pl.supported is False
+    assert plan_pl.plan is None
