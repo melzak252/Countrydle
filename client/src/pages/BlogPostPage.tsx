@@ -164,54 +164,79 @@ export default function BlogPostPage() {
               </p>
             )}
 
-            {/* Performance Bar */}
-            {post.player_stats && post.player_stats.total_players > 0 && (
-              <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-mono text-zinc-400">
-                <span className="text-sand-100 font-bold">
-                  {post.player_stats.win_rate_pct}% Solved
-                </span>
-                <span>&bull;</span>
-                <span>
-                  Avg: <strong className="text-sand-100">{post.player_stats.avg_questions_won}</strong> Qs
-                </span>
-                <span>&bull;</span>
-                <span>
-                  <strong className="text-sand-100">{post.player_stats.total_players}</strong> Challengers
-                </span>
-              </div>
-            )}
+            {/* Community Performance Scoreboard */}
+            <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-mono text-zinc-400">
+              {post.game_debrief?.has_telemetry ? (
+                <>
+                  <span className="text-sand-100 font-bold">
+                    {post.game_debrief.win_rate_pct}% Solved ({post.game_debrief.total_solvers} of {post.game_debrief.total_challengers})
+                  </span>
+                  <span>&bull;</span>
+                  <span>
+                    Avg: <strong className="text-sand-100">{post.game_debrief.avg_questions_to_win}</strong> Questions to Win
+                  </span>
+                  {post.game_debrief.high_score && (
+                    <>
+                      <span>&bull;</span>
+                      <span>High Score: <strong className="text-emerald-400">{post.game_debrief.high_score} pts</strong></span>
+                    </>
+                  )}
+                </>
+              ) : post.player_stats && post.player_stats.total_players > 0 ? (
+                <>
+                  <span className="text-sand-100 font-bold">
+                    {post.player_stats.win_rate_pct}% Solved
+                  </span>
+                  <span>&bull;</span>
+                  <span>
+                    Avg: <strong className="text-sand-100">{post.player_stats.avg_questions_won}</strong> Qs
+                  </span>
+                  <span>&bull;</span>
+                  <span>
+                    <strong className="text-sand-100">{post.player_stats.total_players}</strong> Challengers
+                  </span>
+                </>
+              ) : (
+                <span>Daily Puzzle #{post.id} Debrief</span>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Visual Deduction Ladder (Step-by-Step Funnel) */}
-      {steps && steps.length > 0 && (
-        <section className="rounded-lg border border-white/10 bg-obsidian-900/60 p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div className="flex items-center gap-2">
-              <Compass size={18} className="text-emerald-400" />
-              <h2 className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
-                The Deduction Ladder
-              </h2>
-            </div>
-            <span className="text-xs text-zinc-500 font-mono">
-              How solvers isolated the target
-            </span>
+      {/* Community Question Telemetry / Deduction Ladder */}
+      <section className="rounded-lg border border-white/10 bg-obsidian-900/60 p-6 sm:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-2">
+          <div className="flex items-center gap-2">
+            <Compass size={18} className="text-emerald-400" />
+            <h2 className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
+              {post.game_debrief?.top_questions?.length ? 'What Questions Players Asked Yesterday' : 'The Deduction Ladder'}
+            </h2>
           </div>
+          <span className="text-xs text-zinc-500 font-mono">
+            {post.game_debrief?.top_questions?.length ? 'Real Community Question Telemetry' : 'Optimal Elimination Sequence'}
+          </span>
+        </div>
 
-          <div className="space-y-4">
-            {steps.map((st: any) => {
-              const isYes = String(st.answer).toUpperCase() === 'YES';
-              return (
-                <div key={st.step} className="flex items-start gap-4 rounded-md border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/15">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 font-mono text-xs font-bold text-sand-100 border border-white/10">
-                    {st.step}
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-sand-100">
-                        "{st.question}"
-                      </span>
+        <div className="space-y-3">
+          {(post.game_debrief?.top_questions?.length ? post.game_debrief.top_questions : steps).map((st: any, idx: number) => {
+            const isYes = String(st.answer).toUpperCase() === 'YES';
+            return (
+              <div key={idx} className="flex items-start gap-4 rounded-md border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/15">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 font-mono text-xs font-bold text-sand-100 border border-white/10">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-sand-100">
+                      "{st.question}"
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {st.count !== undefined && (
+                        <span className="text-[11px] font-mono text-zinc-400">
+                          Asked {st.count}x {st.pct ? `(${st.pct}%)` : ''}
+                        </span>
+                      )}
                       <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-wider ${
                         isYes 
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
@@ -220,13 +245,32 @@ export default function BlogPostPage() {
                         {isYes ? 'YES' : 'NO'}
                       </span>
                     </div>
-                    <p className="text-xs leading-relaxed text-zinc-400">
-                      {st.explanation}
-                    </p>
                   </div>
+                  <p className="text-xs leading-relaxed text-zinc-400">
+                    {st.explanation}
+                  </p>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Common Traps & Wrong Guesses */}
+      {post.game_debrief?.common_pitfalls && post.game_debrief.common_pitfalls.length > 0 && (
+        <section className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-5 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-rose-400 font-bold">
+            <span>⚠️ Common Traps & Wrong Guesses</span>
+          </div>
+          <p className="text-xs text-zinc-300">
+            Solvers who stumbled yesterday frequently submitted these incorrect countries before zeroing in on {post.country_name}:
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {post.game_debrief.common_pitfalls.map((pf: any, idx: number) => (
+              <span key={idx} className="rounded border border-rose-500/30 bg-rose-500/10 px-3 py-1 font-mono text-xs text-rose-300">
+                ❌ {pf.guess} <span className="text-rose-400/70 text-[10px]">({pf.count} guesses)</span>
+              </span>
+            ))}
           </div>
         </section>
       )}

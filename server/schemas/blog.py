@@ -22,6 +22,31 @@ class BlogPostSummary(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class TopQuestionStat(BaseModel):
+    question: str
+    answer: str
+    count: int
+    pct: Optional[int] = None
+    explanation: Optional[str] = None
+
+
+class WrongGuessStat(BaseModel):
+    guess: str
+    count: int
+
+
+class CommunityGameDebrief(BaseModel):
+    has_telemetry: bool = False
+    total_challengers: int = 0
+    total_solvers: int = 0
+    win_rate_pct: float = 0.0
+    avg_questions_to_win: float = 0.0
+    avg_guesses: float = 0.0
+    high_score: Optional[int] = None
+    top_questions: List[TopQuestionStat] = []
+    common_pitfalls: List[WrongGuessStat] = []
+    decisive_clue: Optional[str] = None
+
 
 class BlogPostDisplay(BlogPostSummary):
     country_id: int
@@ -31,6 +56,7 @@ class BlogPostDisplay(BlogPostSummary):
     content_markdown: str
     country: Optional[CountryDisplay] = None
     player_stats: Optional[Dict[str, Any]] = None
+    game_debrief: Optional[CommunityGameDebrief] = None
     related_posts: Optional[List[BlogPostSummary]] = None
     model_config = ConfigDict(from_attributes=True)
 

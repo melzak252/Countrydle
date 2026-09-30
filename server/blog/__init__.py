@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
-from db.models.countrydle import CountrydleDay
+from db.models.countrydle import CountrydleDay, CountrydleQuestion, CountrydleGuess, CountrydleState
 from db.repositories.blog import BlogRepository
 from db.repositories.countrydle import CountrydleRepository
-from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary
+from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
+from sqlalchemy import func, desc, select
 from utils.blog_generator import create_daily_blog_post
 from utils.country_codes import get_country_code
 from functools import lru_cache
@@ -51,6 +52,84 @@ def compute_difficulty(win_rate_pct: Optional[float]) -> str:
     return "Challenging"
 
 router = APIRouter(prefix="/blog", tags=["blog"])
+
+async def get_day_community_telemetry(session: AsyncSession, post_date: date) -> CommunityGameDebrief:
+    try:
+        day_res = await session.execute(
+            select(CountrydleDay).where(CountrydleDay.date == post_date)
+        )
+        day = day_res.scalars().first()
+        if not day:
+            return CommunityGameDebrief(has_telemetry=False)
+
+        # 1. State statistics
+        states_res = await session.execute(
+            select(
+                func.count(CountrydleState.id),
+                func.count().filter(CountrydleState.won.is_(True)),
+                func.avg(CountrydleState.questions_asked).filter(CountrydleState.won.is_(True)),
+                func.avg(CountrydleState.guesses_made).filter(CountrydleState.won.is_(True)),
+                func.max(CountrydleState.points)
+            ).where(CountrydleState.day_id == day.id)
+        )
+        row = states_res.one()
+        tot_players = row[0] or 0
+        tot_wins = row[1] or 0
+        avg_q = round(float(row[2]), 1) if row[2] is not None else 0.0
+        avg_g = round(float(row[3]), 1) if row[3] is not None else 0.0
+        high_score = row[4]
+        win_rate = round((tot_wins / tot_players * 100), 1) if tot_players > 0 else 0.0
+
+        # 2. Top community questions
+        q_res = await session.execute(
+            select(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation, func.count(CountrydleQuestion.id).label('cnt'))
+            .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
+            .group_by(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation)
+            .order_by(desc('cnt'))
+            .limit(6)
+        )
+        top_questions = []
+        for q in q_res.all():
+            pct = round(q.cnt / tot_players * 100) if tot_players > 0 else None
+            top_questions.append(
+                TopQuestionStat(
+                    question=q.question or "",
+                    answer="YES" if q.answer else "NO",
+                    count=q.cnt,
+                    pct=pct,
+                    explanation=q.explanation
+                )
+            )
+
+        # 3. Common wrong guesses
+        g_res = await session.execute(
+            select(CountrydleGuess.guess, func.count(CountrydleGuess.id).label('cnt'))
+            .where(CountrydleGuess.day_id == day.id, CountrydleGuess.answer.is_(False))
+            .group_by(CountrydleGuess.guess)
+            .order_by(desc('cnt'))
+            .limit(4)
+        )
+        pitfalls = [
+            WrongGuessStat(guess=g.guess or "", count=g.cnt)
+            for g in g_res.all() if g.guess
+        ]
+
+        has_data = tot_players > 0 or len(top_questions) > 0
+        return CommunityGameDebrief(
+            has_telemetry=has_data,
+            total_challengers=tot_players,
+            total_solvers=tot_wins,
+            win_rate_pct=win_rate,
+            avg_questions_to_win=avg_q,
+            avg_guesses=avg_g,
+            high_score=high_score,
+            top_questions=top_questions,
+            common_pitfalls=pitfalls,
+            decisive_clue=top_questions[-1].question if top_questions else None
+        )
+    except Exception as exc:
+        logger.warning("Could not calculate community telemetry for %s: %s", post_date, exc)
+        return CommunityGameDebrief(has_telemetry=False)
 
 
 @router.get("", response_model=BlogPostListResponse)
@@ -127,7 +206,7 @@ async def get_latest_blog_post(session: AsyncSession = Depends(get_db)):
         total_players=stats.get("total_players"),
         country=post.country,
         player_stats=stats,
-        created_at=post.created_at or datetime.now(),
+        game_debrief=await get_day_community_telemetry(session, post.date),
     )
 
 
@@ -203,6 +282,7 @@ async def get_blog_post(slug_or_date: str, session: AsyncSession = Depends(get_d
         total_players=stats.get("total_players"),
         country=post.country,
         player_stats=stats,
+        game_debrief=await get_day_community_telemetry(session, post.date),
         related_posts=related,
         created_at=post.created_at or datetime.now(),
     )
