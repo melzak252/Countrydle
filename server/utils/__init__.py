@@ -69,8 +69,8 @@ async def generate_day_flags():
 async def generate_yesterday_blog_post():
     from db.repositories.blog import BlogRepository
     from utils.blog_generator import create_daily_blog_post
-
-    yesterday = date.today() - timedelta(days=1)
+    from datetime import datetime, timezone
+    yesterday = datetime.now(timezone.utc).date() - timedelta(days=1)
     async with AsyncSessionLocal() as session:
         repo = BlogRepository(session)
         existing = await repo.get_by_date(yesterday)

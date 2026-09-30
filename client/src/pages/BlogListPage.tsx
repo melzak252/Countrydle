@@ -10,14 +10,16 @@ import {
   Loader2
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import AdSenseUnit from '../components/AdSenseUnit';
 import { blogService } from '../services/api';
-
 export default function BlogListPage() {
   const { t } = useTranslation();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-
+  const [selectedContinent, setSelectedContinent] = useState<string>('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'solvers' | 'fastest'>('newest');
   useEffect(() => {
     let isMounted = true;
     const fetchPosts = async () => {
@@ -41,9 +43,27 @@ export default function BlogListPage() {
     };
   }, [search]);
 
-  const featuredPost = posts.length > 0 && !search ? posts[0] : null;
-  const regularPosts = featuredPost ? posts.slice(1) : posts;
+  const continents = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
+  const difficulties = ['all', 'Easy', 'Medium', 'Challenging'];
 
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch = !search ||
+      post.title.toLowerCase().includes(search.toLowerCase()) ||
+      post.country_name.toLowerCase().includes(search.toLowerCase()) ||
+      post.summary.toLowerCase().includes(search.toLowerCase());
+    const matchesContinent = selectedContinent === 'all' || post.continent === selectedContinent;
+    const matchesDifficulty = selectedDifficulty === 'all' || post.difficulty === selectedDifficulty;
+    return matchesSearch && matchesContinent && matchesDifficulty;
+  }).sort((a, b) => {
+    if (sortBy === 'solvers') return (b.total_players || 0) - (a.total_players || 0);
+    if (sortBy === 'fastest') return (a.reading_time_minutes || 2) - (b.reading_time_minutes || 2);
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
+  const featuredPost = filteredPosts.length > 0 && !search && selectedContinent === 'all' && selectedDifficulty === 'all'
+    ? filteredPosts[0]
+    : null;
+  const regularPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-16">
       <div className="space-y-10 md:space-y-14">
@@ -79,6 +99,71 @@ export default function BlogListPage() {
             </div>
           </div>
         </header>
+
+        {/* Dynamic Filters & Controls */}
+        <div className="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+              Continent:
+            </span>
+            {continents.map((cont) => (
+              <button
+                key={cont}
+                type="button"
+                onClick={() => setSelectedContinent(cont)}
+                className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${
+                  selectedContinent === cont
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
+                }`}
+              >
+                {cont === 'all' ? 'All' : cont}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                Difficulty:
+              </span>
+              {difficulties.map((diff) => (
+                <button
+                  key={diff}
+                  type="button"
+                  onClick={() => setSelectedDifficulty(diff)}
+                  className={`rounded-sm px-2 py-0.5 text-xs transition-colors ${
+                    selectedDifficulty === diff
+                      ? 'bg-sand-100 text-obsidian-950 font-semibold'
+                      : 'bg-white/5 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  {diff === 'all' ? 'All' : diff}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                Sort:
+              </span>
+              {(['newest', 'solvers', 'fastest'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSortBy(s)}
+                  className={`rounded-sm px-2 py-0.5 text-xs capitalize transition-colors ${
+                    sortBy === s
+                      ? 'bg-emerald-400 text-obsidian-950 font-semibold'
+                      : 'bg-white/5 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {loading ? (
           <div role="status" aria-label={'Loading articles'} className="flex justify-center py-24">
@@ -117,9 +202,19 @@ export default function BlogListPage() {
                     </Link>
                   </h2>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
-                  <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-500">
+                  <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
                     <span className="inline-flex items-center gap-1.5"><Calendar size={13} />{featuredPost.date}</span>
                     <span className="inline-flex items-center gap-1.5"><Clock size={13} />{featuredPost.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
+                    {featuredPost.continent && (
+                      <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/20">
+                        {featuredPost.continent}
+                      </span>
+                    )}
+                    {featuredPost.difficulty && (
+                      <span className="rounded bg-white/5 px-2 py-0.5 font-mono text-[10px] text-zinc-300">
+                        {featuredPost.difficulty}
+                      </span>
+                    )}
                   </div>
                   <Link
                     to={`/blog/${featuredPost.slug}`}
@@ -156,14 +251,28 @@ export default function BlogListPage() {
                         )}
                       </Link>
                       <div className="flex flex-1 flex-col p-6">
-                        <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-400">{post.country_name}</p>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-400">{post.country_name}</p>
+                          {post.continent && (
+                            <span className="font-mono text-[10px] text-zinc-500">{post.continent}</span>
+                          )}
+                        </div>
                         <h3 className="font-serif text-2xl leading-snug text-sand-100">
                           <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
                         </h3>
-                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400">{post.summary}</p>
-                        <div className="mb-5 mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-zinc-500">
+                        <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
+                        <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
                           <span>{post.date}</span>
-                          <span>{post.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
+                          <span>{post.reading_time_minutes} min</span>
+                          {post.difficulty && (
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                              post.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                              post.difficulty === 'Challenging' ? 'bg-rose-500/10 text-rose-400' :
+                              'bg-amber-500/10 text-amber-400'
+                            }`}>
+                              {post.difficulty}
+                            </span>
+                          )}
                         </div>
                         <Link to={`/blog/${post.slug}`} className="mt-auto flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">
                           {t('blog.readArticle', 'Read Full Post')}
@@ -184,6 +293,8 @@ export default function BlogListPage() {
             )}
           </>
         )}
+
+        <AdSenseUnit slot="blog-list-footer" className="max-w-xl mx-auto pt-6" />
       </div>
     </div>
   );

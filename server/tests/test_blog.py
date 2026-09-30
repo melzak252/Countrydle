@@ -24,9 +24,13 @@ def test_generate_fallback_template():
     ]
     article = _generate_fallback_template("Poland", fragments, d)
 
-    assert article["title"] == "Countrydle Daily Recap: Exploring Poland"
-    assert len(article["fun_facts"]) >= 3
+    assert "Poland" in article["title"]
+    assert len(article["fun_facts"]) >= 2
     assert "Malbork Castle" in article["content_markdown"]
+    assert "The Deduction Path" in article["content_markdown"]
+    assert "Quick Facts" in article["content_markdown"]
+    assert "Two Things Worth Knowing" in article["content_markdown"]
+    assert "Curator's Pro Tip" in article["content_markdown"]
     assert "deduction_masterclass" in article
     assert article["reading_time_minutes"] == 2
 
@@ -68,7 +72,8 @@ async def test_get_blog_post_by_slug_success(async_client: AsyncClient):
     mock_post.country = mock_country
 
     with patch("db.repositories.blog.BlogRepository.get_by_slug", new_callable=AsyncMock) as mock_get_slug, \
-         patch("db.repositories.blog.BlogRepository.get_day_player_stats", new_callable=AsyncMock, return_value={}):
+         patch("db.repositories.blog.BlogRepository.get_day_player_stats", new_callable=AsyncMock, return_value={"win_rate_pct": 72.5, "total_players": 150}), \
+         patch("db.repositories.blog.BlogRepository.list_posts", new_callable=AsyncMock, return_value=([], 0)):
         mock_get_slug.return_value = mock_post
 
         resp = await async_client.get("/blog/2026-09-19-poland")
@@ -77,7 +82,10 @@ async def test_get_blog_post_by_slug_success(async_client: AsyncClient):
         assert data["title"] == "Countrydle Recap: Poland"
         assert data["slug"] == "2026-09-19-poland"
         assert data["country_name"] == "Poland"
-
+        assert data["continent"] == "Europe"
+        assert data["difficulty"] == "Easy"
+        assert data["win_rate_pct"] == 72.5
+        assert data["total_players"] == 150
 
 @pytest.mark.anyio
 async def test_get_blog_post_not_found(async_client: AsyncClient):
@@ -88,3 +96,21 @@ async def test_get_blog_post_not_found(async_client: AsyncClient):
 
         resp = await async_client.get("/blog/non-existent-slug")
         assert resp.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_create_daily_blog_post_incorporates_player_questions():
+    from utils.blog_generator import _generate_fallback_template
+    d = date(2026, 9, 29)
+    fragments = ["South Sudan is a landlocked country in East-Central Africa."]
+    sample_questions = [
+        {"question": "Is the country in Africa?", "answer": "YES", "explanation": "South Sudan is located in Africa."},
+        {"question": "Does the country have access to the sea?", "answer": "NO", "explanation": "South Sudan is completely landlocked."},
+    ]
+    template = _generate_fallback_template("South Sudan", fragments, d, actual_questions=sample_questions)
+    assert "Is the country in Africa?" in template["content_markdown"]
+    assert "Does the country have access to the sea?" in template["content_markdown"]
+    assert "The Deduction Path" in template["content_markdown"]
+    assert "Quick Facts" in template["content_markdown"]
+    assert "Two Things Worth Knowing" in template["content_markdown"]
+    assert "Curator's Pro Tip" in template["content_markdown"]

@@ -329,7 +329,7 @@ export default function ExplorePage() {
                   <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
                     {c.app_country_name}
                   </h4>
-                  <p className="text-xs text-zinc-400 truncate">
+                  <p className="text-xs text-zinc-400 break-words">
                     {c.official_name || c.app_country_name}
                   </p>
                 </div>
@@ -337,7 +337,7 @@ export default function ExplorePage() {
                 <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
                   <div>
                     <span className="text-zinc-600 block">Capital</span>
-                    <span className="text-sand-100 truncate block">{c.capital || 'N/A'}</span>
+                    <span className="text-sand-100 block break-words">{c.capital || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-zinc-600 block">Population</span>
@@ -375,7 +375,7 @@ export default function ExplorePage() {
                   <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
                     {s.name}
                   </h4>
-                  <p className="text-xs text-zinc-400 italic truncate">
+                  <p className="text-xs text-zinc-400 italic break-words">
                     {s.nickname || 'The State of ' + s.name}
                   </p>
                 </div>
@@ -383,7 +383,7 @@ export default function ExplorePage() {
                 <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
                   <div>
                     <span className="text-zinc-600 block">Division</span>
-                    <span className="text-sand-100 truncate block">{s.division || 'N/A'}</span>
+                    <span className="text-sand-100 block break-words">{s.division || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-zinc-600 block">Population</span>
