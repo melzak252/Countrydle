@@ -32,7 +32,7 @@ async def regenerate_all():
             if not country:
                 continue
 
-            if "### 📌 Main Facts at a Glance" in (post.content_markdown or ""):
+            if "### The Deduction Path" in (post.content_markdown or ""):
                 logger.info(f"[{idx}/{len(posts)}] Skipping {post.date} ({country.name}) - already clean.")
                 continue
 

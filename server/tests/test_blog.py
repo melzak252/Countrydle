@@ -25,11 +25,12 @@ def test_generate_fallback_template():
     article = _generate_fallback_template("Poland", fragments, d)
 
     assert "Poland" in article["title"]
-    assert len(article["fun_facts"]) >= 3
+    assert len(article["fun_facts"]) >= 2
     assert "Malbork Castle" in article["content_markdown"]
-    assert "Main Facts at a Glance" in article["content_markdown"]
-    assert "Did You Know?" in article["content_markdown"]
-    assert "Countrydle Pro Deduction Tip" in article["content_markdown"]
+    assert "The Deduction Path" in article["content_markdown"]
+    assert "Quick Facts" in article["content_markdown"]
+    assert "Two Things Worth Knowing" in article["content_markdown"]
+    assert "Curator's Pro Tip" in article["content_markdown"]
     assert "deduction_masterclass" in article
     assert article["reading_time_minutes"] == 2
 
@@ -109,7 +110,7 @@ async def test_create_daily_blog_post_incorporates_player_questions():
     template = _generate_fallback_template("South Sudan", fragments, d, actual_questions=sample_questions)
     assert "Is the country in Africa?" in template["content_markdown"]
     assert "Does the country have access to the sea?" in template["content_markdown"]
-    assert "The Deduction Breakdown (Real Player Questions)" in template["content_markdown"]
-    assert "Main Facts at a Glance" in template["content_markdown"]
-    assert "Did You Know?" in template["content_markdown"]
-    assert "Countrydle Pro Deduction Tip" in template["content_markdown"]
+    assert "The Deduction Path" in template["content_markdown"]
+    assert "Quick Facts" in template["content_markdown"]
+    assert "Two Things Worth Knowing" in template["content_markdown"]
+    assert "Curator's Pro Tip" in template["content_markdown"]
