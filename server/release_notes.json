@@ -1,5 +1,5 @@
 {
-  "version": "1.17.0",
-  "title": "AdSense readiness, build-time SSG prerendering, and Geography Explorer hub",
-  "body": "ADSENSE READINESS & SEO ENHANCEMENT\n- Introduced build-time SSG prerendering (prerender.py) generating crawlable HTML for core static pages, guides, and policies to pass Google AdSense indexing.\n- Hardened AdSense unit component with responsive layouts and non-intrusive container sizing.\n\nGEOGRAPHY EXPLORER HUB & MODE GUIDES\n- Added Geography Explorer hub (/explore) featuring searchable, filterable country and geography intelligence.\n- Created dedicated interactive Mode Guides (/modes/:mode) with comprehensive rules, strategies, and tips for all game modes.\n- Added backend explorer APIs (/api/explore) providing aggregated entity statistics, facts, and region groupings."
+  "version": "1.17.1",
+  "title": "Question security hardening, island territory mapping, and active player accounting",
+  "body": "QUESTION EXPLANATION SECURITY & ANTI-LEAK\n- Prevented potential prompt plumbing and secret target name leaks in local question explanations using explanation sanitization.\n\nKNOWLEDGE BASE & ROUTING ENHANCEMENTS\n- Mapped island territory and archipelago questions directly to the verified is_island fact.\n- Routed territory proportion questions (e.g., 'mostly in Europe') to general-knowledge fallback with a 50% threshold common-sense evaluation.\n- Added rich factual explanations for mountain ranges in Województwodle.\n\nGAME INITIALIZATION & PLAYER ACCOUNTING\n- Ensured asking questions automatically initializes the daily game puzzle across regional modes if not already created.\n- Fixed active players counting to accurately account for players participating in daily deduction games."
 }
