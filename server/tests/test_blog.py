@@ -95,3 +95,21 @@ async def test_get_blog_post_not_found(async_client: AsyncClient):
 
         resp = await async_client.get("/blog/non-existent-slug")
         assert resp.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_create_daily_blog_post_incorporates_player_questions():
+    from utils.blog_generator import _generate_fallback_template
+    d = date(2026, 9, 29)
+    fragments = ["South Sudan is a landlocked country in East-Central Africa."]
+    sample_questions = [
+        {"question": "Is the country in Africa?", "answer": "YES", "explanation": "South Sudan is located in Africa."},
+        {"question": "Does the country have access to the sea?", "answer": "NO", "explanation": "South Sudan is completely landlocked."},
+    ]
+    template = _generate_fallback_template("South Sudan", fragments, d, actual_questions=sample_questions)
+    assert "Is the country in Africa?" in template["content_markdown"]
+    assert "Does the country have access to the sea?" in template["content_markdown"]
+    assert "The Deduction Breakdown (Real Player Questions)" in template["content_markdown"]
+    assert "Main Facts at a Glance" in template["content_markdown"]
+    assert "Did You Know?" in template["content_markdown"]
+    assert "Countrydle Pro Deduction Tip" in template["content_markdown"]

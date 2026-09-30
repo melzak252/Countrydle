@@ -82,12 +82,12 @@ async def generate_blog_content_ai(
     country_name: str,
     wiki_fragments: List[str],
     post_date: date,
+    actual_questions: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         logger.warning("No GEMINI_API_KEY found, falling back to deterministic template.")
-        return _generate_fallback_template(country_name, wiki_fragments, post_date)
-
+        return _generate_fallback_template(country_name, wiki_fragments, post_date, actual_questions)
     country_facts = get_country_sqlite_facts(country_name)
     facts_summary = f"""
 - Capital: {country_facts.get('capital', 'N/A')}
@@ -99,24 +99,71 @@ async def generate_blog_content_ai(
 - Official Languages: {country_facts.get('languages', 'N/A')}
 """
 
-    prompt = f"""You are the lead geography editor and deduction strategist for Countrydle (a daily geography deduction game).
+    if actual_questions:
+        q_log = "\n".join([f"- [{q['answer']}] \"{q['question']}\" -> Outcome: {q['explanation']}" for q in actual_questions[:10]])
+    else:
+        q_log = f"- [YES] \"Is the country in {country_facts.get('continent', 'the continent')}?\"\n- [{ 'YES' if 'Landlocked' not in country_facts.get('water_access', '') else 'NO'}] \"Does it have maritime sea access?\"\n- [YES] \"Does it border its regional neighbors?\""
+
+    prompt = f"""You are the lead geography editor and game analyst for Countrydle (a daily geography deduction game).
 Yesterday's secret target country was {country_name} on {post_date.strftime('%B %d, %Y')}.
 
 Verified Geographic Identity Facts:
 {facts_summary}
+
+Actual Questions Asked by Players in Yesterday's Game:
+{q_log}
 
 Authentic Wikipedia Excerpts:
 ---
 {"---".join(wiki_fragments[:6])}
 ---
 
-Write an easy-to-read, authoritative, and captivating recap article.
+ANTI-AI-SLOP & AUTHENTICITY RULES (STRICT):
+1. FORBIDDEN CLICHÉS (NEVER USE ANY OF THESE UNDER ANY CIRCUMSTANCES):
+   - "Nestled in..."
+   - "A tapestry of..."
+   - "Boasts a rich..."
+   - "Vibrant culture / vibrant nation"
+   - "Whether you're a seasoned traveler or an armchair explorer"
+   - "In conclusion..."
+   - "Embark on a journey"
+   - "Beacon of..."
+   - "Steeped in history"
+2. VOICE & TONE:
+   - Analytical, concise, factual, and crisp—like a seasoned match analyst reviewing a game.
+   - Use active voice, short paragraphs (2-3 sentences max).
+   - Use real numbers, real border names, and reference the ACTUAL questions asked by players from the log above.
+3. STRUCTURE OF 'content_markdown':
+   ## Yesterday's Mystery Country: {country_name}
+   [Direct 2-sentence intro confirming the secret country and community difficulty]
+
+   ### 📌 Main Facts at a Glance
+   - 🏛️ **Capital**: {country_facts.get('capital', 'N/A')}
+   - 🌍 **Continent & Region**: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
+   - 👥 **Population**: {country_facts.get('population', 'N/A')}
+   - 📏 **Land Area**: {country_facts.get('area_km2', 'N/A')}
+   - 🌊 **Coastline & Water Access**: {country_facts.get('water_access', 'N/A')}
+   - 🗺️ **Neighboring Borders**: {country_facts.get('borders', 'N/A')}
+   - 🗣️ **Official Languages**: {country_facts.get('languages', 'N/A')}
+
+   ### 🎮 The Deduction Breakdown (Real Player Questions)
+   [Analyze the actual questions from the log above: what was the first macro move, what ruled out the closest rivals, and what was the winning clue that clinched the game]
+
+   ### 🌿 Geography & Natural Landscape
+   [1-2 crisp, informative paragraphs on the terrain, river basins, or mountain systems]
+
+   ### 💡 Did You Know?
+   > **[Authentic fact title from Wiki fragments]**: [Detailed, accurate explanation]
+
+   ### 🎯 Countrydle Pro Deduction Tip
+   > **Pro Tip**: [A practical tactical tip for identifying this country in future games]
+
 Format the output as a valid JSON object with the exact keys:
 {{
-  "title": "A compelling, viral-worthy headline (e.g. 'Yesterday's Countrydle: Uncovering the Wonders of {country_name}')",
-  "subtitle": "An engaging 1-sentence teaser summarizing what makes {country_name} unique",
+  "title": "A compelling headline (e.g. 'Yesterday's Countrydle: Uncovering {country_name}')",
+  "subtitle": "An engaging 1-sentence teaser summarizing what made yesterday's puzzle unique",
   "reading_time_minutes": 2,
-  "summary": "2-3 sentence overview of yesterday's game and the country's global significance",
+  "summary": "2-3 sentence overview of yesterday's game and the country's geographic identity",
   "fast_facts": {{
     "capital": "{country_facts.get('capital', 'N/A')}",
     "continent": "{country_facts.get('continent', 'N/A')}",
@@ -136,7 +183,7 @@ Format the output as a valid JSON object with the exact keys:
     "step_2": "The decisive border or maritime question that isolated the region",
     "winning_clue": "The final signature characteristic that locked in the correct guess"
   }},
-  "content_markdown": "Full Markdown article. MUST begin with a '### 📌 Main Facts at a Glance' summary box listing the key facts. Then 2-3 engaging, easy-to-read sections covering geography and history. MUST conclude with a '### 💡 Did You Know?' curiosity section and '### 🎯 Countrydle Pro Tip' deduction advice."
+  "content_markdown": "Markdown following the structure above without any AI clichés."
 }}
 Return only valid JSON."""
 
@@ -155,11 +202,14 @@ Return only valid JSON."""
     except Exception as e:
         logger.error(f"Fallback model {FALLBACK_MODEL} failed: {e}. Generating deterministic fallback.")
 
-    return _generate_fallback_template(country_name, wiki_fragments, post_date)
+    return _generate_fallback_template(country_name, wiki_fragments, post_date, actual_questions)
 
 
 def _generate_fallback_template(
-    country_name: str, wiki_fragments: List[str], post_date: date
+    country_name: str, 
+    wiki_fragments: List[str], 
+    post_date: date,
+    actual_questions: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
     country_facts = get_country_sqlite_facts(country_name)
     facts = []
@@ -179,6 +229,17 @@ def _generate_fallback_template(
         })
 
     pro_tip = f"When deducing {country_name}, check whether it borders {country_facts.get('borders', 'its neighbors')} or has access to {country_facts.get('water_access', 'the sea')}. This immediately narrows the global search space down to single-digit candidates!"
+    if actual_questions:
+        q_section = "### 🎮 The Deduction Breakdown (Real Player Questions)\n"
+        q_section += "Yesterday's solvers tackled the puzzle with these pivotal questions:\n"
+        for q in actual_questions[:5]:
+            badge = "✅ YES" if q["answer"] == "YES" else "❌ NO"
+            q_section += f"- **{badge}** \"{q['question']}\": {q['explanation']}\n"
+    else:
+        q_section = f"""### 🎮 The Deduction Breakdown (Optimal Strategy)
+1. **Macro Triangulation**: Start by verifying {country_facts.get('continent', 'the continent')} and hemisphere orientation.
+2. **Maritime Check**: Confirming whether {country_name} has coastline access ({country_facts.get('water_access', 'coastlines')}) eliminates non-coastal candidates.
+3. **Border Anchors**: Querying adjacent borders ({country_facts.get('borders', 'neighboring nations')}) isolates {country_name}."""
 
     markdown = f"""## Yesterday's Mystery Country: {country_name}
 
@@ -193,6 +254,7 @@ Every day at midnight UTC, Countrydle challenges players to deduce a secret nati
 - 🗺️ **Neighboring Borders**: {country_facts.get('borders', 'N/A')}
 - 🗣️ **Official Languages**: {country_facts.get('languages', 'N/A')}
 
+{q_section}
 ### 🌿 Geography & Landscape
 {country_name} is located in {country_facts.get('continent', 'the world')}, encompassing {country_facts.get('area_km2', 'an extensive territory')}. Its unique physical terrain features diverse biomes and important transportation and river corridors.
 
@@ -243,8 +305,29 @@ async def create_daily_blog_post(
     )
     fragments = list(res.scalars().all())
 
-    # 2. Generate content via Gemini 3.1 Pro (with fallback)
-    payload = await generate_blog_content_ai(country.name, fragments, post_date)
+    # 2. Fetch actual player questions asked for yesterday's puzzle
+    day_res = await session.execute(
+        select(CountrydleDay).where(CountrydleDay.date == post_date)
+    )
+    day = day_res.scalars().first()
+
+    actual_questions: List[Dict[str, str]] = []
+    if day:
+        q_res = await session.execute(
+            select(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation)
+            .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
+            .order_by(CountrydleQuestion.id.asc())
+            .limit(15)
+        )
+        for q in q_res.all():
+            actual_questions.append({
+                "question": q.question or "",
+                "answer": "YES" if q.answer else "NO",
+                "explanation": q.explanation or ""
+            })
+
+    # 3. Generate content via Gemini (with questions log and anti-slop rules)
+    payload = await generate_blog_content_ai(country.name, fragments, post_date, actual_questions)
 
     slug = generate_slug(post_date, country.name)
 
