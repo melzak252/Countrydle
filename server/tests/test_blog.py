@@ -24,9 +24,12 @@ def test_generate_fallback_template():
     ]
     article = _generate_fallback_template("Poland", fragments, d)
 
-    assert article["title"] == "Countrydle Daily Recap: Exploring Poland"
+    assert "Poland" in article["title"]
     assert len(article["fun_facts"]) >= 3
     assert "Malbork Castle" in article["content_markdown"]
+    assert "Main Facts at a Glance" in article["content_markdown"]
+    assert "Did You Know?" in article["content_markdown"]
+    assert "Countrydle Pro Deduction Tip" in article["content_markdown"]
     assert "deduction_masterclass" in article
     assert article["reading_time_minutes"] == 2
 

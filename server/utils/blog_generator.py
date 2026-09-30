@@ -199,9 +199,11 @@ Every day at midnight UTC, Countrydle challenges players to deduce a secret nati
 ### 💡 Did You Know?
 > **{facts[0]['title']}**: {facts[0]['description']}
 
+### 🏛️ Fascinating Curiosities from Wikipedia
+{chr(10).join([f"- **{f['title']}**: {f['description']}" for f in facts[1:]])}
+
 ### 🎯 Countrydle Pro Deduction Tip
 > **Pro Tip**: {pro_tip}
-
 ---
 *Ready to test your geography skills today? Jump into [Countrydle](/) and see if you can solve today's daily puzzle!*"""
 
