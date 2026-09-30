@@ -133,34 +133,55 @@ def get_curator_pro_tip(country_name: str, facts: Dict[str, Any]) -> str:
 
 
 def extract_clean_curiosities(country_name: str, wiki_fragments: List[str], facts: Dict[str, Any]) -> List[Dict[str, str]]:
-    curiosities = []
+    sentences = []
+    banned_words = [
+        "redirects here", "see also", "main article", "from wikipedia",
+        "coordinates:", "citation needed", "for the former", "for other uses",
+        "human rights", "conflict"
+    ]
+
     for frag in wiki_fragments:
-        lines = [
-            l.strip() for l in frag.split('\n')
-            if l.strip() and not l.strip().startswith(('Coordinates', 'From Wikipedia', 'This article', '|', '{', 'Country in', 'Not to be confused'))
-        ]
-        for line in lines:
-            clean = re.sub(r'\[\d+\]', '', line).strip()
-            clean = re.sub(r'\\-', '-', clean)
-            if len(clean) >= 60 and len(clean) <= 300 and len(curiosities) < 2:
-                if clean not in [c['description'] for c in curiosities]:
-                    curiosities.append({
-                        "title": "Geographic Fact" if len(curiosities) == 0 else "Cultural Heritage",
-                        "description": clean
-                    })
+        if frag.strip().startswith('|') or '--- | ---' in frag:
+            continue
+
+        cleaned = frag.replace(r'\[', '[').replace(r'\]', ']').replace(r'\(', '(').replace(r'\)', ')').replace(r'\_', '_').replace(r'\*', '*').replace(r'\-', '-')
+        cleaned = re.sub(r'\[\*?\s*citation needed\s*\*?\]', '', cleaned, flags=re.I)
+        cleaned = re.sub(r'\[\d+\]', '', cleaned)
+        cleaned = cleaned.replace('\\', '')
+
+        raw_sentences = re.split(r'(?<=[.!?])\s+', cleaned)
+        for s in raw_sentences:
+            s = re.sub(r'\s+', ' ', s).strip()
+            if len(s) >= 50 and len(s) <= 280 and s[0].isupper() and s[-1] in ('.', '!'):
+                if not s.startswith(('#', '|', '-', '*', '•', '>', 'State in', 'Country in')):
+                    if not any(bw in s.lower() for bw in banned_words):
+                        if s not in sentences:
+                            sentences.append(s)
+
+    curiosities = []
+    if len(sentences) >= 1:
+        curiosities.append({
+            "title": "Geographic Fact",
+            "description": sentences[0]
+        })
+    if len(sentences) >= 2:
+        curiosities.append({
+            "title": "Cultural Heritage",
+            "description": sentences[1]
+        })
+
     if len(curiosities) < 1:
         curiosities.append({
             "title": "Geographic Profile",
-            "description": f"{country_name} spans {facts.get('area_km2', 'an extensive area')} across {facts.get('continent', 'its region')}, featuring {facts.get('water_access', 'its territorial boundaries')}."
+            "description": f"{country_name} spans {facts.get('area_km2', 'an extensive territory')} in {facts.get('continent', 'its region')}, situated with {facts.get('water_access', 'its territorial borders')}."
         })
     if len(curiosities) < 2:
-        borders = facts.get('borders', 'regional neighbors')
+        borders = facts.get('borders', 'neighboring states')
         curiosities.append({
-            "title": "Bordering Geography",
-            "description": f"The nation shares international land borders with {borders}." if borders != "None" else f"{country_name} is an island nation surrounded by {facts.get('water_access', 'the sea')}."
+            "title": "Border Connections",
+            "description": f"The country shares land borders with {borders}." if borders != "None" else f"{country_name} is an island nation surrounded by {facts.get('water_access', 'ocean basins')}."
         })
     return curiosities
-
 
 def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -> Dict[str, Any]:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"

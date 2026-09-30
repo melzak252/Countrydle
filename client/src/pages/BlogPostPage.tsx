@@ -16,6 +16,15 @@ import { toast } from 'react-hot-toast';
 import { blogService } from '../services/api';
 import AdSenseUnit from '../components/AdSenseUnit';
 
+function cleanDisplayText(text?: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\\?\[\*?\s*citation needed\s*\*?\\?\]/gi, '')
+    .replace(/\[\d+\]/g, '')
+    .replace(/\\([_()\[\]*])/g, '$1')
+    .replace(/\\/g, '')
+    .trim();
+}
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const { i18n } = useTranslation();
@@ -247,7 +256,7 @@ export default function BlogPostPage() {
                     </div>
                   </div>
                   <p className="text-xs leading-relaxed text-zinc-400">
-                    {st.explanation}
+                    {cleanDisplayText(st.explanation)}
                   </p>
                 </div>
               </div>
@@ -331,7 +340,7 @@ export default function BlogPostPage() {
                   #{i + 1} &bull; {c.title}
                 </span>
                 <p className="text-xs leading-relaxed text-zinc-300">
-                  {c.description}
+                  {cleanDisplayText(c.description)}
                 </p>
               </div>
             ))}
@@ -347,7 +356,7 @@ export default function BlogPostPage() {
             <span>Curator's Deduction Pro Tip</span>
           </div>
           <p className="text-xs sm:text-sm leading-relaxed text-zinc-200">
-            {proTip}
+            {cleanDisplayText(proTip)}
           </p>
         </section>
       )}
@@ -373,7 +382,7 @@ export default function BlogPostPage() {
                   : 'border-white/10 bg-white/[0.02] text-zinc-300 hover:border-white/20'
               }`}
             >
-              A) {curiosities[0]?.description.slice(0, 90)}...
+              A) {cleanDisplayText(curiosities[0]?.description).slice(0, 90)}...
             </button>
             <button
               type="button"
@@ -393,7 +402,7 @@ export default function BlogPostPage() {
               <span className="font-bold block mb-1">
                 {selectedTriviaOption === 0 ? '✓ Correct!' : 'Not quite!'}
               </span>
-              <span>{curiosities[0]?.description}</span>
+              <span>{cleanDisplayText(curiosities[0]?.description)}</span>
             </div>
           )}
         </section>
