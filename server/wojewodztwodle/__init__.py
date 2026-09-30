@@ -352,6 +352,7 @@ async def _do_ask_question(
     day_state = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
     if not day_state:
         day_state = await WojewodztwodleDayRepository(session).generate_new_day_wojewodztwo()
+    target_woj = await WojewodztwoRepository(session).get(day_state.wojewodztwo_id)
     if user is not None:
         state = await WojewodztwodleStateRepository(session).get_state(user, day_state)
         require_question_available(state, WOJEWODZTWDLE_CONFIG.max_questions)
@@ -377,8 +378,8 @@ async def _do_ask_question(
             )
 
     if not is_answered(question_create):
-        return unresolved_question(question_create, WojewodztwoQuestionDisplay)
-
+        names = {target_woj.nazwa} if getattr(target_woj, "nazwa", None) else set()
+        return unresolved_question(question_create, WojewodztwoQuestionDisplay, target_names=names, entity_label="to województwo")
     question_create.user_id = user.id if user else None
     question_create.day_id = day_state.id
     if user is None:

@@ -386,9 +386,9 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
 
 
-    if any(x in q for x in ("left-driving", "drive on the left", "drive on left", "drive left", "drives left", "drives on left", "left drive", "left side of the road", "ruch lewostronny", "lewostronny")):
+    if any(x in q for x in ("left-driving", "drive on the left", "drive on left", "drive left", "drives left", "drives on left", "left drive", "left side of the road")):
         return [_node("equals", "driving_side", "left")], "Does the country drive on the left?"
-    if any(x in q for x in ("right-driving", "drive on the right", "drive on right", "drive right", "drives right", "drives on right", "right drive", "right side of the road", "ruch prawostronny", "prawostronny", "prawej stronie")):
+    if any(x in q for x in ("right-driving", "drive on the right", "drive on right", "drive right", "drives right", "drives on right", "right drive", "right side of the road")):
         return [_node("equals", "driving_side", "right")], "Does the country drive on the right?"
     if any(x in q for x in ("monarchy", "monarch", "monarchia")) and not any(m in q for m in ("absolute", "absolutn", "constitutional", "konstytucyjn")):
         return [_node("equals", "government_type", "Monarchy")], "Is the country a monarchy?"
@@ -423,7 +423,7 @@ def check_open_ended_question(question: str) -> str | None:
     ):
         return "Please ask a yes/no question about the driving side, for example: 'Does it drive on the right?' or 'Does it drive on the left?'."
     if re.search(r"\bpo\s+kt[oó]rej\s+stronie\b", q) and any(
-        term in q for term in ("drog", "ulic", "jezd", "jech", "ruch", "samochod", "sie", "jest")
+        term in q for term in ("drog", "ulic", "jezd", "jech", "ruch", "samochod")
     ):
         return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o stronę ruchu, np. 'Czy ruch jest prawostronny?' lub 'Czy ruch jest lewostronny?'."
     return None

@@ -97,42 +97,6 @@ def analyze_question(
     load_dotenv()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or "gemini-2.5-flash-lite"
     version = f"{PLANNER_VERSION}:{model}"
-    from generic_template_compiler import check_generic_open_ended_question, compile_generic_template_plan
-    clarify_msg = check_generic_open_ended_question(question)
-    if clarify_msg is not None:
-        plan = QuestionPlan(
-            original_question=question,
-            valid=False,
-            supported=False,
-            improved_question=None,
-            explanation=clarify_msg,
-            plan=None,
-        )
-        if use_cache:
-            plan_cache.set(config.mode_name, question, plan, version=version)
-        if evidence is not None:
-            evidence.update(provider="template_clarify", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
-        return plan
-
-    deterministic = compile_generic_template_plan(question, config.mode_name)
-    if deterministic is not None:
-        ast, improved = deterministic
-        from utils.shadow_audit import schedule_shadow_audit
-        schedule_shadow_audit(config.mode_name, question, ast, improved)
-        plan = QuestionPlan(
-            original_question=question,
-            valid=True,
-            supported=True,
-            improved_question=improved,
-            explanation="Deterministic template match.",
-            plan=ast,
-        )
-        if use_cache:
-            plan_cache.set(config.mode_name, question, plan, version=version)
-        if evidence is not None:
-            evidence.update(provider="template", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
-        return plan
-
     cached = plan_cache.get(config.mode_name, question, version=version) if use_cache else None
     if evidence is not None:
         evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)
@@ -722,6 +686,14 @@ def generate_mode_explanation(
             return f"Powiat {name} leży w województwie {row['voivodeship']}."
         if rel == "is_city_county":
             return f"{name} jest miastem na prawach powiatu." if row[config.scalar_relations[rel]] else f"{name} jest powiatem ziemskim."
+        if rel == "mountain_ranges":
+            ranges = [r[0] for r in conn.execute("SELECT range_name FROM voivodeship_mountain_ranges WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
+            r_str = ", ".join(ranges)
+            if ranges:
+                if val:
+                    return f"{name} leży w paśmie: {val}. Pasma w województwie: {r_str}." if answer else f"{name} nie leży w paśmie: {val}. Pasma w województwie: {r_str}."
+                return f"{name} leży w pasmach górskich: {r_str}."
+            return f"{name} nie leży w górach (brak pasm górskich)."
         return f"{'Tak' if answer else 'Nie'} - {plan.explanation.rstrip('.')} dla {name}." if plan.explanation else f"{'Tak' if answer else 'Nie'} dla: {name}."
     else:
         if rel == "is_coastal":

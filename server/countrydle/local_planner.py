@@ -214,6 +214,7 @@ Allowed plan operators:
   by not referencing that node. Do not compare water_access with true/false.
 - For an island country use equals(is_island, true). Sharing a land border on an
   island does not make a country continental.
+  Questions asking about the quantitative territorial composition of islands (e.g. whether most/majority of its territory is islands, "czy większość terenu to wyspy") require detailed area proportions not stored locally: route="fallback".
 - "greater_than": strict numeric comparison >
 - "less_than": strict numeric comparison <
 - "greater_than_or_equal": inclusive numeric comparison >=
@@ -434,40 +435,6 @@ def analyze_question_for_local_plan(
     load_dotenv_if_present()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or DEFAULT_MODEL
     version = f"{PLANNER_VERSION}:{model}"
-    from countrydle.template_compiler import check_open_ended_question, compile_template_plan
-    clarify_msg = check_open_ended_question(question)
-    if clarify_msg is not None:
-        plan = QuestionPlan(
-            original_question=question,
-            valid=False,
-            supported=False,
-            improved_question=None,
-            explanation=clarify_msg,
-            plan=None,
-        )
-        if use_cache:
-            plan_cache.set("countrydle", question, plan, version=version)
-        if evidence is not None:
-            evidence.update(provider="template_clarify", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
-        return plan
-    deterministic = compile_template_plan(question)
-    if deterministic is not None:
-        ast, improved = deterministic
-        from utils.shadow_audit import schedule_shadow_audit
-        schedule_shadow_audit("countrydle", question, ast, improved)
-        plan = QuestionPlan(
-            original_question=question,
-            valid=True,
-            supported=True,
-            improved_question=improved,
-            explanation="Deterministic template match.",
-            plan=ast,
-        )
-        if use_cache:
-            plan_cache.set("countrydle", question, plan, version=version)
-        if evidence is not None:
-            evidence.update(provider="template", model=None, contract_version=PLANNER_VERSION, cache_hit=False)
-        return plan
     cached = plan_cache.get("countrydle", question, version=version) if use_cache else None
     if evidence is not None:
         evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)

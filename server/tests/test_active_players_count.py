@@ -204,3 +204,15 @@ async def test_regional_modes_generate_day_on_question(monkeypatch):
 
     await wojewodztwodle._do_ask_question(SimpleNamespace(question="Test"), None, fake_session, fake_request, fake_response)
     assert mock_generate_woj.called
+
+
+def test_sanitize_explanation_removes_target_name_and_plumbing():
+    from utils.explanation_sanitizer import sanitize_explanation_for_player
+
+    raw = "The provided text mentions that Vietnam has numerous islands, but it does not specify the total area of these islands or compare it to the mainland territory to determine if islands constitute the majority of Vietnam's land area."
+    sanitized = sanitize_explanation_for_player(raw, {"Vietnam", "Socialist Republic of Vietnam"}, "the country")
+
+    assert "Vietnam" not in sanitized
+    assert "provided text" not in sanitized.lower()
+    assert sanitized.startswith("The country has numerous islands")
+    assert "majority of the country's land area" in sanitized

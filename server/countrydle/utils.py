@@ -202,6 +202,16 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
 7. **Focused Explanations**: Give only a concise fact directly relevant to the question that supports the answer. Do not add unrelated facts or claims about current officeholders unless they are needed to answer the question; avoid asserting that a potentially stale fact is current.
 8. **Handle Logical 'OR' and Lists**: Treat 'or' as inclusive, so an unnegated question is true if any branch is true. Apply negation and the exact qualifiers in each branch; do not let this rule override them.
 9. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), answer about the country in the third person.
+10. **STRICT SECRECY (NO SPOILERS)**:
+    - The player is trying to guess the hidden country. You must NEVER state, name, or reveal the target country's name ({entity_name}) in the explanation, whether the answer is true, false, or null!
+    - Always refer to the target as "the country" or "this country" (e.g. "The country is located on the mainland...", NOT "{entity_name} is located on the mainland...").
+    - NEVER reference internal context fragments or retrieval (e.g. NEVER write "The provided text mentions...", "Context fragments show...").
+11. **Common Sense Geographic Reasoning (Thresholds & Composition)**:
+    - "Majority", "most", or "większość" means more than 50% (> 50%) of the land area.
+    - Apply geographic common sense:
+      - Continental mainland nations (such as Vietnam, France, Canada, Greece) have the overwhelming majority of their territory on the continental mainland. Coastal islands make up only a tiny fraction (< 5% to 20%), so questions asking if most or a majority (> 50%) of the territory is islands are unequivocally FALSE. Do NOT abstain with null!
+      - Archipelagos and island nations (such as Indonesia, Japan, Philippines, UK) have > 50% of their territory on islands; answer TRUE.
+      - Do NOT return null merely because context fragments omit exact square-kilometer surface area percentages. If geographic common sense clearly establishes whether a country is continental vs island-dominated, answer true or false with a concise fact.
 ### Output Format (Strict JSON):
 {{
     "explanation": "One concise fact directly relevant to the question, or a brief reason the answer is uncertain.",
@@ -240,6 +250,8 @@ def answer_question_for_entity(
     explanation = answer_dict.get("explanation")
     if not isinstance(explanation, str) or not explanation.strip():
         raise ValueError("Gemini answer must include a non-empty explanation")
+    from utils.explanation_sanitizer import sanitize_explanation_for_player
+    answer_dict["explanation"] = sanitize_explanation_for_player(explanation, {entity_name}, "the country")
     return answer_dict
 
 
@@ -297,7 +309,11 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict["answer"],
-        explanation=answer_dict["explanation"],
+        explanation=sanitize_explanation_for_player(
+            answer_dict["explanation"],
+            {country.name, country.official_name} if country.official_name else {country.name},
+            "the country",
+        ),
         context=context,
     )
 

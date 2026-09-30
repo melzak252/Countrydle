@@ -275,6 +275,20 @@ def test_voivodeship_numeric_boolean_and_negative_cases():
     assert answer(VOIVODESHIP_CONFIG, "Pomorskie", contains(VOIVODESHIP_CONFIG, "borders_country", "Słowacja")).answer is False
 
 
+
+def test_voivodeship_mountain_ranges():
+    exist_plan = question_plan({"operator": "exists", "left": {"entity": "target_voivodeship", "relation": "mountain_ranges"}})
+    ans_malopolskie = execute_plan(VOIVODESHIP_CONFIG, "Małopolskie", exist_plan)
+    assert ans_malopolskie is not None
+    assert ans_malopolskie.answer is True
+    assert "Beskidy" in ans_malopolskie.explanation
+    assert "Tatry" in ans_malopolskie.explanation
+
+    ans_mazowieckie = execute_plan(VOIVODESHIP_CONFIG, "Mazowieckie", exist_plan)
+    assert ans_mazowieckie is not None
+    assert ans_mazowieckie.answer is False
+    assert "brak pasm górskich" in ans_mazowieckie.explanation
+
 def test_voivodeship_lodzkie_does_not_border_pomorskie_question():
     plan = question_plan(contains(VOIVODESHIP_CONFIG, "borders_voivodeship", "Pomorskie"))
     plan = QuestionPlan(
