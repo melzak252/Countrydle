@@ -1149,11 +1149,11 @@ class LocalCountryFacts:
         )
 
     def _answer_driving_side(self, conn, country, original, q):
-        if not any(word in q for word in ("drive", "driving", "ruch", "lewostron", "prawostron", "left side", "right side")):
+        if not any(word in q for word in ("drive", "driving", "left side", "right side")):
             return None
-        if any(word in q for word in ("left", "lew")):
+        if "left" in q:
             target = "left"
-        elif any(word in q for word in ("right", "praw")):
+        elif "right" in q:
             target = "right"
         else:
             return None
@@ -1504,6 +1504,10 @@ def evaluate_plan_node(
                 c_left = RELIGION_ALIASES.get(normalize_value(left).lower(), normalize_value(left))
                 c_right = RELIGION_ALIASES.get(normalize_value(right).lower(), normalize_value(right))
                 return normalize_value(c_left) == normalize_value(c_right)
+            if relation == "driving_side":
+                c_left = "left" if "left" in str(left).lower() else ("right" if "right" in str(left).lower() else str(left))
+                c_right = "left" if "right" not in str(right).lower() and "left" in str(right).lower() else ("right" if "right" in str(right).lower() else str(right))
+                return c_left.lower() == c_right.lower()
             return normalize_value(left) == normalize_value(right)
         if operator == "has_space":
             return " " in (text_value(left) or "").strip()

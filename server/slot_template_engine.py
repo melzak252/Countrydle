@@ -167,8 +167,8 @@ _WATER_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(w) for w in _SORTED_WA
 
 # 1.6 Driving Side
 DRIVING_SIDE_MAP = {
-    "left": "left", "left hand": "left", "left side": "left", "lewostronny": "left", "lewej": "left",
-    "right": "right", "right hand": "right", "right side": "right", "prawostronny": "right", "prawej": "right",
+    "left": "left", "left hand": "left", "left side": "left",
+    "right": "right", "right hand": "right", "right side": "right",
 }
 _SORTED_SIDES = sorted(DRIVING_SIDE_MAP.keys(), key=len, reverse=True)
 _SIDE_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(s) for s in _SORTED_SIDES) + r")\b")
@@ -587,8 +587,6 @@ def _build_country_island(slots: dict[str, Any], mode: str):
         "does it drive on the [SIDE]",
         "does it have [SIDE] hand traffic",
         "does the country drive on the [SIDE]",
-        "czy ruch jest [SIDE]",
-        "czy obowiazuje ruch [SIDE]",
     ]
 )
 def _build_country_driving_side(slots: dict[str, Any], mode: str):
