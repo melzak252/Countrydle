@@ -179,19 +179,19 @@ export default function BlogPostPage() {
         )}
 
         {post.fast_facts && (
-          <section className="border-y border-white/10 py-7">
-            <h2 className="mb-5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-400">
+          <section className="rounded-lg border border-white/10 bg-obsidian-900/60 p-6 sm:p-7 space-y-4">
+            <h2 className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.14em] text-emerald-400">
               <Globe size={15} />
-              {t('blog.fastFacts', 'Fast Facts')}
+              <span>{t('blog.mainFacts', 'Main Facts at a Glance')}</span>
             </h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-xs">
               {Object.entries(post.fast_facts).map(([key, val]) => (
-                <div key={key} className="min-w-0">
-                  <dt className="mb-1 text-xs capitalize text-zinc-500">{key.replace(/_/g, ' ')}</dt>
-                  <dd className="break-words text-sm leading-6 text-sand-100">{String(val)}</dd>
+                <div key={key} className="rounded border border-white/5 bg-white/[0.02] p-3">
+                  <dt className="text-zinc-500 capitalize text-[11px] mb-1">{key.replace(/_/g, ' ')}</dt>
+                  <dd className="font-semibold text-sand-100 break-words">{String(val)}</dd>
                 </div>
               ))}
-            </dl>
+            </div>
           </section>
         )}
 
@@ -217,7 +217,41 @@ export default function BlogPostPage() {
           <MarkdownRenderer content={post.content_markdown} />
         </article>
 
-        {/* Interactive Geography Knowledge Check */}
+        {/* Bottom Section: Did You Know? & Pro Tip */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {post.fun_facts && post.fun_facts.length > 0 && (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-amber-400">
+                <Sparkles size={14} />
+                <span>Did You Know? &bull; Wikipedia Curiosity</span>
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-sand-100">
+                {post.fun_facts[0].title}
+              </h3>
+              <p className="text-xs leading-6 text-zinc-300">
+                {post.fun_facts[0].description}
+              </p>
+            </div>
+          )}
+
+          {post.deduction_masterclass && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">
+                <Compass size={14} />
+                <span>Countrydle Pro Deduction Tip</span>
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-sand-100">
+                Winning Deduction Strategy
+              </h3>
+              <p className="text-xs leading-6 text-zinc-300">
+                {post.deduction_masterclass.winning_clue || post.deduction_masterclass.step_2}
+              </p>
+              <div className="pt-1 text-[11px] text-emerald-400/80 font-mono">
+                Strategy: {post.deduction_masterclass.step_1}
+              </div>
+            </div>
+          )}
+        </section>
         {post.fun_facts && post.fun_facts.length > 0 && (
           <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 sm:p-8 space-y-4">
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">

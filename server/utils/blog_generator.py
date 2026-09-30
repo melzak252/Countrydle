@@ -5,6 +5,8 @@ import os
 import re
 import urllib.request
 from datetime import date
+from pathlib import Path
+import sqlite3
 from typing import Any, Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +23,39 @@ FALLBACK_MODEL = os.getenv("BLOG_FALLBACK_MODEL", "gemini-3.8-flash")
 def generate_slug(post_date: date, country_name: str) -> str:
     clean_name = re.sub(r"[^a-zA-Z0-9]+", "-", country_name.strip().lower()).strip("-")
     return f"{post_date.isoformat()}-{clean_name}"
+
+def get_country_sqlite_facts(country_name: str) -> Dict[str, Any]:
+    base = Path(__file__).resolve().parent.parent
+    data_dir = base / "data" if (base / "data").exists() else base.parent / "data"
+    facts_db = data_dir / "country_facts.sqlite"
+    if not facts_db.exists():
+        return {}
+    try:
+        conn = sqlite3.connect(f"{facts_db.resolve().as_uri()}?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM countries WHERE app_country_name = ? LIMIT 1", (country_name,)).fetchone()
+        if not row:
+            conn.close()
+            return {}
+        c_id = row["id"]
+        borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id = ?", (c_id,)).fetchall()]
+        water = [r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id = ?", (c_id,)).fetchall()]
+        languages = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id = ?", (c_id,)).fetchall()]
+        continents = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id = ?", (c_id,)).fetchall()]
+        conn.close()
+        return {
+            "capital": row["capital"] or "N/A",
+            "population": f"{row['population']:,}" if row["population"] else "N/A",
+            "area_km2": f"{int(row['area_km2']):,} km²" if row["area_km2"] else "N/A",
+            "continent": ", ".join(continents) or row["region"] or "N/A",
+            "region": row["subregion"] or row["region"] or "N/A",
+            "water_access": ", ".join(water) if water else ("Island Nation" if row["is_island"] else "Landlocked"),
+            "borders": ", ".join(borders) if borders else ("None (Island nation)" if row["is_island"] else "None"),
+            "languages": ", ".join(languages) if languages else "N/A",
+            "driving_side": row["driving_side"] or "Right",
+        }
+    except Exception:
+        return {}
 
 
 def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -> Dict[str, Any]:
@@ -53,15 +88,29 @@ async def generate_blog_content_ai(
         logger.warning("No GEMINI_API_KEY found, falling back to deterministic template.")
         return _generate_fallback_template(country_name, wiki_fragments, post_date)
 
-    prompt = f"""You are the lead geography editor and viral trivia writer for Countrydle (a daily geography deduction game).
+    country_facts = get_country_sqlite_facts(country_name)
+    facts_summary = f"""
+- Capital: {country_facts.get('capital', 'N/A')}
+- Continent & Region: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
+- Population: {country_facts.get('population', 'N/A')}
+- Land Area: {country_facts.get('area_km2', 'N/A')}
+- Coastline / Water Access: {country_facts.get('water_access', 'N/A')}
+- Neighboring Borders: {country_facts.get('borders', 'N/A')}
+- Official Languages: {country_facts.get('languages', 'N/A')}
+"""
+
+    prompt = f"""You are the lead geography editor and deduction strategist for Countrydle (a daily geography deduction game).
 Yesterday's secret target country was {country_name} on {post_date.strftime('%B %d, %Y')}.
 
-Here are verified excerpts directly from its Wikipedia page:
+Verified Geographic Identity Facts:
+{facts_summary}
+
+Authentic Wikipedia Excerpts:
 ---
 {"---".join(wiki_fragments[:6])}
 ---
 
-Write an engaging, authoritative, and educational recap article for Countrydle players and geography enthusiasts.
+Write an easy-to-read, authoritative, and captivating recap article.
 Format the output as a valid JSON object with the exact keys:
 {{
   "title": "A compelling, viral-worthy headline (e.g. 'Yesterday's Countrydle: Uncovering the Wonders of {country_name}')",
@@ -69,10 +118,13 @@ Format the output as a valid JSON object with the exact keys:
   "reading_time_minutes": 2,
   "summary": "2-3 sentence overview of yesterday's game and the country's global significance",
   "fast_facts": {{
-    "continent": "Continent name",
-    "capital": "Capital city",
-    "water_access": "Maritime ocean or Landlocked",
-    "notable_feature": "Key geographic feature"
+    "capital": "{country_facts.get('capital', 'N/A')}",
+    "continent": "{country_facts.get('continent', 'N/A')}",
+    "population": "{country_facts.get('population', 'N/A')}",
+    "area": "{country_facts.get('area_km2', 'N/A')}",
+    "coastline": "{country_facts.get('water_access', 'N/A')}",
+    "borders": "{country_facts.get('borders', 'N/A')}",
+    "languages": "{country_facts.get('languages', 'N/A')}"
   }},
   "fun_facts": [
     {{"title": "Intriguing Fact 1 Title", "description": "Fascinating narrative explanation using the provided Wikipedia context."}},
@@ -84,7 +136,7 @@ Format the output as a valid JSON object with the exact keys:
     "step_2": "The decisive border or maritime question that isolated the region",
     "winning_clue": "The final signature characteristic that locked in the correct guess"
   }},
-  "content_markdown": "Full educational article in Markdown format with ## headings, bullet points, engaging prose explaining the history, nature, and deduction strategy, concluding with an encouraging invitation to play today's game."
+  "content_markdown": "Full Markdown article. MUST begin with a '### 📌 Main Facts at a Glance' summary box listing the key facts. Then 2-3 engaging, easy-to-read sections covering geography and history. MUST conclude with a '### 💡 Did You Know?' curiosity section and '### 🎯 Countrydle Pro Tip' deduction advice."
 }}
 Return only valid JSON."""
 
@@ -109,6 +161,7 @@ Return only valid JSON."""
 def _generate_fallback_template(
     country_name: str, wiki_fragments: List[str], post_date: date
 ) -> Dict[str, Any]:
+    country_facts = get_country_sqlite_facts(country_name)
     facts = []
     for i, frag in enumerate(wiki_fragments[:3]):
         snippet = frag.strip().split("\n")[0]
@@ -121,41 +174,59 @@ def _generate_fallback_template(
 
     while len(facts) < 3:
         facts.append({
-            "title": f"Did You Know?",
+            "title": "Did You Know?",
             "description": f"{country_name} was yesterday's featured country on Countrydle."
         })
 
+    pro_tip = f"When deducing {country_name}, check whether it borders {country_facts.get('borders', 'its neighbors')} or has access to {country_facts.get('water_access', 'the sea')}. This immediately narrows the global search space down to single-digit candidates!"
+
+    markdown = f"""## Yesterday's Mystery Country: {country_name}
+
+Every day at midnight UTC, Countrydle challenges players to deduce a secret nation using spatial elimination. Yesterday's target was **{country_name}**!
+
+### 📌 Main Facts at a Glance
+- 🏛️ **Capital**: {country_facts.get('capital', 'N/A')}
+- 🌍 **Continent & Region**: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
+- 👥 **Population**: {country_facts.get('population', 'N/A')}
+- 📏 **Land Area**: {country_facts.get('area_km2', 'N/A')}
+- 🌊 **Coastline & Water Access**: {country_facts.get('water_access', 'N/A')}
+- 🗺️ **Neighboring Borders**: {country_facts.get('borders', 'N/A')}
+- 🗣️ **Official Languages**: {country_facts.get('languages', 'N/A')}
+
+### 🌿 Geography & Landscape
+{country_name} is located in {country_facts.get('continent', 'the world')}, encompassing {country_facts.get('area_km2', 'an extensive territory')}. Its unique physical terrain features diverse biomes and important transportation and river corridors.
+
+### 💡 Did You Know?
+> **{facts[0]['title']}**: {facts[0]['description']}
+
+### 🎯 Countrydle Pro Deduction Tip
+> **Pro Tip**: {pro_tip}
+
+---
+*Ready to test your geography skills today? Jump into [Countrydle](/) and see if you can solve today's daily puzzle!*"""
+
     return {
-        "title": f"Countrydle Daily Recap: Exploring {country_name}",
+        "title": f"Yesterday's Countrydle: Uncovering the Wonders of {country_name}",
         "subtitle": f"Yesterday's mystery location revealed: discovering the geography, culture, and trivia of {country_name}.",
         "reading_time_minutes": 2,
         "summary": f"On {post_date.strftime('%B %d, %Y')}, Countrydle players tackled the challenge of deducing {country_name}. Explore its geography, historical heritage, and key trivia facts.",
         "fast_facts": {
-            "country": country_name,
-            "status": "Sovereign Nation",
+            "capital": country_facts.get("capital", "N/A"),
+            "continent": country_facts.get("continent", "N/A"),
+            "population": country_facts.get("population", "N/A"),
+            "area": country_facts.get("area_km2", "N/A"),
+            "coastline": country_facts.get("water_access", "N/A"),
+            "borders": country_facts.get("borders", "N/A"),
+            "languages": country_facts.get("languages", "N/A"),
         },
         "fun_facts": facts,
         "deduction_masterclass": {
-            "step_1": "Test hemisphere and continent boundaries to narrow down the quadrant.",
-            "step_2": "Inquire about oceanic coastline and neighboring sovereign states.",
-            "winning_clue": f"Confirm demographic thresholds and capital city attributes for {country_name}."
+            "step_1": f"Start with hemisphere and continent checks to isolate {country_facts.get('continent', 'the region')}.",
+            "step_2": f"Ask about maritime access: {country_facts.get('water_access', 'coastlines')} isolates the candidates.",
+            "winning_clue": f"Confirm border neighbors ({country_facts.get('borders', 'adjacent nations')}) to lock in {country_name}."
         },
-        "content_markdown": f"""## Yesterday's Mystery Country: {country_name}
-
-Every day at midnight UTC, Countrydle challenges players to deduce a secret nation using spatial elimination. Yesterday's target was **{country_name}**!
-
-### Key Wikipedia Facts
-{chr(10).join([f"- **{f['title']}**: {f['description']}" for f in facts])}
-
-### Optimal Deduction Strategy
-1. **Macro Triangulation**: Start with hemisphere checks (Northern vs Southern Hemisphere) to immediately divide the world's nations.
-2. **Coastline Checks**: Determine whether {country_name} has maritime sea access or is landlocked.
-3. **Neighbor Frontiers**: Ask about key hub borders to zero in on the exact territory.
-
----
-*Think you can deduce today's secret location in fewer guesses? Jump into [Countrydle](/) and put your geography knowledge to the test!*"""
+        "content_markdown": markdown,
     }
-
 
 async def create_daily_blog_post(
     session: AsyncSession,
