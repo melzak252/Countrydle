@@ -342,7 +342,6 @@ async def _do_ask_question(
     day_powiat = await PowiatdleDayRepository(session).get_today_powiat()
     if not day_powiat:
         day_powiat = await PowiatdleDayRepository(session).generate_new_day_powiat()
-    target_powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
     if user is not None:
         state = await PowiatdleStateRepository(session).get_state(user, day_powiat)
         require_question_available(state, POWIATDLE_CONFIG.max_questions)
@@ -368,8 +367,7 @@ async def _do_ask_question(
             )
 
     if not is_answered(question_create):
-        names = {target_powiat.nazwa} if getattr(target_powiat, "nazwa", None) else set()
-        return unresolved_question(question_create, PowiatQuestionDisplay, target_names=names, entity_label="ten powiat")
+        return unresolved_question(question_create, PowiatQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day_powiat.id
     if user is None:

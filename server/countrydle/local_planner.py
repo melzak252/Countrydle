@@ -214,7 +214,6 @@ Allowed plan operators:
   by not referencing that node. Do not compare water_access with true/false.
 - For an island country use equals(is_island, true). Sharing a land border on an
   island does not make a country continental.
-  Questions asking about the quantitative territorial composition of islands (e.g. whether most/majority of its territory is islands, "czy większość terenu to wyspy") require detailed area proportions not stored locally: route="fallback".
 - "greater_than": strict numeric comparison >
 - "less_than": strict numeric comparison <
 - "greater_than_or_equal": inclusive numeric comparison >=
