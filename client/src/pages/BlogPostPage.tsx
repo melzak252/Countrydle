@@ -12,9 +12,6 @@ import {
   Check, 
   Loader2,
   Users,
-  CheckCircle2,
-  HelpCircle,
-  Target
 } from 'lucide-react';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useTranslation } from 'react-i18next';
@@ -126,132 +123,26 @@ export default function BlogPostPage() {
           )}
         </header>
 
+        {/* Community Performance Scoreboard */}
         {post.player_stats && post.player_stats.total_players > 0 && (
-          <section className="rounded-lg border border-white/10 bg-obsidian-900 p-5 sm:p-7">
-            <h2 className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
-              <Users size={15} />
-              {"Yesterday's player scoreboard"}
-            </h2>
-            <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-4">
-              <div>
-                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
-                  <Users size={13} />
-                  <span>{'Challengers'}</span>
-                </div>
-                <div className="font-mono text-2xl text-sand-100">{post.player_stats.total_players}</div>
-              </div>
-              <div>
-                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
-                  <CheckCircle2 size={13} />
-                  <span>{'Solved'}</span>
-                </div>
-                <div className="flex flex-wrap items-baseline gap-2 font-mono text-2xl text-emerald-400">
-                  <span>{post.player_stats.winners_count}</span>
-                  <span className="text-xs text-zinc-400">({post.player_stats.win_rate_pct}%)</span>
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
-                  <HelpCircle size={13} />
-                  <span>{'Questions asked'}</span>
-                </div>
-                <div className="flex flex-wrap items-baseline gap-2 font-mono text-2xl text-sand-100">
-                  <span>{post.player_stats.total_questions}</span>
-                  {post.player_stats.avg_questions_won > 0 && (
-                    <span className="text-xs text-zinc-400">({'avg'} {post.player_stats.avg_questions_won})</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">
-                  <Target size={13} />
-                  <span>{'Guesses made'}</span>
-                </div>
-                <div className="flex flex-wrap items-baseline gap-2 font-mono text-2xl text-sand-100">
-                  <span>{post.player_stats.total_guesses}</span>
-                  {post.player_stats.avg_guesses_won > 0 && (
-                    <span className="text-xs text-zinc-400">({'avg'} {post.player_stats.avg_guesses_won})</span>
-                  )}
-                </div>
-              </div>
+          <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-white/10 bg-obsidian-900/60 px-6 py-4 text-xs font-mono">
+            <div className="flex items-center gap-2 text-zinc-400">
+              <Users size={14} className="text-emerald-400" />
+              <span>Community Solvers: <strong className="text-sand-100">{post.player_stats.winners_count}</strong> of {post.player_stats.total_players} ({post.player_stats.win_rate_pct}%)</span>
             </div>
+            {post.player_stats.avg_questions_won > 0 && (
+              <div className="flex items-center gap-2 text-zinc-400">
+                <Compass size={14} className="text-amber-400" />
+                <span>Average Solved in: <strong className="text-sand-100">{post.player_stats.avg_questions_won} questions</strong></span>
+              </div>
+            )}
           </section>
         )}
 
-        {post.fast_facts && (
-          <section className="rounded-lg border border-white/10 bg-obsidian-900/60 p-6 sm:p-7 space-y-4">
-            <h2 className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.14em] text-emerald-400">
-              <Globe size={15} />
-              <span>{t('blog.mainFacts', 'Main Facts at a Glance')}</span>
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-xs">
-              {Object.entries(post.fast_facts).map(([key, val]) => (
-                <div key={key} className="rounded border border-white/5 bg-white/[0.02] p-3">
-                  <dt className="text-zinc-500 capitalize text-[11px] mb-1">{key.replace(/_/g, ' ')}</dt>
-                  <dd className="font-semibold text-sand-100 break-words">{String(val)}</dd>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {post.fun_facts && post.fun_facts.length > 0 && (
-          <section>
-            <h2 className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-emerald-400">
-              <Sparkles size={15} />
-              {t('blog.funFacts', 'Wikipedia Curiosities & Fun Facts')}
-            </h2>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {post.fun_facts.map((fact: { title: string; description: string }, idx: number) => (
-                <div key={idx} className="border-l border-white/15 pl-5">
-                  <span aria-hidden="true" className="font-mono text-xs text-zinc-500">{String(idx + 1).padStart(2, '0')}</span>
-                  <h3 className="mb-3 mt-2 font-serif text-xl leading-snug text-sand-100">{fact.title}</h3>
-                  <p className="text-sm leading-7 text-zinc-400">{fact.description}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <article className="mx-auto max-w-[70ch] border-y border-white/10 py-8 text-zinc-300 md:py-12">
+        {/* Article Body */}
+        <article className="mx-auto max-w-[72ch] border-y border-white/10 py-8 text-zinc-300 md:py-12">
           <MarkdownRenderer content={post.content_markdown} />
         </article>
-
-        {/* Bottom Section: Did You Know? & Pro Tip */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {post.fun_facts && post.fun_facts.length > 0 && (
-            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-amber-400">
-                <Sparkles size={14} />
-                <span>Did You Know? &bull; Wikipedia Curiosity</span>
-              </div>
-              <h3 className="font-serif text-lg font-semibold text-sand-100">
-                {post.fun_facts[0].title}
-              </h3>
-              <p className="text-xs leading-6 text-zinc-300">
-                {post.fun_facts[0].description}
-              </p>
-            </div>
-          )}
-
-          {post.deduction_masterclass && (
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">
-                <Compass size={14} />
-                <span>Countrydle Pro Deduction Tip</span>
-              </div>
-              <h3 className="font-serif text-lg font-semibold text-sand-100">
-                Winning Deduction Strategy
-              </h3>
-              <p className="text-xs leading-6 text-zinc-300">
-                {post.deduction_masterclass.winning_clue || post.deduction_masterclass.step_2}
-              </p>
-              <div className="pt-1 text-[11px] text-emerald-400/80 font-mono">
-                Strategy: {post.deduction_masterclass.step_1}
-              </div>
-            </div>
-          )}
-        </section>
         {post.fun_facts && post.fun_facts.length > 0 && (
           <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 sm:p-8 space-y-4">
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">

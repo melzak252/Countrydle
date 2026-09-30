@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.models.blog import DailyBlogPost
 from db.models.country import Country
 from db.models.fragment import CountryFragment
+from db.models.countrydle import CountrydleDay, CountrydleQuestion
 
 logger = logging.getLogger(__name__)
 
