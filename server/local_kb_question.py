@@ -686,6 +686,14 @@ def generate_mode_explanation(
             return f"Powiat {name} leży w województwie {row['voivodeship']}."
         if rel == "is_city_county":
             return f"{name} jest miastem na prawach powiatu." if row[config.scalar_relations[rel]] else f"{name} jest powiatem ziemskim."
+        if rel == "mountain_ranges":
+            ranges = [r[0] for r in conn.execute("SELECT range_name FROM voivodeship_mountain_ranges WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
+            r_str = ", ".join(ranges)
+            if ranges:
+                if val:
+                    return f"{name} leży w paśmie: {val}. Pasma w województwie: {r_str}." if answer else f"{name} nie leży w paśmie: {val}. Pasma w województwie: {r_str}."
+                return f"{name} leży w pasmach górskich: {r_str}."
+            return f"{name} nie leży w górach (brak pasm górskich)."
         return f"{'Tak' if answer else 'Nie'} - {plan.explanation.rstrip('.')} dla {name}." if plan.explanation else f"{'Tak' if answer else 'Nie'} dla: {name}."
     else:
         if rel == "is_coastal":
