@@ -27,6 +27,29 @@ def get_db_connection(filename: str) -> sqlite3.Connection:
     return conn
 
 
+def deduplicate_border_names(borders: List[str]) -> List[str]:
+    """Deduplicate canonical country names and aliases for human display."""
+    canonical_aliases = {
+        "dr congo": "Democratic Republic of the Congo",
+        "democratic republic of the congo": "Democratic Republic of the Congo",
+        "czech republic": "Czechia",
+        "czechia": "Czechia",
+        "usa": "United States",
+        "united states": "United States",
+        "uk": "United Kingdom",
+        "united kingdom": "United Kingdom",
+    }
+    seen = set()
+    result = []
+    for b in borders:
+        clean = b.strip()
+        canonical = canonical_aliases.get(clean.lower(), clean)
+        canon_key = canonical.lower()
+        if canon_key not in seen:
+            seen.add(canon_key)
+            result.append(canonical)
+    return sorted(result)
+
 GAME_MODES = [
     {
         "id": "countrydle",
@@ -164,7 +187,8 @@ async def get_country_detail(identifier: str):
 
         # Related lists
         continents = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id = ?", (c_id,)).fetchall()]
-        borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id = ?", (c_id,)).fetchall()]
+        raw_borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id = ?", (c_id,)).fetchall()]
+        borders = deduplicate_border_names(raw_borders)
         water = [r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id = ?", (c_id,)).fetchall()]
         currencies = [r[0] for r in conn.execute("SELECT currency_name FROM country_currencies WHERE country_id = ?", (c_id,)).fetchall()]
         languages = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id = ?", (c_id,)).fetchall()]

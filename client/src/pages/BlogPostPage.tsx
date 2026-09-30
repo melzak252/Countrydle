@@ -25,6 +25,31 @@ function cleanDisplayText(text?: string): string {
     .replace(/\\/g, '')
     .trim();
 }
+
+function cleanBorderList(bordersStr?: string): string {
+  if (!bordersStr) return '';
+  const parts = bordersStr.split(',').map((b) => b.trim()).filter(Boolean);
+  const aliasMap: Record<string, string> = {
+    'dr congo': 'Democratic Republic of the Congo',
+    'democratic republic of the congo': 'Democratic Republic of the Congo',
+    'czech republic': 'Czechia',
+    'czechia': 'Czechia',
+    'usa': 'United States',
+    'united states': 'United States',
+    'uk': 'United Kingdom',
+    'united kingdom': 'United Kingdom',
+  };
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const p of parts) {
+    const canonical = aliasMap[p.toLowerCase()] || p;
+    if (!seen.has(canonical.toLowerCase())) {
+      seen.add(canonical.toLowerCase());
+      result.push(canonical);
+    }
+  }
+  return result.join(', ');
+}
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const { i18n } = useTranslation();
@@ -320,7 +345,7 @@ export default function BlogPostPage() {
           {facts.borders && facts.borders !== 'None' && (
             <div className="rounded border border-white/10 bg-obsidian-900/40 p-4 text-xs font-mono">
               <span className="text-zinc-500 block text-[10px] uppercase mb-1.5">Bordering Neighbors:</span>
-              <span className="text-zinc-300 leading-relaxed">{facts.borders}</span>
+              <span className="text-zinc-300 leading-relaxed">{cleanBorderList(facts.borders)}</span>
             </div>
           )}
         </section>

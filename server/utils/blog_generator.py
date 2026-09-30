@@ -25,6 +25,29 @@ def generate_slug(post_date: date, country_name: str) -> str:
     clean_name = re.sub(r"[^a-zA-Z0-9]+", "-", country_name.strip().lower()).strip("-")
     return f"{post_date.isoformat()}-{clean_name}"
 
+def deduplicate_border_names(borders: List[str]) -> List[str]:
+    """Deduplicate canonical country names and aliases for human display."""
+    canonical_aliases = {
+        "dr congo": "Democratic Republic of the Congo",
+        "democratic republic of the congo": "Democratic Republic of the Congo",
+        "czech republic": "Czechia",
+        "czechia": "Czechia",
+        "usa": "United States",
+        "united states": "United States",
+        "uk": "United Kingdom",
+        "united kingdom": "United Kingdom",
+    }
+    seen = set()
+    result = []
+    for b in borders:
+        clean = b.strip()
+        canonical = canonical_aliases.get(clean.lower(), clean)
+        canon_key = canonical.lower()
+        if canon_key not in seen:
+            seen.add(canon_key)
+            result.append(canonical)
+    return sorted(result)
+
 def get_country_sqlite_facts(country_name: str) -> Dict[str, Any]:
     base = Path(__file__).resolve().parent.parent
     data_dir = base / "data" if (base / "data").exists() else base.parent / "data"
@@ -39,7 +62,8 @@ def get_country_sqlite_facts(country_name: str) -> Dict[str, Any]:
             conn.close()
             return {}
         c_id = row["id"]
-        borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id = ?", (c_id,)).fetchall()]
+        raw_borders = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id = ?", (c_id,)).fetchall()]
+        borders = deduplicate_border_names(raw_borders)
         water = [r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id = ?", (c_id,)).fetchall()]
         languages = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id = ?", (c_id,)).fetchall()]
         continents = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id = ?", (c_id,)).fetchall()]
