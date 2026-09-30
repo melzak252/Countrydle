@@ -260,7 +260,7 @@ export default function BlogListPage() {
                         <h3 className="font-serif text-2xl leading-snug text-sand-100">
                           <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
                         </h3>
-                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400">{post.summary}</p>
+                        <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
                         <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
                           <span>{post.date}</span>
                           <span>{post.reading_time_minutes} min</span>

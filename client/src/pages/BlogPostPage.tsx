@@ -292,27 +292,27 @@ export default function BlogPostPage() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
             {facts.capital && (
-              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3">
+              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
                 <span className="text-zinc-500 block text-[10px] uppercase">Capital</span>
-                <span className="text-sand-100 font-bold text-sm truncate block mt-0.5">{facts.capital}</span>
+                <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.capital}</span>
               </div>
             )}
             {facts.population && (
-              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3">
+              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
                 <span className="text-zinc-500 block text-[10px] uppercase">Population</span>
-                <span className="text-sand-100 font-bold text-sm block mt-0.5">{facts.population}</span>
+                <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.population}</span>
               </div>
             )}
             {facts.area && (
-              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3">
+              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
                 <span className="text-zinc-500 block text-[10px] uppercase">Land Area</span>
-                <span className="text-sand-100 font-bold text-sm block mt-0.5">{facts.area}</span>
+                <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.area}</span>
               </div>
             )}
             {facts.coastline && (
-              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3">
+              <div className="rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
                 <span className="text-zinc-500 block text-[10px] uppercase">Maritime Access</span>
-                <span className="text-sand-100 font-bold text-sm truncate block mt-0.5">{facts.coastline}</span>
+                <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.coastline}</span>
               </div>
             )}
           </div>
@@ -382,7 +382,7 @@ export default function BlogPostPage() {
                   : 'border-white/10 bg-white/[0.02] text-zinc-300 hover:border-white/20'
               }`}
             >
-              A) {cleanDisplayText(curiosities[0]?.description).slice(0, 90)}...
+              A) {cleanDisplayText(curiosities[0]?.description)}
             </button>
             <button
               type="button"
@@ -429,7 +429,7 @@ export default function BlogPostPage() {
                   <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 block mb-1">
                     {rp.country_name}
                   </span>
-                  <h4 className="font-serif text-sm font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors line-clamp-1">
+                  <h4 className="font-serif text-sm font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
                     {rp.title}
                   </h4>
                 </div>
