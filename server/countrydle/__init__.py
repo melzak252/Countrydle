@@ -703,6 +703,7 @@ async def _do_ask_question(
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
         daily_country = await CountrydleRepository(session).generate_new_day_country()
+    target_country = daily_country.country if getattr(daily_country, "country", None) else await CountryRepository(session).get(daily_country.country_id)
 
     if user is not None:
         await check_question_available(
@@ -740,8 +741,10 @@ async def _do_ask_question(
         )
 
     if not is_answered(question_create):
-        return unresolved_question(question_create, InvalidQuestionDisplay)
-
+        names = {target_country.name} if target_country else set()
+        if target_country and target_country.official_name:
+            names.add(target_country.official_name)
+        return unresolved_question(question_create, InvalidQuestionDisplay, target_names=names, entity_label="the country")
     question_create.user_id = user.id if user else None
     question_create.day_id = daily_country.id
     if user is None:

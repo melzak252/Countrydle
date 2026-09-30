@@ -202,6 +202,11 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
 7. **Focused Explanations**: Give only a concise fact directly relevant to the question that supports the answer. Do not add unrelated facts or claims about current officeholders unless they are needed to answer the question; avoid asserting that a potentially stale fact is current.
 8. **Handle Logical 'OR' and Lists**: Treat 'or' as inclusive, so an unnegated question is true if any branch is true. Apply negation and the exact qualifiers in each branch; do not let this rule override them.
 9. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), answer about the country in the third person.
+10. **STRICT SECRECY (NO SPOILERS)**:
+    - The player is trying to guess the hidden country. You must NEVER state, name, or reveal the target country's name ({entity_name}) in the explanation, whether the answer is true, false, or null!
+    - Always refer to the target as "the country" or "this country" (e.g. "The country is located on the mainland...", NOT "{entity_name} is located on the mainland...").
+    - NEVER reference internal context fragments or retrieval (e.g. NEVER write "The provided text mentions...", "Context fragments show...").
+    - For geographic composition questions (e.g. whether most of the territory is islands, an archipelago, or landlocked), apply reliable general geographic knowledge when fragments are silent. Continental mainland nations (such as Vietnam) are NOT archipelagos or mostly islands; answer false with a concise fact.
 ### Output Format (Strict JSON):
 {{
     "explanation": "One concise fact directly relevant to the question, or a brief reason the answer is uncertain.",
@@ -240,6 +245,8 @@ def answer_question_for_entity(
     explanation = answer_dict.get("explanation")
     if not isinstance(explanation, str) or not explanation.strip():
         raise ValueError("Gemini answer must include a non-empty explanation")
+    from utils.explanation_sanitizer import sanitize_explanation_for_player
+    answer_dict["explanation"] = sanitize_explanation_for_player(explanation, {entity_name}, "the country")
     return answer_dict
 
 
@@ -297,7 +304,11 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict["answer"],
-        explanation=answer_dict["explanation"],
+        explanation=sanitize_explanation_for_player(
+            answer_dict["explanation"],
+            {country.name, country.official_name} if country.official_name else {country.name},
+            "the country",
+        ),
         context=context,
     )
 

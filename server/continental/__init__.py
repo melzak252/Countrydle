@@ -353,8 +353,10 @@ async def _do_ask_question(
             )
 
     if not is_answered(question_create):
-        return unresolved_question(question_create, InvalidContinentalQuestionDisplay)
-
+        names = {target_country.name} if target_country else set()
+        if target_country and target_country.official_name:
+            names.add(target_country.official_name)
+        return unresolved_question(question_create, InvalidContinentalQuestionDisplay, target_names=names, entity_label="the country")
     question_create.user_id = user.id if user else None
     question_create.day_id = day.id
     if user is None:
