@@ -212,8 +212,11 @@ Allowed plan operators:
   For a list use contains to test membership, or exists to test nonemptiness.
 - A landlocked country has NO sea/ocean access: emit exists(water_access) followed
   by not referencing that node. Do not compare water_access with true/false.
-- For an island country use equals(is_island, true). Sharing a land border on an
-  island does not make a country continental.
+- Island countries and territory:
+  - For questions asking whether the country is an island, an archipelago, island nation, whether its territory is made of islands, or whether most/all of its territory consists of islands (e.g. "is it an island?", "is it an archipelago?", "is most of the country islands?", "czy to wyspa?", "czy większość terenu zajmują wyspy?", "czy większość terenu to wyspy?"):
+    ALWAYS map to local plan: {{"operator": "equals", "left": {{"entity": "target_country", "relation": "is_island"}}, "right": {{"value": true}}}}.
+    Do NOT route to fallback or clarify! Mainland continental countries (is_island=0) do not have their territory primarily made of islands; island countries (is_island=1) do.
+  - Sharing a land border on an island does not make a country continental.
 - "greater_than": strict numeric comparison >
 - "less_than": strict numeric comparison <
 - "greater_than_or_equal": inclusive numeric comparison >=
