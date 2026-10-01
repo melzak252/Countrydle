@@ -1,6 +1,6 @@
-# Countrydle planner compaction: research, local cutover, and measured limits
+# Countrydle planner compaction: research, production cutover, and measured limits
 
-Research date: 2026-10-01. Scope: Task 08 and Task 12's relation-growth design. Worktree: `Countrydle-planner-compaction`; branch: `feature/planner-compaction`; unchanged baseline: `01fb383` (application version 1.19.0). Original research runs made no production writes, template edits, fact assignments, database-schema change, or executor change. The user subsequently approved publishing and production adoption of the selected setup; release preparation targets **1.19.1** from the existing production baseline, without merging or deploying the unrelated 1.20.0 work on `main`.
+Research date: 2026-10-01. Scope: Task 08 and Task 12's relation-growth design. Worktree: `Countrydle-planner-compaction`; branch: `feature/planner-compaction`; unchanged baseline: `01fb383` (application version 1.19.0). Original research runs made no production writes, template edits, fact assignments, database-schema change, or executor change. The user subsequently approved publishing and production adoption of the selected setup. Release **1.19.1** is deployed and verified from the previous production baseline, without merging or deploying the unrelated 1.20.0 work on `main`.
 
 ## Decision and result
 
@@ -187,7 +187,7 @@ Follow-up source files: `/tmp/countrydle-planner-balance/comparison-summary.json
 - Local model: **`gemini-2.5-flash-lite`**; temperature **0**; thinking budget **1,024**; total-output ceiling **2,048**.
 - Countrydle revision: **`compact-v5-t1024`**; effective cache identity **`26:countrydle:compact-v5-t1024:gemini-2.5-flash-lite`**.
 - Shared AST, executor, relations, fact databases, template behavior and other modes' prompt/cache versions remain unchanged.
-- Existing production image-digest pinning, environment, proxy trust and data volumes must be preserved. Release deployment evidence is recorded only after live verification.
+- Production image-digest pinning, environment, proxy trust and data volumes were preserved. Existing database, Qdrant and alfa containers were not restarted.
 
 ### Release preflight verification
 
@@ -196,6 +196,33 @@ The 1.19.1 release preflight passed **305 tests** covering the planner contract,
 A fresh live-provider rerun of the 20-question final corpus had **zero route mismatches, malformed plans, semantic failures or executor failures**, with 15 local answers and five correct non-local routes. Mean/p95 planning was **2.964s / 3.812s**; mean input was **4,344.35 tokens**. Positive provider-cache metadata was present on only **5/20** calls; the other 15 were unknown, so no full-cohort actual charge or cold-cache claim is made. Evidence: `/tmp/countrydle-planner-release-live.json`.
 
 The release manifest passed `python -m scripts.publish_patch_notes --check`. Frontend typecheck, production build and 46-route prerender passed on **Node 22.23.3**; the existing large-bundle warning remained. Production adoption and public release-note publication are separate from these preflight results.
+
+### Verified production release
+
+- Published branch: `feature/planner-compaction`; immutable release tag: **`v1.19.1`**.
+- Deployed application revision: **`205d9a11b0cddab700b958684a3e4dc40b52262a`**. Feature commit: `c0b3ae4`; required separate version commit: `205d9a1`. The subsequent report-only commit does not change either deployed image or move the release tag.
+- Both image builds succeeded: [GitHub Actions run 36929925880](https://github.com/melzak252/Countrydle/actions/runs/36929925880).
+- Backend image: `ghcr.io/melzak252/countrydle-backend@sha256:3394be1c979dd28b29d3d24692e7cca369903d6a3940fdc5175599ed8b6ae12d`.
+- Frontend image: `ghcr.io/melzak252/countrydle-frontend@sha256:ad1b3181757a19907ad12b926036a4ed04d4c0289c7d3972a5e0d72191e7b762`.
+- Guarded deployment verified both image revision labels, preserved production configuration, and kept production database/Qdrant and alfa container IDs/start times unchanged. The 1.19.0 rollback images and `container-compose.yml.pre-v1.19.1` checkpoint remain available.
+
+The first attempt automatically rolled back because the throwaway smoke checker required a nonempty optional `fallback_reason`. The existing wire/compiler contract permits that field to be absent. The question was correctly valid, unsupported locally, and had no local plan; compound-answer, cache, religion and membership checks had already passed. Only the checker was corrected to assert the actual fallback contract; no production application code, prompt, schema, or exception handling was weakened. The second guarded deployment and all checks passed before release-note publication.
+
+The deployed container made four real Gemini calls against private SQLite fact/cache copies, with no gameplay-history or live-cache writes:
+
+| Production smoke | Observed result |
+|---|---|
+| Europe AND population at least ten million | Poland true; Switzerland false; fresh interpretation ignored deliberately wrong old-version cache entry |
+| Normalized repeat of the compound question | Cache hit; same correct answers; zero new provider calls |
+| Broad Christianity predicate | Catholic Poland answered true |
+| Current Soviet Union membership | Poland answered false using local current-membership facts |
+| Hosting the 2014 FIFA World Cup | Valid unsupported question; no local plan; fallback routing retained |
+
+The first compound check, including two local evaluations, took **3,049.18ms**; the normalized repeat took **1.77ms**. These are isolated deployed-container smoke timings, not HTTP gameplay latency or a population SLA. The smoke confirmed model `gemini-2.5-flash-lite`, thinking budget 1,024, output ceiling 2,048 and the new Countrydle cache identity.
+
+Public `/api/version` returned **1.19.1**. Countrydle, Continental Europe, Flagdle, US Statedle, Powiatdle and Województwodle state endpoints all returned HTTP 200. A real browser rendered the game map, unchanged 10-question/3-guess controls, and the release-history page with synchronized footer `v1.19.1 (s: 1.19.1)`.
+
+Player-facing notes were published only after successful deployment verification, at **2026-10-01T21:46:43.202840Z**, and verified in the public API and browser: [1.19.1 patch notes](https://countrydle.online/patch-notes). Raw local deployment/public verification records are `/tmp/countrydle-planner-production-release.json` and `/tmp/countrydle-planner-public-verification.json`. Temporary release scripts and the first attempt's private log are removed after closeout; the ignored local deployment runbook and rollback checkpoint are retained.
 
 
 ---
