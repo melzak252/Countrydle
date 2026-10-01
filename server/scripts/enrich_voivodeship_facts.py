@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import sqlite3
-import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-VOIVODESHIP_DB = ROOT_DIR / "data" / "voivodeship_facts.sqlite"
-POWIAT_DB = ROOT_DIR / "data" / "powiat_facts.sqlite"
+APP_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = APP_DIR / "data" if (APP_DIR / "data").exists() else APP_DIR.parent / "data"
+VOIVODESHIP_DB = DATA_DIR / "voivodeship_facts.sqlite"
+POWIAT_DB = DATA_DIR / "powiat_facts.sqlite"
 
 
 def enrich_voivodeships():

@@ -94,6 +94,25 @@ python scripts/populate_all.py
 ```
 *This script reads the CSVs, creates DB entries, reads the Markdown files, chunks them, generates OpenAI embeddings, and upserts them to Qdrant.*
 
+### Województwodle motorway and expressway facts
+
+The `major_roads` relation reads `voivodeship_major_roads` from
+`voivodeship_facts.sqlite`. Rebuild it from the existing county road facts with:
+
+```bash
+# From server/ on the host or the backend working directory in the container:
+python scripts/enrich_voivodeship_facts.py
+```
+
+The script aggregates distinct road codes per voivodeship from
+`powiat_facts.sqlite`; it replaces the voivodeship road relation, not the county
+facts. It prefers the application's `data/` directory and falls back to the
+repository-root `data/` directory on the host.
+
+SQLite files are gitignored and deployed in a persistent data volume. Merging
+the code does not update that volume: run the script against its existing
+county database or transfer the enriched voivodeship database during deployment.
+
 ### Country availability and Kosovo rollout
 
 Game eligibility is separate from factual geography and historical results.
