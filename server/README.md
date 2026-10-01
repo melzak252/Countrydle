@@ -282,6 +282,7 @@ The public **More → Patch notes** page at `/patch-notes` shows English release
 - `GET /patch-notes?page=1&limit=10` returns `{ "items": [...], "total": 0, "page": 1, "limit": 10 }`. Each item has `id`, `version`, `title`, `body`, and `published_at`. Pages start at 1; the maximum page size is 50. Entries are ordered newest-first with a stable ID tiebreak.
 - `patch_notes` has one immutable publication per version. Identical publication retries preserve its original timestamp; conflicting content is rejected. There is no public write endpoint.
 - `server/release_notes.json` contains the English release text and must match `SERVER_VERSION`. Application startup and migrations never publish release announcements.
+- Public release titles and changes must describe player-facing features, fixes, and gameplay improvements. Exclude admin dashboards, moderation or QA tools, internal diagnostics, database migrations, deployment details, and test-suite maintenance. Keep those details in developer documentation, not `server/release_notes.json` or published patch notes.
 - Migration `f1e2d3c4b5a6` creates the table without inserting release history. Exact operational instructions are deliberately kept in the ignored, local-only `DEPLOY.local.md`, not in tracked documentation.
 
 ---
