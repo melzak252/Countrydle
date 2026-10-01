@@ -8,8 +8,9 @@ from db import get_db
 from db.models.countrydle import CountrydleDay, CountrydleQuestion, CountrydleGuess, CountrydleState
 from db.repositories.blog import BlogRepository
 from db.repositories.countrydle import CountrydleRepository
+from db.repositories.participation import ParticipationRepository
 from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
-from sqlalchemy import func, desc, select
+from sqlalchemy import func, desc, select, or_
 from utils.blog_generator import create_daily_blog_post
 from utils.country_codes import get_country_code
 from functools import lru_cache
@@ -62,59 +63,103 @@ async def get_day_community_telemetry(session: AsyncSession, post_date: date) ->
         if not day:
             return CommunityGameDebrief(has_telemetry=False)
 
-        # 1. State statistics
-        states_res = await session.execute(
-            select(
-                func.count(CountrydleState.id),
-                func.count().filter(CountrydleState.won.is_(True)),
-                func.avg(CountrydleState.questions_asked).filter(CountrydleState.won.is_(True)),
-                func.avg(CountrydleState.guesses_made).filter(CountrydleState.won.is_(True)),
-                func.max(CountrydleState.points)
-            ).where(CountrydleState.day_id == day.id)
-        )
-        row = states_res.one()
-        tot_players = row[0] or 0
-        tot_wins = row[1] or 0
-        avg_q = round(float(row[2]), 1) if row[2] is not None else 0.0
-        avg_g = round(float(row[3]), 1) if row[3] is not None else 0.0
-        high_score = row[4]
-        win_rate = round((tot_wins / tot_players * 100), 1) if tot_players > 0 else 0.0
+        # 1. Unified Player & Solver statistics (Counting unique authenticated AND guest players)
+        part_repo = ParticipationRepository(session)
+        stats = await part_repo.get_stats(post_date, "countrydle")
+        tot_players = stats.get("total_players", 0)
+        tot_wins = stats.get("winners_count", 0)
+        win_rate = stats.get("win_rate_pct", 0.0)
+        avg_q = stats.get("avg_questions_won", 0.0)
+        avg_g = stats.get("avg_guesses_won", 0.0)
 
-        # 2. Top community questions
-        q_res = await session.execute(
-            select(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation, func.count(CountrydleQuestion.id).label('cnt'))
-            .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
-            .group_by(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation)
-            .order_by(desc('cnt'))
-            .limit(6)
-        )
-        top_questions = []
-        for q in q_res.all():
-            pct = round(q.cnt / tot_players * 100) if tot_players > 0 else None
-            top_questions.append(
-                TopQuestionStat(
-                    question=q.question or "",
-                    answer="YES" if q.answer else "NO",
-                    count=q.cnt,
-                    pct=pct,
-                    explanation=q.explanation
+        # Fallback for legacy days before GuestParticipation tracking was deployed
+        if tot_players == 0:
+            active_states = await session.execute(
+                select(
+                    func.count(CountrydleState.id),
+                    func.count().filter(CountrydleState.won.is_(True)),
+                    func.avg(CountrydleState.questions_asked).filter(CountrydleState.won.is_(True)),
+                    func.avg(CountrydleState.guesses_made).filter(CountrydleState.won.is_(True)),
+                ).where(
+                    CountrydleState.day_id == day.id,
+                    or_(CountrydleState.questions_asked > 0, CountrydleState.guesses_made > 0)
                 )
             )
+            l_row = active_states.one()
+            l_players = l_row[0] or 0
+            l_wins = l_row[1] or 0
+
+            anon_guesses = await session.execute(
+                select(
+                    func.count(CountrydleGuess.id),
+                    func.count().filter(CountrydleGuess.answer.is_(True))
+                ).where(CountrydleGuess.day_id == day.id, CountrydleGuess.user_id.is_(None))
+            )
+            anon_row = anon_guesses.one()
+            anon_g = anon_row[0] or 0
+            anon_w = anon_row[1] or 0
+
+            if l_players > 0 or anon_g > 0:
+                tot_players = l_players + (1 if anon_g > 0 else 0)
+                tot_wins = l_wins + (1 if anon_w > 0 else 0)
+                win_rate = round((tot_wins / tot_players * 100), 1) if tot_players > 0 else 0.0
+                avg_q = round(float(l_row[2]), 1) if l_row[2] is not None else 0.0
+                avg_g = round(float(l_row[3]), 1) if l_row[3] is not None else (1.0 if anon_w > 0 else 0.0)
+
+        high_score_res = await session.execute(
+            select(func.max(CountrydleState.points)).where(
+                CountrydleState.day_id == day.id,
+                CountrydleState.won.is_(True)
+            )
+        )
+        high_score = high_score_res.scalar_one_or_none()
+        # 2. Top community questions
+        top_questions = []
+        try:
+            q_res = await session.execute(
+                select(
+                    CountrydleQuestion.question,
+                    CountrydleQuestion.answer,
+                    CountrydleQuestion.explanation,
+                    func.count(CountrydleQuestion.id).label('cnt')
+                )
+                .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
+                .group_by(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation)
+                .order_by(desc('cnt'))
+                .limit(6)
+            )
+            for q in q_res.all():
+                pct = min(100, round(q.cnt / tot_players * 100)) if tot_players > 0 else None
+                top_questions.append(
+                    TopQuestionStat(
+                        question=q.question or "",
+                        answer="YES" if q.answer else "NO",
+                        count=q.cnt,
+                        pct=pct,
+                        explanation=q.explanation
+                    )
+                )
+        except Exception as q_exc:
+            logger.debug("Could not query top questions for %s: %s", post_date, q_exc)
 
         # 3. Common wrong guesses
-        g_res = await session.execute(
-            select(CountrydleGuess.guess, func.count(CountrydleGuess.id).label('cnt'))
-            .where(CountrydleGuess.day_id == day.id, CountrydleGuess.answer.is_(False))
-            .group_by(CountrydleGuess.guess)
-            .order_by(desc('cnt'))
-            .limit(4)
-        )
-        pitfalls = [
-            WrongGuessStat(guess=g.guess or "", count=g.cnt)
-            for g in g_res.all() if g.guess
-        ]
+        pitfalls = []
+        try:
+            g_res = await session.execute(
+                select(CountrydleGuess.guess, func.count(CountrydleGuess.id).label('cnt'))
+                .where(CountrydleGuess.day_id == day.id, CountrydleGuess.answer.is_(False))
+                .group_by(CountrydleGuess.guess)
+                .order_by(desc('cnt'))
+                .limit(4)
+            )
+            pitfalls = [
+                WrongGuessStat(guess=g.guess or "", count=g.cnt)
+                for g in g_res.all() if g.guess
+            ]
+        except Exception as g_exc:
+            logger.debug("Could not query common wrong guesses for %s: %s", post_date, g_exc)
 
-        has_data = tot_players > 0 or len(top_questions) > 0
+        has_data = tot_players > 0
         return CommunityGameDebrief(
             has_telemetry=has_data,
             total_challengers=tot_players,
