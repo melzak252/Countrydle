@@ -17,8 +17,8 @@ from db.models.countrydle import CountrydleDay, CountrydleQuestion
 
 logger = logging.getLogger(__name__)
 
-PRIMARY_MODEL = os.getenv("BLOG_GENERATOR_MODEL", "gemini-3.1-pro-preview")
-FALLBACK_MODEL = os.getenv("BLOG_FALLBACK_MODEL", "gemini-3.8-flash")
+PRIMARY_MODEL = os.getenv("BLOG_GENERATOR_MODEL", "gemini-3.8-flash")
+FALLBACK_MODEL = os.getenv("BLOG_FALLBACK_MODEL", "gemini-3.1-pro-preview")
 
 
 def generate_slug(post_date: date, country_name: str) -> str:
