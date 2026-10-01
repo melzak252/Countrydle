@@ -1,5 +1,5 @@
 {
-  "version": "1.19.0",
-  "title": "More regional facts and steadier question submissions",
-  "body": "MORE WOJEWÓDZTWA FACTS\n- You can now ask about major motorways and expressways in Polish voivodeships.\n- Improved understanding of Polish questions about roads and rivers in regional games.\n\nQUESTION SUBMISSION COOLDOWN\n- Rapid repeated question submissions now receive a short cooldown to keep games responsive.\n- Your normal daily question and guess limits are unchanged."
+  "version": "1.19.1",
+  "title": "Clearer understanding of compound geography questions",
+  "body": "COUNTRY QUESTION UNDERSTANDING\n- Improved interpretation of English and Polish questions combining geography, numeric comparisons, and membership conditions.\n- Improved distinctions between current and historical membership and between broad Christian categories and individual denominations.\n- Your daily question and guess limits are unchanged."
 }

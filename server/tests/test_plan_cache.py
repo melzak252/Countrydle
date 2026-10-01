@@ -108,6 +108,42 @@ def test_cached_plan_remains_target_independent_and_skips_provider(monkeypatch, 
             assert execute_plan(LOCAL_CONFIG, "Indiana", second).answer is False
 
 
+def test_country_prompt_cutover_ignores_old_interpretation(monkeypatch):
+    from countrydle.local_planner import DEFAULT_MODEL, QuestionPlan
+    from planner_protocol import PLANNER_VERSION
+
+    monkeypatch.setenv("LOCAL_QUESTION_MODEL", DEFAULT_MODEL)
+    question = "Does the country have at least ten million people?"
+    old_plan = QuestionPlan(
+        original_question=question, valid=True, supported=True,
+        improved_question=None, explanation=None,
+        plan={"operator": "less_than",
+              "left": {"entity": "target_country", "relation": "population"},
+              "right": {"value": 10_000_000}},
+    )
+    plan_cache.set(
+        "countrydle", question, old_plan, version=f"{PLANNER_VERSION}:{DEFAULT_MODEL}",
+    )
+    response = {
+        "route": "local", "plan": [{
+            "operator": "greater_than_or_equal",
+            "left": {"entity": "target_country", "relation": "population"},
+            "right": {"value": 10_000_000},
+        }],
+    }
+    responses = iter([
+        httpx.Response(200, json={
+            "candidates": [{"content": {"parts": [{"text": json.dumps(response)}]}}],
+        }),
+    ])
+    with httpx.Client(transport=httpx.MockTransport(lambda request: next(responses))) as client:
+        monkeypatch.setattr(ai_clients, "_http_client", client)
+        fresh = analyze_question_for_local_plan(question)
+        reused = analyze_question_for_local_plan(question.upper())
+        assert execute_local_plan(fresh.plan, "Poland", question).answer is True
+        assert execute_local_plan(reused.plan, "Switzerland", question).answer is False
+
+
 @pytest.mark.parametrize("country", [True, False])
 def test_provider_failure_does_not_poison_next_attempt(monkeypatch, country):
     responses = iter([

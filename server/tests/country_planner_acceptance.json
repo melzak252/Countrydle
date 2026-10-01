@@ -1,0 +1,343 @@
+{
+  "description": "Independent provider-free held-out acceptance corpus authored from planner and executor contracts. All cases use complete supported_ast gold semantics; meaning_guard records required semantic distinctions, required_atoms are harness-checkable critical nodes, and explanatory_notes justify routing and gold meaning.",
+  "cases": [
+    {
+      "id": "accept-001", "split": "held_out", "category": "named_numeric_reference",
+      "question": "Does the hidden country have a larger population than Chile?",
+      "route": "local",
+      "supported_ast": {"operator": "greater_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"entity": "Chile", "relation": "population"}},
+      "gold_plan": {"operator": "greater_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"entity": "Chile", "relation": "population"}},
+      "meaning_guard": "Compare target population against Chile population; Chile is not the target identity.",
+      "required_atoms": [{"operator": "greater_than", "relation": "population"}],
+      "explanatory_notes": "The named country supplies the comparison operand while the game target remains the subject.", "notes": "Named-country population comparison."
+    },
+    {
+      "id": "accept-002", "split": "held_out", "category": "inclusive_numeric_boundary",
+      "question": "Czy powierzchnia tego kraju nie przekracza powierzchni Algierii?",
+      "route": "local",
+      "supported_ast": {"operator": "less_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"entity": "Algeria", "relation": "area"}},
+      "gold_plan": {"operator": "less_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"entity": "Algeria", "relation": "area"}},
+      "meaning_guard": "The target area is at most Algeria's area; equality is included and the comparison country is not the target.",
+      "required_atoms": [{"operator": "less_than_or_equal", "relation": "area"}],
+      "explanatory_notes": "Nie przekracza denotes an inclusive upper bound; both area operands are explicit.", "notes": "Polish inclusive area upper bound."
+    },
+    {
+      "id": "accept-003", "split": "held_out", "category": "same_axis_compass_reference",
+      "question": "Czy kraj leży na wschód od Madagaskaru?",
+      "route": "local",
+      "supported_ast": {"operator": "east_of", "left": {"entity": "target_country", "relation": "coordinates.longitude"}, "right": {"entity": "Madagascar", "relation": "coordinates.longitude"}},
+      "gold_plan": {"operator": "east_of", "left": {"entity": "target_country", "relation": "coordinates.longitude"}, "right": {"entity": "Madagascar", "relation": "coordinates.longitude"}},
+      "meaning_guard": "Use longitude for both target and Madagascar; preserve eastward comparison.",
+      "required_atoms": [{"operator": "east_of", "relation": "coordinates.longitude"}],
+      "explanatory_notes": "Compass east/west comparisons are same-axis longitude relations against a named country.", "notes": "Same-axis named-reference compass comparison."
+    },
+    {
+      "id": "accept-004", "split": "held_out", "category": "same_axis_compass_reference",
+      "question": "Czy ten kraj leży na południe od Norwegii?",
+      "route": "local",
+      "supported_ast": {"operator": "south_of", "left": {"entity": "target_country", "relation": "coordinates.latitude"}, "right": {"entity": "Norway", "relation": "coordinates.latitude"}},
+      "gold_plan": {"operator": "south_of", "left": {"entity": "target_country", "relation": "coordinates.latitude"}, "right": {"entity": "Norway", "relation": "coordinates.latitude"}},
+      "meaning_guard": "Both operands use latitude; do not compare the target with Norway on a different coordinate axis.",
+      "required_atoms": [{"operator": "south_of", "relation": "coordinates.latitude"}],
+      "explanatory_notes": "The Polish south-of relation has an objective same-axis interpretation in the executor.", "notes": "Polish same-axis compass comparison."
+    },
+    {
+      "id": "accept-005", "split": "held_out", "category": "cross_axis_invalid_geography",
+      "question": "Is it north of Greece by longitude?",
+      "route": "clarify", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "Do not turn north into an east/west longitude comparison; ask which spatial relation or axis is intended.",
+      "required_atoms": [],
+      "explanatory_notes": "North is a latitude relation, while the phrase explicitly specifies longitude, leaving conflicting geography rather than a precise predicate.", "notes": "Conflicting compass direction and coordinate axis require clarification."
+    },
+    {
+      "id": "accept-006", "split": "held_out", "category": "quantifier_neighbor_membership",
+      "question": "Czy wszyscy jego sąsiedzi lądowi należą do UE?",
+      "route": "local",
+      "supported_ast": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "EU"}}},
+      "gold_plan": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "EU"}}},
+      "meaning_guard": "Universal condition ranges over the target's border-country list, with each bound item tested for EU membership; empty-list all semantics are vacuously true.",
+      "required_atoms": [{"operator": "all", "relation": "borders_country"}, {"operator": "contains", "relation": "membership", "value": "EU"}],
+      "explanatory_notes": "All is a supported quantifier over list-valued borders_country and its condition uses the bound neighbor item.", "notes": "Universal neighbor quantifier, including executor vacuity semantics."
+    },
+    {
+      "id": "accept-007", "split": "held_out", "category": "negated_quantifier",
+      "question": "Czy istnieje sąsiad lądowy, który nie należy do NATO?",
+      "route": "local",
+      "supported_ast": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "NATO"}}}},
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "NATO"}}}},
+      "meaning_guard": "There must be at least one bound land neighbor whose membership list does not contain NATO; this is not the negation of any NATO neighbor.",
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "not", "relation": "membership"}, {"operator": "contains", "relation": "membership", "value": "NATO"}],
+      "explanatory_notes": "Existential quantification scopes over a negated membership predicate for each item.", "notes": "Polish existential with inner negation, not global negation."
+    },
+    {
+      "id": "accept-008", "split": "held_out", "category": "three_clause_boolean",
+      "question": "Is it a republic, uses the euro, and has a red flag?",
+      "route": "local",
+      "supported_ast": {"operator": "and", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "government_type"}, "right": {"value": "Republic"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "EUR"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "flag_color"}, "right": {"value": "red"}}
+      ]},
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "government_type"}, "right": {"value": "Republic"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "EUR"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "flag_color"}, "right": {"value": "red"}}
+      ]},
+      "meaning_guard": "All three conditions are conjunctive: Republic government category, euro currency, and red flag color.",
+      "required_atoms": [{"operator": "equals", "relation": "government_type", "value": "Republic"}, {"operator": "contains", "relation": "currency", "value": "EUR"}, {"operator": "contains", "relation": "flag_color", "value": "red"}],
+      "explanatory_notes": "Use the scalar government category and two list relations; the three-clause conjunction is complete.", "notes": "Three independent local predicates joined by AND."
+    },
+    {
+      "id": "accept-009", "split": "held_out", "category": "mixed_boolean_negation",
+      "question": "Czy kraj należy do UE lub ma dostęp do oceanu, ale nie używa euro?",
+      "route": "local",
+      "supported_ast": {"operator": "and", "conditions": [
+        {"operator": "or", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "EU"}},
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Ocean"}}
+        ]},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "EUR"}}}
+      ]},
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "or", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "EU"}},
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Ocean"}}
+        ]},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "EUR"}}}
+      ]},
+      "meaning_guard": "(EU membership OR ocean access) AND NOT euro currency; negation applies only to euro use.",
+      "required_atoms": [{"operator": "contains", "relation": "membership", "value": "EU"}, {"operator": "contains", "relation": "water_access", "value": "Ocean"}, {"operator": "not", "relation": "currency"}, {"operator": "contains", "relation": "currency", "value": "EUR"}],
+      "explanatory_notes": "The Polish contrastive 'ale nie' preserves the positive disjunction and negates only the final predicate.", "notes": "Nested OR, conjunction and narrow negation."
+    },
+    {
+      "id": "accept-010", "split": "held_out", "category": "unsupported_cultural_association",
+      "question": "Does this country belong to the Germanic cultural sphere?",
+      "route": "fallback",
+      "supported_ast": null,
+      "gold_plan": null,
+      "meaning_guard": "A cultural-country association is not official-language status, language family, geography, or dominant religion.",
+      "required_atoms": [],
+      "explanatory_notes": "The cultural association is absent locally; keep the clear question valid and send it to fallback.", "notes": "Unsupported cultural association without a proxy relation."
+    },
+    {
+      "id": "accept-011", "split": "held_out", "category": "inclusive_numeric_boundary",
+      "question": "Is its population at most 750,000?",
+      "route": "local",
+      "supported_ast": {"operator": "less_than_or_equal", "left": {"entity": "target_country", "relation": "population"}, "right": {"value": 750000}},
+      "gold_plan": {"operator": "less_than_or_equal", "left": {"entity": "target_country", "relation": "population"}, "right": {"value": 750000}},
+      "meaning_guard": "Population <= 750,000, including equality.",
+      "required_atoms": [{"operator": "less_than_or_equal", "relation": "population", "value": 750000}],
+      "explanatory_notes": "At most is an inclusive numeric upper boundary supported by the population metric.", "notes": "Inclusive population upper bound."
+    },
+    {
+      "id": "accept-012", "split": "held_out", "category": "religion_umbrella",
+      "question": "Would Christianity be described as its predominant religion?",
+      "route": "local",
+      "supported_ast": {"operator": "or", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Protestant"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Christianity"}}
+      ]},
+      "gold_plan": {"operator": "or", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Protestant"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Christianity"}}
+      ]},
+      "meaning_guard": "Ordinary Christianity is the umbrella OR of Catholic, Orthodox, Protestant and Christianity.",
+      "required_atoms": [{"operator": "equals", "relation": "dominant_religion", "value": "Catholic"}, {"operator": "equals", "relation": "dominant_religion", "value": "Orthodox"}, {"operator": "equals", "relation": "dominant_religion", "value": "Protestant"}, {"operator": "equals", "relation": "dominant_religion", "value": "Christianity"}],
+      "explanatory_notes": "The umbrella spans denominational categories; standalone Christianity equality misses Christian countries.", "notes": "Ordinary broad Christianity umbrella."
+    },
+    {
+      "id": "accept-013", "split": "held_out", "category": "religion_specific_category",
+      "question": "Czy dominującą kategorią religijną jest prawosławie?",
+      "route": "local",
+      "supported_ast": {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+      "gold_plan": {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+      "meaning_guard": "Map Polish prawosławie to the supported Orthodox category, not Christianity generally.",
+      "required_atoms": [{"operator": "equals", "relation": "dominant_religion", "value": "Orthodox"}],
+      "explanatory_notes": "Orthodox is an explicit available religion category, and Polish wording translates unambiguously.", "notes": "Polish explicit Orthodox category."
+    },
+    {
+      "id": "accept-014", "split": "held_out", "category": "unsupported_religious_detail",
+      "question": "Is Lutheranism the country's dominant Christian denomination?",
+      "route": "fallback", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "Do not answer a finer denomination by substituting broad Protestant, Christianity, or another stored dominant category.",
+      "required_atoms": [],
+      "explanatory_notes": "Local religion values distinguish broad Protestant and Christianity but not Lutheran denomination; this clear criterion needs external facts.", "notes": "Precise unsupported denominational classification routes to fallback."
+    },
+    {
+      "id": "accept-015", "split": "held_out", "category": "vague_comparative_clarification",
+      "question": "Is this country larger than the average country?",
+      "route": "clarify", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "No average reference or definition of the comparison set is given; do not invent a world mean or ranking.",
+      "required_atoms": [],
+      "explanatory_notes": "Larger lacks a specified objective comparator; knowing area does not define which average is meant.", "notes": "Vague comparative size with unspecified comparison criterion."
+    },
+    {
+      "id": "accept-016", "split": "held_out", "category": "quoted_foreign_substring",
+      "question": "Czy angielska nazwa kraju zawiera dokładny fragment \"land\"?",
+      "route": "local",
+      "supported_ast": {"operator": "contains_text", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "land"}},
+      "gold_plan": {"operator": "contains_text", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "land"}},
+      "meaning_guard": "Test exact quoted substring 'land' in the English common country name; do not translate or replace its characters.",
+      "required_atoms": [{"operator": "contains_text", "relation": "name", "value": "land"}],
+      "explanatory_notes": "The target's name is text and contains_text performs substring matching; the quoted foreign-language prompt still refers to the English name.", "notes": "Quoted substring is retained literally in a Polish question."
+    },
+    {
+      "id": "accept-017", "split": "held_out", "category": "common_name_identity",
+      "question": "Czy to Stany Zjednoczone?",
+      "route": "local",
+      "supported_ast": {"operator": "equals", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "United States"}},
+      "gold_plan": {"operator": "equals", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "United States"}},
+      "meaning_guard": "Identity check uses the common English country name United States, not its official long name.",
+      "required_atoms": [{"operator": "equals", "relation": "name", "value": "United States"}],
+      "explanatory_notes": "Direct identity is a valid supported yes/no question and Polish country name translates unambiguously.", "notes": "Common-name identity question."
+    },
+    {
+      "id": "accept-018", "split": "held_out", "category": "unsupported_official_name",
+      "question": "Does its official constitutional name contain the words 'Kingdom of'?",
+      "route": "fallback", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "The requested official constitutional-name text is not the supported common name field; do not test target_country.name as a substitute.",
+      "required_atoms": [],
+      "explanatory_notes": "The planner requires external facts for official long names when they differ from the locally supported common-name relation.", "notes": "Official-name wording calls for unsupported text, not common-name substring."
+    },
+    {
+      "id": "accept-019", "split": "held_out", "category": "language_prevalence_fallback",
+      "question": "Czy mieszkańcy zwykle mówią po portugalsku?",
+      "route": "fallback", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "This asks about what residents usually speak, not legal official-language status.",
+      "required_atoms": [],
+      "explanatory_notes": "Language prevalence is not established by official_language; use external knowledge rather than substituting co-official status.", "notes": "Polish language-use frequency routes to fallback."
+    },
+    {
+      "id": "accept-020", "split": "held_out", "category": "language_prevalence_fallback",
+      "question": "Is the country's main national language of Turkic origin?",
+      "route": "fallback", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "Preserve the principal-language usage and language-origin criteria; do not reduce this to whether a Turkic language is official.",
+      "required_atoms": [],
+      "explanatory_notes": "Main-language prevalence and language-family origin are general-knowledge facts absent from supported relations.", "notes": "Culture/language prevalence and origin require fallback."
+    },
+    {
+      "id": "accept-021", "split": "held_out", "category": "strict_numeric_boundary",
+      "question": "Czy powierzchnia tego kraju jest mniejsza niż 120 000 km²?",
+      "route": "local",
+      "supported_ast": {"operator": "less_than", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 120000}},
+      "gold_plan": {"operator": "less_than", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 120000}},
+      "meaning_guard": "Strict area < 120,000 km²; equality is excluded.",
+      "required_atoms": [{"operator": "less_than", "relation": "area", "value": 120000}],
+      "explanatory_notes": "Mniejsza niż means strictly less than; the provided threshold is unambiguous.", "notes": "Polish strict area upper boundary."
+    },
+    {
+      "id": "accept-022", "split": "held_out", "category": "three_clause_boolean",
+      "question": "Czy kraj ma dostęp do morza, jeździ się w nim lewą stroną i jego walutą jest jen?",
+      "route": "local",
+      "supported_ast": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Sea"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "driving_side"}, "right": {"value": "left"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "JPY"}}
+      ]},
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Sea"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "driving_side"}, "right": {"value": "left"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "JPY"}}
+      ]},
+      "meaning_guard": "All three predicates are required: sea access, left-side traffic, and yen as currency.",
+      "required_atoms": [{"operator": "contains", "relation": "water_access", "value": "Sea"}, {"operator": "equals", "relation": "driving_side", "value": "left"}, {"operator": "contains", "relation": "currency", "value": "JPY"}],
+      "explanatory_notes": "The three facts use the documented water access, driving side and currency relations.", "notes": "Polish three-condition conjunction."
+    },
+    {
+      "id": "accept-023", "split": "held_out", "category": "two_clause_boolean",
+      "question": "Was the country in the USSR or in Yugoslavia?",
+      "route": "local",
+      "supported_ast": {"operator": "or", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "USSR"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "Yugoslavia"}}
+      ]},
+      "gold_plan": {"operator": "or", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "USSR"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "Yugoslavia"}}
+      ]},
+      "meaning_guard": "Historical membership in either of two named supported dissolved unions suffices.",
+      "required_atoms": [{"operator": "contains", "relation": "historical_union", "value": "USSR"}, {"operator": "contains", "relation": "historical_union", "value": "Yugoslavia"}],
+      "explanatory_notes": "Historical_union explicitly stores both named polities; this is OR, not present membership.", "notes": "Two-branch historical-union disjunction."
+    },
+    {
+      "id": "accept-024", "split": "held_out", "category": "vacuous_universal_scope",
+      "question": "Are all of its bordering countries republics?",
+      "route": "local",
+      "supported_ast": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "equals", "left": {"entity": "item", "relation": "government_type"}, "right": {"value": "Republic"}}},
+      "gold_plan": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "equals", "left": {"entity": "item", "relation": "government_type"}, "right": {"value": "Republic"}}},
+      "meaning_guard": "Every bound border-country item must have government_type Republic; executor all returns true on an empty list.",
+      "required_atoms": [{"operator": "all", "relation": "borders_country"}, {"operator": "equals", "relation": "government_type", "value": "Republic"}],
+      "explanatory_notes": "The list and scalar item property are both supported; universal quantification intentionally keeps its documented empty-list behavior.", "notes": "Universal borders quantification with explicit vacuous scope."
+    },
+    {
+      "id": "accept-025", "split": "held_out", "category": "negated_universal_scope",
+      "question": "Czy żaden z sąsiadów lądowych nie używa euro?",
+      "route": "local",
+      "supported_ast": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "currency"}, "right": {"value": "EUR"}}}},
+      "gold_plan": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "currency"}, "right": {"value": "EUR"}}}},
+      "meaning_guard": "No neighbor is an EU/euro predicate substitute; specifically, negate the existence of any land neighbor using EUR.",
+      "required_atoms": [{"operator": "not", "relation": "borders_country"}, {"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "currency", "value": "EUR"}],
+      "explanatory_notes": "Polish żaden ... nie means not(any neighbor whose currency list contains EUR), not an unscoped currency negation.", "notes": "Negated existential; false on any euro-using neighbor."
+    },
+    {
+      "id": "accept-026", "split": "held_out", "category": "religion_specific_category",
+      "question": "Is Catholicism the dominant religion category there?",
+      "route": "local",
+      "supported_ast": {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+      "gold_plan": {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+      "meaning_guard": "Use the explicit Catholic category, not the broader Christianity umbrella.",
+      "required_atoms": [{"operator": "equals", "relation": "dominant_religion", "value": "Catholic"}],
+      "explanatory_notes": "Catholic is a supported dominant religion grouping with scalar equality semantics.", "notes": "English explicit Catholic denomination category."
+    },
+    {
+      "id": "accept-027", "split": "held_out", "category": "vague_proximity_clarification",
+      "question": "Czy ten kraj znajduje się blisko Maroka?",
+      "route": "clarify", "supported_ast": null, "gold_plan": null,
+      "meaning_guard": "Nearness has no distance threshold; do not substitute a shared border or point-coordinate comparison.",
+      "required_atoms": [],
+      "explanatory_notes": "The named reference is clear but 'blisko' lacks an objective proximity criterion, so clarification precedes local-coverage routing.", "notes": "Polish vague proximity with named reference."
+    },
+    {
+      "id": "accept-028", "split": "held_out", "category": "common_name_text",
+      "question": "Does the common English country name end with the letters 'ia'?",
+      "route": "local",
+      "supported_ast": {"operator": "ends_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "ia"}},
+      "gold_plan": {"operator": "ends_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "ia"}},
+      "meaning_guard": "Test the two quoted letters at the end of the common English name, not an official long name or a country-language fact.",
+      "required_atoms": [{"operator": "ends_with", "relation": "name", "value": "ia"}],
+      "explanatory_notes": "The common name is a supported scalar text relation and ends_with preserves the requested suffix exactly.", "notes": "Supported English common-name suffix."
+    },
+    {
+      "id": "accept-029", "split": "held_out", "category": "named_reference_three_condition",
+      "question": "Is the country north of Senegal, an African Union member, and not an island country?",
+      "route": "local",
+      "supported_ast": {"operator": "and", "conditions": [
+        {"operator": "north_of", "left": {"entity": "target_country", "relation": "coordinates.latitude"}, "right": {"entity": "Senegal", "relation": "coordinates.latitude"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "AU"}},
+        {"operator": "not", "condition": {"operator": "equals", "left": {"entity": "target_country", "relation": "is_island"}, "right": {"value": true}}}
+      ]},
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "north_of", "left": {"entity": "target_country", "relation": "coordinates.latitude"}, "right": {"entity": "Senegal", "relation": "coordinates.latitude"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "AU"}},
+        {"operator": "not", "condition": {"operator": "equals", "left": {"entity": "target_country", "relation": "is_island"}, "right": {"value": true}}}
+      ]},
+      "meaning_guard": "AND all three: target latitude is north of Senegal's latitude, target is an AU member, and is_island is false.",
+      "required_atoms": [{"operator": "north_of", "relation": "coordinates.latitude"}, {"operator": "contains", "relation": "membership", "value": "AU"}, {"operator": "not", "relation": "is_island"}, {"operator": "equals", "relation": "is_island", "value": true}],
+      "explanatory_notes": "The question has an objective same-axis point comparison plus two supported target facts; no clause is dropped.", "notes": "Three-clause mix with compass reference and negated boolean property."
+    },
+    {
+      "id": "accept-030", "split": "held_out", "category": "inclusive_metric_boundary",
+      "question": "Czy kraj ma powierzchnię co najmniej 9 000 000 km²?",
+      "route": "local",
+      "supported_ast": {"operator": "greater_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 9000000}},
+      "gold_plan": {"operator": "greater_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 9000000}},
+      "meaning_guard": "Target area >= 9,000,000 km²; equality counts.",
+      "required_atoms": [{"operator": "greater_than_or_equal", "relation": "area", "value": 9000000}],
+      "explanatory_notes": "Co najmniej means an inclusive lower bound on the directly supported area metric.", "notes": "Polish inclusive area lower bound."
+    }
+  ]
+}

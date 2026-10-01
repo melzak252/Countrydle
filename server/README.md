@@ -187,6 +187,54 @@ These regressions use controlled provider responses; they do not measure live
 model accuracy or latency. SQLite regressions require the normal local fact data
 and country-additions provisioning.
 
+### Countrydle planner compaction
+
+Countrydle uses one compact, complete relation catalogue; no extra classifier or
+question-specific schema pruning. Its effective cache version includes the
+Countrydle-only prompt revision (`compact-v5-t1024`) and configured model in
+addition to the shared planner contract. Old interpretations cannot mask the
+cutover; other modes retain their cache versions and normalization.
+
+The 1,024-token thinking budget and 2,048-token output ceiling are retained.
+Live lower-budget experiments exposed semantic and tree-reference errors.
+On the final 20-question prospective EN/PL stress set, both arms used
+`gemini-2.5-flash-lite`, temperature zero, application-cache bypass, and the same
+read-only fact snapshot:
+
+| Planner-only measure | Original | Compact |
+|---|---:|---:|
+| Input tokens, mean / p95 | 7,143 / 7,151 | 4,344 / 4,352 |
+| Correct meaning/routing | 15/20 | 20/20 |
+| Planning latency, mean / p95 | 2.37s / 3.74s | 2.86s / 3.62s |
+| Full-input-uncached cost counterfactual per 1,000 calls | $0.992 | $0.784 |
+| Observed charge per 1,000 matched provider-warm calls (19 pairs) | $0.427 | $0.429 |
+
+Input decreased 39.2%, but increased thinking erased the saving on the matched
+provider-warm cohort. Neither sub-second planning nor a 30% paid-cost saving is
+established. Missing cache metadata is unknown, not zero; no provider-cold cohort
+was forced. These are curated stress cases, not a production traffic estimate.
+A post-tuning 30-case regression also retains a pre-existing membership-alias
+failure when the model emits `African Union` instead of `AU`.
+
+The actual ASGI/API smoke used live providers and isolated PostgreSQL: stale
+interpretations missed, exact/normalized repeats hit, compound answers and
+fallback were correct, and only verified booleans consumed turns. Qdrant was
+unavailable; retrieval/indexing failure was observed, not mocked away.
+Affected backend regressions: 292 passed.
+
+The opt-in reproducible harness never writes gameplay records or the source fact
+database. Run from `server/`; provider-free gold validation needs no API key:
+
+```bash
+python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --validate-only --output /tmp/planner-gold.json
+python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --variant both --baseline-planner /path/to/unchanged/local_planner.py --env-file /path/to/local/.env --output /tmp/planner-comparison.json
+```
+
+The complete [research and measurement report](../docs/planner_compaction_research.md)
+records corpus hashes, adjudication, budget rejection, cost missingness, projected
+gameplay costs, and a measured design-only cultural-relation delta. No new cultural
+facts, relation, template, schema, or executor behavior is implemented here.
+
 ## County border facts
 
 Powiatdle uses the repository snapshot `powiatdle/local_kb/borders.json`, derived
