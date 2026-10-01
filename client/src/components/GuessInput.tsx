@@ -125,7 +125,7 @@ export default function GuessInput<Id extends string | number = number>({
       return;
     }
 
-    const looksLikeQuestion = query.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(query.trim());
+    const looksLikeQuestion = query.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|do\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(query.trim());
     if (looksLikeQuestion) {
       setShowSuggestions(false);
       if (onWarning) {

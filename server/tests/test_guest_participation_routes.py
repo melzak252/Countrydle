@@ -24,6 +24,7 @@ async def solo_client(participation_db):
     from users.utils import get_current_or_guest_user
 
     model_names = (
+        "UserPoints",
         "Country", "CountrydleDay", "CountrydleState", "CountrydleQuestion", "CountrydleGuess",
         "USState", "USStatedleDay", "USStatedleState", "USStatedleQuestion", "USStatedleGuess",
         "Powiat", "PowiatdleDay", "PowiatdleState", "PowiatdleQuestion", "PowiatdleGuess",
@@ -327,3 +328,85 @@ async def test_countrydle_guest_events_are_reconstructible_by_browser_identity(
         ("Is it in Europe?", "Germany", False),
         ("Does it border Germany?", "Germany", False),
     }
+
+
+@pytest.mark.parametrize("mode", ["countrydle", "continental/europe"])
+@pytest.mark.parametrize("authenticated", [False, True])
+@pytest.mark.parametrize("invalid_guess", [
+    {"guess": "do they speak portuguese", "country_id": 0},
+    {"guess": "do they speak portuguese", "country_id": 1},
+    {"guess": "tell me its language"},
+    {"guess": "%"},
+    {"guess": "Germany", "country_id": 1},
+    {"guess": "Germany", "country_id": 999},
+])
+async def test_invalid_country_guess_preserves_last_attempt(
+    solo_client, participation_db, mode, authenticated, invalid_guess,
+):
+    from app import app
+    from db.models import Country, CountrydleGuess, ContinentalGuess
+    from users.utils import get_current_or_guest_user
+
+    if authenticated:
+        app.dependency_overrides[get_current_or_guest_user] = lambda: SimpleNamespace(
+            id=1, username="first", email="first@example.com", verified=True,
+        )
+    async with participation_db() as session:
+        session.add(Country(id=3, name="France", official_name="French Republic", md_file="france.md"))
+        await session.commit()
+
+    for name, country_id in (("Germany", 2), ("France", 3)):
+        response = await solo_client.post(
+            f"/{mode}/guess", json={"guess": name, "country_id": country_id},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["answer"] is False
+
+    from utils.guest_session import read_guest_game_token
+    cookie_mode = mode.replace("/", "_")
+    guest_cookie = solo_client.cookies.get(f"guest_{cookie_mode}")
+    if authenticated:
+        before = (await solo_client.get(f"/{mode}/state")).json()["state"]
+        assert before["remaining_guesses"] == 1
+    else:
+        assert read_guest_game_token(guest_cookie, cookie_mode, 1)["guesses_count"] == 2
+    rejected = await solo_client.post(f"/{mode}/guess", json=invalid_guess)
+    assert rejected.status_code == 400, rejected.text
+    if authenticated:
+        after = (await solo_client.get(f"/{mode}/state")).json()["state"]
+        assert after["remaining_guesses"] == 1
+        assert after["guesses_made"] == 2
+        assert after["is_game_over"] is False
+        assert after["won"] is False
+    else:
+        assert solo_client.cookies.get(f"guest_{cookie_mode}") == guest_cookie
+        after = read_guest_game_token(guest_cookie, cookie_mode, 1)
+        assert after["guesses_count"] == 2
+        assert after["is_game_over"] is False
+        assert after["won"] is False
+    guess_model = CountrydleGuess if mode == "countrydle" else ContinentalGuess
+    async with participation_db() as session:
+        assert await session.scalar(select(func.count()).select_from(guess_model)) == 2
+        if not authenticated:
+            participation = (await session.scalars(select(GuestParticipation))).one()
+            assert participation.guesses_made == 2
+            assert participation.won is False
+
+    final_guess = await solo_client.post(
+        f"/{mode}/guess", json={"guess": "Poland", "country_id": 1},
+    )
+    assert final_guess.status_code == 200, final_guess.text
+    assert final_guess.json()["answer"] is True
+
+
+@pytest.mark.parametrize("payload", [
+    {"guess": "  poland  "},
+    {"guess": "Republic of Poland"},
+    {"guess": "rePUBLIC OF polAND", "country_id": 1},
+])
+async def test_country_guess_accepts_canonical_and_official_names(
+    solo_client, payload,
+):
+    response = await solo_client.post("/countrydle/guess", json=payload)
+    assert response.status_code == 200, response.text
+    assert response.json()["answer"] is True

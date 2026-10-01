@@ -49,6 +49,13 @@ their reason and next step as accessible alerts without making the entire
 conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
+
+The Guess input recognizes question prefixes, including `do …`, and switches back
+to Question with a chat notice rather than submitting a guess. Countrydle and
+continental APIs also reject text that is not a known country, so bypassing the
+client guard cannot consume an attempt. Selecting a valid country can still use
+the preserved final guess.
+
 ## Friend duels
 
 Create a duel at `/friends`; invitations open `/duel/:code`.
