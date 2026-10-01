@@ -39,6 +39,8 @@ LOCAL_CONFIG = LocalModeConfig(
         "water_access": ("powiat_water_access", "water_name"),
         "landform_regions": ("powiat_landform_regions", "region_name"),
         "regional_labels": ("powiat_landform_regions", "region_name"),
+        "historical_regions": ("powiat_historical_regions", "region_name"),
+        "historical_partitions": ("powiat_historical_partitions", "partition_name"),
     },
     entity_list_relations=frozenset({"borders_powiat"}),
     supported_relations=[
@@ -46,13 +48,17 @@ LOCAL_CONFIG = LocalModeConfig(
         "borders_country", "population", "area", "population_density", "urbanization", "registration_plates",
         "gmina_count", "urban_gmina_count", "rural_gmina_count", "urban_rural_gmina_count",
         "major_rivers", "major_roads", "water_access", "landform_regions", "regional_labels",
-        "latitude", "longitude",
+        "historical_regions", "historical_partitions", "latitude", "longitude",
     ],
     mode_notes=(
         "Relative cardinal directions comparing position to another city or county (e.g. 'na zachód od Warszawy', "
         "'na wschód od Krakowa', 'na północ od Wrocławia', 'na południe od Poznania') are supported: use "
         "operator west_of / east_of comparing relation longitude, or north_of / south_of comparing relation latitude "
         "with the reference city/county name as right operand entity.\n"
+        "Historical lands/regions (Małopolska, Wielkopolska, Śląsk, Mazowsze, Pomorze, Warmia, Mazury, Kujawy, Podlasie, Galicja) "
+        "use contains_exact on relation historical_regions (or regional_labels).\n"
+        "Historical partitions (Zabór rosyjski, Zabór pruski, Zabór austriacki, Ziemie Odzyskane) "
+        "use contains_exact on relation historical_partitions.\n"
         "water_access records direct coastline access to Morze Bałtyckie (Baltic Sea).\n"
         "(powiat grodzki), 0 means powiat ziemski. These are precise administrative categories.\n"
         "When a question names a specific neighboring county, use contains_exact on borders_powiat "

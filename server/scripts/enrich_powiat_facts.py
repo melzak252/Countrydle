@@ -502,9 +502,135 @@ def enrich_database(db_path: Path):
         conn.executemany("INSERT OR IGNORE INTO powiat_major_roads (powiat_id, road_name) VALUES (?, ?)", road_inserts)
         print(f"  -> Inserted {len(road_inserts)} road records across {len(ROADS_TO_POWIATS)} motorways and expressways.")
 
+        # 5. Populate Historical Regions and Partitions for All 380 Powiats
+        print("Populating historical regions and partitions for all powiats...")
+        conn.execute("CREATE TABLE IF NOT EXISTS powiat_historical_regions (powiat_id INTEGER NOT NULL, region_name TEXT NOT NULL, PRIMARY KEY (powiat_id, region_name))")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_powiat_hist_reg ON powiat_historical_regions(region_name)")
+        conn.execute("CREATE TABLE IF NOT EXISTS powiat_historical_partitions (powiat_id INTEGER NOT NULL, partition_name TEXT NOT NULL, PRIMARY KEY (powiat_id, partition_name))")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_powiat_hist_part ON powiat_historical_partitions(partition_name)")
+        conn.execute("DELETE FROM powiat_historical_regions")
+        conn.execute("DELETE FROM powiat_historical_partitions")
+
+        hist_reg_inserts = []
+        hist_part_inserts = []
+        landform_inserts = []
+
+        all_powiats = conn.execute("SELECT id, name, voivodeship FROM powiats").fetchall()
+        for p in all_powiats:
+            pid = p["id"]
+            pname = p["name"]
+            woj = p["voivodeship"].lower()
+
+            regions = set()
+            partitions = set()
+
+            # Partitions (Zabory & Ziemie Odzyskane)
+            if woj in {"dolnośląskie", "zachodniopomorskie", "lubuskie", "opolskie", "warmińsko-mazurskie"}:
+                partitions.update(["Ziemie Odzyskane", "Zabór pruski"])
+            elif woj in {"wielkopolskie", "pomorskie"}:
+                partitions.add("Zabór pruski")
+            elif woj == "kujawsko-pomorskie":
+                partitions.add("Zabór pruski")
+                if any(x in pname.lower() for x in ["włocław", "lipnow", "rypiń", "radziej", "aleksandr"]):
+                    partitions.add("Zabór rosyjski")
+            elif woj in {"mazowieckie", "łódzkie", "lubelskie", "świętokrzyskie", "podlaskie"}:
+                partitions.add("Zabór rosyjski")
+            elif woj in {"małopolskie", "podkarpackie"}:
+                partitions.update(["Zabór austriacki", "Galicja"])
+            elif woj == "śląskie":
+                if any(x in pname.lower() for x in ["cieszyn", "bielsk", "żywiec"]):
+                    partitions.update(["Zabór austriacki", "Galicja"])
+                elif any(x in pname.lower() for x in ["częstochow", "kłobuck", "myszkow", "zawierc", "będziń", "bedzin", "sosnowiec", "dąbrowa", "dabrowa", "jaworzno"]):
+                    partitions.add("Zabór rosyjski")
+                else:
+                    partitions.update(["Ziemie Odzyskane", "Zabór pruski"])
+
+            # Historical Lands (Krainy historyczne)
+            if woj == "dolnośląskie":
+                regions.update(["Dolny Śląsk", "Śląsk", "Sudety"])
+            elif woj == "opolskie":
+                regions.update(["Górny Śląsk", "Śląsk"])
+            elif woj == "śląskie":
+                if any(x in pname.lower() for x in ["cieszyn", "bielsk", "żywiec"]):
+                    regions.update(["Górny Śląsk", "Śląsk", "Śląsk Cieszyński", "Małopolska", "Galicja", "Beskidy"])
+                elif any(x in pname.lower() for x in ["częstochow", "kłobuck", "myszkow", "zawierc", "będziń", "bedzin", "sosnowiec", "dąbrowa", "dabrowa", "jaworzno"]):
+                    regions.update(["Małopolska", "Zagłębie Dąbrowskie"])
+                else:
+                    regions.update(["Górny Śląsk", "Śląsk"])
+            elif woj == "małopolskie":
+                regions.update(["Małopolska", "Galicja"])
+                if any(x in pname.lower() for x in ["tatrzań", "nowotar", "nowosąd", "gorlic", "suski"]):
+                    regions.update(["Karpaty", "Podhale", "Beskidy"])
+            elif woj == "podkarpackie":
+                regions.update(["Małopolska", "Galicja", "Podkarpacie"])
+                if any(x in pname.lower() for x in ["bieszczad", "leski", "sanoc", "krośnień", "jasiel"]):
+                    regions.update(["Bieszczady", "Karpaty", "Beskidy"])
+            elif woj == "świętokrzyskie":
+                regions.update(["Małopolska", "Ziemia sandomierska", "Góry Świętokrzyskie"])
+            elif woj == "lubelskie":
+                regions.update(["Małopolska", "Lubelszczyzna"])
+                if any(x in pname.lower() for x in ["chełm", "włodaw", "bialsk"]):
+                    regions.add("Polesie")
+            elif woj == "mazowieckie":
+                regions.add("Mazowsze")
+                if any(x in pname.lower() for x in ["radom", "szydłow", "lipsk", "kozienic"]):
+                    regions.update(["Małopolska", "Ziemia radomska"])
+            elif woj == "podlaskie":
+                regions.add("Podlasie")
+                if any(x in pname.lower() for x in ["łomż", "kolneń", "grajew", "zambrow"]):
+                    regions.update(["Mazowsze", "Ziemia łomżyńska"])
+                if any(x in pname.lower() for x in ["suwal", "sejneń", "augustow"]):
+                    regions.add("Suwalszczyzna")
+            elif woj == "łódzkie":
+                regions.update(["Ziemia łódzka", "Ziemia sieradzka", "Ziemia łęczycka", "Wielkopolska"])
+            elif woj == "wielkopolskie":
+                regions.add("Wielkopolska")
+            elif woj == "lubuskie":
+                regions.update(["Ziemia lubuska", "Wielkopolska"])
+                if any(x in pname.lower() for x in ["zielonogór", "nowosol", "żar", "żagań"]):
+                    regions.update(["Dolny Śląsk", "Śląsk"])
+            elif woj == "zachodniopomorskie":
+                regions.update(["Pomorze Zachodnie", "Pomorze"])
+            elif woj == "pomorskie":
+                regions.update(["Pomorze Gdańskie", "Pomorze"])
+                if any(x in pname.lower() for x in ["kartuz", "kościers", "wejherow", "puc", "bytow", "chojnic", "lębor", "gdyn", "gdań", "sopot"]):
+                    regions.add("Kaszuby")
+                if any(x in pname.lower() for x in ["starogard", "tczew"]):
+                    regions.add("Kociewie")
+            elif woj == "kujawsko-pomorskie":
+                if any(x in pname.lower() for x in ["włocław", "inowrocław", "aleksandr", "radziej"]):
+                    regions.add("Kujawy")
+                if any(x in pname.lower() for x in ["toruń", "chełmiń", "grudziądz", "wąbrzeź"]):
+                    regions.add("Ziemia chełmińska")
+                if any(x in pname.lower() for x in ["rypiń", "lipnow", "golub"]):
+                    regions.add("Ziemia dobrzyńska")
+                if any(x in pname.lower() for x in ["świec", "tuchol"]):
+                    regions.add("Pomorze")
+                if any(x in pname.lower() for x in ["żniń", "mogileń"]):
+                    regions.add("Wielkopolska")
+                regions.add("Kujawy")
+            elif woj == "warmińsko-mazurskie":
+                if any(x in pname.lower() for x in ["olsztyn", "lidzbar", "braniew"]):
+                    regions.add("Warmia")
+                else:
+                    regions.add("Mazury")
+                regions.add("Pojezierze Mazurskie")
+
+            for reg in regions:
+                hist_reg_inserts.append((pid, reg))
+                landform_inserts.append((pid, reg))
+            for part in partitions:
+                hist_part_inserts.append((pid, part))
+
+        conn.executemany("INSERT OR IGNORE INTO powiat_historical_regions (powiat_id, region_name) VALUES (?, ?)", hist_reg_inserts)
+        conn.executemany("INSERT OR IGNORE INTO powiat_historical_partitions (powiat_id, partition_name) VALUES (?, ?)", hist_part_inserts)
+        conn.executemany("INSERT OR IGNORE INTO powiat_landform_regions (powiat_id, region_name) VALUES (?, ?)", landform_inserts)
+        print(f"  -> Inserted {len(hist_reg_inserts)} historical region assignments.")
+        print(f"  -> Inserted {len(hist_part_inserts)} historical partition assignments.")
+        print(f"  -> Synced into powiat_landform_regions.")
+
     conn.close()
     print("Database enrichment complete!")
-
 
 if __name__ == "__main__":
     enrich_database(DB_PATH)
