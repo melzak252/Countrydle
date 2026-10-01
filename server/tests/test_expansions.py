@@ -2,13 +2,19 @@ import pytest
 from datetime import date, timedelta
 from unittest.mock import MagicMock, AsyncMock, patch
 
-from countrydle.local_answering import execute_local_plan
+from countrydle.local_answering import DEFAULT_DB_PATH, execute_local_plan
 from countrydle.local_planner import QuestionPlan
 from db.models import Country, CountrydleDay, Wojewodztwo, WojewodztwodleDay
 from db.repositories.countrydle import CountrydleRepository
 from db.repositories.wojewodztwodle import WojewodztwodleDayRepository
 
+requires_country_facts = pytest.mark.skipif(
+    not DEFAULT_DB_PATH.exists(),
+    reason="Countrydle local SQLite KB is missing",
+)
 
+
+@requires_country_facts
 def test_flag_color_evaluation():
     p_red = {
         "operator": "contains",
@@ -30,6 +36,7 @@ def test_flag_color_evaluation():
     assert execute_local_plan(p_red, "Brazil", "Is there red on the flag?").answer is False
 
 
+@requires_country_facts
 def test_flag_symbol_evaluation():
     p_star = {
         "operator": "contains",
@@ -51,6 +58,7 @@ def test_flag_symbol_evaluation():
     assert execute_local_plan(p_star, "United Kingdom", "Does the flag have a star?").answer is False
 
 
+@requires_country_facts
 def test_historical_unions_evaluation():
     p_ussr = {
         "operator": "contains",

@@ -62,6 +62,14 @@ uvicorn app:app --reload --port 8080
 
 ---
 
+## Backend tests
+
+Test placement, focused-run commands, fixture and database rules, and extension
+guidance are documented in [`tests/README.md`](tests/README.md). From `server/`,
+run a focused group with `python scripts/test_module.py powiatdle` or one test
+module with `python -m pytest -q tests/test_powiat_names.py`. Use
+`python scripts/test_module.py --list` to inspect groups.
+
 ## 💾 Database & Data Population
 
 ### 1. Resetting the Database
