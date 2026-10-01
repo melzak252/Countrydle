@@ -747,6 +747,12 @@ def generate_mode_explanation(
             return f"{name} graniczy {prep} {val_instr}." if answer else f"{name} nie graniczy {prep} {val_instr}."
         if rel == "seat":
             return f"Siedzibą {name} jest {row['seat']}."
+        if rel == "major_roads" and val:
+            label = "Województwo" if config.mode_name == "Wojewodztwodle" else "Powiat"
+            return f"Przez {label} {name} przebiega {val}." if answer else f"Przez {label} {name} nie przebiega {val}."
+        if rel == "major_rivers" and val:
+            label = "Województwo" if config.mode_name == "Wojewodztwodle" else "Powiat"
+            return f"Przez {label} {name} przepływa {val}." if answer else f"Przez {label} {name} nie przepływa {val}."
         if rel == "macroregion":
             return f"{name} leży w makroregionie: {row['macroregion']}."
         if rel == "registration_plates" and val:

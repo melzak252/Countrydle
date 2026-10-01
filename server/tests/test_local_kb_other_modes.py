@@ -391,3 +391,26 @@ def test_powiat_registration_plate_code_length():
     # Powiat krakowski has 3-letter codes (KRA)
     assert answer(POWIAT_CONFIG, "Powiat krakowski", scalar(POWIAT_CONFIG, "char_count_equals", "registration_plates", 3)).answer is True
     assert answer(POWIAT_CONFIG, "Powiat krakowski", scalar(POWIAT_CONFIG, "char_count_equals", "registration_plates", 2)).answer is False
+
+
+def test_wojewodztwodle_major_roads():
+    from local_kb_question import analyze_question
+
+    p_a4 = analyze_question("Czy przez województwo przebiega autostrada A4?", VOIVODESHIP_CONFIG, use_cache=False)
+    assert p_a4.valid is True and p_a4.supported is True
+
+    # A4 runs through southern Poland: Dolnośląskie, Opolskie, Śląskie, Małopolskie, Podkarpackie
+    assert answer(VOIVODESHIP_CONFIG, "Dolnośląskie", p_a4.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Śląskie", p_a4.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Małopolskie", p_a4.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Pomorskie", p_a4.plan).answer is False
+
+    p_a1 = analyze_question("Czy przez województwo przebiega autostrada A1?", VOIVODESHIP_CONFIG, use_cache=False)
+    assert answer(VOIVODESHIP_CONFIG, "Pomorskie", p_a1.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Łódzkie", p_a1.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Podlaskie", p_a1.plan).answer is False
+
+    p_s7 = analyze_question("Czy przez województwo przebiega droga ekspresowa S7?", VOIVODESHIP_CONFIG, use_cache=False)
+    assert answer(VOIVODESHIP_CONFIG, "Mazowieckie", p_s7.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Świętokrzyskie", p_s7.plan).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Wielkopolskie", p_s7.plan).answer is False
