@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
 import TemplateDivergencesPanel from '../components/admin/TemplateDivergencesPanel';
 import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
@@ -9,6 +10,7 @@ import AdminLiveFeedTab from '../components/admin/AdminLiveFeedTab';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminQuestionsTab, { type AdminGameType } from '../components/admin/AdminQuestionsTab';
 import AdminFactsTab from '../components/admin/AdminFactsTab';
+import AdminSuggestionsTab from '../components/admin/AdminSuggestionsTab';
 import type { AnswerReport } from '../types';
 import { 
   adminService, 
@@ -29,11 +31,12 @@ import {
   FileText, 
   Sparkles,
   Gamepad2,
-  Cpu
+  Cpu,
+  MessageSquare
 } from 'lucide-react';
 
 type AdminSection = 'gameplay' | 'qa' | 'system';
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache';
+type AdminTab = 'overview' | 'liveFeed' | 'users' | 'suggestions' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache';
 
 interface TabDefinition {
   id: AdminTab;
@@ -47,6 +50,7 @@ const TABS: TabDefinition[] = [
   { id: 'overview', label: 'Overview & Solve Rates', icon: Activity, section: 'gameplay' },
   { id: 'liveFeed', label: 'Live Player Feed', icon: Calendar, section: 'gameplay' },
   { id: 'users', label: 'User Directory', icon: Users, section: 'gameplay' },
+  { id: 'suggestions', label: 'adminSuggestions.tab', icon: MessageSquare, section: 'gameplay' },
   { id: 'friendAnswers', label: 'Friend Duels', icon: HelpCircle, section: 'gameplay' },
 
   // QA & Knowledge Section
@@ -61,6 +65,7 @@ const TABS: TabDefinition[] = [
 ];
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [activeSection, setActiveSection] = useState<AdminSection>('gameplay');
   const [questionTestReport, setQuestionTestReport] = useState<AnswerReport | null>(null);
@@ -285,7 +290,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && activeTab !== 'cache' && (
+        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && activeTab !== 'cache' && activeTab !== 'suggestions' && (
           <div>
             <button
               type="button"
@@ -357,7 +362,7 @@ export default function AdminDashboard() {
               }`}
             >
               <Icon size={14} className={isActive ? 'text-emerald-300' : 'text-sand-100/55'} />
-              <span>{tab.label}</span>
+              <span>{tab.id === 'suggestions' ? t(tab.label) : tab.label}</span>
             </button>
           );
         })}
@@ -387,6 +392,7 @@ export default function AdminDashboard() {
         />
       )}
 
+      {activeTab === 'suggestions' && <AdminSuggestionsTab />}
       {activeTab === 'questions' && (
         <AdminQuestionsTab
           mode={questionsMode}

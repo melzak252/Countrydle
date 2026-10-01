@@ -248,3 +248,26 @@ export interface PatchNotesResponse {
   page: number;
   limit: number;
 }
+export type SuggestionTopic = 'feedback' | 'bug' | 'feature' | 'data';
+
+export interface SuggestionSubmission {
+  topic: SuggestionTopic;
+  message: string;
+  name: string | null;
+  email: string | null;
+}
+
+export interface Suggestion {
+  id: number;
+  topic: SuggestionTopic;
+  message: string;
+  name: string | null;
+  email: string | null;
+  created_at: string;
+  reporter_username: string | null;
+}
+
+export interface AdminSuggestionsResponse {
+  items: Suggestion[];
+  total: number;
+}

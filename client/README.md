@@ -1,3 +1,18 @@
+## General Suggestion Box
+
+`/contact` hosts the General Suggestion Box for guests and signed-in players.
+Choose general feedback, a bug report, a feature request, or a data correction;
+name and email are optional. Submissions are stored through `POST /suggestions`.
+The form confirms success only after the backend returns `201`, prevents repeat
+submits while pending, and preserves the draft on failure. Public copy is
+available in English and Polish. Direct email support remains a separate link.
+
+In `/admin`, open **Gameplay & Players → Suggestions** to read the full message,
+topic, submission time, guest/player identity, and any provided contact details.
+The list is newest first, has 25 suggestions per page, and supports refresh and
+retry. Backend authorization protects the messages and contact information;
+they are not exposed in a public feed.
+
 ## Daily game question chat
 
 `src/components/QuestionChat.tsx` renders the shared conversation for the world,

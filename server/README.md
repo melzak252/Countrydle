@@ -70,6 +70,28 @@ run a focused group with `python scripts/test_module.py powiatdle` or one test
 module with `python -m pytest -q tests/test_powiat_names.py`. Use
 `python scripts/test_module.py --list` to inspect groups.
 
+## Player suggestions
+
+The public General Suggestion Box at `/contact` saves feedback in PostgreSQL;
+it no longer opens the player's email client.
+
+- `POST /suggestions`: guests and signed-in players submit `message` (trimmed,
+  1–5000 characters), optional `topic` (`feedback`, `bug`, `feature`, or `data`,
+  default `feedback`), optional `name` (up to 100 characters), and optional
+  `email` (valid address, up to 254 characters). Blank contact fields become null.
+  Unknown fields are rejected. A successful committed submission returns `201`
+  with `{ "id": ... }`.
+- `GET /admin/suggestions?page=1&limit=25`: admin-only, newest first with a stable
+  ID tie-breaker; returns `{ "items": [...], "total": ... }`. Page starts at 1 and
+  limit is bounded to 1–100. Items contain the full message, topic, submitted
+  contact fields, creation time, and signed-in player's username when available.
+
+Alembic revision `9f8e7d6c5b4a` creates `suggestions` after `c3d4e5f6a7b8`.
+Normal backend startup applies it automatically. Existing mailto messages
+cannot be imported because the old form did not persist them.
+Run `python -m pytest -q tests/test_suggestions.py` for persistence, validation,
+pagination, and access-control regression coverage.
+
 ## 💾 Database & Data Population
 
 ### 1. Resetting the Database

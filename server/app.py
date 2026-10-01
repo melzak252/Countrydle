@@ -22,6 +22,7 @@ from blog import router as blog_router
 from flagdle import router as flagdle_router
 from admin import router as admin_router
 from answer_reports import router as answer_reports_router, admin_router as admin_answer_reports_router
+from suggestions import router as suggestions_router, admin_router as admin_suggestions_router
 from friend_matches import router as friend_matches_router
 from patch_notes import router as patch_notes_router
 from admin.template_divergences import router as template_divergences_router
@@ -190,6 +191,8 @@ app.include_router(blog_router)
 app.include_router(admin_router)
 app.include_router(answer_reports_router)
 app.include_router(admin_answer_reports_router)
+app.include_router(suggestions_router)
+app.include_router(admin_suggestions_router)
 app.include_router(friend_matches_router)
 app.include_router(patch_notes_router)
 app.include_router(template_divergences_router)

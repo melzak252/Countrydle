@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "September 26, 2026";
+  const lastUpdated = "October 1, 2026";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -66,6 +66,17 @@ export default function PrivacyPolicyPage() {
                   Your opponent sees your human answers, not your private AI advice or reports. Secret locations are revealed
                   when the duel ends. Authorized administrators can review completed-game evidence. A necessary HttpOnly
                   browser cookie preserves your guest seats for up to one year; clearing it can remove your access to them.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-white mb-2">e. Player Suggestions</h3>
+                <p className="text-zinc-300">
+                  When you use the General Suggestion Box, we store your selected topic, message, submission time,
+                  and any name or email address you choose to provide. If you are signed in, the submission is
+                  linked to your account. You can also submit as a guest without providing contact details.
+                  Suggestions are available only to authorized administrators, who use them to review feedback,
+                  improve Countrydle, and contact you about your suggestion when you provide an email address.
+                  Do not include passwords or sensitive personal information.
                 </p>
               </div>
             </div>
