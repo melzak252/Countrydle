@@ -1,5 +1,5 @@
 {
-  "version": "1.17.4",
-  "title": "Default daily blog generation to Gemini 3.8 Flash",
-  "body": "DAILY BLOG ENGINE OPTIMIZATION\n- Set the default primary model for daily blog recap and trivia generation to Gemini 3.8 Flash, delivering fast and high-quality curiosities and quizzes at optimal efficiency.\n- Maintained Gemini 3.1 Pro as automatic high-capacity fallback."
+  "version": "1.18.0",
+  "title": "Refined navigation bar with descriptive countdown timer and equator/meridian improvements",
+  "body": "NAVIGATION BAR & COUNTDOWN TIMER\n- Added clean descriptive countdown label ('Next Countrydle in:') and compact responsive timer styling across all viewports.\n- Refined navigation header with a single elegant 'In Dev' badge for upcoming experimental modes.\n\nEQUATOR & PRIME MERIDIAN ROUTING\n- Mapped equator and prime meridian questions to hemisphere relations for trans-hemispheric countries (such as Brazil, Kenya, Indonesia, and Spain), ensuring accurate territorial evaluation."
 }
