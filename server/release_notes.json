@@ -1,5 +1,5 @@
 {
-  "version": "1.19.0",
-  "title": "More regional facts and steadier question submissions",
-  "body": "MORE WOJEWÓDZTWA FACTS\n- You can now ask about major motorways and expressways in Polish voivodeships.\n- Improved understanding of Polish questions about roads and rivers in regional games.\n\nQUESTION SUBMISSION COOLDOWN\n- Rapid repeated question submissions now receive a short cooldown to keep games responsive.\n- Your normal daily question and guess limits are unchanged."
+  "version": "1.20.0",
+  "title": "Send feedback and ideas directly from Countrydle",
+  "body": "SUGGESTIONS AND CONTACT\n- Send feedback, bug reports, data corrections, and feature ideas directly from the Suggestions and contact page.\n- Suggestions work for both guests and signed-in players.\n- You can optionally include your name and email address so we can follow up.\n- Direct email and GitHub contact options remain available."
 }

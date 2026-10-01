@@ -81,6 +81,11 @@ it no longer opens the player's email client.
   `email` (valid address, up to 254 characters). Blank contact fields become null.
   Unknown fields are rejected. A successful committed submission returns `201`
   with `{ "id": ... }`.
+  Submissions have a separate process-local limit of five attempts per client
+  network per rolling minute; excess requests return `429` with `Retry-After`
+  before writing a suggestion. The limiter uses the existing HMAC network key
+  and proxy-trust rules, does not retain raw IP addresses, and does not consume
+  the gameplay question limiter's allowance.
 - `GET /admin/suggestions?page=1&limit=25`: admin-only, newest first with a stable
   ID tie-breaker; returns `{ "items": [...], "total": ... }`. Page starts at 1 and
   limit is bounded to 1–100. Items contain the full message, topic, submitted

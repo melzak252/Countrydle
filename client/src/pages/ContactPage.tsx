@@ -3,11 +3,20 @@ import { Mail, MessageSquare, Bug, Lightbulb, Send, CheckCircle2, Github } from 
 import { useTranslation } from 'react-i18next';
 import { suggestionService } from '../services/api';
 import type { SuggestionTopic } from '../types';
+import { isAxiosError } from 'axios';
 
 const CONTACT_EMAIL = 'melzacki.jakub@gmail.com';
 const MESSAGE_MAX_LENGTH = 5000;
 const NAME_MAX_LENGTH = 100;
 const EMAIL_MAX_LENGTH = 254;
+
+function characterCount(value: string): number {
+  return Array.from(value).length;
+}
+
+function limitCharacters(value: string, limit: number): string {
+  return value.length <= limit ? value : Array.from(value).slice(0, limit).join('');
+}
 
 export default function ContactPage() {
   const { t } = useTranslation();
@@ -26,7 +35,7 @@ export default function ContactPage() {
     const trimmedMessage = message.trim();
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
-    if (!trimmedMessage || trimmedMessage.length > MESSAGE_MAX_LENGTH || trimmedName.length > NAME_MAX_LENGTH || trimmedEmail.length > EMAIL_MAX_LENGTH) {
+    if (!trimmedMessage || characterCount(trimmedMessage) > MESSAGE_MAX_LENGTH || characterCount(trimmedName) > NAME_MAX_LENGTH || characterCount(trimmedEmail) > EMAIL_MAX_LENGTH) {
       setError(t('suggestion.validationError'));
       return;
     }
@@ -48,8 +57,8 @@ export default function ContactPage() {
       setName('');
       setEmail('');
       setSubmitted(true);
-    } catch {
-      setError(t('suggestion.submitError'));
+    } catch (error) {
+      setError(t(isAxiosError(error) && error.response?.status === 429 ? 'suggestion.rateLimitError' : 'suggestion.submitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -132,20 +141,20 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label htmlFor="suggestion-name" className="text-sm font-medium text-sand-100">{t('suggestion.name')} <span className="font-normal text-zinc-400">{t('suggestion.optional')}</span></label>
-                  <input id="suggestion-name" type="text" maxLength={NAME_MAX_LENGTH} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('suggestion.namePlaceholder')} disabled={isSubmitting} className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-60" />
-                  <p className="text-right text-xs text-zinc-500">{name.length}/{NAME_MAX_LENGTH}</p>
+                  <input id="suggestion-name" type="text" maxLength={NAME_MAX_LENGTH * 2} value={name} onChange={(event) => setName(limitCharacters(event.target.value, NAME_MAX_LENGTH))} placeholder={t('suggestion.namePlaceholder')} disabled={isSubmitting} className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-60" />
+                  <p className="text-right text-xs text-zinc-500">{characterCount(name)}/{NAME_MAX_LENGTH}</p>
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="suggestion-email" className="text-sm font-medium text-sand-100">{t('suggestion.email')} <span className="font-normal text-zinc-400">{t('suggestion.optional')}</span></label>
-                  <input id="suggestion-email" type="email" maxLength={EMAIL_MAX_LENGTH} value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t('suggestion.emailPlaceholder')} disabled={isSubmitting} className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-60" />
-                  <p className="text-right text-xs text-zinc-500">{email.length}/{EMAIL_MAX_LENGTH}</p>
+                  <input id="suggestion-email" type="email" maxLength={EMAIL_MAX_LENGTH * 2} value={email} onChange={(event) => setEmail(limitCharacters(event.target.value, EMAIL_MAX_LENGTH))} placeholder={t('suggestion.emailPlaceholder')} disabled={isSubmitting} className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-60" />
+                  <p className="text-right text-xs text-zinc-500">{characterCount(email)}/{EMAIL_MAX_LENGTH}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="suggestion-message" className="text-sm font-medium text-sand-100">{t('suggestion.message')} <span className="font-normal text-zinc-400">{t('suggestion.required')}</span></label>
-                <textarea id="suggestion-message" required minLength={1} maxLength={MESSAGE_MAX_LENGTH} rows={5} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={t('suggestion.messagePlaceholder')} disabled={isSubmitting} aria-describedby="suggestion-message-limit" className="w-full resize-y rounded-sm border border-white/15 bg-obsidian-950 px-3 py-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-60" />
-                <p id="suggestion-message-limit" className="text-right text-xs text-zinc-500">{t('suggestion.characterCount', { count: message.length, max: MESSAGE_MAX_LENGTH })}</p>
+                <textarea id="suggestion-message" required minLength={1} maxLength={MESSAGE_MAX_LENGTH * 2} rows={5} value={message} onChange={(event) => setMessage(limitCharacters(event.target.value, MESSAGE_MAX_LENGTH))} placeholder={t('suggestion.messagePlaceholder')} disabled={isSubmitting} aria-describedby="suggestion-message-limit" className="w-full resize-y rounded-sm border border-white/15 bg-obsidian-950 px-3 py-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-60" />
+                <p id="suggestion-message-limit" className="text-right text-xs text-zinc-500">{t('suggestion.characterCount', { count: characterCount(message), max: MESSAGE_MAX_LENGTH })}</p>
               </div>
 
               <button type="submit" disabled={isSubmitting} className="flex w-full items-center justify-center gap-2 rounded-sm bg-emerald-400 px-5 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-wait disabled:opacity-60 sm:w-auto">

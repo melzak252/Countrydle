@@ -11,6 +11,8 @@ from db import get_db
 from db.base import Base
 from db.models import User
 from users.utils import get_current_or_guest_user, get_current_user
+from utils.question_rate_limit import QuestionAttemptLimiter
+import suggestions
 
 
 class AsyncSessionAdapter:
@@ -31,8 +33,9 @@ class AsyncSessionAdapter:
 
 
 @pytest.fixture
-async def suggestions_api():
+async def suggestions_api(monkeypatch):
     engine = create_engine("sqlite://")
+    monkeypatch.setattr(suggestions, "submission_limiter", QuestionAttemptLimiter(), raising=False)
     tables = [User.__table__]
     if "suggestions" in Base.metadata.tables:
         tables.append(Base.metadata.tables["suggestions"])
@@ -137,14 +140,51 @@ async def test_invalid_suggestion_cannot_be_saved(suggestions_api, payload):
 
 
 @pytest.mark.anyio
-async def test_message_boundary_and_blank_optional_contact_fields(suggestions_api):
+@pytest.mark.parametrize("message", ["x" * 5000, "😀" * 5000])
+async def test_message_boundary_and_blank_optional_contact_fields(suggestions_api, message):
     api = suggestions_api
     response = await api.client.post("/suggestions", json={
-        "topic": "data", "message": "  " + "x" * 5000 + "  ", "name": " ", "email": " ",
+        "topic": "data", "message": "  " + message + "  ", "name": " ", "email": " ",
     })
     assert response.status_code == 201
     login(api.admin)
     item = (await api.client.get("/admin/suggestions")).json()["items"][0]
-    assert item["message"] == "x" * 5000
+    assert item["message"] == message
     assert item["name"] is None
     assert item["email"] is None
+
+
+@pytest.mark.anyio
+async def test_submission_limit_rejects_without_persisting_and_recovers(suggestions_api, monkeypatch):
+    api = suggestions_api
+    clock = [0.0]
+    monkeypatch.setattr(
+        suggestions,
+        "submission_limiter",
+        QuestionAttemptLimiter(max_requests=2, clock=lambda: clock[0]),
+        raising=False,
+    )
+    for message in ("First suggestion", "Second suggestion"):
+        assert (await api.client.post("/suggestions", json={"message": message})).status_code == 201
+
+    blocked = await api.client.post("/suggestions", json={"message": "Blocked suggestion"})
+    assert blocked.status_code == 429
+    assert blocked.headers["retry-after"] == "60"
+
+    transport = ASGITransport(app=app, client=("198.51.100.2", 1234))
+    async with AsyncClient(transport=transport, base_url="http://test") as other:
+        assert (await other.post("/suggestions", json={"message": "Another client"})).status_code == 201
+
+    clock[0] = 31.0
+    blocked = await api.client.post("/suggestions", json={"message": "Still blocked"})
+    assert blocked.status_code == 429
+    assert blocked.headers["retry-after"] == "29"
+
+    clock[0] = 60.0
+    assert (await api.client.post("/suggestions", json={"message": "After cooldown"})).status_code == 201
+    login(api.admin)
+    saved = (await api.client.get("/admin/suggestions")).json()
+    assert saved["total"] == 4
+    assert {item["message"] for item in saved["items"]} == {
+        "First suggestion", "Second suggestion", "Another client", "After cooldown",
+    }

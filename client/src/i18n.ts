@@ -92,6 +92,7 @@ const resources = {
         validationError: 'Enter a suggestion of 1–5000 characters. Name and email must be within their character limits.',
         emailError: 'Enter a valid email address or leave the field blank.',
         submitError: 'Your suggestion could not be saved. Please try again.',
+        rateLimitError: 'Too many suggestions. Please wait a minute before trying again.',
       },
       adminSuggestions: {
         tab: 'Suggestions',
@@ -590,6 +591,7 @@ const resources = {
         validationError: 'Wpisz sugestię o długości 1–5000 znaków. Imię i adres e-mail muszą mieścić się w limitach.',
         emailError: 'Wpisz prawidłowy adres e-mail lub pozostaw to pole puste.',
         submitError: 'Nie udało się zapisać sugestii. Spróbuj ponownie.',
+        rateLimitError: 'Zbyt wiele sugestii. Odczekaj minutę przed kolejną próbą.',
       },
       adminSuggestions: {
         tab: 'Sugestie',

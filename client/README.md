@@ -6,6 +6,8 @@ name and email are optional. Submissions are stored through `POST /suggestions`.
 The form confirms success only after the backend returns `201`, prevents repeat
 submits while pending, and preserves the draft on failure. Public copy is
 available in English and Polish. Direct email support remains a separate link.
+Character limits count Unicode code points consistently with the backend.
+Submission cooldowns show a localized message and retain the draft for retry.
 
 In `/admin`, open **Gameplay & Players → Suggestions** to read the full message,
 topic, submission time, guest/player identity, and any provided contact details.
