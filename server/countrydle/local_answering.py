@@ -1120,16 +1120,24 @@ class LocalCountryFacts:
                 explanation=f"{country['app_country_name']} territory spans: {', '.join(sorted(hemispheres))} hemispheres.",
                 relation="hemisphere",
             )
+        if any(word in q for word in ("cross the prime meridian", "crosses the prime meridian", "crossing the prime meridian", "on the prime meridian", "cross the greenwich", "crosses the greenwich", "przecina poludnik greenwich", "przecina poludnik zerowy", "lezy na poludniku greenwich", "lezy na poludniku zerowym", "na poludniku greenwich", "na poludniku zerowym")):
+            answer = "Eastern" in hemispheres and "Western" in hemispheres
+            return LocalAnswer(
+                question="Does the country cross the prime meridian?",
+                answer=answer,
+                explanation=f"{country['app_country_name']} territory spans: {', '.join(sorted(hemispheres))} hemispheres.",
+                relation="hemisphere",
+            )
         if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika", "nad rownik", "powyzej rownik", "above equator", "above the equator")):
             answer = "Northern" in hemispheres if hemispheres else lat > 0
             target = "Northern Hemisphere"
         elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika", "pod rownik", "ponizej rownik", "below equator", "below the equator")):
             answer = "Southern" in hemispheres if hemispheres else lat < 0
             target = "Southern Hemisphere"
-        elif any(word in q for word in ("eastern", "wschodn")):
+        elif any(word in q for word in ("eastern", "wschodn", "east of the prime meridian", "east of prime meridian", "east of greenwich", "na wschod od poludnika greenwich", "na wschod od poludnika zerowego")):
             answer = "Eastern" in hemispheres if hemispheres else lon > 0
             target = "Eastern Hemisphere"
-        elif any(word in q for word in ("western", "zachodn")):
+        elif any(word in q for word in ("western", "zachodn", "west of the prime meridian", "west of prime meridian", "west of greenwich", "na zachod od poludnika greenwich", "na zachod od poludnika zerowego")):
             answer = "Western" in hemispheres if hemispheres else lon < 0
             target = "Western Hemisphere"
         else:

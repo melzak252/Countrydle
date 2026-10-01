@@ -141,13 +141,18 @@ Important rules:
   longitude is positive east and negative west. The Western Hemisphere has
   negative longitude, not positive longitude. Point coordinates do not establish
   the full territorial extent of a country.
-- In questions about the equator and hemispheres (in English or Polish):
-  * Countries are geographic areas with spatial extent. A country crossing the equator spans both Northern and Southern hemispheres.
+- In questions about the equator, prime meridian, and hemispheres (in English or Polish):
+  * Countries are geographic areas with spatial extent. A country crossing the equator spans both Northern and Southern hemispheres; a country crossing the prime meridian spans both Eastern and Western hemispheres.
   * "above the equator", "north of the equator", "nad równikiem", "powyżej równika", "na północ od równika" means the country has territory north of the equator: use `hemisphere contains "Northern"`. NEVER use scalar coordinates.latitude for equator questions! NEVER translate "nad równikiem" as "on the equator"!
   * "below the equator", "south of the equator", "pod równikiem", "poniżej równika", "na południe od równika" means the country has territory south of the equator: use `hemisphere contains "Southern"`. NEVER use scalar coordinates.latitude for equator questions!
   * "on the equator", "crosses the equator", "straddles the equator", "na równiku", "przecina równik" means territory in both hemispheres: combine `hemisphere contains "Northern"` AND `hemisphere contains "Southern"` with "and".
+  * "east of the prime meridian", "east of Greenwich", "na wschód od południka Greenwich/zerowego" means the country has territory east of the line: use `hemisphere contains "Eastern"`. NEVER use scalar coordinates.longitude for prime meridian questions!
+  * "west of the prime meridian", "west of Greenwich", "na zachód od południka Greenwich/zerowego" means the country has territory west of the line: use `hemisphere contains "Western"`. NEVER use scalar coordinates.longitude for prime meridian questions!
+  * "crosses the prime meridian", "on the prime meridian", "crosses Greenwich", "przecina południk Greenwich/zerowy", "leży na południku Greenwich/zerowym" means territory in both hemispheres: combine `hemisphere contains "Eastern"` AND `hemisphere contains "Western"` with "and".
   * "entirely above the equator" / "entirely in the Northern Hemisphere" means `hemisphere contains "Northern"` AND NOT `hemisphere contains "Southern"`.
   * "entirely below the equator" / "entirely in the Southern Hemisphere" means `hemisphere contains "Southern"` AND NOT `hemisphere contains "Northern"`.
+  * "entirely east of the prime meridian" / "entirely in the Eastern Hemisphere" means `hemisphere contains "Eastern"` AND NOT `hemisphere contains "Western"`.
+  * "entirely west of the prime meridian" / "entirely in the Western Hemisphere" means `hemisphere contains "Western"` AND NOT `hemisphere contains "Eastern"`.
 - If a clear question can be answered only with external facts, return route="fallback"
   and plan=null. Local coverage does not determine whether the question is meaningful.
 - Direct identity questions are valid and supported, including "Is it Poland?",
@@ -388,6 +393,18 @@ User: Does the country cross the equator?
 {{"route":"local","plan":[
   {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Northern"}}}},
   {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}},
+  {{"operator":"and","args":[0, 1]}}
+]}}
+
+User: East of the prime meridian?
+{{"route":"local","plan":[
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}}
+]}}
+
+User: Does the country cross the prime meridian?
+{{"route":"local","plan":[
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Western"}}}},
   {{"operator":"and","args":[0, 1]}}
 ]}}
 

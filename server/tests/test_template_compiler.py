@@ -70,9 +70,12 @@ from countrydle.template_compiler import _COUNTRY_NAMES, check_open_ended_questi
     ("Czy leży na południe od równika?", "contains", "hemisphere", "Southern"),
     ("Czy leży pod równikiem?", "contains", "hemisphere", "Southern"),
     ("pod rownikiem?", "contains", "hemisphere", "Southern"),
-    ("Is it west of the prime meridian?", "less_than", "coordinates.longitude", 0),
-    ("Is it east of the prime meridian?", "greater_than", "coordinates.longitude", 0),
-    ("Czy znajduje się na zachód od południka Greenwich?", "less_than", "coordinates.longitude", 0),
+    ("Is it west of the prime meridian?", "contains", "hemisphere", "Western"),
+    ("Is it east of the prime meridian?", "contains", "hemisphere", "Eastern"),
+    ("Czy znajduje się na zachód od południka Greenwich?", "contains", "hemisphere", "Western"),
+    ("Czy znajduje się na wschód od południka Greenwich?", "contains", "hemisphere", "Eastern"),
+    ("Czy leży na zachód od południka zerowego?", "contains", "hemisphere", "Western"),
+    ("Czy leży na wschód od południka zerowego?", "contains", "hemisphere", "Eastern"),
 
     # English Relative directions
     ("Is it east of Poland?", "east_of", "coordinates.longitude", "Poland"),

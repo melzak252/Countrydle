@@ -1218,3 +1218,55 @@ def test_equator_questions_accurately_classify_crossing_and_pure_countries():
 
     ans_poland_cross = execute_local_plan(cross_plan, "Poland", "Does it cross the equator?")
     assert ans_poland_cross.answer is False
+
+
+def test_prime_meridian_questions_accurately_classify_crossing_and_pure_countries():
+    from countrydle.template_compiler import compile_template_plan
+
+    # "East of the prime meridian" -> True for UK, France, Spain, Poland; False for Brazil
+    east_res = compile_template_plan("Is it east of the prime meridian?")
+    assert east_res is not None
+    east_plan, _ = east_res
+
+    ans_uk_east = execute_local_plan(east_plan, "United Kingdom", "Is it east of the prime meridian?")
+    assert ans_uk_east.answer is True
+    assert "Eastern Hemisphere" in ans_uk_east.explanation
+
+    ans_fr_east = execute_local_plan(east_plan, "France", "Is it east of the prime meridian?")
+    assert ans_fr_east.answer is True
+
+    ans_pl_east = execute_local_plan(east_plan, "Poland", "Is it east of the prime meridian?")
+    assert ans_pl_east.answer is True
+
+    ans_br_east = execute_local_plan(east_plan, "Brazil", "Is it east of the prime meridian?")
+    assert ans_br_east.answer is False
+
+    # "West of the prime meridian" -> True for UK, France, Spain, Brazil; False for Poland
+    west_res = compile_template_plan("Is it west of the prime meridian?")
+    assert west_res is not None
+    west_plan, _ = west_res
+
+    ans_uk_west = execute_local_plan(west_plan, "United Kingdom", "Is it west of the prime meridian?")
+    assert ans_uk_west.answer is True
+    assert "Western Hemisphere" in ans_uk_west.explanation
+
+    ans_fr_west = execute_local_plan(west_plan, "France", "Is it west of the prime meridian?")
+    assert ans_fr_west.answer is True
+
+    ans_br_west = execute_local_plan(west_plan, "Brazil", "Is it west of the prime meridian?")
+    assert ans_br_west.answer is True
+
+    ans_pl_west = execute_local_plan(west_plan, "Poland", "Is it west of the prime meridian?")
+    assert ans_pl_west.answer is False
+
+    # "Crosses the prime meridian" -> True for UK, France, Spain; False for Poland, Brazil
+    cross_res = compile_template_plan("Does it cross the prime meridian?")
+    assert cross_res is not None
+    cross_plan, _ = cross_res
+
+    ans_uk_cross = execute_local_plan(cross_plan, "United Kingdom", "Does it cross the prime meridian?")
+    assert ans_uk_cross.answer is True
+    assert "Eastern Hemisphere" in ans_uk_cross.explanation and "Western Hemisphere" in ans_uk_cross.explanation
+
+    ans_pl_cross = execute_local_plan(cross_plan, "Poland", "Does it cross the prime meridian?")
+    assert ans_pl_cross.answer is False

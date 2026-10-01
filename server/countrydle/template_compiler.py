@@ -331,29 +331,46 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
         if any(phrase in q for phrase in phrases):
             return [_node("contains", "hemisphere", hemi)], f"Is the country {wording}?"
 
+    prime_meridian_crossing_phrases = (
+        "cross the prime meridian", "crosses the prime meridian", "crossing the prime meridian",
+        "cross the greenwich meridian", "crosses the greenwich meridian",
+        "cross the greenwich line", "crosses the greenwich line",
+        "on the prime meridian", "on the greenwich meridian", "on the greenwich line",
+        "przecina poludnik greenwich", "przecina poludnik zerowy",
+        "lezy na poludniku greenwich", "lezy na poludniku zerowym",
+        "na poludniku greenwich", "na poludniku zerowym",
+    )
+    if any(phrase in q for phrase in prime_meridian_crossing_phrases):
+        ast = [
+            _node("contains", "hemisphere", "Eastern"),
+            _node("contains", "hemisphere", "Western"),
+            {"operator": "and", "args": [0, 1]},
+        ]
+        return ast, "Does the country cross the prime meridian?"
+
     prime_meridian_rules = (
         (
             (
                 "east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian",
-                "na wschod od poludnika greenwich", "na wschod od poludnika zerowego",
+                "east of greenwich", "east to greenwich",
+                "na wschod od poludnika greenwich", "na wschod od poludnika zerowego", "na wschod od greenwich",
             ),
-            "greater_than",
-            "coordinates.longitude",
+            "Eastern",
             "east of the prime meridian",
         ),
         (
             (
                 "west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian",
-                "na zachod od poludnika greenwich", "na zachod od poludnika zerowego",
+                "west of greenwich", "west to greenwich",
+                "na zachod od poludnika greenwich", "na zachod od poludnika zerowego", "na zachod od greenwich",
             ),
-            "less_than",
-            "coordinates.longitude",
+            "Western",
             "west of the prime meridian",
         ),
     )
-    for phrases, op, relation, wording in prime_meridian_rules:
+    for phrases, hemi, wording in prime_meridian_rules:
         if any(phrase in q for phrase in phrases):
-            return [_node(op, relation, 0)], f"Is the country {wording}?"
+            return [_node("contains", "hemisphere", hemi)], f"Is the country {wording}?"
     direction_phrases = (
         ("north_of", ("north of", "north to", "above")),
         ("south_of", ("south of", "south to", "below")),
