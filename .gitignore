@@ -26,3 +26,9 @@ databases
 
 # Private operator instructions: never commit or publish.
 /DEPLOY.local.md
+
+# Local developer notes and task lists
+TODO.md
+TODO*.md
+todo.md
+todo/

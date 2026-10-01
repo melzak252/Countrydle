@@ -1,5 +1,5 @@
 {
-  "version": "1.18.0",
-  "title": "Refined navigation bar with descriptive countdown timer and equator/meridian improvements",
-  "body": "NAVIGATION BAR & COUNTDOWN TIMER\n- Added clean descriptive countdown label ('Next Countrydle in:') and compact responsive timer styling across all viewports.\n- Refined navigation header with a single elegant 'In Dev' badge for upcoming experimental modes.\n\nEQUATOR & PRIME MERIDIAN ROUTING\n- Mapped equator and prime meridian questions to hemisphere relations for trans-hemispheric countries (such as Brazil, Kenya, Indonesia, and Spain), ensuring accurate territorial evaluation."
+  "version": "1.18.1",
+  "title": "Massive Powiatdle facts enrichment and regional geographic intelligence",
+  "body": "POWIATDLE FACTS & KB ENRICHMENT\n- Enriched Polish counties (Powiatdle) with 7 new verified knowledge relations: 23 National Parks, major lakes, 17 UNESCO World Heritage sites, 45 statutory health resorts (uzdrowiska), historical partitions (zabory) & Ziemie Odzyskane, historical regions (krainy historyczne), and Baltic Sea coastline access.\n- Added enriched relations for major motorways and expressways (A1, A2, A4, S3, S7, S8).\n- Refined Polish grammar in border and plate explanations.\n\nWOJEWÓDZTWA GEOGRAPHIC INTELLIGENCE\n- Added relative cardinal directions (północ, południe, wschód, zachód) and voivodeship genitive alias resolution for Województwodle."
 }
