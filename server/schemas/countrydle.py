@@ -30,6 +30,7 @@ class QuestionCreate(QuestionEnhanced):
     user_id: int | None
     day_id: int
     context: str | None
+    guest_id: str | None = None
     server_version: str | None = SERVER_VERSION
 
     model_config = ConfigDict(from_attributes=True)
@@ -83,6 +84,7 @@ class GuessCreate(GuessBase):
     day_id: int
     user_id: int | None = None
     answer: bool | None
+    guest_id: str | None = None
 
 
 class GuessDisplay(GuessBase):

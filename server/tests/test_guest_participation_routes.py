@@ -259,3 +259,71 @@ async def test_invalid_question_attempts_share_limit_across_private_clients_and_
     assert blocked.status_code == 429
     assert int(blocked.headers["Retry-After"]) > 0
     assert planner.await_count == 2
+
+
+async def test_countrydle_guest_events_are_reconstructible_by_browser_identity(
+    solo_client, participation_db, monkeypatch,
+):
+    from app import app
+    from db.models import CountrydleGuess, CountrydleQuestion
+    from schemas.countrydle import QuestionCreate
+
+    async def answer_locally(original_question, day_country, user, session):
+        return (
+            QuestionCreate(
+                original_question=original_question,
+                question=original_question,
+                valid=True,
+                answer=True,
+                explanation="Yes",
+                user_id=None,
+                day_id=day_country.id,
+                context=None,
+            ),
+            None,
+        )
+
+    monkeypatch.setattr(
+        "countrydle.utils.analyze_and_answer_locally",
+        AsyncMock(side_effect=answer_locally),
+    )
+
+    asked = await solo_client.post("/countrydle/question", json={"question": "Is it in Europe?"})
+    guessed = await solo_client.post(
+        "/countrydle/guess", json={"guess": "Germany", "country_id": 2},
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as second_client:
+        second_asked = await second_client.post(
+            "/countrydle/question", json={"question": "Does it border Germany?"},
+        )
+        second_guessed = await second_client.post(
+            "/countrydle/guess", json={"guess": "Germany", "country_id": 2},
+        )
+
+    assert asked.status_code == 200, asked.text
+    assert guessed.status_code == 200, guessed.text
+    assert second_asked.status_code == 200, second_asked.text
+    assert second_guessed.status_code == 200, second_guessed.text
+    async with participation_db() as session:
+        questions = (await session.scalars(select(CountrydleQuestion))).all()
+        guesses = (await session.scalars(select(CountrydleGuess))).all()
+        participations = (await session.scalars(select(GuestParticipation))).all()
+
+    guest_ids = {row.guest_id for row in participations}
+    assert len(guest_ids) == 2
+    assert {row.guest_id for row in questions} == guest_ids
+    assert {row.guest_id for row in guesses} == guest_ids
+    assert all(sum(row.guest_id == guest_id for row in questions) == 1 for guest_id in guest_ids)
+    assert all(sum(row.guest_id == guest_id for row in guesses) == 1 for guest_id in guest_ids)
+    sequences = {
+        guest_id: (
+            next(row.original_question for row in questions if row.guest_id == guest_id),
+            next(row.guess for row in guesses if row.guest_id == guest_id),
+            next(row.answer for row in guesses if row.guest_id == guest_id),
+        )
+        for guest_id in guest_ids
+    }
+    assert set(sequences.values()) == {
+        ("Is it in Europe?", "Germany", False),
+        ("Does it border Germany?", "Germany", False),
+    }

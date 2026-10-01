@@ -291,6 +291,9 @@ Guests are identified by a signed, HttpOnly, SameSite=Lax `guest_identity` cooki
 with a two-day lifetime (Secure on HTTPS). Opening a solo game's state endpoint
 establishes the cookie but creates no participation row. Accepted actions update
 `guest_participations` in the same database transaction as the saved action.
+Countrydle question and guess rows also store that browser identity, allowing
+each guest's daily sequence to be reconstructed by joining on `guest_id` and
+`day_id`. Other modes currently retain aggregate guest participation only.
 Guest-to-account sync links that browser's puzzle so it is not counted twice.
 Participation records do not use IP addresses or browser fingerprints.
 Question-abuse throttling separately uses a short-lived keyed hash of the source
@@ -301,12 +304,13 @@ distinct accounts and guest browser identities across modes; games won and the
 win rate are calculated per puzzle played, not per unique person. These are
 browser/account counts, not a claim to identify real people: clearing or expiring
 cookies, using multiple browsers, or sharing a browser affects uniqueness.
-Historical anonymous guesses have no usable player identity and are **not**
-backfilled as people. Historical guest participation therefore remains incomplete.
+Historical anonymous gameplay events have no usable player identity and are
+**not** backfilled. Older guest participation counts remain, but those daily
+question and guess sequences cannot be reconstructed.
 
-Alembic revision `d9e0f1a2b3c4` adds the guest table and
-`flagdle_states.questions_asked`. Apply it through the normal migration process
-before running this code; do not run the new code against the old schema.
+Alembic revision `d9e0f1a2b3c4` adds guest participation tracking;
+`c3d4e5f6a7b8` adds guest IDs to Countrydle question and guess events. Apply
+the migrations through the normal startup process before running this code.
 The PostgreSQL regression tests require an explicitly disposable
 `PARTICIPATION_TEST_DATABASE_URL`; they create and remove isolated schemas:
 

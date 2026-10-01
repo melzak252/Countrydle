@@ -6,6 +6,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -19,9 +20,12 @@ from db.base import Base
 
 class CountrydleQuestion(Base):
     __tablename__ = "countrydle_questions"
+    __table_args__ = (Index("ix_countrydle_questions_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    guest_id = Column(String(36), nullable=True)
+
     day_id = Column(Integer, ForeignKey("countrydle_days.id"))
     context = Column(String)
     original_question = Column(String, nullable=False)
