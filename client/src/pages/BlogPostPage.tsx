@@ -50,6 +50,45 @@ function cleanBorderList(bordersStr?: string): string {
   }
   return result.join(', ');
 }
+
+export function getFalseDistractor(_countryName?: string, continent?: string, facts?: any, isPl: boolean = false): string {
+  const normCont = (continent || facts?.continent || '').toLowerCase();
+
+  if (normCont.includes('africa')) {
+    return isPl
+      ? 'Jest państwem śródlądowym położonym całkowicie w Ameryce Południowej.'
+      : 'It is a landlocked country located entirely within South America.';
+  }
+  if (normCont.includes('europe')) {
+    return isPl
+      ? 'Jest państwem wyspiarskim położonym całkowicie na półkuli południowej.'
+      : 'It is an island nation situated entirely in the Southern Hemisphere.';
+  }
+  if (normCont.includes('asia')) {
+    return isPl
+      ? 'Jest suwerennym państwem położonym w Ameryce Środkowej.'
+      : 'It is a sovereign country located entirely within Central America.';
+  }
+  if (normCont.includes('south america')) {
+    return isPl
+      ? 'Jest państwem członkowskim Unii Europejskiej w Europie.'
+      : 'It is a member state of the European Union situated in Europe.';
+  }
+  if (normCont.includes('north america') || normCont.includes('americas')) {
+    return isPl
+      ? 'Leży na kontynencie afrykańskim i graniczy z Jeziorem Wiktorii.'
+      : 'It is located on the African continent and borders Lake Victoria.';
+  }
+  if (normCont.includes('oceania')) {
+    return isPl
+      ? 'Jest alpejskim państwem śródlądowym w Europie Środkowej.'
+      : 'It is a landlocked alpine country located in Central Europe.';
+  }
+  return isPl
+    ? 'Posiada bezpośrednią granicę lądową z Antarktydą.'
+    : 'It shares an extensive direct land border with Antarctica.';
+}
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const { i18n } = useTranslation();
@@ -387,51 +426,65 @@ export default function BlogPostPage() {
       )}
 
       {/* Interactive Trivia Knowledge Check */}
-      {curiosities && curiosities.length > 0 && (
-        <section className="rounded-lg border border-white/10 bg-obsidian-900 p-6 space-y-4">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">
-            <Award size={14} />
-            <span>Quick Memory Check</span>
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-sand-100">
-            Which statement about {post.country_name} is true?
-          </h3>
+      {curiosities && curiosities.length > 0 && (() => {
+        const trueFactText = cleanDisplayText(curiosities[0]?.description || '');
+        const falseDistractor = getFalseDistractor(post.country_name, post.continent, facts, isPl);
+        const triviaSeed = (post?.id || 0) + (post?.country_name ? post.country_name.length : 0);
+        const correctOptionIndex = triviaSeed % 2;
+        const triviaOptions = correctOptionIndex === 0
+          ? [trueFactText, falseDistractor]
+          : [falseDistractor, trueFactText];
 
-          <div className="space-y-2 text-xs sm:text-sm">
-            <button
-              type="button"
-              onClick={() => { setSelectedTriviaOption(0); setTriviaRevealed(true); }}
-              className={`w-full text-left p-3 rounded border transition-all ${
-                triviaRevealed
-                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-semibold'
-                  : 'border-white/10 bg-white/[0.02] text-zinc-300 hover:border-white/20'
-              }`}
-            >
-              A) {cleanDisplayText(curiosities[0]?.description)}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setSelectedTriviaOption(1); setTriviaRevealed(true); }}
-              className={`w-full text-left p-3 rounded border transition-all ${
-                triviaRevealed && selectedTriviaOption === 1
-                  ? 'border-rose-500 bg-rose-500/10 text-rose-300 line-through'
-                  : 'border-white/10 bg-white/[0.02] text-zinc-300 hover:border-white/20'
-              }`}
-            >
-              B) It has a coastline on the Mediterranean Sea.
-            </button>
-          </div>
-
-          {triviaRevealed && (
-            <div className="rounded bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-300">
-              <span className="font-bold block mb-1">
-                {selectedTriviaOption === 0 ? '✓ Correct!' : 'Not quite!'}
-              </span>
-              <span>{cleanDisplayText(curiosities[0]?.description)}</span>
+        return (
+          <section className="rounded-lg border border-white/10 bg-obsidian-900 p-6 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">
+              <Award size={14} />
+              <span>{isPl ? 'Szybki test wiedzy' : 'Quick Memory Check'}</span>
             </div>
-          )}
-        </section>
-      )}
+            <h3 className="font-serif text-lg font-semibold text-sand-100">
+              {isPl
+                ? `Które zdanie o ${post.country_name} jest prawdziwe?`
+                : `Which statement about ${post.country_name} is true?`}
+            </h3>
+
+            <div className="space-y-2 text-xs sm:text-sm">
+              {triviaOptions.map((optText, idx) => {
+                const isSelected = selectedTriviaOption === idx;
+                const isCorrect = idx === correctOptionIndex;
+                let btnClass = 'border-white/10 bg-white/[0.02] text-zinc-300 hover:border-white/20';
+                if (triviaRevealed) {
+                  if (isCorrect) {
+                    btnClass = 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-semibold';
+                  } else if (isSelected) {
+                    btnClass = 'border-rose-500 bg-rose-500/10 text-rose-300 line-through';
+                  }
+                }
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => { setSelectedTriviaOption(idx); setTriviaRevealed(true); }}
+                    className={`w-full text-left p-3 rounded border transition-all ${btnClass}`}
+                  >
+                    {idx === 0 ? 'A) ' : 'B) '}{optText}
+                  </button>
+                );
+              })}
+            </div>
+
+            {triviaRevealed && (
+              <div className="rounded bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-300">
+                <span className="font-bold block mb-1">
+                  {selectedTriviaOption === correctOptionIndex
+                    ? (isPl ? '✓ Prawidłowo!' : '✓ Correct!')
+                    : (isPl ? 'Niestety nie!' : 'Not quite!')}
+                </span>
+                <span>{trueFactText}</span>
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       {/* Compliant Ad Placement */}
       <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />
