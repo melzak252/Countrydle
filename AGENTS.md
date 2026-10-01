@@ -116,6 +116,7 @@ When a user submits a natural-language question (`POST /{mode}/question`):
 ├── docker-compose.yml          # Primary development/local composition
 ├── docker-compose.prod.yml     # Production configuration
 ├── docker-compose.test-db-only.yml # Isolated PostgreSQL for host testing
+├── todo/                      # Local feature specifications, task lists, and developer backlogs (gitignored)
 └── nginx.conf                  # Production reverse proxy config
 ```
 
@@ -375,3 +376,19 @@ All autonomous agents and developers working on Countrydle MUST strictly adhere 
   - `test: <short description>` — Test additions or updates
   - `chore: bump version to X.Y.Z` — Version increments
   - `docs: <short description>` — Documentation updates
+
+---
+
+## 9. Task Backlogs & Developer Notes (`todo/` Directory)
+
+Countrydle organizes feature plans, task specifications, and implementation backlogs in the `todo/` folder at the repository root.
+
+### Conventions & Rules:
+1. **Ignored by Git**: The `todo/` directory is excluded in `.gitignore` (`todo/`, `todo.md`, `TODO.md`). New files added to `todo/` remain local developer notes and must never be committed or pushed to remote repositories unless explicitly instructed by the user.
+2. **File Naming**: Task files inside `todo/` should be descriptive markdown documents, ideally prefixed with numbers or topic slugs (e.g. `todo/01-practice-mode.md`, `todo/07-templates-expansion.md`).
+3. **No Root `TODO.md`**: Do not create or leave ad-hoc `TODO.md` files in the repository root. Always place task specifications and backlog ideas in `todo/<feature-name>.md`.
+4. **Structure of a Task File**: Each task document should include:
+   - Problem statement & empirical motivation (data or user reports).
+   - Scope and architectural components affected (`server`, `client`, databases).
+   - Concrete specification and implementation plan.
+   - Acceptance criteria and verification proof.
