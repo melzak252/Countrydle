@@ -183,10 +183,11 @@ Geographic Direction / Coordinate rules:
 - For questions like "further west than 74° W" or "west of 74° W":
   ALWAYS use operator "west_of" (e.g. {{"operator":"west_of","left":{{"entity":"{config.target_entity}","relation":"longitude"}},"right":{{"value":-74.0}}}}).
   NEVER use greater_than for "further west than" with negative numbers!
-- For questions like "further east than" or "east of", use operator "east_of".
-- For "further north than" or "north of", use operator "north_of".
-- For "further south than" or "south of", use operator "south_of".
-
+- For relative cardinal directions comparing position to another named entity (e.g. "na zachód od Warszawy", "west of Warsaw"):
+  use operator "west_of" with left={{"entity":"{config.target_entity}","relation":"longitude"}} and right={{"entity":"Warszawa","relation":"longitude"}}.
+- For "na wschód od" / "east of": use operator "east_of" comparing relation "longitude".
+- For "na północ od" / "north of": use operator "north_of" comparing relation "latitude".
+- For "na południe od" / "south of": use operator "south_of" comparing relation "latitude".
 Reference format examples:
 {{"entity":"{config.target_entity}","relation":"population"}}
 {{"entity":"{config.target_entity}","relation":"name"}}
@@ -211,12 +212,15 @@ User question: {question}
 """.strip()
     allowed_relations = config.scalar_relations.keys() | config.list_relations.keys() | {"name"}
     operators = (PLANNER_OPERATORS - {"contains"}) | {"contains_exact", "contains_partial", "any", "all"}
+    allow_named_entities = config.mode_name in {"Countrydle", "Powiatdle", "USStatedle", "Wojewodztwodle"}
     schema = planner_response_schema(
         relations=allowed_relations, operators=operators, target_entity=config.target_entity,
+        allow_named_entities=allow_named_entities,
     )
     data = gemini_json(prompt, response_schema=schema, evidence=evidence)
     ast = compile_planner_response(
         data, relations=allowed_relations, operators=operators, target_entity=config.target_entity,
+        allow_named_entities=allow_named_entities,
     )
     if evidence is not None:
         evidence.update(
@@ -269,19 +273,22 @@ def get_relation_value(conn: sqlite3.Connection, config: LocalModeConfig, row: s
     return None
 
 
-def _reference_row(config: LocalModeConfig, row: sqlite3.Row, node: Any, item_value: Any) -> sqlite3.Row | None:
+def _reference_row(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, node: Any, item_value: Any) -> sqlite3.Row | None:
     if isinstance(node, dict):
         if node.get("entity") == config.target_entity:
             return row
         if node.get("entity") == "item" and isinstance(item_value, sqlite3.Row):
             return item_value
+        entity_name = node.get("entity")
+        if entity_name and entity_name not in {config.target_entity, "item"}:
+            return get_entity_row(conn, config, entity_name)
     return None
 
 
 def resolve_ref(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, node: Any, item_value: Any = None) -> Any:
     if isinstance(node, dict) and set(node.keys()) == {"value"}:
         return node.get("value")
-    entity_row = _reference_row(config, row, node, item_value)
+    entity_row = _reference_row(conn, config, row, node, item_value)
     if entity_row is not None:
         return get_relation_value(conn, config, entity_row, node.get("relation", ""))
     if isinstance(node, dict) and node.get("entity") == "item":
@@ -451,7 +458,7 @@ def evaluate(
             return is_coast
         if right in {False, 0, "false", "False"}:
             return not is_coast
-    left_row = _reference_row(config, row, left_node, item_value)
+    left_row = _reference_row(conn, config, row, left_node, item_value)
     if (
         config.mode_name == "Powiatdle"
         and isinstance(left_node, dict)
@@ -514,8 +521,14 @@ def evaluate(
         if n_left == n_right:
             return True
         if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
-            clean_left = re.sub(r"\s*\([^)]*\)", "", n_left).strip()
-            clean_right = re.sub(r"\s*\([^)]*\)", "", n_right).strip()
+            resolved_r = resolve_powiat_name(conn, right)
+            if resolved_r and norm(resolved_r) == n_left:
+                return True
+            resolved_l = resolve_powiat_name(conn, left)
+            if resolved_l and resolved_r and resolved_l == resolved_r:
+                return True
+            clean_left = re.sub(r"\s*\([^)]*\)", "", n_left).replace("powiat ", "").strip()
+            clean_right = re.sub(r"\s*\([^)]*\)", "", n_right).replace("powiat ", "").strip()
             return clean_left == clean_right
         return False
     if op == "contains_partial":
@@ -673,20 +686,33 @@ def generate_mode_explanation(
                 name_display = name if name.startswith("Powiat") else f"Powiat {name}"
                 return f"{name_display} graniczy z {len(borders)} sąsiednimi powiatami{b_str}."
         if rel == "borders_country" and val:
-            borders = [r[0] for r in conn.execute("SELECT country_name FROM voivodeship_borders_countries WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
-            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
-                b_str = f" ({', '.join(borders)})" if borders else ""
-                return f"{name} graniczy z {len(borders)} państwami{b_str}."
-            return f"{name} graniczy z obcym państwem: {val}." if answer else f"{name} nie graniczy z {val}."
+            country_instr = {
+                "Niemcy": "Niemcami", "Czechy": "Czechami", "Słowacja": "Słowacją",
+                "Ukraina": "Ukrainą", "Białoruś": "Białorusią", "Litwa": "Litwą", "Rosja": "Rosją",
+            }
+            val_instr = country_instr.get(val, val)
+            prep = "ze" if val in {"Słowacja", "Słowacją"} else "z"
+            return f"{name} graniczy {prep} {val_instr}." if answer else f"{name} nie graniczy {prep} {val_instr}."
         if rel == "seat":
             return f"Siedzibą {name} jest {row['seat']}."
         if rel == "macroregion":
             return f"{name} leży w makroregionie: {row['macroregion']}."
         if rel == "registration_plates" and val:
             plates = [r[0] for r in conn.execute("SELECT plate_code FROM powiat_registration_plates WHERE powiat_id=?", (row["id"],))]
+            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
+                return f"Wyróżnik tablic powiatu {name} ma {val} znaki ({', '.join(plates)})." if answer else f"Wyróżnik tablic powiatu {name} nie ma {val} znaków ({', '.join(plates)})."
             return f"Wyróżnik tablic powiatu {name} to: {val}. Wszystkie kody: {', '.join(plates)}." if answer else f"Powiat {name} nie ma wyróżnika {val}. Tablice to: {', '.join(plates)}."
         if rel == "voivodeship":
-            return f"Powiat {name} leży w województwie {row['voivodeship']}."
+            voiv_locative = {
+                "dolnośląskie": "dolnośląskim", "kujawsko-pomorskie": "kujawsko-pomorskim", "lubelskie": "lubelskim",
+                "lubuskie": "lubuskim", "łódzkie": "łódzkim", "małopolskie": "małopolskim", "mazowieckie": "mazowieckim",
+                "opolskie": "opolskim", "podkarpackie": "podkarpackim", "podlaskie": "podlaskim", "pomorskie": "pomorskim",
+                "śląskie": "śląskim", "świętokrzyskie": "świętokrzyskim", "warmińsko-mazurskie": "warmińsko-mazurskim",
+                "wielkopolskie": "wielkopolskim", "zachodniopomorskie": "zachodniopomorskim",
+            }
+            loc_woj = voiv_locative.get(str(row['voivodeship']).lower(), row['voivodeship'])
+            name_display = name if name.startswith("Powiat") else f"Powiat {name}"
+            return f"{name_display} leży w województwie {loc_woj}."
         if rel == "is_city_county":
             return f"{name} jest miastem na prawach powiatu." if row[config.scalar_relations[rel]] else f"{name} jest powiatem ziemskim."
         if rel == "mountain_ranges":

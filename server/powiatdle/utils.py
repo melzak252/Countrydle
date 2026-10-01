@@ -13,7 +13,7 @@ import qdrant
 from schemas.powiatdle import PowiatQuestionCreate, PowiatQuestionEnhanced
 from db.repositories.powiatdle import PowiatRepository
 from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
-
+from utils.explanation_sanitizer import sanitize_explanation_for_player
 
 LOCAL_CONFIG = LocalModeConfig(
     mode_name="Powiatdle",
@@ -26,8 +26,8 @@ LOCAL_CONFIG = LocalModeConfig(
         "name": "name", "voivodeship": "voivodeship", "is_city_county": "is_city_county", "seat": "seat",
         "population": "population", "area": "area_km2", "population_density": "population_density",
         "urbanization": "urbanization_percent", "gmina_count": "gmina_count",
-        "urban_gmina_count": "urban_gmina_count", "rural_gmina_count": "rural_gmina_count",
         "urban_rural_gmina_count": "urban_rural_gmina_count",
+        "latitude": "latitude", "longitude": "longitude",
     },
     list_relations={
         "borders_powiat": ("powiat_borders_powiats", "border_powiat_name"),
@@ -46,10 +46,14 @@ LOCAL_CONFIG = LocalModeConfig(
         "borders_country", "population", "area", "population_density", "urbanization", "registration_plates",
         "gmina_count", "urban_gmina_count", "rural_gmina_count", "urban_rural_gmina_count",
         "major_rivers", "major_roads", "water_access", "landform_regions", "regional_labels",
+        "latitude", "longitude",
     ],
     mode_notes=(
+        "Relative cardinal directions comparing position to another city or county (e.g. 'na zachód od Warszawy', "
+        "'na wschód od Krakowa', 'na północ od Wrocławia', 'na południe od Poznania') are supported: use "
+        "operator west_of / east_of comparing relation longitude, or north_of / south_of comparing relation latitude "
+        "with the reference city/county name as right operand entity.\n"
         "water_access records direct coastline access to Morze Bałtyckie (Baltic Sea).\n"
-        "is_city_county is a boolean classification: 1 means miasto na prawach powiatu "
         "(powiat grodzki), 0 means powiat ziemski. These are precise administrative categories.\n"
         "When a question names a specific neighboring county, use contains_exact on borders_powiat "
         "with its canonical Polish nominative name, not an inflected phrase copied from the question. "
@@ -144,6 +148,10 @@ async def analyze_and_answer_locally(
             evidence["local_duration_ms"] = (time.perf_counter() - local_started) * 1000
     if answer is None:
         return None, plan
+    target_names = {powiat.nazwa}
+    if powiat.nazwa.startswith("Powiat "):
+        target_names.add(powiat.nazwa.replace("Powiat ", "", 1).strip())
+    clean_exp = sanitize_explanation_for_player(answer.explanation, target_names, "ten powiat")
     return PowiatQuestionCreate(
         user_id=user.id if user else None,
         day_id=day_powiat.id,
@@ -151,7 +159,7 @@ async def analyze_and_answer_locally(
         question=answer.question,
         valid=True,
         answer=answer.answer,
-        explanation=answer.explanation,
+        explanation=clean_exp,
         context="local_kb:" + ",".join(answer.relations),
         intent=plan.explanation,
         required_info=", ".join(answer.relations),
@@ -337,7 +345,11 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict.get("answer"),
-        explanation=answer_dict.get("explanation") or "Brak wyjaśnienia.",
+        explanation=sanitize_explanation_for_player(
+            answer_dict.get("explanation") or "Brak wyjaśnienia.",
+            {powiat.nazwa, powiat.nazwa.replace("Powiat ", "", 1).strip()} if powiat.nazwa.startswith("Powiat ") else {powiat.nazwa},
+            "ten powiat",
+        ),
         context=context,
     )
 

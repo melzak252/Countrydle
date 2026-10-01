@@ -201,3 +201,45 @@ def test_powiat_water_access_baltic_sea():
                 (row[0],)
             ).fetchone()
             assert has_coast is None, f"{name} must NOT have access to Morze Bałtyckie"
+
+
+def test_powiat_grammar_and_identity_fixes():
+    from local_kb_question import analyze_question, execute_plan
+
+    # 1. Grammar: Instrumental case after "z / ze"
+    p_cz = analyze_question("Czy powiat graniczy z Czechami?", LOCAL_CONFIG, use_cache=False)
+    ans_cieszyn = execute_plan(LOCAL_CONFIG, "Powiat cieszyński", p_cz)
+    assert ans_cieszyn.answer is True
+    assert "graniczy z Czechami." in ans_cieszyn.explanation
+
+    ans_chojnice = execute_plan(LOCAL_CONFIG, "Powiat chojnicki", p_cz)
+    assert ans_chojnice.answer is False
+    assert "nie graniczy z Czechami." in ans_chojnice.explanation
+
+    p_sk = analyze_question("Czy powiat graniczy ze Słowacją?", LOCAL_CONFIG, use_cache=False)
+    ans_zywiec = execute_plan(LOCAL_CONFIG, "Powiat żywiecki", p_sk)
+    assert ans_zywiec.answer is True
+    assert "ze Słowacją." in ans_zywiec.explanation
+
+    # 2. Direct Identity: Adjective form matching
+    p_ident = analyze_question("Czy to powiat chojnicki?", LOCAL_CONFIG, use_cache=False)
+    ans_ident = execute_plan(LOCAL_CONFIG, "Powiat chojnicki", p_ident)
+    assert ans_ident.answer is True
+
+
+def test_powiat_relative_directions():
+    from local_kb_question import analyze_question, execute_plan
+
+    p_west = analyze_question("Czy powiat leży na zachód od Warszawy?", LOCAL_CONFIG, use_cache=False)
+    assert p_west.valid is True
+    assert p_west.supported is True
+
+    ans_slubice = execute_plan(LOCAL_CONFIG, "Powiat słubicki", p_west)
+    assert ans_slubice.answer is True
+
+    ans_bialystok = execute_plan(LOCAL_CONFIG, "Białystok", p_west)
+    assert ans_bialystok.answer is False
+
+    p_south = analyze_question("Czy powiat leży na południe od Poznania?", LOCAL_CONFIG, use_cache=False)
+    ans_wolsztyn = execute_plan(LOCAL_CONFIG, "Powiat wolsztyński", p_south)
+    assert ans_wolsztyn.answer is True
