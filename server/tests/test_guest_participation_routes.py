@@ -217,3 +217,45 @@ async def test_sync_links_guest_even_when_account_already_has_progress(solo_clie
             GuestParticipation.user_id.is_(None)
         ))
         assert active_accounts + unlinked_guests == 1
+
+
+async def test_invalid_question_attempts_share_limit_across_private_clients_and_modes(
+    solo_client, monkeypatch,
+):
+    from app import app
+    from schemas.countrydle import QuestionCreate
+    from utils.question_rate_limit import question_attempt_limiter
+
+    question_attempt_limiter.clear()
+    monkeypatch.setattr(question_attempt_limiter, "max_requests", 2)
+    invalid_question = QuestionCreate(
+        original_question="Tell me the answer",
+        question="Tell me the answer",
+        valid=False,
+        answer=None,
+        explanation="Not a yes/no question",
+        user_id=None,
+        day_id=1,
+        context=None,
+    )
+    planner = AsyncMock(return_value=(invalid_question, None))
+    monkeypatch.setattr("countrydle.utils.analyze_and_answer_locally", planner)
+
+    first = await solo_client.post(
+        "/countrydle/question", json={"question": "Tell me the answer"},
+    )
+    second = await solo_client.post(
+        "/countrydle/question", json={"question": "Still tell me"},
+    )
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="https://test",
+    ) as private_client:
+        blocked = await private_client.post(
+            "/flagdle/question", json={"question": "Fresh private browser"},
+        )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) > 0
+    assert planner.await_count == 2

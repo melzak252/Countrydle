@@ -77,6 +77,16 @@ def make_test_user(
 
 
 @pytest.fixture(autouse=True)
+def isolate_question_attempt_rate_limit(monkeypatch):
+    from utils.question_rate_limit import question_attempt_limiter
+
+    question_attempt_limiter.clear()
+    monkeypatch.setattr(question_attempt_limiter, "max_requests", 1000)
+    yield
+    question_attempt_limiter.clear()
+
+
+@pytest.fixture(autouse=True)
 def mock_common_database_repositories(monkeypatch, request):
     """Keep endpoint tests hermetic when PostgreSQL is not running locally.
 

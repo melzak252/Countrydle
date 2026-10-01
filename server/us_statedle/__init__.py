@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, R
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
 )
+from utils.question_rate_limit import enforce_question_attempt_limit
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -300,7 +302,11 @@ async def get_admin_questions(
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
-@router.post("/question", response_model=USStateQuestionDisplay)
+@router.post(
+    "/question",
+    response_model=USStateQuestionDisplay,
+    dependencies=[Depends(enforce_question_attempt_limit)],
+)
 async def ask_question(
     question: USStateQuestionBase,
     request: Request,
