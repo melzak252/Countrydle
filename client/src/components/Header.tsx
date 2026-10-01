@@ -1,6 +1,20 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { ChevronDown, Menu, X, LogOut, Archive, Sparkles, ShieldCheck, Info, HelpCircle, Mail, Cpu, BookOpen, FileText } from 'lucide-react';
+import {
+  ChevronDown,
+  Menu,
+  X,
+  LogOut,
+  Archive,
+  Cpu,
+  BookOpen,
+  Sparkles,
+  ShieldCheck,
+  Info,
+  HelpCircle,
+  Mail,
+  FileText,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
@@ -10,14 +24,17 @@ import { PrivacySettingsButton } from './PrivacySettingsButton';
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const isPl = i18n?.language?.startsWith('pl');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const gameCategories = [
     {
       category: t('header.groupGlobal', 'Global & Multiplayer'),
       items: [
         { path: '/game', name: t('header.worldMap', 'World Map'), badge: 'Countrydle' },
         { path: '/flagdle', name: 'Flagdle', badge: '12 Cards' },
-        { path: '/friends', name: i18n.language.startsWith('pl') ? 'Graj ze znajomym' : 'Play with a Friend', badge: '1v1' },
+        { path: '/friends', name: isPl ? 'Graj ze znajomym' : 'Play with a Friend', badge: '1v1' },
       ],
     },
     {
@@ -38,25 +55,28 @@ export default function Header() {
       ],
     },
   ];
+
   const more = [
-    ['/archive', t('header.archive')],
+    ['/archive', t('header.archive', 'Archive')],
     ['/how-it-works', t('header.howItWorks', 'How Questions Work')],
-    ['/explore', i18n.language.startsWith('pl') ? 'Przewodnik geograficzny' : 'Geography Guides'],
+    ['/explore', isPl ? 'Przewodnik geograficzny' : 'Geography Guides'],
     ['/patch-notes', t('header.patchNotes', 'Patch notes')],
-    ['/about', t('header.about')],
-    ['/faq', t('header.faq')],
-    ['/contact', t('header.contact')],
+    ['/about', t('header.about', 'About')],
+    ['/faq', t('header.faq', 'FAQ')],
+    ['/contact', t('header.contact', 'Contact')],
     ['/privacy-policy', t('footer.privacyPolicy', 'Privacy Policy')],
     ['/terms', t('footer.termsOfService', 'Terms of Service')],
     ...(user?.is_admin ? [['/admin', 'Admin']] : []),
   ];
+
   const exploreItems = [
     { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
     { path: '/how-it-works', name: t('header.howItWorks', 'How Questions Work'), icon: Cpu },
-    { path: '/explore', name: i18n.language.startsWith('pl') ? 'Przewodnik geograficzny' : 'Geography Guides', icon: BookOpen },
+    { path: '/explore', name: isPl ? 'Przewodnik geograficzny' : 'Geography Guides', icon: BookOpen },
     { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
     ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];
+
   const aboutItems = [
     { path: '/about', name: t('header.about', 'About'), icon: Info },
     { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
@@ -64,7 +84,9 @@ export default function Header() {
     { path: '/privacy-policy', name: t('footer.privacyPolicy', 'Privacy Policy'), icon: ShieldCheck },
     { path: '/terms', name: t('footer.termsOfService', 'Terms of Service'), icon: FileText },
   ];
+
   const closeMenu = () => setIsMenuOpen(false);
+
   const handleLogout = async () => {
     closeMenu();
     await logout();
@@ -72,27 +94,52 @@ export default function Header() {
 
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
+      const target = e.target as HTMLElement;
       if (!target?.closest('details')) {
         document.querySelectorAll('header details[open]').forEach((el) => {
-          (el as HTMLDetailsElement).open = false;
+          el.removeAttribute('open');
         });
       }
     };
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
   }, []);
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `block px-3 py-2.5 text-sm transition-colors ${isActive ? 'text-emerald-300 bg-white/5' : 'text-zinc-300 hover:text-sand-50 hover:bg-white/5'}`;
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `px-3 py-2 text-sm transition-colors ${
+      isActive ? 'text-emerald-300 font-medium' : 'text-zinc-300 hover:text-white'
+    }`;
+
+  const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `block px-3 py-2.5 text-sm transition-colors ${
+      isActive ? 'text-emerald-300 bg-white/5 font-medium' : 'text-zinc-300 hover:text-sand-50 hover:bg-white/5'
+    }`;
 
   return (
     <header className="sticky top-0 z-[1001] border-b border-white/10 bg-obsidian-950 text-sand-100">
-      <div className="mx-auto flex min-h-14 sm:min-h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        
+        {/* Brand with single subtle In Development indicator */}
         <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2.5" aria-label="Countrydle">
           <CountrydleLogo size={32} />
-          <span className="text-xl font-semibold tracking-tight">Countrydle<span className="text-emerald-300">.</span></span>
+          <span className="text-xl font-semibold tracking-tight text-sand-100">
+            Countrydle<span className="text-emerald-400">.</span>
+          </span>
+          <span
+            className="text-[10px] font-mono tracking-wider uppercase text-zinc-400 border border-zinc-700/60 rounded px-1.5 py-0.5 ml-0.5 select-none"
+            title={isPl ? 'Strona w fazie aktywnego rozwoju' : 'Site is in active development'}
+          >
+            {isPl ? 'W rozwoju' : 'In Dev'}
+          </span>
         </Link>
+
+        {/* Desktop Navigation */}
         <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
+          {/* Games Dropdown */}
           <details
             className="group relative"
             onMouseLeave={(event) => {
@@ -105,11 +152,12 @@ export default function Header() {
               }
             }}
           >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              {t('header.games')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+              <span>{t('header.games', 'Games')}</span>
+              <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              className="absolute left-0 top-full mt-1 w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-md p-1.5 before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
@@ -125,7 +173,7 @@ export default function Header() {
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
-                          `flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs transition-colors ${
+                          `flex items-center justify-between gap-1.5 rounded px-2.5 py-1.5 text-xs transition-colors ${
                             isActive
                               ? 'bg-emerald-500/10 text-emerald-300 font-medium'
                               : 'text-sand-100 hover:bg-white/5 hover:text-white'
@@ -159,11 +207,12 @@ export default function Header() {
               }
             }}
           >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              {t('header.explore', 'Explore')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+              <span>{t('header.explore', 'Explore')}</span>
+              <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full w-48 border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              className="absolute left-0 top-full mt-1 w-52 border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl z-50 rounded-md before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
@@ -176,7 +225,7 @@ export default function Header() {
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) =>
-                        `flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs transition-colors ${
+                        `flex items-center gap-2 rounded px-2.5 py-2 text-xs transition-colors ${
                           isActive
                             ? 'bg-emerald-500/10 text-emerald-300 font-medium'
                             : 'text-sand-100 hover:bg-white/5 hover:text-white'
@@ -192,8 +241,13 @@ export default function Header() {
             </div>
           </details>
 
-          <NavLink to="/leaderboard" className={linkClass}>{t('header.leaderboard')}</NavLink>
-          <NavLink to="/blog" className={linkClass}>{t('header.blog', 'Blog')}</NavLink>
+          <NavLink to="/leaderboard" className={navLinkClass}>
+            {t('header.leaderboard', 'Leaderboard')}
+          </NavLink>
+          
+          <NavLink to="/blog" className={navLinkClass}>
+            {t('header.blog', 'Blog')}
+          </NavLink>
 
           {/* About Dropdown */}
           <details
@@ -208,16 +262,17 @@ export default function Header() {
               }
             }}
           >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-3 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              {t('header.about', 'About')}<ChevronDown size={13} className="group-open:rotate-180 transition-transform" aria-hidden="true" />
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+              <span>{t('header.about', 'About')}</span>
+              <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full w-48 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-sm before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              className="absolute left-0 top-full mt-1 w-52 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-md p-1.5 before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
             >
-              <div className="p-1.5 flex flex-col gap-0.5">
+              <div className="flex flex-col gap-0.5 pb-1">
                 {aboutItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -225,7 +280,7 @@ export default function Header() {
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) =>
-                        `flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs transition-colors ${
+                        `flex items-center gap-2 rounded px-2.5 py-2 text-xs transition-colors ${
                           isActive
                             ? 'bg-emerald-500/10 text-emerald-300 font-medium'
                             : 'text-sand-100 hover:bg-white/5 hover:text-white'
@@ -238,69 +293,165 @@ export default function Header() {
                   );
                 })}
               </div>
-              <div className="p-1.5 bg-white/[0.02]">
-                <PrivacySettingsButton className="flex items-center gap-2 w-full px-2.5 py-1.5 text-left text-xs text-zinc-400 hover:text-sand-50 hover:bg-white/5 transition-colors rounded-sm" />
+              <div className="pt-1 bg-white/[0.02]">
+                <PrivacySettingsButton className="flex items-center gap-2 w-full px-2.5 py-1.5 text-left text-xs text-zinc-400 hover:text-sand-50 hover:bg-white/5 transition-colors rounded" />
               </div>
             </div>
           </details>
         </nav>
-        <div className="hidden items-center gap-3 xl:flex">
+
+        {/* Right Section: Bigger Clock & Auth Controls (Desktop) */}
+        <div className="hidden items-center gap-4 xl:flex">
+          {/* Prominent Next Puzzle / Country Countdown Clock */}
           <CountdownTimer />
-          {isAuthenticated ? <>
-            <Link to={`/profile/${user?.username}`} className="max-w-28 truncate border-l border-white/15 pl-3 text-sm" title={t('header.viewProfile')}>{user?.username}</Link>
-            <button type="button" onClick={handleLogout} aria-label={t('header.logout')} className="p-2 text-zinc-400 hover:text-sand-100"><LogOut size={17} /></button>
-          </> : <>
-            <Link to="/login" className="px-2 py-2 text-sm text-zinc-300 hover:text-white">{t('header.login')}</Link>
-            <Link to="/register" className="border border-sand-200/40 px-3 py-2 text-sm hover:bg-sand-100 hover:text-obsidian-950">{t('header.signUp')}</Link>
-          </>}
+
+          {/* User Profile or Login/Register CTAs */}
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2 border-l border-white/15 pl-4">
+              <Link
+                to={`/profile/${user?.username}`}
+                className="max-w-28 truncate text-sm text-sand-100 hover:text-emerald-300 transition-colors"
+                title={t('header.viewProfile', 'View Profile')}
+              >
+                {user?.username}
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                aria-label={t('header.logout', 'Logout')}
+                className="p-1.5 text-zinc-400 hover:text-sand-100 transition-colors"
+                title={t('header.logout', 'Logout')}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 border-l border-white/15 pl-4">
+              <Link
+                to="/login"
+                className="text-sm text-zinc-300 hover:text-white transition-colors"
+              >
+                {t('header.login', 'Login')}
+              </Link>
+              <Link
+                to="/register"
+                className="border border-sand-200/40 px-3 py-1.5 text-sm rounded hover:bg-sand-100 hover:text-obsidian-950 font-medium transition-colors"
+              >
+                {t('header.signUp', 'Sign Up')}
+              </Link>
+            </div>
+          )}
         </div>
+
+        {/* Mobile Header: Compact Clock & Hamburger Menu Button */}
         <div className="flex items-center gap-2 xl:hidden">
-          <CountdownTimer />
-          <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-expanded={isMenuOpen} aria-controls="mobile-navigation" aria-label="Navigation menu" className="p-2.5 text-sand-100">
+          <CountdownTimer className="text-[11px] px-2 py-1" />
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-navigation"
+            aria-label="Navigation menu"
+            className="p-2 text-sand-100 hover:bg-white/5 rounded transition-colors"
+          >
             {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
-      {isMenuOpen && <nav id="mobile-navigation" aria-label="Mobile navigation" className="max-h-[calc(100dvh-5rem)] overflow-y-auto border-t border-white/10 px-4 pb-5 pt-4 xl:hidden" onKeyDown={(event) => { if (event.key === 'Escape') closeMenu(); }}>
-        <div className="space-y-4 border-y border-white/10 py-3" onClick={closeMenu}>
-          {gameCategories.map((group) => (
-            <div key={group.category}>
-              <span className="block mb-1.5 font-mono text-[10px] uppercase tracking-widest text-zinc-400">
-                {group.category}
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `flex items-center justify-between gap-1 rounded-sm px-2.5 py-2 text-xs transition-colors ${
-                        isActive ? 'bg-emerald-500/10 text-emerald-300 font-medium' : 'text-zinc-200 hover:bg-white/5 bg-white/[0.02]'
-                      }`
-                    }
-                  >
-                    <span className="truncate">{item.name}</span>
-                    {item.badge && <span className="text-[10px] text-zinc-400 font-mono">{item.badge}</span>}
-                  </NavLink>
-                ))}
+
+      {/* Mobile Drawer Menu */}
+      {isMenuOpen && (
+        <nav
+          id="mobile-navigation"
+          aria-label="Mobile navigation"
+          className="max-h-[calc(100dvh-5rem)] overflow-y-auto border-t border-white/10 bg-obsidian-950 px-4 pb-6 pt-4 xl:hidden"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') closeMenu();
+          }}
+        >
+          {/* Game Modes Section */}
+          <div className="space-y-4 border-b border-white/10 pb-4" onClick={closeMenu}>
+            {gameCategories.map((group) => (
+              <div key={group.category}>
+                <span className="block mb-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                  {group.category}
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between gap-1 rounded px-2.5 py-2 text-xs transition-colors ${
+                          isActive
+                            ? 'bg-emerald-500/10 text-emerald-300 font-medium'
+                            : 'text-zinc-200 hover:bg-white/5 bg-white/[0.02]'
+                        }`
+                      }
+                    >
+                      <span className="truncate">{item.name}</span>
+                      {item.badge && <span className="text-[10px] text-zinc-400 font-mono">{item.badge}</span>}
+                    </NavLink>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 py-3" onClick={closeMenu}>
-          {[[ '/leaderboard', t('header.leaderboard') ], ['/blog', t('header.blog', 'Blog')], ...more].map(([path, label]) => <NavLink key={path} to={path} className={linkClass}>{label}</NavLink>)}
-          <PrivacySettingsButton className="block px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
-        </div>
-        <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-4">
-          {isAuthenticated ? <>
-            <Link onClick={closeMenu} to={`/profile/${user?.username}`} className="min-w-0 truncate text-sm text-emerald-300">{user?.username}</Link>
-            <button type="button" onClick={handleLogout} className="px-3 py-2 text-sm">{t('header.logout')}</button>
-          </> : <>
-            <Link onClick={closeMenu} to="/login" className="px-3 py-2 text-sm">{t('header.login')}</Link>
-            <Link onClick={closeMenu} to="/register" className="border border-sand-200/40 px-4 py-2 text-sm">{t('header.signUp')}</Link>
-          </>}
-        </div>
-      </nav>}
+            ))}
+          </div>
+
+          {/* Secondary Links Grid */}
+          <div className="grid grid-cols-2 py-3" onClick={closeMenu}>
+            {[
+              ['/leaderboard', t('header.leaderboard', 'Leaderboard')],
+              ['/blog', t('header.blog', 'Blog')],
+              ...more,
+            ].map(([path, label]) => (
+              <NavLink key={path} to={path} className={mobileLinkClass}>
+                {label}
+              </NavLink>
+            ))}
+            <PrivacySettingsButton className="block px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
+          </div>
+
+          {/* User Auth Section (Mobile) */}
+          <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-4 mt-2">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  onClick={closeMenu}
+                  to={`/profile/${user?.username}`}
+                  className="min-w-0 truncate text-sm text-emerald-300 font-medium"
+                >
+                  {user?.username}
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-3 py-2 text-sm text-zinc-400 hover:text-sand-100"
+                >
+                  {t('header.logout', 'Logout')}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  onClick={closeMenu}
+                  to="/login"
+                  className="px-3 py-2 text-sm text-zinc-300 hover:text-white"
+                >
+                  {t('header.login', 'Login')}
+                </Link>
+                <Link
+                  onClick={closeMenu}
+                  to="/register"
+                  className="border border-sand-200/40 px-4 py-2 text-sm hover:bg-sand-100 hover:text-obsidian-950 font-medium rounded transition-colors"
+                >
+                  {t('header.signUp', 'Sign Up')}
+                </Link>
+              </>
+            )}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

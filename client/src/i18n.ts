@@ -23,6 +23,12 @@ const resources = {
         contact: 'Contact',
         patchNotes: 'Patch notes',
         howItWorks: 'How Questions Work',
+        nextDailyIn: 'New country in',
+        inDevelopment: 'In Development',
+        activeDevelopment: 'Active Development',
+        dev: 'DEV',
+        devNotice: 'Countrydle is actively evolving — new geography modes, questions, and daily features added regularly.',
+        viewChangelog: 'Changelog',
       },
       footer: {
         rights: 'All rights reserved.',
@@ -489,6 +495,12 @@ const resources = {
     translation: {
       header: {
         howItWorks: 'Jak działają pytania',
+        nextDailyIn: 'Nowe państwo za',
+        inDevelopment: 'W rozwoju',
+        activeDevelopment: 'Strona w rozwoju',
+        dev: 'DEV',
+        devNotice: 'Countrydle stale się rozwija — nowe tryby gry, ciekawostki i funkcje dodawane regularnie.',
+        viewChangelog: 'Lista zmian',
       },
       footer: {
         howItWorks: 'Jak działają pytania',
