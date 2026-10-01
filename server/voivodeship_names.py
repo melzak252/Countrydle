@@ -57,7 +57,7 @@ _RAW_ALIASES: dict[str, list[str]] = {
     ],
     "Mazowieckie": [
         "mazowieckie", "mazowieckim", "mazowieckiego", "mazowiecka", "mazowiecką",
-        "mazowsze", "mazowszu", "warszawa", "warszawy", "warszawie", "warszawą",
+        "mazowsze", "mazowszu", "mazowsza", "warszawa", "warszawy", "warszawie", "warszawą",
     ],
     "Opolskie": [
         "opolskie", "opolskim", "opolskiego", "opolska", "opolską", "opole", "opola", "opolu", "opolem",
@@ -68,15 +68,15 @@ _RAW_ALIASES: dict[str, list[str]] = {
     ],
     "Podlaskie": [
         "podlaskie", "podlaskim", "podlaskiego", "podlaska", "podlaską",
-        "podlasie", "podlasiu", "białystok", "bialystok", "białegostoku", "bialegostoku", "białymstoku", "bialymstoku",
+        "podlasie", "podlasiu", "podlasia", "białystok", "bialystok", "białegostoku", "bialegostoku", "białymstoku", "bialymstoku",
     ],
     "Pomorskie": [
         "pomorskie", "pomorskim", "pomorskiego", "pomorska", "pomorską",
-        "pomorze", "pomorzu", "gdańsk", "gdansk", "gdańska", "gdansku", "gdańskiem", "gdanskiem", "trójmiasto", "trojmiasto",
+        "pomorze", "pomorzu", "pomorza", "gdańsk", "gdansk", "gdańska", "gdansku", "gdańskiem", "gdanskiem", "trójmiasto", "trojmiasto",
     ],
     "Śląskie": [
         "śląskie", "slaskie", "śląskim", "slaskim", "śląskiego", "slaskiego", "śląska", "slaska", "śląską", "slaska",
-        "śląsk", "slask", "śląsku", "slasku", "katowice", "katowic", "katowicach", "katowicami",
+        "śląsk", "slask", "śląsku", "slasku", "śląskiem", "katowice", "katowic", "katowicach", "katowicami",
     ],
     "Świętokrzyskie": [
         "świętokrzyskie", "swietokrzyskie", "świętokrzyskim", "swietokrzyskim", "świętokrzyskiego", "swietokrzyskiego",
@@ -88,12 +88,12 @@ _RAW_ALIASES: dict[str, list[str]] = {
         "warmia", "warmii", "mazury", "mazurach", "mazur", "olsztyn", "olsztyna", "olsztynie", "olsztynem",
     ],
     "Wielkopolskie": [
-        "wielkopolskie", "wielkopolskim", "wielkopolskiego", "wielkopolska", "wielkopolskę", "wielkopolsce",
+        "wielkopolskie", "wielkopolskim", "wielkopolskiego", "wielkopolska", "wielkopolskę", "wielkopolsce", "wielkopolski",
         "poznań", "poznan", "poznania", "poznaniu", "poznaniem",
     ],
     "Zachodniopomorskie": [
         "zachodniopomorskie", "zachodniopomorskim", "zachodniopomorskiego", "zachodnio-pomorskie", "zachodnio-pomorskim",
-        "szczecin", "szczecina", "szczecinie", "szczecinem", "koszalin", "koszalina",
+        "pomorze zachodnie", "pomorza zachodniego", "szczecin", "szczecina", "szczecinie", "szczecinem", "koszalin", "koszalina",
     ],
 }
 

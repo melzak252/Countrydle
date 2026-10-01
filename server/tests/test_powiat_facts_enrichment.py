@@ -243,3 +243,47 @@ def test_powiat_relative_directions():
     p_south = analyze_question("Czy powiat leży na południe od Poznania?", LOCAL_CONFIG, use_cache=False)
     ans_wolsztyn = execute_plan(LOCAL_CONFIG, "Powiat wolsztyński", p_south)
     assert ans_wolsztyn.answer is True
+
+
+def test_historical_regions_and_partitions():
+    from local_kb_question import analyze_question, execute_plan
+
+    # Historical partitions
+    p_pruski = analyze_question("Czy powiat leżał w zaborze pruskim?", LOCAL_CONFIG, use_cache=False)
+    assert p_pruski.valid is True and p_pruski.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Poznań", p_pruski).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Warszawa", p_pruski).answer is False
+
+    p_rosyjski = analyze_question("Czy powiat leżał w zaborze rosyjskim?", LOCAL_CONFIG, use_cache=False)
+    assert p_rosyjski.valid is True and p_rosyjski.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Warszawa", p_rosyjski).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Poznań", p_rosyjski).answer is False
+
+    p_odzyskane = analyze_question("Czy powiat leży na Ziemiach Odzyskanych?", LOCAL_CONFIG, use_cache=False)
+    assert p_odzyskane.valid is True and p_odzyskane.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Wrocław", p_odzyskane).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Kraków", p_odzyskane).answer is False
+
+    # Historical lands
+    p_mazowsze = analyze_question("Czy powiat leży na Mazowszu?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Płock", p_mazowsze).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Gdańsk", p_mazowsze).answer is False
+
+    p_slask = analyze_question("Czy powiat leży na Śląsku?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Gliwice", p_slask).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Warszawa", p_slask).answer is False
+
+    p_malopolska = analyze_question("Czy powiat leży w Małopolsce?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Kraków", p_malopolska).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Poznań", p_malopolska).answer is False
+
+
+def test_wojewodztwodle_relative_directions():
+    from wojewodztwodle.utils import LOCAL_CONFIG as WOJ_CONFIG
+    from local_kb_question import analyze_question, execute_plan
+
+    p = analyze_question("Czy województwo leży na zachód od Mazowsza?", WOJ_CONFIG, use_cache=False)
+    assert p.valid is True and p.supported is True
+    ans = execute_plan(WOJ_CONFIG, "śląskie", p)
+    assert ans.answer is True
+    assert "Śląskie leży na długości geograficznej" in ans.explanation

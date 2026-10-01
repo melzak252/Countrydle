@@ -248,10 +248,26 @@ def norm(value: Any) -> str:
 
 def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_name: str) -> sqlite3.Row | None:
     conn.row_factory = sqlite3.Row
-    return conn.execute(
+    row = conn.execute(
         f"SELECT * FROM {config.table} WHERE {config.name_column} = ? COLLATE NOCASE",
         (entity_name,),
     ).fetchone()
+    if row:
+        return row
+    if config.mode_name == "Wojewodztwodle":
+        resolved_v = resolve_voivodeship_name(entity_name)
+        if resolved_v:
+            row = conn.execute(f"SELECT * FROM {config.table} WHERE {config.name_column} = ?", (resolved_v,)).fetchone()
+            if row:
+                return row
+    target_norm = norm(entity_name)
+    all_rows = conn.execute(f"SELECT * FROM {config.table}").fetchall()
+    for r in all_rows:
+        if norm(r[config.name_column]) == target_norm:
+            return r
+        if "seat" in r.keys() and r["seat"] and norm(r["seat"]) == target_norm:
+            return r
+    return None
 
 
 def get_relation_value(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, relation: str) -> Any:
