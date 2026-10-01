@@ -31,6 +31,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, R
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
 )
+from utils.question_rate_limit import enforce_question_attempt_limit
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
 from db.repositories.guess import (
@@ -670,7 +672,11 @@ async def get_admin_country_fact_change_log(
     return await CountryFactChangeLogRepository(session).get_recent(limit=limit, offset=offset)
 
 
-@router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])
+@router.post(
+    "/question",
+    response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay],
+    dependencies=[Depends(enforce_question_attempt_limit)],
+)
 async def ask_question(
     question: QuestionBase,
     request: Request,

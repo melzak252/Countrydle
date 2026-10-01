@@ -273,7 +273,9 @@ with a two-day lifetime (Secure on HTTPS). Opening a solo game's state endpoint
 establishes the cookie but creates no participation row. Accepted actions update
 `guest_participations` in the same database transaction as the saved action.
 Guest-to-account sync links that browser's puzzle so it is not counted twice.
-No IP address or browser fingerprint is used.
+Participation records do not use IP addresses or browser fingerprints.
+Question-abuse throttling separately uses a short-lived keyed hash of the source
+network.
 
 The admin overview covers all nine daily challenges. Its player total counts
 distinct accounts and guest browser identities across modes; games won and the
@@ -292,6 +294,16 @@ The PostgreSQL regression tests require an explicitly disposable
 ```bash
 python -m pytest -q tests/test_guest_participation.py tests/test_guest_participation_routes.py tests/test_participation_reporting.py tests/test_blog.py
 ```
+
+## Question rate limits
+
+All natural-language question endpoints share a limit of 30 attempts per source network per rolling 60 seconds. Both valid and invalid questions count, and the limit is shared across game modes. Exceeding it returns HTTP `429` with a `Retry-After` header; opening a private browser or clearing site data does not reset the server-side counter.
+
+The limiter keeps only keyed hashes in process memory; raw IP addresses are neither retained nor logged by it. IPv4 addresses are limited individually; IPv6 addresses are grouped by `/64`. Users behind one public IP (for example, a shared network) share the allowance.
+
+`QUESTION_RATE_LIMIT_TRUST_X_REAL_IP` is disabled by default. Production enables it because Nginx sets `X-Real-IP` from the connected client address. Only enable it behind a trusted reverse proxy that overwrites this header; otherwise callers can spoof their address.
+
+Counters are process-local and reset when the backend restarts. The current backend runs one worker. If deploying multiple workers or replicas, use a shared rate-limit store before scaling; otherwise each process has a separate allowance.
 
 ### Leaderboards
 

@@ -55,6 +55,8 @@ from utils.geo import enhance_guess_with_hint
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
 )
+from utils.question_rate_limit import enforce_question_attempt_limit
+
 
 
 router = APIRouter(prefix="/continental")
@@ -291,6 +293,7 @@ async def reveal_country(
 @router.post(
     "/{continent}/question",
     response_model=Union[ContinentalQuestionDisplay, InvalidContinentalQuestionDisplay],
+    dependencies=[Depends(enforce_question_attempt_limit)],
 )
 async def ask_question(
     continent: ContinentCode,

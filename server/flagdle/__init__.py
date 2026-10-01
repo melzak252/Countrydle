@@ -40,6 +40,8 @@ from users.utils import get_current_or_guest_user, get_current_user
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
 )
+from utils.question_rate_limit import enforce_question_attempt_limit
+
 from flagdle.utils import (
     UNMASK_ORDER,
     evaluate_flag_clues,
@@ -436,7 +438,11 @@ async def make_guess(
         )
 
 
-@router.post("/question", response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay])
+@router.post(
+    "/question",
+    response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay],
+    dependencies=[Depends(enforce_question_attempt_limit)],
+)
 async def ask_flag_question(
     question: QuestionBase,
     request: Request,
