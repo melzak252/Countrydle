@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
@@ -9,7 +10,13 @@ from countrydle.local_answering import (
 from countrydle.local_planner import analyze_question_for_local_plan
 from countrydle.template_compiler import compile_template_plan
 
+live_planner_eval = pytest.mark.skipif(
+    os.getenv("COUNTRYDLE_RUN_LIVE_PLANNER_EVAL") != "1",
+    reason="Set COUNTRYDLE_RUN_LIVE_PLANNER_EVAL=1 to run provider-backed planner evaluations",
+)
 
+
+@pytest.mark.skipif(not DEFAULT_DB_PATH.exists(), reason="Countrydle local SQLite KB is missing")
 def test_find_country_micronesia():
     """Verify that find_country resolves English and Polish aliases for Federated States of Micronesia."""
     with sqlite3.connect(DEFAULT_DB_PATH) as conn:
@@ -47,6 +54,7 @@ def test_compile_template_micronesia():
     assert improved_en == "Is the country Federated States of Micronesia?"
 
 
+@live_planner_eval
 def test_analyze_question_for_local_plan_micronesia():
     """Verify analyze_question_for_local_plan marks 'Czy to mikronezja?' as valid and supported."""
     result = analyze_question_for_local_plan("Czy to mikronezja?")
@@ -57,6 +65,7 @@ def test_analyze_question_for_local_plan_micronesia():
     ]
 
 
+@pytest.mark.skipif(not DEFAULT_DB_PATH.exists(), reason="Countrydle local SQLite KB is missing")
 def test_execute_local_plan_micronesia():
     """Verify execution of the plan against target countries."""
     plan, improved = compile_template_plan("Czy to mikronezja?")
@@ -74,6 +83,7 @@ def test_execute_local_plan_micronesia():
     assert "name" in ans_fsm.relation
 
 
+@live_planner_eval
 def test_other_countries_previously_failing_polish_and_english():
     """Verify other countries with Polish names and English variations compile and resolve."""
     cases = [
@@ -124,6 +134,7 @@ def test_other_countries_previously_failing_polish_and_english():
 
 
 @pytest.mark.anyio
+@live_planner_eval
 async def test_countrydle_question_endpoint_micronesia(async_client):
     """POST /countrydle/question with 'Czy to mikronezja?' returns valid=True with answer."""
     mock_country = MagicMock()
