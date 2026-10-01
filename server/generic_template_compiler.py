@@ -134,6 +134,10 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
                     f"Czy powiat graniczy z: {country_canonical}?",
                 )
 
+    # Cardinal directions (e.g. "na zachód od Warszawy") are handled by the planner with coordinates
+    if any(phrase in norm_q for phrase in ("na zachod od", "na wschod od", "na polnoc od", "na poludnie od", "west of", "east of", "north of", "south of")):
+        return None
+
     # 6. Voivodeship: Shorthand or explicit location/bordering
     # Check if a voivodeship is explicitly named
     matched_voivodeship = None

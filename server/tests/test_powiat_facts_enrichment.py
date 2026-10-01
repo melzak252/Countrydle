@@ -287,3 +287,61 @@ def test_wojewodztwodle_relative_directions():
     ans = execute_plan(WOJ_CONFIG, "śląskie", p)
     assert ans.answer is True
     assert "Śląskie leży na długości geograficznej" in ans.explanation
+
+
+def test_powiat_national_parks():
+    from local_kb_question import analyze_question, execute_plan
+
+    p_any = analyze_question("Czy na terenie powiatu znajduje się park narodowy?", LOCAL_CONFIG, use_cache=False)
+    assert p_any.valid is True and p_any.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat tatrzański", p_any).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Warszawa", p_any).answer is False
+
+    p_tpn = analyze_question("Czy w powiecie znajduje się Tatrzański Park Narodowy?", LOCAL_CONFIG, use_cache=False)
+    assert p_tpn.valid is True and p_tpn.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat tatrzański", p_tpn).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat hajnowski", p_tpn).answer is False
+
+    p_bpn = analyze_question("Czy w powiecie leży Białowieski Park Narodowy?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Powiat hajnowski", p_bpn).answer is True
+
+
+def test_powiat_major_lakes():
+    from local_kb_question import analyze_question, execute_plan
+
+    p_sniardwy = analyze_question("Czy w powiecie znajduje się jezioro Śniardwy?", LOCAL_CONFIG, use_cache=False)
+    assert p_sniardwy.valid is True and p_sniardwy.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat piski", p_sniardwy).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Kraków", p_sniardwy).answer is False
+
+    p_solina = analyze_question("Czy w powiecie leży jezioro Solina?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Powiat leski", p_solina).answer is True
+
+    p_goplo = analyze_question("Czy w powiecie znajduje się jezioro Gopło?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Powiat inowrocławski", p_goplo).answer is True
+
+
+def test_powiat_unesco_sites():
+    from local_kb_question import analyze_question, execute_plan
+
+    p_any = analyze_question("Czy w powiecie znajduje się obiekt z listy UNESCO?", LOCAL_CONFIG, use_cache=False)
+    assert p_any.valid is True and p_any.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat wielicki", p_any).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Toruń", p_any).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Zamość", p_any).answer is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat chojnicki", p_any).answer is False
+
+    p_malbork = analyze_question("Czy w powiecie znajduje się zamek w Malborku?", LOCAL_CONFIG, use_cache=False)
+    assert execute_plan(LOCAL_CONFIG, "Powiat malborski", p_malbork).answer is True
+
+
+def test_powiat_health_resorts():
+    from local_kb_question import analyze_question, execute_plan
+
+    p_spa = analyze_question("Czy w powiecie znajduje się uzdrowisko?", LOCAL_CONFIG, use_cache=False)
+    assert p_spa.valid is True and p_spa.supported is True
+    assert execute_plan(LOCAL_CONFIG, "Powiat aleksandrowski", p_spa).answer is True  # Ciechocinek
+    assert execute_plan(LOCAL_CONFIG, "Powiat kołobrzeski", p_spa).answer is True     # Kołobrzeg
+    assert execute_plan(LOCAL_CONFIG, "Powiat nowosądecki", p_spa).answer is True     # Krynica-Zdrój
+    assert execute_plan(LOCAL_CONFIG, "Sopot", p_spa).answer is True                  # Sopot
+    assert execute_plan(LOCAL_CONFIG, "Powiat pińczowski", p_spa).answer is False

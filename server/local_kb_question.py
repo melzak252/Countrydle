@@ -103,6 +103,24 @@ def analyze_question(
     if cached is not None:
         return replace(cached, original_question=question)
 
+    try:
+        from generic_template_compiler import compile_generic_template_plan
+        tpl_res = compile_generic_template_plan(question, config.mode_name)
+        if tpl_res is not None:
+            tpl_ast, tpl_improved = tpl_res
+            plan = QuestionPlan(
+                original_question=question,
+                valid=True,
+                supported=True,
+                improved_question=tpl_improved,
+                explanation="Deterministic template match.",
+                plan=tpl_ast,
+            )
+            if use_cache:
+                plan_cache.set(config.mode_name, question, plan, version=version)
+            return plan
+    except Exception:
+        pass
     relations = "\n".join(f"- {r}" for r in config.supported_relations)
     entity_relations = ", ".join(sorted(config.entity_list_relations)) or "(none)"
     neighbor_example = ""
@@ -684,6 +702,24 @@ def generate_mode_explanation(
         if rel in {"is_coastal", "water_access"}:
             label = "Powiat" if config.mode_name == "Powiatdle" else "Województwo"
             return f"{label} {name} ma bezpośredni dostęp do Morza Bałtyckiego." if answer else f"{label} {name} nie ma dostępu do morza (jest jednostką śródlądową)."
+        if rel == "national_parks" and (op == "exists" or not val):
+            parks = [r[0] for r in conn.execute("SELECT park_name FROM powiat_national_parks WHERE powiat_id=?", (row["id"],))]
+            return f"Na terenie {name} znajduje się park narodowy: {', '.join(parks)}." if answer else f"Na terenie {name} nie ma parku narodowego."
+        if rel == "national_parks" and val:
+            return f"Na terenie {name} znajduje się: {val}." if answer else f"Na terenie {name} nie leży {val}."
+        if rel in {"major_lakes", "lakes"} and (op == "exists" or not val):
+            lakes = [r[0] for r in conn.execute("SELECT lake_name FROM powiat_lakes WHERE powiat_id=?", (row["id"],))]
+            return f"W {name} znajduje się jezioro / zbiornik wodny: {', '.join(lakes)}." if answer else f"W {name} nie ma dużego jeziora ani zbiornika."
+        if rel in {"major_lakes", "lakes"} and val:
+            return f"W {name} znajduje się: {val}." if answer else f"W {name} nie leży {val}."
+        if rel == "unesco_sites" and (op == "exists" or not val):
+            sites = [r[0] for r in conn.execute("SELECT site_name FROM powiat_unesco_sites WHERE powiat_id=?", (row["id"],))]
+            return f"Na terenie {name} znajduje się obiekt z listy UNESCO: {', '.join(sites)}." if answer else f"Na terenie {name} nie ma obiektu z listy UNESCO."
+        if rel == "unesco_sites" and val:
+            return f"Na terenie {name} znajduje się obiekt UNESCO: {val}." if answer else f"Na terenie {name} nie leży obiekt UNESCO: {val}."
+        if rel == "health_resorts":
+            spas = [r[0] for r in conn.execute("SELECT resort_name FROM powiat_health_resorts WHERE powiat_id=?", (row["id"],))]
+            return f"Na terenie {name} znajduje się uzdrowisko: {', '.join(spas)}." if answer else f"Na terenie {name} nie ma statutowego uzdrowiska."
         if rel == "borders_voivodeship" and val:
             borders = get_relation_value(conn, config, row, rel) or []
             entity_name = f"Województwo {name}" if config.target_entity == "target_voivodeship" else name

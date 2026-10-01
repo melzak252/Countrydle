@@ -415,6 +415,132 @@ ROADS_TO_POWIATS: dict[str, list[str]] = {
     ],
 }
 
+PARKS_TO_POWIATS: dict[str, list[str]] = {
+    "Tatrzański Park Narodowy": ["Powiat tatrzański"],
+    "Białowieski Park Narodowy": ["Powiat hajnowski"],
+    "Bieszczadzki Park Narodowy": ["Powiat bieszczadzki", "Powiat leski"],
+    "Karkonoski Park Narodowy": ["Powiat karkonoski", "Jelenia Góra"],
+    "Słowiński Park Narodowy": ["Powiat słupski", "Powiat lęborski"],
+    "Kampinoski Park Narodowy": ["Powiat warszawski zachodni", "Powiat nowodworski (województwo mazowieckie)", "Powiat sochaczewski"],
+    "Ojcowski Park Narodowy": ["Powiat krakowski"],
+    "Pieniński Park Narodowy": ["Powiat nowotarski"],
+    "Biebrzański Park Narodowy": ["Powiat moniecki", "Powiat augustowski", "Powiat grajewski", "Powiat sokólski"],
+    "Woliński Park Narodowy": ["Powiat kamieński", "Świnoujście"],
+    "Wigierski Park Narodowy": ["Powiat suwalski", "Powiat sejneński"],
+    "Roztoczański Park Narodowy": ["Powiat zamojski", "Powiat biłgorajski"],
+    "Świętokrzyski Park Narodowy": ["Powiat kielecki", "Powiat ostrowiecki", "Powiat starachowicki"],
+    "Bory Tucholskie": ["Powiat chojnicki"],
+    "Drawieński Park Narodowy": ["Powiat choszczeński", "Powiat wałecki", "Powiat strzelecko-drezdenecki"],
+    "Gorczański Park Narodowy": ["Powiat limanowski", "Powiat nowotarski"],
+    "Park Narodowy Gór Stołowych": ["Powiat kłodzki"],
+    "Magurski Park Narodowy": ["Powiat jasielski", "Powiat gorlicki", "Powiat krośnieński (województwo podkarpackie)"],
+    "Narwiański Park Narodowy": ["Powiat białostocki", "Powiat wysokomazowiecki"],
+    "Poleski Park Narodowy": ["Powiat włodawski", "Powiat łęczyński", "Powiat parczewski"],
+    "Babiogórski Park Narodowy": ["Powiat suski", "Powiat nowotarski"],
+    "Park Narodowy Ujście Warty": ["Powiat słubicki", "Powiat gorzowski", "Powiat sulęciński"],
+    "Wielkopolski Park Narodowy": ["Powiat poznański"],
+}
+
+LAKES_TO_POWIATS: dict[str, list[str]] = {
+    "Śniardwy": ["Powiat piski"],
+    "Mamry": ["Powiat węgorzewski", "Powiat giżycki"],
+    "Jeziorak": ["Powiat iławski"],
+    "Dąbie": ["Szczecin", "Powiat goleniowski"],
+    "Miedwie": ["Powiat stargardzki", "Powiat gryfiński"],
+    "Łebsko": ["Powiat słupski", "Powiat lęborski"],
+    "Gardno": ["Powiat słupski"],
+    "Jamno": ["Koszalin", "Powiat koszaliński"],
+    "Gopło": ["Powiat inowrocławski", "Powiat mogileński", "Powiat koniński"],
+    "Wigry": ["Powiat suwalski", "Powiat sejneński"],
+    "Hańcza": ["Powiat suwalski"],
+    "Morskie Oko": ["Powiat tatrzański"],
+    "Czarny Staw": ["Powiat tatrzański"],
+    "Solina": ["Powiat leski", "Powiat bieszczadzki"],
+    "Zalew Zegrzyński": ["Powiat legionowski"],
+    "Zbiornik Włocławski": ["Powiat włocławski", "Włocławek", "Powiat płocki", "Płock"],
+    "Zbiornik Sulejowski": ["Powiat tomaszowski (województwo łódzkie)", "Powiat piotrkowski", "Powiat opoczyński"],
+    "Zbiornik Jeziorsko": ["Powiat sieradzki", "Powiat poddębicki", "Powiat turecki"],
+    "Jezioro Rożnowskie": ["Powiat nowosądecki"],
+    "Jezioro Czorsztyńskie": ["Powiat nowotarski"],
+    "Jezioro Żywieckie": ["Powiat żywiecki"],
+    "Jezioro Otmuchowskie": ["Powiat nyski"],
+    "Jezioro Nyskie": ["Powiat nyski"],
+    "Drawsko": ["Powiat drawski"],
+    "Wdzydze": ["Powiat kościerski"],
+    "Charzykowskie": ["Powiat chojnicki"],
+    "Powidzkie": ["Powiat słupecki"],
+}
+
+UNESCO_TO_POWIATS: dict[str, list[str]] = {
+    "Historyczne centrum Krakowa": ["Kraków"],
+    "Kopalnia soli w Wieliczce": ["Powiat wielicki"],
+    "Kopalnia soli w Bochni": ["Powiat bocheński"],
+    "Auschwitz-Birkenau": ["Powiat oświęcimski"],
+    "Puszcza Białowieska": ["Powiat hajnowski"],
+    "Historyczne centrum Warszawy": ["Warszawa"],
+    "Stare Miasto w Zamościu": ["Zamość"],
+    "Zamek w Malborku": ["Powiat malborski"],
+    "Średniowieczny zespół miejski Torunia": ["Toruń"],
+    "Kalwaria Zebrzydowska": ["Powiat wadowicki"],
+    "Kościoły Pokoju w Jaworze i Świdnicy": ["Powiat jaworski", "Powiat świdnicki (województwo dolnośląskie)"],
+    "Drewniane kościoły południowej Małopolski": ["Powiat gorlicki", "Powiat nowotarski", "Powiat tarnowski", "Powiat brzozowski"],
+    "Park Mużakowski": ["Powiat żarski"],
+    "Hala Stulecia we Wrocławiu": ["Wrocław"],
+    "Drewniane cerkwie w Karpatach": ["Powiat bieszczadzki", "Powiat leski", "Powiat sanocki", "Powiat przemyski", "Powiat gorlicki", "Powiat nowosądecki"],
+    "Kopalnia rud ołowiu, srebra i cynku w Tarnowskich Górach": ["Powiat tarnogórski", "Bytom"],
+    "Krzemionki Opatowskie": ["Powiat ostrowiecki", "Powiat opatowski"],
+    "Lasy bukowe w Bieszczadach": ["Powiat bieszczadzki"],
+}
+
+SPAS_TO_POWIATS: dict[str, list[str]] = {
+    "Ciechocinek": ["Powiat aleksandrowski"],
+    "Kołobrzeg": ["Powiat kołobrzeski"],
+    "Krynica-Zdrój": ["Powiat nowosądecki"],
+    "Muszyna": ["Powiat nowosądecki"],
+    "Piwniczna-Zdrój": ["Powiat nowosądecki"],
+    "Żegiestów-Zdrój": ["Powiat nowosądecki"],
+    "Szczawnica": ["Powiat nowotarski"],
+    "Rabka-Zdrój": ["Powiat nowotarski"],
+    "Zakopane": ["Powiat tatrzański"],
+    "Wapienne": ["Powiat gorlicki"],
+    "Wysowa-Zdrój": ["Powiat gorlicki"],
+    "Busko-Zdrój": ["Powiat buski"],
+    "Solec-Zdrój": ["Powiat buski"],
+    "Nałęczów": ["Powiat puławski"],
+    "Krasnobród": ["Powiat zamojski"],
+    "Horyniec-Zdrój": ["Powiat lubaczowski"],
+    "Iwonicz-Zdrój": ["Powiat krośnieński (województwo podkarpackie)"],
+    "Rymanów-Zdrój": ["Powiat krośnieński (województwo podkarpackie)"],
+    "Polańczyk": ["Powiat leski"],
+    "Sopot": ["Sopot"],
+    "Ustka": ["Powiat słupski"],
+    "Dąbki": ["Powiat sławieński"],
+    "Kamień Pomorski": ["Powiat kamieński"],
+    "Połczyn-Zdrój": ["Powiat świdwiński"],
+    "Świnoujście": ["Świnoujście"],
+    "Augustów": ["Powiat augustowski"],
+    "Supraśl": ["Powiat białostocki"],
+    "Gołdap": ["Powiat gołdapski"],
+    "Konstancin-Jeziorna": ["Powiat piaseczyński"],
+    "Uniejów": ["Powiat poddębicki"],
+    "Cieplice Śląskie-Zdrój": ["Jelenia Góra"],
+    "Świeradów-Zdrój": ["Powiat lubański"],
+    "Czerniawa-Zdrój": ["Powiat lubański"],
+    "Szczawno-Zdrój": ["Powiat wałbrzyski"],
+    "Jedlina-Zdrój": ["Powiat wałbrzyski"],
+    "Duszniki-Zdrój": ["Powiat kłodzki"],
+    "Kudowa-Zdrój": ["Powiat kłodzki"],
+    "Polanica-Zdrój": ["Powiat kłodzki"],
+    "Lądek-Zdrój": ["Powiat kłodzki"],
+    "Długopole-Zdrój": ["Powiat kłodzki"],
+    "Przerzeczyn-Zdrój": ["Powiat dzierżoniowski"],
+    "Goczałkowice-Zdrój": ["Powiat pszczyński"],
+    "Ustroń": ["Powiat cieszyński"],
+    "Jaworze": ["Powiat bielski (województwo śląskie)"],
+    "Swoszowice": ["Kraków"],
+}
+
+
 
 def find_powiat_id(conn: sqlite3.Connection, name: str) -> int | None:
     row = conn.execute("SELECT id FROM powiats WHERE name = ?", (name,)).fetchone()
@@ -629,7 +755,69 @@ def enrich_database(db_path: Path):
         print(f"  -> Inserted {len(hist_part_inserts)} historical partition assignments.")
         print(f"  -> Synced into powiat_landform_regions.")
 
-    conn.close()
+        # 6. Clean and Rebuild National Parks
+        print("Rebuilding powiat_national_parks...")
+        conn.execute("CREATE TABLE IF NOT EXISTS powiat_national_parks (powiat_id INTEGER NOT NULL, park_name TEXT NOT NULL, PRIMARY KEY (powiat_id, park_name), FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_powiat_parks ON powiat_national_parks(park_name)")
+        conn.execute("DELETE FROM powiat_national_parks")
+        park_inserts = []
+        for park, powiat_names in PARKS_TO_POWIATS.items():
+            for p_name in powiat_names:
+                pid = find_powiat_id(conn, p_name)
+                if pid is None:
+                    print(f"  WARNING: Could not find powiat '{p_name}' for park '{park}'")
+                    continue
+                park_inserts.append((pid, park))
+        conn.executemany("INSERT OR IGNORE INTO powiat_national_parks (powiat_id, park_name) VALUES (?, ?)", park_inserts)
+        print(f"  -> Inserted {len(park_inserts)} national park assignments across {len(PARKS_TO_POWIATS)} parks.")
+
+        # 7. Clean and Rebuild Major Lakes
+        print("Rebuilding powiat_lakes...")
+        conn.execute("CREATE TABLE IF NOT EXISTS powiat_lakes (powiat_id INTEGER NOT NULL, lake_name TEXT NOT NULL, PRIMARY KEY (powiat_id, lake_name), FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_powiat_lakes ON powiat_lakes(lake_name)")
+        conn.execute("DELETE FROM powiat_lakes")
+        lake_inserts = []
+        for lake, powiat_names in LAKES_TO_POWIATS.items():
+            for p_name in powiat_names:
+                pid = find_powiat_id(conn, p_name)
+                if pid is None:
+                    print(f"  WARNING: Could not find powiat '{p_name}' for lake '{lake}'")
+                    continue
+                lake_inserts.append((pid, lake))
+        conn.executemany("INSERT OR IGNORE INTO powiat_lakes (powiat_id, lake_name) VALUES (?, ?)", lake_inserts)
+        print(f"  -> Inserted {len(lake_inserts)} lake records across {len(LAKES_TO_POWIATS)} major lakes/reservoirs.")
+
+        # 8. Clean and Rebuild UNESCO Sites
+        print("Rebuilding powiat_unesco_sites...")
+        conn.execute("CREATE TABLE IF NOT EXISTS powiat_unesco_sites (powiat_id INTEGER NOT NULL, site_name TEXT NOT NULL, PRIMARY KEY (powiat_id, site_name), FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_powiat_unesco ON powiat_unesco_sites(site_name)")
+        conn.execute("DELETE FROM powiat_unesco_sites")
+        unesco_inserts = []
+        for site, powiat_names in UNESCO_TO_POWIATS.items():
+            for p_name in powiat_names:
+                pid = find_powiat_id(conn, p_name)
+                if pid is None:
+                    print(f"  WARNING: Could not find powiat '{p_name}' for UNESCO site '{site}'")
+                    continue
+                unesco_inserts.append((pid, site))
+        conn.executemany("INSERT OR IGNORE INTO powiat_unesco_sites (powiat_id, site_name) VALUES (?, ?)", unesco_inserts)
+        print(f"  -> Inserted {len(unesco_inserts)} UNESCO site assignments across {len(UNESCO_TO_POWIATS)} sites.")
+
+        # 9. Clean and Rebuild Health Resorts / Spas
+        print("Rebuilding powiat_health_resorts...")
+        conn.execute("CREATE TABLE IF NOT EXISTS powiat_health_resorts (powiat_id INTEGER NOT NULL, resort_name TEXT NOT NULL, PRIMARY KEY (powiat_id, resort_name), FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_powiat_spas ON powiat_health_resorts(resort_name)")
+        conn.execute("DELETE FROM powiat_health_resorts")
+        spa_inserts = []
+        for spa, powiat_names in SPAS_TO_POWIATS.items():
+            for p_name in powiat_names:
+                pid = find_powiat_id(conn, p_name)
+                if pid is None:
+                    print(f"  WARNING: Could not find powiat '{p_name}' for health resort '{spa}'")
+                    continue
+                spa_inserts.append((pid, spa))
+        conn.executemany("INSERT OR IGNORE INTO powiat_health_resorts (powiat_id, resort_name) VALUES (?, ?)", spa_inserts)
+        print(f"  -> Inserted {len(spa_inserts)} health resort records across {len(SPAS_TO_POWIATS)} statutory spas.")
     print("Database enrichment complete!")
 
 if __name__ == "__main__":
