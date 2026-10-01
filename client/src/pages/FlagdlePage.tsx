@@ -545,7 +545,7 @@ export default function FlagdlePage() {
                     Next Flagdle
                   </span>
                   <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-emerald-400">
-                    <CountdownTimer />
+                    <CountdownTimer variant="minimal" className="text-lg sm:text-xl text-emerald-400 font-semibold" />
                   </div>
                 </div>
               </div>
