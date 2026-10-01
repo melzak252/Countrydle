@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AnswerReport, AnswerReportMode, AnswerReportStatus, CacheStats, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult, TemplateDivergence, TemplateDivergenceStatus } from '../types';
+import type { AdminSuggestionsResponse, AnswerReport, AnswerReportMode, AnswerReportStatus, CacheStats, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult, SuggestionSubmission, TemplateDivergence, TemplateDivergenceStatus } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -417,6 +417,23 @@ export const reportService = {
     return response.data;
   },
 };
+export const suggestionService = {
+  submit: async (suggestion: SuggestionSubmission): Promise<{ id: number }> => {
+    const response = await api.post<{ id: number }>('/suggestions', suggestion);
+    return response.data;
+  },
+};
+
+export const adminSuggestionService = {
+  getSuggestions: async (page = 1, limit = 25, signal?: AbortSignal): Promise<AdminSuggestionsResponse> => {
+    const response = await api.get<AdminSuggestionsResponse>('/admin/suggestions', {
+      params: { page, limit },
+      signal,
+    });
+    return response.data;
+  },
+};
+
 
 export const adminService = {
   getCacheStats: async (signal?: AbortSignal): Promise<CacheStats> => {

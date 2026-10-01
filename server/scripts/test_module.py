@@ -87,6 +87,7 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
         "test_answer_reports.py",
         "test_country_fact_editor.py",
         "test_shadow_audit.py",
+        "test_suggestions.py",
     ),
     "leaderboards": (
         "test_active_players_count.py",
@@ -115,6 +116,7 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
         "test_guest_sync.py",
         "test_new_games.py",
         "test_zero_500.py",
+        "test_suggestions.py",
     ),
     "game-rules": ("test_game_logic.py", "test_scoring_streaks.py"),
     "geo": ("test_geo_hints.py", "test_game_logic.py"),
@@ -132,6 +134,7 @@ SOURCE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("server/flagdle/", ("flagdle",)),
     ("server/friend_matches/", ("friend-matches",)),
     ("server/users/", ("auth",)),
+    ("server/suggestions.py", ("admin", "api")),
     ("server/utils/guest_session.py", ("guests",)),
     ("server/utils/plan_cache.py", ("question-engine",)),
     ("server/utils/ai_clients.py", ("question-engine",)),

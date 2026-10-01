@@ -25,7 +25,7 @@ export default function Footer() {
           <Link to="/faq" className="hover:text-white transition-colors">{t('footer.faq', 'FAQ')}</Link>
           <Link to="/explore" className="hover:text-white transition-colors">{t('footer.explore', 'Geography Guides')}</Link>
           <Link to="/blog" className="hover:text-white transition-colors">{t('footer.blog', 'Blog')}</Link>
-          <Link to="/contact" className="hover:text-white transition-colors">{t('footer.contact', 'Contact')}</Link>
+          <Link to="/contact" className="hover:text-white transition-colors">{t('footer.suggestions', 'Suggestions')}</Link>
           <span className="text-zinc-800 hidden sm:inline">•</span>
           <Link to="/privacy-policy" className="hover:text-zinc-300 transition-colors text-zinc-500 text-[11px]">{t('footer.privacyPolicy')}</Link>
           <Link to="/terms" className="hover:text-zinc-300 transition-colors text-zinc-500 text-[11px]">{t('footer.termsOfService')}</Link>

@@ -63,7 +63,7 @@ export default function Header() {
     ['/patch-notes', t('header.patchNotes', 'Patch notes')],
     ['/about', t('header.about', 'About')],
     ['/faq', t('header.faq', 'FAQ')],
-    ['/contact', t('header.contact', 'Contact')],
+    ['/contact', t('header.suggestions', 'Suggestions')],
     ['/privacy-policy', t('footer.privacyPolicy', 'Privacy Policy')],
     ['/terms', t('footer.termsOfService', 'Terms of Service')],
     ...(user?.is_admin ? [['/admin', 'Admin']] : []),
@@ -80,7 +80,7 @@ export default function Header() {
   const aboutItems = [
     { path: '/about', name: t('header.about', 'About'), icon: Info },
     { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
-    { path: '/contact', name: t('header.contact', 'Contact'), icon: Mail },
+    { path: '/contact', name: t('header.suggestions', 'Suggestions'), icon: Mail },
     { path: '/privacy-policy', name: t('footer.privacyPolicy', 'Privacy Policy'), icon: ShieldCheck },
     { path: '/terms', name: t('footer.termsOfService', 'Terms of Service'), icon: FileText },
   ];
