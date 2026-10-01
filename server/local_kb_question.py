@@ -440,15 +440,17 @@ def evaluate(
 
     left = resolve_ref(conn, config, row, left_node, item_value)
     right = resolve_ref(conn, config, row, right_node, item_value)
-    if config.mode_name == "Wojewodztwodle" and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
-        is_coast = bool(row["is_coastal"])
+    if config.mode_name in {"Wojewodztwodle", "Powiatdle"} and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
+        if config.mode_name == "Wojewodztwodle":
+            is_coast = bool(row["is_coastal"])
+        else:
+            is_coast = bool(conn.execute("SELECT 1 FROM powiat_water_access WHERE powiat_id = ? LIMIT 1", (row["id"],)).fetchone())
         if op == "exists":
             return is_coast
         if right in {True, 1, "true", "True"} or norm(right) in {"morze", "baltyk", "morze baltyckie", "baltyckie", "sea", "baltic sea", "baltic"}:
             return is_coast
         if right in {False, 0, "false", "False"}:
             return not is_coast
-
     left_row = _reference_row(config, row, left_node, item_value)
     if (
         config.mode_name == "Powiatdle"
@@ -650,8 +652,9 @@ def generate_mode_explanation(
             return f"{'Yes' if answer else 'No'} - {name} is located at {rel} {coord_text} ({position} {threshold_text}; the condition {left_value!r} {comparison} {val!r} is {'true' if answer else 'false'})."
 
     if config.language == "Polish":
-        if rel == "is_coastal":
-            return f"Województwo {name} ma bezpośredni dostęp do Morza Bałtyckiego." if row[config.scalar_relations[rel]] else f"Województwo {name} nie ma dostępu do morza (jest województwem śródlądowym)."
+        if rel in {"is_coastal", "water_access"}:
+            label = "Powiat" if config.mode_name == "Powiatdle" else "Województwo"
+            return f"{label} {name} ma bezpośredni dostęp do Morza Bałtyckiego." if answer else f"{label} {name} nie ma dostępu do morza (jest jednostką śródlądową)."
         if rel == "borders_voivodeship" and val:
             borders = get_relation_value(conn, config, row, rel) or []
             entity_name = f"Województwo {name}" if config.target_entity == "target_voivodeship" else name

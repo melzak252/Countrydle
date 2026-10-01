@@ -36,6 +36,7 @@ LOCAL_CONFIG = LocalModeConfig(
         "registration_plates": ("powiat_registration_plates", "plate_code"),
         "major_rivers": ("powiat_major_rivers", "river_name"),
         "major_roads": ("powiat_major_roads", "road_name"),
+        "water_access": ("powiat_water_access", "water_name"),
         "landform_regions": ("powiat_landform_regions", "region_name"),
         "regional_labels": ("powiat_landform_regions", "region_name"),
     },
@@ -44,9 +45,10 @@ LOCAL_CONFIG = LocalModeConfig(
         "name", "voivodeship", "is_city_county", "seat", "borders_powiat", "borders_voivodeship",
         "borders_country", "population", "area", "population_density", "urbanization", "registration_plates",
         "gmina_count", "urban_gmina_count", "rural_gmina_count", "urban_rural_gmina_count",
-        "major_rivers", "major_roads", "landform_regions", "regional_labels",
+        "major_rivers", "major_roads", "water_access", "landform_regions", "regional_labels",
     ],
     mode_notes=(
+        "water_access records direct coastline access to Morze Bałtyckie (Baltic Sea).\n"
         "is_city_county is a boolean classification: 1 means miasto na prawach powiatu "
         "(powiat grodzki), 0 means powiat ziemski. These are precise administrative categories.\n"
         "When a question names a specific neighboring county, use contains_exact on borders_powiat "
