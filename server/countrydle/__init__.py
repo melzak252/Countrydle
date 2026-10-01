@@ -29,7 +29,8 @@ from schemas.countrydle import FullQuestionDisplay
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
-    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    create_guest_game_token, read_guest_game_token, record_guest_action,
+    link_guest_participation, get_guest_identity,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from countrydle import statistics
@@ -741,6 +742,10 @@ async def _do_ask_question(
     if not is_answered(question_create):
         return unresolved_question(question_create, InvalidQuestionDisplay)
     question_create.user_id = user.id if user else None
+    question_create.guest_id = (
+        get_guest_identity(request, response) if user is None else None
+    )
+
     question_create.day_id = daily_country.id
     if user is None:
         await record_guest_action(
@@ -838,12 +843,14 @@ async def make_guess(
         is_game_over = is_correct or (guesses_count >= COUNTRYDLE_CONFIG.max_guesses)
         token = create_guest_game_token("countrydle", daily_country.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_countrydle", token, httponly=True, samesite="lax", max_age=86400 * 2)
+        guest_id = get_guest_identity(request, response)
 
         guess_create = GuessCreate(
             guess=guess.guess,
             country_id=guess.country_id,
             day_id=daily_country.id,
             user_id=None,
+            guest_id=guest_id,
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )
