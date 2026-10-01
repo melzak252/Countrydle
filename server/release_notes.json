@@ -1,5 +1,5 @@
 {
-  "version": "1.18.1",
-  "title": "Massive Powiatdle facts enrichment and regional geographic intelligence",
-  "body": "POWIATDLE FACTS & KB ENRICHMENT\n- Enriched Polish counties (Powiatdle) with 7 new verified knowledge relations: 23 National Parks, major lakes, 17 UNESCO World Heritage sites, 45 statutory health resorts (uzdrowiska), historical partitions (zabory) & Ziemie Odzyskane, historical regions (krainy historyczne), and Baltic Sea coastline access.\n- Added enriched relations for major motorways and expressways (A1, A2, A4, S3, S7, S8).\n- Refined Polish grammar in border and plate explanations.\n\nWOJEWÓDZTWA GEOGRAPHIC INTELLIGENCE\n- Added relative cardinal directions (północ, południe, wschód, zachód) and voivodeship genitive alias resolution for Województwodle."
+  "version": "1.19.0",
+  "title": "More regional facts and steadier question submissions",
+  "body": "MORE WOJEWÓDZTWA FACTS\n- You can now ask about major motorways and expressways in Polish voivodeships.\n- Improved understanding of Polish questions about roads and rivers in regional games.\n\nQUESTION SUBMISSION COOLDOWN\n- Rapid repeated question submissions now receive a short cooldown to keep games responsive.\n- Your normal daily question and guess limits are unchanged."
 }
