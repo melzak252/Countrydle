@@ -36,6 +36,7 @@ LOCAL_CONFIG = LocalModeConfig(
         "borders_country": ("voivodeship_borders_countries", "country_name"),
         "water_access": ("voivodeship_water_access", "water_body"),
         "major_rivers": ("voivodeship_major_rivers", "river_name"),
+        "major_roads": ("voivodeship_major_roads", "road_name"),
         "mountain_ranges": ("voivodeship_mountain_ranges", "range_name"),
         "historical_region": ("voivodeship_historical_regions", "region_name"),
         "landform_regions": ("voivodeship_landform_regions", "region_name"),
@@ -46,9 +47,11 @@ LOCAL_CONFIG = LocalModeConfig(
         "name", "seat", "macroregion", "borders_voivodeship", "borders_country", "water_access",
         "is_coastal", "population", "area", "latitude", "longitude", "major_rivers", "mountain_ranges",
         "historical_region", "urbanization", "powiat_count", "city_count", "city_count_with_powiat_rights",
-        "landform_regions", "regional_labels",
+        "landform_regions", "regional_labels", "major_roads",
     ],
     mode_notes=(
+        "- For motorways (autostrady) and expressways (drogi ekspresowe), use contains_exact or contains_text on major_roads with code e.g. A1, A2, A4, S3, S5, S7, S8, S19.\n"
+        "- Relative cardinal directions comparing position to another voivodeship, city, or capital (e.g. 'na zachód od Mazowsza / Warszawy', 'na południe od Warszawy') are supported: use operator west_of / east_of on longitude and north_of / south_of on latitude with the reference entity.\n"
         "- For borders_voivodeship, use the canonical Polish voivodeship adjective name: "
         "Dolnośląskie, Kujawsko-Pomorskie, Lubelskie, Lubuskie, Łódzkie, Małopolskie, "
         "Mazowieckie, Opolskie, Podkarpackie, Podlaskie, Pomorskie, Śląskie, "
