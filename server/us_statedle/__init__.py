@@ -342,7 +342,6 @@ async def _do_ask_question(
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     if not day_state:
         day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
-    target_state = await USStateRepository(session).get(day_state.us_state_id)
     if user is not None:
         state = await USStatedleStateRepository(session).get_state(user, day_state)
         require_question_available(state, USSTATEDLE_CONFIG.max_questions)
@@ -368,8 +367,7 @@ async def _do_ask_question(
             )
 
     if not is_answered(question_create):
-        names = {target_state.name} if getattr(target_state, "name", None) else set()
-        return unresolved_question(question_create, USStateQuestionDisplay, target_names=names, entity_label="the state")
+        return unresolved_question(question_create, USStateQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day_state.id
     if user is None:

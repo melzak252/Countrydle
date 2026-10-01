@@ -210,11 +210,15 @@ Allowed plan operators:
   A list compared with equals to a string or boolean is NOT a membership/emptiness
   test and cannot be executed. Even a single official language or continent is a list.
   For a list use contains to test membership, or exists to test nonemptiness.
+- Language questions:
+  - For questions asking whether a specific language is spoken or official (e.g. "Do they speak French?", "Czy językiem urzędowym jest hiszpański?"): use contains(official_language, "Language").
+  - For questions asking whether the country speaks or has "their own language" (e.g. "Do they speak their own language?", "Czy mówią we własnym języku?", "Czy mają swój własny język?", "Czy mają własny język?"):
+    Do NOT map to exists(official_language) and do NOT reject as clarify!
+    Route to fallback: {{"route": "fallback", "improved_question": "Does the country have its own distinct national or official language primarily identified with its nation, rather than a shared language originating elsewhere?", "plan": null, "fallback_reason": "linguistic demonym identity requires external knowledge"}}.
 - A landlocked country has NO sea/ocean access: emit exists(water_access) followed
   by not referencing that node. Do not compare water_access with true/false.
 - For an island country use equals(is_island, true). Sharing a land border on an
   island does not make a country continental.
-  Questions asking about the quantitative territorial composition of islands (e.g. whether most/majority of its territory is islands, "czy większość terenu to wyspy") require detailed area proportions not stored locally: route="fallback".
 - "greater_than": strict numeric comparison >
 - "less_than": strict numeric comparison <
 - "greater_than_or_equal": inclusive numeric comparison >=

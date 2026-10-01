@@ -10,17 +10,14 @@ def is_answered(question) -> bool:
     return question.valid is True and type(question.answer) is bool
 
 
-def unresolved_question(question, display, target_names: set[str] | None = None, entity_label: str = "the country"):
-    from utils.explanation_sanitizer import sanitize_explanation_for_player
-    raw_exp = question.explanation or "Could not verify this question. Your turn was not deducted."
-    sanitized = sanitize_explanation_for_player(raw_exp, target_names or set(), entity_label) or "Could not verify this question. Your turn was not deducted."
+def unresolved_question(question, display):
     return display.model_validate({
         **question.model_dump(),
         "id": 0,
         "asked_at": datetime.now(),
         "valid": False,
         "answer": None,
-        "explanation": sanitized,
+        "explanation": question.explanation or "Could not verify this question. Your turn was not deducted.",
     })
 
 
