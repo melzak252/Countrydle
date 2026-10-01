@@ -292,15 +292,29 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
             else:
                 return [_node("contains", "hemisphere", target_hemi)], f"Is the country in the {target_hemi} Hemisphere?"
 
-    equator_prime_rules = (
+    equator_crossing_phrases = (
+        "cross the equator", "crosses the equator", "crossing the equator",
+        "crosses equator", "cross equator",
+        "on the equator", "on equator",
+        "straddle the equator", "straddles the equator",
+        "przecina rownik", "przecina ten rownik", "lezy na rowniku", "na rowniku",
+    )
+    if any(phrase in q for phrase in equator_crossing_phrases):
+        ast = [
+            _node("contains", "hemisphere", "Northern"),
+            _node("contains", "hemisphere", "Southern"),
+            {"operator": "and", "args": [0, 1]},
+        ]
+        return ast, "Does the country cross the equator?"
+
+    equator_rules = (
         (
             (
                 "north of the equator", "north of equator", "north to the equator", "north to equator",
                 "above the equator", "above equator",
                 "nad rownikiem", "powyzej rownika", "na polnoc od rownika",
             ),
-            "greater_than",
-            "coordinates.latitude",
+            "Northern",
             "north of the equator",
         ),
         (
@@ -309,10 +323,15 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
                 "below the equator", "below equator",
                 "pod rownikiem", "ponizej rownika", "na poludnie od rownika",
             ),
-            "less_than",
-            "coordinates.latitude",
+            "Southern",
             "south of the equator",
         ),
+    )
+    for phrases, hemi, wording in equator_rules:
+        if any(phrase in q for phrase in phrases):
+            return [_node("contains", "hemisphere", hemi)], f"Is the country {wording}?"
+
+    prime_meridian_rules = (
         (
             (
                 "east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian",
@@ -332,7 +351,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
             "west of the prime meridian",
         ),
     )
-    for phrases, op, relation, wording in equator_prime_rules:
+    for phrases, op, relation, wording in prime_meridian_rules:
         if any(phrase in q for phrase in phrases):
             return [_node(op, relation, 0)], f"Is the country {wording}?"
     direction_phrases = (

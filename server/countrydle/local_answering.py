@@ -1111,25 +1111,34 @@ class LocalCountryFacts:
             return None
         lat = country["latitude"]
         lon = country["longitude"]
+        hemispheres = {r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))}
+        if any(word in q for word in ("cross the equator", "crosses the equator", "crossing the equator", "on the equator", "straddle the equator", "przecina rownik", "lezy na rowniku", "na rowniku")):
+            answer = "Northern" in hemispheres and "Southern" in hemispheres
+            return LocalAnswer(
+                question="Does the country cross the equator?",
+                answer=answer,
+                explanation=f"{country['app_country_name']} territory spans: {', '.join(sorted(hemispheres))} hemispheres.",
+                relation="hemisphere",
+            )
         if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika", "nad rownik", "powyzej rownik", "above equator", "above the equator")):
-            answer = lat > 0
+            answer = "Northern" in hemispheres if hemispheres else lat > 0
             target = "Northern Hemisphere"
         elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika", "pod rownik", "ponizej rownik", "below equator", "below the equator")):
-            answer = lat < 0
+            answer = "Southern" in hemispheres if hemispheres else lat < 0
             target = "Southern Hemisphere"
         elif any(word in q for word in ("eastern", "wschodn")):
-            answer = lon > 0
+            answer = "Eastern" in hemispheres if hemispheres else lon > 0
             target = "Eastern Hemisphere"
         elif any(word in q for word in ("western", "zachodn")):
-            answer = lon < 0
+            answer = "Western" in hemispheres if hemispheres else lon < 0
             target = "Western Hemisphere"
         else:
             return None
         return LocalAnswer(
             question=f"Is the country in the {target}?",
             answer=answer,
-            explanation=f"The coordinates for {country['app_country_name']} are approximately {lat:g}, {lon:g}.",
-            relation="coordinates",
+            explanation=f"{country['app_country_name']} is located in the {', '.join(sorted(hemispheres)) if hemispheres else f'coordinates {lat:g}, {lon:g}'}.",
+            relation="hemisphere" if hemispheres else "coordinates",
         )
 
     def _answer_river(self, conn, country, original, q):

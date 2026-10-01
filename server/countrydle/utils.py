@@ -22,6 +22,8 @@ from utils.ai_clients import (
     FALLBACK_ANSWER_SCHEMA,
     gemini_json,
 )
+from utils.explanation_sanitizer import sanitize_explanation_for_player
+
 
 
 async def enhance_question(question: str) -> QuestionEnhanced:
@@ -313,11 +315,11 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict["answer"],
-        explanation=sanitize_explanation_for_player(
-            answer_dict["explanation"],
-            {country.name, country.official_name} if country.official_name else {country.name},
-            "the country",
-        ),
+            explanation=sanitize_explanation_for_player(
+                answer_dict["explanation"],
+                {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
+                "the country",
+            ),
         context=context,
     )
 

@@ -207,6 +207,7 @@ async def get_latest_blog_post(session: AsyncSession = Depends(get_db)):
         country=post.country,
         player_stats=stats,
         game_debrief=await get_day_community_telemetry(session, post.date),
+        created_at=post.created_at or datetime.now(),
     )
 
 

@@ -141,10 +141,13 @@ Important rules:
   longitude is positive east and negative west. The Western Hemisphere has
   negative longitude, not positive longitude. Point coordinates do not establish
   the full territorial extent of a country.
-- In Polish questions about the equator and hemispheres:
-  * "nad równikiem", "powyżej równika", "na północ od równika" means ABOVE / north of the equator (greater_than on target_country.coordinates.latitude with value 0, or hemisphere contains "Northern"). NEVER translate "nad równikiem" as "on the equator"!
-  * "pod równikiem", "poniżej równika", "na południe od równika" means BELOW / south of the equator (less_than on target_country.coordinates.latitude with value 0, or hemisphere contains "Southern").
-  * "na równiku", "przecina równik" means situated directly on / crossing the equator.
+- In questions about the equator and hemispheres (in English or Polish):
+  * Countries are geographic areas with spatial extent. A country crossing the equator spans both Northern and Southern hemispheres.
+  * "above the equator", "north of the equator", "nad równikiem", "powyżej równika", "na północ od równika" means the country has territory north of the equator: use `hemisphere contains "Northern"`. NEVER use scalar coordinates.latitude for equator questions! NEVER translate "nad równikiem" as "on the equator"!
+  * "below the equator", "south of the equator", "pod równikiem", "poniżej równika", "na południe od równika" means the country has territory south of the equator: use `hemisphere contains "Southern"`. NEVER use scalar coordinates.latitude for equator questions!
+  * "on the equator", "crosses the equator", "straddles the equator", "na równiku", "przecina równik" means territory in both hemispheres: combine `hemisphere contains "Northern"` AND `hemisphere contains "Southern"` with "and".
+  * "entirely above the equator" / "entirely in the Northern Hemisphere" means `hemisphere contains "Northern"` AND NOT `hemisphere contains "Southern"`.
+  * "entirely below the equator" / "entirely in the Southern Hemisphere" means `hemisphere contains "Southern"` AND NOT `hemisphere contains "Northern"`.
 - If a clear question can be answered only with external facts, return route="fallback"
   and plan=null. Local coverage does not determine whether the question is meaningful.
 - Direct identity questions are valid and supported, including "Is it Poland?",
@@ -374,6 +377,18 @@ User: Does the country have territory in all four hemispheres?
   {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}},
   {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Western"}}}},
   {{"operator":"and","args":[0, 1, 2, 3]}}
+]}}
+
+User: Below equator?
+{{"route":"local","plan":[
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}}
+]}}
+
+User: Does the country cross the equator?
+{{"route":"local","plan":[
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Northern"}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}},
+  {{"operator":"and","args":[0, 1]}}
 ]}}
 
 User: Were the 2004 Summer Olympics held in this country?

@@ -1175,3 +1175,46 @@ def test_water_access_sea_and_or_ocean_evaluates_correctly():
     ans_or_chad = execute_local_plan(node_or, "Chad", "Does it have access to the sea or ocean?")
     assert ans_or_chad.answer is False
     assert "landlocked" in ans_or_chad.explanation
+
+
+def test_equator_questions_accurately_classify_crossing_and_pure_countries():
+    from countrydle.template_compiler import compile_template_plan
+
+    # "Below the equator" / "South of equator" -> True for DRC, Kenya, Brazil, Australia; False for Poland
+    below_res = compile_template_plan("Is it below the equator?")
+    assert below_res is not None
+    below_plan, _ = below_res
+
+    ans_drc_below = execute_local_plan(below_plan, "Democratic Republic of the Congo", "Is it below the equator?")
+    assert ans_drc_below.answer is True
+    assert "Southern Hemisphere" in ans_drc_below.explanation
+
+    ans_kenya_below = execute_local_plan(below_plan, "Kenya", "Is it below the equator?")
+    assert ans_kenya_below.answer is True
+
+    ans_poland_below = execute_local_plan(below_plan, "Poland", "Is it below the equator?")
+    assert ans_poland_below.answer is False
+
+    # "Above the equator" / "North of equator" -> True for DRC, Kenya, Brazil, Poland; False for Australia
+    above_res = compile_template_plan("Is it above the equator?")
+    assert above_res is not None
+    above_plan, _ = above_res
+
+    ans_drc_above = execute_local_plan(above_plan, "Democratic Republic of the Congo", "Is it above the equator?")
+    assert ans_drc_above.answer is True
+    assert "Northern Hemisphere" in ans_drc_above.explanation
+
+    ans_aus_above = execute_local_plan(above_plan, "Australia", "Is it above the equator?")
+    assert ans_aus_above.answer is False
+
+    # "Crosses the equator" / "On the equator" -> True for DRC, Kenya, Brazil; False for Poland, Australia
+    cross_res = compile_template_plan("Does it cross the equator?")
+    assert cross_res is not None
+    cross_plan, _ = cross_res
+
+    ans_drc_cross = execute_local_plan(cross_plan, "Democratic Republic of the Congo", "Does it cross the equator?")
+    assert ans_drc_cross.answer is True
+    assert "Northern Hemisphere" in ans_drc_cross.explanation and "Southern Hemisphere" in ans_drc_cross.explanation
+
+    ans_poland_cross = execute_local_plan(cross_plan, "Poland", "Does it cross the equator?")
+    assert ans_poland_cross.answer is False
