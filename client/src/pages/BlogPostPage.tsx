@@ -426,14 +426,24 @@ export default function BlogPostPage() {
       )}
 
       {/* Interactive Trivia Knowledge Check */}
-      {curiosities && curiosities.length > 0 && (() => {
-        const trueFactText = cleanDisplayText(curiosities[0]?.description || '');
-        const falseDistractor = getFalseDistractor(post.country_name, post.continent, facts, isPl);
+      {((curiosities && curiosities.length > 0) || post.deduction_masterclass?.quiz) && (() => {
+        const quiz = post.deduction_masterclass?.quiz;
+        const questionText = quiz?.question
+          ? cleanDisplayText(quiz.question)
+          : (isPl
+            ? `Które zdanie o ${post.country_name} jest prawdziwe?`
+            : `Which statement about ${post.country_name} is true?`);
+        const correctAnswer = cleanDisplayText(quiz?.correct_answer || curiosities[0]?.description || '');
+        const incorrectDistractor = cleanDisplayText(
+          quiz?.incorrect_distractor || getFalseDistractor(post.country_name, post.continent, facts, isPl)
+        );
+        const explanationText = cleanDisplayText(quiz?.explanation || curiosities[0]?.description || '');
+
         const triviaSeed = (post?.id || 0) + (post?.country_name ? post.country_name.length : 0);
         const correctOptionIndex = triviaSeed % 2;
         const triviaOptions = correctOptionIndex === 0
-          ? [trueFactText, falseDistractor]
-          : [falseDistractor, trueFactText];
+          ? [correctAnswer, incorrectDistractor]
+          : [incorrectDistractor, correctAnswer];
 
         return (
           <section className="rounded-lg border border-white/10 bg-obsidian-900 p-6 space-y-4">
@@ -442,9 +452,7 @@ export default function BlogPostPage() {
               <span>{isPl ? 'Szybki test wiedzy' : 'Quick Memory Check'}</span>
             </div>
             <h3 className="font-serif text-lg font-semibold text-sand-100">
-              {isPl
-                ? `Które zdanie o ${post.country_name} jest prawdziwe?`
-                : `Which statement about ${post.country_name} is true?`}
+              {questionText}
             </h3>
 
             <div className="space-y-2 text-xs sm:text-sm">
@@ -479,7 +487,7 @@ export default function BlogPostPage() {
                     ? (isPl ? '✓ Prawidłowo!' : '✓ Correct!')
                     : (isPl ? 'Niestety nie!' : 'Not quite!')}
                 </span>
-                <span>{trueFactText}</span>
+                <span>{explanationText}</span>
               </div>
             )}
           </section>

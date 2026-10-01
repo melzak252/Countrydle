@@ -1,5 +1,5 @@
 {
-  "version": "1.17.2",
-  "title": "Dynamic trivia distracters in daily country solution blog",
-  "body": "DAILY BLOG TRIVIA DISTRACTER FIX\n- Replaced the hardcoded 'It has a coastline on the Mediterranean Sea' trivia distracter with geographically validated, mutually exclusive false statements based on continent and country facts.\n- Solved the contradiction on Mediterranean countries (such as Tunisia, Spain, France, Italy, Greece, Cyprus, Morocco, and Egypt) where the distracter was factually true but struck through as incorrect.\n- Shuffled trivia options deterministically based on country and puzzle ID, ensuring answers alternate naturally without UI shift.\n- Added multilingual support for English and Polish memory check feedback."
+  "version": "1.17.3",
+  "title": "Gemini 3.1 Pro daily blog engine, distinct trivia quizzes, and language routing",
+  "body": "GEMINI 3.1 PRO DAILY BLOG & TRIVIA ENGINE\n- Upgraded daily blog generation to flagship Gemini 3.1 Pro (with Gemini 3.8 Flash fallback) using rich multi-fragment Wikipedia context for engaging, grammatically complete fun facts.\n- Created an interactive trivia quiz generator producing distinct knowledge-check questions and plausible distractors that do not repeat the fun facts above.\n- Hardened blog trivia with dynamic geographic distractors and randomized option positioning across all devices.\n\nLANGUAGE ROUTING & QUERY OPTIMIZATION\n- Routed questions asking whether a country has its own national/native language (e.g., 'czy to państwo ma własny język?') to general-knowledge fallback with linguistic identity analysis instead of literal matching.\n- Streamlined target country database queries and simplified unresolved question handling."
 }

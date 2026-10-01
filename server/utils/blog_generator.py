@@ -233,8 +233,148 @@ async def generate_blog_content_ai(
     post_date: date,
     actual_questions: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
-    # Deterministic factual debrief: guaranteed ground-truth, 0 hallucinations, 0 AI slop
+    api_key = os.getenv("GEMINI_API_KEY")
+    country_facts = get_country_sqlite_facts(country_name)
+    if not api_key:
+        logger.warning("No GEMINI_API_KEY found, falling back to deterministic template.")
+        return _generate_fallback_template(country_name, wiki_fragments, post_date, actual_questions)
+
+    facts_summary = f"""
+- Capital: {country_facts.get('capital', 'N/A')}
+- Continent & Region: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
+- Population: {country_facts.get('population', 'N/A')}
+- Land Area: {country_facts.get('area_km2', 'N/A')}
+- Coastline / Water Access: {country_facts.get('water_access', 'N/A')}
+- Neighboring Borders: {country_facts.get('borders', 'N/A')}
+- Official Languages: {country_facts.get('languages', 'N/A')}
+"""
+    clean_frags = []
+    for frag in wiki_fragments:
+        cleaned = frag.replace(r'\[', '[').replace(r'\]', ']').replace(r'\(', '(').replace(r'\)', ')').replace(r'\_', '_').replace(r'\*', '*').replace(r'\-', '-')
+        cleaned = re.sub(r'\[\*?\s*citation needed\s*\*?\]', '', cleaned, flags=re.I)
+        cleaned = re.sub(r'\[\d+\]', '', cleaned)
+        cleaned = cleaned.replace('\\', '').strip()
+        if cleaned.startswith('|') and '---' in cleaned and len(cleaned) < 300:
+            continue
+        if len(cleaned) > 80:
+            clean_frags.append(cleaned[:1000])
+
+    wiki_context = "\n\n".join(clean_frags[:15]) if clean_frags else "No additional Wikipedia context available."
+
+    prompt = f"""You are the lead geography editor and game analyst for Countrydle.
+Generate the daily blog recap for: {country_name} on {post_date.strftime('%B %d, %Y')}.
+
+Verified Ground Truth Facts:
+{facts_summary}
+
+Wikipedia Context Excerpts:
+{wiki_context}
+
+TASK:
+Generate a JSON object with:
+1. "title": Catchy, exciting headline (e.g. "Countrydle Solution: {country_name} — [Evocative Description]").
+2. "subtitle": Engaging 1-sentence teaser summarizing the country's unique deduction identity.
+3. "summary": 2-3 sentence overview of the country and its daily deduction challenge.
+4. "fun_facts": Exactly 2 or 3 fascinating, grammatically complete, polished curiosities about culture, geography, or history.
+   Each curiosity MUST have:
+   - "title": Catchy 2-4 word theme (e.g. "Alpine Wonderland", "Cradle of Classical Music", "Culinary Traditions").
+   - "description": 1-2 polished, self-contained sentences. NEVER start with dangling pronouns like "This left..." or "On 11 November, the emperor...". Always clearly name {country_name} or the specific subject.
+5. "trivia_quiz":
+   A fun trivia question for players.
+   CRITICAL RULE: The quiz question and answer MUST NOT simply repeat or copy any of the fun facts provided in "fun_facts"! It must test a different piece of cultural, historical, or geographic knowledge about {country_name}.
+   - "question": Specific question string.
+   - "correct_answer": Correct answer string.
+   - "incorrect_distractor": Believable false answer string.
+   - "explanation": 1 concise sentence explaining the correct answer.
+
+Return ONLY the raw JSON object.
+"""
+
+    loop = asyncio.get_running_loop()
+    for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
+        try:
+            logger.info(f"Calling Gemini model {model_name} for blog post ({country_name})...")
+            res = await loop.run_in_executor(None, _call_gemini_api, model_name, prompt, api_key, 35)
+            if res and isinstance(res, dict) and "fun_facts" in res and res.get("fun_facts"):
+                logger.info(f"Successfully generated blog content using {model_name} for {country_name}")
+                return _assemble_blog_post_payload(country_name, country_facts, res, post_date, actual_questions)
+        except Exception as e:
+            logger.warning(f"Model {model_name} failed for {country_name}: {e}")
+
+    logger.warning(f"All AI models failed for {country_name}, using deterministic template.")
     return _generate_fallback_template(country_name, wiki_fragments, post_date, actual_questions)
+
+
+def _assemble_blog_post_payload(
+    country_name: str,
+    country_facts: Dict[str, Any],
+    ai_data: Dict[str, Any],
+    post_date: date,
+    actual_questions: Optional[List[Dict[str, str]]] = None,
+) -> Dict[str, Any]:
+    steps = get_deduction_steps(country_name, actual_questions)
+    pro_tip = get_curator_pro_tip(country_name, country_facts)
+
+    step_lines = "\n".join([
+        f"{s['step']}. **[{s['answer']}] \"{s['question']}\"** — {s['explanation']}"
+        for s in steps
+    ])
+
+    fun_facts = ai_data.get("fun_facts") or []
+    curiosity_lines = "\n".join([
+        f"- **{c['title']}**: {c['description']}"
+        for c in fun_facts
+    ])
+
+    markdown = f"""## Yesterday's Solution: {country_name}
+
+### The Deduction Path
+{step_lines}
+
+### Quick Facts
+- **Capital**: {country_facts.get('capital', 'N/A')}
+- **Region**: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
+- **Population**: {country_facts.get('population', 'N/A')}
+- **Land Area**: {country_facts.get('area_km2', 'N/A')} ({country_facts.get('water_access', 'N/A')})
+- **Bordering Neighbors**: {country_facts.get('borders', 'N/A')}
+- **Official Languages**: {country_facts.get('languages', 'N/A')}
+
+### Two Things Worth Knowing
+{curiosity_lines}
+
+### Curator's Pro Tip
+> {pro_tip}"""
+
+    deduction_masterclass = {
+        "steps": steps,
+        "pro_tip": pro_tip,
+    }
+    if "trivia_quiz" in ai_data and isinstance(ai_data["trivia_quiz"], dict):
+        deduction_masterclass["quiz"] = ai_data["trivia_quiz"]
+
+    title = ai_data.get("title") or f"Countrydle Solution: {country_name}"
+    subtitle = ai_data.get("subtitle") or f"Game recap and deduction breakdown for {post_date.strftime('%B %d, %Y')}."
+    summary = ai_data.get("summary") or f"Yesterday's Countrydle mystery country was {country_name}."
+
+    return {
+        "title": title,
+        "subtitle": subtitle,
+        "reading_time_minutes": 2,
+        "summary": summary,
+        "fast_facts": {
+            "capital": country_facts.get("capital", "N/A"),
+            "continent": country_facts.get("continent", "N/A"),
+            "region": country_facts.get("region", "N/A"),
+            "population": country_facts.get("population", "N/A"),
+            "area": country_facts.get("area_km2", "N/A"),
+            "coastline": country_facts.get("water_access", "N/A"),
+            "borders": country_facts.get("borders", "N/A"),
+            "languages": country_facts.get("languages", "N/A"),
+        },
+        "fun_facts": fun_facts,
+        "deduction_masterclass": deduction_masterclass,
+        "content_markdown": markdown,
+    }
 
 
 def _generate_fallback_template(
@@ -310,7 +450,7 @@ async def create_daily_blog_post(
     res = await session.execute(
         select(CountryFragment.text)
         .where(CountryFragment.country_id == country.id)
-        .limit(8)
+        .limit(25)
     )
     fragments = list(res.scalars().all())
 
