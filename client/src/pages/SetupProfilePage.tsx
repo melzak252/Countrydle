@@ -37,7 +37,7 @@ export default function SetupProfilePage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 p-8 rounded-xl shadow-xl">
+      <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow-xl sm:p-8">
         <div className="flex justify-center mb-6">
           <div className="p-4 bg-blue-500/20 text-blue-500 rounded-full">
             <UserIcon size={48} />
@@ -55,7 +55,7 @@ export default function SetupProfilePage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your nickname"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors"
+              className="min-h-11 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-base focus:border-blue-500 focus:outline-none transition-colors"
               required
               minLength={3}
               maxLength={30}
@@ -66,7 +66,7 @@ export default function SetupProfilePage() {
           <button
             type="submit"
             disabled={loading || !username.trim()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-600 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" size={20} /> : 'Start Playing'}
           </button>

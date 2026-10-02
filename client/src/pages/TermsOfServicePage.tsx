@@ -4,18 +4,18 @@ export default function TermsOfServicePage() {
   const lastUpdated = "September 26, 2026";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-4 md:py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        <h1 className="text-4xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
+        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center text-sand-100">
           Terms of Service
         </h1>
         
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 shadow-xl">
+        <div className="bg-obsidian-950 border border-white/10 rounded-lg p-4 md:p-8">
           <p className="mb-6 text-zinc-400 italic text-sm text-right">Last updated: {lastUpdated}</p>
           
           <section className="mb-8">
@@ -93,9 +93,9 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8 border-t border-zinc-800 pt-8">
+          <section className="mb-8 border-t border-white/10 pt-8">
             <h2 className="text-2xl font-semibold mb-4 text-white">10. Contact Information</h2>
-            <p className="text-zinc-300 leading-relaxed">
+            <p className="text-zinc-300 leading-relaxed break-words">
               If you have any questions about these Terms, please contact us at:<br />
               Email: <strong>melzacki.jakub@gmail.com</strong>
             </p>

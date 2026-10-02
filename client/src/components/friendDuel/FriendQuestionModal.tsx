@@ -54,9 +54,9 @@ export default function FriendQuestionModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="question-modal-title"
-      className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[1200] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div className="relative w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-sm border border-emerald-500/30 bg-obsidian-950/95 p-5 sm:p-6 shadow-2xl space-y-4 border-t-4 border-t-amber-400 custom-scrollbar">
+      <div className="relative w-full max-w-xl max-h-[calc(var(--app-height,100dvh)-1rem)] sm:max-h-[calc(var(--app-height,100dvh)-2rem)] overflow-y-auto rounded-sm border border-emerald-500/30 bg-obsidian-950/95 p-3 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 border-t-4 border-t-amber-400 custom-scrollbar">
         {/* Top Header: Badge & Live Countdown Timer */}
         <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function FriendQuestionModal({
               type="button"
               disabled={busy}
               onClick={() => onAnswer('yes')}
-              className="flex items-center justify-center gap-1.5 rounded-sm border border-emerald-500/40 bg-emerald-950/80 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-emerald-300 shadow-sm transition-all hover:bg-emerald-500/20 hover:border-emerald-400 hover:text-emerald-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-emerald-500/40 bg-emerald-950/80 px-2 sm:px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-emerald-300 shadow-sm transition-all hover:bg-emerald-500/20 hover:border-emerald-400 hover:text-emerald-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
             >
               <Check size={14} className="stroke-[3]" />
               <span>{copy.yes}</span>
@@ -141,7 +141,7 @@ export default function FriendQuestionModal({
               type="button"
               disabled={busy}
               onClick={() => onAnswer('mostly_yes')}
-              className="flex items-center justify-center gap-1.5 rounded-sm border border-teal-500/40 bg-teal-950/70 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-teal-300 shadow-sm transition-all hover:bg-teal-500/20 hover:border-teal-400 hover:text-teal-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-teal-500/40 bg-teal-950/70 px-2 sm:px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-teal-300 shadow-sm transition-all hover:bg-teal-500/20 hover:border-teal-400 hover:text-teal-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
             >
               <Check size={13} />
               <span>{copy.mostly_yes}</span>
@@ -152,7 +152,7 @@ export default function FriendQuestionModal({
               type="button"
               disabled={busy}
               onClick={() => onAnswer('mostly_no')}
-              className="flex items-center justify-center gap-1.5 rounded-sm border border-rose-400/40 bg-rose-950/60 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-rose-300 shadow-sm transition-all hover:bg-rose-500/20 hover:border-rose-400 hover:text-rose-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rose-400/40 bg-rose-950/60 px-2 sm:px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-rose-300 shadow-sm transition-all hover:bg-rose-500/20 hover:border-rose-400 hover:text-rose-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
             >
               <X size={13} />
               <span>{copy.mostly_no}</span>
@@ -163,7 +163,7 @@ export default function FriendQuestionModal({
               type="button"
               disabled={busy}
               onClick={() => onAnswer('no')}
-              className="flex items-center justify-center gap-1.5 rounded-sm border border-rose-500/50 bg-rose-950/80 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-rose-300 shadow-sm transition-all hover:bg-rose-500/25 hover:border-rose-400 hover:text-rose-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rose-500/50 bg-rose-950/80 px-2 sm:px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-rose-300 shadow-sm transition-all hover:bg-rose-500/25 hover:border-rose-400 hover:text-rose-200 active:scale-[0.98] disabled:opacity-40 cursor-pointer"
             >
               <X size={14} className="stroke-[3]" />
               <span>{copy.no}</span>

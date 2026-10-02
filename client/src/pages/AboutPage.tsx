@@ -131,7 +131,7 @@ export default function AboutPage() {
         <h2 id="about-privacy" className="text-xl font-semibold text-sand-100">{t('about.privacyTitle', 'Player Privacy & Open Access')}</h2>
         <div>
           <p className="text-base leading-7">No account is required to play. For daily games, guest progress is stored in your browser; clearing site data or changing devices can make that progress unavailable. Accepted guest gameplay activity is also recorded server-side using a short-lived pseudonymous browser identifier.</p>
-          <p className="mt-4 text-base leading-7">The site loads Google AdSense, and analytics such as Rybbit may be enabled by deployment settings. See the <Link to="/privacy-policy" className="whitespace-nowrap text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Privacy Policy</Link> and <Link to="/cookie-policy" className="whitespace-nowrap text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Cookie Policy</Link> for details about data and cookies.</p>
+          <p className="mt-4 text-base leading-7">The site loads Google AdSense, and analytics such as Rybbit may be enabled by deployment settings. See the <Link to="/privacy-policy" className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Privacy Policy</Link> and <Link to="/cookie-policy" className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Cookie Policy</Link> for details about data and cookies.</p>
           <p className="mt-5 text-sm text-zinc-400">Built for the global geography community</p>
         </div>
       </section>

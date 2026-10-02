@@ -203,7 +203,7 @@ export default function LeaderboardPage() {
                 type="button"
                 onClick={() => changePeriod(period)}
                 aria-pressed={leaderboardType === period}
-                className={`min-h-10 rounded-sm px-4 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 ${leaderboardType === period ? 'bg-sand-100 text-obsidian-950' : 'text-zinc-400 hover:text-sand-100'}`}
+                className={`min-h-11 rounded-sm px-4 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 ${leaderboardType === period ? 'bg-sand-100 text-obsidian-950' : 'text-zinc-400 hover:text-sand-100'}`}
               >
                 {period === 'monthly' ? 'Monthly' : 'Average'}
               </button>
@@ -242,7 +242,7 @@ export default function LeaderboardPage() {
                     setFindMessage(null);
                   }}
                   placeholder="Search username"
-                  className="min-h-12 w-full rounded-sm border border-white/15 bg-obsidian-900 py-2.5 pl-10 pr-3 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  className="min-h-12 w-full rounded-sm border border-white/15 bg-obsidian-900 py-2.5 pl-10 pr-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
                 />
               </label>
               {isAuthenticated && user && (
@@ -271,8 +271,8 @@ export default function LeaderboardPage() {
               </div>
             ) : (
               <>
-                <div role="region" aria-label={`${gameLabel} leaderboard`} tabIndex={0} className="overflow-x-auto rounded-sm border border-white/10 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-                  <table className="w-full min-w-[600px] table-fixed text-left text-sm">
+                <div role="region" aria-label={`${gameLabel} leaderboard`} tabIndex={0} className="overflow-hidden rounded-sm border border-white/10 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 md:overflow-x-auto">
+                  <table className="w-full min-w-0 table-fixed text-left text-sm md:min-w-[600px]">
                     <caption className="sr-only">
                       {gameLabel} — {leaderboardType === 'monthly' ? 'monthly points standings' : 'monthly average standings'}
                     </caption>
@@ -290,19 +290,19 @@ export default function LeaderboardPage() {
                         </th>
                         <th
                           scope="col"
-                          className={`w-24 px-2 py-3.5 text-right font-medium sm:w-28 sm:px-3 ${
+                          className={`hidden w-24 px-2 py-3.5 text-right font-medium sm:w-28 sm:px-3 md:table-cell ${
                             leaderboardType === 'average' ? 'text-emerald-400' : ''
                           }`}
                         >
                           Avg / Game{leaderboardType === 'average' ? ' ★' : ''}
                         </th>
-                        <th scope="col" className="w-16 px-2 py-3.5 text-right font-medium sm:w-20 sm:px-3">
+                        <th scope="col" className="hidden w-16 px-2 py-3.5 text-right font-medium sm:w-20 sm:px-3 md:table-cell">
                           Games
                         </th>
-                        <th scope="col" className="w-14 px-2 py-3.5 text-right font-medium sm:w-20 sm:px-3">
+                        <th scope="col" className="hidden w-14 px-2 py-3.5 text-right font-medium sm:w-20 sm:px-3 md:table-cell">
                           Wins
                         </th>
-                        <th scope="col" className="w-16 px-2 py-3.5 text-right font-medium sm:w-24 sm:px-3">
+                        <th scope="col" className="hidden w-16 px-2 py-3.5 text-right font-medium sm:w-24 sm:px-3 md:table-cell">
                           Win %
                         </th>
                       </tr>
@@ -329,10 +329,16 @@ export default function LeaderboardPage() {
                                 <span aria-hidden="true" className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/10 font-mono text-xs text-zinc-400 sm:flex">
                                   {row.entry.username.substring(0, 2).toUpperCase()}
                                 </span>
-                                <Link to={`/profile/${row.entry.username}`} title={row.entry.username} className="min-w-0 truncate font-medium text-sand-100 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+                                <Link to={`/profile/${row.entry.username}`} title={row.entry.username} className="min-w-0 break-words font-medium text-sand-100 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
                                   {row.entry.username}
                                 </Link>
                                 {isMe && <span className="shrink-0 rounded-sm bg-emerald-400/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">You</span>}
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400 md:hidden">
+                                <span>Avg / Game <span className="font-mono tabular-nums text-zinc-200">{formatAverage(row.entry.average_points)}</span></span>
+                                <span>Games <span className="font-mono tabular-nums text-zinc-200">{formatNumber(row.entry.games_played)}</span></span>
+                                <span>Wins <span className="font-mono tabular-nums text-zinc-200">{formatNumber(row.entry.wins)}</span></span>
+                                <span>Win % <span className="font-mono tabular-nums text-zinc-200">{winRate}%</span></span>
                               </div>
                             </td>
                             <td className={`px-2 py-4 text-right font-mono tabular-nums sm:px-3 ${
@@ -340,18 +346,18 @@ export default function LeaderboardPage() {
                             }`}>
                               {formatNumber(row.entry.points)}
                             </td>
-                            <td className={`px-2 py-4 text-right font-mono tabular-nums sm:px-3 ${
+                            <td className={`hidden px-2 py-4 text-right font-mono tabular-nums sm:px-3 md:table-cell ${
                               leaderboardType === 'average' ? 'font-semibold text-emerald-300' : 'text-zinc-300'
                             }`}>
                               {formatAverage(row.entry.average_points)}
                             </td>
-                            <td className="px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3">
+                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3 md:table-cell">
                               {formatNumber(row.entry.games_played)}
                             </td>
-                            <td className="px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3">
+                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3 md:table-cell">
                               {formatNumber(row.entry.wins)}
                             </td>
-                            <td className="px-2 py-4 text-right font-mono tabular-nums text-zinc-400 sm:px-3">
+                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-zinc-400 sm:px-3 md:table-cell">
                               {winRate}%
                             </td>
                           </tr>

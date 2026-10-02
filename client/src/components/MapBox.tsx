@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapContainer, TileLayer, GeoJSON, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
@@ -128,6 +129,8 @@ function MapControls({
   showReferenceLines,
   onToggleReferenceLines,
 }: MapControlsProps) {
+  const { i18n } = useTranslation();
+  const isPl = i18n?.language?.startsWith('pl');
   const { isGameOver, activeMarkerColor, setActiveMarkerColor, clearMapMarkings } = interaction;
   const handleZoomToCorrect = () => {
     if (map && correctCountryName && geoJsonData) {
@@ -154,16 +157,18 @@ function MapControls({
         activeColor={activeMarkerColor}
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
+        className={isGameOver && correctCountryName ? '' : 'max-md:!top-[10.75rem]'}
       />
-      <div className="absolute top-[5.25rem] left-[12px] md:left-[12px] z-[1050] flex flex-col gap-2">
+      <div className="absolute top-[5.75rem] left-[12px] md:top-[5.25rem] md:left-[12px] z-[1050] flex flex-col gap-1 md:gap-2">
         {defaultCenter && (
           <button
             onClick={(e) => {
               e.preventDefault();
               handleResetView();
             }}
-            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 w-8 h-8 flex items-center justify-center cursor-pointer"
-            title="Reset view"
+            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            title={isPl ? 'Resetuj widok' : 'Reset view'}
+            aria-label={isPl ? 'Resetuj widok' : 'Reset view'}
           >
             <RotateCcw size={15} />
           </button>
@@ -174,13 +179,15 @@ function MapControls({
               e.preventDefault();
               onToggleReferenceLines();
             }}
-            className={`p-2 rounded shadow-md transition-colors border w-8 h-8 flex items-center justify-center cursor-pointer ${
+            className={`p-2 rounded shadow-md transition-colors border h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer ${
               showReferenceLines
                 ? 'bg-zinc-700 text-zinc-100 border-zinc-500 hover:bg-zinc-600'
                 : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-white'
             }`}
-            title={showReferenceLines ? 'Hide Equator & Greenwich lines' : 'Show Equator & Greenwich lines'}
-            aria-label="Toggle Equator and Greenwich reference lines"
+            title={showReferenceLines
+              ? (isPl ? 'Ukryj równik i południk Greenwich' : 'Hide Equator & Greenwich lines')
+              : (isPl ? 'Pokaż równik i południk Greenwich' : 'Show Equator & Greenwich lines')}
+            aria-label={isPl ? 'Przełącz linie równika i południka Greenwich' : 'Toggle Equator and Greenwich reference lines'}
             aria-pressed={showReferenceLines}
           >
             <Compass size={15} />
@@ -192,8 +199,9 @@ function MapControls({
               e.preventDefault();
               handleZoomToCorrect();
             }}
-            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 w-8 h-8 flex items-center justify-center cursor-pointer"
-            title="Zoom to correct country"
+            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            title={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
+            aria-label={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
           >
             <Check size={16} />
           </button>

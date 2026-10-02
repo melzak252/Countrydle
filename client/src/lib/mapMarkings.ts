@@ -10,6 +10,9 @@ export interface MapInteractionState {
 }
 
 export function mapClickColor(activeColor: MapMarkerColor, isSecondary = false): MapMarkerColor {
+  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+    return 'red';
+  }
   if (!isSecondary) return activeColor;
   switch (activeColor) {
     case 'green': return 'red';
