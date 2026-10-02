@@ -168,7 +168,7 @@ export default function ShareResultCard({
   return (
     <section
       aria-label={`${gameName} result`}
-      className="w-full space-y-6 rounded-sm border border-white/15 bg-obsidian-950 p-5 sm:p-7 md:p-8 relative text-left"
+      className="w-full max-h-[var(--app-height,100dvh)] overflow-y-auto space-y-4 sm:space-y-6 rounded-sm border border-white/15 bg-obsidian-950 p-3 sm:p-7 md:p-8 relative text-left"
     >
       {/* 1. Header Bar: Game Name & Date + Close Button */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3.5 -mt-1 text-left">
@@ -185,7 +185,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
             aria-label="Close result modal"
             title="Close"
           >

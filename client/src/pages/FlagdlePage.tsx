@@ -235,22 +235,22 @@ export default function FlagdlePage() {
     );
   }
   return (
-    <div className="mx-auto w-full max-w-4xl px-3 py-4 sm:px-6">
+    <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-6 sm:py-4">
       {/* Header Bar */}
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-sand-800/80 pb-4">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-sand-800/80 pb-2 sm:mb-6 sm:gap-3 sm:pb-4">
         <div>
           <div className="mb-1 flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
             <span>🚩 Daily Flag Deduction</span>
             <span>•</span>
             <span>{dailyDate}</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">Flagdle</h1>
+          <h1 className="text-xl font-bold tracking-tight text-sand-100 sm:text-3xl">Flagdle</h1>
           {isGuest && <p className="mt-1 text-xs text-sand-500">Playing as Guest • No account required</p>}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Guesses Remaining Pill */}
-          <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-3.5 py-2 shadow-sm">
+          <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2.5 py-1.5 shadow-sm sm:px-3.5 sm:py-2">
             <span className="text-xs uppercase tracking-wider text-zinc-400 mr-2 font-mono">Guesses:</span>
             <span
               className={`font-mono text-base font-bold ${
@@ -265,7 +265,7 @@ export default function FlagdlePage() {
           <button
             type="button"
             onClick={() => setShowInstructions(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors sm:h-9 sm:w-9"
             title="How to play Flagdle"
           >
             <HelpCircle size={18} />
@@ -274,7 +274,7 @@ export default function FlagdlePage() {
             <button
               type="button"
               onClick={() => setShowResultsModal(true)}
-              className="flex h-9 items-center gap-1.5 px-3 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
+              className="flex h-11 md:h-9 items-center gap-1.5 px-3 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
               title="Show results"
             >
               <Trophy size={15} />
@@ -285,7 +285,7 @@ export default function FlagdlePage() {
       </header>
 
       {/* Main Game Container */}
-      <main className="space-y-6">
+      <main className="space-y-3 sm:space-y-6">
         {/* 1. The 12-Card Progressive Unmasking Canvas (3 rows x 4 columns) */}
         <section aria-label="Flag Visualizer">
           <FlagTiles
@@ -317,21 +317,21 @@ export default function FlagdlePage() {
                     onKeyDown={handleKeyDown}
                     placeholder="Search national flag by country name..."
                     disabled={isLoading || isGameOver}
-                    className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-4 py-3 text-sm text-sand-100 placeholder:text-zinc-500 shadow-inner focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-50"
+                    className="w-full min-w-0 rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2.5 text-base md:text-sm text-sand-100 placeholder:text-zinc-500 shadow-inner focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-50 sm:px-4 sm:py-3"
                   />
 
                   {/* Suggestion Dropdown */}
                   {showSuggestions && filteredCountries.length > 0 && (
                     <div
                       ref={dropdownRef}
-                      className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-64 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl backdrop-blur-md"
+                      className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-64 max-md:max-h-[min(35dvh,calc(var(--app-height,100dvh)-8rem))] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl"
                     >
                       {filteredCountries.map((c, idx) => (
                         <div
                           key={c.id}
                           onClick={() => handleSelectCountry(c)}
                           onMouseEnter={() => setHighlightedIndex(idx)}
-                          className={`flex items-center justify-between gap-3 rounded-sm px-3 py-2 cursor-pointer transition-colors ${
+                          className={`flex max-md:min-h-11 items-center justify-between gap-2 rounded-sm px-3 py-2 cursor-pointer transition-colors ${
                             idx === highlightedIndex ? 'bg-white/10 text-white' : 'text-zinc-300 hover:bg-white/5'
                           }`}
                         >
@@ -351,7 +351,7 @@ export default function FlagdlePage() {
                   type="button"
                   onClick={handleSubmitGuess}
                   disabled={isLoading || !inputVal.trim()}
-                  className="inline-flex items-center justify-center rounded-sm bg-emerald-400 px-5 py-3 text-sm font-semibold text-obsidian-950 shadow-md hover:bg-emerald-300 active:scale-95 disabled:pointer-events-none disabled:opacity-50 transition-all cursor-pointer"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-obsidian-950 shadow-md hover:bg-emerald-300 active:scale-95 disabled:pointer-events-none disabled:opacity-50 transition-all cursor-pointer sm:px-5 sm:py-3"
                 >
                   {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Guess'}
                 </button>
@@ -427,7 +427,7 @@ export default function FlagdlePage() {
 
         {/* Results Modal */}
         {isGameOver && showResultsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-y-auto md:z-50 md:max-h-none">
             {/* Backdrop: clicking background closes modal */}
             <div
               className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
@@ -440,7 +440,7 @@ export default function FlagdlePage() {
               role="dialog"
               aria-modal="true"
               aria-label="Game Result"
-              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl text-left space-y-6 my-auto"
+              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-3 md:max-h-[92vh] sm:p-8 shadow-2xl text-left space-y-4 sm:space-y-6 my-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Bar */}
@@ -457,7 +457,7 @@ export default function FlagdlePage() {
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                  className="flex h-11 w-11 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
                   aria-label="Close"
                   title="Close"
                 >
@@ -466,7 +466,7 @@ export default function FlagdlePage() {
               </div>
 
               {/* Hero Reveal Banner */}
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5">
                 <div className="flex items-center gap-4 sm:gap-5 min-w-0">
                   {correctCountry && (
                     <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
@@ -589,7 +589,7 @@ export default function FlagdlePage() {
 
       {/* Instructions Modal — WIDER CONTAINER (max-w-4xl) */}
       {showInstructions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-6 sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+1.5rem)] overflow-y-auto md:z-50 md:max-h-none">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
@@ -601,7 +601,7 @@ export default function FlagdlePage() {
             role="dialog"
             aria-modal="true"
             aria-label="How to Play Flagdle"
-            className="relative z-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-md border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl space-y-6 my-auto text-sand-100"
+            className="relative z-10 w-full max-w-4xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-3 md:max-h-[92vh] sm:rounded-md sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
@@ -616,7 +616,7 @@ export default function FlagdlePage() {
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 md:h-8 md:w-8"
                 aria-label="Close"
                 title="Close"
               >

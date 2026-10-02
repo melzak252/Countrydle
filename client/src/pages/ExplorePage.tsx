@@ -448,16 +448,17 @@ export default function ExplorePage() {
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedCountry(null)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-6 sm:p-8 space-y-6 text-sand-100 shadow-2xl"
+            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh] md:p-8"
           >
             <button 
               type="button" 
               onClick={() => setSelectedCountry(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-white"
+              aria-label={isPl ? 'Zamknij szczegóły kraju' : 'Close country details'}
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
             >
               <X size={20} />
             </button>
@@ -567,16 +568,17 @@ export default function ExplorePage() {
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedState(null)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-6 sm:p-8 space-y-6 text-sand-100 shadow-2xl"
+            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh] md:p-8"
           >
             <button 
               type="button" 
               onClick={() => setSelectedState(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-white"
+              aria-label={isPl ? 'Zamknij szczegóły stanu' : 'Close state details'}
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
             >
               <X size={20} />
             </button>
@@ -666,16 +668,17 @@ export default function ExplorePage() {
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedVoivodeship(null)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-6 sm:p-8 space-y-6 text-sand-100 shadow-2xl"
+            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh] md:p-8"
           >
             <button 
               type="button" 
               onClick={() => setSelectedVoivodeship(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-white"
+              aria-label={isPl ? 'Zamknij szczegóły województwa' : 'Close voivodeship details'}
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
             >
               <X size={20} />
             </button>

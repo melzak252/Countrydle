@@ -16,7 +16,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CountdownTimer from './CountdownTimer';
 import CountrydleLogo from './CountrydleLogo';
 import { PrivacySettingsButton } from './PrivacySettingsButton';
@@ -27,6 +27,7 @@ export default function Header() {
   const location = useLocation();
   const isPl = i18n?.language?.startsWith('pl');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const gameCategories = [
     {
@@ -85,7 +86,10 @@ export default function Header() {
     { path: '/terms', name: t('footer.termsOfService', 'Terms of Service'), icon: FileText },
   ];
 
-  const closeMenu = () => setIsMenuOpen(false);
+  const closeMenu = (restoreFocus = false) => {
+    setIsMenuOpen(false);
+    if (restoreFocus) menuButtonRef.current?.focus();
+  };
 
   const handleLogout = async () => {
     closeMenu();
@@ -106,6 +110,20 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    if (!isMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMenu(true);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
@@ -120,17 +138,17 @@ export default function Header() {
     }`;
 
   return (
-    <header className="sticky top-0 z-[1001] border-b border-white/10 bg-obsidian-950 text-sand-100">
-      <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-[1001] shrink-0 border-b border-white/10 bg-obsidian-950 text-sand-100">
+      <div className="mx-auto flex h-14 sm:h-20 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
         
         {/* Brand with single subtle In Development indicator */}
-        <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2.5" aria-label="Countrydle">
+        <Link to="/" onClick={() => closeMenu()} className="flex shrink-0 items-center gap-2.5" aria-label="Countrydle">
           <CountrydleLogo size={32} />
           <span className="text-xl font-semibold tracking-tight text-sand-100">
             Countrydle<span className="text-emerald-400">.</span>
           </span>
           <span
-            className="text-[10px] font-mono tracking-wider uppercase text-zinc-400 border border-zinc-700/60 rounded px-1.5 py-0.5 ml-0.5 select-none"
+            className="hidden sm:inline text-[10px] font-mono tracking-wider uppercase text-zinc-400 border border-zinc-700/60 rounded px-1.5 py-0.5 ml-0.5 select-none"
             title={isPl ? 'Strona w fazie aktywnego rozwoju' : 'Site is in active development'}
           >
             {isPl ? 'W rozwoju' : 'In Dev'}
@@ -344,15 +362,16 @@ export default function Header() {
         </div>
 
         {/* Mobile Header: Compact Clock & Hamburger Menu Button */}
-        <div className="flex items-center gap-2 xl:hidden">
-          <CountdownTimer className="text-[11px] px-2 py-1" />
+        <div className="flex shrink-0 items-center gap-2 xl:hidden">
+          <CountdownTimer className="hidden sm:flex text-[11px] px-2 py-1" />
           <button
+            ref={menuButtonRef}
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-navigation"
-            aria-label="Navigation menu"
-            className="p-2 text-sand-100 hover:bg-white/5 rounded transition-colors"
+            aria-label={isPl ? 'Menu nawigacyjne' : 'Navigation menu'}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-sand-100 hover:bg-white/5 transition-colors"
           >
             {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -364,13 +383,13 @@ export default function Header() {
         <nav
           id="mobile-navigation"
           aria-label="Mobile navigation"
-          className="max-h-[calc(100dvh-5rem)] overflow-y-auto border-t border-white/10 bg-obsidian-950 px-4 pb-6 pt-4 xl:hidden"
+          className="max-h-[calc(var(--app-height,100dvh)-3.5rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-obsidian-950 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 xl:hidden"
           onKeyDown={(event) => {
-            if (event.key === 'Escape') closeMenu();
+            if (event.key === 'Escape') closeMenu(true);
           }}
         >
           {/* Game Modes Section */}
-          <div className="space-y-4 border-b border-white/10 pb-4" onClick={closeMenu}>
+          <div className="space-y-4 border-b border-white/10 pb-4" onClick={() => closeMenu()}>
             {gameCategories.map((group) => (
               <div key={group.category}>
                 <span className="block mb-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
@@ -382,15 +401,15 @@ export default function Header() {
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) =>
-                        `flex items-center justify-between gap-1 rounded px-2.5 py-2 text-xs transition-colors ${
+                        `flex min-h-11 items-center justify-between gap-1 rounded px-2.5 py-2 text-sm transition-colors ${
                           isActive
                             ? 'bg-emerald-500/10 text-emerald-300 font-medium'
                             : 'text-zinc-200 hover:bg-white/5 bg-white/[0.02]'
                         }`
                       }
                     >
-                      <span className="truncate">{item.name}</span>
-                      {item.badge && <span className="text-[10px] text-zinc-400 font-mono">{item.badge}</span>}
+                      <span className="min-w-0 break-words sm:truncate">{item.name}</span>
+                      {item.badge && <span className="hidden text-[10px] text-zinc-400 font-mono sm:inline">{item.badge}</span>}
                     </NavLink>
                   ))}
                 </div>
@@ -399,17 +418,17 @@ export default function Header() {
           </div>
 
           {/* Secondary Links Grid */}
-          <div className="grid grid-cols-2 py-3" onClick={closeMenu}>
+          <div className="grid grid-cols-2 py-3" onClick={() => closeMenu()}>
             {[
               ['/leaderboard', t('header.leaderboard', 'Leaderboard')],
               ['/blog', t('header.blog', 'Blog')],
               ...more,
             ].map(([path, label]) => (
-              <NavLink key={path} to={path} className={mobileLinkClass}>
+              <NavLink key={path} to={path} className={({ isActive }) => `${mobileLinkClass({ isActive })} min-h-11`}>
                 {label}
               </NavLink>
             ))}
-            <PrivacySettingsButton className="block px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
+            <PrivacySettingsButton className="min-h-11 px-3 py-2.5 text-left text-sm text-zinc-300 hover:text-sand-50 hover:bg-white/5 transition-colors" />
           </div>
 
           {/* User Auth Section (Mobile) */}
@@ -417,16 +436,16 @@ export default function Header() {
             {isAuthenticated ? (
               <>
                 <Link
-                  onClick={closeMenu}
+                  onClick={() => closeMenu()}
                   to={`/profile/${user?.username}`}
-                  className="min-w-0 truncate text-sm text-emerald-300 font-medium"
+                  className="flex min-h-11 min-w-0 items-center truncate text-sm text-emerald-300 font-medium"
                 >
                   {user?.username}
                 </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="px-3 py-2 text-sm text-zinc-400 hover:text-sand-100"
+                  className="min-h-11 px-3 py-2 text-sm text-zinc-400 hover:text-sand-100"
                 >
                   {t('header.logout', 'Logout')}
                 </button>
@@ -434,16 +453,16 @@ export default function Header() {
             ) : (
               <>
                 <Link
-                  onClick={closeMenu}
+                  onClick={() => closeMenu()}
                   to="/login"
-                  className="px-3 py-2 text-sm text-zinc-300 hover:text-white"
+                  className="flex min-h-11 items-center px-3 py-2 text-sm text-zinc-300 hover:text-white"
                 >
                   {t('header.login', 'Login')}
                 </Link>
                 <Link
-                  onClick={closeMenu}
+                  onClick={() => closeMenu()}
                   to="/register"
-                  className="border border-sand-200/40 px-4 py-2 text-sm hover:bg-sand-100 hover:text-obsidian-950 font-medium rounded transition-colors"
+                  className="flex min-h-11 items-center border border-sand-200/40 px-4 py-2 text-sm hover:bg-sand-100 hover:text-obsidian-950 font-medium rounded transition-colors"
                 >
                   {t('header.signUp', 'Sign Up')}
                 </Link>

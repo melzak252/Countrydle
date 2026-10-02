@@ -4,18 +4,18 @@ export default function PrivacyPolicyPage() {
   const lastUpdated = "October 1, 2026";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-4 md:py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        <h1 className="text-4xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
+        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center text-sand-100">
           Privacy Policy
         </h1>
         
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 shadow-xl">
+        <div className="bg-obsidian-950 border border-white/10 rounded-lg p-4 md:p-8">
           <p className="mb-6 text-zinc-400 italic text-sm text-right">Last updated: {lastUpdated}</p>
           
           <section className="mb-8">
@@ -82,12 +82,12 @@ export default function PrivacyPolicyPage() {
             </div>
           </section>
 
-          <section className="mb-8 border-l-4 border-blue-500 pl-6 py-2 bg-blue-500/5 rounded-r-lg">
+          <section className="mb-8 border-l-4 border-emerald-500 pl-4 md:pl-6 py-2 bg-emerald-500/5 rounded-r-lg">
             <h2 className="text-2xl font-semibold mb-4 text-white">3. Google AdSense, Cookies, and Advertising</h2>
             <p className="text-zinc-300 leading-relaxed mb-4">
               We use <strong>Google AdSense</strong> to display advertisements to support our free educational platform. To comply with Google's Program Policies, we disclose the following regarding advertising cookies and tracking technologies:
             </p>
-            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4 mb-4">
+            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-2 md:ml-4 mb-4">
               <li>
                 <strong>Third-party vendor cookies:</strong> Third party vendors, including Google, use cookies to serve ads based on a user's prior visits to our website or other websites across the Internet.
               </li>
@@ -95,7 +95,7 @@ export default function PrivacyPolicyPage() {
                 <strong>Advertising cookies:</strong> Google's use of advertising cookies enables it and its partners to serve personalized advertisements to our users based on their visits to our site and/or other sites on the Internet.
               </li>
               <li>
-                <strong>Opting out of personalized advertising:</strong> Users may opt out of personalized advertising at any time by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300">Google Ads Settings</a>. Alternatively, users can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300">www.aboutads.info</a>.
+                <strong>Opting out of personalized advertising:</strong> Users may opt out of personalized advertising at any time by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300 break-all">Google Ads Settings</a>. Alternatively, users can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300 break-all">www.aboutads.info</a>.
               </li>
               <li>
                 <strong>Consent Management Platform (CMP):</strong> For visitors in the European Economic Area (EEA), United Kingdom (UK), and Switzerland, we implement a Google-certified Consent Management Platform (CMP) integrated with the IAB Transparency and Consent Framework (TCF v2.2) to collect and manage cookie consent preferences. You can adjust your consent choices at any time using the "Privacy Settings" button in our site footer.
@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage() {
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4 text-white">4. How We Use Your Information</h2>
-            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-4">
+            <ul className="list-disc list-inside text-zinc-300 space-y-2 ml-2 md:ml-4">
               <li><strong>Account Management:</strong> To create and manage your account, including authentication and login using Google.</li>
               <li><strong>Game Functionality:</strong> To enable you to play the game and keep track of your daily participation and guesses.</li>
               <li><strong>Improving the Website:</strong> To analyze usage and improve the performance of our website.</li>
@@ -159,9 +159,9 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8 border-t border-zinc-800 pt-8">
+          <section className="mb-8 border-t border-white/10 pt-8">
             <h2 className="text-2xl font-semibold mb-4 text-white">9. Contact Us</h2>
-            <p className="text-zinc-300 leading-relaxed">
+            <p className="text-zinc-300 leading-relaxed break-words">
               If you have any questions about this Privacy Policy, please contact us at:<br />
               Email: <strong>melzacki.jakub@gmail.com</strong>
             </p>

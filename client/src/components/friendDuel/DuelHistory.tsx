@@ -328,7 +328,7 @@ export default function DuelHistory({
   const [chatTab, setChatTab] = useState<'yours' | 'opponent'>('yours');
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prevCount = useRef(snapshot.history.length);
+  
 
   const combined = useMemo(() => {
     const map = new Map(older.map(item => [item.id, item]));
@@ -357,15 +357,9 @@ export default function DuelHistory({
 
   const activeMoves = chatTab === 'yours' ? yourMoves : opponentMoves;
 
-  // Auto-scroll inside container ONLY when new items arrive
   useEffect(() => {
-    if (history.length > prevCount.current) {
-      prevCount.current = history.length;
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    } else {
-      prevCount.current = history.length;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [history.length, chatTab]);
 

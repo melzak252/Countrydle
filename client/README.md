@@ -27,8 +27,8 @@ question identifiers. `QuestionInput.tsx` and `GuessInput.tsx` supply the shared
 `GameActionComposer.tsx` hosts the active form in the chat footer.
 
 In daily games, the top `Questions`/`Guesses` tabs choose both displayed history and
-active input; no second selector appears by the composer. On mobile, open the chat
-drawer to reach it. Friend-duel controls remain in their chat footer.
+active input; no second selector appears by the composer. Phone labels are shortened
+to `Ask`/`Guess`, with attempt counts. Friend-duel controls remain in their chat footer.
 
 Player questions, including pending and rejected submissions, remain text-selectable
 and each has a copy control that copies the original text. Map tooltips stay anchored
@@ -49,6 +49,38 @@ their reason and next step as accessible alerts without making the entire
 conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
+
+## Mobile layout
+
+- Daily map games use a full-width, 44px status row immediately below the app
+  header, with question count, guess count, and labelled `Guide` action sharing
+  equal-width sections. It remains visible with either the map or notebook open.
+  Active duels use two rows to retain player counts, countdown, and secret controls.
+- Daily map games and friend duels open a full-height action panel on phones,
+  filling the game area below the status row. `Map` collapses the notebook;
+  `Ask`/`Guess` restores the corresponding history and input.
+- Opening or switching histories scrolls to the newest response or guess. History
+  scrolls independently above the pinned composer; manual scrolling remains
+  unchanged until a new entry arrives or the selected history changes.
+- The shared fullscreen shell tracks `visualViewport` through `--app-height`,
+  accounting for browser chrome and reduced keyboard space. At 560px viewport
+  height or less on phones, quick-question suggestions hide to leave room for the input
+  and history. Expanded active duels retain their turn status and countdown;
+  at reduced heights, `Map` moves into the status row and the redundant notebook
+  heading and optional composer hint hide so the input stays visible.
+- Phone map taps mark red; repeating a tap removes the mark. The colour picker
+  is desktop-only. Zoom, reset, reference-line, clear and revealed-target controls
+  form a compact left column with 36px buttons.
+- Mobile inputs use 16px text; question and answer text uses 14px. Navigation,
+  autocomplete options and primary actions retain 44px touch targets. Dialogs and
+  lists scroll within the available height, with safe-area padding on bottom controls.
+- The phone menu fits narrow screens and restores focus to its trigger on Escape.
+  Archive uses a grouped mode selector; leaderboard rows retain rank, player, and
+  score without requiring horizontal scrolling.
+- Desktop map panels and multi-column browsing layouts retain their existing
+  breakpoint behavior. The dark palette, typography, routes, and gameplay rules are
+  unchanged.
+
 ## Friend duels
 
 Create a duel at `/friends`; invitations open `/duel/:code`.

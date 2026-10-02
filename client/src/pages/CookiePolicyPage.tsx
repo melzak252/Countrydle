@@ -5,18 +5,18 @@ export default function CookiePolicyPage() {
   const lastUpdated = "September 26, 2026";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-4 md:py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        <h1 className="text-4xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
+        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center text-sand-100">
           Cookie Policy
         </h1>
         
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 shadow-xl">
+        <div className="bg-obsidian-950 border border-white/10 rounded-lg p-4 md:p-8">
           <p className="mb-6 text-zinc-400 italic text-sm text-right">Last updated: {lastUpdated}</p>
           
           <section className="mb-8">
@@ -58,7 +58,7 @@ export default function CookiePolicyPage() {
               You can use Privacy settings to reopen Google’s consent message and review or change your advertising choices when those settings are available:
             </p>
             <div className="mb-4">
-              <PrivacySettingsButton />
+              <PrivacySettingsButton className="inline-flex min-h-[44px] items-center rounded-md border border-white/15 px-4 text-emerald-300 underline underline-offset-4 hover:bg-white/5" />
             </div>
             <p className="text-zinc-300 leading-relaxed mb-4">
               If no consent message applies, there may be no message to display. If Google’s consent services are unavailable, the button reports that settings cannot be opened; it does not save or change an advertising choice. You can also block or delete cookies through your browser, though doing so may prevent login or other features from working. Browser cookie controls are separate from the Privacy settings for your advertising choices.
@@ -68,8 +68,7 @@ export default function CookiePolicyPage() {
           <section className="mb-8 border-t border-zinc-800 pt-8">
             <h2 className="text-2xl font-semibold mb-4 text-white">5. Contact Us</h2>
             <p className="text-zinc-300 leading-relaxed">
-              If you have any questions about our use of cookies, please contact us at:<br />
-              Email: <strong>melzacki.jakub@gmail.com</strong>
+              Email: <strong className="break-words">melzacki.jakub@gmail.com</strong>
             </p>
           </section>
         </div>

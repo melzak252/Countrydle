@@ -58,7 +58,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
   }, [isOpen]);
 
   const modalContent = (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6 overflow-y-auto animate-in fade-in duration-200" style={{ maxHeight: 'var(--app-height, 100dvh)' }}>
       {/* Full-screen Dark Backdrop */}
       <div
         className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
@@ -71,7 +71,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
         role="dialog"
         aria-modal="true"
         aria-label={t('instructions.title', 'How to Play & Guide')}
-        className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-md border border-white/15 bg-obsidian-950 p-6 sm:p-8 shadow-2xl space-y-6 my-auto text-sand-100"
+        className="relative z-10 w-full max-w-3xl max-h-full sm:max-h-[calc(var(--app-height,100dvh)-3rem)] overflow-y-auto rounded-md border border-white/15 bg-obsidian-950 p-4 sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Title & Close Button */}
@@ -89,7 +89,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
           <button
             type="button"
             onClick={handleClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
             aria-label="Close"
             title="Close"
           >
@@ -108,12 +108,12 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 {isPl
-                  ? 'Wpisz pytanie w lewym dolnym rogu ekranu (po polsku lub angielsku). Pytaj o granice, morza, ludność czy stolicę. Literówki nie zużywają tury!'
-                  : 'Type questions in the bottom-left chat (English or Polish). Ask about borders, seas, population, or capitals. Typos never cost a turn!'}
+                  ? 'Wpisz pytanie w Czacie (na telefonie otwórz je przyciskiem Pytanie). Pytaj o granice, morza, ludność czy stolicę. Literówki nie zużywają tury!'
+                  : 'Open Chat (on phones, use the Question button) to ask in English or Polish about borders, seas, population, or capitals. Typos never cost a turn!'}
               </p>
             </div>
             <span className="font-mono text-[10px] text-emerald-300/80 pt-1 block">
-              {isPl ? '↙ Czat w lewym dolnym rogu' : '↙ Chat in bottom-left corner'}
+              {isPl ? 'Otwórz Pytanie, aby zapytać' : 'Open Question to ask'}
             </span>
           </div>
 
@@ -126,12 +126,12 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 {isPl
-                  ? 'Klikaj na mapę, by śledzić wnioski: lewy przycisk (LPM) zaznacza kandydata na zielono, a prawy przycisk (PPM) wykreśla na czerwono.'
-                  : 'Click on the map to track deductions: Left-click (or tap) marks candidates in green, and Right-click marks eliminated areas in red.'}
+                  ? 'Dotknij mapy, by śledzić wnioski: wybierz Pytanie, aby oznaczyć kandydata na zielono, lub Strzał, by wykreślić obszar na czerwono.'
+                  : 'Use the map to track deductions: choose Question to mark candidates in green, or Guess to mark eliminated areas in red.'}
               </p>
             </div>
             <span className="font-mono text-[10px] text-cyan-300/80 pt-1 block">
-              {isPl ? 'LPM = Zielony, PPM = Czerwony' : 'Left = Green, Right = Red'}
+              {isPl ? 'Pytanie = Zielony, Strzał = Czerwony' : 'Question = Green, Guess = Red'}
             </span>
           </div>
 
@@ -233,11 +233,13 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={triggerClassName || "flex h-9 items-center gap-1.5 px-3 rounded-sm border border-white/15 bg-obsidian-900 text-zinc-300 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors text-xs font-semibold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"}
+        className={`${triggerClassName || "flex h-9 items-center gap-1.5 px-3 rounded-sm border border-white/15 bg-obsidian-900 text-zinc-300 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors text-xs font-semibold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"} ${compact ? 'max-md:h-11 max-md:flex-1 max-md:justify-center max-md:px-2' : ''}`}
         title={t('instructions.title', 'How to Play & Guide')}
+        aria-label={t('instructions.title', 'How to Play & Guide')}
       >
         <HelpCircle size={compact ? 13 : 15} className="text-emerald-400 shrink-0" aria-hidden="true" />
-        <span>{t('instructions.title', 'Rules & Guide')}</span>
+        {compact && <span className="md:hidden">{isPl ? 'Zasady' : 'Guide'}</span>}
+        <span className={compact ? 'hidden md:inline' : undefined}>{t('instructions.title', 'Rules & Guide')}</span>
       </button>
 
       {isOpen && createPortal(modalContent, document.body)}

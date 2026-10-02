@@ -111,7 +111,7 @@ export default function BlogListPage() {
                 key={cont}
                 type="button"
                 onClick={() => setSelectedContinent(cont)}
-                className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`min-h-11 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors md:min-h-0 ${
                   selectedContinent === cont
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
@@ -123,7 +123,7 @@ export default function BlogListPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
                 Difficulty:
               </span>
@@ -132,7 +132,7 @@ export default function BlogListPage() {
                   key={diff}
                   type="button"
                   onClick={() => setSelectedDifficulty(diff)}
-                  className={`rounded-sm px-2 py-0.5 text-xs transition-colors ${
+                  className={`min-h-11 rounded-sm px-2 py-0.5 text-xs transition-colors md:min-h-0 ${
                     selectedDifficulty === diff
                       ? 'bg-sand-100 text-obsidian-950 font-semibold'
                       : 'bg-white/5 text-zinc-400 hover:text-zinc-200'
@@ -143,7 +143,7 @@ export default function BlogListPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
+            <div className="flex flex-wrap items-center gap-1.5 border-l border-white/10 pl-3">
               <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
                 Sort:
               </span>
@@ -152,7 +152,7 @@ export default function BlogListPage() {
                   key={s}
                   type="button"
                   onClick={() => setSortBy(s)}
-                  className={`rounded-sm px-2 py-0.5 text-xs capitalize transition-colors ${
+                  className={`min-h-11 rounded-sm px-2 py-0.5 text-xs capitalize transition-colors md:min-h-0 ${
                     sortBy === s
                       ? 'bg-emerald-400 text-obsidian-950 font-semibold'
                       : 'bg-white/5 text-zinc-400 hover:text-zinc-200'
