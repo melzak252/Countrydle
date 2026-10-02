@@ -108,12 +108,12 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 {isPl
-                  ? 'Wpisz pytanie w Czacie (na telefonie otwórz je przyciskiem Pytanie). Pytaj o granice, morza, ludność czy stolicę. Literówki nie zużywają tury!'
-                  : 'Open Chat (on phones, use the Question button) to ask in English or Polish about borders, seas, population, or capitals. Typos never cost a turn!'}
+                  ? 'Otwórz zakładkę pytań (Pytaj na telefonie), aby zapytać po polsku lub angielsku o granice, morza, ludność czy stolicę. Literówki nie zużywają tury!'
+                  : 'Open Questions (Ask on phones) to ask in English or Polish about borders, seas, population, or capitals. Typos never cost a turn!'}
               </p>
             </div>
             <span className="font-mono text-[10px] text-emerald-300/80 pt-1 block">
-              {isPl ? 'Otwórz Pytanie, aby zapytać' : 'Open Question to ask'}
+              {isPl ? 'Otwórz zakładkę pytań' : 'Open the question tab to ask'}
             </span>
           </div>
 
@@ -126,12 +126,12 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 {isPl
-                  ? 'Dotknij mapy, by śledzić wnioski: wybierz Pytanie, aby oznaczyć kandydata na zielono, lub Strzał, by wykreślić obszar na czerwono.'
-                  : 'Use the map to track deductions: choose Question to mark candidates in green, or Guess to mark eliminated areas in red.'}
+                  ? 'Na telefonie dotknij obszaru, aby oznaczyć go na czerwono; dotknij ponownie, aby usunąć oznaczenie. Na komputerze wybierz kolor w narzędziach mapy.'
+                  : 'On phones, tap an area to mark it red; tap it again to remove the mark. On desktop, choose a color in the map toolbar.'}
               </p>
             </div>
             <span className="font-mono text-[10px] text-cyan-300/80 pt-1 block">
-              {isPl ? 'Pytanie = Zielony, Strzał = Czerwony' : 'Question = Green, Guess = Red'}
+              {isPl ? 'Dotknij ponownie, aby usunąć oznaczenie' : 'Tap again to remove a mark'}
             </span>
           </div>
 

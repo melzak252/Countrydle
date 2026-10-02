@@ -250,7 +250,11 @@ unavailable; retrieval/indexing failure was observed, not mocked away.
 Affected backend regressions: 292 passed.
 
 The opt-in reproducible harness never writes gameplay records or the source fact
-database. Run from `server/`; provider-free gold validation needs no API key:
+database. Report output must not alias the input database, its SQLite WAL/shared-
+memory/journal sidecars, corpus, planner source, or credentials file. The CLI
+rejects such paths before provider setup, including symlink and hardlink aliases.
+
+Run from `server/`; provider-free gold validation needs no API key:
 
 ```bash
 python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --validate-only --output /tmp/planner-gold.json

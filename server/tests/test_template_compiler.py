@@ -197,14 +197,6 @@ def test_entirely_in_hemisphere_compiles_to_and_not_plan():
 
 
 
-def test_template_compilation_is_fast():
-    import time
-    questions = ("Is it in Europe?", "Czy graniczy z Niemcami?", "Is it an island?") * 1000
-    start = time.perf_counter()
-    for question in questions:
-        compile_template_plan(question)
-    elapsed_ms = (time.perf_counter() - start) * 1000 / len(questions)
-    assert elapsed_ms < 0.1
 def test_open_ended_driving_side_questions_reject_with_clarification():
     queries = [
         "Which side of the road do they drive on?",

@@ -85,6 +85,40 @@ def test_output_collision_preserves_database_and_stops_cli_before_provider(tmp_p
     assert database.read_bytes() == original
 
 
+@pytest.mark.parametrize("suffix", ["-wal", "-shm", "-journal"])
+@pytest.mark.parametrize("alias", ["direct", "hardlink", "symlink"])
+def test_output_collision_preserves_sqlite_sidecars(tmp_path, monkeypatch, suffix, alias):
+    database = tmp_path / "facts.sqlite"
+    with sqlite3.connect(database) as conn:
+        if suffix != "-journal":
+            conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("CREATE TABLE countries (app_country_name TEXT)")
+        conn.execute("INSERT INTO countries VALUES ('Exampleland')")
+        conn.commit()
+        if suffix == "-journal":
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("INSERT INTO countries VALUES ('Uncommitted')")
+        sidecar = Path(f"{database}{suffix}")
+        original = sidecar.read_bytes()
+        output = sidecar
+        if alias == "hardlink":
+            output = tmp_path / "report.json"
+            os.link(sidecar, output)
+        elif alias == "symlink":
+            output = tmp_path / "report.json"
+            output.symlink_to(sidecar)
+        harness = _load_harness()
+
+        def forbid_environment_setup(*args):
+            pytest.fail("A destructive output path reached provider environment setup")
+
+        monkeypatch.setattr(harness, "prepare_environment", forbid_environment_setup)
+        with pytest.raises(SystemExit) as rejected:
+            harness.main(["--database", str(database), "--output", str(output)])
+        assert rejected.value.code == 2
+        assert sidecar.read_bytes() == original
+
+
 def test_gold_item_operand_requires_its_quantifier_scope():
     harness = _load_harness()
     module = _shape_module()

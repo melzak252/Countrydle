@@ -673,7 +673,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.workers < 1 or args.repeat < 1 or (args.limit is not None and args.limit < 1) or (args.thinking_budget is not None and args.thinking_budget < 0):
         parser.error("workers/repeat/limit must be positive and thinking-budget non-negative")
-    protected = [args.corpus, args.database, Path(__file__), SERVER_DIR / "countrydle" / "local_planner.py"]
+    database_path = args.database.resolve()
+    protected = [args.corpus, database_path, Path(__file__), SERVER_DIR / "countrydle" / "local_planner.py"]
+    protected.extend(Path(f"{database_path}{suffix}") for suffix in ("-wal", "-shm", "-journal"))
     if args.baseline_planner is not None:
         protected.append(args.baseline_planner)
     if args.env_file is not None:

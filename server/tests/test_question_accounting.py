@@ -279,7 +279,8 @@ async def test_rejected_persistence_rolls_back_question_and_quota(daily_mode, mo
         assert all(state.questions_asked == 0 for state in (await session.scalars(select(mode.state_model))).all())
 
 
-async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_existing_progress(daily_mode):
+@pytest.mark.parametrize("question_ids", [[1, 1, 2, 3, 4], [1, 2, 3, 4, 999999]])
+async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_existing_progress(daily_mode, question_ids):
     mode = daily_mode
     async with mode.factory() as session:
         session.add_all([
@@ -300,8 +301,8 @@ async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_exis
     }[mode.name]
     schema = getattr(mode.module, schema_name)
     body = schema.model_validate({
-        "date": str(date.today()), "questions": [1, 1, 2, 3, 4, 999999], "guesses": [],
-        "state": {"questions_asked": mode.maximum, "remaining_questions": 0, "guesses_made": 0,
+        "date": str(date.today()), "questions": question_ids, "guesses": [],
+        "state": {"questions_asked": len(question_ids), "remaining_questions": mode.maximum - len(question_ids), "guesses_made": 0,
                   "remaining_guesses": 2 if mode.name == "wojewodztwodle" else 3,
                   "won": False, "is_game_over": False},
     })
@@ -456,9 +457,11 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
         session.add_all([
             Country(id=2, name="Germany", official_name="Germany", md_file="germany.md"),
             models.USState(id=1, name="California"),
+            models.USState(id=2, name="Nevada"),
             models.Powiat(id=1, nazwa="Kraków"), models.Wojewodztwo(id=1, nazwa="Dolnośląskie"),
+            models.Powiat(id=2, nazwa="Warszawa"), models.Wojewodztwo(id=2, nazwa="Małopolskie"),
             mode.state_model(user_id=1, day_id=1, questions_asked=0, remaining_questions=mode.maximum,
-                             guesses_made=0, remaining_guesses=3, is_game_over=False, won=False),
+                             guesses_made=0, remaining_guesses=2 if mode.name == "wojewodztwodle" else 3, is_game_over=False, won=False),
         ])
         await session.commit()
     add_guess = repository.add_guess
@@ -470,11 +473,13 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
         return result
 
     monkeypatch.setattr(repository, "add_guess", yield_after_insert)
+    guess_name = {"us_statedle": "Nevada", "powiatdle": "Warszawa", "wojewodztwodle": "Małopolskie"}.get(mode.name, "Germany")
     body = SimpleNamespace(
         date=str(date.today()), questions=[],
-        guesses=[SimpleNamespace(guess="Germany", country_id=2, us_state_id=1, powiat_id=1,
-                                 wojewodztwo_id=1, elapsed_seconds=None)],
-        state=SimpleNamespace(guesses_made=1, remaining_guesses=1 if mode.name == "wojewodztwodle" else 2, is_game_over=False, won=False),
+        guesses=[SimpleNamespace(guess=guess_name, country_id=2, us_state_id=2, powiat_id=2,
+                                 wojewodztwo_id=2, elapsed_seconds=None)],
+        state=SimpleNamespace(guesses_made=1, remaining_guesses=1 if mode.name == "wojewodztwodle" else 2,
+                              questions_asked=0, remaining_questions=mode.maximum, is_game_over=False, won=False),
     )
 
     async def sync():
