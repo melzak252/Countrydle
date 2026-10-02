@@ -1,0 +1,575 @@
+{
+  "description": "Prospective, independently adjudicated EN/PL whole-question corpus, authored before provider evaluation. All cases are held_out and use supported local concepts or explicit fallback/clarification where facts are absent or criteria are underspecified. Gold plans encode the complete intended proposition; guards call out nearby interpretations that must not be substituted.",
+  "cases": [
+    {
+      "id": "prospect-001",
+      "split": "held_out",
+      "category": "comparative_compound",
+      "question": "Is the target more populous than Poland but smaller in area than Germany?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "greater_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"entity": "Poland", "relation": "population"}},
+        {"operator": "less_than", "left": {"entity": "target_country", "relation": "area"}, "right": {"entity": "Germany", "relation": "area"}}
+      ]},
+      "required_atoms": [
+        {"operator": "greater_than", "relation": "population"},
+        {"operator": "less_than", "relation": "area"}
+      ],
+      "guards": ["Keep Poland and Germany as named comparison entities, not target identities.", "Compare population to population and area to area; retain both clauses."],
+      "family": "named_reference_multi_relation_comparison",
+      "notes": "Two independent comparisons use explicitly named reference-country facts and different target relations."
+    },
+    {
+      "id": "prospect-002",
+      "split": "held_out",
+      "category": "comparative_compound",
+      "question": "Czy powierzchnia jest co najmniej tak duża jak Portugalii, a populacja mniejsza niż Grecji?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "greater_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"entity": "Portugal", "relation": "area"}},
+        {"operator": "less_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"entity": "Greece", "relation": "population"}}
+      ]},
+      "required_atoms": [
+        {"operator": "greater_than_or_equal", "relation": "area"},
+        {"operator": "less_than", "relation": "population"}
+      ],
+      "guards": ["Co najmniej includes equality for area; population remains a strict comparison.", "Portugal and Greece are references, not proposed target countries."],
+      "family": "polish_named_reference_boundary_comparison",
+      "notes": "Combines an inclusive threshold against Portugal with a strict population comparison against Greece."
+    },
+    {
+      "id": "prospect-003",
+      "split": "held_out",
+      "category": "name_numeric_compound",
+      "question": "Does its common name begin with ‘M’, contain exactly two words, and have more than 8 characters?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "starts_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "M"}},
+        {"operator": "word_count_equals", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": 2}},
+        {"operator": "char_count_greater_than", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": 8}}
+      ]},
+      "required_atoms": [
+        {"operator": "starts_with", "relation": "name", "value": "M"},
+        {"operator": "word_count_equals", "relation": "name", "value": 2},
+        {"operator": "char_count_greater_than", "relation": "name", "value": 8}
+      ],
+      "guards": ["Use common English display name, not a native or official long name.", "All three text predicates are conjunctive."],
+      "family": "three_way_name_shape_filter",
+      "notes": "Combines literal prefix, exact word count, and strict character-count boundary on the documented common-name relation."
+    },
+    {
+      "id": "prospect-004",
+      "split": "held_out",
+      "category": "name_boolean_logic",
+      "question": "Is its name either exactly three words or ending in ‘-guay’, while also having no space?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "or", "conditions": [
+          {"operator": "word_count_equals", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": 3}},
+          {"operator": "ends_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "-guay"}}
+        ]},
+        {"operator": "not", "condition": {"operator": "has_space", "left": {"entity": "target_country", "relation": "name"}}}
+      ]},
+      "required_atoms": [
+        {"operator": "word_count_equals", "relation": "name", "value": 3},
+        {"operator": "ends_with", "relation": "name", "value": "-guay"},
+        {"operator": "not", "relation": "name"}
+      ],
+      "guards": ["The final no-space condition applies to both OR branches.", "The quoted suffix is literal text, not a country-name identity."],
+      "family": "scoped_or_with_outer_negation",
+      "notes": "Nested disjunction must remain under the conjunction with a separate negated space predicate."
+    },
+    {
+      "id": "prospect-005",
+      "split": "held_out",
+      "category": "named_reference_or_compound",
+      "question": "Is Warsaw its capital, or does it border Czechia while having an area no greater than Austria?",
+      "route": "local",
+      "gold_plan": {"operator": "or", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "capital"}, "right": {"value": "Warsaw"}},
+        {"operator": "and", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "borders_country"}, "right": {"value": "Czechia"}},
+          {"operator": "less_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"entity": "Austria", "relation": "area"}}
+        ]}
+      ]},
+      "required_atoms": [
+        {"operator": "equals", "relation": "capital", "value": "Warsaw"},
+        {"operator": "contains", "relation": "borders_country", "value": "Czechia"},
+        {"operator": "less_than_or_equal", "relation": "area"}
+      ],
+      "guards": ["Warsaw is a capital-value literal, not a country entity.", "Czechia and Austria occur only in the second OR branch; keep its border and area clauses conjoined."],
+      "family": "disjunction_of_scalar_and_nested_country_predicates",
+      "notes": "One branch checks capital identity; the other requires both a named border and inclusive area comparison."
+    },
+    {
+      "id": "prospect-006",
+      "split": "held_out",
+      "category": "quantified_neighbor_membership",
+      "question": "Does it border a country that belongs to the EU but is not in NATO?",
+      "route": "local",
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "EU"}},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "NATO"}}}
+      ]}},
+      "required_atoms": [
+        {"operator": "any", "relation": "borders_country"},
+        {"operator": "contains", "relation": "membership", "value": "EU"},
+        {"operator": "not", "relation": "membership"},
+        {"operator": "contains", "relation": "membership", "value": "NATO"}
+      ],
+      "guards": ["Both membership predicates bind the same bordering-country item.", "Do not test the target's own EU/NATO memberships."],
+      "family": "same_item_positive_and_negated_membership",
+      "notes": "The existential country-valued border list is filtered by EU membership and lack of NATO membership on that same item."
+    },
+    {
+      "id": "prospect-007",
+      "split": "held_out",
+      "category": "quantified_neighbor_language",
+      "question": "Czy każde państwo graniczące z celem ma niemiecki jako język urzędowy?",
+      "route": "local",
+      "gold_plan": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "official_language"}, "right": {"value": "German"}}},
+      "required_atoms": [
+        {"operator": "all", "relation": "borders_country"},
+        {"operator": "contains", "relation": "official_language", "value": "German"}
+      ],
+      "guards": ["German official status is checked for every bordering-country item, not for the target.", "This tests legal official-language listing, not how widely German is spoken."],
+      "family": "universal_quantifier_nested_country_language",
+      "notes": "A universal scoped predicate over country-valued neighbors; no claim about language prevalence."
+    },
+    {
+      "id": "prospect-008",
+      "split": "held_out",
+      "category": "quantified_neighbor_negation",
+      "question": "Are none of its land neighbors islands?",
+      "route": "local",
+      "gold_plan": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "equals", "left": {"entity": "item", "relation": "is_island"}, "right": {"value": true}}}},
+      "required_atoms": [
+        {"operator": "not", "relation": "borders_country"},
+        {"operator": "any", "relation": "borders_country"},
+        {"operator": "equals", "relation": "is_island", "value": true}
+      ],
+      "guards": ["Negation scopes over existence of any island neighbor; do not negate only the item property outside the quantifier.", "The item is a bordering country, not a water body."],
+      "family": "negated_existential_country_boolean",
+      "notes": "‘None’ is not(any matching neighbor); the bound item has the scalar country island property."
+    },
+    {
+      "id": "prospect-009",
+      "split": "held_out",
+      "category": "quantified_neighbor_nested_or",
+      "question": "Does at least one neighbor have either the euro or the Swiss franc listed as a currency?",
+      "route": "local",
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "or", "conditions": [
+        {"operator": "contains", "left": {"entity": "item", "relation": "currency"}, "right": {"value": "Euro"}},
+        {"operator": "contains", "left": {"entity": "item", "relation": "currency"}, "right": {"value": "Swiss franc"}}
+      ]}},
+      "required_atoms": [
+        {"operator": "any", "relation": "borders_country"},
+        {"operator": "contains", "relation": "currency", "value": "Euro"},
+        {"operator": "contains", "relation": "currency", "value": "Swiss franc"}
+      ],
+      "guards": ["Both alternative currency tests apply to the same bordering country.", "Use currency-list membership; do not count currencies or treat the target as the item."],
+      "family": "quantified_country_currency_alternatives",
+      "notes": "A country-valued neighbor quantifier contains an OR of two supported currency-list predicates."
+    },
+    {
+      "id": "prospect-010",
+      "split": "held_out",
+      "category": "quantified_neighbor_continent",
+      "question": "Does every country it borders lie in Europe or have a population above 20 million?",
+      "route": "local",
+      "gold_plan": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "or", "conditions": [
+        {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "Europe"}},
+        {"operator": "greater_than", "left": {"entity": "item", "relation": "population"}, "right": {"value": 20000000}}
+      ]}},
+      "required_atoms": [
+        {"operator": "all", "relation": "borders_country"},
+        {"operator": "contains", "relation": "continent", "value": "Europe"},
+        {"operator": "greater_than", "relation": "population", "value": 20000000}
+      ],
+      "guards": ["The OR is evaluated separately for each bordering country under ALL.", "The numeric threshold is strict and applies to each item, not the target."],
+      "family": "universal_item_scoped_disjunction",
+      "notes": "Tests binding/scope where each neighbor may satisfy either continental membership or its own strict population threshold."
+    },
+    {
+      "id": "prospect-011",
+      "split": "held_out",
+      "category": "geography_border_numeric",
+      "question": "Czy leży w Afryce i graniczy z krajem o populacji wynoszącej co najmniej 30 milionów?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "Africa"}},
+        {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "greater_than_or_equal", "left": {"entity": "item", "relation": "population"}, "right": {"value": 30000000}}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "continent", "value": "Africa"},
+        {"operator": "any", "relation": "borders_country"},
+        {"operator": "greater_than_or_equal", "relation": "population", "value": 30000000}
+      ],
+      "guards": ["Africa is physical continent membership of the target.", "At least 30 million includes equality and is evaluated on a border-country item."],
+      "family": "target_continent_plus_quantified_neighbor_threshold",
+      "notes": "Conjoins a target continent-list condition with an existential country-valued neighbor population test."
+    },
+    {
+      "id": "prospect-012",
+      "split": "held_out",
+      "category": "geography_and_boolean",
+      "question": "Is it in Oceania but not in the Southern Hemisphere?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "Oceania"}},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "hemisphere"}, "right": {"value": "Southern"}}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "continent", "value": "Oceania"},
+        {"operator": "not", "relation": "hemisphere"},
+        {"operator": "contains", "relation": "hemisphere", "value": "Southern"}
+      ],
+      "guards": ["The question negates Southern-hemisphere membership only; it does not assert Northern membership.", "Oceania uses the physical continent relation, not a guessed regional substitute."],
+      "family": "continent_with_negated_territorial_hemisphere",
+      "notes": "Combines broad physical continent membership and explicit territory hemisphere negation without adding an unstated northern condition."
+    },
+    {
+      "id": "prospect-013",
+      "split": "held_out",
+      "category": "water_access_numeric_compound",
+      "question": "Does it have recorded access to the Indian Ocean and an area below 1,200,000 km²?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Indian Ocean"}},
+        {"operator": "less_than", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 1200000}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "water_access", "value": "Indian Ocean"},
+        {"operator": "less_than", "relation": "area", "value": 1200000}
+      ],
+      "guards": ["Indian Ocean is a named ocean-access condition, not a generic coast test.", "The area bound is strict; both conditions are conjunctive."],
+      "family": "named_ocean_access_plus_strict_area_bound",
+      "notes": "Combines an explicit recorded ocean-access list value with an independent area threshold."
+    },
+    {
+      "id": "prospect-014",
+      "split": "held_out",
+      "category": "list_numeric_compound",
+      "question": "Does it have a land border and a population below 750,000?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "exists", "left": {"entity": "target_country", "relation": "borders_country"}},
+        {"operator": "less_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"value": 750000}}
+      ]},
+      "required_atoms": [
+        {"operator": "exists", "relation": "borders_country"},
+        {"operator": "less_than", "relation": "population", "value": 750000}
+      ],
+      "guards": ["A land border means nonempty known country border list, not water access.", "Population threshold is strict."],
+      "family": "relation_existence_with_strict_numeric_filter",
+      "notes": "Pairs existence of at least one recorded land-bordering country with an independent strict population bound."
+    },
+    {
+      "id": "prospect-015",
+      "split": "held_out",
+      "category": "border_membership_or_language",
+      "question": "Does it border France or have Portuguese as an official language, but not both?",
+      "route": "local",
+      "gold_plan": {"operator": "or", "conditions": [
+        {"operator": "and", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "borders_country"}, "right": {"value": "France"}},
+          {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "official_language"}, "right": {"value": "Portuguese"}}}
+        ]},
+        {"operator": "and", "conditions": [
+          {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "borders_country"}, "right": {"value": "France"}}},
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "official_language"}, "right": {"value": "Portuguese"}}
+        ]}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "borders_country", "value": "France"},
+        {"operator": "contains", "relation": "official_language", "value": "Portuguese"},
+        {"operator": "not", "relation": "borders_country"},
+        {"operator": "not", "relation": "official_language"}
+      ],
+      "guards": ["‘But not both’ is exclusive-or: preserve both exclusive branches.", "Official-language listing does not mean Portuguese is widely spoken."],
+      "family": "exclusive_or_across_two_list_relations",
+      "notes": "Explicit truth conditions are (France border AND no Portuguese official language) OR (no France border AND Portuguese official language)."
+    },
+    {
+      "id": "prospect-016",
+      "split": "held_out",
+      "category": "religion_membership_compound",
+      "question": "Is Christianity the dominant religion and is the country outside the EU?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "or", "conditions": [
+          {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+          {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+          {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Protestant"}},
+          {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Christianity"}}
+        ]},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "EU"}}}
+      ]},
+      "required_atoms": [
+        {"operator": "equals", "relation": "dominant_religion", "value": "Catholic"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Orthodox"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Protestant"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Christianity"},
+        {"operator": "not", "relation": "membership"},
+        {"operator": "contains", "relation": "membership", "value": "EU"}
+      ],
+      "guards": ["Christianity includes Catholic OR Orthodox OR Protestant OR generic Christianity in the stored dominant category.", "Do not infer Christianity from language or culture; EU negation is a separate conjunct."],
+      "family": "broad_faith_disjunction_with_membership_negation",
+      "notes": "Faith categories are alternatives under an AND with not(EU membership); neither cultural proxies nor target language are relevant."
+    },
+    {
+      "id": "prospect-017",
+      "split": "held_out",
+      "category": "religion_exact_category_compound",
+      "question": "Czy dominującą kategorią religijną jest islam, a rząd ma formę monarchii?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Islam"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "government_type"}, "right": {"value": "Monarchy"}}
+      ]},
+      "required_atoms": [
+        {"operator": "equals", "relation": "dominant_religion", "value": "Islam"},
+        {"operator": "equals", "relation": "government_type", "value": "Monarchy"}
+      ],
+      "guards": ["Islam is the exact grouped dominant-religion value, not a general prevalence estimate.", "Monarchy is the broad stored form; no constitutional/absolute subtype is implied."],
+      "family": "religion_and_broad_government_scalar_categories",
+      "notes": "Conjoins two exact supported scalar categories in Polish wording."
+    },
+    {
+      "id": "prospect-018",
+      "split": "held_out",
+      "category": "unsupported_state_religion",
+      "question": "Does its constitution establish Catholicism as the state religion?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["Do not substitute the dominant-religion category for constitutional establishment.", "Do not infer legal state religion from majority belief."],
+      "family": "absent_legal_religion_relation",
+      "notes": "Objective constitutional state-religion status is not represented by dominant_religion and requires external legal facts."
+    },
+    {
+      "id": "prospect-019",
+      "split": "held_out",
+      "category": "unsupported_religion_prevalence",
+      "question": "Are more than 60 percent of its residents Muslim?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["Do not treat a dominant-religion label as a numeric population share.", "The precise percentage asks prevalence data, not category equality."],
+      "family": "absent_quantitative_faith_prevalence",
+      "notes": "The numerical resident share is absent even though broad dominant-religion categories are supported."
+    },
+    {
+      "id": "prospect-020",
+      "split": "held_out",
+      "category": "coordinates_reference_compound",
+      "question": "Is its latitude north of Italy's and its longitude west of Greece's?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "north_of", "left": {"entity": "target_country", "relation": "coordinates.latitude"}, "right": {"entity": "Italy", "relation": "coordinates.latitude"}},
+        {"operator": "west_of", "left": {"entity": "target_country", "relation": "coordinates.longitude"}, "right": {"entity": "Greece", "relation": "coordinates.longitude"}}
+      ]},
+      "required_atoms": [
+        {"operator": "north_of", "relation": "coordinates.latitude"},
+        {"operator": "west_of", "relation": "coordinates.longitude"}
+      ],
+      "guards": ["North means greater signed latitude; west means smaller signed longitude.", "Italy and Greece are reference countries, and point coordinates do not assert territorial extent."],
+      "family": "two_axis_named_reference_coordinate_comparison",
+      "notes": "Combines two independent signed-coordinate comparisons to different named references."
+    },
+    {
+      "id": "prospect-021",
+      "split": "held_out",
+      "category": "hemisphere_continent_negation",
+      "question": "Does its territory include both Eastern and Western Hemispheres, and is it in Asia?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "hemisphere"}, "right": {"value": "Eastern"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "hemisphere"}, "right": {"value": "Western"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "Asia"}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "hemisphere", "value": "Eastern"},
+        {"operator": "contains", "relation": "hemisphere", "value": "Western"},
+        {"operator": "contains", "relation": "continent", "value": "Asia"}
+      ],
+      "guards": ["Both hemisphere memberships describe territory and are conjunctive; do not substitute point longitude.", "Asia is physical continent membership, not a regional-area guess."],
+      "family": "territorial_crossing_plus_physical_continent",
+      "notes": "Tests two-sided territory hemisphere membership alongside an independent physical-continent condition."
+    },
+    {
+      "id": "prospect-022",
+      "split": "held_out",
+      "category": "rivers_and_area_compound",
+      "question": "Does the recorded major-river list include the Danube while the country has an area above 400,000 km²?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "major_rivers"}, "right": {"value": "Danube"}},
+        {"operator": "greater_than", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 400000}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "major_rivers", "value": "Danube"},
+        {"operator": "greater_than", "relation": "area", "value": 400000}
+      ],
+      "guards": ["River-list membership is a recorded major-river fact, not a claim that the river only occurs there.", "Area is strictly greater than 400,000 km²."],
+      "family": "named_river_membership_plus_strict_area",
+      "notes": "Conjoins a direct major-river list query with a numeric area lower bound."
+    },
+    {
+      "id": "prospect-023",
+      "split": "held_out",
+      "category": "flag_two_relation_compound",
+      "question": "Does its flag include both blue and a crescent symbol?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "flag_color"}, "right": {"value": "blue"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "flag_symbol"}, "right": {"value": "crescent"}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "flag_color", "value": "blue"},
+        {"operator": "contains", "relation": "flag_symbol", "value": "crescent"}
+      ],
+      "guards": ["Blue is a color-presence test; crescent is a symbol-presence test.", "Both presences are required; no proportion, layout, or exclusivity is asserted."],
+      "family": "flag_color_and_design_presence",
+      "notes": "Combines two distinct supported flag relations without inferring area or arrangement."
+    },
+    {
+      "id": "prospect-024",
+      "split": "held_out",
+      "category": "unsupported_flag_proportion",
+      "question": "Does red cover at least one third of its flag?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["Do not replace a proportional-area claim with flag_color contains red.", "The fraction is an objective but unrepresented flag measurement."],
+      "family": "absent_flag_area_measurement",
+      "notes": "Flag colors are represented only as presence, not share of area."
+    },
+    {
+      "id": "prospect-025",
+      "split": "held_out",
+      "category": "historical_current_membership_compound",
+      "question": "Was it part of the Austro-Hungarian Empire historically, and is it currently in NATO?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "Austro-Hungarian Empire"}},
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "NATO"}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "historical_union", "value": "Austro-Hungarian Empire"},
+        {"operator": "contains", "relation": "membership", "value": "NATO"}
+      ],
+      "guards": ["Past polity membership and current NATO membership are separate relations and time frames.", "Do not infer one predicate from the other."],
+      "family": "past_polity_and_present_organization_membership",
+      "notes": "Pairs one listed past polity with present organization membership while preserving temporal distinction."
+    },
+    {
+      "id": "prospect-026",
+      "split": "held_out",
+      "category": "unsupported_historical_membership",
+      "question": "Was it ever a member of NATO before 1990?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["Current membership cannot answer an ‘ever before 1990’ historical-membership question.", "Do not infer past status from present membership or vice versa."],
+      "family": "unsupported_past_active_organization_period",
+      "notes": "Past membership in an active organization and a date-bounded historical period are not represented."
+    },
+    {
+      "id": "prospect-027",
+      "split": "held_out",
+      "category": "membership_historical_negation",
+      "question": "Is it currently in the EU but absent from the historical Warsaw Pact list?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "EU"}},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "Warsaw Pact"}}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "membership", "value": "EU"},
+        {"operator": "not", "relation": "historical_union"},
+        {"operator": "contains", "relation": "historical_union", "value": "Warsaw Pact"}
+      ],
+      "guards": ["EU is current membership; Warsaw Pact absence is checked only in historical_union.", "Do not treat Warsaw Pact and Eastern Bloc as synonyms."],
+      "family": "current_membership_plus_negated_past_polity",
+      "notes": "Combines a present-state positive list test with a historical-polity negative list test."
+    },
+    {
+      "id": "prospect-028",
+      "split": "held_out",
+      "category": "geography_nested_logic",
+      "question": "Does it lie in Europe or Asia, but not in South America?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "or", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "Europe"}},
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "Asia"}}
+        ]},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "South America"}}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "continent", "value": "Europe"},
+        {"operator": "contains", "relation": "continent", "value": "Asia"},
+        {"operator": "not", "relation": "continent"},
+        {"operator": "contains", "relation": "continent", "value": "South America"}
+      ],
+      "guards": ["The exclusion applies after the Europe-or-Asia disjunction; preserve its outer AND with NOT South America.", "Use physical continent membership, not geographic-area tags or a claim of entire territorial extent."],
+      "family": "continent_disjunction_with_outer_negation",
+      "notes": "The complete condition is (Europe OR Asia) AND NOT South America, retaining all three continent clauses."
+    },
+    {
+      "id": "prospect-029",
+      "split": "held_out",
+      "category": "geographic_area_and_government",
+      "question": "Is it in the Caribbean and classified as a republic?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "geographic_area"}, "right": {"value": "Caribbean"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "government_type"}, "right": {"value": "Republic"}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "geographic_area", "value": "Caribbean"},
+        {"operator": "equals", "relation": "government_type", "value": "Republic"}
+      ],
+      "guards": ["Caribbean is the stored geographic-area tag, not a cultural or language label.", "Republic is the broad stored government type and does not imply democracy."],
+      "family": "regional_tag_and_broad_government_category",
+      "notes": "Pairs an explicit regional tag with an exact supported government-form category."
+    },
+    {
+      "id": "prospect-030",
+      "split": "held_out",
+      "category": "unsupported_cultural_classification",
+      "question": "Is its national culture predominantly Slavic?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["Do not substitute geographic_area, official_language, or a neighboring-country fact for culture.", "The cultural category has no local relation."],
+      "family": "absent_cultural_classification",
+      "notes": "This asks an objective-sounding but culturally defined classification absent from the supported country facts."
+    },
+    {
+      "id": "prospect-031",
+      "split": "held_out",
+      "category": "unsupported_name_property",
+      "question": "Does the official long-form country name contain the letter ‘e’?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["The name relation is the common English display name, not the official long-form name.", "Do not apply a supported common-name substring test to an unsupported name variant."],
+      "family": "official_name_text_property_absent",
+      "notes": "Official-name text is absent; its letter property cannot be answered using the common display name."
+    },
+    {
+      "id": "prospect-032",
+      "split": "held_out",
+      "category": "clarification_underspecified_size",
+      "question": "Is it relatively small compared with nearby countries?",
+      "route": "clarify",
+      "gold_plan": null,
+      "required_atoms": [],
+      "guards": ["No comparison set or measurable definition of ‘small’ is specified.", "Do not invent nearby countries from borders or assume area/population as the intended size measure."],
+      "family": "underspecified_comparative_criterion_and_group",
+      "notes": "The request lacks both an objective meaning for ‘small’ and a defined reference group, so neither a local predicate nor factual fallback can be chosen."
+    }
+  ]
+}

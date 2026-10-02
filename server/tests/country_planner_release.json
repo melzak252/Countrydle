@@ -1,0 +1,303 @@
+{
+  "description": "Independently authored release-001..030 held-out EN/PL whole-question corpus. Gold plans express intended semantics from planner and executor contracts, not model outputs; meaning_guard records semantic distinctions without requiring a particular equivalent Boolean syntax.",
+  "cases": [
+    {
+      "id": "release-001", "split": "held_out", "category": "named_reference_same_country_unknown",
+      "question": "Is the hidden country's population greater than France's?",
+      "route": "local",
+      "gold_plan": {"operator": "greater_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"entity": "France", "relation": "population"}},
+      "required_atoms": [{"operator": "greater_than", "relation": "population"}],
+      "meaning_guard": "Compare target population with the population fact belonging to France; if the hidden target is France, preserve the resulting same-country unknown rather than simplifying it to true or false.",
+      "notes": "The named operand remains a country reference even when it may identify the target at evaluation time."
+    },
+    {
+      "id": "release-002", "split": "held_out", "category": "named_compass_reference",
+      "question": "Does the country lie west of Japan?",
+      "route": "local",
+      "gold_plan": {"operator": "west_of", "left": {"entity": "target_country", "relation": "coordinates.longitude"}, "right": {"entity": "Japan", "relation": "coordinates.longitude"}},
+      "required_atoms": [{"operator": "west_of", "relation": "coordinates.longitude"}],
+      "meaning_guard": "Compare the target's longitude with Japan's longitude using westward direction; retain Japan as the reference country, with same-country results unknown.",
+      "notes": "A named directional reference uses the same coordinate axis on both operands."
+    },
+    {
+      "id": "release-003", "split": "held_out", "category": "ambiguous_reference_and_distance_clarification",
+      "question": "Is it a meaningful distance east?",
+      "route": "clarify", "gold_plan": null, "required_atoms": [],
+      "meaning_guard": "East requires a reference point and 'meaningful distance' supplies no objective threshold; ask for the missing reference and criterion rather than inventing either.",
+      "notes": "Both directional reference and requested distance metric are underspecified."
+    },
+    {
+      "id": "release-004", "split": "held_out", "category": "existential_negated_item_predicate",
+      "question": "Does it border at least one country that is outside the EU?",
+      "route": "local",
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "EU"}}}},
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "membership", "value": "EU"}],
+      "meaning_guard": "There exists a bound border-country whose membership does not include EU. This differs from saying that no border-country is an EU member.",
+      "notes": "Negation belongs to each candidate neighbor's membership test inside the existential."
+    },
+    {
+      "id": "release-005", "split": "held_out", "category": "negated_existential_membership",
+      "question": "Is it false that any land neighbor belongs to NATO?",
+      "route": "local",
+      "gold_plan": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "NATO"}}}},
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "membership", "value": "NATO"}],
+      "meaning_guard": "Negate the whole claim that a NATO-member neighbor exists; do not move negation inside the item predicate, which would instead ask for a non-NATO neighbor.",
+      "notes": "The outer negation and existential scope are both semantically essential."
+    },
+    {
+      "id": "release-006", "split": "held_out", "category": "universal_item_predicate",
+      "question": "Are all countries sharing a land border with it non-island countries?",
+      "route": "local",
+      "gold_plan": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "equals", "left": {"entity": "item", "relation": "is_island"}, "right": {"value": false}}},
+      "required_atoms": [{"operator": "all", "relation": "borders_country"}, {"operator": "equals", "relation": "is_island", "value": false}],
+      "meaning_guard": "Every bound land-border neighbor must have is_island false; keep the predicate on each neighbor, not the target. Equivalent Boolean-negation forms are acceptable.",
+      "notes": "A universal condition over border-country items, with an explicit non-island property."
+    },
+    {
+      "id": "release-007", "split": "held_out", "category": "christian_umbrella",
+      "question": "Would Christianity count as its dominant religion?",
+      "route": "local",
+      "gold_plan": {"operator": "or", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Protestant"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Christianity"}}
+      ]},
+      "required_atoms": [
+        {"operator": "equals", "relation": "dominant_religion", "value": "Catholic"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Orthodox"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Protestant"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Christianity"}
+      ],
+      "meaning_guard": "Ordinary Christianity is the umbrella covering the Catholic, Orthodox, Protestant, and Christianity stored categories; any of those categories satisfies the question. Do not interpret this as exact raw-category introspection.",
+      "notes": "The ordinary religious label denotes a broad category union, not one stored string."
+    },
+    {
+      "id": "release-008", "split": "held_out", "category": "explicit_religion_category",
+      "question": "Is the country's dominant religion specifically Protestant?",
+      "route": "local",
+      "gold_plan": {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Protestant"}},
+      "required_atoms": [{"operator": "equals", "relation": "dominant_religion", "value": "Protestant"}],
+      "meaning_guard": "Test the explicit supported Protestant category only; do not expand it to the broader Christianity umbrella or another Christian category.",
+      "notes": "An explicit supported grouped religion category differs from the ordinary umbrella label."
+    },
+    {
+      "id": "release-009", "split": "held_out", "category": "unsupported_denomination",
+      "question": "Is Lutheranism the dominant denomination there?",
+      "route": "fallback", "gold_plan": null, "required_atoms": [],
+      "meaning_guard": "This is a clear question about an unsupported finer denomination; do not substitute Protestant, Christianity, or another broad stored category.",
+      "notes": "Local dominant-religion groupings do not supply Lutheran denominational detail."
+    },
+    {
+      "id": "release-010", "split": "held_out", "category": "recognized_cultural_country_label",
+      "question": "Is this country part of the Germanic cultural world?",
+      "route": "fallback", "gold_plan": null, "required_atoms": [],
+      "meaning_guard": "Treat Germanic as a recognizable cultural-country association, not as geography, German language official status, or a language-family proxy; missing cultural coverage calls for fallback, not clarification.",
+      "notes": "A clear cultural classification is unsupported locally and must not be replaced by a related stored fact."
+    },
+    {
+      "id": "release-011", "split": "held_out", "category": "exact_quoted_common_name_substring",
+      "question": "Does the common English country name contain the exact quoted text \"stan\"?",
+      "route": "local",
+      "gold_plan": {"operator": "contains_text", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "stan"}},
+      "required_atoms": [{"operator": "contains_text", "relation": "name", "value": "stan"}],
+      "meaning_guard": "Search for the literal lowercase substring 'stan' in the common English display name; preserve the quoted characters rather than translating them or treating them as country identity.",
+      "notes": "Quoted text is an exact supported common-name substring predicate."
+    },
+    {
+      "id": "release-012", "split": "held_out", "category": "strict_numeric_threshold",
+      "question": "Is its population strictly above 1,250,000 people?",
+      "route": "local",
+      "gold_plan": {"operator": "greater_than", "left": {"entity": "target_country", "relation": "population"}, "right": {"value": 1250000}},
+      "required_atoms": [{"operator": "greater_than", "relation": "population", "value": 1250000}],
+      "meaning_guard": "Population > 1,250,000; equality does not pass.",
+      "notes": "An explicit strict lower numeric boundary on population."
+    },
+    {
+      "id": "release-013", "split": "held_out", "category": "inclusive_numeric_threshold",
+      "question": "Does its area reach at least 400,000 km²?",
+      "route": "local",
+      "gold_plan": {"operator": "greater_than_or_equal", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 400000}},
+      "required_atoms": [{"operator": "greater_than_or_equal", "relation": "area", "value": 400000}],
+      "meaning_guard": "Area >= 400,000 km²; equality is included.",
+      "notes": "An explicit inclusive lower boundary on the supported area metric."
+    },
+    {
+      "id": "release-014", "split": "held_out", "category": "mixed_or_and_negation_scope",
+      "question": "Is it an EU member or does it have Baltic Sea access, while not using the euro?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "or", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "EU"}},
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Baltic Sea"}}
+        ]},
+        {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "currency"}, "right": {"value": "EUR"}}}
+      ]},
+      "required_atoms": [
+        {"operator": "contains", "relation": "membership", "value": "EU"},
+        {"operator": "contains", "relation": "water_access", "value": "Baltic Sea"},
+        {"operator": "contains", "relation": "currency", "value": "EUR"}
+      ],
+      "meaning_guard": "(EU membership OR Baltic Sea access) AND not EUR currency. The euro exclusion scopes over both positive alternatives; equivalent De Morgan forms are valid.",
+      "notes": "Preserve the OR alternatives and the outer conjunction with a narrowly scoped euro negation."
+    },
+    {
+      "id": "release-015", "split": "held_out", "category": "official_name_text_fallback",
+      "question": "Does its official legal name begin with the words \"Kingdom of\"?",
+      "route": "fallback", "gold_plan": null, "required_atoms": [],
+      "meaning_guard": "The predicate concerns official legal-name text, which is not available as target_country.name; never substitute the common/display name.",
+      "notes": "Clear official-name text needs a fact absent from the local schema."
+    },
+    {
+      "id": "release-016", "split": "held_out", "category": "named_compass_comparison",
+      "question": "Czy ten kraj leży na wschód od Egiptu?",
+      "route": "local",
+      "gold_plan": {"operator": "east_of", "left": {"entity": "target_country", "relation": "coordinates.longitude"}, "right": {"entity": "Egypt", "relation": "coordinates.longitude"}},
+      "required_atoms": [{"operator": "east_of", "relation": "coordinates.longitude"}],
+      "meaning_guard": "Porównaj długość geograficzną kraju docelowego z długością Egiptu, zachowując kierunek na wschód; Egipt pozostaje nazwanym operandem, a samo-porównanie daje unknown.",
+      "notes": "Polskie określenie kierunku wschodniego używa długości geograficznej obu krajów."
+    },
+    {
+      "id": "release-017", "split": "held_out", "category": "existential_negated_membership_polish",
+      "question": "Czy ma przynajmniej jednego sąsiada lądowego, który nie należy do NATO?",
+      "route": "local",
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "NATO"}}}},
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "membership", "value": "NATO"}],
+      "meaning_guard": "Istnieje sąsiad lądowy, którego członkostwo nie obejmuje NATO; to nie jest zaprzeczenie istnienia jakiegokolwiek sąsiada należącego do NATO.",
+      "notes": "Negacja dotyczy członkostwa każdego kandydata wewnątrz kwantyfikatora egzystencjalnego."
+    },
+    {
+      "id": "release-018", "split": "held_out", "category": "negated_existential_membership_polish",
+      "question": "Czy nie ma żadnego sąsiada lądowego należącego do UE?",
+      "route": "local",
+      "gold_plan": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "membership"}, "right": {"value": "EU"}}}},
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "membership", "value": "EU"}],
+      "meaning_guard": "Zaprzecz całemu twierdzeniu, że istnieje sąsiad lądowy należący do UE; nie przenoś negacji do predykatu pojedynczego sąsiada.",
+      "notes": "Polskie 'nie ma żadnego' wyraża not(any), a nie any(not)."
+    },
+    {
+      "id": "release-019", "split": "held_out", "category": "universal_neighbor_predicate_polish",
+      "question": "Czy wszystkie państwa graniczące z nim mają francuski jako język urzędowy?",
+      "route": "local",
+      "gold_plan": {"operator": "all", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "official_language"}, "right": {"value": "French"}}},
+      "required_atoms": [{"operator": "all", "relation": "borders_country"}, {"operator": "contains", "relation": "official_language", "value": "French"}],
+      "meaning_guard": "Każdy element listy sąsiadów lądowych musi zawierać francuski wśród języków urzędowych; pytanie nie dotyczy języka dominującego ani popularności.",
+      "notes": "Uniwersalny warunek o oficjalnym statusie języka każdego sąsiada."
+    },
+    {
+      "id": "release-020", "split": "held_out", "category": "unsupported_cultural_region_polish",
+      "question": "Czy to kraj latynoamerykański?",
+      "route": "fallback", "gold_plan": null, "required_atoms": [],
+      "meaning_guard": "Latynoamerykańskość jest kulturowo-historyczną klasyfikacją, a nie członkostwem w geograficznym obszarze Americas ani testem języka urzędowego; jasne, brakujące lokalnie kryterium kieruje do fallback.",
+      "notes": "Nie zastępuj etykiety kulturowej regionem geograficznym ani proxy językowym."
+    },
+    {
+      "id": "release-021", "split": "held_out", "category": "christianity_umbrella_polish",
+      "question": "Czy chrześcijaństwo jest dominującą religią tego państwa?",
+      "route": "local",
+      "gold_plan": {"operator": "or", "conditions": [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Orthodox"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Protestant"}},
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Christianity"}}
+      ]},
+      "required_atoms": [
+        {"operator": "equals", "relation": "dominant_religion", "value": "Catholic"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Orthodox"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Protestant"},
+        {"operator": "equals", "relation": "dominant_religion", "value": "Christianity"}
+      ],
+      "meaning_guard": "W zwykłym znaczeniu chrześcijaństwo obejmuje kategorię Catholic LUB Orthodox LUB Protestant LUB Christianity; nie oznacza kontroli, czy surowa wartość ma dokładnie jeden tekst.",
+      "notes": "Polskie pytanie o chrześcijaństwo zachowuje ten sam szeroki zakres denominacyjny."
+    },
+    {
+      "id": "release-022", "split": "held_out", "category": "explicit_religion_category_polish",
+      "question": "Czy dominującą kategorią religijną jest katolicyzm?",
+      "route": "local",
+      "gold_plan": {"operator": "equals", "left": {"entity": "target_country", "relation": "dominant_religion"}, "right": {"value": "Catholic"}},
+      "required_atoms": [{"operator": "equals", "relation": "dominant_religion", "value": "Catholic"}],
+      "meaning_guard": "Sprawdź wyłącznie konkretną obsługiwaną kategorię Catholic, nie szerszy zbiór wszystkich kategorii chrześcijańskich.",
+      "notes": "Wprost nazwana kategoria katolicka jest węższa niż ogólne chrześcijaństwo."
+    },
+    {
+      "id": "release-023", "split": "held_out", "category": "unsupported_denomination_polish",
+      "question": "Czy dominującą religią jest kalwinizm?",
+      "route": "fallback", "gold_plan": null, "required_atoms": [],
+      "meaning_guard": "Kalwinizm jest bardziej szczegółową, nieobsługiwaną denominacją; nie zastępuj go protestantyzmem ani ogólnym chrześcijaństwem.",
+      "notes": "Pytanie jest zrozumiałe, ale lokalna kategoria religii nie rozróżnia tej denominacji."
+    },
+    {
+      "id": "release-024", "split": "held_out", "category": "exact_quoted_separator_polish",
+      "question": "Czy angielska nazwa kraju zawiera dokładnie znak \"–\"?",
+      "route": "local",
+      "gold_plan": {"operator": "contains_text", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "–"}},
+      "required_atoms": [{"operator": "contains_text", "relation": "name", "value": "–"}],
+      "meaning_guard": "Sprawdź dosłownie półpauzę U+2013 w tekście angielskiej nazwy zwyczajowej; nie zamieniaj jej na łącznik-minus '-' ani na oficjalną nazwę.",
+      "notes": "Dokładny cytowany separator jest treścią wyszukiwaną, a nie oznaczeniem ogólnego łącznika."
+    },
+    {
+      "id": "release-025", "split": "held_out", "category": "strict_numeric_threshold_polish",
+      "question": "Czy powierzchnia państwa jest mniejsza niż 230 000 km²?",
+      "route": "local",
+      "gold_plan": {"operator": "less_than", "left": {"entity": "target_country", "relation": "area"}, "right": {"value": 230000}},
+      "required_atoms": [{"operator": "less_than", "relation": "area", "value": 230000}],
+      "meaning_guard": "Powierzchnia < 230 000 km²; równość z limitem nie spełnia warunku.",
+      "notes": "Polskie 'mniejsza niż' wyraża ścisłą granicę górną."
+    },
+    {
+      "id": "release-026", "split": "held_out", "category": "inclusive_numeric_threshold_polish",
+      "question": "Czy ludność liczy co najmniej 4 000 000 osób?",
+      "route": "local",
+      "gold_plan": {"operator": "greater_than_or_equal", "left": {"entity": "target_country", "relation": "population"}, "right": {"value": 4000000}},
+      "required_atoms": [{"operator": "greater_than_or_equal", "relation": "population", "value": 4000000}],
+      "meaning_guard": "Liczba ludności >= 4 000 000; próg włącznie z równością.",
+      "notes": "Co najmniej oznacza inkluzywną dolną granicę liczbową."
+    },
+    {
+      "id": "release-027", "split": "held_out", "category": "nested_mixed_scope_polish",
+      "question": "Czy kraj leży na północ od Kanady oraz (należy do NATO lub ma dostęp do Oceanu Spokojnego)?",
+      "route": "local",
+      "gold_plan": {"operator": "and", "conditions": [
+        {"operator": "north_of", "left": {"entity": "target_country", "relation": "coordinates.latitude"}, "right": {"entity": "Canada", "relation": "coordinates.latitude"}},
+        {"operator": "or", "conditions": [
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "NATO"}},
+          {"operator": "contains", "left": {"entity": "target_country", "relation": "water_access"}, "right": {"value": "Pacific Ocean"}}
+        ]}
+      ]},
+      "required_atoms": [
+        {"operator": "north_of", "relation": "coordinates.latitude"},
+        {"operator": "contains", "relation": "membership", "value": "NATO"},
+        {"operator": "contains", "relation": "water_access", "value": "Pacific Ocean"}
+      ],
+      "meaning_guard": "Warunek to: (na północ od Kanady) AND (członkostwo w NATO OR dostęp do Oceanu Spokojnego). Zachowaj oba ramiona alternatywy i oba operandy porównania; nie spłaszczaj zakresu.",
+      "notes": "Jednoznaczne nawiasy definiują mieszany zakres AND/OR bez odwołań do nieprecyzyjnych regionów."
+    },
+    {
+      "id": "release-028", "split": "held_out", "category": "present_membership_dissolved_organization_polish",
+      "question": "Czy to państwo jest obecnie członkiem ZSRR?",
+      "route": "local",
+      "gold_plan": {"operator": "contains", "left": {"entity": "target_country", "relation": "membership"}, "right": {"value": "USSR"}},
+      "required_atoms": [{"operator": "contains", "relation": "membership", "value": "USSR"}],
+      "meaning_guard": "Pytanie dotyczy członkostwa obecnego, więc użyj membership nawet dla rozwiązanej organizacji i pozostaw brak tej wartości jako unknown; nie zamieniaj go na członkostwo historyczne.",
+      "notes": "Wyraźne 'obecnie' rozróżnia listę aktualnego członkostwa od history_union."
+    },
+    {
+      "id": "release-029", "split": "held_out", "category": "historical_membership_polish",
+      "question": "Czy w przeszłości należało do Związku Radzieckiego?",
+      "route": "local",
+      "gold_plan": {"operator": "contains", "left": {"entity": "target_country", "relation": "historical_union"}, "right": {"value": "USSR"}},
+      "required_atoms": [{"operator": "contains", "relation": "historical_union", "value": "USSR"}],
+      "meaning_guard": "Pytanie dotyczy dawnego członkostwa w ZSRR, a nie współczesnego membership; użyj historycznego faktu wspieranego dla tej unii.",
+      "notes": "Jawne odniesienie do przeszłości wymaga history_union, w przeciwieństwie do poprzedniego pytania."
+    },
+    {
+      "id": "release-030", "split": "held_out", "category": "common_vs_official_name_text_polish",
+      "question": "Czy zwyczajowa angielska nazwa kraju kończy się dokładnym tekstem \"stan\"?",
+      "route": "local",
+      "gold_plan": {"operator": "ends_with", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": "stan"}},
+      "required_atoms": [{"operator": "ends_with", "relation": "name", "value": "stan"}],
+      "meaning_guard": "Testuj dosłowny sufiks 'stan' w angielskiej nazwie zwyczajowej; nie pytaj o nazwę oficjalną ani o zawieranie tego tekstu w dowolnym miejscu.",
+      "notes": "Wspierana relacja name oznacza nazwę zwyczajową; sufiks jest dokładny, a nie ogólnym podciągiem."
+    }
+  ]
+}

@@ -1,0 +1,2235 @@
+{
+  "description": "Curated, independently adjudicated EN/PL planner-compaction corpus. Development and held-out partitions are assigned before prompt tuning; held-out wording and combinations are not copies of development prompts. Gold plans express intended local propositions, not current-model outputs. Required atoms protect semantic boundaries and relation choice; compare plan denotations over available entities while preserving unknown. Notes state the discrimination each case is meant to exercise.",
+  "cases": [
+    {
+      "id": "cp-001",
+      "split": "development",
+      "category": "identity",
+      "question": "Czy to Bośnia?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "Bosnia and Herzegovina"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "name",
+          "value": "Bosnia and Herzegovina"
+        }
+      ],
+      "notes": "Bośnia is the supported short identity for Bosnia and Herzegovina."
+    },
+    {
+      "id": "cp-002",
+      "split": "development",
+      "category": "identity",
+      "question": "Is this Dominica—not the Dominican Republic?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "Dominica"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "name",
+          "value": "Dominica"
+        }
+      ],
+      "notes": "The target identity is Dominica; the contrast excludes a different country rather than adding a condition."
+    },
+    {
+      "id": "cp-003",
+      "split": "development",
+      "category": "identity",
+      "question": "Are you Guinea-Bissau?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "Guinea-Bissau"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "name",
+          "value": "Guinea-Bissau"
+        }
+      ],
+      "notes": "The hyphenated country name resolves to Guinea-Bissau, not Guinea."
+    },
+    {
+      "id": "cp-004",
+      "split": "development",
+      "category": "identity",
+      "question": "Czy to Antugua?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "Antigua and Barbuda"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "name",
+          "value": "Antigua and Barbuda"
+        }
+      ],
+      "notes": "A one-edit typo maps to the known identity Antigua and Barbuda."
+    },
+    {
+      "id": "cp-005",
+      "split": "development",
+      "category": "identity",
+      "question": "Is the country name “Côte d’Ivoire”?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "Côte d’Ivoire"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "name",
+          "value": "Côte d’Ivoire"
+        }
+      ],
+      "notes": "Quoted Unicode apostrophe text denotes the country name Côte d’Ivoire."
+    },
+    {
+      "id": "cp-006",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Does its name contain the literal “–” (en dash)?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains_text",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "–"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains_text",
+          "relation": "name",
+          "value": "–"
+        }
+      ],
+      "notes": "Quoted en dash is an ordinary exact substring, not a hyphen test."
+    },
+    {
+      "id": "cp-007",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Czy nazwa zawiera łącznik?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "has_hyphen",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "has_hyphen",
+          "relation": "name"
+        }
+      ],
+      "notes": "Polish łącznik asks whether the name contains a hyphen character."
+    },
+    {
+      "id": "cp-008",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Does the official name have a space?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "The supported name relation is the executor’s common country name, not its official legal name; the official-name question needs unsupported data."
+    },
+    {
+      "id": "cp-009",
+      "split": "development",
+      "category": "identity_ambiguity",
+      "question": "Are you Nigeri?",
+      "route": "clarify",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Ambiguous near-match between Niger and Nigeria is not resolved by guessing."
+    },
+    {
+      "id": "cp-010",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Does the country name start with “Saint” and have exactly two words?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "starts_with",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": "Saint"
+            }
+          },
+          {
+            "operator": "word_count_equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": 2
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "starts_with",
+          "relation": "name",
+          "value": "Saint"
+        },
+        {
+          "operator": "word_count_equals",
+          "relation": "name",
+          "value": 2
+        }
+      ],
+      "notes": "Both name prefix and exact word-count criteria are required."
+    },
+    {
+      "id": "cp-011",
+      "split": "development",
+      "category": "numeric",
+      "question": "Is its population greater than 1,000,000 people?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "greater_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "population"
+        },
+        "right": {
+          "value": 1000000
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than",
+          "relation": "population",
+          "value": 1000000
+        }
+      ],
+      "notes": "Strict population threshold in people; equality does not qualify."
+    },
+    {
+      "id": "cp-012",
+      "split": "development",
+      "category": "numeric",
+      "question": "Czy powierzchnia nie przekracza 1000 km²?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "less_than_or_equal",
+        "left": {
+          "entity": "target_country",
+          "relation": "area"
+        },
+        "right": {
+          "value": 1000
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "less_than_or_equal",
+          "relation": "area",
+          "value": 1000
+        }
+      ],
+      "notes": "Nie przekracza is inclusive; area is compared in stored square kilometres."
+    },
+    {
+      "id": "cp-013",
+      "split": "development",
+      "category": "numeric",
+      "question": "Does the population reach at least 10 million?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "greater_than_or_equal",
+        "left": {
+          "entity": "target_country",
+          "relation": "population"
+        },
+        "right": {
+          "value": 10000000
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than_or_equal",
+          "relation": "population",
+          "value": 10000000
+        }
+      ],
+      "notes": "At least includes equality; threshold refers to 10 million people."
+    },
+    {
+      "id": "cp-014",
+      "split": "development",
+      "category": "numeric",
+      "question": "Czy powierzchnia jest mniejsza niż 500 km²?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "less_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "area"
+        },
+        "right": {
+          "value": 500
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "less_than",
+          "relation": "area",
+          "value": 500
+        }
+      ],
+      "notes": "Mniejsza niż is strict, applied to area in km²."
+    },
+    {
+      "id": "cp-015",
+      "split": "development",
+      "category": "numeric",
+      "question": "Is its population exactly 1,000,000?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "population"
+        },
+        "right": {
+          "value": 1000000
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "population",
+          "value": 1000000
+        }
+      ],
+      "notes": "Exact scalar equality, not a lower-bound test."
+    },
+    {
+      "id": "cp-016",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Does the name have more than 10 characters?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "char_count_greater_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": 10
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "char_count_greater_than",
+          "relation": "name",
+          "value": 10
+        }
+      ],
+      "notes": "Character count greater-than is strict."
+    },
+    {
+      "id": "cp-017",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Czy nazwa ma mniej niż 3 wyrazy?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "word_count_less_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": 3
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "word_count_less_than",
+          "relation": "name",
+          "value": 3
+        }
+      ],
+      "notes": "Word-count less-than is strict and counts words in the target name."
+    },
+    {
+      "id": "cp-018",
+      "split": "development",
+      "category": "text_pattern",
+      "question": "Does its name have exactly 6 characters?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "char_count_equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": 6
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "char_count_equals",
+          "relation": "name",
+          "value": 6
+        }
+      ],
+      "notes": "Exact character count in the name."
+    },
+    {
+      "id": "cp-019",
+      "split": "development",
+      "category": "numeric_units",
+      "question": "Is its area larger than Poland’s area?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "greater_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "area"
+        },
+        "right": {
+          "entity": "Poland",
+          "relation": "area"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than",
+          "relation": "area"
+        }
+      ],
+      "notes": "Comparison group is explicitly the named country Poland; compare area to area, not population."
+    },
+    {
+      "id": "cp-020",
+      "split": "development",
+      "category": "scalar",
+      "question": "Czy stolicą jest Warszawa?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "capital"
+        },
+        "right": {
+          "value": "Warsaw"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "capital",
+          "value": "Warsaw"
+        }
+      ],
+      "notes": "Capital equality against the canonical value Warsaw."
+    },
+    {
+      "id": "cp-021",
+      "split": "development",
+      "category": "boolean_and",
+      "question": "Is it in Europe and a member of the EU?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "continent",
+          "value": "Europe"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "EU"
+        }
+      ],
+      "notes": "Both continental classification and current EU membership must hold."
+    },
+    {
+      "id": "cp-022",
+      "split": "development",
+      "category": "boolean_or",
+      "question": "Czy graniczy z Polską lub z Niemcami?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "or",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Poland"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "borders_country",
+          "value": "Poland"
+        },
+        {
+          "operator": "contains",
+          "relation": "borders_country",
+          "value": "Germany"
+        }
+      ],
+      "notes": "Either named neighboring country is sufficient."
+    },
+    {
+      "id": "cp-023",
+      "split": "development",
+      "category": "boolean_neither",
+      "question": "Is it neither in NATO nor in the EU?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "not",
+        "condition": {
+          "operator": "or",
+          "conditions": [
+            {
+              "operator": "contains",
+              "left": {
+                "entity": "target_country",
+                "relation": "membership"
+              },
+              "right": {
+                "value": "NATO"
+              }
+            },
+            {
+              "operator": "contains",
+              "left": {
+                "entity": "target_country",
+                "relation": "membership"
+              },
+              "right": {
+                "value": "EU"
+              }
+            }
+          ]
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "not",
+          "relation": "membership"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "NATO"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "EU"
+        }
+      ],
+      "notes": "Neither means not(A or B), preserving both membership clauses."
+    },
+    {
+      "id": "cp-024",
+      "split": "development",
+      "category": "boolean_not",
+      "question": "Czy nie jest wyspą?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "not",
+        "condition": {
+          "operator": "equals",
+          "left": {
+            "entity": "target_country",
+            "relation": "is_island"
+          },
+          "right": {
+            "value": true
+          }
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "not",
+          "relation": "is_island"
+        },
+        {
+          "operator": "equals",
+          "relation": "is_island",
+          "value": true
+        }
+      ],
+      "notes": "Negation applies to the stored island boolean."
+    },
+    {
+      "id": "cp-025",
+      "split": "development",
+      "category": "boolean_but",
+      "question": "It borders France, but is not in the EU—does it fit?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          },
+          {
+            "operator": "not",
+            "condition": {
+              "operator": "contains",
+              "left": {
+                "entity": "target_country",
+                "relation": "membership"
+              },
+              "right": {
+                "value": "EU"
+              }
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "borders_country",
+          "value": "France"
+        },
+        {
+          "operator": "not",
+          "relation": "membership"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "EU"
+        }
+      ],
+      "notes": "But joins the positive border criterion with a negated EU-membership criterion."
+    },
+    {
+      "id": "cp-026",
+      "split": "development",
+      "category": "two_bounds",
+      "question": "Is its population at least 1 million but below 5 million?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "greater_than_or_equal",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 1000000
+            }
+          },
+          {
+            "operator": "less_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 5000000
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than_or_equal",
+          "relation": "population",
+          "value": 1000000
+        },
+        {
+          "operator": "less_than",
+          "relation": "population",
+          "value": 5000000
+        }
+      ],
+      "notes": "Two independent bounds: inclusive lower and strict upper."
+    },
+    {
+      "id": "cp-027",
+      "split": "development",
+      "category": "quantifier_any",
+      "question": "Does it border any country that belongs to NATO?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "any",
+        "items": {
+          "entity": "target_country",
+          "relation": "borders_country"
+        },
+        "condition": {
+          "operator": "contains",
+          "left": {
+            "entity": "item",
+            "relation": "membership"
+          },
+          "right": {
+            "value": "NATO"
+          }
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "any",
+          "relation": "borders_country"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "NATO"
+        }
+      ],
+      "notes": "The NATO predicate binds each border-country item; it is not target NATO membership."
+    },
+    {
+      "id": "cp-028",
+      "split": "development",
+      "category": "quantifier_all",
+      "question": "Are all of its neighboring countries non-islands?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "all",
+        "items": {
+          "entity": "target_country",
+          "relation": "borders_country"
+        },
+        "condition": {
+          "operator": "equals",
+          "left": {
+            "entity": "item",
+            "relation": "is_island"
+          },
+          "right": {
+            "value": false
+          }
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "all",
+          "relation": "borders_country"
+        },
+        {
+          "operator": "equals",
+          "relation": "is_island",
+          "value": false
+        }
+      ],
+      "notes": "All quantifies over bordering countries and tests each item’s island status."
+    },
+    {
+      "id": "cp-029",
+      "split": "development",
+      "category": "quantifier_exists",
+      "question": "Czy ma jakąkolwiek granicę lądową?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "exists",
+        "left": {
+          "entity": "target_country",
+          "relation": "borders_country"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "exists",
+          "relation": "borders_country"
+        }
+      ],
+      "notes": "Question asks whether the known border list has any value, not for a neighbor attribute."
+    },
+    {
+      "id": "cp-030",
+      "split": "development",
+      "category": "boolean_compound",
+      "question": "Is it an island or does it have access to the Baltic Sea, but not both?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "or",
+        "conditions": [
+          {
+            "operator": "and",
+            "conditions": [
+              {
+                "operator": "equals",
+                "left": {
+                  "entity": "target_country",
+                  "relation": "is_island"
+                },
+                "right": {
+                  "value": true
+                }
+              },
+              {
+                "operator": "not",
+                "condition": {
+                  "operator": "contains",
+                  "left": {
+                    "entity": "target_country",
+                    "relation": "water_access"
+                  },
+                  "right": {
+                    "value": "Baltic Sea"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "conditions": [
+              {
+                "operator": "not",
+                "condition": {
+                  "operator": "equals",
+                  "left": {
+                    "entity": "target_country",
+                    "relation": "is_island"
+                  },
+                  "right": {
+                    "value": true
+                  }
+                }
+              },
+              {
+                "operator": "contains",
+                "left": {
+                  "entity": "target_country",
+                  "relation": "water_access"
+                },
+                "right": {
+                  "value": "Baltic Sea"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "required_atoms": [],
+      "notes": "Exclusive-or: exactly one criterion holds; the plan preserves both mutually exclusive branches."
+    },
+    {
+      "id": "cp-031",
+      "split": "development",
+      "category": "geography_continent",
+      "question": "Czy leży w Ameryce Południowej?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "continent"
+        },
+        "right": {
+          "value": "South America"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "continent",
+          "value": "South America"
+        }
+      ],
+      "notes": "Broad continental membership, not a narrower subregion."
+    },
+    {
+      "id": "cp-032",
+      "split": "development",
+      "category": "geography_subregion",
+      "question": "Is it in Southeast Asia?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "geographic_area"
+        },
+        "right": {
+          "value": "Southeast Asia"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "geographic_area",
+          "value": "Southeast Asia"
+        }
+      ],
+      "notes": "Southeast Asia is a specific geographic area, not all of Asia."
+    },
+    {
+      "id": "cp-033",
+      "split": "development",
+      "category": "geography_superregion",
+      "question": "Does it lie in the Middle East?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "geographic_area"
+        },
+        "right": {
+          "value": "Middle East"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "geographic_area",
+          "value": "Middle East"
+        }
+      ],
+      "notes": "The region is Middle East, not a guessed continent or neighboring area."
+    },
+    {
+      "id": "cp-034",
+      "split": "development",
+      "category": "geography_qualifier",
+      "question": "Is it a coastal country on the European continent?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "continent",
+          "value": "Europe"
+        },
+        {
+          "operator": "exists",
+          "relation": "water_access"
+        }
+      ],
+      "notes": "Explicit continental membership plus recorded coastline, not a geopolitical regional label; both predicates must be retained."
+    },
+    {
+      "id": "cp-035",
+      "split": "development",
+      "category": "geography_superregion",
+      "question": "Czy znajduje się w Afryce Północnej?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "geographic_area"
+        },
+        "right": {
+          "value": "Northern Africa"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "geographic_area",
+          "value": "Northern Africa"
+        }
+      ],
+      "notes": "North African geographic area, distinct from the whole continent."
+    },
+    {
+      "id": "cp-036",
+      "split": "development",
+      "category": "geography_subregion",
+      "question": "Is the country in Central America?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "geographic_area"
+        },
+        "right": {
+          "value": "Central America"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "geographic_area",
+          "value": "Central America"
+        }
+      ],
+      "notes": "Central America is a narrower area within the wider continent."
+    },
+    {
+      "id": "cp-037",
+      "split": "development",
+      "category": "geography_qualifier",
+      "question": "Is it entirely within the Northern Hemisphere?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "hemisphere"
+            },
+            "right": {
+              "value": "Northern"
+            }
+          },
+          {
+            "operator": "not",
+            "condition": {
+              "operator": "contains",
+              "left": {
+                "entity": "target_country",
+                "relation": "hemisphere"
+              },
+              "right": {
+                "value": "Southern"
+              }
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "hemisphere",
+          "value": "Northern"
+        },
+        {
+          "operator": "not",
+          "relation": "hemisphere"
+        },
+        {
+          "operator": "contains",
+          "relation": "hemisphere",
+          "value": "Southern"
+        }
+      ],
+      "notes": "Entirely in the Northern Hemisphere means Northern membership without Southern membership; territorial extent, not centroid alone."
+    },
+    {
+      "id": "cp-038",
+      "split": "development",
+      "category": "geography_qualifier",
+      "question": "Does its territory cross the equator?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "hemisphere"
+            },
+            "right": {
+              "value": "Northern"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "hemisphere"
+            },
+            "right": {
+              "value": "Southern"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "hemisphere",
+          "value": "Northern"
+        },
+        {
+          "operator": "contains",
+          "relation": "hemisphere",
+          "value": "Southern"
+        }
+      ],
+      "notes": "Cross-equator extent requires territory to occupy both Northern and Southern hemispheres."
+    },
+    {
+      "id": "cp-039",
+      "split": "development",
+      "category": "geography_area",
+      "question": "Is it in the Southern Africa region? I mean the region, not whether the target is South Africa.",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "geographic_area"
+        },
+        "right": {
+          "value": "Southern Africa"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "geographic_area",
+          "value": "Southern Africa"
+        }
+      ],
+      "notes": "Southern Africa is a broad regional area, not the country South Africa."
+    },
+    {
+      "id": "cp-040",
+      "split": "development",
+      "category": "geography_qualifier",
+      "question": "Czy leży w północno-zachodniej Afryce?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Northwestern Africa is not represented as an exact supported area; northern Africa cannot substitute."
+    },
+    {
+      "id": "cp-041",
+      "split": "development",
+      "category": "hemisphere",
+      "question": "Is its location in the Southern Hemisphere?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "hemisphere"
+        },
+        "right": {
+          "value": "Southern"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "hemisphere",
+          "value": "Southern"
+        }
+      ],
+      "notes": "Asks for stored location hemisphere membership, not whether every part of territory lies there."
+    },
+    {
+      "id": "cp-042",
+      "split": "development",
+      "category": "hemisphere",
+      "question": "Is its stored latitude greater than 0°?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "greater_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "coordinates.latitude"
+        },
+        "right": {
+          "value": 0
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than",
+          "relation": "coordinates.latitude",
+          "value": 0
+        }
+      ],
+      "notes": "Coordinate comparison locates the target north of latitude zero."
+    },
+    {
+      "id": "cp-043",
+      "split": "development",
+      "category": "hemisphere",
+      "question": "Is it south of the Prime Meridian?",
+      "route": "clarify",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "South is not a meaningful direction relative to the north–south Prime Meridian; clarify the intended geographic criterion rather than infer west."
+    },
+    {
+      "id": "cp-044",
+      "split": "development",
+      "category": "water_access",
+      "question": "Does it have access to the Baltic Sea?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "water_access"
+        },
+        "right": {
+          "value": "Baltic Sea"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "water_access",
+          "value": "Baltic Sea"
+        }
+      ],
+      "notes": "Named water-access list membership."
+    },
+    {
+      "id": "cp-045",
+      "split": "development",
+      "category": "water_access",
+      "question": "Czy ma dostęp do oceanu?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "water_access"
+        },
+        "right": {
+          "value": "ocean"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "water_access",
+          "value": "ocean"
+        }
+      ],
+      "notes": "Generic ocean access is asked as the supported water-access classification."
+    },
+    {
+      "id": "cp-046",
+      "split": "development",
+      "category": "water_access",
+      "question": "Is it landlocked?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "not",
+        "condition": {
+          "operator": "exists",
+          "left": {
+            "entity": "target_country",
+            "relation": "water_access"
+          }
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "not",
+          "relation": "water_access"
+        },
+        {
+          "operator": "exists",
+          "relation": "water_access"
+        }
+      ],
+      "notes": "Landlocked means no recorded water access; negate list existence, not a specific sea."
+    },
+    {
+      "id": "cp-047",
+      "split": "development",
+      "category": "water_access",
+      "question": "Does it border the Mediterranean Sea or the Black Sea?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "or",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "Mediterranean Sea"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "Black Sea"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "or",
+          "relation": "water_access"
+        },
+        {
+          "operator": "contains",
+          "relation": "water_access",
+          "value": "Mediterranean Sea"
+        },
+        {
+          "operator": "contains",
+          "relation": "water_access",
+          "value": "Black Sea"
+        }
+      ],
+      "notes": "Either of the two named water bodies qualifies."
+    },
+    {
+      "id": "cp-048",
+      "split": "development",
+      "category": "coordinates",
+      "question": "Is its latitude greater than 50 degrees north?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "greater_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "coordinates.latitude"
+        },
+        "right": {
+          "value": 50
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than",
+          "relation": "coordinates.latitude",
+          "value": 50
+        }
+      ],
+      "notes": "Latitude scalar uses degrees; threshold is strict."
+    },
+    {
+      "id": "cp-049",
+      "split": "development",
+      "category": "coordinates",
+      "question": "Czy leży na wschód od południka 30°?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "east_of",
+        "left": {
+          "entity": "target_country",
+          "relation": "coordinates.longitude"
+        },
+        "right": {
+          "value": 30
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "east_of",
+          "relation": "coordinates.longitude",
+          "value": 30
+        }
+      ],
+      "notes": "Longitude east-of comparison with 30 degrees; degree unit explicit."
+    },
+    {
+      "id": "cp-050",
+      "split": "development",
+      "category": "physical_feature",
+      "question": "Does a major river flow through it?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "exists",
+        "left": {
+          "entity": "target_country",
+          "relation": "major_rivers"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "exists",
+          "relation": "major_rivers"
+        }
+      ],
+      "notes": "Whether the supported major-river list contains any entry."
+    },
+    {
+      "id": "cp-051",
+      "split": "development",
+      "category": "membership_current",
+      "question": "Is it currently a member of the European Union?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "membership"
+        },
+        "right": {
+          "value": "EU"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "EU"
+        }
+      ],
+      "notes": "Current membership relation, unlike former membership."
+    },
+    {
+      "id": "cp-052",
+      "split": "development",
+      "category": "membership_current",
+      "question": "Czy należy do NATO lub Unii Europejskiej?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "or",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "NATO"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "or",
+          "relation": "membership"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "NATO"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "EU"
+        }
+      ],
+      "notes": "Current membership in either listed organization."
+    },
+    {
+      "id": "cp-053",
+      "split": "development",
+      "category": "historical_membership",
+      "question": "Was it a founding member of NATO?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Founding status is historical event data not present in current membership facts."
+    },
+    {
+      "id": "cp-054",
+      "split": "held_out",
+      "category": "historical_membership",
+      "question": "Czy było częścią ZSRR?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "historical_union"
+        },
+        "right": {
+          "value": "USSR"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "historical_union",
+          "value": "USSR"
+        }
+      ],
+      "notes": "Historical-union relation records former USSR membership, not current political union membership."
+    },
+    {
+      "id": "cp-055",
+      "split": "held_out",
+      "category": "historical_membership",
+      "question": "Is it currently part of the USSR?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "membership"
+        },
+        "right": {
+          "value": "USSR"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "USSR"
+        }
+      ],
+      "notes": "The question asks about current membership; the membership relation encodes present status, without adding a historical-status exclusion."
+    },
+    {
+      "id": "cp-056",
+      "split": "held_out",
+      "category": "language",
+      "question": "Is French an official language?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "official_language"
+        },
+        "right": {
+          "value": "French"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "official_language",
+          "value": "French"
+        }
+      ],
+      "notes": "Tests official-language list membership, not prevalence or membership in a political organization."
+    },
+    {
+      "id": "cp-057",
+      "split": "held_out",
+      "category": "language",
+      "question": "Czy hiszpański jest najczęściej używanym językiem?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Most widely spoken/prevalent language is not interchangeable with the supported official-language relation."
+    },
+    {
+      "id": "cp-058",
+      "split": "held_out",
+      "category": "culture_group",
+      "question": "Is the population ethnically Slavic?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Ethnic/cultural identity is unsupported; language or official language cannot stand in for it."
+    },
+    {
+      "id": "cp-059",
+      "split": "held_out",
+      "category": "government",
+      "question": "Does it have a republic form of government?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "government_type"
+        },
+        "right": {
+          "value": "republic"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "government_type",
+          "value": "republic"
+        }
+      ],
+      "notes": "Broad stored government category, not an inferred detailed subtype."
+    },
+    {
+      "id": "cp-060",
+      "split": "held_out",
+      "category": "government",
+      "question": "Czy to monarchia konstytucyjna?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Constitutional monarchy is a detailed legal subtype; do not infer it from a broad monarchy label."
+    },
+    {
+      "id": "cp-061",
+      "split": "held_out",
+      "category": "driving_side",
+      "question": "Does traffic use the left side of the road?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "driving_side"
+        },
+        "right": {
+          "value": "left"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "driving_side",
+          "value": "left"
+        }
+      ],
+      "notes": "Yes/no criterion compares the stored driving-side value with left."
+    },
+    {
+      "id": "cp-062",
+      "split": "held_out",
+      "category": "mixed_language_compound",
+      "question": "Czy ruch jest prawostronny i czy to wyspa?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "driving_side"
+            },
+            "right": {
+              "value": "right"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "is_island"
+            },
+            "right": {
+              "value": true
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "driving_side",
+          "value": "right"
+        },
+        {
+          "operator": "equals",
+          "relation": "is_island",
+          "value": true
+        }
+      ],
+      "notes": "Mixed-domain conjunction requires both right-hand traffic and island status; neither condition may be dropped."
+    },
+    {
+      "id": "cp-063",
+      "split": "held_out",
+      "category": "currency",
+      "question": "Is the euro its currency?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "currency"
+        },
+        "right": {
+          "value": "Euro"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "currency",
+          "value": "Euro"
+        }
+      ],
+      "notes": "Currency list membership."
+    },
+    {
+      "id": "cp-064",
+      "split": "held_out",
+      "category": "religion",
+      "question": "Is Christianity the dominant religion?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "or",
+        "conditions": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Catholic"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Orthodox"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Protestant"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Christianity"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Catholic"
+        },
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Orthodox"
+        },
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Protestant"
+        },
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Christianity"
+        }
+      ],
+      "notes": "Christianity includes the locally classified Catholic, Orthodox, Protestant, and generic Christianity dominant-religion categories; all four scalar values are included."
+    },
+    {
+      "id": "cp-065",
+      "split": "held_out",
+      "category": "flag",
+      "question": "Does the flag contain a star symbol?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "flag_symbol"
+        },
+        "right": {
+          "value": "star"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "flag_symbol",
+          "value": "star"
+        }
+      ],
+      "notes": "Presence of a flag symbol, not its area or proportion."
+    },
+    {
+      "id": "cp-066",
+      "split": "held_out",
+      "category": "flag",
+      "question": "Is more than half of its flag blue?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Flag color proportions are not represented by flag-color presence facts."
+    },
+    {
+      "id": "cp-067",
+      "split": "held_out",
+      "category": "flag",
+      "question": "Is blue present among its flag colors?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "flag_color"
+        },
+        "right": {
+          "value": "blue"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "flag_color",
+          "value": "blue"
+        }
+      ],
+      "notes": "Tests color presence only; no proportion inference."
+    },
+    {
+      "id": "cp-068",
+      "split": "held_out",
+      "category": "borders",
+      "question": "Does it share a land border with Côte d’Ivoire?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "borders_country"
+        },
+        "right": {
+          "value": "Côte d’Ivoire"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "borders_country",
+          "value": "Côte d’Ivoire"
+        }
+      ],
+      "notes": "Named entity reference with Unicode apostrophe; asks direct border relation."
+    },
+    {
+      "id": "cp-069",
+      "split": "held_out",
+      "category": "capital",
+      "question": "Is its capital called “San José”?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "capital"
+        },
+        "right": {
+          "value": "San José"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "capital",
+          "value": "San José"
+        }
+      ],
+      "notes": "Quoted accented capital-name literal is preserved."
+    },
+    {
+      "id": "cp-070",
+      "split": "held_out",
+      "category": "continent",
+      "question": "Does it lie in both Europe and Asia?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "continent",
+          "value": "Europe"
+        },
+        {
+          "operator": "contains",
+          "relation": "continent",
+          "value": "Asia"
+        }
+      ],
+      "notes": "Both continental classifications are required; do not collapse a transcontinental question to either/or."
+    },
+    {
+      "id": "cp-071",
+      "split": "held_out",
+      "category": "mixed_fragment",
+      "question": "Europe, borders France, population under five million?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          },
+          {
+            "operator": "less_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 5000000
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "continent",
+          "value": "Europe"
+        },
+        {
+          "operator": "contains",
+          "relation": "borders_country",
+          "value": "France"
+        },
+        {
+          "operator": "less_than",
+          "relation": "population",
+          "value": 5000000
+        }
+      ],
+      "notes": "Telegraphic fragment still specifies three conjunctive criteria."
+    },
+    {
+      "id": "cp-072",
+      "split": "held_out",
+      "category": "mixed_language",
+      "question": "Czy populacja przekracza 2 miliony i czy nazwa kończy się na „stan”?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 2000000
+            }
+          },
+          {
+            "operator": "ends_with",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": "stan"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than",
+          "relation": "population",
+          "value": 2000000
+        },
+        {
+          "operator": "ends_with",
+          "relation": "name",
+          "value": "stan"
+        }
+      ],
+      "notes": "Mixed-style Polish predicate combines strict population bound and literal name suffix."
+    },
+    {
+      "id": "cp-073",
+      "split": "held_out",
+      "category": "typo",
+      "question": "Is it a Caribean country?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "geographic_area"
+        },
+        "right": {
+          "value": "Caribbean"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "geographic_area",
+          "value": "Caribbean"
+        }
+      ],
+      "notes": "Existing documented typo pattern: misspelled Caribbean still indicates the Caribbean geographic area."
+    },
+    {
+      "id": "cp-074",
+      "split": "held_out",
+      "category": "identity_named",
+      "question": "Is the target the Republic of Korea?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "South Korea"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "name",
+          "value": "South Korea"
+        }
+      ],
+      "notes": "Named identity refers to South Korea; not North Korea."
+    },
+    {
+      "id": "cp-075",
+      "split": "held_out",
+      "category": "clarification_missing_relation",
+      "question": "Is it big?",
+      "route": "clarify",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "“Big” supplies no measurable relation, threshold, or comparison criterion."
+    },
+    {
+      "id": "cp-076",
+      "split": "held_out",
+      "category": "clarification_missing_relation",
+      "question": "Is it famous?",
+      "route": "clarify",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Fame is subjective and has no specified measurable criterion."
+    },
+    {
+      "id": "cp-077",
+      "split": "held_out",
+      "category": "unsupported_event",
+      "question": "Did it host the 2030 World Cup?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Precise event question requires external historical/event facts absent from local relations."
+    },
+    {
+      "id": "cp-078",
+      "split": "held_out",
+      "category": "unsupported_event",
+      "question": "Did it host the 2014 FIFA World Cup?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "A specific past sporting event is an external fact absent from the supported local relations."
+    },
+    {
+      "id": "cp-079",
+      "split": "held_out",
+      "category": "unsupported_relation",
+      "question": "Does it have a higher GDP than Poland?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "GDP is a precise unsupported relation; do not substitute population or area."
+    },
+    {
+      "id": "cp-080",
+      "split": "held_out",
+      "category": "unsupported_legal",
+      "question": "Is it a federal parliamentary republic?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Detailed government/legal subtype exceeds the broad supported government category."
+    }
+  ]
+}
