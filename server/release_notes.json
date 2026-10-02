@@ -1,5 +1,5 @@
 {
-  "version": "1.20.0",
-  "title": "Send feedback and ideas directly from Countrydle",
-  "body": "SUGGESTIONS AND CONTACT\n- Send feedback, bug reports, data corrections, and feature ideas directly from the Suggestions and contact page.\n- Suggestions work for both guests and signed-in players.\n- You can optionally include your name and email address so we can follow up.\n- Direct email and GitHub contact options remain available."
+  "version": "1.21.1",
+  "title": "A refreshed mobile game and clearer geography questions",
+  "body": "MOBILE GAMEPLAY\n- Phone map games have a full-height notebook, pinned question and guess inputs, and a visible status row.\n- Switch between Ask, Guess, and Map; larger touch targets make navigation and map controls easier to use.\n\nCOUNTRY QUESTION UNDERSTANDING\n- Improved interpretation of English and Polish questions combining geography, numeric comparisons, and membership conditions.\n- Improved distinctions between current and historical membership and between broad Christian categories and individual denominations.\n- Your daily question and guess limits are unchanged.\n\nSUGGESTIONS AND CONTACT\n- Send feedback, bug reports, data corrections, and feature ideas from the Suggestions and contact page.\n- Guests and signed-in players can optionally include a name and email address. Direct email and GitHub options remain available."
 }
