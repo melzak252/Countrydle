@@ -104,9 +104,20 @@ async def run_generate_continental_days():
     except Exception as e:
         logging.error(f"Error generating continental days: {e}", exc_info=True)
 
+
+async def purge_old_fallback_answers():
+    from datetime import datetime, timezone
+    from db.repositories.fallback_answers import purge_old
+
+    async with AsyncSessionLocal() as session:
+        await purge_old(session, before=datetime.now(timezone.utc).date())
+        await session.commit()
+
+
 scheduler = AsyncIOScheduler()
 scheduler.add_job(generate_day_countries, CronTrigger(hour=0, minute=0))
 scheduler.add_job(check_streaks, CronTrigger(hour=0, minute=0))
 scheduler.add_job(generate_yesterday_blog_post, CronTrigger(hour=0, minute=5))
 scheduler.add_job(run_generate_continental_days, CronTrigger(hour=0, minute=0))
 scheduler.add_job(generate_day_flags, CronTrigger(hour=0, minute=0))
+scheduler.add_job(purge_old_fallback_answers, CronTrigger(hour=0, minute=10, timezone="UTC"))

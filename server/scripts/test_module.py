@@ -63,6 +63,7 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
     "question-engine": (
         "test_ai_clients.py",
         "test_fallback_answers.py",
+        "test_fallback_answer_repository.py",
         "test_request_budget.py",
         "test_question_context_privacy.py",
         "test_countrydle_fallback.py",
@@ -154,6 +155,8 @@ SOURCE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("server/slot_template_engine.py", ("question-engine",)),
     ("server/app.py", ("api",)),
     ("server/utils/app.py", ("api",)),
+    ("server/utils/__init__.py", ("question-engine", "api")),
+    ("server/alembic/", ("question-engine", "api")),
     ("server/db/models/", ("api", "guests", "friend-matches", "leaderboards", "question-engine")),
     ("server/db/repositories/", ("api", "guests", "friend-matches", "leaderboards", "question-engine")),
     ("server/db/", ("api",)),

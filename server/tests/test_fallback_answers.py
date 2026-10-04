@@ -1,169 +1,248 @@
-from datetime import datetime, timezone
+"""Durable fallback-answer reuse through the production async runner and SQL cache."""
+from collections import deque
+from datetime import date, datetime, timezone
+import asyncio
+import threading
+from types import SimpleNamespace
 
 import pytest
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from db.base import Base
+
+
+class FixedDateTime:
+    current = date(2026, 10, 4)
+
+    @classmethod
+    def now(cls, tz):
+        return datetime.combine(cls.current, datetime.min.time(), tzinfo=timezone.utc)
 
 
 @pytest.fixture
-def fallback(monkeypatch):
-    from collections import deque
-    from types import SimpleNamespace
+async def fallback_db(tmp_path):
+    from db.repositories import fallback_answers as cache
+
+    path = tmp_path / "fallback.sqlite"
+    url = f"sqlite+aiosqlite:///{path}"
+
+    cache_tables = [Base.metadata.tables["fallback_answers"],
+                    Base.metadata.tables["fallback_answer_blocks"]]
+
+    async def open_database():
+        engine = create_async_engine(url)
+        async with engine.begin() as connection:
+            await connection.run_sync(
+                lambda sync_connection: Base.metadata.create_all(sync_connection, tables=cache_tables)
+            )
+        return engine, async_sessionmaker(engine, expire_on_commit=False)
+
+    engine, sessions = await open_database()
+    yield SimpleNamespace(cache=cache, path=path, url=url, engine=engine, sessions=sessions,
+                          open_database=open_database)
+    await engine.dispose()
+
+@pytest.fixture
+def fallback(monkeypatch, fallback_db):
+    from utils import fallback as runner
     from utils import fallback_answers
 
-    seconds = [0.0]
-    utc = [datetime(2026, 10, 4, tzinfo=timezone.utc)]
-    monkeypatch.setattr(fallback_answers, "_cache", fallback_answers._AnswerCache(
-        capacity=2, ttl=300, clock=lambda: seconds[0],
-    ))
-    monkeypatch.setattr(fallback_answers, "datetime", SimpleNamespace(now=lambda tz: utc[0]))
+    monkeypatch.setattr(runner, "datetime", FixedDateTime)
+    monkeypatch.setattr(FixedDateTime, "current", date(2026, 10, 4))
     monkeypatch.setenv("GEMINI_QUIZ_MODEL", "test-model-a")
     responses = deque()
-    calls = []
+    provider_calls = []
+    retrievals = []
+    state = SimpleNamespace(context="Poland hosted the event in 2001.",
+                            prompts=("Stable game rules.", "Exact question data."),
+                            provider_entered=None, provider_release=None)
 
     def provider(*args, **kwargs):
-        calls.append(kwargs)
-        if kwargs.get("evidence") is not None:
-            kwargs["evidence"].update(provider="gemini", usage={"input_tokens": 100})
-        return responses.popleft()
+        if state.provider_entered is not None:
+            state.provider_entered.set()
+            if not state.provider_release.wait(timeout=5):
+                raise TimeoutError("Test did not release the provider")
+        provider_calls.append(kwargs.copy())
+        evidence = kwargs.get("evidence")
+        if evidence is not None:
+            evidence.update(provider="gemini", usage={"input_tokens": 100}, response_id="paid")
+        result = responses.popleft()
+        if isinstance(result, Exception):
+            raise result
+        return result
 
     monkeypatch.setattr(fallback_answers, "gemini_json", provider)
-    arguments = {
-        "entity_name": "Poland", "original_question": "Did it host the event?",
-        "question": "Did the country host the event?",
-        "context": "Poland hosted the event in 2001.", "cache_scope": ("countrydle", 31),
-    }
 
-    def answer(value):
-        return {"answer": value, "explanation": (
-            "The country hosted the event." if value is True else
-            "The country did not host the event." if value is False else "The date is undetermined."
-        )}
+    async def retrieve(*args, **kwargs):
+        retrievals.append(kwargs)
+        return [SimpleNamespace(text=state.context)] if state.context else [], [0.1]
 
-    def get(**changes):
-        return fallback_answers.get_answer(
-            "Stable game rules.", "Exact question data.", **(arguments | changes),
-        )
+    monkeypatch.setattr(runner, "get_fragments_matching_question", retrieve)
 
-    return SimpleNamespace(module=fallback_answers, responses=responses, calls=calls,
-                           seconds=seconds, utc=utc, arguments=arguments, answer=answer, get=get)
+    def prompt_builder(question, entity_name, context):
+        return state.prompts
+
+    def answerer(question, entity_name, context, *, model, deadline, evidence=None):
+        system_prompt, question_prompt = prompt_builder(question, entity_name, context)
+        return fallback_answers.get_answer(system_prompt, question_prompt, model=model,
+                                           deadline=deadline, evidence=evidence)
+
+    question = SimpleNamespace(original_question="Did it host the event?",
+                               question="Did the country host the event?")
+    arguments = dict(question=question, entity_name="Poland", cache_scope=("countrydle", 31),
+                     filter_key="country_id", filter_value=31, collection_name="countrydle",
+                     context_limit=5, answerer=answerer, prompt_builder=prompt_builder)
+
+    async def run(*, evidence=None, session=None, **changes):
+        async with fallback_db.sessions() as owned_session:
+            return await runner.retrieve_and_answer(
+                **(arguments | changes), session=session or owned_session, evidence=evidence,
+            )
+
+    def answer(value, explanation=None):
+        if explanation is None:
+            explanation = "The country hosted the event." if value is True else "The country did not host the event."
+        return {"answer": value, "explanation": explanation}
+
+    return SimpleNamespace(db=fallback_db, cache=fallback_db.cache, responses=responses,
+                           provider_calls=provider_calls, retrievals=retrievals, state=state,
+                           arguments=arguments, run=run, answer=answer, prompt_builder=prompt_builder)
 
 
 @pytest.mark.parametrize("value", [True, False])
-def test_identical_evidence_reuses_both_booleans_without_rebilling_or_mutable_result_sharing(fallback, value):
+@pytest.mark.anyio
+async def test_committed_answer_survives_worker_restart_as_fresh_unbilled_result(fallback, value, monkeypatch):
     fallback.responses.extend([fallback.answer(value), fallback.answer(not value)])
-    evidence = {}
-    first = fallback.get(evidence=evidence)
-    first["answer"] = not value
-    second = fallback.get(evidence=evidence)
-    assert second["answer"] is value
-    assert len(fallback.calls) == 1
-    assert evidence["provider"] == "answer_cache"
-    assert evidence["cache_hit"] is True
-    assert "usage" not in evidence
+    first_evidence = {}
+    first, context, vector = await fallback.run(evidence=first_evidence)
+    assert first["answer"] is value
+    first["explanation"] = "caller mutation"
+    await fallback.db.engine.dispose()
+    engine, sessions = await fallback.db.open_database()
+    fallback.db.engine = engine
+    fallback.db.sessions = sessions
+
+    hit_evidence = {}
+    second, second_context, second_vector = await fallback.run(evidence=hit_evidence)
+    assert second == fallback.answer(value)
+    assert second is not first
+    assert second_context == context
+    assert second_vector == vector
+    assert len(fallback.provider_calls) == 1
+    assert len(fallback.retrievals) == 2
+    assert hit_evidence["fallback"]["provider"] == "answer_cache"
+    assert hit_evidence["fallback"]["cache_hit"] is True
+    assert "usage" not in hit_evidence["fallback"]
+    await engine.dispose()
 
 
 @pytest.mark.parametrize("changes", [
+    {"cache_scope": ("powiatdle", 31)},
     {"cache_scope": ("countrydle", 32)},
-    {"cache_scope": ("us_statedle", 31)},
-    {"entity_name": "Japan"},
-    {"context": "Poland did not host the event."},
-    {"original_question": "Did it NOT host the event?"},
-    {"question": "Does the official name contain 'é'?"},
+    {"entity_name": "Republic of Poland"},
+    {"question": SimpleNamespace(original_question="Did Poland host the event?", question="Did the country host the event?")},
+    {"question": SimpleNamespace(original_question="Did it host the event?", question="Did Poland host the event?")},
 ])
-def test_changed_target_mode_evidence_or_exact_meaning_cannot_reuse_prior_answer(fallback, changes):
+@pytest.mark.anyio
+async def test_changed_identity_scope_cannot_reuse(fallback, changes):
     fallback.responses.extend([fallback.answer(True), fallback.answer(False)])
-    assert fallback.get()["answer"] is True
-    assert fallback.get(**changes)["answer"] is False
-    assert len(fallback.calls) == 2
+    await fallback.run()
+    result, _, _ = await fallback.run(**changes)
+    assert result["answer"] is False
+    assert len(fallback.provider_calls) == 2
 
 
-def test_model_revision_and_midnight_invalidate_reuse(fallback, monkeypatch):
-    from datetime import timedelta
-    fallback.responses.extend([fallback.answer(True), fallback.answer(False), fallback.answer(True)])
-    assert fallback.get()["answer"] is True
-    monkeypatch.setenv("GEMINI_QUIZ_MODEL", "test-model-b")
-    assert fallback.get()["answer"] is False
-    fallback.utc[0] += timedelta(days=1)
-    assert fallback.get()["answer"] is True
-    assert len(fallback.calls) == 3
+@pytest.mark.parametrize("change", ["context", "model", "system prompt", "question prompt", "date"])
+@pytest.mark.anyio
+async def test_changed_evidence_model_prompt_or_daily_date_cannot_reuse(fallback, monkeypatch, change):
+    fallback.responses.extend([fallback.answer(True), fallback.answer(False)])
+    await fallback.run()
+    if change == "context":
+        fallback.state.context = "Poland hosted the event in 2002."
+    elif change == "model":
+        monkeypatch.setenv("GEMINI_QUIZ_MODEL", "test-model-b")
+    elif change == "system prompt":
+        fallback.state.prompts = ("Revised game rules.", "Exact question data.")
+    elif change == "question prompt":
+        fallback.state.prompts = ("Stable game rules.", "Revised exact question data.")
+    else:
+        FixedDateTime.current = date(2026, 10, 5)
+    result, _, _ = await fallback.run()
+    assert result["answer"] is False
+    assert len(fallback.provider_calls) == 2
 
 
-@pytest.mark.parametrize("changes", [{"context": ""}, {"cache_scope": None}, {"request_timeout": 30}])
-def test_missing_context_or_diagnostic_call_does_not_reuse_answer(fallback, changes):
+@pytest.mark.parametrize("changes", [{"context": ""}, {"cache_scope": None}])
+@pytest.mark.anyio
+async def test_empty_context_and_scope_less_diagnostics_bypass_persistence(fallback, changes):
     fallback.responses.extend([fallback.answer(False), fallback.answer(True)])
-    assert fallback.get(**changes)["answer"] is False
-    assert fallback.get(**changes)["answer"] is True
-    assert len(fallback.calls) == 2
+    changes = dict(changes)
+    if "context" in changes:
+        fallback.state.context = changes.pop("context")
+    result, _, _ = await fallback.run(**changes)
+    assert result["answer"] is False
+    result, _, _ = await fallback.run(**changes)
+    assert result["answer"] is True
+    assert len(fallback.provider_calls) == 2
 
 
-def test_abstention_and_malformed_provider_result_do_not_poison_later_answer(fallback):
-    fallback.responses.extend([
-        fallback.answer(None), {"answer": "false", "explanation": "Incorrect wire type."},
-        fallback.answer(True),
-    ])
-    assert fallback.get()["answer"] is None
+@pytest.mark.anyio
+async def test_null_malformed_and_provider_error_do_not_poison_later_answer(fallback):
+    fallback.responses.extend([fallback.answer(None), {"answer": "false", "explanation": "bad"},
+                               RuntimeError("provider failed"), fallback.answer(True)])
+    assert (await fallback.run())[0]["answer"] is None
     with pytest.raises(ValueError):
-        fallback.get()
-    assert fallback.get()["answer"] is True
-    assert len(fallback.calls) == 3
+        await fallback.run()
+    with pytest.raises(RuntimeError, match="provider failed"):
+        await fallback.run()
+    assert (await fallback.run())[0]["answer"] is True
+    assert len(fallback.provider_calls) == 4
 
 
-def test_expiry_and_capacity_eviction_require_a_fresh_answer(fallback):
-    fallback.responses.extend([fallback.answer(True), fallback.answer(False),
-                               fallback.answer(True), fallback.answer(False), fallback.answer(True)])
-    assert fallback.get()["answer"] is True
-    fallback.seconds[0] = 300
-    assert fallback.get()["answer"] is False
-    fallback.get(cache_scope=("countrydle", 32))
-    fallback.get(cache_scope=("countrydle", 33))
-    assert fallback.get()["answer"] is True
-    assert len(fallback.calls) == 5
-
-
-def test_reported_answer_is_evicted_and_not_reused_during_quarantine(fallback):
-    fallback.responses.extend([fallback.answer(True), fallback.answer(False), fallback.answer(True)])
-    assert fallback.get()["answer"] is True
-    fallback.module.invalidate_reported_answer(
-        mode="continental", entity_name="Poland",
-        original_question=fallback.arguments["original_question"],
-        question=fallback.arguments["question"], context=fallback.arguments["context"],
-        game_date=fallback.utc[0].date(),
-    )
-    assert fallback.get()["answer"] is False
-    assert fallback.get()["answer"] is True
-    assert len(fallback.calls) == 3
-
-
-def test_quoted_character_identity_is_not_accent_folded(fallback):
-    accented = "Does the official name contain the character 'é'?"
-    plain = "Does the official name contain the character 'e'?"
+@pytest.mark.anyio
+async def test_exact_accented_question_identity_is_not_folded(fallback):
+    accented = SimpleNamespace(original_question="Does it contain 'é'?", question="Does it contain 'é'?")
+    plain = SimpleNamespace(original_question="Does it contain 'e'?", question="Does it contain 'e'?")
     fallback.responses.extend([fallback.answer(False), fallback.answer(True)])
-    assert fallback.get(original_question=accented, question=accented)["answer"] is False
-    assert fallback.get(original_question=plain, question=plain)["answer"] is True
+    assert (await fallback.run(question=accented))[0]["answer"] is False
+    assert (await fallback.run(question=plain))[0]["answer"] is True
+    assert len(fallback.provider_calls) == 2
 
 
-def test_prompt_policy_revision_requires_new_generation(fallback):
+@pytest.mark.anyio
+async def test_continental_and_country_scopes_share_canonical_country_answer(fallback):
     fallback.responses.extend([fallback.answer(True), fallback.answer(False)])
-    assert fallback.get()["answer"] is True
-    changed = fallback.module.get_answer(
-        "Revised game rules.", "Exact question data.", **fallback.arguments,
-    )
-    assert changed["answer"] is False
+    await fallback.run(cache_scope=("continental", 31))
+    result, _, _ = await fallback.run(cache_scope=("countrydle", 31))
+    assert result["answer"] is True
+    assert len(fallback.provider_calls) == 1
+    assert len(fallback.retrievals) == 2
 
 
-def test_generation_racing_a_report_cannot_repopulate_the_cache(fallback, monkeypatch):
-    def disputed_provider(*args, **kwargs):
-        fallback.module.invalidate_reported_answer(
-            mode="countrydle", entity_name="Poland",
-            original_question=fallback.arguments["original_question"],
-            question=fallback.arguments["question"], context=fallback.arguments["context"],
-            game_date=fallback.utc[0].date(),
-        )
-        fallback.seconds[0] = 2
-        return fallback.answer(True)
+@pytest.mark.anyio
+async def test_report_committed_during_generation_prevents_late_cache_repopulation(fallback):
+    fallback.responses.extend([fallback.answer(True), fallback.answer(False)])
+    entered = threading.Event()
+    release = threading.Event()
+    fallback.state.provider_entered = entered
+    fallback.state.provider_release = release
 
-    monkeypatch.setattr(fallback.module, "gemini_json", disputed_provider)
-    assert fallback.get()["answer"] is True
-    # The report's quarantine expired, but an incorrect late insertion would not.
-    fallback.seconds[0] = 301
-    monkeypatch.setattr(fallback.module, "gemini_json", lambda *args, **kwargs: fallback.answer(False))
-    assert fallback.get()["answer"] is False
+    generation = asyncio.create_task(fallback.run())
+    assert await asyncio.to_thread(entered.wait, 5), "Provider did not start"
+    try:
+        async with fallback.db.sessions() as report_session:
+            await fallback.cache.invalidate(
+                report_session, mode="countrydle", entity_name="Poland",
+                original_question=fallback.arguments["question"].original_question,
+                question=fallback.arguments["question"].question,
+                context=fallback.state.context, game_date=FixedDateTime.current,
+            )
+            await report_session.commit()
+    finally:
+        release.set()
+
+    assert (await generation)[0]["answer"] is True
+    fallback.state.provider_entered = None
+    result, _, _ = await fallback.run()
+    assert result["answer"] is False
+    assert len(fallback.provider_calls) == 2

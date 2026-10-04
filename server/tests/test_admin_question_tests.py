@@ -358,7 +358,6 @@ async def test_admin_fallback_diagnostics_always_regenerate_instead_of_reusing_g
     from utils import fallback_answers
 
     client, _ = admin_client
-    monkeypatch.setattr(fallback_answers, "_cache", fallback_answers._AnswerCache())
     patch_country_local(monkeypatch, plan(supported=False))
 
     async def fragments(*args, **kwargs):

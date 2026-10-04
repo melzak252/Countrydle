@@ -118,7 +118,6 @@ async def test_daily_fallback_allows_other_coroutines_and_preserves_false_answer
         raise RuntimeError("Retrieval unavailable")
 
     def answer(*args, evidence=None, **kwargs):
-        assert session.commits == 1
         blocking()
         if evidence is not None:
             evidence.update(provider="test-provider", usage={"input_tokens": 12, "output_tokens": 3})

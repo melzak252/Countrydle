@@ -28,3 +28,4 @@ from .friend_match import FriendMatch, FriendSeat, FriendMove, FriendAction, Fri
 from .guest_participation import GuestParticipation
 from .patch_note import PatchNote
 from .template_divergence import TemplateDivergence
+from .fallback_answer import FallbackAnswer, FallbackAnswerBlock

@@ -226,16 +226,14 @@ Simplified Question: {question.question}"""
 def answer_question_for_entity(
     question: QuestionEnhanced, entity_name: str, context: str, *,
     evidence: dict | None = None, request_timeout: float | None = None,
-    cache_scope: tuple[str, int] | None = None, deadline: float | None = None,
+    model: str | None = None, deadline: float | None = None,
 ) -> dict:
     """Run the normal answer model for an explicit target, without daily state."""
     system_prompt, question_prompt = answer_prompts(question, entity_name, context)
     from utils.fallback_answers import get_answer
     answer_dict = get_answer(
-        system_prompt, question_prompt, entity_name=entity_name,
-        original_question=question.original_question, question=question.question,
-        context=context, cache_scope=cache_scope, evidence=evidence,
-        request_timeout=request_timeout, deadline=deadline,
+        system_prompt, question_prompt, evidence=evidence,
+        request_timeout=request_timeout, deadline=deadline, model=model,
     )
     answer_dict["explanation"] = sanitize_explanation_for_player(
         answer_dict["explanation"], {entity_name}, "the country"
@@ -263,7 +261,8 @@ async def ask_question(
         cache_scope=("countrydle", day_country.country_id) if use_cache else None,
         filter_key="country_id", filter_value=day_country.country_id,
         collection_name="countries", context_limit=qdrant.COUNTRYDLE_CONTEXT_LIMIT,
-        session=session, answerer=answer_question_for_entity, evidence=evidence,
+        session=session, answerer=answer_question_for_entity,
+        prompt_builder=answer_prompts, evidence=evidence,
     )
     question_create = QuestionCreate(
         user_id=user.id if user else None,

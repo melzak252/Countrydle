@@ -39,6 +39,9 @@ class AsyncSessionAdapter:
     def __init__(self, session):
         self.session = session
 
+    def get_bind(self):
+        return self.session.get_bind()
+
     async def execute(self, statement):
         return self.session.execute(statement)
 
@@ -60,6 +63,8 @@ class AsyncSessionAdapter:
 
 @pytest.fixture
 async def reports_api(monkeypatch):
+    from db.repositories import fallback_answers as answer_cache
+
     monkeypatch.setenv("SECRET_KEY", "report-tests-secret")
     engine = create_engine("sqlite://")
 
@@ -74,10 +79,11 @@ async def reports_api(monkeypatch):
             if t not in seen_tables:
                 seen_tables.add(t)
                 tables.append(t)
-    if "answer_reports" in Base.metadata.tables:
-        t = Base.metadata.tables["answer_reports"]
-        if t not in seen_tables:
-            tables.append(t)
+    for table_name in ("answer_reports", "fallback_answers", "fallback_answer_blocks"):
+        table = Base.metadata.tables.get(table_name)
+        if table is not None and table not in seen_tables:
+            seen_tables.add(table)
+            tables.append(table)
     Base.metadata.create_all(engine, tables=tables)
     with Session(engine, expire_on_commit=False) as session:
         owner = User(id=1, username="owner", email="owner@example.com", is_admin=False)
@@ -361,27 +367,28 @@ async def test_admin_template_divergences_api(reports_api):
 
 
 @pytest.mark.anyio
-async def test_committed_report_stops_reusing_the_disputed_fallback_answer(reports_api, monkeypatch):
-    from datetime import timezone
-    from utils import fallback_answers
+async def test_committed_report_blocks_disputed_fallback_answer_in_sql(reports_api):
+    from db.repositories import fallback_answers as cache
 
-    monkeypatch.setattr(fallback_answers, "_cache", fallback_answers._AnswerCache())
-    monkeypatch.setattr(fallback_answers, "datetime", SimpleNamespace(
-        now=lambda tz: datetime(2026, 9, 20, 12, tzinfo=timezone.utc),
-    ))
-    responses = iter([
-        {"answer": False, "explanation": "The country did not host the event."},
-        {"answer": True, "explanation": "Corrected evidence confirms the event."},
-    ])
-    monkeypatch.setattr(fallback_answers, "gemini_json", lambda *args, **kwargs: next(responses))
     record = reports_api.questions["countrydle"]
-    arguments = {
-        "entity_name": "Poland", "original_question": record.original_question,
-        "question": record.question, "context": record.context,
-        "cache_scope": ("countrydle", 1),
-    }
-    assert fallback_answers.get_answer("Game rules.", "Question data.", **arguments)["answer"] is False
+    identity = cache.make_identity(
+        mode="countrydle", entity_id=1, entity_name="Poland",
+        original_question=record.original_question, question=record.question,
+        context=record.context, system_prompt="Game rules.",
+        question_prompt="Question data.", model="test-model",
+        game_date=date(2026, 9, 20),
+    )
+    async_session = AsyncSessionAdapter(reports_api.session)
+    await cache.store(async_session, identity, False, "The country did not host the event.")
+    await async_session.commit()
+
     login(reports_api.owner)
     response = await reports_api.client.post("/answer-reports", json=payload())
     assert response.status_code == 201
-    assert fallback_answers.get_answer("Game rules.", "Question data.", **arguments)["answer"] is True
+
+    with Session(reports_api.session.get_bind(), expire_on_commit=False) as fresh_session:
+        fresh_adapter = AsyncSessionAdapter(fresh_session)
+        assert await cache.lookup(fresh_adapter, identity) is None
+        await cache.store(fresh_adapter, identity, True, "A later generation.")
+        await fresh_adapter.commit()
+        assert await cache.lookup(fresh_adapter, identity) is None

@@ -16,7 +16,7 @@ from schemas.answer_report import (
     AnswerReportList, AnswerReportMode, AnswerReportReview, AnswerReportStatus,
 )
 from users.utils import get_admin_user, get_current_or_guest_user
-from utils.fallback_answers import invalidate_reported_answer
+from db.repositories.fallback_answers import invalidate
 
 
 router = APIRouter(tags=["answer reports"])
@@ -85,6 +85,11 @@ async def submit_answer_report(
     )
     session.add(report)
     try:
+        await invalidate(
+            session, mode=mode, entity_name=target_name,
+            original_question=details.original_question, question=details.question,
+            context=details.context, game_date=game_date,
+        )
         await session.commit()
     except IntegrityError:
         await session.rollback()
@@ -99,11 +104,6 @@ async def submit_answer_report(
             raise HTTPException(status_code=409, detail="This answer has already been reported") from None
         raise
     await session.refresh(report)
-    invalidate_reported_answer(
-        mode=mode, entity_name=target_name,
-        original_question=details.original_question, question=details.question,
-        context=details.context, game_date=details.game_date,
-    )
     return AnswerReportCreated(id=report.id)
 
 

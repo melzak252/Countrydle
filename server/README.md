@@ -101,23 +101,34 @@ Blocking SDK calls run in worker threads: cancellation stops the waiting gamepla
 operation, but cannot forcibly kill an in-flight SDK call; expired work cannot
 start another paid attempt or publish a resolved answer afterward.
 
-`utils/fallback_answers.py` reuses only strictly validated `true`/`false` results
-for identical mode, canonical target ID, original/rewritten question, model,
-rendered prompts, UTC date and freshly retrieved context. There is no accent
-folding, translation or vector-similarity matching. Each worker has a bounded
-256-entry LRU with a five-minute lifetime; nothing is loaded from player history
-or persisted as a new source of truth. Retrieval remains fresh before lookup:
-changed or unavailable context cannot reuse an older context's answer.
-Nonempty context is an identity/freshness condition, not proof that the passage
-supports every clause.
+`utils/fallback.py` and `db/repositories/fallback_answers.py` reuse only strictly
+validated `true`/`false` results from the shared PostgreSQL `fallback_answers`
+table. Identity includes mode, canonical target ID/name, exact original/rewritten
+question, configured model, rendered prompts, strict-answer schema version,
+UTC game date and freshly retrieved context. There is no accent folding,
+translation or vector-similarity matching. Player question history is not used
+as a cache. Rows contain hashed identities and answer/explanation, not raw prompts,
+questions, context or player ownership.
+
+There is no worker-local LRU or five-minute expiry. Reuse survives worker restarts
+and lasts within the UTC daily scope while evidence and answer policy match.
+Retrieval remains fresh before lookup: changed or unavailable context cannot
+reuse an older context's answer. This saves answer-model calls, not embedding or
+retrieval calls. Nonempty context is an identity/freshness condition, not proof
+that the passage supports every clause. Startup and a 00:10 UTC maintenance job
+delete prior-day entries and report blocks.
 
 Null, malformed and failed generations, empty-context general-knowledge answers,
 scope-less explicit-target calls and explicit-timeout diagnostics are not cached.
 Admin question tests explicitly bypass answer reuse as well as planner caching.
-A committed answer report evicts and quarantines matching server-owned inputs in
-the worker handling that report; a racing generation cannot repopulate them.
-This invalidation is process-local, not cross-worker coordination. Every player
-still gets a fresh question record/report token and independent normal accounting.
+A committed answer report invalidates matching server-owned inputs in the shared
+database. Report creation, cache eviction and insertion into `fallback_answer_blocks`
+are one transaction: rollback leaves a valid answer reusable; commit prevents
+all workers from reusing the disputed signature for that daily scope. Every
+lookup excludes blocked signatures, including a late insert racing an uncommitted
+report. A different context or a new game date has a different signature.
+No database transaction is held across model generation. Every player still gets
+a fresh question record/report token and independent normal accounting.
 
 Model selection, predicate policies and EN/PL support are unchanged; Gemini 2.5
 fallbacks retain the 1,024-token thinking and 2,048-token total output ceilings.
@@ -136,11 +147,18 @@ site-wide savings from a duplicate-request smoke.
 From `server/`, regression coverage:
 
 ```bash
-python -m pytest -q tests/test_fallback_answers.py tests/test_ai_clients.py \
-  tests/test_request_budget.py tests/test_question_context_privacy.py \
-  tests/test_countrydle_fallback.py tests/test_question_nonblocking.py \
-  tests/test_admin_question_tests.py tests/test_answer_reports.py
+python -m pytest -q tests/test_fallback_answers.py tests/test_fallback_answer_repository.py \
+  tests/test_ai_clients.py tests/test_request_budget.py \
+  tests/test_question_context_privacy.py tests/test_countrydle_fallback.py \
+  tests/test_question_nonblocking.py tests/test_admin_question_tests.py \
+  tests/test_answer_reports.py tests/test_question_accounting.py
 ```
+
+Set `QUESTION_TEST_DATABASE_URL` to an explicitly disposable PostgreSQL database
+to exercise PostgreSQL MVCC/report races and daily accounting. Tests isolate
+their schemas; never point this variable at the production database. The cache
+tables are installed by Alembic revision `f6a8c2d4e901` during normal startup
+migration; no production database migration is performed by the test suite.
 
 ## Player suggestions
 

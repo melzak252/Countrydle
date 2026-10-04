@@ -1,8 +1,11 @@
 import asyncio
 import time
+from datetime import datetime, timezone
 from typing import Any, Callable
 
 from qdrant.utils import get_fragments_matching_question
+from db.repositories import fallback_answers as answer_cache
+from utils.ai_clients import get_gemini_model
 from utils.request_budget import remaining_timeout
 
 
@@ -17,6 +20,7 @@ async def retrieve_and_answer(
     context_limit: int,
     session: Any,
     answerer: Callable[..., dict],
+    prompt_builder: Callable[..., tuple[str, str]],
     evidence: dict | None = None,
 ) -> tuple[dict, str, list[float]]:
     """Retrieve fresh evidence and answer within one bounded daily request."""
@@ -49,15 +53,39 @@ async def retrieve_and_answer(
     fallback_started = time.perf_counter()
     try:
         async with asyncio.timeout(remaining_timeout(deadline)):
+            model = get_gemini_model()
+            identity = None
+            if cache_scope is not None and context:
+                system_prompt, question_prompt = prompt_builder(question, entity_name, context)
+                identity = answer_cache.make_identity(
+                    mode=cache_scope[0], entity_id=cache_scope[1], entity_name=entity_name,
+                    original_question=question.original_question, question=question.question,
+                    context=context, system_prompt=system_prompt, question_prompt=question_prompt,
+                    model=model, game_date=datetime.now(timezone.utc).date(),
+                )
+                cached = await answer_cache.lookup(session, identity)
+                await session.commit()
+                remaining_timeout(deadline)
+                if cached is not None:
+                    if fallback_evidence is not None:
+                        for field in ("usage", "response_id", "model_version", "messages",
+                                      "temperature", "max_output_tokens", "attempts"):
+                            fallback_evidence.pop(field, None)
+                        fallback_evidence.update(provider="answer_cache", model=model,
+                                                 cache_hit=True, provider_attempts=0)
+                    return cached, context, question_vector
+            else:
+                await session.commit()
+            # No database transaction spans the blocking provider call.
             answer = await asyncio.to_thread(
-                answerer,
-                question,
-                entity_name,
-                context,
-                cache_scope=cache_scope,
-                deadline=deadline,
+                answerer, question, entity_name, context, model=model, deadline=deadline,
                 **({"evidence": fallback_evidence} if fallback_evidence is not None else {}),
             )
+            remaining_timeout(deadline)
+            if identity is not None and type(answer["answer"]) is bool:
+                await answer_cache.store(session, identity, answer["answer"], answer["explanation"])
+                remaining_timeout(deadline)
+                await session.commit()
     finally:
         if fallback_evidence is not None:
             fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
