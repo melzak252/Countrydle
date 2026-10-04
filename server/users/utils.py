@@ -166,7 +166,7 @@ async def send_verification_email(
 ) -> None:
     token = create_verification_token(user.email)
 
-    verification_url = f"https://jmelzacki.com/api/verify-email?token={token}"
+    verification_url = f"https://countrydle.online/api/verify-email?token={token}"
     message = MessageSchema(
         subject="Verify Your Email",
         recipients=[user.email],  # List of recipients

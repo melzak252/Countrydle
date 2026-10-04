@@ -136,6 +136,20 @@ including FAQ search, topic filters, and keyboard accordion controls.
 
 The `/contact` page uses `melzacki.jakub@gmail.com` for direct support and feedback submissions. Keep this address aligned with support contacts in server email templates.
 
+## Legal document presentation
+
+`/terms`, `/privacy-policy`, and `/cookie-policy` share
+`src/components/LegalDocument.tsx`: a left-aligned serif title, update date,
+readable document column, and thin section dividers matching the public pages.
+The component owns section, paragraph, list, and link styling; each policy page
+owns its wording, links, and update date. Presentation-only changes must preserve
+those values. Cookie Policy retains the existing `PrivacySettingsButton` and
+Google CMP behavior described below.
+
+Use **Countrydle** as the project name and `https://countrydle.online` for
+public-site links. Keep personal author attribution and the support address
+`melzacki.jakub@gmail.com` distinct from the project branding.
+
 ## Advertising consent and public discovery
 
 `main.tsx` is the only AdSense loader. Set `VITE_GOOGLE_ADSENSE_ID` when building
