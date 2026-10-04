@@ -217,7 +217,7 @@ async def test_unsupported_plan_uses_daily_retrieval_and_answer_model(admin_clie
             raise ValueError("Embedding input must contain question text")
         return [SimpleNamespace(text="Retrieved geographic evidence.")], [0.1]
 
-    monkeypatch.setattr(module, "get_fragments_matching_question", fragments)
+    monkeypatch.setattr("utils.fallback.get_fragments_matching_question", fragments)
 
     def answer_from_context(prompt):
         return {
@@ -225,7 +225,7 @@ async def test_unsupported_plan_uses_daily_retrieval_and_answer_model(admin_clie
             "explanation": "The retrieved evidence rules this out." if "Retrieved geographic evidence." in prompt else "Insufficient evidence.",
         }
 
-    monkeypatch.setattr(module, "gemini_json", lambda prompt, *args, **kwargs: answer_from_context(prompt))
+    monkeypatch.setattr("utils.fallback_answers.gemini_json", lambda system, prompt, **kwargs: answer_from_context(system))
     response = await client.post("/admin/question-tests", json={
         "mode": mode, "entity_id": entity_id, "question": "Is it in Europe?",
     })
@@ -248,8 +248,8 @@ async def test_model_operational_failure_does_not_fabricate_answer(admin_client,
             raise RuntimeError("provider unavailable; secret provider details")
         return {"explanation": "No usable answer"}
 
-    monkeypatch.setattr("countrydle.utils.get_fragments_matching_question", no_fragments)
-    monkeypatch.setattr("countrydle.utils.answer_question_for_entity", broken_answer)
+    monkeypatch.setattr("utils.fallback.get_fragments_matching_question", no_fragments)
+    monkeypatch.setattr("utils.fallback_answers.gemini_json", lambda *args, **kwargs: broken_answer(*args, **kwargs))
     response = await client.post("/admin/question-tests", json={
         "mode": "countrydle", "entity_id": 31, "question": "Is it in Europe?",
     })
@@ -352,3 +352,27 @@ async def test_diagnostics_exclude_private_provider_evidence(admin_client, monke
     assert diagnostics["planner"]["usage"]["input_tokens"] == 0
     assert "PRIVATE_" not in response.text
     assert "prompt" not in diagnostics["planner"] and "messages" not in diagnostics["planner"]
+
+
+async def test_admin_fallback_diagnostics_always_regenerate_instead_of_reusing_game_answers(admin_client, monkeypatch):
+    from utils import fallback_answers
+
+    client, _ = admin_client
+    monkeypatch.setattr(fallback_answers, "_cache", fallback_answers._AnswerCache())
+    patch_country_local(monkeypatch, plan(supported=False))
+
+    async def fragments(*args, **kwargs):
+        return [SimpleNamespace(text="Poland hosted the event.")], [0.1]
+
+    monkeypatch.setattr("utils.fallback.get_fragments_matching_question", fragments)
+    answers = iter([
+        {"answer": False, "explanation": "First model result."},
+        {"answer": True, "explanation": "Fresh second model result."},
+    ])
+    monkeypatch.setattr(fallback_answers, "gemini_json", lambda *args, **kwargs: next(answers))
+    request = {"mode": "countrydle", "entity_id": 31, "question": "Did it host the event?"}
+    first = await client.post("/admin/question-tests", json=request)
+    second = await client.post("/admin/question-tests", json=request)
+    assert first.status_code == second.status_code == 200
+    assert first.json()["answer"] is False
+    assert second.json()["answer"] is True

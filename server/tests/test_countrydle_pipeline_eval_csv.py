@@ -308,7 +308,9 @@ async def test_countrydle_live_fallback_answering_eval_rows_are_recorded(record_
                     required_info="Relevant Wikipedia/Qdrant fragments for the requested fact.",
                 )
 
-                question_create, _question_vector = await ask_question(enhanced, day_country, None, session)
+                question_create, _question_vector = await ask_question(
+                    enhanced, day_country, None, session, use_cache=False,
+                )
 
             record_countrydle_eval(
                 question=question,

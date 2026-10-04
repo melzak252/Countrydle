@@ -358,3 +358,30 @@ async def test_admin_template_divergences_api(reports_api):
         assert res_rev_after.json()["total"] == 1
     finally:
         app.dependency_overrides.pop(get_admin_user, None)
+
+
+@pytest.mark.anyio
+async def test_committed_report_stops_reusing_the_disputed_fallback_answer(reports_api, monkeypatch):
+    from datetime import timezone
+    from utils import fallback_answers
+
+    monkeypatch.setattr(fallback_answers, "_cache", fallback_answers._AnswerCache())
+    monkeypatch.setattr(fallback_answers, "datetime", SimpleNamespace(
+        now=lambda tz: datetime(2026, 9, 20, 12, tzinfo=timezone.utc),
+    ))
+    responses = iter([
+        {"answer": False, "explanation": "The country did not host the event."},
+        {"answer": True, "explanation": "Corrected evidence confirms the event."},
+    ])
+    monkeypatch.setattr(fallback_answers, "gemini_json", lambda *args, **kwargs: next(responses))
+    record = reports_api.questions["countrydle"]
+    arguments = {
+        "entity_name": "Poland", "original_question": record.original_question,
+        "question": record.question, "context": record.context,
+        "cache_scope": ("countrydle", 1),
+    }
+    assert fallback_answers.get_answer("Game rules.", "Question data.", **arguments)["answer"] is False
+    login(reports_api.owner)
+    response = await reports_api.client.post("/answer-reports", json=payload())
+    assert response.status_code == 201
+    assert fallback_answers.get_answer("Game rules.", "Question data.", **arguments)["answer"] is True

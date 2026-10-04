@@ -52,7 +52,7 @@ class QuestionDisplay(ReportableQuestion):
 
 class FullQuestionDisplay(QuestionDisplay):
     explanation: str
-    context: str | None
+    context: str | None = Field(default=None, exclude=True)
     user: UserDisplay | None = None
     country: CountryDisplay | None = None
 
