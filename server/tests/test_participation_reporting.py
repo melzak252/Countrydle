@@ -9,7 +9,7 @@ from db.base import Base
 from db.models.blog import DailyBlogPost
 from db.models.continental import ContinentalDay, ContinentalState
 from db.models.country import Country
-from db.models.countrydle import CountrydleDay, CountrydleState
+from db.models.countrydle import CountrydleDay, CountrydleState, CountrydleQuestion, CountrydleGuess
 from db.models.flagdle import FlagdleDay, FlagdleState
 from db.models.guest_participation import GuestParticipation
 from db.models.powiatdle import PowiatdleDay, PowiatdleState
@@ -38,6 +38,7 @@ def reporting_db():
     engine = create_engine("sqlite://")
     models = (
         User, Country, DailyBlogPost, CountrydleDay, CountrydleState,
+        CountrydleQuestion, CountrydleGuess,
         USStatedleDay, USStatedleState, PowiatdleDay, PowiatdleState,
         WojewodztwodleDay, WojewodztwodleState, FlagdleDay, FlagdleState,
         ContinentalDay, ContinentalState, GuestParticipation,
@@ -198,3 +199,28 @@ async def test_existing_blog_responses_refresh_stats_without_changing_article(re
     assert after.content_markdown == before.content_markdown == post.content_markdown
     assert after.title == before.title == "Original title"
     assert not db.is_modified(post)
+
+
+@pytest.mark.anyio
+async def test_game_debrief_counts_unique_guests_and_users(reporting_db):
+    from blog import get_day_community_telemetry
+
+    db, session = reporting_db
+    # Inactive registered user (0 questions, 0 guesses) -> should NOT be counted
+    db.add(CountrydleState(user_id=101, day_id=1, questions_asked=0, guesses_made=0, won=False))
+    # Active registered user who won -> 1 challenger, 1 solver
+    db.add(CountrydleState(user_id=102, day_id=1, questions_asked=5, guesses_made=1, won=True, points=1000))
+    # Active guest who won -> 1 challenger, 1 solver
+    db.add(GuestParticipation(guest_id="guest-winner", mode="countrydle", day_id=1, questions_asked=4, guesses_made=1, won=True))
+    # Active guest who lost -> 1 challenger, 0 solver
+    db.add(GuestParticipation(guest_id="guest-lost", mode="countrydle", day_id=1, questions_asked=10, guesses_made=3, won=False))
+    db.flush()
+
+    debrief = await get_day_community_telemetry(session, TODAY)
+    assert debrief.has_telemetry is True
+    # Exactly 3 unique active players (User 102, Guest winner, Guest lost)
+    assert debrief.total_challengers == 3
+    # Exactly 2 solvers (User 102, Guest winner)
+    assert debrief.total_solvers == 2
+    assert debrief.win_rate_pct == 66.7
+    assert debrief.high_score == 1000
