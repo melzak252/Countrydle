@@ -27,7 +27,7 @@ export default function GameActionComposer({
   children,
 }: GameActionComposerProps) {
   const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  const isPl = i18n.language?.startsWith('pl') || false;
   return (
     <section aria-label={isPl ? 'Panel akcji gry' : 'Game action composer'} className="game-action-composer flex min-h-0 shrink-0 flex-col border-t border-white/10 bg-obsidian-950/90 px-3 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+0.625rem)]">
       {(showActionTabs || trailingActions) && (
