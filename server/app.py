@@ -234,6 +234,7 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
         "<url><loc>https://countrydle.online/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>",
         "<url><loc>https://countrydle.online/game</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/flagdle</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/border-hop</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/europe</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/asia</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/africa</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",

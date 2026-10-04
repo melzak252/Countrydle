@@ -28,6 +28,7 @@ ROUTES = [
     "/patch-notes",
     "/archive",
     "/leaderboard",
+    "/border-hop",
 ]
 
 

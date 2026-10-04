@@ -1,8 +1,12 @@
 import logging
+import random
 import sqlite3
+from collections import deque
+from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +53,195 @@ def deduplicate_border_names(borders: List[str]) -> List[str]:
             seen.add(canon_key)
             result.append(canonical)
     return sorted(result)
+
+
+class BorderHopVerifyRequest(BaseModel):
+    mode: str = "countries"
+    start: str
+    target: str
+    path: List[str]
+
+
+class BorderHopVerifyResponse(BaseModel):
+    valid: bool
+    hops: int
+    optimal_hops: Optional[int] = None
+    is_optimal: bool
+    rank: Optional[str] = None
+    optimal_path: Optional[List[str]] = None
+    error_step: Optional[List[str]] = None
+    message: Optional[str] = None
+
+
+BORDER_CANONICAL_ALIASES: Dict[str, str] = {
+    "czechia": "Czech Republic",
+    "dr congo": "Democratic Republic of the Congo",
+    "democratic republic of the congo": "Democratic Republic of the Congo",
+    "timor-leste": "East Timor",
+    "east timor": "East Timor",
+    "usa": "United States",
+    "united states": "United States",
+    "uk": "United Kingdom",
+    "united kingdom": "United Kingdom",
+}
+
+_COUNTRY_ADJACENCY: Optional[Dict[str, Set[str]]] = None
+_COUNTRY_LOOKUP: Optional[Dict[str, str]] = None
+_COUNTRY_ISLANDS: Optional[Set[str]] = None
+_COUNTRY_CONNECTED_PAIRS: Optional[List[Tuple[str, str, int]]] = None
+
+_US_STATE_ADJACENCY: Optional[Dict[str, Set[str]]] = None
+_US_STATE_LOOKUP: Optional[Dict[str, str]] = None
+_US_STATE_ISLANDS: Optional[Set[str]] = None
+_US_STATE_CONNECTED_PAIRS: Optional[List[Tuple[str, str, int]]] = None
+
+
+def _get_country_graph() -> Tuple[Dict[str, Set[str]], Dict[str, str], Set[str]]:
+    global _COUNTRY_ADJACENCY, _COUNTRY_LOOKUP, _COUNTRY_ISLANDS
+    if _COUNTRY_ADJACENCY is not None and _COUNTRY_LOOKUP is not None and _COUNTRY_ISLANDS is not None:
+        return _COUNTRY_ADJACENCY, _COUNTRY_LOOKUP, _COUNTRY_ISLANDS
+
+    conn = get_db_connection("country_facts.sqlite")
+    try:
+        names = {r[0]: r[0] for r in conn.execute("SELECT app_country_name FROM countries")}
+        lookup = {name.lower(): name for name in names}
+        adj = {name: set() for name in names}
+
+        rows = conn.execute("""
+            SELECT c.app_country_name, b.border_country_name
+            FROM countries c
+            JOIN country_borders b ON c.id = b.country_id
+        """).fetchall()
+
+        for c_name, b_name in rows:
+            b_clean = b_name.strip()
+            b_canon = BORDER_CANONICAL_ALIASES.get(b_clean.lower(), b_clean)
+            actual_b = lookup.get(b_canon.lower(), b_canon)
+            if actual_b in adj and c_name in adj:
+                adj[c_name].add(actual_b)
+                adj[actual_b].add(c_name)
+
+        islands = {name for name, nbrs in adj.items() if len(nbrs) == 0}
+
+        _COUNTRY_ADJACENCY = adj
+        _COUNTRY_LOOKUP = lookup
+        _COUNTRY_ISLANDS = islands
+        return _COUNTRY_ADJACENCY, _COUNTRY_LOOKUP, _COUNTRY_ISLANDS
+    finally:
+        conn.close()
+
+
+def _get_us_state_graph() -> Tuple[Dict[str, Set[str]], Dict[str, str], Set[str]]:
+    global _US_STATE_ADJACENCY, _US_STATE_LOOKUP, _US_STATE_ISLANDS
+    if _US_STATE_ADJACENCY is not None and _US_STATE_LOOKUP is not None and _US_STATE_ISLANDS is not None:
+        return _US_STATE_ADJACENCY, _US_STATE_LOOKUP, _US_STATE_ISLANDS
+
+    conn = get_db_connection("us_state_facts.sqlite")
+    try:
+        names = {r[0]: r[0] for r in conn.execute("SELECT name FROM us_states")}
+        lookup = {name.lower(): name for name in names}
+        adj = {name: set() for name in names}
+
+        rows = conn.execute("""
+            SELECT s.name, b.border_state_name
+            FROM us_states s
+            JOIN us_state_borders_states b ON s.id = b.state_id
+        """).fetchall()
+
+        for s_name, b_name in rows:
+            b_clean = b_name.strip()
+            actual_b = lookup.get(b_clean.lower(), b_clean)
+            if actual_b in adj and s_name in adj:
+                adj[s_name].add(actual_b)
+                adj[actual_b].add(s_name)
+
+        islands = {name for name, nbrs in adj.items() if len(nbrs) == 0}
+
+        _US_STATE_ADJACENCY = adj
+        _US_STATE_LOOKUP = lookup
+        _US_STATE_ISLANDS = islands
+        return _US_STATE_ADJACENCY, _US_STATE_LOOKUP, _US_STATE_ISLANDS
+    finally:
+        conn.close()
+
+
+def canonicalize_entity_name(name: str, mode: str = "countries") -> Optional[str]:
+    clean = name.strip()
+    if mode in ("countries", "countrydle"):
+        _, lookup, _ = _get_country_graph()
+        clean = BORDER_CANONICAL_ALIASES.get(clean.lower(), clean)
+        return lookup.get(clean.lower())
+    elif mode in ("us_states", "us_statedle"):
+        _, lookup, _ = _get_us_state_graph()
+        return lookup.get(clean.lower())
+    return None
+
+
+def find_shortest_border_path(start: str, target: str, mode: str = "countries") -> Optional[List[str]]:
+    if mode in ("countries", "countrydle"):
+        adj, _, _ = _get_country_graph()
+    elif mode in ("us_states", "us_statedle"):
+        adj, _, _ = _get_us_state_graph()
+    else:
+        return None
+
+    canon_start = canonicalize_entity_name(start, mode)
+    canon_target = canonicalize_entity_name(target, mode)
+
+    if not canon_start or not canon_target:
+        return None
+    if canon_start == canon_target:
+        return [canon_start]
+
+    queue = deque([[canon_start]])
+    visited = {canon_start}
+    while queue:
+        path = queue.popleft()
+        node = path[-1]
+        for nbr in sorted(adj.get(node, [])):
+            if nbr == canon_target:
+                return path + [nbr]
+            if nbr not in visited:
+                visited.add(nbr)
+                queue.append(path + [nbr])
+    return None
+
+
+def _get_connected_pairs(mode: str = "countries", min_hops: int = 3, max_hops: int = 5) -> List[Tuple[str, str, int]]:
+    global _COUNTRY_CONNECTED_PAIRS, _US_STATE_CONNECTED_PAIRS
+    if mode in ("countries", "countrydle"):
+        if _COUNTRY_CONNECTED_PAIRS is not None:
+            return _COUNTRY_CONNECTED_PAIRS
+        adj, _, _ = _get_country_graph()
+    elif mode in ("us_states", "us_statedle"):
+        if _US_STATE_CONNECTED_PAIRS is not None:
+            return _US_STATE_CONNECTED_PAIRS
+        adj, _, _ = _get_us_state_graph()
+    else:
+        return []
+
+    pairs: List[Tuple[str, str, int]] = []
+    for start in adj:
+        if not adj[start]:
+            continue
+        dist = {start: 0}
+        q = deque([start])
+        while q:
+            curr = q.popleft()
+            for nbr in sorted(adj[curr]):
+                if nbr not in dist:
+                    dist[nbr] = dist[curr] + 1
+                    q.append(nbr)
+        for target, d in dist.items():
+            if min_hops <= d <= max_hops and start < target:
+                pairs.append((start, target, d))
+
+    pairs.sort()
+    if mode in ("countries", "countrydle"):
+        _COUNTRY_CONNECTED_PAIRS = pairs
+    else:
+        _US_STATE_CONNECTED_PAIRS = pairs
+    return pairs
 
 GAME_MODES = [
     {
@@ -324,5 +517,324 @@ async def get_voivodeship_detail(name: str):
         voivodeship["historical_regions"] = historical
 
         return voivodeship
+    finally:
+        conn.close()
+
+
+@router.get("/border-hop/challenge")
+async def get_border_hop_challenge(
+    mode: str = Query("countries"),
+    target: Optional[str] = Query(None),
+    origin: Optional[str] = Query(None),
+    seed: Optional[str] = Query(None),
+):
+    """Generate a deterministic border hop path-finding challenge."""
+    if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
+        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries' or 'us_states'.")
+
+    normalized_mode = "us_states" if mode in ("us_states", "us_statedle") else "countries"
+
+    if normalized_mode == "countries":
+        adj, lookup, islands = _get_country_graph()
+    else:
+        adj, lookup, islands = _get_us_state_graph()
+
+    if target:
+        canon_target = canonicalize_entity_name(target, normalized_mode)
+        if not canon_target:
+            raise HTTPException(status_code=404, detail=f"Target '{target}' not found in {normalized_mode}.")
+
+        if canon_target in islands or len(adj.get(canon_target, set())) == 0:
+            return {
+                "mode": normalized_mode,
+                "start": None,
+                "target": canon_target,
+                "connected": False,
+                "is_island": True,
+                "optimal_hops": None,
+                "optimal_path": None,
+                "message": f"{canon_target} has no direct land borders.",
+            }
+
+        if origin:
+            canon_origin = canonicalize_entity_name(origin, normalized_mode)
+            if not canon_origin:
+                raise HTTPException(status_code=404, detail=f"Origin '{origin}' not found in {normalized_mode}.")
+
+            path = find_shortest_border_path(canon_origin, canon_target, normalized_mode)
+            if not path or len(path) < 2:
+                return {
+                    "mode": normalized_mode,
+                    "start": canon_origin,
+                    "target": canon_target,
+                    "connected": False,
+                    "is_island": canon_origin in islands,
+                    "optimal_hops": None,
+                    "optimal_path": None,
+                    "message": f"No land border connection between {canon_origin} and {canon_target}.",
+                }
+
+            return {
+                "mode": normalized_mode,
+                "start": canon_origin,
+                "target": canon_target,
+                "connected": True,
+                "is_island": False,
+                "optimal_hops": len(path) - 1,
+                "optimal_path": path,
+                "message": None,
+            }
+
+        # Select origin between 3 and 5 hops away from target
+        dist = {canon_target: 0}
+        q = deque([canon_target])
+        while q:
+            curr = q.popleft()
+            for nbr in sorted(adj.get(curr, set())):
+                if nbr not in dist:
+                    dist[nbr] = dist[curr] + 1
+                    q.append(nbr)
+
+        candidates = [node for node, d in dist.items() if 3 <= d <= 5]
+        if not candidates:
+            # Fallback to any reachable node with d >= 1
+            candidates = [node for node, d in dist.items() if d >= 1]
+
+        if not candidates:
+            return {
+                "mode": normalized_mode,
+                "start": None,
+                "target": canon_target,
+                "connected": False,
+                "is_island": True,
+                "optimal_hops": None,
+                "optimal_path": None,
+                "message": f"{canon_target} has no connected neighbors.",
+            }
+
+        candidates.sort()
+        seed_val = seed or f"{date.today().isoformat()}:{canon_target}"
+        rng = random.Random(seed_val)
+        chosen_origin = rng.choice(candidates)
+        path = find_shortest_border_path(chosen_origin, canon_target, normalized_mode)
+
+        return {
+            "mode": normalized_mode,
+            "start": chosen_origin,
+            "target": canon_target,
+            "connected": True,
+            "is_island": False,
+            "optimal_hops": len(path) - 1 if path else None,
+            "optimal_path": path,
+            "message": None,
+        }
+
+    # Daily puzzle (no target provided)
+    pairs = _get_connected_pairs(normalized_mode, min_hops=3, max_hops=5)
+    if not pairs:
+        pairs = _get_connected_pairs(normalized_mode, min_hops=2, max_hops=6)
+
+    seed_val = seed or date.today().isoformat()
+    rng = random.Random(seed_val)
+    chosen_pair = rng.choice(pairs)
+
+    if rng.random() < 0.5:
+        start_entity, target_entity = chosen_pair[0], chosen_pair[1]
+    else:
+        start_entity, target_entity = chosen_pair[1], chosen_pair[0]
+
+    path = find_shortest_border_path(start_entity, target_entity, normalized_mode)
+
+    return {
+        "mode": normalized_mode,
+        "start": start_entity,
+        "target": target_entity,
+        "connected": True,
+        "is_island": False,
+        "optimal_hops": len(path) - 1 if path else None,
+        "optimal_path": path,
+        "message": None,
+    }
+
+
+@router.get("/border-hop/neighbors")
+async def get_border_neighbors(
+    name: str = Query(...),
+    mode: str = Query("countries"),
+):
+    """Get bordering neighbors for a specific entity."""
+    if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
+        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries' or 'us_states'.")
+
+    normalized_mode = "us_states" if mode in ("us_states", "us_statedle") else "countries"
+
+    if normalized_mode == "countries":
+        adj, _, _ = _get_country_graph()
+    else:
+        adj, _, _ = _get_us_state_graph()
+
+    canon_name = canonicalize_entity_name(name, normalized_mode)
+    if not canon_name:
+        raise HTTPException(status_code=404, detail=f"'{name}' not found in {normalized_mode}.")
+
+    nbrs = sorted(list(adj.get(canon_name, set())))
+    return {
+        "name": canon_name,
+        "neighbors": nbrs,
+        "is_island": len(nbrs) == 0,
+    }
+
+
+@router.post("/border-hop/verify", response_model=BorderHopVerifyResponse)
+async def verify_border_hop(payload: BorderHopVerifyRequest):
+    """Verify a completed border hop path against ground-truth borders."""
+    mode = payload.mode
+    if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
+        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries' or 'us_states'.")
+
+    normalized_mode = "us_states" if mode in ("us_states", "us_statedle") else "countries"
+
+    if normalized_mode == "countries":
+        adj, _, _ = _get_country_graph()
+    else:
+        adj, _, _ = _get_us_state_graph()
+
+    canon_start = canonicalize_entity_name(payload.start, normalized_mode)
+    canon_target = canonicalize_entity_name(payload.target, normalized_mode)
+
+    if not canon_start:
+        raise HTTPException(status_code=404, detail=f"Start entity '{payload.start}' not found.")
+    if not canon_target:
+        raise HTTPException(status_code=404, detail=f"Target entity '{payload.target}' not found.")
+
+    if not payload.path:
+        return BorderHopVerifyResponse(
+            valid=False,
+            hops=0,
+            optimal_hops=None,
+            is_optimal=False,
+            rank=None,
+            message="Path cannot be empty.",
+        )
+
+    canonical_path: List[str] = []
+    for step in payload.path:
+        c_step = canonicalize_entity_name(step, normalized_mode)
+        if not c_step:
+            return BorderHopVerifyResponse(
+                valid=False,
+                hops=len(payload.path) - 1,
+                optimal_hops=None,
+                is_optimal=False,
+                rank=None,
+                message=f"Entity '{step}' not recognized in {normalized_mode}.",
+            )
+        canonical_path.append(c_step)
+
+    optimal_path = find_shortest_border_path(canon_start, canon_target, normalized_mode)
+    optimal_hops = len(optimal_path) - 1 if optimal_path else None
+
+    if canonical_path[0] != canon_start:
+        return BorderHopVerifyResponse(
+            valid=False,
+            hops=len(canonical_path) - 1,
+            optimal_hops=optimal_hops,
+            is_optimal=False,
+            rank=None,
+            optimal_path=optimal_path,
+            message=f"Path must start at '{canon_start}', but started at '{canonical_path[0]}'.",
+        )
+
+    if canonical_path[-1] != canon_target:
+        return BorderHopVerifyResponse(
+            valid=False,
+            hops=len(canonical_path) - 1,
+            optimal_hops=optimal_hops,
+            is_optimal=False,
+            rank=None,
+            optimal_path=optimal_path,
+            message=f"Path must end at '{canon_target}', but ended at '{canonical_path[-1]}'.",
+        )
+
+    for i in range(len(canonical_path) - 1):
+        curr_node = canonical_path[i]
+        next_node = canonical_path[i + 1]
+        if next_node not in adj.get(curr_node, set()):
+            return BorderHopVerifyResponse(
+                valid=False,
+                hops=len(canonical_path) - 1,
+                optimal_hops=optimal_hops,
+                is_optimal=False,
+                rank=None,
+                optimal_path=optimal_path,
+                error_step=[curr_node, next_node],
+                message=f"'{next_node}' does not share a land border with '{curr_node}'.",
+            )
+
+    hops = len(canonical_path) - 1
+    is_optimal = (optimal_hops is not None and hops == optimal_hops)
+
+    if is_optimal:
+        rank = "gold"
+    elif optimal_hops is not None and hops <= optimal_hops + 2:
+        rank = "silver"
+    else:
+        rank = "bronze"
+
+    return BorderHopVerifyResponse(
+        valid=True,
+        hops=hops,
+        optimal_hops=optimal_hops,
+        is_optimal=is_optimal,
+        rank=rank,
+        optimal_path=optimal_path,
+    )
+
+
+@router.get("/powiats/{name}")
+async def get_powiat_detail(name: str):
+    """Get full encyclopedic facts for a specific Polish powiat."""
+    conn = get_db_connection("powiat_facts.sqlite")
+    try:
+        row = conn.execute(
+            "SELECT * FROM powiats WHERE name = ? OR name LIKE ? LIMIT 1",
+            (name, f"%{name}%")
+        ).fetchone()
+
+        if not row:
+            alias_row = conn.execute(
+                """
+                SELECT p.* FROM powiats p 
+                JOIN powiat_name_aliases a ON p.id = a.powiat_id 
+                WHERE a.alias = ? OR a.alias LIKE ? LIMIT 1
+                """,
+                (name, f"%{name}%")
+            ).fetchone()
+            if alias_row:
+                row = alias_row
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Powiat not found in knowledge base.")
+
+        powiat = dict(row)
+        p_id = powiat["id"]
+
+        powiat_borders = [r[0] for r in conn.execute("SELECT border_powiat_name FROM powiat_borders_powiats WHERE powiat_id = ? ORDER BY border_powiat_name", (p_id,)).fetchall()]
+        voiv_borders = [r[0] for r in conn.execute("SELECT voivodeship FROM powiat_borders_voivodeships WHERE powiat_id = ? ORDER BY voivodeship", (p_id,)).fetchall()]
+        country_borders = [r[0] for r in conn.execute("SELECT country_name FROM powiat_borders_countries WHERE powiat_id = ? ORDER BY country_name", (p_id,)).fetchall()]
+        plates = [r[0] for r in conn.execute("SELECT plate_code FROM powiat_registration_plates WHERE powiat_id = ? ORDER BY plate_code", (p_id,)).fetchall()]
+        rivers = [r[0] for r in conn.execute("SELECT river_name FROM powiat_major_rivers WHERE powiat_id = ? ORDER BY river_name", (p_id,)).fetchall()]
+        water = [r[0] for r in conn.execute("SELECT water_name FROM powiat_water_access WHERE powiat_id = ?", (p_id,)).fetchall()]
+        regions = [r[0] for r in conn.execute("SELECT region_name FROM powiat_landform_regions WHERE powiat_id = ?", (p_id,)).fetchall()]
+
+        powiat["neighboring_powiats"] = powiat_borders
+        powiat["neighboring_voivodeships"] = voiv_borders
+        powiat["neighboring_countries"] = country_borders
+        powiat["registration_plates"] = plates
+        powiat["major_rivers"] = rivers
+        powiat["water_access"] = water
+        powiat["landform_regions"] = regions
+
+        return powiat
     finally:
         conn.close()

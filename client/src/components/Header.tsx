@@ -36,6 +36,7 @@ export default function Header() {
         { path: '/game', name: t('header.worldMap', 'World Map'), badge: 'Countrydle' },
         { path: '/flagdle', name: 'Flagdle', badge: '12 Cards' },
         { path: '/friends', name: isPl ? 'Graj ze znajomym' : 'Play with a Friend', badge: '1v1' },
+        { path: '/border-hop', name: isPl ? 'Border Hop' : 'Border Hop', badge: 'New' },
       ],
     },
     {
