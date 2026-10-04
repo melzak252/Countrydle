@@ -16,6 +16,7 @@ import type { AnswerReportMode, Question } from '../types';
 import type { GameplayNotice } from '../lib/gameplayNotices';
 import QuestionChat from './QuestionChat';
 import AdSenseUnit from './AdSenseUnit';
+import LocationFieldNotes from './LocationFieldNotes';
 interface ShareResultCardProps {
   gameName: string;
   gamePath: string;
@@ -268,6 +269,13 @@ export default function ShareResultCard({
           </div>
         </div>
       </div>
+
+      <LocationFieldNotes
+        targetName={targetName}
+        mode={resolvedMode}
+        gamePath={gamePath}
+        targetCountryCode={targetCountryCode}
+      />
 
 
       {/* 5. Primary Actions: Share & 1v1 Challenge */}

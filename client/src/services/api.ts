@@ -313,6 +313,34 @@ export const blogService = {
   },
 };
 
+export interface BorderHopChallenge {
+  mode: string;
+  start: string | null;
+  target: string;
+  connected: boolean;
+  is_island: boolean;
+  optimal_hops: number | null;
+  optimal_path: string[] | null;
+  message?: string | null;
+}
+
+export interface BorderHopVerification {
+  valid: boolean;
+  hops: number;
+  optimal_hops: number | null;
+  is_optimal: boolean;
+  rank: 'gold' | 'silver' | 'bronze' | null;
+  optimal_path?: string[] | null;
+  error_step?: string[] | null;
+  message?: string | null;
+}
+
+export interface BorderNeighborResponse {
+  name: string;
+  neighbors: string[];
+  is_island: boolean;
+}
+
 export const exploreService = {
   getModes: async () => {
     const response = await api.get('/explore/modes');
@@ -349,6 +377,30 @@ export const exploreService = {
   },
   getVoivodeshipDetail: async (name: string) => {
     const response = await api.get(`/explore/voivodeships/${encodeURIComponent(name)}`);
+    return response.data;
+  },
+  getPowiatDetail: async (name: string) => {
+    const response = await api.get(`/explore/powiats/${encodeURIComponent(name)}`);
+    return response.data;
+  },
+  getBorderHopChallenge: async (params?: { mode?: string; target?: string; origin?: string; seed?: string }) => {
+    const p = new URLSearchParams();
+    if (params?.mode) p.append('mode', params.mode);
+    if (params?.target) p.append('target', params.target);
+    if (params?.origin) p.append('origin', params.origin);
+    if (params?.seed) p.append('seed', params.seed);
+    const qs = p.toString();
+    const response = await api.get<BorderHopChallenge>(`/explore/border-hop/challenge${qs ? `?${qs}` : ''}`);
+    return response.data;
+  },
+  getBorderNeighbors: async (name: string, mode?: string) => {
+    const p = new URLSearchParams({ name });
+    if (mode) p.append('mode', mode);
+    const response = await api.get<BorderNeighborResponse>(`/explore/border-hop/neighbors?${p.toString()}`);
+    return response.data;
+  },
+  verifyBorderHop: async (payload: { mode: string; start: string; target: string; path: string[] }) => {
+    const response = await api.post<BorderHopVerification>('/explore/border-hop/verify', payload);
     return response.data;
   },
 };

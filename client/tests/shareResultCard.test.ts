@@ -86,3 +86,13 @@ test('results modal omits question history section when no questions were asked'
   expect(markup).not.toContain('Question History');
   expect(markup).not.toContain('Report answer');
 });
+
+test('results modal renders Location Field Notes section for target location', () => {
+  const markup = renderCard({
+    targetName: 'Italy',
+    mode: 'countrydle',
+  });
+
+  expect(markup).toContain('Location Field Notes');
+  expect(markup).toContain('Atlas Guide');
+});
