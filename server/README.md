@@ -1,6 +1,16 @@
-# Guess Your Country - Server
+# Countrydle - Server
 
-This is the backend server for the "Guess Your Country" (and related games) application. It is built using **FastAPI**, **PostgreSQL** (via SQLAlchemy + AsyncPG), and **Qdrant** (Vector Database).
+This is the backend server for Countrydle and its related geography games. It is built using **FastAPI**, **PostgreSQL** (via SQLAlchemy + AsyncPG), and **Qdrant** (Vector Database).
+
+The public site is `https://countrydle.online`. Verification emails use
+`https://countrydle.online/api/verify-email`; verification success links to
+`/login`. Friend-duel defaults accept HTTPS origins for `countrydle.online` and
+`www.countrydle.online`, alongside the existing local development origins.
+
+The root `nginx.conf` expects `countrydle.online.crt`, `countrydle.online.key`,
+and `countrydle.online.ca-bundle` under `/etc/ssl/certs/`. Provision valid
+certificates covering both public hostnames before deploying that configuration;
+production certificates are not managed by this repository.
 
 ## 🏗 Project Structure
 

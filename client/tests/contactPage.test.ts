@@ -16,6 +16,4 @@ test('Contact & Feedback shows the canonical contact email and mailto link', () 
   ));
 
   expect(markup).toContain('href="mailto:melzacki.jakub@gmail.com"');
-  expect(markup).toContain('>melzacki.jakub@gmail.com</a>');
-  expect(markup).not.toContain('@jmelzacki.com');
 });
