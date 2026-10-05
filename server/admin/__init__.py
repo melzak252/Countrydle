@@ -40,11 +40,13 @@ from schemas.admin import (
 )
 from users.utils import get_admin_user
 from admin.question_tests import router as question_tests_router
+from admin.country_costs import router as country_costs_router
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 router.include_router(question_tests_router)
+router.include_router(country_costs_router)
 
 
 def get_today_date() -> date:

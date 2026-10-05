@@ -7,7 +7,7 @@ from utils.country_cost_metrics import (
     build_cost_report,
 )
 
-from scripts.report_country_costs import apply_measurement_coverage
+from utils.country_cost_report import apply_measurement_coverage
 
 
 def test_metrics_aggregate_atomically_across_reopen_and_threads(tmp_path):

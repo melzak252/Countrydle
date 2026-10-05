@@ -7,6 +7,7 @@ import QuestionTestsPanel from '../components/QuestionTestsPanel';
 import CacheStatsPanel from '../components/CacheStatsPanel';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
 import AdminLiveFeedTab from '../components/admin/AdminLiveFeedTab';
+import AdminCountrydleCostsTab from '../components/admin/AdminCountrydleCostsTab';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminQuestionsTab, { type AdminGameType } from '../components/admin/AdminQuestionsTab';
 import AdminFactsTab from '../components/admin/AdminFactsTab';
@@ -32,11 +33,12 @@ import {
   Sparkles,
   Gamepad2,
   Cpu,
-  MessageSquare
+  MessageSquare,
+  DollarSign
 } from 'lucide-react';
 
 type AdminSection = 'gameplay' | 'qa' | 'system';
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'suggestions' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache';
+type AdminTab = 'overview' | 'liveFeed' | 'users' | 'suggestions' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache' | 'aiCosts';
 
 interface TabDefinition {
   id: AdminTab;
@@ -62,6 +64,7 @@ const TABS: TabDefinition[] = [
 
   // System Section
   { id: 'cache', label: 'Cache & Performance', icon: Cpu, section: 'system' },
+  { id: 'aiCosts', label: 'adminCosts.tab', icon: DollarSign, section: 'system' },
 ];
 
 export default function AdminDashboard() {
@@ -290,7 +293,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && activeTab !== 'cache' && activeTab !== 'suggestions' && (
+        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && activeTab !== 'cache' && activeTab !== 'aiCosts' && activeTab !== 'suggestions' && (
           <div>
             <button
               type="button"
@@ -362,7 +365,7 @@ export default function AdminDashboard() {
               }`}
             >
               <Icon size={14} className={isActive ? 'text-emerald-300' : 'text-sand-100/55'} />
-              <span>{tab.id === 'suggestions' ? t(tab.label) : tab.label}</span>
+              <span>{tab.id === 'suggestions' || tab.id === 'aiCosts' ? t(tab.label) : tab.label}</span>
             </button>
           );
         })}
@@ -464,6 +467,7 @@ export default function AdminDashboard() {
       {activeTab === 'cache' && (
         <CacheStatsPanel />
       )}
+      {activeTab === 'aiCosts' && <AdminCountrydleCostsTab />}
     </div>
   );
 }

@@ -369,6 +369,23 @@ production Compose file uses the `backend_data` named volume. Verify the mount
 in any separately maintained production deployment. Set `COUNTRYDLE_COST_METRICS_DB`
 to override the metrics path when running outside the container.
 
+Administrators can open **Explore → Admin Dashboard → System & Cache → AI Costs**.
+The dashboard shows the last 7, 14, or 30 completed UTC days, with manual refresh,
+daily requests, completed games, template answers, planner-cache hits, paid
+planner calls, USD cost bounds, and cost per 1,000 completed games. Expand a
+day's usage disclosure for stage/model token counts, retries, failed attempts,
+fallback calls, and unknown-usage counters. Missing measurements appear as
+dashes, not zeroes; partial startup days and incomplete known-cost subsets are
+labelled explicitly. No aggregate combines days with incompatible coverage.
+
+The dashboard calls `GET /admin/countrydle-costs?days=7` (API range: 1–366).
+It requires the existing administrator session cookie: guests receive 401 and
+authenticated non-admin users receive 403. It uses the same report assembly as
+the CLI below, reads existing aggregates, and never triggers provider requests.
+Collection happens automatically when Countrydle questions reach the backend;
+there is no report job to schedule. Today is excluded until the next UTC day,
+and no historical costs are backfilled when collection first starts.
+
 From `server/`, run:
 
 ```bash
