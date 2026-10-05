@@ -797,7 +797,7 @@ function DuelRoom({ code }: { code?: string }) {
         <div className={`pointer-events-none ${
           isHistoryOpen
             ? 'game-notebook-layer max-md:absolute max-md:inset-0 max-md:z-[1100] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
-            : 'max-md:absolute max-md:inset-x-0 max-md:bottom-0 max-md:z-[995] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+            : 'max-md:absolute max-md:inset-x-0 max-md:bottom-0 max-md:z-[995] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)]'
         }`}>
           {!isHistoryOpen ? (
             <>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useUSStatesGameStore, type MapMarkerColor } from '../stores/gameStore';
@@ -8,6 +8,13 @@ import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
+import { useMapData } from '../hooks/useMapData';
+import { useMapZoomSync } from '../hooks/useMapZoomSync';
+import MapLoading from './MapLoading';
+import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
+import { createMapRenderer } from '../lib/mapRenderer';
+
+type FeatureLayer = L.Path & { feature?: Feature };
 
 interface USStatesMapProps {
   correctStateName?: string;
@@ -17,6 +24,8 @@ interface USStatesMapProps {
 
 function MapController({ correctName, geoJsonData, isGameOver }: { correctName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
   const map = useMap();
+  useMapZoomSync(map);
+  useEffect(() => trackMapZoom(map), [map]);
 
   useEffect(() => {
     const container = map.getContainer();
@@ -48,15 +57,15 @@ function MapController({ correctName, geoJsonData, isGameOver }: { correctName?:
 
   useEffect(() => {
     if (isGameOver && correctName && geoJsonData) {
-      const correctFeature = geoJsonData.features.find((f: any) => 
-        f.properties.name.toUpperCase() === correctName.toUpperCase()
+      const correctFeature = geoJsonData.features.find((f) =>
+        f.properties?.name.toUpperCase() === correctName.toUpperCase()
       );
 
       if (correctFeature) {
         const layer = L.geoJSON(correctFeature);
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
-            map.flyToBounds(bounds, { duration: 2 });
+            focusMapBounds(map, bounds);
         }
       }
     }
@@ -85,43 +94,23 @@ export function ControlledUSStatesMap({
   onStateClick,
   interaction,
 }: USStatesMapProps & { interaction: MapInteractionState }) {
-  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(null);
+  const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/us-states.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
+  const [renderer] = useState(createMapRenderer);
   const { i18n } = useTranslation();
   const isPl = i18n.language.startsWith('pl');
   const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctStateName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
   const current = useRef({ interaction, revealedName, onStateClick });
-  current.current = { interaction, revealedName, onStateClick };
+  useLayoutEffect(() => {
+    current.current = { interaction, revealedName, onStateClick };
+  }, [interaction, revealedName, onStateClick]);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
-  const activeHoverLayerRef = useRef<L.Layer | null>(null);
+  const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
 
-  useEffect(() => {
-    if (!map) return;
-    const onMapMouseOut = () => {
-      if (activeHoverLayerRef.current) {
-        const prev = activeHoverLayerRef.current as any;
-        prev.closeTooltip?.();
-        if (prev.feature) {
-          prev.setStyle?.(getStyle(prev.feature));
-        }
-        activeHoverLayerRef.current = null;
-      }
-    };
-    map.on('mouseout', onMapMouseOut);
-    return () => {
-      map.off('mouseout', onMapMouseOut);
-    };
-  }, [map]);
-  useEffect(() => {
-    fetch('/us-states.geojson')
-      .then(res => res.json())
-      .then(data => setGeoJsonData(data))
-      .catch(err => console.error('Failed to load US states map data', err));
-  }, []);
 
-  const getStyleFromState = (feature: any, markings: Record<string, MapMarkerColor>, currentCorrect?: string): PathOptions => {
+  const getStyleFromState = useCallback((feature: Feature | undefined, markings: Record<string, MapMarkerColor>, currentCorrect?: string): PathOptions => {
     if (!feature || !feature.properties || !feature.properties.name) return {};
 
     const name = feature.properties.name.toUpperCase();
@@ -187,15 +176,33 @@ export function ControlledUSStatesMap({
       fillOpacity: 0.7,
       dashArray: undefined,
     };
-  };
+  }, []);
 
-  const getStyle = (feature: any) => {
-    return getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName);
-  };
+  const getStyle = useCallback((feature: Feature | undefined) => (
+    getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName)
+  ), [getStyleFromState]);
+  useEffect(() => {
+    if (!map) return;
+    const onMapMouseOut = () => {
+      if (activeHoverLayerRef.current) {
+        const prev = activeHoverLayerRef.current;
+        prev.closeTooltip?.();
+        if (prev.feature) {
+          prev.setStyle?.(getStyle(prev.feature));
+        }
+        activeHoverLayerRef.current = null;
+      }
+    };
+    map.on('mouseout', onMapMouseOut);
+    return () => {
+      map.off('mouseout', onMapMouseOut);
+    };
+  }, [map, getStyle]);
 
   useEffect(() => {
     if (geoJsonLayerRef.current) {
-      geoJsonLayerRef.current.eachLayer((layer: any) => {
+      geoJsonLayerRef.current.eachLayer((item) => {
+        const layer = item as FeatureLayer;
         const feature = layer.feature;
         if (feature) {
           const newStyle = getStyleFromState(
@@ -205,13 +212,13 @@ export function ControlledUSStatesMap({
           );
           layer.setStyle(newStyle);
 
-          if (revealedName && feature.properties.name.toUpperCase() === revealedName.toUpperCase()) {
+          if (revealedName && feature.properties?.name.toUpperCase() === revealedName.toUpperCase()) {
             layer.bringToFront();
           }
         }
       });
     }
-  }, [entityMarkings, revealedName, geoJsonData]);
+  }, [entityMarkings, revealedName, geoJsonData, getStyleFromState]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.name;
@@ -221,14 +228,14 @@ export function ControlledUSStatesMap({
         current.current.interaction.handleEntityMapClick(name.toUpperCase(), false);
         current.current.onStateClick?.(name);
       },
-      contextmenu: (e: any) => {
+      contextmenu: (e: L.LeafletMouseEvent) => {
         e.originalEvent?.preventDefault?.();
         current.current.interaction.handleEntityMapClick(name.toUpperCase(), true);
       },
-      mouseover: (e: any) => {
-        const l = e.target;
+      mouseover: () => {
+        const l = layer as FeatureLayer;
         if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
-          const prev = activeHoverLayerRef.current as any;
+          const prev = activeHoverLayerRef.current;
           prev.closeTooltip?.();
           if (prev.feature) {
             prev.setStyle?.(getStyle(prev.feature));
@@ -242,8 +249,8 @@ export function ControlledUSStatesMap({
         });
         l.openTooltip?.();
       },
-      mouseout: (e: any) => {
-        const l = e.target;
+      mouseout: () => {
+        const l = layer as FeatureLayer;
         const style = getStyle(feature);
         l.setStyle(style);
         l.closeTooltip?.();
@@ -266,22 +273,22 @@ export function ControlledUSStatesMap({
     const targetName = revealedName;
     
     if (map && targetName && geoJsonData) {
-      const correctFeature = geoJsonData.features.find((f: any) => 
-        f.properties.name.toUpperCase() === targetName.toUpperCase()
+      const correctFeature = geoJsonData.features.find((f) =>
+        f.properties?.name.toUpperCase() === targetName.toUpperCase()
       );
 
       if (correctFeature) {
         const layer = L.geoJSON(correctFeature);
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
-            map.flyToBounds(bounds, { duration: 2 });
+            focusMapBounds(map, bounds);
         }
       }
     }
   };
 
   if (!geoJsonData) {
-    return <div className="h-[350px] md:h-[500px] w-full bg-zinc-900 rounded-xl animate-pulse flex items-center justify-center text-zinc-500">Loading US Map...</div>;
+    return <MapLoading className={className ?? 'border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'} error={mapError} onRetry={retryMap} />;
   }
 
   return (
@@ -301,13 +308,14 @@ export function ControlledUSStatesMap({
         activeColor={activeMarkerColor}
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
-        className={revealedName ? 'max-md:!top-[8.25rem]' : 'max-md:!top-[5.75rem]'}
+        onReset={() => { if (map) resetMapView(map, [37.8, -96], 4); }}
+        className={revealedName ? 'max-md:!top-[10rem]' : 'max-md:!top-[7rem]'}
       />
       {revealedName && (
-        <div className="absolute top-[5.75rem] left-[12px] md:top-[5.25rem] z-[1050]">
+        <div className="absolute top-[7rem] left-[12px] md:top-[5.25rem] z-[1050]">
           <button
             onClick={handleZoomToCorrect}
-            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
             title={isPl ? 'Przybliż poprawny stan' : 'Zoom to correct state'}
             aria-label={isPl ? 'Przybliż poprawny stan' : 'Zoom to correct state'}
           >
@@ -324,16 +332,19 @@ export function ControlledUSStatesMap({
         maxZoom={10}
         attributionControl={false}
         wheelDebounceTime={40}
-        wheelPxPerZoomLevel={120}
+        wheelPxPerZoomLevel={60}
+        zoomSnap={0}
+        zoomDelta={0.5}
+        doubleClickZoom={!L.Browser.mobile}
         ref={setMap}
+        renderer={renderer}
       >
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            keepBuffer={8}
-            updateInterval={100}
-            updateWhenZooming={true}
-            updateWhenIdle={false}
+            keepBuffer={2}
+            updateInterval={200}
+            updateWhenZooming={false}
         />
         
         <GeoJSON 

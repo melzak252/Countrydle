@@ -202,7 +202,7 @@ export default function USStatesGamePage() {
       <div className={`pointer-events-none ${
         isChatOpen
           ? 'game-notebook-layer absolute inset-0 z-[1100] md:absolute md:inset-0 md:z-[1000]'
-          : 'absolute inset-x-0 bottom-0 z-[995] w-full pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+          : 'absolute inset-x-0 bottom-0 z-[995] w-full pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)]'
       }`}>
         {!isChatOpen ? (
           <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
