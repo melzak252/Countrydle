@@ -1,30 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
-import {
-  AlertTriangle,
-  Calendar,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Database,
-  ExternalLink,
-  FileText,
-  Filter,
-  HelpCircle,
-  Info,
-  Loader2,
-  RefreshCw,
-  Search,
-  ShieldAlert,
-  Sparkles,
-  Trash2,
-  User as UserIcon,
-  UserX,
-  X,
-  XCircle,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Loader2, RefreshCw, Search, ShieldAlert, Sparkles, Trash2, User as UserIcon, UserX, X } from 'lucide-react';
 import { adminService } from '../../services/api';
-import type { AdminQuestionItem, AdminQuestionSource } from '../../types';
+import type { AdminQuestionItem } from '../../types';
 
 export interface AdminQuestionsTabProps {
   onTestInQA?: (target: { mode: string; targetName?: string; questionText?: string }) => void;
@@ -33,69 +12,66 @@ export interface AdminQuestionsTabProps {
 }
 
 const MODES = [
-  { key: 'all', label: 'All Modes' },
-  { key: 'countrydle', label: 'Countries' },
-  { key: 'powiatdle', label: 'Powiaty' },
-  { key: 'us_statedle', label: 'US States' },
-  { key: 'wojewodztwodle', label: 'Voivodeships' },
-  { key: 'continental', label: 'Continental' },
-];
+  ['all', 'allModes'], ['countrydle', 'modeCountries'], ['powiatdle', 'modePowiaty'],
+  ['us_statedle', 'modeStates'], ['wojewodztwodle', 'modeVoivodeships'], ['continental', 'modeContinental'],
+] as const;
+const SOURCES = [['all', 'allSources'], ['fallback', 'sourceFallback'], ['local_kb', 'sourceLocal'], ['invalid', 'sourceInvalid']] as const;
+const ANSWERS = [['all', 'allAnswers'], ['yes', 'yes'], ['no', 'no'], ['invalid', 'invalid']] as const;
+const PAGE_LIMIT = 30;
 
-const SOURCES: { key: string; label: string; color: string }[] = [
-  { key: 'all', label: 'All Sources', color: 'text-sand-300' },
-  { key: 'fallback', label: 'AI Fallback (LLM)', color: 'text-indigo-400' },
-  { key: 'local_kb', label: 'Local KB (Deterministic)', color: 'text-emerald-400' },
-  { key: 'invalid', label: 'Invalid / Rejected', color: 'text-amber-400' },
-];
-
-const ANSWERS = [
-  { key: 'all', label: 'All Answers' },
-  { key: 'yes', label: 'YES' },
-  { key: 'no', label: 'NO' },
-  { key: 'invalid', label: 'INVALID' },
-];
-
-export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
-  onTestInQA,
-  initialMode = 'all',
-  initialSearch = '',
-}) => {
-  const [mode, setMode] = useState<string>(initialMode);
-  const [search, setSearch] = useState<string>(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState<string>(initialSearch);
-  const [date, setDate] = useState<string>('');
-  const [source, setSource] = useState<string>('all');
-  const [answer, setAnswer] = useState<string>('all');
-  const [hasReport, setHasReport] = useState<boolean | undefined>(undefined);
-  const [page, setPage] = useState<number>(1);
-  const limit = 30;
-
-  // Data states
+export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({ onTestInQA, initialMode = 'all', initialSearch = '' }) => {
+  const { t, i18n } = useTranslation();
+  const [mode, setMode] = useState(initialMode);
+  const [search, setSearch] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+  const [date, setDate] = useState('');
+  const [source, setSource] = useState('all');
+  const [answer, setAnswer] = useState('all');
+  const [hasReport, setHasReport] = useState(false);
+  const [page, setPage] = useState(1);
   const [items, setItems] = useState<AdminQuestionItem[]>([]);
-  const [total, setTotal] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [expandedContexts, setExpandedContexts] = useState<Record<number, boolean>>({});
-
-  // Remediation states
-  const [invalidatingId, setInvalidatingId] = useState<number | null>(null);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [invalidatingId, setInvalidatingId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [retryVersion, setRetryVersion] = useState(0);
+  const [isWide, setIsWide] = useState(false);
+  const requestSequence = useRef(0);
+  const mounted = useRef(false);
+  const generatedId = useId().replace(/:/g, '');
+  const locale = i18n.language?.toLowerCase().startsWith('pl') ? 'pl-PL' : 'en-US';
+  const queryKey = JSON.stringify([mode, debouncedSearch.trim(), date, source, answer, hasReport, page]);
+  const [resultQueryKey, setResultQueryKey] = useState<string | null>(null);
 
-  // Debounce search input
   useEffect(() => {
-    const handler = setTimeout(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; requestSequence.current += 1; };
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1280px)');
+    const update = () => setIsWide(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
     }, 300);
-    return () => clearTimeout(handler);
+    return () => window.clearTimeout(timer);
   }, [search]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [mode, date, source, answer, hasReport]);
-
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     setIsLoading(true);
+    setError(null);
+    setItems([]);
+    setTotal(0);
     try {
       const res = await adminService.getQuestions({
         mode: mode === 'all' ? undefined : mode,
@@ -103,449 +79,142 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({
         date: date || undefined,
         source: source === 'all' ? undefined : source,
         answer: answer === 'all' ? undefined : answer,
-        has_report: hasReport,
+        has_report: hasReport ? true : undefined,
         page,
-        limit,
+        limit: PAGE_LIMIT,
       });
+      if (!mounted.current || requestId !== requestSequence.current) return;
       setItems(res.items);
       setTotal(res.total);
+      setResultQueryKey(queryKey);
     } catch (err) {
+      if (!mounted.current || requestId !== requestSequence.current) return;
       console.error('Failed to fetch admin questions:', err);
+      setError(isAxiosError(err) && typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('adminAudit.error'));
+      setResultQueryKey(queryKey);
     } finally {
-      setIsLoading(false);
+      if (mounted.current && requestId === requestSequence.current) setIsLoading(false);
     }
-  };
+  }, [mode, debouncedSearch, date, source, answer, hasReport, page, retryVersion, queryKey, t]);
 
-  useEffect(() => {
-    fetchQuestions();
-  }, [mode, debouncedSearch, date, source, answer, hasReport, page]);
+  useEffect(() => { void fetchQuestions(); }, [fetchQuestions]);
 
   const handleInvalidate = async (item: AdminQuestionItem) => {
-    if (!window.confirm(`Are you sure you want to invalidate and block the AI fallback answer for question #${item.id} on target '${item.target_name}'? This will remove the cached LLM answer.`)) {
-      return;
-    }
-    setInvalidatingId(item.id);
+    const key = `${item.mode}:${item.id}`;
+    if (!window.confirm(t('adminAudit.confirmInvalidate', { id: item.id, target: item.target_name }))) return;
+    setInvalidatingId(key);
     setActionMessage(null);
     try {
       const res = await adminService.invalidateQuestionFallback(item.mode, item.id);
-      setActionMessage({ type: 'success', text: res.message || 'Cached answer invalidated successfully.' });
+      setActionMessage({ type: 'success', text: res.message || t('adminAudit.invalidated') });
       await fetchQuestions();
     } catch (err: unknown) {
-      let errMsg = 'Failed to invalidate fallback answer.';
-      if (isAxiosError(err) && typeof err.response?.data?.detail === 'string') {
-        errMsg = err.response.data.detail;
-      }
+      const errMsg = isAxiosError(err) && typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('adminAudit.invalidateError');
       setActionMessage({ type: 'error', text: errMsg });
     } finally {
       setInvalidatingId(null);
     }
   };
 
-  const totalPages = Math.ceil(total / limit) || 1;
+  const clearFilters = () => {
+    setMode(initialMode);
+    setSearch(initialSearch);
+    setDebouncedSearch(initialSearch);
+    setDate('');
+    setSource('all');
+    setAnswer('all');
+    setHasReport(false);
+    setPage(1);
+  };
+  const controlClass = 'admin-control min-w-0';
+  const recordKey = (item: AdminQuestionItem) => `${item.mode}:${item.id}`;
+  const timestamp = (value?: string | null) => value ? new Date(value).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  const queryPending = search !== debouncedSearch;
+  const resultsCurrent = resultQueryKey === queryKey && !queryPending;
+  const visibleItems = resultsCurrent ? items : [];
+  const visibleTotal = resultsCurrent ? total : 0;
+  const visibleError = resultsCurrent ? error : null;
+  const queryIsLoading = isLoading || !resultsCurrent;
+  const totalPages = Math.ceil(visibleTotal / PAGE_LIMIT) || 1;
 
-  return (
-    <div className="space-y-6">
-      {/* Action Notification Banner */}
-      {actionMessage && (
-        <div
-          className={`p-3 rounded-sm text-xs flex items-center justify-between gap-3 border ${
-            actionMessage.type === 'success'
-              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
-              : 'bg-rose-950/60 border-rose-500/40 text-rose-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {actionMessage.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-            )}
-            <span>{actionMessage.text}</span>
-          </div>
-          <button
-            onClick={() => setActionMessage(null)}
-            className="text-sand-400 hover:text-sand-200 text-xs p-1"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+  const renderDetails = (item: AdminQuestionItem, contextId: string) => <div className="mt-3 border-t border-white/10 pt-3 space-y-3 text-sm leading-6">
+    <div><h4 className="font-semibold text-sand-200">{t('adminAudit.originalQuestion')}</h4><p className="whitespace-pre-wrap break-words">{item.original_question}</p></div>
+    {item.question && item.question !== item.original_question && <div><h4 className="font-semibold text-sand-200">{t('adminAudit.rephrasedQuestion')}</h4><p className="whitespace-pre-wrap break-words">{item.question}</p></div>}
+    <div><h4 className="font-semibold text-sand-200">{t('adminAudit.explanation')}</h4><p className="whitespace-pre-wrap break-words">{item.explanation || t('adminAudit.noExplanation')}</p></div>
+    <dl className="admin-meta grid gap-2 sm:grid-cols-2">
+      <div><dt>{t('adminAudit.relation')}</dt><dd className="break-words text-sand-200">{item.relation || '—'}</dd></div>
+      <div><dt>{t('adminAudit.reported')}</dt><dd className="text-sand-200">{item.has_report ? t('adminAudit.reportId', { id: item.report_id ?? '—' }) : t('adminCommon.no')}</dd></div>
+      <div><dt>{t('adminAudit.gameDate')}</dt><dd className="text-sand-200">{item.game_date} · #{item.day_id}</dd></div>
+      <div><dt>{t('adminAudit.askedAt')}</dt><dd className="text-sand-200">{timestamp(item.asked_at)} · #{item.id}</dd></div>
+    </dl>
+    {item.context && <details id={contextId} className="admin-panel">
+      <summary className="admin-button admin-row-button cursor-pointer font-medium text-sand-200">{t('adminAudit.rawContext')}</summary>
+      <pre id={`${contextId}-panel`} tabIndex={0} aria-label={t('adminAudit.rawContext')} className="admin-diagnostics mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words">{item.context}</pre>
+    </details>}
+  </div>;
 
-      {/* 1. Filter Controls & Search */}
-      <div className="bg-obsidian-900 border border-white/10 rounded-sm p-4 space-y-4">
-        {/* Search Bar + Date Presets */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-sand-400 w-4 h-4" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search question text, explanation, target entity, or username..."
-              className="w-full bg-obsidian-950 border border-white/10 rounded-sm pl-9 pr-8 py-2 text-xs text-sand-100 placeholder:text-sand-500 focus:outline-none focus:border-amber-400"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sand-500 hover:text-sand-300"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+  const renderTestAction = (item: AdminQuestionItem) => onTestInQA && <button type="button" onClick={() => onTestInQA({ mode: item.mode, targetName: item.target_name, questionText: item.original_question || item.question || '' })} className="admin-button inline-flex items-center gap-2"><Sparkles aria-hidden="true" size={16} /><span>{t('adminAudit.testInQA')}</span></button>;
+  const renderInvalidationAction = (item: AdminQuestionItem) => item.source === 'fallback' && <button type="button" disabled={invalidatingId === recordKey(item)} onClick={() => void handleInvalidate(item)} className="admin-button admin-button-danger inline-flex items-center gap-2"><Trash2 aria-hidden="true" size={16} />{invalidatingId === recordKey(item) ? t('adminCommon.updating') : t('adminAudit.invalidate')}</button>;
 
-          {/* Date controls */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-obsidian-950 border border-white/10 rounded-sm px-2.5 py-1 text-sand-100 text-xs">
-              <Calendar className="w-3.5 h-3.5 text-sand-400" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="bg-transparent text-sand-100 text-xs focus:outline-none"
-              />
-            </div>
-            {date && (
-              <button
-                onClick={() => setDate('')}
-                className="text-[11px] text-amber-400 hover:underline px-1"
-              >
-                Clear Date
-              </button>
-            )}
-            <button
-              onClick={fetchQuestions}
-              disabled={isLoading}
-              className="p-2 bg-obsidian-950 hover:bg-white/5 text-sand-300 border border-white/10 rounded-sm transition-colors"
-              title="Refresh questions"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
+  const renderRecordDetails = (item: AdminQuestionItem) => {
+    const key = recordKey(item);
+    const open = !!expanded[key];
+    const detailsId = `${generatedId}-details-${encodeURIComponent(key)}`;
+    return <button type="button" aria-expanded={open} aria-controls={detailsId} onClick={() => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))} className="admin-button admin-row-button inline-flex items-center gap-2">
+      {open ? <ChevronDown aria-hidden="true" size={16} /> : <ChevronRight aria-hidden="true" size={16} />}{open ? t('adminAudit.hideDetails') : t('adminAudit.details')}
+    </button>;
+  };
 
-        {/* Filter Pills: Mode, Source, Answer, Reported */}
-        <div className="space-y-3 pt-2 border-t border-white/5 text-xs">
-          {/* Modes */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-sand-500 mr-1">Mode:</span>
-            {MODES.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setMode(m.key)}
-                className={`px-2.5 py-1 rounded-sm text-xs font-semibold transition-all ${
-                  mode === m.key
-                    ? 'bg-amber-400 text-obsidian-950 font-bold'
-                    : 'bg-obsidian-950 text-sand-300 hover:bg-white/5 border border-white/5'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
+  const renderAnswer = (item: AdminQuestionItem) => <span className={`admin-badge ${!item.valid ? 'admin-answer-invalid' : item.answer === true ? 'admin-answer-yes' : 'admin-muted'}`}>
+    {!item.valid ? t('adminAudit.invalid') : item.answer === true ? t('adminAudit.yes') : item.answer === false ? t('adminAudit.no') : t('adminCommon.noAnswer')}
+  </span>;
+  const renderSource = (item: AdminQuestionItem) => <div className="space-y-1"><span className="admin-badge">{item.source === 'local_kb' ? t('adminAudit.sourceLocalLong') : item.source === 'fallback' ? t('adminAudit.sourceFallbackLong') : t('adminAudit.sourceInvalidLong')}</span>{item.has_report && <span className="admin-badge admin-outcome-error inline-flex items-center gap-1"><ShieldAlert aria-hidden="true" size={14} />{t('adminAudit.reportId', { id: item.report_id ?? '—' })}</span>}</div>;
+  const renderQuestionSummary = (item: AdminQuestionItem) => <p className="admin-question line-clamp-3 break-words">{item.original_question}</p>;
 
-          {/* Source & Answer Filters */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 flex-wrap">
-            {/* Source */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-sand-500 mr-1">Source:</span>
-              {SOURCES.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setSource(s.key)}
-                  className={`px-2 py-0.5 rounded-sm text-[11px] font-medium transition-colors border ${
-                    source === s.key
-                      ? 'bg-white/15 text-sand-100 border-white/20'
-                      : `bg-obsidian-950 ${s.color} hover:bg-white/5 border-white/5`
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+  return <div className="space-y-4">
+    {actionMessage && <div role={actionMessage.type === 'error' ? 'alert' : 'status'} className={`admin-panel flex items-start justify-between gap-3 ${actionMessage.type === 'success' ? 'border-emerald-700 text-emerald-200' : 'border-rose-700 text-rose-200'}`}>
+      <div className="flex items-center gap-2">{actionMessage.type === 'success' ? <CheckCircle2 aria-hidden="true" size={18} /> : <AlertTriangle aria-hidden="true" size={18} />}{actionMessage.text}</div>
+      <button type="button" aria-label={t('adminAudit.invalidationDismiss')} onClick={() => setActionMessage(null)} className="admin-button admin-row-button"><X aria-hidden="true" size={16} /></button>
+    </div>}
 
-            {/* Answer & Anomaly */}
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Answer */}
-              <div className="flex items-center bg-obsidian-950 border border-white/10 rounded-sm p-0.5">
-                {ANSWERS.map((a) => (
-                  <button
-                    key={a.key}
-                    onClick={() => setAnswer(a.key)}
-                    className={`px-2 py-0.5 rounded-sm text-[11px] font-medium transition-colors ${
-                      answer === a.key ? 'bg-white/15 text-sand-100' : 'text-sand-400 hover:text-sand-200'
-                    }`}
-                  >
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* High Risk / Reported Filter */}
-              <button
-                onClick={() => setHasReport(hasReport === true ? undefined : true)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-sm text-[11px] font-semibold border transition-all ${
-                  hasReport === true
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
-                    : 'bg-obsidian-950 text-sand-400 hover:text-rose-400 border-white/10'
-                }`}
-              >
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                <span>Reported Only</span>
-              </button>
-            </div>
-          </div>
-        </div>
+    <section className="admin-panel" aria-label={t('adminAudit.search')}>
+      <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
+        <label className="min-w-0 min-[360px]:col-span-2 lg:col-span-4"><span className="block text-sm font-medium text-slate-200">{t('adminAudit.search')}</span><span className="admin-meta block">{t('adminAudit.searchHint')}</span><span className="relative block mt-1"><Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={t('adminAudit.searchHint')} className={`${controlClass} admin-control-with-icon`} /></span></label>
+        <label><span className="block text-sm font-medium text-slate-200">{t('adminAudit.mode')}</span><select value={mode} onChange={event => { setMode(event.target.value); setPage(1); }} className={controlClass}>{MODES.map(([value, key]) => <option key={value} value={value}>{t(`adminAudit.${key}`)}</option>)}</select></label>
+        <label><span className="block text-sm font-medium text-slate-200">{t('adminAudit.date')}</span><input type="date" value={date} onChange={event => { setDate(event.target.value); setPage(1); }} className={controlClass} /></label>
+        <label><span className="block text-sm font-medium text-slate-200">{t('adminAudit.source')}</span><select value={source} onChange={event => { setSource(event.target.value); setPage(1); }} className={controlClass}>{SOURCES.map(([value, key]) => <option key={value} value={value}>{t(`adminAudit.${key}`)}</option>)}</select></label>
+        <label><span className="block text-sm font-medium text-slate-200">{t('adminAudit.answer')}</span><select value={answer} onChange={event => { setAnswer(event.target.value); setPage(1); }} className={controlClass}>{ANSWERS.map(([value, key]) => <option key={value} value={value}>{t(`adminAudit.${key}`)}</option>)}</select></label>
       </div>
-
-      {/* 2. Questions Audit Table */}
-      <div className="bg-obsidian-900 border border-white/10 rounded-sm overflow-hidden">
-        {/* Table summary bar */}
-        <div className="px-4 py-3 bg-obsidian-950/60 border-b border-white/10 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sand-200">Questions Audit Log</span>
-            <span className="text-sand-500">•</span>
-            <span className="text-sand-400 font-mono">
-              {total} {total === 1 ? 'record' : 'records'} matching criteria
-            </span>
-          </div>
-          {isLoading && (
-            <div className="flex items-center gap-1.5 text-amber-400 text-xs">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Querying...</span>
-            </div>
-          )}
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-obsidian-950 text-sand-400 border-b border-white/10 font-medium">
-              <tr>
-                <th className="px-4 py-2.5 min-w-[130px]">Target Entity</th>
-                <th className="px-3 py-2.5 min-w-[100px]">Player</th>
-                <th className="px-4 py-2.5 min-w-[280px]">Question Asked</th>
-                <th className="px-3 py-2.5 min-w-[80px]">Answer</th>
-                <th className="px-3 py-2.5 min-w-[140px]">Source Engine</th>
-                <th className="px-4 py-2.5 min-w-[240px]">Explanation & Context</th>
-                <th className="px-3 py-2.5 text-right min-w-[120px]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {isLoading && items.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center text-sand-400">
-                    <Loader2 className="w-6 h-6 animate-spin text-amber-400 mx-auto mb-2" />
-                    <span>Loading questions audit log...</span>
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center text-sand-400 italic">
-                    No questions match the selected filters.
-                  </td>
-                </tr>
-              ) : (
-                items.map((item) => {
-                  const isContextExpanded = !!expandedContexts[item.id];
-                  const isInvalidating = invalidatingId === item.id;
-
-                  return (
-                    <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
-                      {/* Target Entity */}
-                      <td className="px-4 py-3 align-top">
-                        <div className="font-bold text-sand-100">{item.target_name}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] text-amber-400/80 bg-amber-400/10 px-1.5 py-0.2 rounded-sm border border-amber-400/20 font-medium">
-                            {item.target_subtitle || item.mode}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-sand-500 font-mono mt-1">{item.game_date}</div>
-                      </td>
-
-                      {/* Player */}
-                      <td className="px-3 py-3 align-top">
-                        <div className="flex items-center gap-1 font-semibold text-sand-200">
-                          {item.is_guest ? (
-                            <UserX className="w-3.5 h-3.5 text-sand-400 flex-shrink-0" />
-                          ) : (
-                            <UserIcon className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                          )}
-                          <span className="truncate max-w-[90px]" title={item.username}>
-                            {item.username}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-sand-500 mt-0.5">
-                          {item.asked_at ? new Date(item.asked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                        </div>
-                      </td>
-
-                      {/* Question */}
-                      <td className="px-4 py-3 align-top space-y-1">
-                        <div className="font-semibold text-sand-100 text-xs leading-relaxed">
-                          "{item.original_question}"
-                        </div>
-                        {item.question && item.question !== item.original_question && (
-                          <div className="flex items-center gap-1 text-[11px] text-sand-400 font-mono bg-obsidian-950 p-1.5 rounded-sm border border-white/5">
-                            <Sparkles className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                            <span>Rephrased: "{item.question}"</span>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Answer */}
-                      <td className="px-3 py-3 align-top">
-                        {item.valid ? (
-                          <span
-                            className={`px-2 py-0.5 rounded-sm text-[11px] font-bold border inline-block ${
-                              item.answer === true
-                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                                : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                            }`}
-                          >
-                            {item.answer === true ? 'YES' : 'NO'}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-sm text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 inline-block">
-                            INVALID
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Source Engine */}
-                      <td className="px-3 py-3 align-top space-y-1">
-                        <div>
-                          {item.source === 'local_kb' ? (
-                            <span className="inline-block px-2 py-0.5 rounded-sm text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800">
-                              Local KB {item.relation ? `· ${item.relation}` : ''}
-                            </span>
-                          ) : item.source === 'fallback' ? (
-                            <span className="inline-block px-2 py-0.5 rounded-sm text-[10px] font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-800">
-                              AI Fallback (LLM)
-                            </span>
-                          ) : (
-                            <span className="inline-block px-2 py-0.5 rounded-sm text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-800">
-                              Invalid Question
-                            </span>
-                          )}
-                        </div>
-
-                        {item.has_report && (
-                          <div>
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-sm text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                              <ShieldAlert className="w-3 h-3" />
-                              Reported #{item.report_id}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Explanation & Context */}
-                      <td className="px-4 py-3 align-top space-y-2">
-                        <div className="text-xs text-sand-300 leading-relaxed font-sans">
-                          {item.explanation || <span className="text-sand-500 italic">No explanation recorded</span>}
-                        </div>
-
-                        {/* Raw Retrieved Context Drawer for Fallback */}
-                        {item.context && (
-                          <div>
-                            <button
-                              onClick={() =>
-                                setExpandedContexts((prev) => ({
-                                  ...prev,
-                                  [item.id]: !prev[item.id],
-                                }))
-                              }
-                              className="text-[11px] text-indigo-400 hover:text-indigo-300 font-mono flex items-center gap-1 transition-colors"
-                            >
-                              {isContextExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                              <span>{isContextExpanded ? 'Hide Raw Retrieved Context' : 'Inspect Retrieved Context'}</span>
-                            </button>
-
-                            {isContextExpanded && (
-                              <div className="mt-1.5 p-2.5 bg-obsidian-950 rounded-sm border border-indigo-500/20 text-[11px] font-mono text-sand-300 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
-                                {item.context}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-3 py-3 align-top text-right space-y-1">
-                        {/* Verify in QA */}
-                        {onTestInQA && (
-                          <button
-                            onClick={() =>
-                              onTestInQA({
-                                mode: item.mode,
-                                targetName: item.target_name,
-                                questionText: item.original_question || item.question || '',
-                              })
-                            }
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-obsidian-950 hover:bg-amber-400/10 hover:text-amber-400 text-sand-300 rounded-sm border border-white/10 transition-colors text-[11px] font-medium"
-                            title="Verify question in QA Playground"
-                          >
-                            <Sparkles className="w-3 h-3 text-amber-400" />
-                            <span>Verify in QA</span>
-                          </button>
-                        )}
-
-                        {/* Invalidate Fallback Cache */}
-                        {item.source === 'fallback' && (
-                          <div>
-                            <button
-                              disabled={isInvalidating}
-                              onClick={() => handleInvalidate(item)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-obsidian-950 hover:bg-rose-500/10 hover:text-rose-400 text-sand-400 rounded-sm border border-white/10 transition-colors text-[11px] font-medium disabled:opacity-40"
-                              title="Purge cached LLM answer and block false claim"
-                            >
-                              {isInvalidating ? (
-                                <Loader2 className="w-3 h-3 animate-spin text-rose-400" />
-                              ) : (
-                                <Trash2 className="w-3 h-3 text-rose-400" />
-                              )}
-                              <span>Invalidate</span>
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 3. Server Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="p-3 bg-obsidian-950 border-t border-white/10 flex items-center justify-between text-xs">
-            <span className="text-sand-400">
-              Page <b className="text-sand-200">{page}</b> of <b className="text-sand-200">{totalPages}</b>
-            </span>
-
-            <div className="flex items-center gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1 bg-obsidian-900 hover:bg-white/5 disabled:opacity-40 text-sand-200 rounded-sm border border-white/10 transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1 bg-obsidian-900 hover:bg-white/5 disabled:opacity-40 text-sand-200 rounded-sm border border-white/10 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <label className="inline-flex min-h-11 items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={hasReport} onChange={event => { setHasReport(event.target.checked); setPage(1); }} className="h-4 w-4 accent-rose-500" />{t('adminAudit.reportedOnly')}</label>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={() => void fetchQuestions()} disabled={queryIsLoading} className="admin-button inline-flex items-center gap-2"><RefreshCw aria-hidden="true" size={16} />{t('adminAudit.refresh')}</button><button type="button" onClick={clearFilters} className="admin-button">{t('adminAudit.clearFilters')}</button></div>
       </div>
-    </div>
-  );
+    </section>
+    <section className="admin-panel overflow-hidden" aria-label={t('adminAudit.auditLog')}>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
+        <h2 className="text-lg font-semibold text-sand-100">{t('adminAudit.auditLog')}</h2>
+        {!queryIsLoading && !visibleError && <p className="admin-meta">{visibleTotal === 1 ? t('adminAudit.recordSingular', { count: visibleTotal }) : t('adminAudit.records', { count: visibleTotal })}</p>}
+        {queryIsLoading && <p role="status" className="admin-meta inline-flex items-center gap-2"><Loader2 aria-hidden="true" size={16} className="animate-spin" />{t('adminAudit.querying')}</p>}
+      </div>
+      {visibleError ? <div role="alert" className="p-5 text-rose-200"><p>{visibleError}</p><button type="button" onClick={() => setRetryVersion(value => value + 1)} disabled={queryIsLoading} className="admin-button mt-3">{t('adminAudit.retry')}</button></div>
+        : queryIsLoading ? <p role="status" className="p-8 text-center text-slate-300"><Loader2 aria-hidden="true" size={20} className="mx-auto mb-2 animate-spin" />{t('adminAudit.loading')}</p>
+        : visibleItems.length === 0 ? <p className="p-8 text-center text-slate-300">{t('adminAudit.empty')}</p>
+        : isWide ? <div className="overflow-x-auto"><table className="admin-table w-full table-fixed text-left"><thead><tr><th className="w-[25%]">{t('adminAudit.question')}</th><th className="w-[12%]">{t('adminAudit.answer')}</th><th className="w-[18%]">{t('adminAudit.source')}</th><th className="w-[15%]">{t('adminAudit.target')}</th><th className="w-[15%]">{t('adminAudit.player')}</th><th className="w-[15%]">{t('adminAudit.actions')}</th></tr></thead><tbody>{visibleItems.map(item => <React.Fragment key={recordKey(item)}><tr>
+          <td className="align-top"><div className="space-y-2">{renderQuestionSummary(item)}</div></td>
+          <td className="align-top">{renderAnswer(item)}</td><td className="align-top">{renderSource(item)}</td>
+          <td className="align-top"><strong className="block break-words text-sand-100">{item.target_name}</strong><span className="admin-meta">{item.target_subtitle || item.mode}</span></td>
+          <td className="align-top"><span className="flex min-w-0 items-start gap-1">{item.is_guest ? <UserX aria-hidden="true" size={16} className="shrink-0" /> : <UserIcon aria-hidden="true" size={16} className="shrink-0" />}<span className="min-w-0 break-words">{item.username}</span></span><span className="admin-meta block">{timestamp(item.asked_at)}</span></td>
+          <td className="align-top"><div className="flex flex-col items-start gap-2">{renderRecordDetails(item)}{renderTestAction(item)}</div></td>
+        </tr><tr key={`${recordKey(item)}:details`} hidden={!expanded[recordKey(item)]}><td id={`${generatedId}-details-${encodeURIComponent(recordKey(item))}`} colSpan={6} className="bg-obsidian-950/50">{renderDetails(item, `${generatedId}-context-${encodeURIComponent(recordKey(item))}`)}<div className="mt-3">{renderInvalidationAction(item)}</div></td></tr></React.Fragment>)}</tbody></table></div>
+        : <div className="divide-y divide-white/10">{visibleItems.map(item => <article key={recordKey(item)} className="space-y-3 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1">{renderQuestionSummary(item)}</div>{renderAnswer(item)}</div>
+          <div className="grid gap-3 sm:grid-cols-2"><div><span className="block text-sm font-medium text-slate-200">{t('adminAudit.source')}</span>{renderSource(item)}</div><div><span className="block text-sm font-medium text-slate-200">{t('adminAudit.target')}</span><strong className="block break-words text-sand-100">{item.target_name}</strong><span className="admin-meta">{item.target_subtitle || item.mode}</span></div><div><span className="block text-sm font-medium text-slate-200">{t('adminAudit.player')}</span><span className="flex min-w-0 items-start gap-1">{item.is_guest ? <UserX aria-hidden="true" size={16} className="shrink-0" /> : <UserIcon aria-hidden="true" size={16} className="shrink-0" />}<span className="min-w-0 break-words">{item.username}</span></span><span className="admin-meta">{timestamp(item.asked_at)}</span></div><div className="flex items-center">{renderRecordDetails(item)}</div></div>
+          <div id={`${generatedId}-details-${encodeURIComponent(recordKey(item))}`} hidden={!expanded[recordKey(item)]}>{renderDetails(item, `${generatedId}-context-${encodeURIComponent(recordKey(item))}`)}<div className="mt-3">{renderInvalidationAction(item)}</div></div>
+          {renderTestAction(item)}
+        </article>)}</div>}
+      {!visibleError && !queryIsLoading && totalPages > 1 && <div className="admin-pager border-t border-white/10"><span className="admin-meta">{t('adminAudit.page', { page, pages: totalPages })}</span><div className="flex gap-2"><button type="button" disabled={page <= 1} onClick={() => setPage(value => Math.max(1, value - 1))} className="admin-button">{t('adminAudit.previous')}</button><button type="button" disabled={page >= totalPages} onClick={() => setPage(value => Math.min(totalPages, value + 1))} className="admin-button">{t('adminAudit.next')}</button></div></div>}
+    </section>
+  </div>;
 };
 
 export default AdminQuestionsTab;

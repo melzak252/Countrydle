@@ -332,6 +332,30 @@ async def admin_fixture(monkeypatch):
     engine.dispose()
 
 
+async def test_admin_live_feed_target_and_source(admin_fixture):
+    response = await admin_fixture.client.get("/admin/live-feed")
+    assert response.status_code == 200
+    data = response.json()
+    questions = {(item["mode"], item["id"]): item for item in data["recent_questions"]}
+    expected = [
+        ("countrydle", 1, "Poland", "local_kb", True, True),
+        ("countrydle", 2, "Poland", "fallback", True, False),
+        ("powiatdle", 1, "powiat krakowski", "local_kb", True, True),
+        ("us_statedle", 1, "Texas", "invalid", False, None),
+        ("continental", 1, "France", "local_kb", True, True),
+    ]
+    for mode, question_id, target, source, valid, answer in expected:
+        item = questions[(mode, question_id)]
+        assert (item["target_name"], item["source"], item["valid"], item["answer"]) == (
+            target, source, valid, answer
+        )
+    assert questions[("us_statedle", 1)]["target_subtitle"] == "TX"
+    guesses = {(item["mode"], item["id"]): item for item in data["recent_guesses"]}
+    for guess_id, guess, answer in [(1, "Germany", False), (2, "Poland", True), (3, "Czech Republic", False)]:
+        item = guesses[("countrydle", guess_id)]
+        assert (item["guess"], item["answer"], item["target_name"]) == (guess, answer, "Poland")
+
+
 async def test_admin_questions_list_multi_mode(admin_fixture):
     """Verify questions return correct target_name, source, relation, and has_report across modes."""
     response = await admin_fixture.client.get("/admin/questions")
@@ -563,11 +587,15 @@ async def test_admin_endpoints_permission_guard(admin_fixture):
     app.dependency_overrides.pop(get_current_user, None)
     res_anon = await unauthed_client.get("/admin/questions")
     assert res_anon.status_code == 401
+    feed_anon = await unauthed_client.get("/admin/live-feed")
+    assert feed_anon.status_code == 401
 
     # 2. Non-admin user -> 403
     app.dependency_overrides[get_current_user] = lambda: admin_fixture.user
     res_forbidden = await unauthed_client.get("/admin/questions")
     assert res_forbidden.status_code == 403
+    feed_forbidden = await unauthed_client.get("/admin/live-feed")
+    assert feed_forbidden.status_code == 403
 
     res_forbidden_sess = await unauthed_client.get("/admin/game-sessions")
     assert res_forbidden_sess.status_code == 403

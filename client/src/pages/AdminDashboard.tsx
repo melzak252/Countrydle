@@ -1,20 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
 import TemplateDivergencesPanel from '../components/admin/TemplateDivergencesPanel';
 import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
 import QuestionTestsPanel from '../components/QuestionTestsPanel';
 import CacheStatsPanel from '../components/CacheStatsPanel';
-import AdminOverviewTab from '../components/admin/AdminOverviewTab';
+import AdminOverviewTab, { type AdminOverviewData } from '../components/admin/AdminOverviewTab';
 import AdminSessionsTab from '../components/admin/AdminSessionsTab';
 import AdminLiveFeedTab from '../components/admin/AdminLiveFeedTab';
 import AdminCountrydleCostsTab from '../components/admin/AdminCountrydleCostsTab';
-import AdminUsersTab from '../components/admin/AdminUsersTab';
+import AdminUsersTab, { type AdminUserRecord } from '../components/admin/AdminUsersTab';
 import AdminQuestionsTab from '../components/admin/AdminQuestionsTab';
-import AdminFactsTab from '../components/admin/AdminFactsTab';
+import AdminFactsTab, { type EntityOption } from '../components/admin/AdminFactsTab';
 import AdminSuggestionsTab from '../components/admin/AdminSuggestionsTab';
 import type { QuestionTestBridgeTarget } from '../components/QuestionTestsPanel';
-import type { AnswerReport } from '../types';
+import type { AnswerReport, AnswerReportMode, LiveFeedData } from '../types';
 import { 
   adminService, 
   gameService, 
@@ -27,13 +28,11 @@ import {
   Users, 
   HelpCircle, 
   Calendar, 
-  RefreshCw, 
   Database, 
   Activity, 
   ShieldCheck, 
   FileText, 
   Sparkles,
-  Gamepad2,
   Cpu,
   MessageSquare,
   Play,
@@ -45,156 +44,257 @@ type AdminTab = 'overview' | 'sessions' | 'liveFeed' | 'users' | 'suggestions' |
 
 interface TabDefinition {
   id: AdminTab;
-  label: string;
+  labelKey: string;
+  descriptionKey: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   section: AdminSection;
 }
 
 const TABS: TabDefinition[] = [
-  // Gameplay Section
-  { id: 'overview', label: 'Overview & Solve Rates', icon: Activity, section: 'gameplay' },
-  { id: 'sessions', label: 'Player Sessions & Replay', icon: Play, section: 'gameplay' },
-  { id: 'liveFeed', label: 'Live Player Feed', icon: Calendar, section: 'gameplay' },
-  { id: 'users', label: 'User Directory', icon: Users, section: 'gameplay' },
-  { id: 'suggestions', label: 'Player Suggestions', icon: MessageSquare, section: 'gameplay' },
-  { id: 'friendAnswers', label: 'Friend Duels', icon: HelpCircle, section: 'gameplay' },
-
-  // QA & Knowledge Section
-  { id: 'questions', label: 'Questions & AI Audit Log', icon: HelpCircle, section: 'qa' },
-  { id: 'reports', label: 'Player Reports', icon: FileText, section: 'qa' },
-  { id: 'questionTests', label: 'QA Playground', icon: Sparkles, section: 'qa' },
-  { id: 'templateDivergences', label: 'Template Shadow Audit', icon: ShieldCheck, section: 'qa' },
-  { id: 'facts', label: 'Facts Editor (SQLite)', icon: Database, section: 'qa' },
-
-  // System Section
-  { id: 'cache', label: 'Cache & Performance', icon: Cpu, section: 'system' },
-  { id: 'aiCosts', label: 'adminCosts.tab', icon: DollarSign, section: 'system' },
+  { id: 'overview', labelKey: 'adminNavigation.pages.overview.label', descriptionKey: 'adminNavigation.pages.overview.description', icon: Activity, section: 'gameplay' },
+  { id: 'sessions', labelKey: 'adminNavigation.pages.sessions.label', descriptionKey: 'adminNavigation.pages.sessions.description', icon: Play, section: 'gameplay' },
+  { id: 'liveFeed', labelKey: 'adminNavigation.pages.liveFeed.label', descriptionKey: 'adminNavigation.pages.liveFeed.description', icon: Calendar, section: 'gameplay' },
+  { id: 'users', labelKey: 'adminNavigation.pages.users.label', descriptionKey: 'adminNavigation.pages.users.description', icon: Users, section: 'gameplay' },
+  { id: 'suggestions', labelKey: 'adminNavigation.pages.suggestions.label', descriptionKey: 'adminNavigation.pages.suggestions.description', icon: MessageSquare, section: 'gameplay' },
+  { id: 'friendAnswers', labelKey: 'adminNavigation.pages.friendAnswers.label', descriptionKey: 'adminNavigation.pages.friendAnswers.description', icon: HelpCircle, section: 'gameplay' },
+  { id: 'questions', labelKey: 'adminNavigation.pages.questions.label', descriptionKey: 'adminNavigation.pages.questions.description', icon: HelpCircle, section: 'qa' },
+  { id: 'reports', labelKey: 'adminNavigation.pages.reports.label', descriptionKey: 'adminNavigation.pages.reports.description', icon: FileText, section: 'qa' },
+  { id: 'questionTests', labelKey: 'adminNavigation.pages.questionTests.label', descriptionKey: 'adminNavigation.pages.questionTests.description', icon: Sparkles, section: 'qa' },
+  { id: 'templateDivergences', labelKey: 'adminNavigation.pages.templateDivergences.label', descriptionKey: 'adminNavigation.pages.templateDivergences.description', icon: ShieldCheck, section: 'qa' },
+  { id: 'facts', labelKey: 'adminNavigation.pages.facts.label', descriptionKey: 'adminNavigation.pages.facts.description', icon: Database, section: 'qa' },
+  { id: 'cache', labelKey: 'adminNavigation.pages.cache.label', descriptionKey: 'adminNavigation.pages.cache.description', icon: Cpu, section: 'system' },
+  { id: 'aiCosts', labelKey: 'adminCosts.tab', descriptionKey: 'adminNavigation.pages.aiCosts.description', icon: DollarSign, section: 'system' },
 ];
+const SECTIONS: AdminSection[] = ['gameplay', 'qa', 'system'];
+
+function requestError(error: unknown): string {
+  if (isAxiosError(error)) {
+    return typeof error.response?.data?.detail === 'string' ? error.response.data.detail : 'adminCommon.error';
+  }
+  return error instanceof Error ? error.message : 'adminCommon.error';
+}
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
-  const [activeSection, setActiveSection] = useState<AdminSection>('gameplay');
   const [questionTestReport, setQuestionTestReport] = useState<AnswerReport | null>(null);
   const [qaBridgeTarget, setQaBridgeTarget] = useState<QuestionTestBridgeTarget | null>(null);
+  const focusQA = useRef(false);
 
   const handleTestInQA = (target: QuestionTestBridgeTarget) => {
+    setQuestionTestReport(null);
     setQaBridgeTarget(target);
-    setActiveSection('qa');
+    focusQA.current = true;
     setActiveTab('questionTests');
   };
-  // Overview State
-  const [overview, setOverview] = useState<any | null>(null);
+  const mounted = useRef(true);
+  const currentTab = useRef(activeTab);
+  currentTab.current = activeTab;
+  const overviewRequest = useRef(0);
+  const usersRequest = useRef(0);
+  const feedRequest = useRef(0);
+  const entitiesRequest = useRef(0);
+  const factsRequest = useRef(0);
+  const [overview, setOverview] = useState<AdminOverviewData | null>(null);
   const [isOverviewLoading, setIsOverviewLoading] = useState(true);
-
-  // Users State
-  const [usersData, setUsersData] = useState<{ total: number; users: any[] }>({ total: 0, users: [] });
+  const [overviewError, setOverviewError] = useState<string | null>(null);
+  const [usersData, setUsersData] = useState<{ total: number; users: AdminUserRecord[] }>({ total: 0, users: [] });
   const [userSearch, setUserSearch] = useState('');
   const [userPage, setUserPage] = useState(1);
-  const [isUsersLoading, setIsUsersLoading] = useState(false);
-
-  // Live Feed State
-  const [liveFeed, setLiveFeed] = useState<{ recent_questions: any[]; recent_guesses: any[] }>({ recent_questions: [], recent_guesses: [] });
+  const [isUsersLoading, setIsUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const usersQuery = `${userPage}:${userSearch}`;
+  const currentUsersQuery = useRef(usersQuery);
+  currentUsersQuery.current = usersQuery;
+  const [loadedUsersQuery, setLoadedUsersQuery] = useState<string | null>(null);
+  const [liveFeed, setLiveFeed] = useState<LiveFeedData>({ recent_questions: [], recent_guesses: [] });
   const [isFeedLoading, setIsFeedLoading] = useState(false);
-
-  // Facts Editor Mode
-  type AdminGameType = 'countrydle' | 'continental' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
-  // Facts Editor State
-  const [factMode, setFactMode] = useState<AdminGameType>('countrydle');
-  const [factEntities, setFactEntities] = useState<any[]>([]);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [feedHasLoaded, setFeedHasLoaded] = useState(false);
+  const [feedUpdatedAt, setFeedUpdatedAt] = useState<string | null>(null);
+  const feedMode = useRef<string | undefined>(undefined);
+  const pendingFeed = useRef<{ mode: string | undefined; promise: Promise<void> } | null>(null);
+  const [factMode, setFactMode] = useState<AnswerReportMode>('countrydle');
+  const currentFactMode = useRef(factMode);
+  currentFactMode.current = factMode;
+  const [factEntities, setFactEntities] = useState<EntityOption[]>([]);
+  const currentFactEntities = useRef<EntityOption[]>([]);
   const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
+  const currentEntity = useRef(selectedEntityId);
+  currentEntity.current = selectedEntityId;
   const [entityFacts, setEntityFacts] = useState<CountryFactsResponse | null>(null);
   const [factInputs, setFactInputs] = useState<Record<string, string>>({});
   const [newListValues, setNewListValues] = useState<Record<string, string>>({});
   const [factError, setFactError] = useState<string | null>(null);
+  const [isEntitiesLoading, setIsEntitiesLoading] = useState(false);
+  const [isFactsLoading, setIsFactsLoading] = useState(false);
 
-  // Sync section with active tab
   useEffect(() => {
-    const tabDef = TABS.find((t) => t.id === activeTab);
-    if (tabDef && tabDef.section !== activeSection) {
-      setActiveSection(tabDef.section);
-    }
-  }, [activeTab]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      overviewRequest.current++;
+      usersRequest.current++;
+      feedRequest.current++;
+      entitiesRequest.current++;
+      factsRequest.current++;
+    };
+  }, []);
 
-  // Fetch Overview Data
-  const fetchOverview = async () => {
+  useEffect(() => {
+    if (activeTab === 'questionTests' && focusQA.current) {
+      document.getElementById('admin-page-title')?.focus();
+      focusQA.current = false;
+    }
+  }, [activeTab, qaBridgeTarget, questionTestReport]);
+  const fetchOverview = useCallback(async () => {
+    const request = ++overviewRequest.current;
     setIsOverviewLoading(true);
+    setOverviewError(null);
     try {
-      const data = await adminService.getOverview();
-      setOverview(data);
-    } catch (err) {
-      console.error('Failed to load admin overview:', err);
-    } finally {
-      setIsOverviewLoading(false);
-    }
-  };
-
-  // Fetch Users
-  const fetchUsers = async () => {
-    setIsUsersLoading(true);
-    try {
-      const data = await adminService.getUsers(userPage, 25, userSearch);
-      setUsersData(data);
-    } catch (err) {
-      console.error('Failed to load users:', err);
-    } finally {
-      setIsUsersLoading(false);
-    }
-  };
-
-  // Fetch Live Feed
-  const fetchLiveFeed = async (mode?: string) => {
-    setIsFeedLoading(true);
-    try {
-      const data = await adminService.getLiveFeed(mode);
-      setLiveFeed(data);
-    } catch (err) {
-      console.error('Failed to load live feed:', err);
-    } finally {
-      setIsFeedLoading(false);
-    }
-  };
-
-
-
-  // Fetch Fact Entities
-  const fetchFactEntities = async () => {
-    try {
-      let data: any[] = [];
-      if (factMode === 'countrydle') data = await gameService.getCountries();
-      else if (factMode === 'us_statedle') data = await usStateService.getStates();
-      else if (factMode === 'powiatdle') data = await powiatService.getPowiaty();
-      else if (factMode === 'wojewodztwodle') data = await wojewodztwoService.getWojewodztwa();
-
-      setFactEntities(data || []);
-      if (data && data.length > 0) {
-        setSelectedEntityId(data[0].id);
-        fetchEntityFacts(data[0].name || data[0].nazwa || data[0].id);
+      const data: AdminOverviewData = await adminService.getOverview();
+      if (mounted.current && request === overviewRequest.current && currentTab.current === 'overview') setOverview(data);
+    } catch (error) {
+      if (mounted.current && request === overviewRequest.current && currentTab.current === 'overview') {
+        setOverviewError(requestError(error));
       }
-    } catch (err) {
-      console.error('Failed to load fact entities:', err);
+    } finally {
+      if (mounted.current && request === overviewRequest.current) setIsOverviewLoading(false);
     }
-  };
+  }, []);
 
-  // Fetch Facts for Entity
-  const fetchEntityFacts = async (entityIdOrName: number | string) => {
+  const fetchUsers = useCallback(async () => {
+    const request = ++usersRequest.current;
+    const query = `${userPage}:${userSearch}`;
+    const applies = () => mounted.current && request === usersRequest.current && currentUsersQuery.current === query && currentTab.current === 'users';
+    setIsUsersLoading(true);
+    setUsersError(null);
     try {
-      const data = await adminService.getCountryFacts(entityIdOrName, factMode);
-      setEntityFacts(data);
-      const inputs: Record<string, string> = {};
-      (data.scalar_facts || []).forEach((f: any) => {
-        inputs[f.relation] = f.value ?? '';
-      });
-      setFactInputs(inputs);
-      setFactError(null);
-    } catch (err) {
-      console.error('Failed to load entity facts:', err);
-      setFactError('Failed to load entity facts');
+      const data: { total: number; users: AdminUserRecord[] } = await adminService.getUsers(userPage, 25, userSearch);
+      if (applies()) {
+        setUsersData(data);
+        setLoadedUsersQuery(query);
+      }
+    } catch (error) {
+      if (applies()) {
+        setUsersData({ total: 0, users: [] });
+        setLoadedUsersQuery(query);
+        setUsersError(requestError(error));
+      }
+    } finally {
+      if (applies()) setIsUsersLoading(false);
     }
-  };
+  }, [userPage, userSearch]);
 
+  const fetchLiveFeed = useCallback((mode?: string): Promise<void> => {
+    if (pendingFeed.current && pendingFeed.current.mode === mode) return pendingFeed.current.promise;
+    const request = ++feedRequest.current;
+    if (feedMode.current !== mode) {
+      setLiveFeed({ recent_questions: [], recent_guesses: [] });
+      setFeedHasLoaded(false);
+      setFeedUpdatedAt(null);
+    }
+    feedMode.current = mode;
+    setIsFeedLoading(true);
+    setFeedError(null);
+    const applies = () => mounted.current && request === feedRequest.current && currentTab.current === 'liveFeed';
+    const promise = (async () => {
+      try {
+        const data = await adminService.getLiveFeed(mode);
+        if (applies()) {
+          setLiveFeed(data);
+          setFeedHasLoaded(true);
+          setFeedUpdatedAt(new Date().toISOString());
+        }
+      } catch (error) {
+        if (applies()) setFeedError(requestError(error));
+      } finally {
+        if (applies()) setIsFeedLoading(false);
+        if (request === feedRequest.current) pendingFeed.current = null;
+      }
+    })();
+    pendingFeed.current = { mode, promise };
+    return promise;
+  }, []);
+
+  const fetchEntityFacts = useCallback(async (entityId: number): Promise<void> => {
+    const request = ++factsRequest.current;
+    const mode = factMode;
+    const applies = () => mounted.current && request === factsRequest.current && currentFactMode.current === mode && currentEntity.current === entityId && currentTab.current === 'facts';
+    setEntityFacts(null);
+    setFactInputs({});
+    setNewListValues({});
+    setIsFactsLoading(true);
+    setFactError(null);
+    try {
+      // Selector IDs belong to PostgreSQL; fact IDs belong to the local SQLite catalog.
+      const entityName = currentFactEntities.current.find((entity) => entity.id === entityId)?.name;
+      if (!entityName) return;
+      const data = await adminService.getCountryFacts(entityName, mode);
+      if (applies()) {
+        setEntityFacts(data);
+        setFactInputs(Object.fromEntries(data.scalar_facts.map((fact) => [fact.relation, fact.value == null ? '' : String(fact.value)])));
+      }
+    } catch (error) {
+      if (applies()) setFactError(requestError(error));
+    } finally {
+      if (applies()) setIsFactsLoading(false);
+    }
+  }, [factMode]);
+
+  const fetchFactEntities = useCallback(async (): Promise<void> => {
+    const request = ++entitiesRequest.current;
+    const mode = factMode;
+    const applies = () => mounted.current && request === entitiesRequest.current && currentFactMode.current === mode && currentTab.current === 'facts';
+    factsRequest.current++;
+    setIsEntitiesLoading(true);
+    setIsFactsLoading(false);
+    setFactError(null);
+    setFactEntities([]);
+    currentFactEntities.current = [];
+    setSelectedEntityId(null);
+    currentEntity.current = null;
+    setEntityFacts(null);
+    setFactInputs({});
+    setNewListValues({});
+    try {
+      let data: EntityOption[] = [];
+      if (mode === 'countrydle') {
+        const countries = await gameService.getCountries();
+        data = countries.map(({ id, name }) => ({ id, name }));
+      } else if (mode === 'us_statedle') {
+        const states: Array<{ id: number; name: string }> = await usStateService.getStates();
+        data = states.map(({ id, name }) => ({ id, name }));
+      } else if (mode === 'powiatdle') {
+        const counties: Array<{ id: number; nazwa: string }> = await powiatService.getPowiaty();
+        data = counties.map(({ id, nazwa }) => ({ id, name: nazwa }));
+      } else if (mode === 'wojewodztwodle') {
+        const voivodeships: Array<{ id: number; nazwa: string }> = await wojewodztwoService.getWojewodztwa();
+        data = voivodeships.map(({ id, nazwa }) => ({ id, name: nazwa }));
+      }
+      if (applies()) {
+        setFactEntities(data);
+        currentFactEntities.current = data;
+        if (data.length) {
+          currentEntity.current = data[0].id;
+          setSelectedEntityId(data[0].id);
+          await fetchEntityFacts(data[0].id);
+        }
+      }
+    } catch (error) {
+      if (applies()) setFactError(requestError(error));
+    } finally {
+      if (applies()) setIsEntitiesLoading(false);
+    }
+  }, [factMode, fetchEntityFacts]);
+
+  const handleRefreshFacts = async (): Promise<void> => {
+    if (selectedEntityId !== null) await fetchEntityFacts(selectedEntityId);
+    else await fetchFactEntities();
+  };
   const handleSaveScalarFact = async (relation: string, value: string) => {
-    if (!entityFacts) return;
+    if (!entityFacts || selectedEntityId === null || isFactsLoading || isEntitiesLoading) return;
+    const applies = () => mounted.current && currentTab.current === 'facts' && currentFactMode.current === factMode && currentEntity.current === selectedEntityId;
     try {
       await adminService.updateCountryScalarFact(
         entityFacts.country.id,
@@ -203,14 +303,15 @@ export default function AdminDashboard() {
         undefined,
         factMode
       );
-      fetchEntityFacts(entityFacts.country.id);
-    } catch (e: any) {
-      setFactError(e.message || 'Failed to update fact');
+      if (applies()) await fetchEntityFacts(selectedEntityId);
+    } catch (error) {
+      if (applies()) setFactError(requestError(error));
     }
   };
 
   const handleAddListFact = async (relation: string, value: string) => {
-    if (!entityFacts || !value.trim()) return;
+    if (!entityFacts || selectedEntityId === null || isFactsLoading || isEntitiesLoading || !value.trim()) return;
+    const applies = () => mounted.current && currentTab.current === 'facts' && currentFactMode.current === factMode && currentEntity.current === selectedEntityId;
     try {
       await adminService.addCountryListFact(
         entityFacts.country.id,
@@ -220,15 +321,18 @@ export default function AdminDashboard() {
         undefined,
         factMode
       );
-      setNewListValues((prev) => ({ ...prev, [relation]: '' }));
-      fetchEntityFacts(entityFacts.country.id);
-    } catch (e: any) {
-      setFactError(e.message || 'Failed to add fact');
+      if (applies()) {
+        setNewListValues((prev) => ({ ...prev, [relation]: '' }));
+        await fetchEntityFacts(selectedEntityId);
+      }
+    } catch (error) {
+      if (applies()) setFactError(requestError(error));
     }
   };
 
   const handleDeleteListFact = async (relation: string, value: string) => {
-    if (!entityFacts) return;
+    if (!entityFacts || selectedEntityId === null || isFactsLoading || isEntitiesLoading) return;
+    const applies = () => mounted.current && currentTab.current === 'facts' && currentFactMode.current === factMode && currentEntity.current === selectedEntityId;
     try {
       await adminService.deleteCountryListFact(
         entityFacts.country.id,
@@ -237,128 +341,71 @@ export default function AdminDashboard() {
         undefined,
         factMode
       );
-      fetchEntityFacts(entityFacts.country.id);
-    } catch (e: any) {
-      setFactError(e.message || 'Failed to delete fact');
+      if (applies()) await fetchEntityFacts(selectedEntityId);
+    } catch (error) {
+      if (applies()) setFactError(requestError(error));
     }
   };
 
-  // Initial load
   useEffect(() => {
-    fetchOverview();
-  }, []);
-
+    if (activeTab === 'overview') void fetchOverview();
+    return () => { overviewRequest.current++; };
+  }, [activeTab, fetchOverview]);
   useEffect(() => {
-    if (activeTab === 'overview') fetchOverview();
-    else if (activeTab === 'users') fetchUsers();
-    else if (activeTab === 'liveFeed') fetchLiveFeed();
-  }, [activeTab, userPage]);
-
-
+    if (activeTab === 'users') void fetchUsers();
+    return () => { usersRequest.current++; };
+  }, [activeTab, fetchUsers]);
   useEffect(() => {
-    if (activeTab === 'facts') fetchFactEntities();
-  }, [activeTab, factMode]);
+    return () => {
+      feedRequest.current++;
+      pendingFeed.current = null;
+    };
+  }, [activeTab]);
+  useEffect(() => {
+    if (activeTab === 'facts') void fetchFactEntities();
+    return () => {
+      entitiesRequest.current++;
+      factsRequest.current++;
+    };
+  }, [activeTab, fetchFactEntities]);
 
-  const activeSectionTabs = TABS.filter((t) => t.section === activeSection);
+  const activeDefinition = TABS.find((tab) => tab.id === activeTab)!;
 
   return (
-    <div className="min-w-0 space-y-6 bg-obsidian-950 text-sand-100 [&_button]:focus-visible:outline [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-emerald-300 [&_input]:focus-visible:outline-emerald-300 [&_select]:focus-visible:outline-emerald-300">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-emerald-300 font-medium text-xs uppercase tracking-[0.18em]">
-            <ShieldCheck size={16} />
-            <span>Administrator Control Center</span>
+    <div className="admin-workspace">
+      <nav className="admin-sidebar" aria-label={t('adminNavigation.pageSelector')}>
+        {SECTIONS.map((section) => (
+          <div key={section} className="mb-6">
+            <p className="admin-meta mb-2 px-3">{t(`adminNavigation.sections.${section}`)}</p>
+            {TABS.filter((tab) => tab.section === section).map((tab) => {
+              const Icon = tab.icon;
+              return <button key={tab.id} type="button" className="admin-button" aria-current={activeTab === tab.id ? 'page' : undefined} onClick={() => setActiveTab(tab.id)}>
+                <Icon size={18} aria-hidden="true" /><span>{t(tab.labelKey)}</span>
+              </button>;
+            })}
           </div>
-          <h1 className="font-serif text-2xl md:text-4xl text-sand-100 tracking-tight">
-            Countrydle Admin Dashboard
-          </h1>
-          <p className="max-w-2xl text-sand-100/65 text-xs md:text-sm leading-relaxed">
-            Real-time player monitoring, community solve progression, knowledge base management, and QA verification.
-          </p>
-        </div>
-
-        {activeTab !== 'reports' && activeTab !== 'friendAnswers' && activeTab !== 'questionTests' && activeTab !== 'cache' && activeTab !== 'aiCosts' && activeTab !== 'suggestions' && (
-          <div>
-            <button
-              type="button"
-              onClick={() => {
-                if (activeTab === 'overview') fetchOverview();
-                else if (activeTab === 'users') fetchUsers();
-                else if (activeTab === 'liveFeed') fetchLiveFeed();
-                else if (activeTab === 'questions') fetchQuestions();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-obsidian-900 hover:bg-white/5 text-sand-100 rounded-sm text-xs font-semibold transition-colors border border-white/10"
-            >
-              <RefreshCw size={13} className={isOverviewLoading || isUsersLoading || isFeedLoading ? 'animate-spin' : ''} />
-              <span>Refresh View</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Primary Section Selector (3 Main Pillars) */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3" role="tablist">
-        {[
-          { id: 'gameplay', label: 'Gameplay & Players', icon: Gamepad2 },
-          { id: 'qa', label: 'Knowledge Base & QA Engine', icon: Sparkles },
-          { id: 'system', label: 'System & Cache', icon: Cpu },
-        ].map((sec) => {
-          const Icon = sec.icon;
-          const isSelected = activeSection === sec.id;
-          return (
-            <button
-              key={sec.id}
-              type="button"
-              onClick={() => {
-                setActiveSection(sec.id as AdminSection);
-                // Switch to first tab in that section
-                const firstTab = TABS.find((t) => t.section === sec.id);
-                if (firstTab) setActiveTab(firstTab.id);
-              }}
-              role="tab"
-              aria-selected={isSelected}
-              className={`flex items-center gap-2 px-4 py-2 rounded-sm font-semibold text-xs md:text-sm transition-colors border ${
-                isSelected
-                  ? 'bg-emerald-400/15 border-emerald-400/40 text-emerald-300 shadow-sm'
-                  : 'bg-obsidian-900/60 border-white/10 text-sand-100/65 hover:text-sand-100 hover:border-white/20'
-              }`}
-            >
-              <Icon size={16} />
-              <span>{sec.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Secondary Sub-Tabs Navigation */}
-      <div className="flex flex-wrap gap-1.5 pb-2" role="tablist">
-        {activeSectionTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              role="tab"
-              aria-selected={isActive}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm font-medium text-xs transition-colors border ${
-                isActive
-                  ? 'bg-white/10 border-white/25 text-sand-100 font-semibold shadow-inner'
-                  : 'bg-transparent border-transparent text-sand-100/55 hover:text-sand-100 hover:bg-white/5'
-              }`}
-            >
-              <Icon size={14} className={isActive ? 'text-emerald-300' : 'text-sand-100/55'} />
-              <span>{tab.id === 'suggestions' || tab.id === 'aiCosts' ? t(tab.label) : tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
+        ))}
+      </nav>
+      <div className="admin-content">
+        <label className="admin-field admin-mobile-navigation">
+          <span>{t('adminNavigation.pageSelector')}</span>
+          <select className="admin-control" value={activeTab} onChange={(event) => {
+            const destination = TABS.find((tab) => tab.id === event.target.value);
+            if (destination) setActiveTab(destination.id);
+          }}>
+            {SECTIONS.map((section) => <optgroup key={section} label={t(`adminNavigation.sections.${section}`)}>
+              {TABS.filter((tab) => tab.section === section).map((tab) => <option key={tab.id} value={tab.id}>{t(tab.labelKey)}</option>)}
+            </optgroup>)}
+          </select>
+        </label>
+        <header className="admin-page-header">
+          <p className="admin-meta">Countrydle / Admin</p>
+          <h1 id="admin-page-title" tabIndex={-1}>{t(activeDefinition.labelKey)}</h1>
+          <p className="admin-muted">{t(activeDefinition.descriptionKey)}</p>
+        </header>
       {/* TAB CONTENT PANELS */}
       {activeTab === 'overview' && (
-        <AdminOverviewTab overview={overview} isLoading={isOverviewLoading} />
+        <AdminOverviewTab overview={overview} isLoading={isOverviewLoading} error={overviewError} onRefresh={fetchOverview} />
       )}
 
       {activeTab === 'sessions' && (
@@ -366,15 +413,17 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'liveFeed' && (
-        <AdminLiveFeedTab data={liveFeed} isLoading={isFeedLoading} onRefresh={fetchLiveFeed} onTestInQA={handleTestInQA} />
+        <AdminLiveFeedTab data={liveFeed} isLoading={isFeedLoading} error={feedError} hasLoaded={feedHasLoaded} lastUpdatedAt={feedUpdatedAt} onRefresh={fetchLiveFeed} onTestInQA={handleTestInQA} />
       )}
       {activeTab === 'users' && (
         <AdminUsersTab
-          users={usersData.users}
-          totalUsers={usersData.total}
+          users={loadedUsersQuery === usersQuery ? usersData.users : []}
+          totalUsers={loadedUsersQuery === usersQuery ? usersData.total : 0}
           search={userSearch}
           page={userPage}
-          isLoading={isUsersLoading}
+          isLoading={isUsersLoading || loadedUsersQuery !== usersQuery}
+          error={loadedUsersQuery === usersQuery ? usersError : null}
+          onRefresh={fetchUsers}
           onSearchChange={(s) => {
             setUserSearch(s);
             setUserPage(1);
@@ -396,10 +445,27 @@ export default function AdminDashboard() {
           factInputs={factInputs}
           newListValues={newListValues}
           factError={factError}
-          onFactModeChange={setFactMode}
-          onEntitySelect={(id, name) => {
+          isEntitiesLoading={isEntitiesLoading}
+          isFactsLoading={isFactsLoading}
+          onRefresh={handleRefreshFacts}
+          onFactModeChange={(mode) => {
+            if (mode === factMode) return;
+            currentFactMode.current = mode;
+            entitiesRequest.current++;
+            factsRequest.current++;
+            setFactEntities([]);
+            currentFactEntities.current = [];
+            setEntityFacts(null);
+            setSelectedEntityId(null);
+            currentEntity.current = null;
+            setFactError(null);
+            setIsEntitiesLoading(true);
+            setFactMode(mode);
+          }}
+          onEntitySelect={(id) => {
+            currentEntity.current = id;
             setSelectedEntityId(id);
-            fetchEntityFacts(name);
+            void fetchEntityFacts(id);
           }}
           onFactInputChange={(rel, val) => setFactInputs((prev) => ({ ...prev, [rel]: val }))}
           onSaveScalarFact={handleSaveScalarFact}
@@ -412,13 +478,15 @@ export default function AdminDashboard() {
       {activeTab === 'reports' && (
         <AnswerReportsPanel
           onTestQuestion={(report) => {
+            setQaBridgeTarget(null);
             setQuestionTestReport(report);
+            focusQA.current = true;
             setActiveTab('questionTests');
           }}
         />
       )}
       {activeTab === 'templateDivergences' && (
-        <TemplateDivergencesPanel />
+        <TemplateDivergencesPanel onTestQuestion={(questionText, mode) => handleTestInQA({ mode, questionText })} />
       )}
 
 
@@ -439,6 +507,7 @@ export default function AdminDashboard() {
         <CacheStatsPanel />
       )}
       {activeTab === 'aiCosts' && <AdminCountrydleCostsTab />}
+      </div>
     </div>
   );
 }

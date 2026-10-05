@@ -40,37 +40,37 @@ export default function AdminSuggestionsTab() {
     };
   }, [page, refreshVersion]);
 
+  const dateLocale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
   const refresh = useCallback(() => setRefreshVersion((version) => version + 1), []);
   const pageCount = Math.ceil(total / PAGE_SIZE);
-  const dateLocale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const numberFormat = new Intl.NumberFormat(dateLocale);
 
   return (
-    <section className="space-y-5 animate-message" aria-labelledby="admin-suggestions-heading">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="min-w-0 space-y-5 animate-message" aria-labelledby="admin-page-title">
+      <div className="admin-toolbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 id="admin-suggestions-heading" className="font-serif text-xl text-sand-100">{t('adminSuggestions.title')}</h2>
-          <p className="mt-1 text-sm text-sand-100/60">{t('adminSuggestions.total', { count: total })}</p>
+          <p className="admin-meta mt-1">{t('adminSuggestions.total', { count: total })}</p>
         </div>
         <button
           type="button"
           onClick={refresh}
           disabled={isLoading}
-          className="flex items-center justify-center gap-2 self-start rounded-sm border border-white/10 bg-obsidian-900 px-3 py-2 text-xs font-semibold text-sand-100 transition-colors hover:bg-white/5 disabled:cursor-wait disabled:opacity-60"
+          className="admin-button self-start"
         >
-          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />
+          <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />
           {t('adminSuggestions.refresh')}
         </button>
       </div>
 
       {isLoading ? (
-        <p role="status" className="rounded-sm border border-white/10 bg-obsidian-900 p-6 text-sm text-sand-100/65">{t('adminSuggestions.loading')}</p>
+        <p role="status" className="admin-panel">{t('adminSuggestions.loading')}</p>
       ) : error ? (
-        <div role="alert" className="rounded-sm border border-red-400/20 bg-red-400/5 p-6 text-sm text-red-200">
+        <div role="alert" className="admin-panel border-rose-400/40 text-rose-200">
           <p>{t('adminSuggestions.error')}</p>
-          <button type="button" onClick={refresh} className="mt-3 rounded-sm border border-red-300/30 px-3 py-2 font-medium hover:bg-red-300/10">{t('adminSuggestions.retry')}</button>
+          <button type="button" onClick={refresh} className="admin-button admin-button-danger mt-3">{t('adminSuggestions.retry')}</button>
         </div>
       ) : total === 0 ? (
-        <p className="rounded-sm border border-white/10 bg-obsidian-900 p-6 text-sm text-sand-100/65">{t('adminSuggestions.empty')}</p>
+        <p className="admin-panel admin-muted">{t('adminSuggestions.empty')}</p>
       ) : (
         <div className="space-y-3">
           {items.map((suggestion) => {
@@ -78,32 +78,32 @@ export default function AdminSuggestionsTab() {
               ? suggestion.created_at
               : `${suggestion.created_at}Z`;
             return (
-              <article key={suggestion.id} className="min-w-0 space-y-3 rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5">
+              <article key={suggestion.id} className="admin-panel min-w-0 space-y-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span className="rounded-sm border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-xs font-semibold text-emerald-300">{t(`suggestion.topics.${suggestion.topic}`)}</span>
-                    <span className="text-xs text-sand-100/60">{suggestion.reporter_username || t('adminSuggestions.guest')}</span>
+                    <span className="admin-badge">{t(`suggestion.topics.${suggestion.topic}`)}</span>
+                    <span className="text-sm text-slate-300">{suggestion.reporter_username || t('adminSuggestions.guest')}</span>
                   </div>
-                  <time dateTime={createdAt} className="shrink-0 text-xs text-sand-100/55">
+                  <time dateTime={createdAt} className="admin-meta shrink-0">
                     {new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(createdAt))}
                   </time>
                 </div>
                 {(suggestion.name || suggestion.email) && (
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sand-100/60">
-                    {suggestion.name && <span>{t('adminSuggestions.name')}: <span className="text-sand-100/85">{suggestion.name}</span></span>}
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-300">
+                    {suggestion.name && <span>{t('adminSuggestions.name')}: <span className="break-words text-sand-100">{suggestion.name}</span></span>}
                     {suggestion.email && <span>{t('adminSuggestions.email')}: <a href={`mailto:${suggestion.email}`} className="break-all text-emerald-300 underline underline-offset-2">{suggestion.email}</a></span>}
                   </div>
                 )}
-                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-sand-100/85">{suggestion.message}</p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-sand-100">{suggestion.message}</p>
               </article>
             );
           })}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-sand-100/65">
-            <span>{t('adminSuggestions.page', { page, pageCount })}</span>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1 || isLoading} className="rounded-sm border border-white/10 px-3 py-2 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40">{t('adminSuggestions.previous')}</button>
-              <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page >= pageCount || isLoading} className="rounded-sm border border-white/10 px-3 py-2 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40">{t('adminSuggestions.next')}</button>
+          <div className="admin-pager flex flex-wrap items-center justify-between gap-3">
+            <span className="admin-meta">{t('adminSuggestions.page', { page: numberFormat.format(page), pageCount: numberFormat.format(pageCount) })}</span>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1 || isLoading} className="admin-button">{t('adminSuggestions.previous')}</button>
+              <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page >= pageCount || isLoading} className="admin-button">{t('adminSuggestions.next')}</button>
             </div>
           </div>
         </div>
