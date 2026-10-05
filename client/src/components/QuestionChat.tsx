@@ -161,25 +161,32 @@ export default function QuestionChat({
             </span>
             <PlayerQuestionBubble question={pendingQuestion} copyLabel={copyLabel} onCopy={copyQuestion} />
           </div>
-          <div className="flex flex-col items-start pr-6">
-            <div className={`flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium transition-colors ${
-              isSlowThinking ? 'text-amber-400' : 'text-zinc-400'
+          <div className="flex flex-col items-start pr-6 space-y-1.5">
+            <div className={`flex items-center gap-1.5 px-1 text-[10px] font-medium transition-colors ${
+              isSlowThinking ? 'text-amber-400 font-semibold' : 'text-zinc-400'
             }`}>
               <Compass size={13} className={`animate-spin-slow ${isSlowThinking ? 'text-amber-400' : 'text-emerald-400'}`} aria-hidden="true" />
               <span>
                 {isSlowThinking
-                  ? t('inputs.slowQuestionMessage')
+                  ? (isPl ? 'Sprawdzanie dodatkowych danych...' : 'Checking additional records...')
                   : t('inputs.thinking', { defaultValue: 'Countrydle is thinking...' })}
               </span>
             </div>
-            <div className={`w-fit rounded-2xl rounded-tl-md border px-3.5 py-2 shadow-inner transition-colors ${
-              isSlowThinking ? 'border-amber-400/30 bg-amber-400/10' : 'border-white/10 bg-white/[0.045]'
+            <div className={`w-fit max-w-[92%] rounded-2xl rounded-tl-md border px-3.5 py-2.5 shadow-inner transition-all space-y-1.5 ${
+              isSlowThinking
+                ? 'border-amber-400/30 bg-amber-400/10 text-amber-200'
+                : 'border-white/10 bg-white/[0.045]'
             }`}>
               <div className="flex items-center gap-1.5 py-0.5 px-0.5">
                 <span className={`h-1.5 w-1.5 rounded-full animate-typing-dot-1 ${isSlowThinking ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                 <span className={`h-1.5 w-1.5 rounded-full animate-typing-dot-2 ${isSlowThinking ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                 <span className={`h-1.5 w-1.5 rounded-full animate-typing-dot-3 ${isSlowThinking ? 'bg-amber-400' : 'bg-emerald-400'}`} />
               </div>
+              {isSlowThinking && (
+                <p className="text-xs text-amber-300 font-medium leading-relaxed pt-0.5 animate-in fade-in duration-200">
+                  {t('inputs.slowQuestionMessage')}
+                </p>
+              )}
             </div>
           </div>
         </li>
