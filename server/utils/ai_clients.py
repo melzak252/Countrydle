@@ -6,6 +6,7 @@ import time
 from typing import Any
 import httpx
 from openai import OpenAI
+from .request_budget import remaining_timeout
 
 _lock = threading.Lock()
 _http_client: httpx.Client | None = None
@@ -93,37 +94,53 @@ FALLBACK_ANSWER_SCHEMA = {
 }
 
 
+def get_gemini_model() -> str:
+    """Return the configured Gemini model using the established precedence."""
+    return (
+        os.getenv("GEMINI_QUIZ_MODEL")
+        or os.getenv("LOCAL_QUESTION_MODEL")
+        or os.getenv("GEMINI_MODEL")
+        or GEMINI_DEFAULT_MODEL
+    )
+
+DEFAULT_REQUEST_TIMEOUT = float(os.getenv("GEMINI_REQUEST_TIMEOUT", "15.0"))
+
+
 def gemini_json(
     system_prompt: str, user_prompt: str, max_output_tokens: int = 1024, *,
-    evidence: dict | None = None, request_timeout: float = 60, max_attempts: int = 3,
+    evidence: dict | None = None, request_timeout: float = DEFAULT_REQUEST_TIMEOUT, max_attempts: int = 3,
     response_schema: dict | None = None, thinking_budget: int | None = None,
+    model: str | None = None, deadline: float | None = None,
 ) -> dict:
     """Call Gemini through the shared connection pool, retaining fallback retry policy."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
 
-    model = (
-        os.getenv("GEMINI_QUIZ_MODEL")
-        or os.getenv("LOCAL_QUESTION_MODEL")
-        or os.getenv("GEMINI_MODEL")
-        or GEMINI_DEFAULT_MODEL
-    )
+    model = get_gemini_model() if model is None else model
+    if evidence is not None:
+        evidence["provider_attempts"] = 0
     prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}"
     retryable_statuses = {429, 500, 502, 503, 504}
     for attempt in range(max_attempts):
+        timeout = remaining_timeout(deadline, request_timeout)
+        if evidence is not None:
+            evidence["provider_attempts"] = attempt + 1
         try:
             parsed = generate_gemini_json(
                 prompt, model=model, api_key=api_key, max_output_tokens=max_output_tokens,
-                timeout=request_timeout, evidence=evidence, response_schema=response_schema,
+                timeout=timeout, evidence=evidence, response_schema=response_schema,
                 thinking_budget=thinking_budget if model.startswith("gemini-2.5") else None,
             )
+            remaining_timeout(deadline)
             break
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
             if status not in retryable_statuses or attempt == max_attempts - 1:
                 raise RuntimeError(f"Gemini HTTP error {status}") from exc
-            time.sleep(2**attempt)
+            backoff = 2**attempt
+            remaining = remaining_timeout(deadline)
+            time.sleep(min(backoff, remaining) if remaining is not None else backoff)
     else:
         raise RuntimeError("Gemini request failed")
     if evidence is not None:

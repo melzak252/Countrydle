@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,16 +13,6 @@ interface QuestionInputProps {
   mode?: string;
 }
 
-function SlowQuestionNotice({ message }: { message: string }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setVisible(true), 1500);
-    return () => window.clearTimeout(timer);
-  }, []);
-  return visible ? <div role="status" className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
-    <Loader2 size={13} className="animate-spin" /><span>{message}</span>
-  </div> : null;
-}
 
 export function getQuickQuestions(currentMode: string, t: (key: string) => string) {
     const norm = currentMode.toLowerCase();
@@ -177,7 +167,6 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
         </button>
       </div>
-      {isLoading && <SlowQuestionNotice message={t('inputs.slowQuestionMessage')} />}
     </form>
   );
 }

@@ -80,6 +80,87 @@ run a focused group with `python scripts/test_module.py powiatdle` or one test
 module with `python -m pytest -q tests/test_powiat_names.py`. Use
 `python scripts/test_module.py --list` to inspect groups.
 
+## Economical fallback answers
+
+Templates, the interpretation cache and local fact evaluation retain precedence.
+After a valid local miss, Countrydle/continental, US Statedle, Powiatdle and
+Województwodle share this path:
+
+```text
+fresh target-filtered retrieval
+    -> exact target/question/evidence answer-cache hit
+    -> otherwise one configured Gemini answer stage
+```
+
+`utils/fallback.py` budgets retrieval and answer generation together for 15
+seconds (configurable via `FALLBACK_DEADLINE_SECONDS`). Embedding, filtered search,
+neighboring-fragment fetch, model requests and eligible HTTP-status retry backoffs
+spend the same remaining budget.
+There is still at most three answer-model HTTP attempts, not a chain of different
+models. The upstream planner and database target lookup are outside this budget.
+Blocking SDK calls run in worker threads: cancellation stops the waiting gameplay
+operation, but cannot forcibly kill an in-flight SDK call; expired work cannot
+start another paid attempt or publish a resolved answer afterward.
+
+`utils/fallback.py` and `db/repositories/fallback_answers.py` reuse only strictly
+validated `true`/`false` results from the shared PostgreSQL `fallback_answers`
+table. Identity includes mode, canonical target ID/name, exact original/rewritten
+question, configured model, rendered prompts, strict-answer schema version,
+UTC game date and freshly retrieved context. There is no accent folding,
+translation or vector-similarity matching. Player question history is not used
+as a cache. Rows contain hashed identities and answer/explanation, not raw prompts,
+questions, context or player ownership.
+
+There is no worker-local LRU or five-minute expiry. Reuse survives worker restarts
+and lasts within the UTC daily scope while evidence and answer policy match.
+Retrieval remains fresh before lookup: changed or unavailable context cannot
+reuse an older context's answer. This saves answer-model calls, not embedding or
+retrieval calls. Nonempty context is an identity/freshness condition, not proof
+that the passage supports every clause. Startup and a 00:10 UTC maintenance job
+delete prior-day entries and report blocks.
+
+Null, malformed and failed generations, empty-context general-knowledge answers,
+scope-less explicit-target calls and explicit-timeout diagnostics are not cached.
+Admin question tests explicitly bypass answer reuse as well as planner caching.
+A committed answer report invalidates matching server-owned inputs in the shared
+database. Report creation, cache eviction and insertion into `fallback_answer_blocks`
+are one transaction: rollback leaves a valid answer reusable; commit prevents
+all workers from reusing the disputed signature for that daily scope. Every
+lookup excludes blocked signatures, including a late insert racing an uncommitted
+report. A different context or a new game date has a different signature.
+No database transaction is held across model generation. Every player still gets
+a fresh question record/report token and independent normal accounting.
+
+Model selection, predicate policies and EN/PL support are unchanged; Gemini 2.5
+fallbacks retain the 1,024-token thinking and 2,048-token total output ceilings.
+Reliable general knowledge remains available when retrieval fails or is
+irrelevant, while genuinely undetermined answers remain null. No extra LLM judge
+or weaker model was introduced. Schema/provider failures and abstention preserve
+each mode's no-turn behavior.
+
+Player-facing full-question responses no longer serialize raw `context`.
+Question storage, trusted admin diagnostics and report snapshots retain it.
+Answer-cache diagnostics identify `provider="answer_cache"`, zero current
+provider attempts and no copied token usage. Paid calls retain actual provider
+usage; report list-price estimates separately from invoices and do not infer
+site-wide savings from a duplicate-request smoke.
+
+From `server/`, regression coverage:
+
+```bash
+python -m pytest -q tests/test_fallback_answers.py tests/test_fallback_answer_repository.py \
+  tests/test_ai_clients.py tests/test_request_budget.py \
+  tests/test_question_context_privacy.py tests/test_countrydle_fallback.py \
+  tests/test_question_nonblocking.py tests/test_admin_question_tests.py \
+  tests/test_answer_reports.py tests/test_question_accounting.py
+```
+
+Set `QUESTION_TEST_DATABASE_URL` to an explicitly disposable PostgreSQL database
+to exercise PostgreSQL MVCC/report races and daily accounting. Tests isolate
+their schemas; never point this variable at the production database. The cache
+tables are installed by Alembic revision `f6a8c2d4e901` during normal startup
+migration; no production database migration is performed by the test suite.
+
 ## Player suggestions
 
 The public General Suggestion Box at `/contact` saves feedback in PostgreSQL;

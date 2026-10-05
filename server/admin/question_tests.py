@@ -152,7 +152,9 @@ async def evaluate_question_test(
                 source = "local_kb" if answer is not None and answer.valid else "local_planner"
                 if answer is None:
                     enhanced = utilities.question_enhanced_from_plan(request.question, plan)
-                    answer, _ = await utilities.ask_question(enhanced, target, None, session, evidence=evidence)
+                    answer, _ = await utilities.ask_question(
+                        enhanced, target, None, session, evidence=evidence, use_cache=False,
+                    )
                     source = "fallback"
 
             if answer.valid and type(answer.answer) is not bool:

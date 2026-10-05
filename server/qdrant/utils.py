@@ -1,4 +1,5 @@
 import asyncio
+import math
 import time
 from typing import List, Tuple, Any
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ import qdrant
 from qdrant_client.models import PointStruct
 
 from .vectorize import get_embedding, get_bulk_embedding
+from utils.request_budget import remaining_timeout
 
 
 @dataclass
@@ -42,10 +44,25 @@ def split_document(content: str) -> List[Document]:
     return fragments
 
 
-def get_points(client: QdrantClient, collection_name: str, ids: list[int], *, strict_errors: bool = False, request_timeout: int | None = None):
+def _qdrant_timeout(deadline: float | None, configured: int | None) -> int | None:
+    timeout = remaining_timeout(deadline, configured)
+    if deadline is None or timeout is None:
+        return timeout
+    # Qdrant's timeout is integer seconds; keep fractional budgets positive.
+    return max(1, math.ceil(timeout))
+
+
+def get_points(
+    client: QdrantClient, collection_name: str, ids: list[int], *,
+    strict_errors: bool = False, request_timeout: int | None = None,
+    deadline: float | None = None,
+):
     try:
         # Try to get the point by its ID
-        points = client.retrieve(collection_name=collection_name, ids=ids, timeout=request_timeout)
+        points = client.retrieve(
+            collection_name=collection_name, ids=ids,
+            timeout=_qdrant_timeout(deadline, request_timeout),
+        )
         return points
     except UnexpectedResponse:
         if strict_errors:
@@ -61,6 +78,7 @@ def search_matches(
     limit: int = 5,
     *,
     request_timeout: int | None = None,
+    deadline: float | None = None,
 ) -> List[ScoredPoint]:
     search_result: GroupsResult = qdrant.client.query_points_groups(
         collection_name=collection_name,
@@ -77,7 +95,7 @@ def search_matches(
             ]
         ),
         with_payload=True,
-        timeout=request_timeout,
+        timeout=_qdrant_timeout(deadline, request_timeout),
     )
     if not search_result.groups:
         return []
@@ -95,10 +113,15 @@ def get_fragments_matching_question_sync(
     strict_errors: bool = False,
     request_timeout: int | None = None,
     embedding_timeout: float | None = None,
+    deadline: float | None = None,
 ) -> Tuple[list[Fragment], List[float]]:
     query = question
     try:
-        query_vector = get_embedding(query, qdrant.EMBEDDING_MODEL, request_timeout=embedding_timeout)
+        query_vector = get_embedding(
+            query, qdrant.EMBEDDING_MODEL,
+            request_timeout=remaining_timeout(deadline, embedding_timeout),
+        )
+        remaining_timeout(deadline)
     except Exception as exc:
         if strict_errors:
             raise
@@ -113,6 +136,7 @@ def get_fragments_matching_question_sync(
             filter_value=filter_value,
             limit=limit,
             request_timeout=request_timeout,
+            deadline=deadline,
         )
     except Exception as exc:
         if strict_errors:
@@ -137,7 +161,7 @@ def get_fragments_matching_question_sync(
     # Fetch all these points from Qdrant
     all_points = get_points(
         qdrant.client, collection_name, list(ids_to_fetch),
-        strict_errors=strict_errors, request_timeout=request_timeout,
+        strict_errors=strict_errors, request_timeout=request_timeout, deadline=deadline,
     )
 
     # Filter points to ensure they belong to the same entity and are valid
@@ -171,10 +195,13 @@ async def get_fragments_matching_question(
     collection_name: str,
     session: AsyncSession,
     limit: int = 1,
+    *,
+    deadline: float | None = None,
 ) -> Tuple[list[Fragment], List[float]]:
     return await asyncio.to_thread(
         get_fragments_matching_question_sync,
-        question, filter_key, filter_value, collection_name, limit
+        question, filter_key, filter_value, collection_name, limit,
+        deadline=deadline,
     )
 
 

@@ -1,15 +1,12 @@
 import asyncio
 import time
-import os
-import json
+import qdrant
 from typing import List, Tuple
-from utils.ai_clients import gemini_json, FALLBACK_ANSWER_SCHEMA
+from utils.ai_clients import gemini_json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Powiat, PowiatdleDay, User
-from qdrant.utils import get_fragments_matching_question
-import qdrant
 from schemas.powiatdle import PowiatQuestionCreate, PowiatQuestionEnhanced
 from db.repositories.powiatdle import PowiatRepository
 from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
@@ -286,29 +283,15 @@ Uproszczone pytanie: {question.question}"""
 def answer_question_for_entity(
     question: PowiatQuestionEnhanced, entity_name: str, context: str, *,
     evidence: dict | None = None, request_timeout: float | None = None,
+    model: str | None = None, deadline: float | None = None,
 ) -> dict:
     """Run the normal answer model for an explicit target, without daily state."""
     system_prompt, question_prompt = answer_prompts(question, entity_name, context)
-
-    answer_dict = gemini_json(
-        system_prompt, question_prompt, max_output_tokens=2048, evidence=evidence,
-        request_timeout=60 if request_timeout is None else request_timeout,
-        max_attempts=3 if request_timeout is None else 1,
-        response_schema=FALLBACK_ANSWER_SCHEMA, thinking_budget=1024,
+    from utils.fallback_answers import get_answer
+    return get_answer(
+        system_prompt, question_prompt, evidence=evidence,
+        request_timeout=request_timeout, deadline=deadline, model=model,
     )
-    if not isinstance(answer_dict, dict):
-        raise ValueError("Gemini answer must be a JSON object")
-    if "answer" not in answer_dict:
-        raise ValueError("Gemini answer is missing the answer field")
-    answer = answer_dict["answer"]
-    if answer is not None and type(answer) is not bool:
-        raise ValueError("Gemini answer must be true, false, or null")
-    if answer_dict.keys() - {"answer", "explanation"}:
-        raise ValueError("Gemini answer contains unexpected fields")
-    explanation = answer_dict.get("explanation")
-    if not isinstance(explanation, str) or not explanation.strip():
-        raise ValueError("Gemini answer must include a non-empty explanation")
-    return answer_dict
 
 
 async def ask_question(
@@ -318,41 +301,23 @@ async def ask_question(
     session: AsyncSession,
     *,
     evidence: dict | None = None,
+    use_cache: bool = True,
 ) -> Tuple[PowiatQuestionCreate, List[float]]:
-
-    fragments = []
-    question_vector = []
-    if evidence is not None:
-        retrieval_started = time.perf_counter()
-    try:
-        fragments, question_vector = await get_fragments_matching_question(
-            question.question, "powiat_id", day_powiat.powiat_id, "powiaty", session, limit=qdrant.POWIATDLE_CONTEXT_LIMIT
-        )
-    except Exception as exc:
-        print(f"Warning: Vector retrieval failed ({exc}); proceeding without Qdrant context.")
-    finally:
-        if evidence is not None:
-            evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
-    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     powiat: Powiat = await PowiatRepository(session).get(day_powiat.powiat_id)
     if hasattr(session, "commit") and callable(session.commit):
         commit_res = session.commit()
         if asyncio.iscoroutine(commit_res):
             await commit_res
-    answer_kwargs = {}
-    if evidence is not None:
-        fallback_evidence = evidence.setdefault("fallback", {})
-        answer_kwargs["evidence"] = fallback_evidence
-        fallback_started = time.perf_counter()
-    try:
-        answer_dict = await asyncio.to_thread(
-            answer_question_for_entity, question, powiat.nazwa, context, **answer_kwargs
-        )
-    finally:
-        if evidence is not None:
-            fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
-
-
+    from utils.fallback import retrieve_and_answer
+    answer_dict, context, question_vector = await retrieve_and_answer(
+        question, powiat.nazwa,
+        cache_scope=("powiatdle", day_powiat.powiat_id) if use_cache else None,
+        filter_key="powiat_id", filter_value=day_powiat.powiat_id,
+        collection_name="powiaty", context_limit=qdrant.POWIATDLE_CONTEXT_LIMIT,
+        session=session, answerer=answer_question_for_entity,
+        prompt_builder=answer_prompts, evidence=evidence,
+        game_date=getattr(day_powiat, "date", None),
+    )
     question_create = PowiatQuestionCreate(
         user_id=user.id if user else None,
         day_id=day_powiat.id,
@@ -367,5 +332,4 @@ async def ask_question(
         ),
         context=context,
     )
-
     return question_create, question_vector

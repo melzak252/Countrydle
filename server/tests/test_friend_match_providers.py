@@ -165,7 +165,7 @@ async def test_invalid_question_does_not_call_fallback(monkeypatch):
     entity = providers.list_entities("countrydle")[0]
     plan = QuestionPlan("Name it", False, False, None, "Not a yes/no question.", None)
     monkeypatch.setattr(providers, "_plan", lambda *args: plan)
-    from countrydle import utils as gemini
+    from utils import ai_clients as gemini
 
     monkeypatch.setattr(gemini, "generate_gemini_json", lambda *args, **kwargs: pytest.fail("Invalid question called fallback"))
     result = await providers.evaluate_question("countrydle", entity, "Name it")
@@ -218,7 +218,7 @@ async def test_gemini_quota_failure_propagates_without_fabricating_an_answer(mon
 
 @pytest.mark.anyio
 async def test_missing_canonical_markdown_is_not_silently_replaced_with_empty_context(monkeypatch, tmp_path):
-    from countrydle import utils as gemini
+    from utils import ai_clients as gemini
 
     engine = providers._engine("us_statedle")
     if not engine.db_path.exists():

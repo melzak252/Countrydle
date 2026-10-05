@@ -25,7 +25,7 @@ def enhanced_question():
 
 @pytest.mark.parametrize("answer", [True, False, None])
 def test_fallback_accepts_boolean_answers_and_explicit_abstention(monkeypatch, enhanced_question, answer):
-    monkeypatch.setattr(utils, "gemini_json", lambda *args, **kwargs: {
+    monkeypatch.setattr("utils.fallback_answers.gemini_json", lambda *args, **kwargs: {
         "answer": answer,
         "explanation": "Historical records establish the requested fact." if answer is not None else "The available evidence is insufficient to determine this fact.",
     })
@@ -43,7 +43,7 @@ def test_fallback_accepts_boolean_answers_and_explicit_abstention(monkeypatch, e
     {"answer": False, "explanation": "Known answer.", "debug": "unexpected provider field"},
 ])
 def test_fallback_rejects_malformed_provider_answers(monkeypatch, enhanced_question, response):
-    monkeypatch.setattr(utils, "gemini_json", lambda *args, **kwargs: response)
+    monkeypatch.setattr("utils.fallback_answers.gemini_json", lambda *args, **kwargs: response)
 
     with pytest.raises(ValueError):
         utils.answer_question_for_entity(enhanced_question, "Central African Republic", "")

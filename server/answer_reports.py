@@ -16,6 +16,7 @@ from schemas.answer_report import (
     AnswerReportList, AnswerReportMode, AnswerReportReview, AnswerReportStatus,
 )
 from users.utils import get_admin_user, get_current_or_guest_user
+from db.repositories.fallback_answers import invalidate
 
 
 router = APIRouter(tags=["answer reports"])
@@ -84,6 +85,11 @@ async def submit_answer_report(
     )
     session.add(report)
     try:
+        await invalidate(
+            session, mode=mode, entity_name=target_name,
+            original_question=details.original_question, question=details.question,
+            context=details.context, game_date=game_date,
+        )
         await session.commit()
     except IntegrityError:
         await session.rollback()

@@ -65,6 +65,7 @@ class ContinentalQuestionDisplay(ReportableQuestion):
     valid: bool
     answer: Optional[bool] = None
     explanation: Optional[str] = None
+    context: Optional[str] = Field(default=None, exclude=True)
     asked_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
