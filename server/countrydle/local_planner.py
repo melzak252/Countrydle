@@ -392,6 +392,9 @@ def analyze_question_for_local_plan(
     question: str, *, use_cache: bool = True, strict_errors: bool = False,
     evidence: dict | None = None,
 ) -> QuestionPlan:
+    if evidence is not None:
+        evidence.setdefault("attempts", [])
+        evidence.setdefault("provider_attempts", len(evidence["attempts"]))
     template = None
     entity = compile_entity_question(question)
     if entity is not None:
@@ -425,6 +428,8 @@ def analyze_question_for_local_plan(
     cached = plan_cache.get("countrydle", question, version=version) if use_cache else None
     if evidence is not None:
         evidence.update(provider="gemini", model=model, contract_version=version, cache_hit=cached is not None)
+        evidence.setdefault("attempts", [])
+        evidence.setdefault("provider_attempts", 0)
     if cached is not None:
         return replace(cached, original_question=question)
     api_key = os.getenv("GEMINI_API_KEY")
