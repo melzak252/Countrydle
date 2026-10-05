@@ -85,6 +85,9 @@ class AdminLiveQuestion(BaseModel):
     answer: Optional[bool] = None
     explanation: Optional[str] = None
     asked_at: Optional[datetime] = None
+    target_name: Optional[str] = None
+    target_subtitle: Optional[str] = None
+    source: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -96,9 +99,10 @@ class AdminLiveGuess(BaseModel):
     guess: str
     answer: bool
     guessed_at: Optional[datetime] = None
+    target_name: Optional[str] = None
+    target_subtitle: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class AdminLiveFeedResponse(BaseModel):
     recent_questions: List[AdminLiveQuestion]
@@ -169,3 +173,118 @@ class AdminQuestionTestResponse(BaseModel):
     duration_ms: int
     plan: Dict[str, Any] | None
     diagnostics: QuestionDiagnostics
+
+
+AdminQuestionSource = Literal["local_kb", "fallback", "invalid"]
+
+
+class AdminQuestionItem(BaseModel):
+    id: int
+    mode: str
+    day_id: int
+    game_date: str
+    target_id: int
+    target_name: str
+    target_subtitle: Optional[str] = None
+    user_id: Optional[int] = None
+    username: str
+    is_guest: bool
+    original_question: str
+    question: Optional[str] = None
+    valid: bool
+    answer: Optional[bool] = None
+    explanation: str
+    context: Optional[str] = None
+    source: AdminQuestionSource
+    relation: Optional[str] = None
+    asked_at: Optional[datetime] = None
+    has_report: bool = False
+    report_id: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminQuestionsListResponse(BaseModel):
+    items: List[AdminQuestionItem]
+    total: int
+    page: int
+    limit: int
+
+
+class AdminGameSessionTimelineEvent(BaseModel):
+    event_type: Literal["question", "guess"]
+    id: int
+    timestamp: Optional[datetime] = None
+    question: Optional[str] = None
+    original_question: Optional[str] = None
+    valid: Optional[bool] = None
+    answer: Optional[bool] = None
+    explanation: Optional[str] = None
+    source: Optional[AdminQuestionSource] = None
+    relation: Optional[str] = None
+    context: Optional[str] = None
+    guess: Optional[str] = None
+    correct: Optional[bool] = None
+
+
+class AdminGameSessionItem(BaseModel):
+    session_id: str
+    mode: str
+    day_id: int
+    game_date: str
+    target_name: str
+    target_subtitle: Optional[str] = None
+    user_id: Optional[int] = None
+    username: str
+    is_guest: bool
+    status: Literal["won", "lost", "in_progress"]
+    questions_asked: int
+    guesses_made: int
+    duration_seconds: Optional[int] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    timeline: List[AdminGameSessionTimelineEvent] = Field(default_factory=list)
+
+
+class AdminGameSessionsResponse(BaseModel):
+    items: List[AdminGameSessionItem]
+    total: int
+    page: int
+    limit: int
+
+
+class AdminTopQuestionStat(BaseModel):
+    text: str
+    count: int
+    yes_pct: float
+    win_correlation: float
+
+
+class AdminTopGuessStat(BaseModel):
+    guess: str
+    count: int
+    correct_pct: float
+
+
+class AdminTargetStrategyStats(BaseModel):
+    target_name: str
+    target_subtitle: Optional[str] = None
+    game_date: str
+    total_players: int
+    win_rate_pct: float
+    top_questions: List[AdminTopQuestionStat] = Field(default_factory=list)
+    top_guesses: List[AdminTopGuessStat] = Field(default_factory=list)
+    avg_questions_winners: float = 0.0
+    avg_questions_losers: float = 0.0
+
+
+class AdminInvalidateFallbackRequest(BaseModel):
+    mode: str
+    question_id: int
+
+
+class AdminInvalidateFallbackResponse(BaseModel):
+    success: bool
+    mode: str
+    question_id: int
+    message: str

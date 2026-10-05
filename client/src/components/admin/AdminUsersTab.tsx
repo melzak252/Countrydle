@@ -1,5 +1,6 @@
-import React from 'react';
-import { Search, Flame } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Flame, RefreshCw, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface AdminUserRecord {
   id: number;
@@ -19,9 +20,13 @@ interface AdminUsersTabProps {
   search: string;
   page: number;
   isLoading: boolean;
+  error: string | null;
   onSearchChange: (search: string) => void;
   onPageChange: (page: number) => void;
+  onRefresh: () => void;
 }
+
+const PAGE_SIZE = 25;
 
 export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   users,
@@ -29,111 +34,103 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   search,
   page,
   isLoading,
+  error,
   onSearchChange,
   onPageChange,
+  onRefresh,
 }) => {
-  return (
-    <div className="space-y-6 animate-message">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sand-100/55" size={16} />
-          <input
-            type="text"
-            aria-label="Search users by username or email"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search username or email..."
-            className="w-full pl-10 pr-4 py-2.5 bg-obsidian-900 border border-white/10 rounded-sm text-sand-100 text-xs md:text-sm focus:outline-none focus:border-emerald-400 transition-colors"
-          />
-        </div>
-        <div className="text-xs text-sand-100/65 font-mono">
-          Total registered: {totalUsers} users
-        </div>
-      </div>
+  const { t, i18n } = useTranslation();
+  const [inputSearch, setInputSearch] = useState(search);
+  const locale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const numberFormat = new Intl.NumberFormat(locale);
+  const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+  const pageCount = Math.ceil(totalUsers / PAGE_SIZE);
 
-      <div className="bg-obsidian-900 border border-white/10 rounded-sm overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-xs md:text-sm">
-          <thead className="bg-white/[0.03] text-sand-100/65 border-b border-white/10">
-            <tr>
-              <th className="px-5 py-3 font-semibold">User</th>
-              <th className="px-5 py-3 font-semibold">Email</th>
-              <th className="px-5 py-3 font-semibold">Registered</th>
-              <th className="px-5 py-3 font-semibold text-right">Points</th>
-              <th className="px-5 py-3 font-semibold text-right">Wins</th>
-              <th className="px-5 py-3 font-semibold text-right">Games</th>
-              <th className="px-5 py-3 font-semibold text-right">Streak</th>
-              <th className="px-5 py-3 font-semibold text-center">Role</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/10">
-            {isLoading ? (
+  useEffect(() => setInputSearch(search), [search]);
+  useEffect(() => {
+    if (inputSearch === search) return;
+    const timer = window.setTimeout(() => onSearchChange(inputSearch), 300);
+    return () => window.clearTimeout(timer);
+  }, [inputSearch, onSearchChange, search]);
+  const queryPending = inputSearch !== search;
+  const loading = isLoading || queryPending;
+
+  return (
+    <section className="min-w-0 space-y-4" aria-labelledby="admin-page-title">
+      <div className="admin-toolbar flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1 sm:max-w-xl">
+          <label htmlFor="admin-users-search" className="mb-1 block text-sm font-medium text-slate-300">{t('adminUsers.searchLabel')}</label>
+          <div className="relative">
+            <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input
+              id="admin-users-search"
+              type="search"
+              value={inputSearch}
+              onChange={(event) => setInputSearch(event.target.value)}
+              placeholder={t('adminUsers.searchPlaceholder')}
+              className="admin-control admin-control-with-icon"
+            />
+          </div>
+        </div>
+        <button type="button" className="admin-button" onClick={onRefresh} disabled={loading}>
+          <RefreshCw aria-hidden="true" size={15} />
+          {loading ? t('adminCommon.updating') : t('adminCommon.refresh')}
+        </button>
+      </div>
+      {error && !queryPending && (
+        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-400/40 text-rose-200">
+          <span>{t(error)}</span>
+          <button type="button" className="admin-button" onClick={onRefresh} disabled={loading}>{t('adminCommon.retry')}</button>
+        </div>
+      )}
+      {loading ? (
+        <p role="status" className="admin-panel">{t('adminCommon.loading')}</p>
+      ) : error ? null : users.length === 0 ? (
+        <p className="admin-panel admin-muted">{t('adminCommon.empty')}</p>
+      ) : (
+        <div className="admin-table overflow-x-auto" role="region" aria-label={t('adminUsers.tableRegion')} tabIndex={0}>
+          <table className="w-full min-w-[860px] text-sm">
+            <thead>
               <tr>
-                <td colSpan={8} className="py-12 text-center text-xs font-mono text-zinc-500">
-                  Loading user records...
-                </td>
+                <th scope="col" className="sticky left-0 z-10 bg-obsidian-850 px-4 py-3 text-left">{t('adminUsers.columns.user')}</th>
+                <th scope="col" className="px-4 py-3 text-left">{t('adminUsers.columns.email')}</th>
+                <th scope="col" className="px-4 py-3 text-left">{t('adminUsers.columns.registered')}</th>
+                <th scope="col" className="admin-number px-4 py-3">{t('adminUsers.columns.points')}</th>
+                <th scope="col" className="admin-number px-4 py-3">{t('adminUsers.columns.wins')}</th>
+                <th scope="col" className="admin-number px-4 py-3">{t('adminUsers.columns.games')}</th>
+                <th scope="col" className="admin-number px-4 py-3">{t('adminUsers.columns.streak')}</th>
+                <th scope="col" className="px-4 py-3 text-center">{t('adminUsers.columns.role')}</th>
               </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-12 text-center text-xs font-mono text-zinc-500">
-                  No users found.
-                </td>
-              </tr>
-            ) : (
-              users.map((u) => (
-                <tr key={u.id} className="hover:bg-white/[0.03] transition-colors">
-                  <td className="px-5 py-3.5 font-semibold text-sand-100">{u.username}</td>
-                  <td className="px-5 py-3.5 text-sand-100/65 font-mono text-xs">{u.email}</td>
-                  <td className="px-5 py-3.5 text-sand-100/55 font-mono text-xs">
-                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}
-                  </td>
-                  <td className="px-5 py-3.5 text-right font-mono font-semibold text-sand-100/80">{u.total_points}</td>
-                  <td className="px-5 py-3.5 text-right font-mono font-semibold text-emerald-300">{u.total_wins}</td>
-                  <td className="px-5 py-3.5 text-right font-mono text-sand-100/80">{u.games_played}</td>
-                  <td className="px-5 py-3.5 text-right font-mono text-sand-100/80">
-                    <span className="inline-flex items-center gap-1">
-                      <span>{u.current_streak}</span>
-                      <Flame size={12} className="text-emerald-300" />
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-center">
-                    {u.is_admin ? (
-                      <span className="text-emerald-300 text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                        ADMIN
-                      </span>
-                    ) : (
-                      <span className="text-sand-100/55 text-xs">Player</span>
-                    )}
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <th scope="row" className="sticky left-0 max-w-52 break-words bg-obsidian-900 px-4 py-3 text-left font-semibold text-sand-100">{user.username}</th>
+                  <td className="max-w-64 break-all px-4 py-3 text-slate-300">{user.email}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">{user.created_at ? dateFormat.format(new Date(user.created_at)) : '—'}</td>
+                  <td className="admin-number px-4 py-3 text-right">{numberFormat.format(user.total_points)}</td>
+                  <td className="admin-number px-4 py-3 text-right text-emerald-300">{numberFormat.format(user.total_wins)}</td>
+                  <td className="admin-number px-4 py-3 text-right">{numberFormat.format(user.games_played)}</td>
+                  <td className="admin-number px-4 py-3 text-right"><span className="inline-flex items-center gap-1">{numberFormat.format(user.current_streak)}<Flame aria-hidden="true" size={14} className="text-emerald-300" /></span></td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="admin-badge">{user.is_admin ? t('adminUsers.admin') : t('adminUsers.player')}</span>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex flex-wrap gap-3 justify-between items-center text-xs text-sand-100/65 font-mono">
-        <span>Page {page}</span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={page <= 1 || isLoading}
-            onClick={() => onPageChange(Math.max(1, page - 1))}
-            className="px-3 py-1.5 bg-obsidian-950 hover:bg-white/5 disabled:opacity-40 rounded-sm text-sand-100 font-medium border border-white/10"
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            disabled={users.length < 25 || isLoading}
-            onClick={() => onPageChange(page + 1)}
-            className="px-3 py-1.5 bg-obsidian-950 hover:bg-white/5 disabled:opacity-40 rounded-sm text-sand-100 font-medium border border-white/10"
-          >
-            Next
-          </button>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
+      )}
+      {!loading && !error && (
+        <nav className="admin-pager flex flex-wrap items-center justify-between gap-3" aria-label={t('adminUsers.pagination')}>
+          <span className="admin-meta">{t('adminUsers.page', { page: numberFormat.format(page), pages: numberFormat.format(Math.max(1, pageCount)), count: totalUsers })}</span>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="admin-button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>{t('adminCommon.previous')}</button>
+            <button type="button" className="admin-button" disabled={pageCount === 0 || page >= pageCount} onClick={() => onPageChange(page + 1)}>{t('adminCommon.next')}</button>
+          </div>
+        </nav>
+      )}
+    </section>
   );
 };
 

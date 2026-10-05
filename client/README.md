@@ -1,3 +1,36 @@
+## Admin workspace
+
+`/admin` provides thirteen direct destinations: Overview, Sessions, Live feed,
+Users, Suggestions, Friend duels, Question audit, Player reports, Question testing,
+Template audit, Facts editor, Cache, and AI Costs. Desktop uses one sidebar grouped into
+Players, Knowledge & QA, and System; narrow layouts use a labelled native page
+selector. Each destination has one page heading. Styles are scoped to
+`.admin-workspace`, with visible keyboard focus and 44px primary controls; public
+game and contact layouts retain their own styling.
+
+- Sessions put the target, four summary metrics, and player list before optional
+  strategy analysis. Replays retain recorded chronological questions and guesses;
+  strategy lists show six entries initially.
+- Question audit uses six summary columns on desktop and equivalent cards on
+  phones. Details preserve complete questions, explanations, context, identifiers,
+  and invalidation actions. Filters and pagination do not present old rows as new
+  results while a query is pending or has failed.
+- Live feed supports paused, 10-second, and 30-second refresh. Automatic refresh
+  waits for completion before scheduling another request. Failed refreshes retain
+  an explicitly stale snapshot without changing the last-success timestamp;
+  switching modes clears the old snapshot.
+- Reports and template divergences retain review/reopen and QA handoffs. Question
+  testing uses current data/models, not a historical replay, and does not consume
+  attempts or change player progress. It offers the nine API-supported test modes.
+- Facts are selected by entity name and writes use the returned SQLite entity ID,
+  not the unrelated PostgreSQL selector ID. Saves, list additions, and deletions
+  take effect immediately; pending writes disable editing and failures remain visible.
+- Friend-duel agreements are comparisons, not verified truth. Cache counters are
+  scoped to one backend process and describe question plans, not target answers.
+
+Admin interface copy is available in English and Polish. Recorded player text,
+fact relation names, and technical identifiers retain their original values.
+
 ## General Suggestion Box
 
 `/contact` hosts the General Suggestion Box for guests and signed-in players.
@@ -9,7 +42,7 @@ available in English and Polish. Direct email support remains a separate link.
 Character limits count Unicode code points consistently with the backend.
 Submission cooldowns show a localized message and retain the draft for retry.
 
-In `/admin`, open **Gameplay & Players → Suggestions** to read the full message,
+In `/admin`, open **Players → Suggestions** to read the full message,
 topic, submission time, guest/player identity, and any provided contact details.
 The list is newest first, has 25 suggestions per page, and supports refresh and
 retry. Backend authorization protects the messages and contact information;

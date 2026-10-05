@@ -1,6 +1,34 @@
 import axios from 'axios';
+import type {
+  AdminGameSessionsResponse,
+  AdminInvalidateFallbackResponse,
+  AdminQuestionsListResponse,
+  AdminSuggestionsResponse,
+  AdminTargetStrategyStats,
+  AnswerReport,
+  AnswerReportMode,
+  AnswerReportStatus,
+  CacheStats,
+  CountryDisplay,
+  FlagdleCountry,
+  FlagdleGuess,
+  FlagdleStateResponse,
+  GameResponse,
+  Guess,
+  LeaderboardEntry,
+  LeaderboardPeriod,
+  LiveFeedData,
+  PatchNotesResponse,
+  Question,
+  QuestionTestEntity,
+  QuestionTestMode,
+  QuestionTestRequest,
+  QuestionTestResult,
+  SuggestionSubmission,
+  TemplateDivergence,
+  TemplateDivergenceStatus,
+} from '../types';
 import type { CountryCostReport } from '../types/countryCostReport';
-import type { AdminSuggestionsResponse, AnswerReport, AnswerReportMode, AnswerReportStatus, CacheStats, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult, SuggestionSubmission, TemplateDivergence, TemplateDivergenceStatus } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -545,11 +573,70 @@ export const adminService = {
     const response = await api.get(`/admin/users?${params.toString()}`);
     return response.data;
   },
-  getLiveFeed: async (mode?: string) => {
+  getLiveFeed: async (mode?: string): Promise<LiveFeedData> => {
     const params = new URLSearchParams();
     if (mode && mode !== 'all') params.append('mode', mode);
     const qs = params.toString();
-    const response = await api.get(`/admin/live-feed${qs ? `?${qs}` : ''}`);
+    const response = await api.get<LiveFeedData>(`/admin/live-feed${qs ? `?${qs}` : ''}`);
+    return response.data;
+  },
+  getQuestions: async (params: {
+    mode?: string;
+    search?: string;
+    date?: string;
+    source?: string;
+    answer?: string;
+    target_name?: string;
+    has_report?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<AdminQuestionsListResponse> => {
+    const qp = new URLSearchParams();
+    if (params.mode && params.mode !== 'all') qp.append('mode', params.mode);
+    if (params.search?.trim()) qp.append('search', params.search.trim());
+    if (params.date) qp.append('date', params.date);
+    if (params.source && params.source !== 'all') qp.append('source', params.source);
+    if (params.answer && params.answer !== 'all') qp.append('answer', params.answer);
+    if (params.target_name?.trim()) qp.append('target_name', params.target_name.trim());
+    if (typeof params.has_report === 'boolean') qp.append('has_report', String(params.has_report));
+    if (params.page) qp.append('page', params.page.toString());
+    if (params.limit) qp.append('limit', params.limit.toString());
+    const response = await api.get<AdminQuestionsListResponse>(`/admin/questions?${qp.toString()}`);
+    return response.data;
+  },
+  getGameSessions: async (params: {
+    mode?: string;
+    date?: string;
+    status?: string;
+    player_type?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<AdminGameSessionsResponse> => {
+    const qp = new URLSearchParams();
+    if (params.mode && params.mode !== 'all') qp.append('mode', params.mode);
+    if (params.date) qp.append('date', params.date);
+    if (params.status && params.status !== 'all') qp.append('status', params.status);
+    if (params.player_type && params.player_type !== 'all') qp.append('player_type', params.player_type);
+    if (params.page) qp.append('page', params.page.toString());
+    if (params.limit) qp.append('limit', params.limit.toString());
+    const response = await api.get<AdminGameSessionsResponse>(`/admin/game-sessions?${qp.toString()}`);
+    return response.data;
+  },
+  getTargetStrategyStats: async (params: {
+    mode?: string;
+    date?: string;
+  }): Promise<AdminTargetStrategyStats> => {
+    const qp = new URLSearchParams();
+    if (params.mode && params.mode !== 'all') qp.append('mode', params.mode);
+    if (params.date) qp.append('date', params.date);
+    const response = await api.get<AdminTargetStrategyStats>(`/admin/game-sessions/stats?${qp.toString()}`);
+    return response.data;
+  },
+  invalidateQuestionFallback: async (mode: string, questionId: number): Promise<AdminInvalidateFallbackResponse> => {
+    const response = await api.post<AdminInvalidateFallbackResponse>('/admin/questions/invalidate-fallback', {
+      mode,
+      question_id: questionId,
+    });
     return response.data;
   },
   getCountrydleQuestions: async (limit = 50, offset = 0): Promise<AdminQuestionsResponse> => {

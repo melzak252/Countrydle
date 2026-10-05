@@ -477,6 +477,15 @@ After a game ends (win or loss), players can report a saved question result from
 
 The `answer_reports` table is created by Alembic revision `4c9f2a1b8d60`, applied through the existing startup migration process. Report tokens use `SECRET_KEY`; keep it stable across replicas. Rotating it invalidates previously issued guest report tokens.
 
+### Admin live feed
+
+`GET /admin/live-feed` requires administrator authentication (anonymous requests
+return `401`; signed-in non-administrators return `403`). Optional `mode` selects
+a game mode. Questions and guesses remain separate recent-event lists, each
+including the target name and optional subtitle. Question records retain source,
+validity, nullable answer, and explanation; guesses retain their correctness.
+The UI's source label describes the answering path, not verified truth.
+
 ### Admin question tests
 
 The admin **Test pytań** tab evaluates a question against an explicitly selected entity in any of the nine game modes. **Testuj pytanie** on a report prefills its original question and selects the target only when its name matches exactly one entity. Historical and current results are shown separately; automatic comparison requires the same mode, uniquely matched target, and original question.

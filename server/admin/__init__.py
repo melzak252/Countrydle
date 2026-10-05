@@ -2,7 +2,7 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import case, desc, func, or_, select
+from sqlalchemy import String, case, desc, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -28,6 +28,9 @@ from db.repositories.wojewodztwo import WojewodztwoRepository
 from db.repositories.wojewodztwodle import WojewodztwodleDayRepository
 from schemas.admin import (
     AdminDaySummary,
+    AdminGameSessionsResponse,
+    AdminInvalidateFallbackRequest,
+    AdminInvalidateFallbackResponse,
     AdminLiveFeedResponse,
     AdminLiveGuess,
     AdminLiveQuestion,
@@ -35,8 +38,18 @@ from schemas.admin import (
     AdminOverviewResponse,
     AdminOverviewToday,
     AdminPlatformTotals,
+    AdminQuestionsListResponse,
+    AdminTargetStrategyStats,
     AdminUserItem,
     AdminUsersResponse,
+)
+from admin.resolver import (
+    ADMIN_MODE_CONFIGS,
+    classify_question_source,
+    invalidate_question_fallback,
+    query_admin_game_sessions,
+    query_admin_questions,
+    query_admin_target_stats,
 )
 from users.utils import get_admin_user
 from admin.question_tests import router as question_tests_router
@@ -254,64 +267,80 @@ async def get_admin_live_feed(
     recent_questions: list[AdminLiveQuestion] = []
     recent_guesses: list[AdminLiveGuess] = []
 
-    q_models = []
-    g_models = []
+    modes_to_query = []
+    if mode is None:
+        modes_to_query = list(ADMIN_MODE_CONFIGS.values())
+    else:
+        norm_mode = mode.lower().strip().split(":", 1)[0]
+        if norm_mode in ADMIN_MODE_CONFIGS:
+            modes_to_query = [ADMIN_MODE_CONFIGS[norm_mode]]
 
-    if mode is None or mode == "countrydle":
-        q_models.append(("countrydle", CountrydleQuestion))
-        g_models.append(("countrydle", CountrydleGuess))
-    if mode is None or mode == "powiatdle":
-        q_models.append(("powiatdle", PowiatdleQuestion))
-        g_models.append(("powiatdle", PowiatdleGuess))
-    if mode is None or mode == "wojewodztwodle":
-        q_models.append(("wojewodztwodle", WojewodztwodleQuestion))
-        g_models.append(("wojewodztwodle", WojewodztwodleGuess))
-    if mode is None or mode == "us_statedle":
-        q_models.append(("us_statedle", USStatedleQuestion))
-        g_models.append(("us_statedle", USStatedleGuess))
+    for cfg in modes_to_query:
+        col_target_subtitle = (
+            func.cast(cfg.target_subtitle_col, String)
+            if cfg.target_subtitle_col is not None
+            else literal(cfg.default_subtitle)
+        )
 
-    if mode is None or mode == "continental":
-        q_models.append(("continental", ContinentalQuestion))
-        g_models.append(("continental", ContinentalGuess))
-    for m_key, q_cls in q_models:
         q_stmt = (
-            select(q_cls)
-            .options(joinedload(q_cls.user))
-            .order_by(desc(q_cls.id))
+            select(
+                cfg.question_model,
+                cfg.target_name_col.label("target_name"),
+                col_target_subtitle.label("target_subtitle"),
+            )
+            .join(cfg.day_model, cfg.question_model.day_id == cfg.day_model.id)
+            .join(cfg.target_model, cfg.target_fk_col == cfg.target_model.id)
+            .options(joinedload(cfg.question_model.user))
+            .order_by(desc(cfg.question_model.id))
             .limit(30)
         )
         q_res = await session.execute(q_stmt)
-        for q in q_res.scalars().all():
+        for q_obj, t_name, t_sub in q_res.all():
+            src, _ = classify_question_source(q_obj.valid, q_obj.context)
             recent_questions.append(
                 AdminLiveQuestion(
-                    id=q.id,
-                    mode=m_key,
-                    username=q.user.username if q.user else "Guest",
-                    question=getattr(q, "original_question", None) or getattr(q, "question", "") or "",
-                    valid=q.valid,
-                    answer=q.answer,
-                    explanation=q.explanation,
-                    asked_at=q.asked_at,
+                    id=q_obj.id,
+                    mode=cfg.mode_key,
+                    username=q_obj.user.username
+                    if q_obj.user
+                    else (f"Guest {q_obj.guest_id[:8]}" if getattr(q_obj, "guest_id", None) else "Guest"),
+                    question=getattr(q_obj, "original_question", None) or getattr(q_obj, "question", "") or "",
+                    valid=q_obj.valid,
+                    answer=q_obj.answer,
+                    explanation=q_obj.explanation,
+                    asked_at=q_obj.asked_at,
+                    target_name=t_name,
+                    target_subtitle=str(t_sub) if t_sub else None,
+                    source=src,
                 )
             )
 
-    for m_key, g_cls in g_models:
         g_stmt = (
-            select(g_cls)
-            .options(joinedload(g_cls.user))
-            .order_by(desc(g_cls.id))
+            select(
+                cfg.guess_model,
+                cfg.target_name_col.label("target_name"),
+                col_target_subtitle.label("target_subtitle"),
+            )
+            .join(cfg.day_model, cfg.guess_model.day_id == cfg.day_model.id)
+            .join(cfg.target_model, cfg.target_fk_col == cfg.target_model.id)
+            .options(joinedload(cfg.guess_model.user))
+            .order_by(desc(cfg.guess_model.id))
             .limit(30)
         )
         g_res = await session.execute(g_stmt)
-        for g in g_res.scalars().all():
+        for g_obj, t_name, t_sub in g_res.all():
             recent_guesses.append(
                 AdminLiveGuess(
-                    id=g.id,
-                    mode=m_key,
-                    username=g.user.username if g.user else "Guest",
-                    guess=getattr(g, "guess", ""),
-                    answer=bool(g.answer),
-                    guessed_at=g.guessed_at,
+                    id=g_obj.id,
+                    mode=cfg.mode_key,
+                    username=g_obj.user.username
+                    if g_obj.user
+                    else (f"Guest {g_obj.guest_id[:8]}" if getattr(g_obj, "guest_id", None) else "Guest"),
+                    guess=getattr(g_obj, "guess", ""),
+                    answer=bool(g_obj.answer),
+                    guessed_at=g_obj.guessed_at,
+                    target_name=t_name,
+                    target_subtitle=str(t_sub) if t_sub else None,
                 )
             )
 
@@ -321,4 +350,90 @@ async def get_admin_live_feed(
     return AdminLiveFeedResponse(
         recent_questions=recent_questions[:45],
         recent_guesses=recent_guesses[:45],
+    )
+
+
+@router.get("/questions", response_model=AdminQuestionsListResponse)
+async def list_admin_questions(
+    mode: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    date: Optional[date] = Query(None),
+    source: Optional[str] = Query(None),
+    answer: Optional[str] = Query(None),
+    target_name: Optional[str] = Query(None),
+    has_report: Optional[bool] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(30, ge=1, le=100),
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    items, total = await query_admin_questions(
+        session=session,
+        mode=mode,
+        search=search,
+        date_filter=date,
+        source_filter=source,
+        answer_filter=answer,
+        target_name_filter=target_name,
+        has_report_filter=has_report,
+        page=page,
+        limit=limit,
+    )
+    return AdminQuestionsListResponse(items=items, total=total, page=page, limit=limit)
+
+
+@router.get("/game-sessions", response_model=AdminGameSessionsResponse)
+async def list_admin_game_sessions(
+    mode: str = Query("countrydle"),
+    date: Optional[date] = Query(None),
+    status: Optional[str] = Query(None),
+    player_type: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    items, total = await query_admin_game_sessions(
+        session=session,
+        mode=mode,
+        target_date=date,
+        status_filter=status,
+        player_type_filter=player_type,
+        page=page,
+        limit=limit,
+    )
+    return AdminGameSessionsResponse(items=items, total=total, page=page, limit=limit)
+
+
+@router.get("/game-sessions/stats", response_model=AdminTargetStrategyStats)
+async def get_admin_game_session_stats(
+    mode: str = Query("countrydle"),
+    date: Optional[date] = Query(None),
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    stats = await query_admin_target_stats(
+        session=session,
+        mode=mode,
+        target_date=date,
+    )
+    return stats
+
+
+@router.post("/questions/invalidate-fallback", response_model=AdminInvalidateFallbackResponse)
+async def invalidate_fallback_answer_endpoint(
+    payload: AdminInvalidateFallbackRequest,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    success, message = await invalidate_question_fallback(
+        session=session,
+        mode=payload.mode,
+        question_id=payload.question_id,
+    )
+    return AdminInvalidateFallbackResponse(
+        success=success,
+        mode=payload.mode,
+        question_id=payload.question_id,
+        message=message,
     )
