@@ -110,6 +110,9 @@ const resources = {
         previous: 'Previous',
         next: 'Next',
       },
+      adminCosts: {
+        tab: 'AI Costs',
+      },
       blog: {
         badge: 'Daily Country Recaps & Trivia',
         title: 'Countrydle Daily Blog',
@@ -636,6 +639,9 @@ const resources = {
         page: 'Strona {{page}} z {{pageCount}}',
         previous: 'Poprzednia',
         next: 'Następna',
+      },
+      adminCosts: {
+        tab: 'Koszty AI',
       },
       chat: {
         copyQuestion: 'Kopiuj pytanie',

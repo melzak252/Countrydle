@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, Request, Response
-from sqlalchemy import or_, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,6 +57,27 @@ def get_guest_identity(request: Request, response: Response) -> str:
     request.state.guest_identity = identity
     return identity
 
+
+
+async def check_guest_question_available(
+    session: AsyncSession,
+    request: Request,
+    response: Response,
+    mode: str,
+    day_id: int,
+    max_questions: int,
+) -> None:
+    """Reject an exhausted guest quota without creating or changing participation."""
+    identity = get_guest_identity(request, response)
+    questions_asked = await session.scalar(
+        select(GuestParticipation.questions_asked).where(
+            GuestParticipation.guest_id == identity,
+            GuestParticipation.mode == mode,
+            GuestParticipation.day_id == day_id,
+        )
+    )
+    if questions_asked is not None and questions_asked >= max_questions:
+        raise HTTPException(status_code=400, detail="No more questions left or game over!")
 
 async def record_guest_action(
     session: AsyncSession,

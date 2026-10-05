@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { CountryCostReport } from '../types/countryCostReport';
 import type { AdminSuggestionsResponse, AnswerReport, AnswerReportMode, AnswerReportStatus, CacheStats, CountryDisplay, GameResponse, Guess, LeaderboardEntry, LeaderboardPeriod, Question, FlagdleCountry, FlagdleGuess, FlagdleStateResponse, PatchNotesResponse, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult, SuggestionSubmission, TemplateDivergence, TemplateDivergenceStatus } from '../types';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
@@ -488,6 +489,10 @@ export const adminSuggestionService = {
 
 
 export const adminService = {
+  getCountrydleCosts: async (days = 7, signal?: AbortSignal): Promise<CountryCostReport> => {
+    const response = await api.get<CountryCostReport>('/admin/countrydle-costs', { params: { days }, signal });
+    return response.data;
+  },
   getCacheStats: async (signal?: AbortSignal): Promise<CacheStats> => {
     const response = await api.get<CacheStats>('/cache-stats', { signal, timeout: 10_000 });
     return response.data;

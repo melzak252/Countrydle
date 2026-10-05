@@ -313,6 +313,7 @@ Countrydle-only prompt revision (`compact-v5-t1024`) and configured model in
 addition to the shared planner contract. Old interpretations cannot mask the
 cutover; other modes retain their cache versions and normalization.
 
+
 The 1,024-token thinking budget and 2,048-token output ceiling are retained.
 Live lower-budget experiments exposed semantic and tree-reference errors.
 On the final 20-question prospective EN/PL stress set, both arms used
@@ -356,6 +357,68 @@ The complete [research and measurement report](../docs/planner_compaction_resear
 records corpus hashes, adjudication, budget rejection, cost missingness, projected
 gameplay costs, and a measured design-only cultural-relation delta. No new cultural
 facts, relation, template, schema, or executor behavior is implemented here.
+
+### Countrydle daily cost measurement
+
+Countrydle question handling stores only UTC-day aggregates for route outcomes
+and observed Gemini planner/fallback usage. No question text, prompt, user or
+guest identity, retrieval context, or provider response is written. The SQLite
+file defaults to `data/countrydle_cost_metrics.sqlite3`. Keep it on the backend's
+persistent `/usr/src/app/data` mount, alongside `plan_cache.sqlite`; the repository
+production Compose file uses the `backend_data` named volume. Verify the mount
+in any separately maintained production deployment. Set `COUNTRYDLE_COST_METRICS_DB`
+to override the metrics path when running outside the container.
+
+Administrators can open **Explore → Admin Dashboard → System & Cache → AI Costs**.
+The dashboard shows the last 7, 14, or 30 completed UTC days, with manual refresh,
+daily requests, completed games, template answers, planner-cache hits, paid
+planner calls, USD cost bounds, and cost per 1,000 completed games. Expand a
+day's usage disclosure for stage/model token counts, retries, failed attempts,
+fallback calls, and unknown-usage counters. Missing measurements appear as
+dashes, not zeroes; partial startup days and incomplete known-cost subsets are
+labelled explicitly. No aggregate combines days with incompatible coverage.
+
+The dashboard calls `GET /admin/countrydle-costs?days=7` (API range: 1–366).
+It requires the existing administrator session cookie: guests receive 401 and
+authenticated non-admin users receive 403. It uses the same report assembly as
+the CLI below, reads existing aggregates, and never triggers provider requests.
+Collection happens automatically when Countrydle questions reach the backend;
+there is no report job to schedule. Today is excluded until the next UTC day,
+and no historical costs are backfilled when collection first starts.
+
+From `server/`, run:
+
+```bash
+python scripts/report_country_costs.py
+```
+
+The report defaults to the last seven completed UTC days (`--days N` selects a
+different window) and reads completed Countrydle games from the configured
+PostgreSQL `DATABASE_URL`. A completed game is a won/lost Countrydle state or an
+unlinked guest participation that won or used all three guesses; linked guests
+are represented only by their account state. Per-1,000-game values use those
+completed games, not question requests.
+
+Request counts begin at the route handler: FastAPI dependency failures, request
+body validation failures, and the attempt-rate limiter run before it and are
+excluded. Coverage before the metrics database's `started_at` is absent, and
+its first date is marked partial; per-1,000 rates are null for that startup day.
+No-data days have null cost rather than an inferred zero.
+Database read failures, hosting, embeddings, retrieval, and other game modes
+are outside this measurement.
+
+Only Gemini 2.5 Flash-Lite is priced (input $0.10, cached input $0.01, output
+$0.40 per million tokens). Planner and fallback output cost uses
+`total_tokens - input_tokens`, so hidden reasoning is included once. Missing
+cached-input counts are shown as cost bounds, never treated as free; absent
+usage or an unrecognized model makes overall cost explicitly incomplete/unpriced.
+“New planner rate” is uncached planner calls per 1,000 completed games; the report
+also gives the fraction of handler-received requests that triggered new planner
+calls, alongside the share of observed planner requests.
+
+Countrydle checks an existing guest's daily question quota before local planning
+or provider work. This read-only preflight does not consume a question; the final
+atomic participation update remains authoritative for concurrent requests.
 
 ## County border facts
 

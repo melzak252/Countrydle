@@ -50,36 +50,58 @@ def generate_gemini_json(
         generation["responseJsonSchema"] = response_schema
     if thinking_budget is not None:
         generation["thinkingConfig"] = {"thinkingBudget": thinking_budget}
-    response = get_http_client().post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        headers={"x-goog-api-key": api_key},
-        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": generation},
-        timeout=timeout,
-    )
-    response.raise_for_status()
-    data = response.json()
-    if evidence is not None:
-        evidence.update(model_version=data.get("modelVersion"), response_id=data.get("responseId"))
-        usage = data.get("usageMetadata") or {}
-        evidence["usage"] = {
-            public: usage[wire] for public, wire in (
-                ("input_tokens", "promptTokenCount"), ("output_tokens", "candidatesTokenCount"),
-                ("thought_tokens", "thoughtsTokenCount"), ("cached_input_tokens", "cachedContentTokenCount"),
-                ("total_tokens", "totalTokenCount"),
-            ) if type(usage.get(wire)) is int and usage[wire] >= 0
-        }
-    candidates = data.get("candidates") or []
-    if not candidates or candidates[0].get("finishReason", "STOP") != "STOP":
-        raise RuntimeError("Gemini returned no complete answer")
-    parts = candidates[0].get("content", {}).get("parts", [])
-    text = "".join(part["text"] for part in parts if isinstance(part.get("text"), str) and not part.get("thought"))
+    client = get_http_client()
+    attempt: dict[str, Any] = {"model": model, "usage": {}, "failed": True}
     try:
-        parsed = json.loads(text)
-    except (TypeError, ValueError) as exc:
-        raise RuntimeError("Gemini returned invalid JSON") from exc
-    if not isinstance(parsed, dict):
-        raise RuntimeError("Gemini returned JSON that is not an object")
-    return parsed
+        response = client.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            headers={"x-goog-api-key": api_key},
+            json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": generation},
+            timeout=timeout,
+        )
+        attempt["http_status"] = response.status_code
+        try:
+            data = response.json()
+        except (ValueError, TypeError):
+            data = None
+        if isinstance(data, dict):
+            usage_data = data.get("usageMetadata")
+            if isinstance(usage_data, dict):
+                attempt["usage"] = {
+                    public: usage_data[wire] for public, wire in (
+                        ("input_tokens", "promptTokenCount"), ("cached_input_tokens", "cachedContentTokenCount"),
+                        ("output_tokens", "candidatesTokenCount"), ("thought_tokens", "thoughtsTokenCount"),
+                        ("total_tokens", "totalTokenCount"),
+                    ) if type(usage_data.get(wire)) is int and usage_data[wire] >= 0
+                }
+                if evidence is not None and attempt["usage"]:
+                    evidence["usage"] = attempt["usage"]
+            response.raise_for_status()
+            if evidence is not None:
+                evidence.update(model_version=data.get("modelVersion"), response_id=data.get("responseId"))
+        else:
+            response.raise_for_status()
+            raise RuntimeError("Gemini returned invalid JSON")
+        candidates = data.get("candidates") or []
+        if not candidates or candidates[0].get("finishReason", "STOP") != "STOP":
+            raise RuntimeError("Gemini returned no complete answer")
+        parts = candidates[0].get("content", {}).get("parts", [])
+        text = "".join(part["text"] for part in parts if isinstance(part.get("text"), str) and not part.get("thought"))
+        try:
+            parsed = json.loads(text)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("Gemini returned invalid JSON") from exc
+        if not isinstance(parsed, dict):
+            raise RuntimeError("Gemini returned JSON that is not an object")
+        attempt["failed"] = False
+        return parsed
+    finally:
+        if evidence is not None:
+            attempts = evidence.setdefault("attempts", [])
+            attempts.append(attempt)
+            evidence["provider_attempts"] = len(attempts)
+            if attempt["usage"]:
+                evidence["usage"] = attempt["usage"]
 
 GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
@@ -113,19 +135,19 @@ def gemini_json(
     model: str | None = None, deadline: float | None = None,
 ) -> dict:
     """Call Gemini through the shared connection pool, retaining fallback retry policy."""
+    model = get_gemini_model() if model is None else model
+    if evidence is not None:
+        evidence.update(provider="gemini", model=model)
+        evidence.setdefault("attempts", [])
+        evidence["provider_attempts"] = len(evidence["attempts"])
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
 
-    model = get_gemini_model() if model is None else model
-    if evidence is not None:
-        evidence["provider_attempts"] = 0
     prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}"
     retryable_statuses = {429, 500, 502, 503, 504}
     for attempt in range(max_attempts):
         timeout = remaining_timeout(deadline, request_timeout)
-        if evidence is not None:
-            evidence["provider_attempts"] = attempt + 1
         try:
             parsed = generate_gemini_json(
                 prompt, model=model, api_key=api_key, max_output_tokens=max_output_tokens,

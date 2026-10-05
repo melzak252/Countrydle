@@ -268,7 +268,7 @@ async def test_countrydle_guest_events_are_reconstructible_by_browser_identity(
     from db.models import CountrydleGuess, CountrydleQuestion
     from schemas.countrydle import QuestionCreate
 
-    async def answer_locally(original_question, day_country, user, session):
+    async def answer_locally(original_question, day_country, user, session, *, evidence=None):
         return (
             QuestionCreate(
                 original_question=original_question,
