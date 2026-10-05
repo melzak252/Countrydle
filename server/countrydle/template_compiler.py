@@ -108,15 +108,95 @@ WATERS = {
 
 # Country names are canonicalized against the same 196-country facts catalog; common Polish inflections are explicit.
 _COUNTRY_NAMES = "Afghanistan|Albania|Algeria|Andorra|Angola|Antigua and Barbuda|Argentina|Armenia|Australia|Austria|Azerbaijan|Bahamas|Bahrain|Bangladesh|Barbados|Belarus|Belgium|Belize|Benin|Bhutan|Bolivia|Bosnia and Herzegovina|Botswana|Brazil|Brunei|Bulgaria|Burkina Faso|Burundi|Cambodia|Cameroon|Canada|Cape Verde|Central African Republic|Chad|Chile|China|Colombia|Comoros|Costa Rica|Croatia|Cuba|Cyprus|Czech Republic|Democratic Republic of the Congo|Denmark|Djibouti|Dominica|Dominican Republic|East Timor|Ecuador|Egypt|El Salvador|Equatorial Guinea|Eritrea|Estonia|Eswatini|Ethiopia|Federated States of Micronesia|Fiji|Finland|France|Gabon|Gambia|Georgia|Germany|Ghana|Greece|Grenada|Guatemala|Guinea|Guinea-Bissau|Guyana|Haiti|Honduras|Hungary|Iceland|India|Indonesia|Iran|Iraq|Ireland|Israel|Italy|Ivory Coast|Jamaica|Japan|Jordan|Kazakhstan|Kenya|Kiribati|Kosovo|Kuwait|Kyrgyzstan|Laos|Latvia|Lebanon|Lesotho|Liberia|Libya|Liechtenstein|Lithuania|Luxembourg|Madagascar|Malawi|Malaysia|Maldives|Mali|Malta|Marshall Islands|Mauritania|Mauritius|Mexico|Moldova|Monaco|Mongolia|Montenegro|Morocco|Mozambique|Myanmar|Namibia|Nauru|Nepal|Netherlands|New Zealand|Nicaragua|Niger|Nigeria|North Korea|North Macedonia|Norway|Oman|Pakistan|Palau|Palestine|Panama|Papua New Guinea|Paraguay|Peru|Philippines|Poland|Portugal|Qatar|Republic of the Congo|Romania|Russia|Rwanda|Saint Kitts and Nevis|Saint Lucia|Saint Vincent and the Grenadines|Samoa|San Marino|Saudi Arabia|Senegal|Serbia|Seychelles|Sierra Leone|Singapore|Slovakia|Slovenia|Solomon Islands|Somalia|South Africa|South Korea|South Sudan|Spain|Sri Lanka|Sudan|Suriname|Sweden|Switzerland|Syria|São Tomé and Príncipe|Tajikistan|Tanzania|Thailand|Togo|Tonga|Trinidad and Tobago|Tunisia|Turkey|Turkmenistan|Tuvalu|Uganda|Ukraine|United Arab Emirates|United Kingdom|United States|Uruguay|Uzbekistan|Vanuatu|Vatican City|Venezuela|Vietnam|Yemen|Zambia|Zimbabwe".split("|")
-from countrydle.local_answering import POLISH_COUNTRY_ALIASES, COUNTRY_NAME_SYNONYMS
+from countrydle.local_answering import (
+    POLISH_COUNTRY_ALIASES, COUNTRY_NAME_SYNONYMS,
+    CONTINENT_ALIASES, SUBREGION_ALIASES, REGION_ALIASES,
+)
 
 _CANONICAL_COUNTRIES = {_norm(name): name for name in _COUNTRY_NAMES}
 _CANONICAL_COUNTRIES.update({_norm(k): v for k, v in COUNTRY_NAME_SYNONYMS.items()})
 _POLISH_COUNTRIES = {_norm(alias): name for alias, name in POLISH_COUNTRY_ALIASES.items()}
 _COUNTRY_ALIASES = {**_CANONICAL_COUNTRIES, **_POLISH_COUNTRIES}
+# The synonym catalog is bilingual; exclude its Polish-only spellings, not
+# shared names/abbreviations such as Antigua, DRC, UK, USA and São Tomé.
+_POLISH_ONLY_SYNONYMS = frozenset({
+    "bosni", "bosnie", "bosnia i hercegowina",
+    "demokratyczna republika konga", "drk", "republika konga",
+})
+_ENGLISH_COUNTRY_ALIASES = {
+    alias: country for alias, country in _CANONICAL_COUNTRIES.items()
+    if alias not in _POLISH_ONLY_SYNONYMS
+}
 _COUNTRY_PATTERN = re.compile(
     r"(?<![a-z])(?:" + "|".join(re.escape(alias) for alias in sorted(_COUNTRY_ALIASES, key=len, reverse=True)) + r")(?![a-z])"
 )
+
+_ENTITY_CONTINENTS = {_norm(value): value for value in CONTINENT_ALIASES.values()}
+_ENTITY_AREAS = {
+    _norm(alias): value for alias, value in (SUBREGION_ALIASES | REGION_ALIASES).items()
+}
+_ENTITY_AREAS.update({
+    _norm(alias): canonical for canonical, aliases in AREAS.items() for alias in aliases
+})
+_ENTITY_UNIONS = {
+    "eurasia": ("Europe", "Asia"),
+    "americas": ("North America", "South America"),
+}
+_LOCATIVE_PREFIX = re.compile(r"^(?:is (?:it|the country) in|in)\s+(?:the\s+)?(.+)$")
+_IDENTITY_PREFIX = re.compile(r"^(?:is (?:it|the country|this))\s+(?:the\s+)?(.+)$")
+_BARE_PREFIX = re.compile(r"^(?:the\s+)?(.+)$")
+_AMBIGUOUS_ENTITIES = frozenset({"america", "ameryka", "ameryce", "congo", "kongo"})
+_ENTITY_ACCENTS = frozenset(
+    "\u0300\u0301\u0302\u0303\u0304\u0306\u0307\u0308\u030a\u030b\u030c"
+    "\u031b\u0323\u0327\u0328"
+)
+
+
+def _normalized_english_question(question: str) -> str | None:
+    if not isinstance(question, str):
+        return None
+    if not question.isascii():
+        # Folding accents is safe; numeric letters and semantic overlays are not.
+        if any(unicodedata.category(char) == "Nl" for char in question):
+            return None
+        if any(
+            unicodedata.category(char).startswith("M") and char not in _ENTITY_ACCENTS
+            for char in unicodedata.normalize("NFKD", question)
+        ):
+            return None
+    return " ".join(_norm(question).split()).rstrip(" ?!.")
+
+
+def compile_entity_question(question: str) -> tuple[dict, str] | None:
+    """Resolve a whole English entity question without confusing location and identity."""
+    text = _normalized_english_question(question)
+    if not text:
+        return None
+    locative = _LOCATIVE_PREFIX.fullmatch(text)
+    match = locative or _IDENTITY_PREFIX.fullmatch(text) or _BARE_PREFIX.fullmatch(text)
+    if match is None:
+        return None
+    entity = match.group(1)
+    if entity in _AMBIGUOUS_ENTITIES:
+        return None
+    if not locative:
+        country = _ENGLISH_COUNTRY_ALIASES.get(entity)
+        if country is not None:
+            return _node("equals", "name", country), f"Is the country {country}?"
+    continent = _ENTITY_CONTINENTS.get(entity)
+    if continent is not None:
+        return _node("contains", "continent", continent), f"Is the country in {continent}?"
+    area = _ENTITY_AREAS.get(entity)
+    union = _ENTITY_UNIONS.get(entity)
+    if area is not None and union is None:
+        return _node("contains", "geographic_area", area), f"Is the country in {area}?"
+    if union is not None:
+        return {
+            "operator": "or",
+            "conditions": [_node("contains", "continent", value) for value in union],
+        }, f"Is the country in {'Eurasia' if union == ('Europe', 'Asia') else 'the Americas'}?"
+    # Country containment has no local relation: let the model preserve that intent.
+    return None
 
 
 def _clean_country_input(text: str) -> str:
@@ -173,8 +253,202 @@ def _parse_number_literal(text: str) -> float | int | None:
     return int(res) if res.is_integer() else res
 
 
-def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
-    """Compile a recognized question to ``(AST, improved English question)``."""
+_POLISH_PREFIX = re.compile(r"^(?:czy|nad|pod|na|po|lezy|jest|ma|panstwo|kraj|graniczy)\b")
+_UNHANDLED_ENGLISH = re.compile(
+    r"\b(?:and|or|not|never|neither|nor|but|except|without|ever|former|formerly|past)\b|[<>-]"
+)
+_WATER_ALIASES = {
+    _norm(alias).removeprefix("the "): canonical
+    for canonical, aliases in WATERS.items() for alias in aliases
+}
+
+_ENGLISH_TARGET_SUBJECTS = frozenset({
+    "it", "the country", "this country", "the hidden country", "hidden country",
+})
+_COUNTRY_COMPARISON_OPERATORS = {
+    "greater": "greater_than", "larger": "greater_than", "higher": "greater_than",
+    "less": "less_than", "smaller": "less_than", "lower": "less_than",
+}
+_SHARED_CONTINENTS = (*CONTINENTS, "Antarctica")
+
+
+def _english_reference_country(match: re.Match | None) -> str | None:
+    if match is None:
+        return None
+    subject = match["subject"]
+    if subject not in _ENGLISH_TARGET_SUBJECTS and (
+        subject in _AMBIGUOUS_ENTITIES or subject not in _ENGLISH_COUNTRY_ALIASES
+    ):
+        return None
+    reference = match["country"]
+    return None if reference in _AMBIGUOUS_ENTITIES else _ENGLISH_COUNTRY_ALIASES.get(reference)
+
+
+_SUBJECT_AUXILIARY = re.compile(
+    r"^\s*(?P<verb>does|do|did|is|are|was|were|has|have|had|can|could|will|would|should|must|may|might|"
+    r"can['\u2019]t|cannot|won['\u2019]t)(?:n['\u2019]t)?\s+", re.IGNORECASE,
+)
+_COUNTRY_ALIAS_WORD_LIMIT = max(len(alias.split()) for alias in _ENGLISH_COUNTRY_ALIASES)
+_COPULAR_COUNTRY_PREDICATES = frozenset({
+    "a", "an", "the", "in", "on", "at", "from", "north", "south", "east", "west",
+    "larger", "smaller", "bigger", "greater", "less", "more", "lower", "higher",
+    "coastal", "landlocked", "located", "situated", "surrounded", "bordered",
+    "connected", "known", "called", "governed", "controlled", "divided",
+})
+_VERBAL_COUNTRY_PREDICATES = frozenset({
+    "have", "had", "been", "be", "border", "share", "belong", "contain", "speak",
+    "use", "lie", "include", "cross", "straddle", "start", "end", "exist", "rank",
+    "consist", "host", "join", "joined", "win", "produce", "export", "import",
+    "touch", "neighbor", "neighbour", "recognize", "maintain", "follow", "possess",
+    "allow", "require", "rely", "support", "drive", "make", "hold", "participate",
+    "occupy", "extend", "stretch", "adjoin", "surround", "face",
+})
+_COUNTRY_PREDICATE_MODIFIERS = frozenset({
+    "not", "never", "ever", "only", "entirely", "completely", "fully", "mostly",
+    "partly", "currently", "formerly", "previously", "already", "still", "once",
+})
+
+
+def _bind_named_country_subject(question: str | None) -> str | None:
+    """Bind an exact leading English country subject without changing its predicate."""
+    if question is None or (auxiliary := _SUBJECT_AUXILIARY.match(question)) is None:
+        return question
+    start = auxiliary.end()
+    country_start = start
+    article = re.match(r"the\s+", question[start:], re.IGNORECASE)
+    if article is not None:
+        country_start += article.end()
+    country_end = None
+    for index, token in enumerate(re.finditer(r"\S+", question[country_start:])):
+        if index >= _COUNTRY_ALIAS_WORD_LIMIT:
+            break
+        candidate = " ".join(_norm(question[country_start:country_start + token.end()]).split())
+        if candidate in _ENGLISH_COUNTRY_ALIASES and candidate not in _AMBIGUOUS_ENTITIES:
+            country_end = country_start + token.end()
+    if country_end is None:
+        return question
+    rest = question[country_end:]
+    following = re.match(r"\s+(\w+)", rest)
+    predicates = (
+        _COPULAR_COUNTRY_PREDICATES if _norm(auxiliary["verb"]) in {"is", "are", "was", "were"}
+        else _VERBAL_COUNTRY_PREDICATES
+    )
+    if following is None:
+        return question
+    first = _norm(following[1])
+    if first not in predicates and first not in _COUNTRY_PREDICATE_MODIFIERS:
+        return question
+    return question[:start] + "the country" + rest
+
+
+def compile_template_plan(
+    question: str, *, english_only: bool = False,
+) -> tuple[list[dict], str] | None:
+    """Compile fully covered English skeletons; retain the separate Polish path."""
+    if not isinstance(question, str) or not question.strip():
+        return None
+    # The active planner must not newly activate legacy Polish compilation.
+    if _POLISH_PREFIX.match(_norm(question).lstrip()):
+        return None if english_only else _compile_polish_template_plan(question)
+    q = _normalized_english_question(question)
+    if not q:
+        return None
+    entity = compile_entity_question(question)
+    if entity is not None:
+        node, wording = entity
+        return [node], wording
+    if _UNHANDLED_ENGLISH.search(q):
+        return None
+    comparison = re.fullmatch(
+        r"does (?P<subject>[a-z0-9 '\u2019&.]+) have (?:a )?"
+        r"(?P<relation>population|area) (?P<comparison>greater|larger|higher|less|smaller|lower) "
+        r"than (?P<country>[a-z0-9 '\u2019&.]+)", q,
+    )
+    country = _english_reference_country(comparison)
+    if country is not None:
+        relation = comparison["relation"]
+        operator = _COUNTRY_COMPARISON_OPERATORS[comparison["comparison"]]
+        return [{
+            "operator": operator,
+            "left": {**_TARGET, "relation": relation},
+            "right": {"entity": country, "relation": relation},
+        }], f"Does the country have a {relation} {comparison['comparison']} than {country}?"
+    direction = re.fullmatch(
+        r"is (?P<subject>[a-z0-9 '\u2019&.]+) (?:(?:farther|further) )?"
+        r"(?P<direction>north|south|east|west) (?:of|than) (?P<country>[a-z0-9 '\u2019&.]+)", q,
+    )
+    country = _english_reference_country(direction)
+    if country is not None:
+        compass = direction["direction"]
+        return [_direction(f"{compass}_of", country)], f"Is the country {compass} of {country}?"
+    shared = re.fullmatch(
+        r"does (?P<subject>[a-z0-9 '\u2019&.]+) "
+        r"(?:share (?:a|any) continent with|have (?:a|any) continent in common with) "
+        r"(?P<country>[a-z0-9 '\u2019&.]+)", q,
+    )
+    country = _english_reference_country(shared)
+    if country is not None:
+        # List intersection uses supported predicates, never continent-valued country items.
+        nodes, branches = [], []
+        for continent in _SHARED_CONTINENTS:
+            first = len(nodes)
+            nodes.extend([
+                _node("contains", "continent", continent),
+                {"operator": "contains", "left": {"entity": country, "relation": "continent"},
+                 "right": {"value": continent}},
+                {"operator": "and", "args": [first, first + 1]},
+            ])
+            branches.append(first + 2)
+        nodes.append({"operator": "or", "args": branches})
+        return nodes, f"Does the country share a continent with {country}?"
+    border = re.fullmatch(
+        r"does (?:it|the country) border (?:the country\s+)?(?P<country>[a-z0-9 '\u2019&.-]+)", q,
+    )
+    if border is not None:
+        reference = border["country"]
+        if reference in _AMBIGUOUS_ENTITIES:
+            return None
+        country = _ENGLISH_COUNTRY_ALIASES.get(reference)
+        if country is not None:
+            return [_node("contains", "borders_country", country)], f"Does the country border {country}?"
+    if re.fullmatch(r"(?:is (?:it|the country) an island(?: country)?|is island)", q):
+        return [_node("equals", "is_island", True)], "Is the country an island country?"
+    if re.fullmatch(
+        r"(?:does (?:it|the country) have (?:a )?coastline|has coast|has sea|is (?:it )?coastal)", q,
+    ):
+        return [_node("exists", "water_access")], "Does the country have a coastline?"
+    if re.fullmatch(r"is (?:it|the country) landlocked", q):
+        return [_node("exists", "marine_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
+    hemisphere = re.fullmatch(
+        r"is (?:it|the country) in the (?P<hemi>northern|southern|eastern|western) hemisphere", q,
+    )
+    if hemisphere is not None:
+        hemi = hemisphere["hemi"].capitalize()
+        return [_node("contains", "hemisphere", hemi)], f"Is the country in the {hemi} Hemisphere?"
+    if re.fullmatch(r"does (?:it|the country) (?:cross|straddle) the equator", q):
+        return [
+            _node("contains", "hemisphere", "Northern"),
+            _node("contains", "hemisphere", "Southern"),
+            {"operator": "and", "args": [0, 1]},
+        ], "Does the country cross the equator?"
+    equator = re.fullmatch(r"is (?:it|the country) (?P<direction>north|south) of the equator", q)
+    if equator is not None:
+        direction = equator["direction"]
+        hemi = "Northern" if direction == "north" else "Southern"
+        return [_node("contains", "hemisphere", hemi)], f"Is the country {direction} of the equator?"
+    water = re.fullmatch(
+        r"(?:does (?:it|the country) (?:border|have access to) (?:the )?(?P<water>[a-z\s]+)"
+        r"|is (?:it|the country) on the (?P<water2>[a-z\s]+))", q,
+    )
+    if water is not None:
+        value = _WATER_ALIASES.get(water["water"] or water["water2"])
+        if value is not None:
+            return [_node("contains", "water_access", value)], f"Does the country have access to the {value}?"
+    return None
+
+
+def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | None:
+    """Existing Polish behavior, intentionally outside the English cutover."""
     if not isinstance(question, str) or not question.strip():
         return None
     if "/" in question or "\\" in question:
@@ -383,7 +657,7 @@ def compile_template_plan(question: str) -> tuple[list[dict], str] | None:
             return ([_direction(operator, country)], f"Is the country {operator[:-3]} of {country}?") if country else None
 
     if re.search(r"\b(landlocked|inland|srodladow\w*|no coastline|no access to (?:the )?(?:sea|ocean)|brak dostepu do morza|nie ma dostepu do morza)\b", q):
-        return [_node("exists", "water_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
+        return [_node("exists", "marine_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
     if any(x in q for x in ("island", "wyspa", "wyspiarsk")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
         return [_node("equals", "is_island", True)], "Is the country an island?"
     is_directional_coast = bool(re.search(r"\b(west\w*|east\w*|north\w*|south\w*|zachod\w*|wschod\w*|polnoc\w*|poludn\w*)\b.*?\b(coast|coastline|wybrzez\w*)\b", q))

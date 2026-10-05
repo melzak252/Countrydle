@@ -412,6 +412,12 @@ WATER_BODY_PARENT_MAP: dict[str, set[str]] = {
     "Arctic Ocean": {"Ocean"},
     "Southern Ocean": {"Ocean"},
 }
+INLAND_WATER_BODIES = frozenset({"aral sea", "caspian sea", "dead sea"})
+
+
+def is_marine_water_body(water_body: str) -> bool:
+    """Whether a named water body gives a coastline connected to the open sea."""
+    return normalize(water_body) not in INLAND_WATER_BODIES
 
 VALUE_ALIASES = {
     "baltyk": "Baltic Sea",
@@ -1214,6 +1220,7 @@ LIST_RELATION_QUERIES = {
     "geographic_area": "SELECT region_name FROM country_regions WHERE country_id=? UNION SELECT subregion_name FROM country_subregions WHERE country_id=?",
     "borders_country": "SELECT border_country_name FROM country_borders WHERE country_id=? UNION SELECT c.app_country_name FROM country_borders cb JOIN countries c ON cb.border_cca3 = c.cca3 WHERE cb.country_id=?",
     "water_access": "SELECT water_body FROM country_water_access WHERE country_id=?",
+    "marine_access": "SELECT water_body FROM country_water_access WHERE country_id=?",
     "currency": "SELECT currency_name FROM country_currencies WHERE country_id=? UNION SELECT currency_code FROM country_currencies WHERE country_id=? AND currency_code IS NOT NULL",
     "official_language": "SELECT language_name FROM country_languages WHERE country_id=?",
     "membership": "SELECT organization FROM country_memberships WHERE country_id=?",
@@ -1318,7 +1325,9 @@ def resolve_ref(
         query = LIST_RELATION_QUERIES[relation]
         params = (entity["id"],) * query.count("?")
         res = [row[0] for row in conn.execute(query, params) if row[0] is not None]
-        if relation == "water_access":
+        if relation == "marine_access":
+            res = [water for water in res if is_marine_water_body(water)]
+        if relation in {"water_access", "marine_access"}:
             expanded = set(res)
             for w in res:
                 if w in WATER_BODY_PARENT_MAP:
@@ -1781,6 +1790,30 @@ def generate_factual_explanation(
                 b_str = ", ".join(sorted(set(borders))) if borders else "none"
                 return f"{name} does not border {target_val}. Its land borders are: {b_str}."
 
+    if rel == "marine_access":
+        db_waters = sorted(set(r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))))
+        marine_waters = [water for water in db_waters if is_marine_water_body(water)]
+        inland_waters = [water for water in db_waters if not is_marine_water_body(water)]
+        if target_val:
+            if answer:
+                return f"{name} has coastline connected to the open sea via {target_val}."
+            if not is_marine_water_body(str(target_val)):
+                return f"{target_val} is an inland water body and does not connect {name}'s shoreline to the open sea."
+            if inland_waters:
+                return (
+                    f"{name} does not have coastline connected to the open sea via {target_val}. "
+                    f"It has inland shoreline on: {', '.join(inland_waters)}."
+                )
+            return f"{name} does not have coastline connected to the open sea via {target_val}."
+        if answer:
+            return f"{name} has coastline connected to the open sea via: {', '.join(marine_waters)}."
+        if inland_waters:
+            return (
+                f"{name} has no coastline connected to the open sea. "
+                f"It does have inland shoreline on: {', '.join(inland_waters)}."
+            )
+        return f"{name} has no coastline connected to the open sea."
+
     if rel == "water_access":
         db_waters = sorted(set(r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))))
         all_waters = set(db_waters)
@@ -1940,22 +1973,22 @@ def generate_factual_explanation(
             )
     if rel == "population":
         pop = country["population"]
-        if target_val and op in ("greater_than", "less_than"):
+        if target_val is not None and op in ("greater_than", "less_than"):
             try:
                 val_num = float(target_val)
-                comp_en = "more" if pop > val_num else "fewer"
-                return f"{name} has a population of approximately {pop:,} ({comp_en} than {int(val_num):,})."
+                comparison = "equal to" if pop == val_num else "more than" if pop > val_num else "fewer than"
+                return f"{name} has a population of approximately {pop:,} ({comparison} {val_num:,})."
             except (ValueError, TypeError):
                 pass
         return f"{name} has a population of approximately {pop:,}."
 
     if rel in ("area_km2", "area"):
         area = country["area_km2"]
-        if target_val and op in ("greater_than", "less_than"):
+        if target_val is not None and op in ("greater_than", "less_than"):
             try:
                 val_num = float(target_val)
-                comp_en = "larger" if area > val_num else "smaller"
-                return f"The area of {name} is approximately {area:,.0f} km² (it is {comp_en} than {val_num:,.0f} km²)."
+                comparison = "equal to" if area == val_num else "larger than" if area > val_num else "smaller than"
+                return f"The area of {name} is approximately {area:,} km² (it is {comparison} {val_num:,} km²)."
             except (ValueError, TypeError):
                 pass
         return f"The area of {name} is approximately {area:,.0f} km²."

@@ -1110,11 +1110,8 @@ def test_historical_unions_matching_and_execution():
     ]
 
     for question, country, expected_union, expected_ans in english_cases:
-        plan = compile_template_plan(question)
-        assert plan is not None, f"Failed to compile: {question}"
-        node = plan[0][0]
-        assert node["left"]["relation"] == "historical_union"
-        assert node["right"]["value"] == expected_union
+        assert compile_template_plan(question) is None
+        node = contains_plan("historical_union", expected_union)
         ans = execute_local_plan(node, country, question)
         assert ans.answer is expected_ans, f"Failed for {country} in {expected_union}: expected {expected_ans}, got {ans.answer}"
 
@@ -1177,13 +1174,72 @@ def test_water_access_sea_and_or_ocean_evaluates_correctly():
     assert "landlocked" in ans_or_chad.explanation
 
 
+def test_marine_access_classifies_empty_inland_mixed_and_marine_waters():
+    marine_access = exists_plan("marine_access")
+
+    empty = execute_local_plan(
+        marine_access, "Chad", "Does it have access to the open sea?"
+    )
+    assert empty is not None
+    assert empty.answer is False
+    assert "open sea" in empty.explanation.lower()
+
+    inland_only = execute_local_plan(
+        marine_access, "Kazakhstan", "Does it have access to the open sea?"
+    )
+    assert inland_only is not None
+    assert inland_only.answer is False
+    assert "Caspian Sea" in inland_only.explanation
+    assert "shore" in inland_only.explanation.lower()
+
+    mixed = execute_local_plan(
+        marine_access, "Iran", "Does it have access to the open sea?"
+    )
+    assert mixed is not None
+    assert mixed.answer is True
+    assert "Persian Gulf" in mixed.explanation
+
+    marine_only = execute_local_plan(
+        marine_access, "Italy", "Does it have access to the open sea?"
+    )
+    assert marine_only is not None
+    assert marine_only.answer is True
+
+
+def test_marine_access_named_water_excludes_inland_bodies_without_changing_water_access():
+    inland = "Caspian Sea"
+    marine_access = contains_plan("marine_access", inland)
+    water_access = contains_plan("water_access", inland)
+
+    assert local_answer(marine_access, "Kazakhstan").answer is False
+    assert local_answer(water_access, "Kazakhstan").answer is True
+    assert local_answer(contains_plan("marine_access", "Persian Gulf"), "Iran").answer is True
+
+
+def test_marine_landlocked_explanation_distinguishes_inland_shoreline():
+    plan = {"operator": "not", "condition": exists_plan("marine_access")}
+
+    kazakhstan = local_answer(plan, "Kazakhstan")
+    switzerland = local_answer(plan, "Switzerland")
+    iran = local_answer(plan, "Iran")
+    italy = local_answer(plan, "Italy")
+
+    assert kazakhstan.answer is True
+    assert "open sea" in kazakhstan.explanation.lower()
+    assert "Caspian Sea" in kazakhstan.explanation
+    assert "shore" in kazakhstan.explanation.lower()
+    assert switzerland.answer is True
+    assert "open sea" in switzerland.explanation.lower()
+    assert iran.answer is False
+    assert italy.answer is False
+
+
 def test_equator_questions_accurately_classify_crossing_and_pure_countries():
     from countrydle.template_compiler import compile_template_plan
 
     # "Below the equator" / "South of equator" -> True for DRC, Kenya, Brazil, Australia; False for Poland
-    below_res = compile_template_plan("Is it below the equator?")
-    assert below_res is not None
-    below_plan, _ = below_res
+    assert compile_template_plan("Is it below the equator?") is None
+    below_plan = contains_plan("hemisphere", "Southern")
 
     ans_drc_below = execute_local_plan(below_plan, "Democratic Republic of the Congo", "Is it below the equator?")
     assert ans_drc_below.answer is True
@@ -1196,9 +1252,8 @@ def test_equator_questions_accurately_classify_crossing_and_pure_countries():
     assert ans_poland_below.answer is False
 
     # "Above the equator" / "North of equator" -> True for DRC, Kenya, Brazil, Poland; False for Australia
-    above_res = compile_template_plan("Is it above the equator?")
-    assert above_res is not None
-    above_plan, _ = above_res
+    assert compile_template_plan("Is it above the equator?") is None
+    above_plan = contains_plan("hemisphere", "Northern")
 
     ans_drc_above = execute_local_plan(above_plan, "Democratic Republic of the Congo", "Is it above the equator?")
     assert ans_drc_above.answer is True
@@ -1224,9 +1279,8 @@ def test_prime_meridian_questions_accurately_classify_crossing_and_pure_countrie
     from countrydle.template_compiler import compile_template_plan
 
     # "East of the prime meridian" -> True for UK, France, Spain, Poland; False for Brazil
-    east_res = compile_template_plan("Is it east of the prime meridian?")
-    assert east_res is not None
-    east_plan, _ = east_res
+    assert compile_template_plan("Is it east of the prime meridian?") is None
+    east_plan = contains_plan("hemisphere", "Eastern")
 
     ans_uk_east = execute_local_plan(east_plan, "United Kingdom", "Is it east of the prime meridian?")
     assert ans_uk_east.answer is True
@@ -1242,9 +1296,8 @@ def test_prime_meridian_questions_accurately_classify_crossing_and_pure_countrie
     assert ans_br_east.answer is False
 
     # "West of the prime meridian" -> True for UK, France, Spain, Brazil; False for Poland
-    west_res = compile_template_plan("Is it west of the prime meridian?")
-    assert west_res is not None
-    west_plan, _ = west_res
+    assert compile_template_plan("Is it west of the prime meridian?") is None
+    west_plan = contains_plan("hemisphere", "Western")
 
     ans_uk_west = execute_local_plan(west_plan, "United Kingdom", "Is it west of the prime meridian?")
     assert ans_uk_west.answer is True
@@ -1260,9 +1313,11 @@ def test_prime_meridian_questions_accurately_classify_crossing_and_pure_countrie
     assert ans_pl_west.answer is False
 
     # "Crosses the prime meridian" -> True for UK, France, Spain; False for Poland, Brazil
-    cross_res = compile_template_plan("Does it cross the prime meridian?")
-    assert cross_res is not None
-    cross_plan, _ = cross_res
+    assert compile_template_plan("Does it cross the prime meridian?") is None
+    cross_plan = {
+        "operator": "and",
+        "conditions": [contains_plan("hemisphere", "Eastern"), contains_plan("hemisphere", "Western")],
+    }
 
     ans_uk_cross = execute_local_plan(cross_plan, "United Kingdom", "Does it cross the prime meridian?")
     assert ans_uk_cross.answer is True

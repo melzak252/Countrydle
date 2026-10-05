@@ -12,6 +12,7 @@ from schemas.countrydle import QuestionCreate, QuestionEnhanced
 from db.repositories.country import CountryRepository
 from countrydle.local_answering import execute_local_plan
 from countrydle.local_planner import QuestionPlan, analyze_question_for_local_plan
+from countrydle.template_compiler import _bind_named_country_subject
 
 
 from utils.explanation_sanitizer import sanitize_explanation_for_player
@@ -110,7 +111,7 @@ async def analyze_and_answer_locally(
     strict_errors: bool = False,
     evidence: dict | None = None,
 ) -> tuple[QuestionCreate | None, QuestionPlan]:
-    """Run one Gemini validator/planner call and answer locally when possible."""
+    """Plan the complete question and answer locally when its predicate is supported."""
     country: Country = await CountryRepository(session).get(day_country.country_id)
     if hasattr(session, "commit") and callable(session.commit):
         commit_res = session.commit()
@@ -168,7 +169,10 @@ async def analyze_and_answer_locally(
         valid=True,
         question=local_answer.question,
         answer=local_answer.answer,
-        explanation=local_answer.explanation,
+        explanation=sanitize_explanation_for_player(
+            local_answer.explanation,
+            entity_names=[name for name in (country.name, country.official_name) if name],
+        ),
         intent=f"Local KB relation: {local_answer.relation}",
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",
@@ -180,9 +184,16 @@ def answer_prompts(
 ) -> tuple[str, str]:
     """Build the shared daily and explicit-target answer instructions."""
     system_prompt = f"""
-You are the 'Game Master' for Countrydle. Your task is to answer a True/False question about a specific country based on provided context and your general knowledge.
+You are the 'Game Master' for Countrydle. Evaluate the exact True/False proposition using the entity-binding rules first, then the provided context and reliable general knowledge.
 
-### Target Country: {entity_name}
+### Hidden Target Country: {entity_name}
+
+### Entity Binding (resolve before looking up or comparing facts)
+- Pronouns and user references to themselves as the country denote the hidden target.
+- Exact leading country-name subjects have already been replaced with "the country" in the question data. Evaluate that subject using {entity_name}'s facts, not another country's facts mentioned in the context.
+- Country names in explicit property phrases and comparison/object references are LITERAL, not placeholders. A named country's population, area, capital or other property belongs to that named country; never substitute {entity_name}'s property merely because a hidden target is supplied.
+- A country-name SUBJECT elsewhere in a compound question still denotes the hidden target. Do not confuse a named property/reference with a country-name subject. Apply these role distinctions before computing the answer.
+- Quoted text remains literal. Preserve the requested relationship, qualifiers, negation and date after resolving entities.
 
 ### Context Fragments:
 {context}
@@ -195,7 +206,7 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
 6. **Temporal Questions**: Answer the period the question asks about. Do not impose an arbitrary date cutoff. If asked about a current fact and you cannot establish it reliably, abstain with `null`.
 7. **Focused Explanations**: Give only a concise fact directly relevant to the question that supports the answer. Do not add unrelated facts or claims about current officeholders unless they are needed to answer the question; avoid asserting that a potentially stale fact is current.
 8. **Handle Logical 'OR' and Lists**: Treat 'or' as inclusive, so an unnegated question is true if any branch is true. Apply negation and the exact qualifiers in each branch; do not let this rule override them.
-9. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), answer about the country in the third person.
+9. **User Perspective**: Answer about the country in the third person, applying the entity bindings above rather than substituting the hidden target for every named reference.
 10. **STRICT SECRECY (NO SPOILERS)**:
     - The player is trying to guess the hidden country. You must NEVER state, name, or reveal the target country's name ({entity_name}) in the explanation, whether the answer is true, false, or null!
     - Always refer to the target as "the country" or "this country" (e.g. "The country is located on the mainland...", NOT "{entity_name} is located on the mainland...").
@@ -218,8 +229,10 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
 For a well-defined historical question, use available historical knowledge rather than abstaining solely because of its date.
 """
 
-    question_prompt = f"""User's Original Question: {question.original_question}
-Simplified Question: {question.question}"""
+    original = _bind_named_country_subject(question.original_question)
+    simplified = _bind_named_country_subject(question.question)
+    question_prompt = f"""User's Question (country subjects bound to the hidden target): {original}
+Suggested Rewrite (do not drop the original proposition's modifiers): {simplified}"""
     return system_prompt, question_prompt
 
 
