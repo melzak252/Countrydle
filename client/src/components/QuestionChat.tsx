@@ -165,8 +165,8 @@ export default function QuestionChat({
             <div className={`flex items-center gap-1.5 mb-1 px-1 text-[11px] font-medium transition-colors ${
               isSlowThinking ? 'text-amber-400' : 'text-zinc-400'
             }`}>
-              <Compass size={13} className={`animate-spin-slow ${isSlowThinking ? 'text-amber-400' : 'text-emerald-400'}`} aria-hidden="true" />
-              <span>
+              <Compass size={13} className={`animate-spin-slow shrink-0 ${isSlowThinking ? 'text-amber-400' : 'text-emerald-400'}`} aria-hidden="true" />
+              <span className="whitespace-nowrap truncate">
                 {isSlowThinking
                   ? t('inputs.slowQuestionMessage')
                   : t('inputs.thinking', { defaultValue: 'Countrydle is thinking...' })}
