@@ -1,4 +1,5 @@
 import { AlertTriangle, Check, Compass, Copy, HelpCircle, MessageCircle, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { AnswerReportMode, Question } from '../types';
@@ -48,6 +49,15 @@ export default function QuestionChat({
   pendingQuestion = null,
 }: QuestionChatProps) {
   const { t, i18n } = useTranslation();
+  const [isSlowThinking, setIsSlowThinking] = useState(false);
+  useEffect(() => {
+    if (!isLoading || !pendingQuestion) {
+      setIsSlowThinking(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setIsSlowThinking(true), 2000);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, pendingQuestion]);
   const isPl = i18n.language.startsWith('pl');
   const copyLabel = t('chat.copyQuestion', { defaultValue: isPl ? 'Kopiuj pytanie' : 'Copy question' });
   const copyQuestion = async (question: string) => {
@@ -152,15 +162,23 @@ export default function QuestionChat({
             <PlayerQuestionBubble question={pendingQuestion} copyLabel={copyLabel} onCopy={copyQuestion} />
           </div>
           <div className="flex flex-col items-start pr-6">
-            <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium text-zinc-400">
-              <Compass size={13} className="text-emerald-400 animate-spin-slow" aria-hidden="true" />
-              <span>{t('inputs.thinking', { defaultValue: 'Countrydle is thinking...' })}</span>
+            <div className={`flex items-center gap-1.5 mb-1 px-1 text-[10px] font-medium transition-colors ${
+              isSlowThinking ? 'text-amber-400' : 'text-zinc-400'
+            }`}>
+              <Compass size={13} className={`animate-spin-slow ${isSlowThinking ? 'text-amber-400' : 'text-emerald-400'}`} aria-hidden="true" />
+              <span>
+                {isSlowThinking
+                  ? t('inputs.slowQuestionMessage')
+                  : t('inputs.thinking', { defaultValue: 'Countrydle is thinking...' })}
+              </span>
             </div>
-            <div className="w-fit rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-3.5 py-2 shadow-inner">
+            <div className={`w-fit rounded-2xl rounded-tl-md border px-3.5 py-2 shadow-inner transition-colors ${
+              isSlowThinking ? 'border-amber-400/30 bg-amber-400/10' : 'border-white/10 bg-white/[0.045]'
+            }`}>
               <div className="flex items-center gap-1.5 py-0.5 px-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-typing-dot-1" />
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-typing-dot-2" />
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-typing-dot-3" />
+                <span className={`h-1.5 w-1.5 rounded-full animate-typing-dot-1 ${isSlowThinking ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                <span className={`h-1.5 w-1.5 rounded-full animate-typing-dot-2 ${isSlowThinking ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                <span className={`h-1.5 w-1.5 rounded-full animate-typing-dot-3 ${isSlowThinking ? 'bg-amber-400' : 'bg-emerald-400'}`} />
               </div>
             </div>
           </div>

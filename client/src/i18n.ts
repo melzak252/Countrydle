@@ -456,7 +456,7 @@ const resources = {
       inputs: {
         questionPlaceholder: 'Ask a yes/no question (e.g., "Is it in Europe?") - {{count}} left',
         guessPlaceholder: 'Guess the country... ({{count}} left)',
-        slowQuestionMessage: 'I need a moment to check additional information...',
+        slowQuestionMessage: 'The model needs more time — checking additional geographic records, please wait...',
         looksLikeQuestion: 'This looks like a question, not a country name. Switch to the "Question" tab to ask questions.',
         thinking: 'Countrydle is thinking...',
         quickQuestions: 'Quick questions',
@@ -618,6 +618,7 @@ const resources = {
       },
 
       inputs: {
+        slowQuestionMessage: 'Model potrzebuje więcej czasu — sprawdzanie dodatkowych danych geograficznych, proszę czekać...',
         looksLikeQuestion: 'To wygląda na pytanie, a nie nazwę państwa. Przełącz się na zakładkę „Pytanie”, aby zadać pytanie.',
         thinking: 'Countrydle myśli...',
         quickQuestions: 'Szybkie pytania',

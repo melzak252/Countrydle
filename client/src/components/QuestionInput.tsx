@@ -19,9 +19,16 @@ function SlowQuestionNotice({ message }: { message: string }) {
     const timer = window.setTimeout(() => setVisible(true), 1500);
     return () => window.clearTimeout(timer);
   }, []);
-  return visible ? <div role="status" className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
-    <Loader2 size={13} className="animate-spin" /><span>{message}</span>
-  </div> : null;
+  return visible ? (
+    <div
+      role="status"
+      aria-live="polite"
+      className="mt-2.5 flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-300 shadow-sm animate-in fade-in duration-300"
+    >
+      <Loader2 size={14} className="shrink-0 animate-spin text-amber-400" aria-hidden="true" />
+      <span>{message}</span>
+    </div>
+  ) : null;
 }
 
 export function getQuickQuestions(currentMode: string, t: (key: string) => string) {
