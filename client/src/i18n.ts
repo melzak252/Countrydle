@@ -127,6 +127,9 @@ const resources = {
         sourceLocalKb: 'Local KB',
         sourceInvalid: 'Invalid Question',
       },
+      adminCosts: {
+        tab: 'AI Costs',
+      },
       blog: {
         badge: 'Daily Country Recaps & Trivia',
         title: 'Countrydle Daily Blog',
@@ -670,6 +673,9 @@ const resources = {
         sourceFallback: 'Ścieżka zapasowa AI (LLM)',
         sourceLocalKb: 'Lokalna baza wiedzy',
         sourceInvalid: 'Niepoprawne pytanie',
+      },
+      adminCosts: {
+        tab: 'Koszty AI',
       },
       chat: {
         copyQuestion: 'Kopiuj pytanie',

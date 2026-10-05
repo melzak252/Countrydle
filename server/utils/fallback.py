@@ -55,10 +55,14 @@ async def retrieve_and_answer(
 
     context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     fallback_evidence = evidence.setdefault("fallback", {}) if evidence is not None else None
+    model = get_gemini_model()
+    if fallback_evidence is not None:
+        fallback_evidence.update(provider="gemini", model=model, cache_hit=False)
+        fallback_evidence.setdefault("attempts", [])
+        fallback_evidence.setdefault("provider_attempts", 0)
     fallback_started = time.perf_counter()
     try:
         async with asyncio.timeout(remaining_timeout(deadline)):
-            model = get_gemini_model()
             identity = None
             if cache_scope is not None and context:
                 system_prompt, question_prompt = prompt_builder(question, entity_name, context)
@@ -78,7 +82,7 @@ async def retrieve_and_answer(
                                       "temperature", "max_output_tokens", "attempts"):
                             fallback_evidence.pop(field, None)
                         fallback_evidence.update(provider="answer_cache", model=model,
-                                                 cache_hit=True, provider_attempts=0)
+                                                 cache_hit=True, attempts=[], provider_attempts=0)
                     return cached, context, question_vector
             else:
                 await session.commit()

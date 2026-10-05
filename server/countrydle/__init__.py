@@ -1,4 +1,7 @@
 from db.models import CountrydleState
+from datetime import UTC, datetime
+import logging
+from utils.country_cost_metrics import append_metrics
 from db.repositories.question_accounting import (
     consume_question, is_answered, unresolved_question, check_question_available,
     lock_question_state, claim_guest_questions,
@@ -30,7 +33,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action,
-    link_guest_participation, get_guest_identity,
+    link_guest_participation, get_guest_identity, check_guest_question_available,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -685,19 +688,95 @@ async def ask_question(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    evidence: dict = {}
+    handler_started = datetime.now(UTC)
+    measurement = {
+        "day": handler_started.date().isoformat(),
+        "started_at": handler_started.isoformat(),
+        "stage": "route",
+        "requests": 1,
+    }
+    accepted_result = None
+    failure_status = None
     try:
-        return await _do_ask_question(question, user, session, request, response)
-    except HTTPException:
+        accepted_result = await _do_ask_question(
+            question, user, session, request, response, evidence
+        )
+        return accepted_result
+    except HTTPException as exc:
+        failure_status = exc.status_code
         await session.rollback()
         raise
     except Exception as exc:
+        failure_status = status.HTTP_503_SERVICE_UNAVAILABLE
         await session.rollback()
-        import logging, traceback
-        logging.getLogger("countrydle").error("Handled error in ask_question: %s\n%s", exc, traceback.format_exc())
+        logging.getLogger("countrydle").error("Handled error in ask_question (%s)", type(exc).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not verify this question right now. Your turn was not deducted.",
         ) from exc
+    finally:
+        if accepted_result is not None:
+            if getattr(accepted_result, "valid", False) and getattr(accepted_result, "answer", None) in (True, False):
+                measurement["answered"] = 1
+                if evidence.get("template_answered"):
+                    measurement["template_answers"] = 1
+            else:
+                measurement["invalid"] = 1
+        if failure_status == status.HTTP_400_BAD_REQUEST:
+            measurement["quota_failures"] = 1
+        elif failure_status == status.HTTP_503_SERVICE_UNAVAILABLE:
+            measurement["provider_failures"] = 1
+        _record_countrydle_cost_measurements(measurement, evidence)
+
+
+def _record_countrydle_cost_measurements(measurement: dict, evidence: dict) -> None:
+    """Write only bounded event labels and observed numeric provider usage."""
+    try:
+        append_metrics({**measurement, "template_answers": 0})
+        if measurement.get("template_answers"):
+            append_metrics({
+                "day": measurement["day"], "stage": "template",
+                "template_answers": measurement["template_answers"],
+            })
+        for stage in ("planner", "fallback"):
+            stage_data = evidence.get(stage) or {}
+            attempts = stage_data.get("attempts") or []
+            if not attempts:
+                if stage_data.get("cache_hit"):
+                    append_metrics({
+                        "day": measurement["day"], "model": stage_data.get("model"), "stage": stage,
+                        "plan_cache_hits": int(stage == "planner"),
+                        "fallback_cache_hits": int(stage == "fallback"),
+                    })
+                continue
+            for index, attempt in enumerate(attempts):
+                event = {
+                    "day": measurement["day"],
+                    "model": attempt.get("model") or stage_data.get("model"),
+                    "stage": stage,
+                    "new_planner_calls": int(stage == "planner" and index == 0),
+                    "fallback_model_calls": int(stage == "fallback"),
+                    "retries": int(index > 0),
+                    "failed_attempts": int(bool(attempt.get("failed"))),
+                }
+                usage = attempt.get("usage")
+                if not isinstance(usage, dict):
+                    event["unknown_usage_calls"] = 1
+                else:
+                    if usage.get("input_tokens") is None or usage.get("total_tokens") is None:
+                        event["unknown_usage_calls"] = 1
+                    if usage.get("cached_input_tokens") is None and isinstance(usage.get("input_tokens"), int):
+                        event["cached_input_unknown_tokens"] = usage["input_tokens"]
+                    for key in ("input_tokens", "cached_input_tokens", "output_tokens", "thought_tokens", "total_tokens"):
+                        value = usage.get(key)
+                        if isinstance(value, int) and value >= 0:
+                            event[key] = value
+                append_metrics(event)
+    except Exception as exc:
+        logging.getLogger("countrydle.cost_metrics").warning(
+            "Could not persist Countrydle cost measurement (%s)", type(exc).__name__
+        )
 
 
 async def _do_ask_question(
@@ -706,6 +785,7 @@ async def _do_ask_question(
     session: AsyncSession,
     request: Request,
     response: Response,
+    evidence: dict | None = None,
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
@@ -715,13 +795,26 @@ async def _do_ask_question(
         await check_question_available(
             session, CountrydleState, user.id, daily_country.id, COUNTRYDLE_CONFIG.max_questions,
         )
+    else:
+        await check_guest_question_available(
+            session, request, response, "countrydle", daily_country.id,
+            COUNTRYDLE_CONFIG.max_questions,
+        )
 
     # End the quota/day read transaction before planner or provider work.
     await session.commit()
 
     question_create, planned_question = await gutils.analyze_and_answer_locally(
         original_question=question.question, day_country=daily_country, user=user, session=session,
+        evidence=evidence,
     )
+    if (
+        question_create is not None
+        and question_create.valid
+        and question_create.answer in (True, False)
+        and (evidence or {}).get("planner", {}).get("provider") == "template"
+    ):
+        evidence["template_answered"] = True
     question_vector = None
     if question_create is None:
         enhanced = gutils.question_enhanced_from_plan(question.question, planned_question)
@@ -739,6 +832,7 @@ async def _do_ask_question(
         else:
             question_create, question_vector = await gutils.ask_question(
                 question=enhanced, day_country=daily_country, user=user, session=session,
+                evidence=evidence,
             )
     if question_create.valid and question_create.answer is None:
         raise HTTPException(
@@ -774,7 +868,6 @@ async def _do_ask_question(
                 filter_value=daily_country.country_id, collection_name="countries_questions",
             )
         except Exception:
-            import logging
             logging.getLogger("countrydle").exception("Could not index accepted countrydle question")
     return result
 

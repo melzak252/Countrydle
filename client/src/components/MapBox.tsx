@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapContainer, TileLayer, GeoJSON, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -9,6 +9,13 @@ import MapToolbar from './MapToolbar';
 import { Check, Compass, RotateCcw } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
 import { isCountryAvailable } from '../lib/countryEligibility';
+import { useMapData } from '../hooks/useMapData';
+import { useMapZoomSync } from '../hooks/useMapZoomSync';
+import MapLoading from './MapLoading';
+import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
+import { createMapRenderer } from '../lib/mapRenderer';
+
+type FeatureLayer = L.Path & { feature?: Feature };
 
 function countryNameKey(name: string): string {
   return name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -140,14 +147,14 @@ function MapControls({
         const layer = L.geoJSON(correctFeature);
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
-            map.flyToBounds(bounds, { duration: 2 });
+            focusMapBounds(map, bounds);
         }
       }
     }
   };
   const handleResetView = () => {
     if (map && defaultCenter) {
-      map.flyTo(defaultCenter, defaultZoom || 2, { duration: 1 });
+      resetMapView(map, defaultCenter, defaultZoom ?? 2);
     }
   };
 
@@ -157,16 +164,16 @@ function MapControls({
         activeColor={activeMarkerColor}
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
-        className={isGameOver && correctCountryName ? '' : 'max-md:!top-[10.75rem]'}
+        className={isGameOver && correctCountryName ? 'max-md:!top-[17rem]' : 'max-md:!top-[14rem]'}
       />
-      <div className="absolute top-[5.75rem] left-[12px] md:top-[5.25rem] md:left-[12px] z-[1050] flex flex-col gap-1 md:gap-2">
+      <div className="absolute top-[7rem] left-[12px] md:top-[5.25rem] md:left-[12px] z-[1050] flex flex-col gap-1 md:gap-2">
         {defaultCenter && (
           <button
             onClick={(e) => {
               e.preventDefault();
               handleResetView();
             }}
-            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
             title={isPl ? 'Resetuj widok' : 'Reset view'}
             aria-label={isPl ? 'Resetuj widok' : 'Reset view'}
           >
@@ -179,7 +186,7 @@ function MapControls({
               e.preventDefault();
               onToggleReferenceLines();
             }}
-            className={`p-2 rounded shadow-md transition-colors border h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer ${
+            className={`p-2 rounded shadow-md transition-colors border h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer ${
               showReferenceLines
                 ? 'bg-zinc-700 text-zinc-100 border-zinc-500 hover:bg-zinc-600'
                 : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-white'
@@ -199,7 +206,7 @@ function MapControls({
               e.preventDefault();
               handleZoomToCorrect();
             }}
-            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
             title={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
             aria-label={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
           >
@@ -221,6 +228,8 @@ function MapController({
   isGameOver: boolean;
 }) {
   const map = useMap();
+  useMapZoomSync(map);
+  useEffect(() => trackMapZoom(map), [map]);
 
   // Keep Leaflet viewport and tiles updated when container size changes
   useEffect(() => {
@@ -264,7 +273,7 @@ function MapController({
         const layer = L.geoJSON(correctFeature);
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
-            map.flyToBounds(bounds, { duration: 2 });
+            focusMapBounds(map, bounds);
         }
       }
     }
@@ -288,33 +297,6 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     }} />;
 }
 
-const geoJsonCache = new Map<string, FeatureCollection>();
-const geoJsonPromiseCache = new Map<string, Promise<FeatureCollection>>();
-function loadGeoJson(url: string): Promise<FeatureCollection> {
-  const cached = geoJsonCache.get(url);
-  if (cached) {
-    return Promise.resolve(cached);
-  }
-  let p = geoJsonPromiseCache.get(url);
-  if (!p) {
-    p = fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status} loading ${url}`);
-        return res.json();
-      })
-      .then(data => {
-        geoJsonCache.set(url, data);
-        geoJsonPromiseCache.delete(url);
-        return data;
-      })
-      .catch(err => {
-        geoJsonPromiseCache.delete(url);
-        throw err;
-      });
-    geoJsonPromiseCache.set(url, p);
-  }
-  return p;
-}
 const getStyleFromState = (
   feature: Feature | undefined,
   eligibleNames: ReadonlySet<string>,
@@ -414,8 +396,9 @@ export function ControlledMapBox({
   countryMode,
 }: MapBoxProps & { interaction: MapInteractionState }) {
   const targetUrl = geoJsonUrl || '/countries_50m.geojson';
-  const [geoJsonData, setGeoJsonData] = useState<FeatureCollection | null>(() => geoJsonCache.get(targetUrl) || null);
+  const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData(targetUrl);
   const [map, setMap] = useState<L.Map | null>(null);
+  const [renderer] = useState(createMapRenderer);
   const [showReferenceLines, setShowReferenceLines] = useState<boolean>(true);
   const { entityMarkings, isGameOver } = interaction;
   const eligibleNames = useMemo(() => new Set(eligibleCountries
@@ -426,21 +409,22 @@ export function ControlledMapBox({
     : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
   const current = useRef({ interaction, revealedName, onCountryClick, eligibleNames });
-  current.current = { interaction, revealedName, onCountryClick, eligibleNames };
+  useLayoutEffect(() => {
+    current.current = { interaction, revealedName, onCountryClick, eligibleNames };
+  }, [interaction, revealedName, onCountryClick, eligibleNames]);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
-  const activeHoverLayerRef = useRef<L.Layer | null>(null);
+  const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
 
-  const getStyle = (feature: Feature | undefined) => {
-    const base = getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName);
-    return base;
-  };
+  const getStyle = useCallback((feature: Feature | undefined) => (
+    getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName)
+  ), []);
 
   // Close lingering tooltips when mouse moves out of the map container
   useEffect(() => {
     if (!map) return;
     const onMapMouseOut = () => {
       if (activeHoverLayerRef.current) {
-        const prev = activeHoverLayerRef.current as any;
+        const prev = activeHoverLayerRef.current;
         prev.closeTooltip?.();
         if (prev.feature) {
           prev.setStyle?.(getStyle(prev.feature));
@@ -452,21 +436,8 @@ export function ControlledMapBox({
     return () => {
       map.off('mouseout', onMapMouseOut);
     };
-  }, [map]);
+  }, [map, getStyle]);
 
-  useEffect(() => {
-    let active = true;
-    loadGeoJson(targetUrl)
-      .then(data => {
-        if (active) {
-          setGeoJsonData(data);
-        }
-      })
-      .catch(err => console.error('Failed to load map data', err));
-    return () => {
-      active = false;
-    };
-  }, [targetUrl]);
   useEffect(() => {
     if (!onCountryCode) return;
     const name = revealedName?.toLowerCase();
@@ -483,7 +454,8 @@ export function ControlledMapBox({
   // Optimization: Update styles imperatively instead of re-rendering whole map
   useEffect(() => {
     if (geoJsonLayerRef.current) {
-      geoJsonLayerRef.current.eachLayer((layer: any) => {
+      geoJsonLayerRef.current.eachLayer((item) => {
+        const layer = item as FeatureLayer;
         const feature = layer.feature;
         if (feature) {
           const newStyle = getStyleFromState(
@@ -513,7 +485,7 @@ export function ControlledMapBox({
         current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), false);
         current.current.onCountryClick?.(countryName);
       },
-      contextmenu: (e: any) => {
+      contextmenu: (e: L.LeafletMouseEvent) => {
         e.originalEvent?.preventDefault?.();
         if (!current.current.eligibleNames.has(countryNameKey(countryName)) || isCorrectCountryFeature(feature, current.current.revealedName)) {
           return;
@@ -521,11 +493,11 @@ export function ControlledMapBox({
 
         current.current.interaction.handleEntityMapClick(countryName.toUpperCase(), true);
       },
-      mouseover: (e: any) => {
+      mouseover: () => {
         if (!current.current.eligibleNames.has(countryNameKey(countryName))) return;
-        const l = e.target;
+        const l = layer as FeatureLayer;
         if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
-          const prev = activeHoverLayerRef.current as any;
+          const prev = activeHoverLayerRef.current;
           prev.closeTooltip?.();
           if (prev.feature) {
             prev.setStyle?.(getStyle(prev.feature));
@@ -539,8 +511,8 @@ export function ControlledMapBox({
         });
         l.openTooltip?.();
       },
-      mouseout: (e: any) => {
-        const l = e.target;
+      mouseout: () => {
+        const l = layer as FeatureLayer;
         const style = getStyle(feature);
         l.setStyle(style);
         l.closeTooltip?.();
@@ -564,14 +536,11 @@ export function ControlledMapBox({
   };
 
   if (!geoJsonData) {
-    return (
-      <div className={`w-full bg-obsidian-950 flex items-center justify-center text-zinc-400 font-mono text-xs ${className ? className : 'border border-white/10 rounded-sm h-[350px] md:h-[500px]'}`}>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Loading map...</span>
-        </div>
-      </div>
-    );
+    return <MapLoading
+      className={className ?? 'border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}
+      error={mapError}
+      onRetry={retryMap}
+    />;
   }
 
   return (
@@ -583,10 +552,6 @@ export function ControlledMapBox({
         }
         .leaflet-tile {
             background-color: #232227 !important;
-        }
-        .leaflet-interactive {
-            vector-effect: non-scaling-stroke;
-            transition: fill 0.12s ease-out, stroke 0.12s ease-out;
         }
         .leaflet-interactive:focus {
             outline: none;
@@ -606,11 +571,14 @@ export function ControlledMapBox({
         maxZoom={maxZoom}
         maxBounds={[[-80, -215], [84, 215]]}
         maxBoundsViscosity={0.85}
-        zoomSnap={0.25}
-        wheelPxPerZoomLevel={90}
-        wheelDebounceTime={20}
+        zoomSnap={0}
+        zoomDelta={0.5}
+        doubleClickZoom={!L.Browser.mobile}
+        wheelPxPerZoomLevel={60}
+        wheelDebounceTime={40}
         attributionControl={false}
         ref={setMap}
+        renderer={renderer}
       >
         <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
@@ -618,10 +586,9 @@ export function ControlledMapBox({
             bounds={[[-78, -180], [82, 180]]}
             errorTileUrl="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
             noWrap={true}
-            keepBuffer={12}
-            updateInterval={20}
-            updateWhenZooming={true}
-            updateWhenIdle={false}
+            keepBuffer={2}
+            updateInterval={200}
+            updateWhenZooming={false}
         />
         
         <GeoJSON 

@@ -32,8 +32,9 @@ to `Ask`/`Guess`, with attempt counts. Friend-duel controls remain in their chat
 
 Player questions, including pending and rejected submissions, remain text-selectable
 and each has a copy control that copies the original text. Map tooltips stay anchored
-to the hovered feature instead of following the pointer; regional map tiles update
-during zooming for steadier interactions.
+to the hovered feature instead of following the pointer. Desktop tiles refresh
+during pan; phone tiles wait for pan to settle. Existing background tiles remain
+visible during zoom before fresh detail appears.
 
 Rejected questions, duplicate guesses, and submission failures appear as chat
 notices with the submitted text, a reason, and a next step instead of expiring
@@ -70,7 +71,8 @@ the questions that precede and follow them rather than grouping warnings last.
   heading and optional composer hint hide so the input stays visible.
 - Phone map taps mark red; repeating a tap removes the mark. The colour picker
   is desktop-only. Zoom, reset, reference-line, clear and revealed-target controls
-  form a compact left column with 36px buttons.
+  form a left column with 44px touch targets. Regional maps also expose reset view;
+  resetting the view preserves markings, while the eraser clears them.
 - Mobile inputs use 16px text; question and answer text uses 14px. Navigation,
   autocomplete options and primary actions retain 44px touch targets. Dialogs and
   lists scroll within the available height, with safe-area padding on bottom controls.
@@ -80,6 +82,100 @@ the questions that precede and follow them rather than grouping warnings last.
 - Desktop map panels and multi-column browsing layouts retain their existing
   breakpoint behavior. The dark palette, typography, routes, and gameplay rules are
   unchanged.
+
+## Map interaction and loading
+
+Daily pages load game state and entities through their mode's Zustand store, then
+mount the world/continental or regional map. Friend duels supply the same controlled
+maps with their own interaction state.
+
+- `src/lib/mapData.ts` shares parsed GeoJSON and in-flight requests by URL across
+  map mounts. County geometry no longer uses a timestamp cache-buster. Failed
+  downloads are not cached, so an explicit retry can recover.
+- `src/hooks/useMapData.ts` ignores results from unmounted/obsolete loads and hides
+  old geometry when the asset URL changes. `MapLoading.tsx` preserves the caller's
+  map dimensions, announces loading/failure, and offers English/Polish retry copy.
+- All four maps use 60px wheel sensitivity and half-level zoom buttons. Wheel/pinch
+  zoom stays fractional, without snapping on release. Phone double-tap zoom is
+  disabled so quick repeat taps toggle a mark without moving the camera; desktop
+  double-click zoom remains enabled.
+- Tile buffers retain two rows instead of eight/twelve. Desktop pan loading uses
+  a 200ms update interval; phones use idle updates. Intermediate pinch zoom levels
+  are not requested, and existing tiles stay visible while moving.
+- Phone zoom, reset, clear, reference-line, and revealed-target controls have
+  44px hit targets; desktop controls retain their compact sizing.
+- `src/hooks/useMapZoomSync.ts` keeps the active background tile level synchronized
+  with the borders during zoom. Other tile levels wait until the animation ends;
+  late CSS transforms finish before new detail becomes visible.
+- `src/lib/mapRenderer.ts` gives each map its own Leaflet Canvas renderer. Zoom
+  transforms a prepainted border bitmap rather than complex SVG strokes. A
+  half-viewport buffer is refreshed during movement, before the visible camera
+  reaches its edge; redraw no longer waits solely for `moveend`. Continuous
+  pinch-out also rebases the bitmap before it shrinks below the viewport. The
+  small Leaflet 1.9 bounds/projection/update adapter is isolated in this file.
+  Same-size redraws reuse the backing bitmap and replace the context transform,
+  avoiding both bitmap reallocation and accumulated retina scaling. An unchanged
+  camera skips the duplicate movement-end redraw; view resets and viewport resizing
+  still refresh the renderer.
+- Collapsed desktop notebooks use content width instead of the expanded 28rem
+  width. Phone Ask/Guess bars remain full-width.
+- Stable GeoJSON style callbacks avoid redrawing borders when only the selected
+  marker color or unrelated game state changes. Latest interaction props are
+  published in `useLayoutEffect`, not during render; markings and reveals still
+  update layer styles immediately.
+- `src/lib/mapView.ts` replaces long fly-to sequences with short view transitions,
+  adds reveal padding, and respects reduced motion. Navigation requested during
+  Leaflet's animated zoom waits for that zoom to finish; the latest request wins.
+- Regional reset controls restore their original center/zoom without clearing
+  markings. Country/continental maps retain reset and reference-line controls.
+
+Regression checks: `bun test tests/mapData.test.ts tests/mapGeometry.test.ts`.
+Browser verification must also cover pan/zoom in both directions (wheel and phone
+pinch), in-motion border/background alignment, painted border pixels on the newly
+exposed side while a drag is still held, resize at normal/retina pixel ratios,
+reset during zoom, mark/unmark, reveal,
+map-asset failures, and collapsed desktop/phone layouts; unit checks alone do not
+prove usability.
+
+## Display geometry
+
+`scripts/simplify-map-geometry.mjs` regenerates display-only GeoJSON through pinned
+Mapshaper 0.7.76, without adding a runtime dependency. It jointly simplifies shared
+boundaries in EPSG:3857; intervals are projected metres, not ground distances.
+Always use an unsimplified source asset, never a previously generated output:
+
+```sh
+bun scripts/simplify-map-geometry.mjs /path/to/original/wojewodztwa.geojson public/wojewodztwa.geojson 200
+```
+
+The generator preserves feature IDs/properties/order, polygon parts, holes, and
+winding. Wrapped/dateline features, polar rings outside Web Mercator, and existing
+zero-area rings remain unchanged. Shared anchors and original zero-width boundary
+spurs are restored on both sides so selectable strokes are not silently removed.
+
+| Asset | Projected interval (m) | Vertices before → after |
+| --- | ---: | ---: |
+| `countries_50m.geojson` | 300 | 94,718 → 90,257 |
+| `europe.geojson` | 500 | 22,640 → 21,727 |
+| `asia.geojson` | 500 | 30,552 → 28,137 |
+| `africa.geojson` | 500 | 12,980 → 10,448 |
+| `americas.geojson` | 500 | 28,868 → 27,264 |
+| `wojewodztwa.geojson` | 200 | 76,881 → 18,198 |
+| `powiaty-min.geojson` | 75 | 18,931 → 18,829 |
+| `us-states.geojson` | 100 | 3,539 → 3,517 |
+
+Generation checks measured less than 2 CSS pixels of original-vertex-to-output-edge
+error at each map's maximum zoom, with unchanged entity/part/hole counts and shared
+entity-pair boundaries. Leaflet's runtime simplification is separate from this
+generation error budget. County/state sources were already coarse, so their
+reductions are deliberately small.
+
+Voivodeship vertices decreased 76.3%, and its payload decreased from 1,368,743 to
+325,437 bytes (76.2%). Six synchronous zoom changes in the same desktop browser
+measured a median 38.45ms with the original asset versus 15.05ms with the generated
+asset using the previous SVG renderer. This isolates geometry projection/redraw
+cost, not current Canvas performance or an FPS guarantee.
+Fact databases, entity names, and server answering are unchanged.
 
 ## Friend duels
 
