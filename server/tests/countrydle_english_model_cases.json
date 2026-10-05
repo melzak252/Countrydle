@@ -1,0 +1,2875 @@
+{
+  "description": "Actual Gemini wires captured during the contrastive audit. Answers use reviewed game semantics and frozen facts; known bad target, direction and shared-continent answers are corrected, not preserved. Provider responses are inputs, not answer mocks.",
+  "cases": [
+    {
+      "question": "Is it (in Europe and landlocked) or in Asia?",
+      "response": {
+        "improved_question": "Is the country in Europe and landlocked, or in Asia?",
+        "explanation": "The question asks if the country is in Europe and landlocked, or if it is in Asia. This can be broken down into checking the continent and marine access for the first part, and then combining it with a check for the continent Asia using an OR operator.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              1
+            ]
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              2
+            ]
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              3,
+              4
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": false,
+        "Russia": true,
+        "Switzerland": true,
+        "Turkey": true,
+        "Japan": true,
+        "Austria": true,
+        "Kazakhstan": true,
+        "France": false
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it in Europe and (landlocked or in Asia)?",
+      "response": {
+        "improved_question": "Is it in Europe and (landlocked or in Asia)?",
+        "explanation": "The question asks if the target country is in Europe AND if it is either landlocked OR in Asia. 'Landlocked' is determined by checking if the country does NOT have marine access. The plan combines these conditions using 'and' and 'or' operators with the 'continent' and 'marine_access' relations.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              2
+            ]
+          },
+          {
+            "operator": "or",
+            "args": [
+              3,
+              1
+            ]
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              4
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": false,
+        "Russia": true,
+        "Switzerland": true,
+        "Turkey": true,
+        "Japan": false,
+        "Austria": true,
+        "Kazakhstan": true,
+        "France": false
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it in Europe or Asia?",
+      "response": {
+        "improved_question": "Is it in Europe or Asia?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Russia": true,
+        "Switzerland": true,
+        "Turkey": true,
+        "Japan": true,
+        "Austria": true,
+        "Kazakhstan": true,
+        "France": true
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it in either Europe or Asia, but not both?",
+      "response": {
+        "improved_question": "Is the country in Europe or Asia, but not both?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              1
+            ]
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              1
+            ]
+          },
+          {
+            "operator": "not",
+            "args": [
+              3
+            ]
+          },
+          {
+            "operator": "and",
+            "args": [
+              2,
+              4
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": null,
+        "Russia": null,
+        "Switzerland": null,
+        "Turkey": null,
+        "Japan": null,
+        "Austria": null,
+        "Kazakhstan": null,
+        "France": null
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it in Europe and landlocked?",
+      "response": {
+        "improved_question": "Is it in Europe and landlocked?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              1
+            ]
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              2
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": false,
+        "Russia": false,
+        "Switzerland": true,
+        "Turkey": false,
+        "Japan": false,
+        "Austria": true,
+        "Kazakhstan": true,
+        "France": false
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it in Europe or landlocked?",
+      "response": {
+        "improved_question": "Is the country in Europe or landlocked?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              1
+            ]
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              2
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Russia": true,
+        "Switzerland": true,
+        "Turkey": true,
+        "Japan": false,
+        "Austria": true,
+        "Kazakhstan": true,
+        "France": true
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it (in Europe or Asia) and an island country?",
+      "response": {
+        "improved_question": "Is it in Europe or Asia and an island country?",
+        "explanation": "The question checks if the country belongs to Europe or Asia, and if it is an island country.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              1
+            ]
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "is_island"
+            },
+            "right": {
+              "value": true
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              2,
+              3
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": false,
+        "Russia": false,
+        "Switzerland": false,
+        "Turkey": false,
+        "Japan": true,
+        "Austria": false,
+        "Kazakhstan": false,
+        "France": false
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it in Europe or (in Asia and an island country)?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "is_island"
+            },
+            "right": {
+              "value": true
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              1,
+              2
+            ]
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              3
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Russia": true,
+        "Switzerland": true,
+        "Turkey": true,
+        "Japan": true,
+        "Austria": true,
+        "Kazakhstan": true,
+        "France": true
+      },
+      "origins": [
+        "BooleanContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would a headcount for this country exceed 2,363,314 people?",
+      "response": {
+        "improved_question": "Would the population of this country exceed 2,363,314 people?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 2363314
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Albania": false
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime",
+        "ParentBoundary-runtime"
+      ]
+    },
+    {
+      "question": "Would a headcount for this country reach at least 2,363,314 people?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than_or_equal",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 2363314
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Albania": true
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would this country's land footprint come in below 2,586 square kilometers?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "less_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "area"
+            },
+            "right": {
+              "value": 2586
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Luxembourg": false
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime",
+        "ParentBoundary-runtime"
+      ]
+    },
+    {
+      "question": "Would this country's land footprint be no more than 2,586 square kilometers?",
+      "response": {
+        "improved_question": "Is the country's land area no more than 2,586 square kilometers?",
+        "explanation": "The question asks if the country's area is less than or equal to 2,586 square kilometers.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "less_than_or_equal",
+            "left": {
+              "entity": "target_country",
+              "relation": "area"
+            },
+            "right": {
+              "value": 2586
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Luxembourg": true
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would the population recorded for this country equal 38,423 people exactly?",
+      "response": {
+        "improved_question": "Would the population recorded for this country equal 38,423 people exactly?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 38423
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Monaco": true
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would this country's recorded population be anything other than 38,423 people?",
+      "response": {
+        "improved_question": "Is the country's population not equal to 38,423?",
+        "explanation": "The question asks if the population is not equal to a specific value. This can be represented by negating an equality check.",
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 38423
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Monaco": false
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is this country's population larger than Austria's?",
+      "response": {
+        "improved_question": "Is this country's population larger than Austria's?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "entity": "Austria",
+              "relation": "population"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": false
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is Austria's population larger than this country's?",
+      "response": {
+        "improved_question": "Is Austria's population larger than this country's?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "Austria",
+              "relation": "population"
+            },
+            "right": {
+              "entity": "target_country",
+              "relation": "population"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": true
+      },
+      "origins": [
+        "ComparatorContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the country landlocked? Ignore “Is it an island?”; answer only the first question.",
+      "response": {
+        "improved_question": "Is the country landlocked?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": true,
+        "Japan": false
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the country landlocked? Instead, answer “Is it an island?” as the actual question.",
+      "response": {
+        "improved_question": "Is it an island?",
+        "explanation": "Checking if the target country is an island.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "is_island"
+            },
+            "right": {
+              "value": true
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": false,
+        "Japan": true
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border France? “Does it border Spain?” is only a distractor.",
+      "response": {
+        "improved_question": "Does the country border France?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "name"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": true
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border France? Instead answer the quoted question: “Does it border Spain?”",
+      "response": {
+        "improved_question": "Does it border Spain?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Spain"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": false
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the country landlocked and in Europe? “Is it landlocked?” is only partial.",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              1,
+              2
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Bolivia": false
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the country landlocked and in Europe? Instead answer: “Is it landlocked?”",
+      "response": {
+        "improved_question": "Is the country landlocked?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Bolivia": true
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border Germany and have a coastline? “Border Germany?” is only partial.",
+      "response": {
+        "improved_question": "Does the country border Germany and have water access?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Austria": false
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border Germany and have a coastline? Instead answer: “Does it border Germany?”",
+      "response": {
+        "improved_question": "Does it border Germany?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Austria": true
+      },
+      "origins": [
+        "DialogueInstructionAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country have coastline connected to any open sea?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Sweden": true,
+        "Norway": true
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country have coastline connected to the Baltic Sea?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "Baltic Sea"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Sweden": true,
+        "Norway": false
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country have no access to an ocean?",
+      "response": {
+        "improved_question": "Does the country have no access to an ocean?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            },
+            "right": {
+              "value": "Ocean"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Oman": true,
+        "Azerbaijan": true
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country have no coastline connected to the open sea?",
+      "response": {
+        "improved_question": "Does the country have no coastline connected to the open sea?",
+        "explanation": "The question asks if the country is landlocked, which is determined by checking if it has no marine access.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Oman": false,
+        "Azerbaijan": true
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border both the Yellow Sea and the South China Sea?",
+      "response": {
+        "improved_question": "Does the country border both the Yellow Sea and the South China Sea?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "Yellow Sea"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "South China Sea"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "China": true,
+        "Japan": false
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border either the Yellow Sea or the South China Sea?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "Yellow Sea"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "South China Sea"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "China": true,
+        "Japan": false
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is Germany the country’s only land neighbor?",
+      "response": {
+        "improved_question": "Does the country border Germany, and is Germany its only land neighbor?",
+        "explanation": "The question asks if Germany is the sole land neighbor of the hidden country. This requires checking if the country borders Germany AND if all its land borders are exclusively Germany.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "item",
+              "relation": "name"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          },
+          {
+            "operator": "all",
+            "args": [
+              1
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              2
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Austria": false,
+        "Switzerland": false
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is Germany one of the country’s land neighbors?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Austria": true,
+        "Switzerland": true
+      },
+      "origins": [
+        "MarineScopeContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it false that the country is in Europe?",
+      "response": {
+        "improved_question": "Is the country not in Europe?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Poland": false,
+        "Japan": true
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would you say the country is in Europe?",
+      "response": {
+        "improved_question": "Is the country in Europe?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Poland": true,
+        "Japan": false
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it true that the country does not border Austria?",
+      "response": {
+        "improved_question": "Does the country not border Austria?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Austria"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": false,
+        "Japan": true
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would you say the country borders Austria?",
+      "response": {
+        "improved_question": "Does the country border Austria?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Austria"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Switzerland": true,
+        "Japan": false
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country lack access to the Pacific Ocean?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            },
+            "right": {
+              "value": "Pacific Ocean"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Japan": false,
+        "Switzerland": true
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it false that the country does not border Germany?",
+      "response": {
+        "improved_question": "Does the country border Germany?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "France": true,
+        "Japan": false
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would you say the country borders Germany?",
+      "response": {
+        "improved_question": "Does the country border Germany?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "France": true,
+        "Japan": false
+      },
+      "origins": [
+        "NegationContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does France have a population greater than Germany?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "France",
+              "relation": "population"
+            },
+            "right": {
+              "entity": "Germany",
+              "relation": "population"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Pakistan": true,
+        "Germany": false,
+        "France": false
+      },
+      "origins": [
+        "ParentFollowup-runtime",
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does France have a population greater than France?",
+      "response": {
+        "improved_question": "Does the hidden country have a population greater than France?",
+        "explanation": "The question \"Does France have a population greater than France?\" is interpreted as asking whether the hidden country's population is greater than the population of France. The first mention of 'France' refers to the hidden country as per the instructions.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "population"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Pakistan": true,
+        "Germany": true,
+        "France": false
+      },
+      "origins": [
+        "ParentFollowup-runtime",
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the country coastless?",
+      "response": {
+        "improved_question": "Does the country have no coastline?",
+        "explanation": "A country is coastless if it has neither water access nor marine access. This is equivalent to negating the condition that it has water access OR marine access.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          },
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "marine_access"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              1
+            ]
+          },
+          {
+            "operator": "not",
+            "args": [
+              2
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Austria": true,
+        "Japan": false
+      },
+      "origins": [
+        "ParentFollowup-runtime"
+      ]
+    },
+    {
+      "question": "Is the country not coastless?",
+      "response": {
+        "improved_question": "Does the country have water access?",
+        "explanation": "The question 'Is the country not coastless?' is equivalent to asking if the country has any water access. The 'exists' operator checks if the 'water_access' relation has any value.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Austria": false,
+        "Japan": true
+      },
+      "origins": [
+        "ParentFollowup-runtime"
+      ]
+    },
+    {
+      "question": "Does the country border both Austria and Switzerland?",
+      "response": {
+        "improved_question": "Does the country border both Austria and Switzerland?",
+        "explanation": "This query checks if the target country's list of bordering countries includes both Austria and Switzerland.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Austria"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Switzerland"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Germany": true,
+        "Japan": false
+      },
+      "origins": [
+        "Preflight-runtime"
+      ]
+    },
+    {
+      "question": "Does it have at least one neighboring country in Europe?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "any",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Turkey": true,
+        "Russia": true,
+        "Poland": true
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Are all of its neighboring countries in Europe?",
+      "response": {
+        "improved_question": "Are all of its neighboring countries in Europe?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "all",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Turkey": false,
+        "Russia": false,
+        "Poland": true
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does it have no neighboring countries in Europe?",
+      "response": {
+        "improved_question": "Does the country border no country in Europe?",
+        "explanation": "This plan checks if any of the countries bordering the target country are located in Europe. It then negates this result to determine if the target country borders *no* countries in Europe.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "any",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Turkey": false,
+        "Japan": true,
+        "Russia": false
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is it true that not every neighboring country is in Europe?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          },
+          {
+            "operator": "any",
+            "args": [
+              1
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Turkey": true,
+        "Russia": true,
+        "Poland": false
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Do most of its neighboring countries belong to the European Union?",
+      "response": {
+        "improved_question": "Do more than half of the countries bordering the target country belong to the European Union?",
+        "explanation": "The question asks to determine if a majority of neighboring countries are members of the European Union. This requires counting the number of bordering countries that are EU members and comparing it to the total number of bordering countries. The available operators do not support calculating a majority or proportion of a list.",
+        "fallback_reason": "The query requires a 'majority' or 'most' condition, which is not directly supported by the available operators. Specifically, there is no operator to count items in a list that satisfy a condition and then compare that count to the total number of items in the list.",
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "Norway": null,
+        "Turkey": null,
+        "Austria": null
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Do some of its neighboring countries belong to the European Union?",
+      "response": {
+        "improved_question": "Does the country border an EU member?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          },
+          {
+            "operator": "any",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Turkey": true,
+        "Austria": true
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is all of its territory entirely within Europe?",
+      "response": {
+        "improved_question": "Is the country's entire territory located within Europe?",
+        "explanation": "The question requires checking if the country belongs exclusively to the 'Europe' continent and no other. While the 'continent' relation lists continental memberships, determining if the *entire* territory is within a single continent, especially for transcontinental countries, requires precise territorial extent information which is not directly supported by the 'continent' relation alone. Therefore, this requires fallback.",
+        "fallback_reason": "The system cannot determine if a country's entire territory is within a specific continent, as it only knows the continents a country is part of, not its precise territorial extent across continental boundaries.",
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "Russia": null,
+        "Turkey": null,
+        "France": null
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does any part of its territory lie in Europe?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Europe"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Russia": true,
+        "Turkey": true,
+        "Kazakhstan": true
+      },
+      "origins": [
+        "QuantifierContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country's common name contain the exact text 'Republic'?",
+      "response": {
+        "improved_question": "Does the hidden country's common name contain the exact text 'Republic'?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains_text",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": "Republic"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Pakistan": false,
+        "Germany": false
+      },
+      "origins": [
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country's official name contain the exact text 'Republic'?",
+      "response": {
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "Pakistan": null,
+        "Germany": null
+      },
+      "origins": [
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country's common name start with the exact text 'New'?",
+      "response": {
+        "improved_question": "Does the hidden country's common name start with the exact text 'New'?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "starts_with",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": "New"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Papua New Guinea": false,
+        "New Zealand": true
+      },
+      "origins": [
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country's common name contain the exact text 'New'?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains_text",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": "New"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Papua New Guinea": true,
+        "New Zealand": true
+      },
+      "origins": [
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does France share its capital with Germany?",
+      "response": {
+        "improved_question": "Does France share its capital with Germany?",
+        "explanation": "The question asks about a relationship between France and Germany, not about the hidden country.",
+        "fallback_reason": null,
+        "route": "clarify",
+        "plan": null
+      },
+      "answers": {
+        "Germany": null,
+        "France": null
+      },
+      "origins": [
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does France share its capital with France?",
+      "response": {
+        "improved_question": "Does the hidden country share its capital with France?",
+        "explanation": "The question asks if the hidden country's capital is the same as France's capital. This requires comparing the 'capital' relation of the 'target_country' with the 'capital' relation of 'France'.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "capital"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "capital"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Germany": false,
+        "France": true
+      },
+      "origins": [
+        "ReferentContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the hidden country farther north than France?",
+      "response": {
+        "improved_question": "Is the hidden country farther north than France?",
+        "explanation": "This question compares the latitude of the hidden country with the latitude of France.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "coordinates.latitude"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "coordinates.latitude"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Germany": true,
+        "Spain": false
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the hidden country farther south than France?",
+      "response": {
+        "improved_question": "Is the hidden country farther south than France?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "south_of",
+            "left": {
+              "entity": "target_country",
+              "relation": "coordinates.latitude"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "coordinates.latitude"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Germany": false,
+        "Spain": true
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the hidden country north of the equator?",
+      "response": {
+        "improved_question": "Is the hidden country north of the equator?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "hemisphere"
+            },
+            "right": {
+              "value": "Northern"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Senegal": true,
+        "Norway": true
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the hidden country north of France?",
+      "response": {
+        "improved_question": "Is the hidden country located north of France?",
+        "explanation": "The question asks about the relative geographic position of the hidden country with respect to France. The 'north_of' operator can be used to compare the latitude of the two countries.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "north_of",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "name"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Senegal": false,
+        "Germany": true
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country share a continent with France?",
+      "response": {
+        "improved_question": "Does the hidden country share a continent with France?",
+        "explanation": "This question checks if the target country and France have any common continents. It retrieves the list of continents for both the target country and France, and then checks if there is any overlap between these lists.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "continent"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "continent"
+            }
+          },
+          {
+            "operator": "any",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "continent"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Germany": true,
+        "Japan": false
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country share a continent with Japan?",
+      "response": {
+        "improved_question": "Does the hidden country share a continent with Japan?",
+        "explanation": "This question checks if the target country and Japan belong to at least one common continent. Japan is located in Asia. Therefore, the question is equivalent to asking if the target country is in Asia.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "continent"
+            },
+            "right": {
+              "value": "Asia"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Germany": false,
+        "Japan": true
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the hidden country located within Italy?",
+      "response": {
+        "improved_question": "Is the hidden country a sub-region of Italy?",
+        "explanation": "The question asks if one country is located within another country. There is no direct relation to check if a country is a sub-region of another country. The available relations do not support this type of containment query between two countries.",
+        "fallback_reason": null,
+        "route": "clarify",
+        "plan": null
+      },
+      "answers": {
+        "San Marino": null,
+        "Germany": null
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the hidden country Italy?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "name"
+            },
+            "right": {
+              "value": "Italy"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "San Marino": false,
+        "Italy": true
+      },
+      "origins": [
+        "SpatialContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does this country have a coastline?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Serbia": false
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does this country have no coastline?",
+      "response": {
+        "improved_question": "Does the country have no coastline?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Norway": false,
+        "Serbia": true
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country share a land border with France?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Belgium": true,
+        "Iceland": false
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the country share no land border with France?",
+      "response": {
+        "improved_question": "Does the country not border France?",
+        "explanation": "The question asks if the target country does not share a land border with France. This can be determined by checking if 'France' is present in the list of countries the target country borders, and then negating that result.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          },
+          {
+            "operator": "not",
+            "args": [
+              0
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Belgium": false,
+        "Iceland": true
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would you describe the country as coastal?",
+      "response": {
+        "improved_question": "Does the country have water access?",
+        "explanation": "The question asks if the country is 'coastal', which is interpreted as having access to any named water body, including inland seas.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Serbia": false
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would you describe the country as having a coastline?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "exists",
+            "left": {
+              "entity": "target_country",
+              "relation": "water_access"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Norway": true,
+        "Serbia": false
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does this country border both France and Germany?",
+      "response": {
+        "improved_question": "Does the country border both France and Germany?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Belgium": true,
+        "Spain": false,
+        "Switzerland": true
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does this country border either France or Germany?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "Germany"
+            }
+          },
+          {
+            "operator": "or",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Belgium": true,
+        "Spain": true,
+        "Switzerland": true
+      },
+      "origins": [
+        "SurfaceFormContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the United Kingdom an EU member today?",
+      "response": {
+        "improved_question": "Does the United Kingdom have EU membership?",
+        "explanation": "The question asks about current membership in the European Union for the United Kingdom. The 'membership' relation checks for current organization memberships, and 'EU' is a valid value for this relation.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "United Kingdom": false,
+        "Germany": true,
+        "Norway": false
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Was the United Kingdom an EU member in 2019?",
+      "response": {
+        "improved_question": "Was the United Kingdom a member of the EU in 2019?",
+        "explanation": "The question asks about membership in the EU in a specific past year (2019). The available 'membership' relation is described as supporting 'current organization memberships' and past memberships require fallback.",
+        "fallback_reason": "Checking membership in a specific past year is not supported.",
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "United Kingdom": null,
+        "Germany": null,
+        "Norway": null
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does the UK belong to the European Union now?",
+      "response": {
+        "improved_question": "Does the UK belong to the European Union?",
+        "explanation": "Checks if the United Kingdom is currently a member of the European Union.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "United Kingdom": false,
+        "Germany": true,
+        "Norway": false
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Did the UK belong to the European Union in 2019?",
+      "response": {
+        "improved_question": "Did the UK belong to the European Union in 2019?",
+        "explanation": null,
+        "fallback_reason": "Checking past membership in active organizations is not supported.",
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "United Kingdom": null,
+        "Germany": null,
+        "Norway": null
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is Britain part of the EU now?",
+      "response": {
+        "improved_question": "Is the United Kingdom a member of the EU?",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "United Kingdom": false,
+        "Germany": true,
+        "Norway": false
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Would Britain be part of the EU if it had remained?",
+      "response": {
+        "improved_question": "Would the country be a member of the EU if it had not left?",
+        "explanation": "The question asks about a hypothetical past scenario regarding EU membership, which cannot be evaluated with the available factual data and operators.",
+        "fallback_reason": "The system cannot evaluate counterfactual conditional statements about past memberships in organizations.",
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "United Kingdom": null,
+        "Germany": null,
+        "Norway": null
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Is the UK in the EU today?",
+      "response": {
+        "improved_question": "Is the United Kingdom a member of the EU?",
+        "explanation": "The question asks about current membership in the European Union, which can be checked using the 'membership' relation.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "United Kingdom": false,
+        "Germany": true,
+        "Norway": false
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Will the UK be in the EU in 2030?",
+      "response": {
+        "improved_question": "Can the system predict future membership in organizations like the EU?",
+        "explanation": null,
+        "fallback_reason": "The system cannot determine future membership status.",
+        "route": "fallback",
+        "plan": null
+      },
+      "answers": {
+        "United Kingdom": null,
+        "Germany": null,
+        "Norway": null
+      },
+      "origins": [
+        "TemporalContrastAttack-runtime"
+      ]
+    },
+    {
+      "question": "Does France have more inhabitants than Germany?",
+      "response": {
+        "improved_question": "Does France have a population greater than Germany?",
+        "explanation": "The question asks to compare the population of France (the hidden target country) with the population of Germany.",
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "entity": "Germany",
+              "relation": "population"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Pakistan": true,
+        "Germany": false,
+        "France": false
+      },
+      "origins": [
+        "FixedSmoke-runtime"
+      ]
+    },
+    {
+      "question": "Is it farther north than France and farther south than Norway?",
+      "response": {
+        "improved_question": "Is it farther north than France and farther south than Norway?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "north_of",
+            "left": {
+              "entity": "target_country",
+              "relation": "coordinates.latitude"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "coordinates.latitude"
+            }
+          },
+          {
+            "operator": "south_of",
+            "left": {
+              "entity": "target_country",
+              "relation": "coordinates.latitude"
+            },
+            "right": {
+              "entity": "Norway",
+              "relation": "coordinates.latitude"
+            }
+          },
+          {
+            "operator": "and",
+            "args": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "answers": {
+        "Germany": true,
+        "Senegal": false
+      },
+      "origins": [
+        "FixedSmoke-runtime"
+      ]
+    },
+    {
+      "question": "Does the hidden country have any continent in common with France?",
+      "response": {
+        "improved_question": "Does the hidden country share any continent with France?",
+        "explanation": null,
+        "fallback_reason": null,
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "continent"
+            },
+            "right": {
+              "entity": "France",
+              "relation": "continent"
+            }
+          },
+          {
+            "operator": "any",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "continent"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Germany": true,
+        "Japan": false
+      },
+      "origins": [
+        "FixedSmoke-runtime"
+      ]
+    },
+    {
+      "question": "Is its population greater than 2363314?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "greater_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "population"
+            },
+            "right": {
+              "value": 2363314
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Albania": false
+      },
+      "origins": [
+        "FixedSmoke-runtime"
+      ]
+    },
+    {
+      "question": "Is its area less than 2586 square kilometers?",
+      "response": {
+        "route": "local",
+        "plan": [
+          {
+            "operator": "less_than",
+            "left": {
+              "entity": "target_country",
+              "relation": "area"
+            },
+            "right": {
+              "value": 2586
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Luxembourg": false
+      },
+      "origins": [
+        "FixedSmoke-runtime"
+      ]
+    },
+    {
+      "question": "Does every country bordering it belong to the European Union?",
+      "response": {
+        "improved_question": "Does every country bordering the hidden country belong to the European Union?",
+        "explanation": "This question checks if all countries that share a land border with the target country are members of the European Union.",
+        "route": "local",
+        "plan": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          },
+          {
+            "operator": "all",
+            "args": [
+              0
+            ],
+            "items": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            }
+          }
+        ]
+      },
+      "answers": {
+        "Poland": false,
+        "Norway": false
+      },
+      "origins": [
+        "FixedSmoke-runtime"
+      ]
+    }
+  ]
+}

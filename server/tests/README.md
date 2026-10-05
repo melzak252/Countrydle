@@ -44,6 +44,109 @@ print the files that need a mapping. Client-only, documentation-only, and other
 non-backend changes do not run backend tests. The mapping is maintained in
 `server/scripts/test_module.py` (`TEST_GROUPS` and `SOURCE_GROUPS`).
 
+### Countrydle English semantic preservation
+
+The active Countrydle planner tries whole-entity compilation, then strict English
+templates, before consulting the plan cache or Gemini. Deterministic plans report
+`provider="template"` and `contract_version="countrydle-strict-v2"`. The English
+path does not use the shared slot masker or legacy substring matching.
+
+Supported skeletons cover exact entity identity/region names, single-country
+borders, island status, coastline/landlocked status, hemisphere membership,
+equator crossing or north/south position, catalogued seas/oceans, and three
+typed country-reference families:
+
+- `Does <subject> have a population/area greater/less than <country>?`
+  (also larger/higher and smaller/lower);
+- `Is <subject> north/south/east/west of <country>?`
+  (also farther/further and `than`);
+- `Does <subject> share a/any continent with <country>?` or
+  `Does <subject> have a/any continent in common with <country>?`.
+
+An explicitly named country **subject** still denotes the hidden target;
+named comparison/object references remain named. Directions use matching
+latitude/longitude operands, and shared continents use an OR of per-continent
+AND predicates rather than binding continent strings as countries.
+Every token must be consumed. Additional clauses, negations, qualifiers,
+temporal modifiers, and symbolic comparisons decline compilation rather than
+answer a partial predicate. Other English forms—including historical
+membership, neighbor counts and comparisons outside these exact
+skeletons—retain the model-planner/fallback route. Conjunctions or hyphens in
+border-country names also conservatively use that route. Polish compilation
+remains a separate legacy path and is not newly enabled in the active planner;
+generic game-mode compilers are unchanged.
+
+Identity and location are distinct: `Is it Italy?` checks the name, whereas
+`Is it in Italy?` declines local compilation because country containment is not
+a local fact relation. `Is it in Micronesia?` checks the geographic area;
+`Is it Micronesia?` checks Federated States of Micronesia identity.
+Locally evaluated explanations are sanitized for both common and official
+target names before creating the player-facing response.
+
+Countrydle fallback uses the same subject/reference policy. Before the provider
+call, bounded English auxiliary/country/predicate prefixes replace a named
+country subject with `the country`, retaining the complete predicate, negation,
+date, and named comparison objects. Property subjects (`the population of
+France`), possessives, quoted names, and named features/species such as the
+Jordan River or Canada goose remain literal. Unrecognized prefixes are not
+rewritten; their interpretation still depends on the provider. Only provider
+inputs change, not the stored original question. Answer-cache keys include the
+rendered prompts, so answers produced under older binding rules are not reused.
+The shared fallback keeps its 15-second total deadline, persistent Boolean
+answer cache (including `False`), report invalidation, and private retrieval
+context.
+
+The English catalog excludes Polish-only country and continent spellings;
+shared English spellings/abbreviations such as `USA`, `UK`, and `DRC` still work.
+`America` and `Congo` decline both identity and border compilation rather than
+silently select one country. The separately invoked legacy Polish compiler
+remains available.
+
+Landlocked status means no coastline connected to the open sea. Its plan uses
+`NOT EXISTS(marine_access)`, a derived view of `water_access` that excludes
+inland bodies such as the Caspian, Aral, and Dead Seas. Named inland-water
+queries retain their facts; generic coastline queries still include inland
+shorelines. Model-planned Countrydle questions use prompt revision
+`compact-v7-typed-t1024`, invalidating older country plans without changing other
+modes. Model plans reject non-coordinate directional operands, list/list
+`contains`, country-item references over primitive lists, and plans that omit
+the hidden target when the question has a hidden/named country subject.
+Explicit parentheses are retained in the player-facing question instead of
+accepting a flattened paraphrase. Numeric explanations distinguish equality
+from strict inequality and retain threshold precision.
+
+```bash
+python -m pytest -q tests/test_template_compiler.py tests/test_countrydle_semantic_preservation.py tests/test_countrydle_audit_regressions.py tests/test_countrydle_english_corpus.py
+```
+
+`test_countrydle_semantic_preservation.py` covers positive skeleton controls,
+generated modifier perturbations, isolated SQLite execution, offline planner
+routing, operator-text parity, player-response name redaction, and fallback
+subject/reference boundaries.
+`test_countrydle_audit_regressions.py` guards target binding, typed spatial and
+quantifier operands, shared continents, displayed grouping, named-object
+references and truthful equality explanations.
+`test_countrydle_english_corpus.py` covers all 3,809 collected adversarial/control
+questions plus 88 captured real-provider responses across 229 target scenarios,
+through the actual planner, SQLite evaluator and player helper. Its committed
+JSON fixtures contain reviewed expected plans/answers and a minimal frozen fact
+snapshot; these tests need neither a live provider nor mutable application
+fact databases. Both `countrydle` and `question-engine` groups include the new
+regression modules. Optional live/integration tests remain separate verification
+and are not implied by passing these deterministic regressions.
+
+The three opt-in real-provider fallback regressions cover historical membership,
+hidden-subject population comparison, and literal named-country property
+comparison. They use controlled retrieval facts and no persistent answer cache:
+
+```bash
+COUNTRYDLE_RUN_LIVE_FALLBACK_EVAL=1 python -m pytest -q tests/test_countrydle_fallback.py::test_live_fallback_binds_named_subject_but_keeps_named_references
+```
+
+Supply a working `GEMINI_API_KEY` in addition to the normal backend environment.
+Run this specific node rather than enabling all optional integration tests;
+other live tests can require PostgreSQL, Qdrant, and additional provider keys.
+
 ## Where tests belong
 
 Use the existing module for the behavior under test; split a file only when it

@@ -10,9 +10,13 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import os
 from pathlib import Path
+import re
 import sqlite3
 from countrydle import local_answering
 from countrydle.local_answering import LIST_RELATION_QUERIES
+from countrydle.template_compiler import (
+    _ENGLISH_COUNTRY_ALIASES, _norm, compile_entity_question, compile_template_plan,
+)
 from planner_protocol import (
     PLANNER_MAX_OUTPUT_TOKENS, PLANNER_OPERATORS, PLANNER_RULES, PLANNER_THINKING_BUDGET, PLANNER_VERSION,
     compile_planner_response, planner_response_schema,
@@ -25,7 +29,7 @@ APP_DIR = Path(__file__).resolve().parent
 ROOT_DIR = APP_DIR.parent if (APP_DIR.parent / "data").exists() else APP_DIR.parents[1]
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
 # Countrydle-only prompt/generation revision; shared contracts/modes keep PLANNER_VERSION.
-COUNTRYDLE_PROMPT_REVISION = "compact-v5-t1024"
+COUNTRYDLE_PROMPT_REVISION = "compact-v7-typed-t1024"
 
 
 SUPPORTED_RELATIONS = [
@@ -34,6 +38,7 @@ SUPPORTED_RELATIONS = [
     "geographic_area",
     "borders_country",
     "water_access",
+    "marine_access",
     "is_island",
     "capital",
     "currency",
@@ -82,7 +87,8 @@ def build_planner_prompt(question: str) -> str:
         "continent": "list of physical continental membership; membership tests use contains, never equals",
         "geographic_area": "stored broad regions/subregions, not unrepresented directional quadrants such as Northwestern Africa",
         "borders_country": "land-bordering countries",
-        "water_access": "named seas/oceans; contains(name) tests a known body, Sea means any sea, Ocean means ocean access only; landlocked is NOT exists(target_country.water_access), not any/all",
+        "water_access": "named coastal water bodies, including inland seas; contains(name) tests a known body, Ocean means ocean access only",
+        "marine_access": "open-sea-connected coastline waters only; excludes inland/endorheic waters such as the Caspian Sea; landlocked is NOT exists(target_country.marine_access), not any/all",
         "is_island": "island-country boolean",
         "capital": "capital city in common English spelling (Warszawa→Warsaw); this is not a country-identity literal",
         "currency": "currency names/codes; prefer ISO 4217 codes for recognized currencies (e.g. yen→JPY), not shortened names",
@@ -155,6 +161,9 @@ not whether that named country itself has it.
 Named comparison references remain named: the same country facts are available for
 Poland, Germany, etc. Use both operand references, not fetched/invented literals:
 {{"operator":"greater_than","left":{{"entity":"target_country","relation":"population"}},"right":{{"entity":"Poland","relation":"population"}}}}.
+For "Does France have a population greater than Germany?", the subject still means
+target_country: compare target_country.population > Germany.population. Never return
+a constant France-vs-Germany comparison that ignores the hidden target.
 Only country rows have these facts; a capital city's population is not country population.
 
 Supported relations (list/scalar):
@@ -165,6 +174,7 @@ Semantic mapping:
   latitude: north_of means target > reference; south_of means target < reference.
   Use north_of/south_of/west_of/east_of for geographic-direction predicates, including
   named-country references; plain numeric coordinate thresholds use numeric operators.
+  Directional operands must use the relevant coordinates, never country-name text.
   Meridian/longitude references permit east/west, NOT north/south; latitude parallels
   permit north/south, NOT east/west. An incompatible axis ("south of Prime Meridian")
   requires clarify, never changing south to west or inventing a point on the line.
@@ -237,6 +247,9 @@ Semantic mapping:
   Item country facts need country-valued items (border countries or literal country
   names). Water bodies, languages and flag values are not country rows: do not query
   item.water_access/item.membership on them; use direct contains/exists instead.
+  For shared continent membership, OR one AND pair per physical continent:
+  contains(target_country.continent, C) AND contains(reference_country.continent, C).
+  Never bind continent-name strings as country rows or use contains(list, another list).
 - Largest/smallest in a group, rankings, continent-wide counts, arbitrary historical
   periods, flag percentages and exact territory extent are unsupported; fallback.
 Do not invent relation names or substitute a related fact for a missing one.
@@ -310,10 +323,98 @@ def _country_name_literals(node):
             yield from _country_name_literals(child)
 
 
+_COUNTRY_LIST_RELATIONS = frozenset(LIST_RELATION_QUERIES) | {"region", "subregion"}
+_DIRECTION_AXES = {
+    "north_of": "coordinates.latitude", "south_of": "coordinates.latitude",
+    "east_of": "coordinates.longitude", "west_of": "coordinates.longitude",
+}
+
+
+def _validate_country_plan(plan: dict, question: str) -> None:
+    """Reject semantically impossible references before advertising local coverage."""
+    def visit(node: dict, country_item: bool = False) -> bool:
+        target = False
+        for field in ("left", "right", "items"):
+            operand = node.get(field, {})
+            entity = operand.get("entity")
+            target |= entity == "target_country"
+            if entity == "item" and not country_item:
+                raise ValueError("Item country facts require country-valued items")
+        operator = node["operator"]
+        if operator in _DIRECTION_AXES:
+            axis = _DIRECTION_AXES[operator]
+            for field in ("left", "right"):
+                operand = node[field]
+                if "entity" in operand:
+                    if operand["relation"] != axis:
+                        raise ValueError(f"{operator} requires {axis} operands")
+                elif type(operand.get("value")) not in (int, float):
+                    raise ValueError("Direction thresholds must be numeric")
+        if operator == "contains":
+            left, right = node["left"], node["right"]
+            if left.get("relation") not in _COUNTRY_LIST_RELATIONS and not isinstance(left.get("value"), list):
+                raise ValueError("contains requires a list on the left")
+            if right.get("relation") in _COUNTRY_LIST_RELATIONS or isinstance(right.get("value"), list):
+                raise ValueError("contains tests one value, not list intersection")
+        if operator in {"any", "all"}:
+            items = node["items"]
+            literal = items.get("value")
+            bound_countries = items.get("relation") == "borders_country" or (
+                isinstance(literal, list) and all(
+                    isinstance(value, str) and _norm(value) in _ENGLISH_COUNTRY_ALIASES
+                    for value in literal
+                )
+            )
+            target |= visit(node["condition"], bound_countries)
+        elif operator == "not":
+            target |= visit(node["condition"], country_item)
+        elif operator in {"and", "or"}:
+            for child in node["conditions"]:
+                target |= visit(child, country_item)
+        return target
+
+    has_target = visit(plan)
+    normalized = " ".join(_norm(question).split())
+    hidden_subject = re.search(
+        r"\b(?:it|its|itself|(?:(?:the|this|hidden|my|our|your) )country)\b", normalized,
+    )
+    subject = re.match(r"(?:is|are|was|were|does|do|did|can|will|would) (.+)", normalized)
+    named_subject = subject is not None and any(
+        subject[1] == alias or subject[1].startswith(alias + " ")
+        for alias in _ENGLISH_COUNTRY_ALIASES
+    )
+    # Named objects/references remain literal; only subjects bind to the hidden target.
+    if not has_target and (hidden_subject or named_subject):
+        raise ValueError("A hidden-country subject must depend on the hidden target")
+
+
 def analyze_question_for_local_plan(
     question: str, *, use_cache: bool = True, strict_errors: bool = False,
     evidence: dict | None = None,
 ) -> QuestionPlan:
+    template = None
+    entity = compile_entity_question(question)
+    if entity is not None:
+        ast, improved_question = entity
+    else:
+        template = compile_template_plan(question, english_only=True)
+        if template is not None:
+            nodes, improved_question = template
+            ast = compile_planner_response(
+                {"route": "local", "plan": nodes},
+                relations=set(SUPPORTED_RELATIONS), operators=PLANNER_OPERATORS,
+                target_entity="target_country", allow_named_entities=True,
+            )
+    if entity is not None or template is not None:
+        if evidence is not None:
+            evidence.update(
+                provider="template", contract_version="countrydle-strict-v2", cache_hit=False,
+            )
+        return QuestionPlan(
+            original_question=question, valid=True, supported=True,
+            improved_question=improved_question, explanation=None, plan=ast,
+        )
+
     from utils.plan_cache import plan_cache
     from utils.ai_clients import generate_gemini_json
 
@@ -359,6 +460,8 @@ def analyze_question_for_local_plan(
             parsed, relations=relations, operators=operators, target_entity="target_country",
         allow_named_entities=True,
     )
+        if ast is not None:
+            _validate_country_plan(ast, question)
     except Exception as exc:
         ast = None
         parsed = {
@@ -377,12 +480,16 @@ def analyze_question_for_local_plan(
                     }
                     ast = None
                     break
+    # A paraphrase cannot silently remove the user's explicit logical grouping.
+    improved_question = (
+        question if "(" in question or ")" in question else parsed.get("improved_question")
+    )
 
     plan = QuestionPlan(
         original_question=question,
         valid=parsed["route"] != "clarify",
         supported=parsed["route"] == "local",
-        improved_question=parsed.get("improved_question"),
+        improved_question=improved_question,
         explanation=parsed.get("explanation"),
         plan=ast,
         fallback_reason=parsed.get("fallback_reason"),

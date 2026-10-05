@@ -69,7 +69,10 @@ def mode_context(monkeypatch, mode, repository, id_field, name_field):
         async def get(self, entity_id):
             assert threading.get_ident() == loop_thread
             assert entity_id == 7
-            return SimpleNamespace(**{name_field: "Test entity"})
+            entity = {name_field: "Test entity"}
+            if mode == "countrydle":
+                entity["official_name"] = "Official test entity"
+            return SimpleNamespace(**entity)
 
     monkeypatch.setattr(module, repository, Repository)
     return module, SimpleNamespace(id=11, **{id_field: 7}), session
