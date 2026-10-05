@@ -142,6 +142,11 @@ body {
   background: rgba(255, 255, 255, 0.45);
 }
 
+/* Scale the existing background with the borders; reveal new tile levels at rest. */
+.map-zoom-synchronized .leaflet-zoom-anim .leaflet-tile-container:not(.map-zoom-base) {
+  visibility: hidden;
+}
+
 .duel-compact-map {
   display: none;
 }
@@ -168,9 +173,9 @@ body {
   }
 
   .leaflet-control-zoom a {
-    width: 36px !important;
-    height: 36px !important;
-    line-height: 36px !important;
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
   }
 }
 
