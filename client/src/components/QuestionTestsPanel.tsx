@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { isAxiosError } from 'axios';
-import { Loader2, Play, RefreshCw } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Sparkles, X } from 'lucide-react';
 import { adminService } from '../services/api';
 import type { AnswerReport, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
 
@@ -17,8 +17,17 @@ const MODE_LABELS: Record<QuestionTestMode | 'continental', string> = {
   americas: 'Ameryki',
   flagdle: 'Flagdle',
 };
+export interface QuestionTestBridgeTarget {
+  mode: string;
+  targetName?: string;
+  questionText?: string;
+}
 
-function initialTestMode(report: AnswerReport | null): QuestionTestMode {
+function initialTestMode(report: AnswerReport | null, target?: QuestionTestBridgeTarget | null): QuestionTestMode {
+  if (target?.mode) {
+    const cleanMode = target.mode.startsWith('continental') ? 'countrydle' : target.mode;
+    if (cleanMode in MODE_LABELS) return cleanMode as QuestionTestMode;
+  }
   if (!report) return 'countrydle';
   if (report.mode === 'continental') return 'countrydle';
   return report.mode;
@@ -65,9 +74,19 @@ type CompletedTest = {
   comparableReportId: number | null;
 };
 
-export default function QuestionTestsPanel({ report, onClearReport }: { report: AnswerReport | null; onClearReport: () => void }) {
-  const [mode, setMode] = useState<QuestionTestMode>(initialTestMode(report));
-  const [question, setQuestion] = useState(report?.details.original_question ?? '');
+export default function QuestionTestsPanel({
+  report,
+  onClearReport,
+  initialTarget,
+  onClearInitialTarget,
+}: {
+  report: AnswerReport | null;
+  onClearReport: () => void;
+  initialTarget?: QuestionTestBridgeTarget | null;
+  onClearInitialTarget?: () => void;
+}) {
+  const [mode, setMode] = useState<QuestionTestMode>(initialTestMode(report, initialTarget));
+  const [question, setQuestion] = useState(initialTarget?.questionText || report?.details.original_question || '');
   const [entityId, setEntityId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [revision, setRevision] = useState(0);
@@ -97,6 +116,20 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
   }, []);
 
   useEffect(() => {
+    if (initialTarget) {
+      if (initialTarget.mode) {
+        const cleanMode = initialTarget.mode.startsWith('continental') ? 'countrydle' : initialTarget.mode;
+        if (cleanMode in MODE_LABELS) setMode(cleanMode as QuestionTestMode);
+      }
+      if (initialTarget.questionText) {
+        setQuestion(initialTarget.questionText);
+      }
+      setCompleted(null);
+      setError(null);
+    }
+  }, [initialTarget]);
+
+  useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
     setEntities(null);
@@ -107,8 +140,12 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
       .then((items) => {
         if (cancelled) return;
         setEntities({ mode, items, error: null });
-        const matches = report && matchesReportMode(mode, report.mode) ? items.filter((entity) => entity.name === report.details.target_name) : [];
-        if (matches.length === 1) setEntityId(matches[0].id);
+        const matches = report && matchesReportMode(mode, report.mode)
+          ? items.filter((entity) => entity.name === report.details.target_name)
+          : initialTarget?.targetName
+          ? items.filter((entity) => entity.name.toLowerCase() === initialTarget.targetName?.toLowerCase())
+          : [];
+        if (matches.length >= 1) setEntityId(matches[0].id);
       })
       .catch((cause: unknown) => {
         if (!cancelled) setEntities({ mode, items: [], error: errorMessage(cause, 'Nie udało się pobrać obiektów. Spróbuj ponownie.') });
@@ -117,8 +154,7 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
       cancelled = true;
       controller.abort();
     };
-  }, [mode, report, revision]);
-
+  }, [mode, report, initialTarget, revision]);
   const clearResult = () => {
     setCompleted(null);
     setError(null);
@@ -154,6 +190,19 @@ export default function QuestionTestsPanel({ report, onClearReport }: { report: 
         </p>
       </div>
 
+      {initialTarget && (
+        <div className="flex items-center justify-between gap-3 bg-amber-400/10 border border-amber-400/25 px-3.5 py-2.5 rounded-sm text-xs text-amber-300">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span>Testing question from live audit for target <b>{initialTarget.targetName || 'Entity'}</b>: "{initialTarget.questionText}"</span>
+          </div>
+          {onClearInitialTarget && (
+            <button onClick={onClearInitialTarget} className="text-sand-400 hover:text-sand-200 p-1" title="Clear test target">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
       <form onSubmit={(event) => void runTest(event)} className={cardClass} aria-busy={busy}>
         <fieldset disabled={busy} className="min-w-0 space-y-4">
           <legend className="sr-only">Parametry testu pytania</legend>

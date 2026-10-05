@@ -6,11 +6,13 @@ import FriendAnswerReviewsPanel from '../components/FriendAnswerReviewsPanel';
 import QuestionTestsPanel from '../components/QuestionTestsPanel';
 import CacheStatsPanel from '../components/CacheStatsPanel';
 import AdminOverviewTab from '../components/admin/AdminOverviewTab';
+import AdminSessionsTab from '../components/admin/AdminSessionsTab';
 import AdminLiveFeedTab from '../components/admin/AdminLiveFeedTab';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
-import AdminQuestionsTab, { type AdminGameType } from '../components/admin/AdminQuestionsTab';
+import AdminQuestionsTab from '../components/admin/AdminQuestionsTab';
 import AdminFactsTab from '../components/admin/AdminFactsTab';
 import AdminSuggestionsTab from '../components/admin/AdminSuggestionsTab';
+import type { QuestionTestBridgeTarget } from '../components/QuestionTestsPanel';
 import type { AnswerReport } from '../types';
 import { 
   adminService, 
@@ -32,11 +34,12 @@ import {
   Sparkles,
   Gamepad2,
   Cpu,
-  MessageSquare
+  MessageSquare,
+  Play
 } from 'lucide-react';
 
 type AdminSection = 'gameplay' | 'qa' | 'system';
-type AdminTab = 'overview' | 'liveFeed' | 'users' | 'suggestions' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache';
+type AdminTab = 'overview' | 'sessions' | 'liveFeed' | 'users' | 'suggestions' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache';
 
 interface TabDefinition {
   id: AdminTab;
@@ -48,16 +51,17 @@ interface TabDefinition {
 const TABS: TabDefinition[] = [
   // Gameplay Section
   { id: 'overview', label: 'Overview & Solve Rates', icon: Activity, section: 'gameplay' },
+  { id: 'sessions', label: 'Player Sessions & Replay', icon: Play, section: 'gameplay' },
   { id: 'liveFeed', label: 'Live Player Feed', icon: Calendar, section: 'gameplay' },
   { id: 'users', label: 'User Directory', icon: Users, section: 'gameplay' },
-  { id: 'suggestions', label: 'adminSuggestions.tab', icon: MessageSquare, section: 'gameplay' },
+  { id: 'suggestions', label: 'Player Suggestions', icon: MessageSquare, section: 'gameplay' },
   { id: 'friendAnswers', label: 'Friend Duels', icon: HelpCircle, section: 'gameplay' },
 
   // QA & Knowledge Section
-  { id: 'questions', label: 'Questions Log', icon: HelpCircle, section: 'qa' },
+  { id: 'questions', label: 'Questions & AI Audit Log', icon: HelpCircle, section: 'qa' },
   { id: 'reports', label: 'Player Reports', icon: FileText, section: 'qa' },
-  { id: 'templateDivergences', label: 'Template Shadow Audit', icon: ShieldCheck, section: 'qa' },
   { id: 'questionTests', label: 'QA Playground', icon: Sparkles, section: 'qa' },
+  { id: 'templateDivergences', label: 'Template Shadow Audit', icon: ShieldCheck, section: 'qa' },
   { id: 'facts', label: 'Facts Editor (SQLite)', icon: Database, section: 'qa' },
 
   // System Section
@@ -69,7 +73,13 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [activeSection, setActiveSection] = useState<AdminSection>('gameplay');
   const [questionTestReport, setQuestionTestReport] = useState<AnswerReport | null>(null);
+  const [qaBridgeTarget, setQaBridgeTarget] = useState<QuestionTestBridgeTarget | null>(null);
 
+  const handleTestInQA = (target: QuestionTestBridgeTarget) => {
+    setQaBridgeTarget(target);
+    setActiveSection('qa');
+    setActiveTab('questionTests');
+  };
   // Overview State
   const [overview, setOverview] = useState<any | null>(null);
   const [isOverviewLoading, setIsOverviewLoading] = useState(true);
@@ -84,14 +94,8 @@ export default function AdminDashboard() {
   const [liveFeed, setLiveFeed] = useState<{ recent_questions: any[]; recent_guesses: any[] }>({ recent_questions: [], recent_guesses: [] });
   const [isFeedLoading, setIsFeedLoading] = useState(false);
 
-  // Questions Log State
-  const [questionsMode, setQuestionsMode] = useState<AdminGameType>('countrydle');
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-  const [questionPage, setQuestionPage] = useState(1);
-  const [questionSearch, setQuestionSearch] = useState('');
-  const [continentalFilter, setContinentalFilter] = useState('all');
-
+  // Facts Editor Mode
+  type AdminGameType = 'countrydle' | 'continental' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle';
   // Facts Editor State
   const [factMode, setFactMode] = useState<AdminGameType>('countrydle');
   const [factEntities, setFactEntities] = useState<any[]>([]);
@@ -148,23 +152,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Fetch Questions
-  const fetchQuestions = async () => {
-    try {
-      const limit = 30;
-      const offset = (questionPage - 1) * limit;
-      let data: { items: unknown[]; total: number } = { items: [], total: 0 };
-      if (questionsMode === 'countrydle') data = await adminService.getCountrydleQuestions(limit, offset);
-      else if (questionsMode === 'continental') data = await adminService.getContinentalQuestions(limit, offset, continentalFilter);
-      else if (questionsMode === 'us_statedle') data = await adminService.getUSStatedleQuestions(limit, offset);
-      else if (questionsMode === 'powiatdle') data = await adminService.getPowiatdleQuestions(limit, offset);
-      else if (questionsMode === 'wojewodztwodle') data = await adminService.getWojewodztwodleQuestions(limit, offset);
-      setQuestions(data.items || []);
-      setTotalQuestions(data.total || 0);
-    } catch (err) {
-      console.error('Failed to load questions:', err);
-    }
-  };
+
 
   // Fetch Fact Entities
   const fetchFactEntities = async () => {
@@ -263,9 +251,6 @@ export default function AdminDashboard() {
     else if (activeTab === 'liveFeed') fetchLiveFeed();
   }, [activeTab, userPage]);
 
-  useEffect(() => {
-    if (activeTab === 'questions') fetchQuestions();
-  }, [activeTab, questionsMode, questionPage, continentalFilter]);
 
   useEffect(() => {
     if (activeTab === 'facts') fetchFactEntities();
@@ -373,10 +358,13 @@ export default function AdminDashboard() {
         <AdminOverviewTab overview={overview} isLoading={isOverviewLoading} />
       )}
 
-      {activeTab === 'liveFeed' && (
-        <AdminLiveFeedTab data={liveFeed} isLoading={isFeedLoading} onRefresh={fetchLiveFeed} />
+      {activeTab === 'sessions' && (
+        <AdminSessionsTab onTestInQA={handleTestInQA} />
       )}
 
+      {activeTab === 'liveFeed' && (
+        <AdminLiveFeedTab data={liveFeed} isLoading={isFeedLoading} onRefresh={fetchLiveFeed} onTestInQA={handleTestInQA} />
+      )}
       {activeTab === 'users' && (
         <AdminUsersTab
           users={usersData.users}
@@ -394,27 +382,8 @@ export default function AdminDashboard() {
 
       {activeTab === 'suggestions' && <AdminSuggestionsTab />}
       {activeTab === 'questions' && (
-        <AdminQuestionsTab
-          mode={questionsMode}
-          selectedContinent={continentalFilter}
-          onContinentChange={(c) => {
-            setContinentalFilter(c);
-            setQuestionPage(1);
-          }}
-          questions={questions}
-          totalQuestions={totalQuestions}
-          page={questionPage}
-          search={questionSearch}
-          onModeChange={(m) => {
-            setQuestionsMode(m);
-            setContinentalFilter('all');
-            setQuestionPage(1);
-          }}
-          onSearchChange={setQuestionSearch}
-          onPageChange={setQuestionPage}
-        />
+        <AdminQuestionsTab onTestInQA={handleTestInQA} />
       )}
-
       {activeTab === 'facts' && (
         <AdminFactsTab
           factMode={factMode}
@@ -454,6 +423,8 @@ export default function AdminDashboard() {
         <QuestionTestsPanel
           report={questionTestReport}
           onClearReport={() => setQuestionTestReport(null)}
+          initialTarget={qaBridgeTarget}
+          onClearInitialTarget={() => setQaBridgeTarget(null)}
         />
       )}
 
