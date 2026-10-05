@@ -1,8 +1,10 @@
 import asyncio
+import logging
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Callable
 
+logger = logging.getLogger(__name__)
 from qdrant.utils import get_fragments_matching_question
 from db.repositories import fallback_answers as answer_cache
 from utils.ai_clients import get_gemini_model
@@ -22,6 +24,7 @@ async def retrieve_and_answer(
     answerer: Callable[..., dict],
     prompt_builder: Callable[..., tuple[str, str]],
     evidence: dict | None = None,
+    game_date: date | None = None,
 ) -> tuple[dict, str, list[float]]:
     """Retrieve fresh evidence and answer within one bounded daily request."""
     deadline = time.monotonic() + 60.0
@@ -41,9 +44,9 @@ async def retrieve_and_answer(
                     deadline=deadline,
                 )
             except Exception as exc:
-                if time.monotonic() >= deadline:
+                if isinstance(exc, (TimeoutError, asyncio.TimeoutError)) or time.monotonic() >= deadline:
                     raise TimeoutError("Daily fallback deadline exhausted") from exc
-                print(f"Warning: Vector retrieval failed ({exc}); answering with general knowledge.")
+                logger.warning("Vector retrieval failed (%s); answering with general knowledge.", exc)
     finally:
         if evidence is not None:
             evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
@@ -61,7 +64,8 @@ async def retrieve_and_answer(
                     mode=cache_scope[0], entity_id=cache_scope[1], entity_name=entity_name,
                     original_question=question.original_question, question=question.question,
                     context=context, system_prompt=system_prompt, question_prompt=question_prompt,
-                    model=model, game_date=datetime.now(timezone.utc).date(),
+                    model=model,
+                    game_date=game_date if game_date is not None else datetime.now(timezone.utc).date(),
                 )
                 cached = await answer_cache.lookup(session, identity)
                 await session.commit()

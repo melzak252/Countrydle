@@ -274,6 +274,7 @@ async def ask_question(
         collection_name="wojewodztwa", context_limit=qdrant.WOJEWODZTWDLE_CONTEXT_LIMIT,
         session=session, answerer=answer_question_for_entity,
         prompt_builder=answer_prompts, evidence=evidence,
+        game_date=getattr(day_wojewodztwo, "date", None),
     )
     question_create = WojewodztwoQuestionCreate(
         user_id=user.id if user else None,

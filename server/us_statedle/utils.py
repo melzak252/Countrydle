@@ -309,6 +309,7 @@ async def ask_question(
         collection_name="us_states", context_limit=qdrant.US_STATEDLE_CONTEXT_LIMIT,
         session=session, answerer=answer_question_for_entity,
         prompt_builder=answer_prompts, evidence=evidence,
+        game_date=getattr(day_state, "date", None),
     )
     question_create = USStateQuestionCreate(
         user_id=user.id if user else None,

@@ -246,3 +246,39 @@ async def test_report_committed_during_generation_prevents_late_cache_repopulati
     result, _, _ = await fallback.run()
     assert result["answer"] is False
     assert len(fallback.provider_calls) == 2
+
+
+@pytest.mark.anyio
+async def test_custom_game_date_aligns_cache_identity_and_report_invalidation(fallback):
+    custom_date = date(2026, 9, 29)
+    fallback.responses.extend([fallback.answer(True), fallback.answer(False)])
+
+    # 1. First run with custom_date caches the answer
+    first, _, _ = await fallback.run(game_date=custom_date)
+    assert first["answer"] is True
+    assert len(fallback.provider_calls) == 1
+
+    # 2. Second run with custom_date is a cache hit (provider not called again)
+    second_evidence = {}
+    second, _, _ = await fallback.run(game_date=custom_date, evidence=second_evidence)
+    assert second["answer"] is True
+    assert len(fallback.provider_calls) == 1
+    assert second_evidence.get("fallback", {}).get("cache_hit") is True
+
+    # 3. Report invalidates under custom_date
+    async with fallback.db.sessions() as report_session:
+        await fallback.cache.invalidate(
+            report_session,
+            mode="countrydle",
+            entity_name="Poland",
+            original_question=fallback.arguments["question"].original_question,
+            question=fallback.arguments["question"].question,
+            context=fallback.state.context,
+            game_date=custom_date,
+        )
+        await report_session.commit()
+
+    # 4. Third run with custom_date misses cache due to block, calls provider
+    third, _, _ = await fallback.run(game_date=custom_date)
+    assert third["answer"] is False
+    assert len(fallback.provider_calls) == 2
