@@ -1,5 +1,8 @@
 """Strict synchronous answer generation; durable reuse belongs to the async runner."""
+import os
 import time
+
+FALLBACK_REQUEST_TIMEOUT = float(os.getenv("FALLBACK_REQUEST_TIMEOUT", "15.0"))
 
 from utils.ai_clients import FALLBACK_ANSWER_SCHEMA, gemini_json, get_gemini_model
 from utils.request_budget import remaining_timeout
@@ -9,7 +12,7 @@ def get_answer(system_prompt: str, question_prompt: str, *,
                evidence: dict | None = None, request_timeout: float | None = None,
                deadline: float | None = None, model: str | None = None) -> dict:
     """Generate one answer without retaining player data or a worker-local cache."""
-    timeout = 60 if request_timeout is None else request_timeout
+    timeout = FALLBACK_REQUEST_TIMEOUT if request_timeout is None else request_timeout
     if deadline is None:
         deadline = time.monotonic() + timeout
     remaining_timeout(deadline, timeout)

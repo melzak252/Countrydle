@@ -92,9 +92,10 @@ fresh target-filtered retrieval
     -> otherwise one configured Gemini answer stage
 ```
 
-`utils/fallback.py` budgets retrieval and answer generation together for 60
-seconds. Embedding, filtered search, neighboring-fragment fetch, model requests
-and eligible HTTP-status retry backoffs spend the same remaining budget.
+`utils/fallback.py` budgets retrieval and answer generation together for 15
+seconds (configurable via `FALLBACK_DEADLINE_SECONDS`). Embedding, filtered search,
+neighboring-fragment fetch, model requests and eligible HTTP-status retry backoffs
+spend the same remaining budget.
 There is still at most three answer-model HTTP attempts, not a chain of different
 models. The upstream planner and database target lookup are outside this budget.
 Blocking SDK calls run in worker threads: cancellation stops the waiting gameplay

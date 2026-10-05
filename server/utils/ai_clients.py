@@ -103,10 +103,12 @@ def get_gemini_model() -> str:
         or GEMINI_DEFAULT_MODEL
     )
 
+DEFAULT_REQUEST_TIMEOUT = float(os.getenv("GEMINI_REQUEST_TIMEOUT", "15.0"))
+
 
 def gemini_json(
     system_prompt: str, user_prompt: str, max_output_tokens: int = 1024, *,
-    evidence: dict | None = None, request_timeout: float = 60, max_attempts: int = 3,
+    evidence: dict | None = None, request_timeout: float = DEFAULT_REQUEST_TIMEOUT, max_attempts: int = 3,
     response_schema: dict | None = None, thinking_budget: int | None = None,
     model: str | None = None, deadline: float | None = None,
 ) -> dict:
