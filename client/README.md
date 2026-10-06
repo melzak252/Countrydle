@@ -311,20 +311,44 @@ Use **Countrydle** as the project name and `https://countrydle.online` for
 public-site links. Keep personal author attribution and the support address
 `melzacki.jakub@gmail.com` distinct from the project branding.
 
+The October 6, 2026 disclosure update distinguishes browser expiry from server
+retention, covers guest-to-account linking, Gemini question processing and
+OpenAI retrieval embeddings, and identifies persistent question-plan storage.
+Daily history, participation, answer reports, suggestions and planner-cache
+records have no general automatic expiry. Friend-duel cleanup remains subject
+to the existing 30/90-day rules and unresolved-work exceptions. Do not describe
+guest identifiers as anonymous or promise self-service account deletion.
+
+Keep the storage inventory aligned with `server/users/utils.py`,
+`server/utils/guest_session.py`, `server/friend_matches/routes.py`,
+`src/stores/gameStore.ts`, `src/stores/authStore.ts` and
+`src/lib/guestHistory.ts`. Login durations are configurable defaults; local
+history has no automatic expiry. Legal pages remain English-language documents,
+as before. Verify all three routes at desktop and mobile widths after copy edits.
+
+These disclosures do not establish deployment compliance. The operator must
+verify analytics collection/storage, provider account terms and international
+transfer arrangements, operational retention/deletion procedures (including
+logs and backups), and actual audience/children's-data handling. Do not add
+AdinPlay recipients or cookie entries until an integration actually exists.
+
 ## Advertising consent and public discovery
 
-`main.tsx` is the only AdSense loader. Set `VITE_GOOGLE_ADSENSE_ID` when building
-the frontend; without it, no AdSense script or account meta tag is added. Keep
-`public/ads.txt` aligned with that publisher account. Do not add another AdSense
-tag to `index.html`.
+`index.html` currently contains an unconditional AdSense script and publisher
+meta tag. `main.tsx` also has a build-configured loader, but its existing-meta
+check normally skips that branch. Setting `VITE_GOOGLE_ADSENSE_ID` blank does
+not disable the static tag. Keep `public/ads.txt` aligned with the deployed
+publisher account. Neither the AdSense loader nor the optional Rybbit loader
+has an application-side consent gate.
 
-Advertising consent is managed by Google's certified Privacy & messaging CMP,
-not by the former `cookie-consent` localStorage banner. Existing values of that
-old key are not treated as consent. `PrivacySettingsButton.tsx` invokes Google's
-supported callback queue and `showRevocationMessage()` API. It is available in
-the footer, desktop More menu, mobile menu, and Cookie Policy, including access
-from fullscreen games whose footer is hidden. If Google's API is unavailable,
-the button reports that no choices were changed.
+The privacy control delegates to Google's Privacy & messaging service, not the
+former `cookie-consent` localStorage banner. Existing values of that old key
+are not treated as consent. `PrivacySettingsButton.tsx` invokes Google's
+callback queue and `showRevocationMessage()` API. It is available in the footer,
+navigation menus and Cookie Policy. If Google's API is unavailable, the button
+reports that no choices were changed. This hook alone does not prove that a
+certified CMP is published, a particular TCF version is active, or that consent
+is enforced. Policy copy intentionally makes no such unverified promises.
 
 **Account prerequisite:** In AdSense → Privacy & messaging → European
 regulations, configure and publish the message for `countrydle.online`. Set the
