@@ -270,6 +270,7 @@ _COUNTRY_COMPARISON_OPERATORS = {
     "less": "less_than", "smaller": "less_than", "lower": "less_than",
 }
 _SHARED_CONTINENTS = (*CONTINENTS, "Antarctica")
+_ENGLISH_CONTINENTS = {continent.casefold(): continent for continent in _SHARED_CONTINENTS}
 
 
 def _english_reference_country(match: re.Match | None) -> str | None:
@@ -357,6 +358,23 @@ def compile_template_plan(
     if entity is not None:
         node, wording = entity
         return [node], wording
+    continent_border = re.fullmatch(
+        r"does (?P<subject>[a-z0-9 '\u2019&.]+?) (?P<negative>not )?"
+        r"(?:touch|border) (?:the (?:continent of )?)?(?P<continent>[a-z ]+)",
+        _bind_named_country_subject(q),
+    )
+    if continent_border is not None and continent_border["subject"] in _ENGLISH_TARGET_SUBJECTS:
+        continent = _ENGLISH_CONTINENTS.get(continent_border["continent"])
+        if continent is not None:
+            nodes = [
+                {"operator": "contains", "left": {"entity": "item", "relation": "continent"},
+                 "right": {"value": continent}},
+                {"operator": "any", "items": {**_TARGET, "relation": "borders_country"}, "args": [0]},
+            ]
+            negative = continent_border["negative"] is not None
+            if negative:
+                nodes.append({"operator": "not", "args": [1]})
+            return nodes, f"Does the country {'not ' if negative else ''}have a land border with a country in {continent}?"
     if _UNHANDLED_ENGLISH.search(q):
         return None
     comparison = re.fullmatch(

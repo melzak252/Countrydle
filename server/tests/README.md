@@ -107,13 +107,21 @@ Landlocked status means no coastline connected to the open sea. Its plan uses
 inland bodies such as the Caspian, Aral, and Dead Seas. Named inland-water
 queries retain their facts; generic coastline queries still include inland
 shorelines. Model-planned Countrydle questions use prompt revision
-`compact-v7-typed-t1024`, invalidating older country plans without changing other
+`compact-v8-continent-borders-t1024`, invalidating older country plans without changing other
 modes. Model plans reject non-coordinate directional operands, list/list
 `contains`, country-item references over primitive lists, and plans that omit
 the hidden target when the question has a hidden/named country subject.
 Explicit parentheses are retained in the player-facing question instead of
 accepting a flattened paraphrase. Numeric explanations distinguish equality
 from strict inequality and retain threshold precision.
+
+Touching/bordering a continent means `ANY(borders_country, item.continent contains
+continent)`, not the target's continental membership. Bounded English questions
+compile deterministically for every supported continent, preserving negation and
+hidden-target subject binding. Qualified, compound, and unknown-place questions
+decline the template rather than lose modifiers. Polish questions and spelling
+repairs use the model; its prompt preserves the border relation and quantifier
+scope. “In/part of a continent” remains a target-membership question.
 
 ```bash
 python -m pytest -q tests/test_template_compiler.py tests/test_countrydle_semantic_preservation.py tests/test_countrydle_audit_regressions.py tests/test_countrydle_english_corpus.py
@@ -125,7 +133,8 @@ routing, operator-text parity, player-response name redaction, and fallback
 subject/reference boundaries.
 `test_countrydle_audit_regressions.py` guards target binding, typed spatial and
 quantifier operands, shared continents, displayed grouping, named-object
-references and truthful equality explanations.
+references, truthful equality explanations, and continent-border versus target
+membership semantics, including negation and countries with no land neighbors.
 `test_countrydle_english_corpus.py` covers all 3,809 collected adversarial/control
 questions plus 88 captured real-provider responses across 229 target scenarios,
 through the actual planner, SQLite evaluator and player helper. Its committed
@@ -134,6 +143,16 @@ snapshot; these tests need neither a live provider nor mutable application
 fact databases. Both `countrydle` and `question-engine` groups include the new
 regression modules. Optional live/integration tests remain separate verification
 and are not implied by passing these deterministic regressions.
+
+`country_planner_acceptance.json` also includes five production-derived
+development cases for continent borders: English, Polish, compound, misspelled,
+and negated questions. The opt-in harness compares each generated plan's answers
+against the gold plan across the country fact snapshot; it never writes the
+application fact database or plan cache:
+
+```bash
+python scripts/benchmark_country_planner.py --variant current --corpus tests/country_planner_acceptance.json --split development --repeat 3 --env-file ../.env --output /tmp/country-planner-continent-borders.json
+```
 
 The three opt-in real-provider fallback regressions cover historical membership,
 hidden-subject population comparison, and literal named-country property

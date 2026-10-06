@@ -103,6 +103,13 @@ def test_compile_supported_templates(question, operator, relation, value):
     "Does it have Spanish as an official language?", "speak english?", "language english?",
     "Does its flag contain red?", "Does its flag contain blue?",
     "Is it north-west of Poland?", "Is it entirely in the Northern Hemisphere?",
+    "Does it touch South America and Europe?",
+    "Does it touch South America by sea?",
+    "Does it touch southern Europe?",
+    "Does it touch South America only?",
+    "Does it not touch South America or Africa?",
+    "Does it touch the coast of South America?",
+    "Does the capital touch South America?",
 
     # Compound / slash questions (must fall through to Gemini)
     "czy ma dostep do morza/oceanu?",

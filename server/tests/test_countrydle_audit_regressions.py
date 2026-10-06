@@ -157,3 +157,57 @@ def test_model_cannot_replace_explicit_named_subject_with_constant_comparison(au
     )
     assert not plan.supported
     assert plan.plan is None
+
+
+@pytest.fixture
+def border_facts(audit_facts):
+    with sqlite3.connect(audit_facts) as connection:
+        connection.executescript("""
+            ALTER TABLE countries ADD COLUMN cca3 TEXT;
+            INSERT INTO countries (id, app_country_name, official_name) VALUES
+                (8, 'Panama', 'Republic of Panama'),
+                (9, 'Colombia', 'Republic of Colombia'),
+                (10, 'Costa Rica', 'Republic of Costa Rica');
+            INSERT INTO country_continents VALUES
+                (8, 'North America'), (9, 'South America'), (10, 'North America');
+            CREATE TABLE country_borders (
+                country_id INTEGER, border_country_name TEXT, border_cca3 TEXT
+            );
+            INSERT INTO country_borders (country_id, border_country_name) VALUES
+                (8, 'Colombia'), (8, 'Costa Rica'), (9, 'Panama'), (10, 'Panama'),
+                (2, 'France'), (3, 'Germany');
+        """)
+
+
+@pytest.mark.parametrize("question", [
+    "does this country touch south america",
+    "Does it border South America?",
+    "Does the hidden country touch the continent of South America?",
+    "Does France touch South America?",
+])
+@pytest.mark.parametrize("target, expected", [
+    ("Panama", True), ("Colombia", False), ("Costa Rica", False), ("Japan", False),
+])
+def test_touch_continent_tests_land_neighbors_not_target_membership(
+    border_facts, provider, question, target, expected,
+):
+    # Captured production mistake: the provider substituted continental membership.
+    provider([predicate("contains", "continent", {"value": "South America"})],
+             improved_question="Is the country part of South America?")
+    assert answer(question, target).answer is expected
+
+
+@pytest.mark.parametrize("question, target, expected", [
+    ("Does it touch Europe?", "Germany", True),
+    ("Does it touch Europe?", "Panama", False),
+    ("Does it border Asia?", "Japan", False),
+    ("Does it not touch South America?", "Panama", False),
+    ("Does it not border South America?", "Colombia", True),
+    ("Is it in South America?", "Panama", False),
+    ("Is it in South America?", "Colombia", True),
+])
+def test_continent_border_preserves_continent_polarity_and_location(
+    border_facts, provider, question, target, expected,
+):
+    provider([predicate("contains", "continent", {"value": "South America"})])
+    assert answer(question, target).answer is expected

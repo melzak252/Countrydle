@@ -29,7 +29,7 @@ APP_DIR = Path(__file__).resolve().parent
 ROOT_DIR = APP_DIR.parent if (APP_DIR.parent / "data").exists() else APP_DIR.parents[1]
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
 # Countrydle-only prompt/generation revision; shared contracts/modes keep PLANNER_VERSION.
-COUNTRYDLE_PROMPT_REVISION = "compact-v7-typed-t1024"
+COUNTRYDLE_PROMPT_REVISION = "compact-v8-continent-borders-t1024"
 
 
 SUPPORTED_RELATIONS = [
@@ -217,6 +217,14 @@ Semantic mapping:
   Cultural/ethnic/language-family labels (Slavic, Germanic, Romance, Celtic, Turkic,
   Arab, Francophone, Anglophone, Lusophone) are not geographic_area/official_language;
   fallback. Established shorthand remains valid; Nordic/Scandinavian is geographic.
+  "Touch/border a continent or region" means any land-border country is in that
+  continent/region: any(target_country.borders_country, contains(item.continent,
+  continent)) or item.geographic_area for a region. Never replace this with the
+  target's own continental/regional membership. Preserve negation and additional
+  clauses. "In/part of a continent" still tests target_country.continent; proximity,
+  maritime borders and territorial extent are different predicates.
+  Spelling/grammar repairs and translation must preserve the relation verb:
+  touch/border must never become in/belong/part of, even if the place is misspelled.
   A recognized cultural-country label such as Germanic is valid but unsupported:
   missing local cultural definitions/coverage alone means fallback, not clarify.
 - Use `historical_union` only for past membership in USSR, Yugoslavia, Czechoslovakia,
@@ -264,6 +272,12 @@ a short missing-facts reason. Examples:
 Polish: "Czy graniczy z krajem należącym do UE?" (not merely has an EU border fact):
 {{"route":"local","improved_question":"Does the country border an EU member?","plan":[
   {{"operator":"contains","left":{{"entity":"item","relation":"membership"}},"right":{{"value":"EU"}}}},
+  {{"operator":"any","items":{{"entity":"target_country","relation":"borders_country"}},"args":[0]}}
+]}}
+
+"Does it touch Asia?" means a land neighbor is in Asia, NOT target membership:
+{{"route":"local","plan":[
+  {{"operator":"contains","left":{{"entity":"item","relation":"continent"}},"right":{{"value":"Asia"}}}},
   {{"operator":"any","items":{{"entity":"target_country","relation":"borders_country"}},"args":[0]}}
 ]}}
 
@@ -405,7 +419,7 @@ def analyze_question_for_local_plan(
             nodes, improved_question = template
             ast = compile_planner_response(
                 {"route": "local", "plan": nodes},
-                relations=set(SUPPORTED_RELATIONS), operators=PLANNER_OPERATORS,
+                relations=set(SUPPORTED_RELATIONS), operators=PLANNER_OPERATORS | {"any", "all"},
                 target_entity="target_country", allow_named_entities=True,
             )
     if entity is not None or template is not None:

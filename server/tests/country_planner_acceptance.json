@@ -1,5 +1,5 @@
 {
-  "description": "Independent provider-free held-out acceptance corpus authored from planner and executor contracts. All cases use complete supported_ast gold semantics; meaning_guard records required semantic distinctions, required_atoms are harness-checkable critical nodes, and explanatory_notes justify routing and gold meaning.",
+  "description": "Semantic acceptance corpus combining independent held-out cases with production-derived development regressions. All cases use complete supported_ast gold semantics; meaning_guard records required semantic distinctions, required_atoms are harness-checkable critical nodes, and explanatory_notes justify routing and gold meaning.",
   "cases": [
     {
       "id": "accept-001", "split": "held_out", "category": "named_numeric_reference",
@@ -338,6 +338,51 @@
       "meaning_guard": "Target area >= 9,000,000 km²; equality counts.",
       "required_atoms": [{"operator": "greater_than_or_equal", "relation": "area", "value": 9000000}],
       "explanatory_notes": "Co najmniej means an inclusive lower bound on the directly supported area metric.", "notes": "Polish inclusive area lower bound."
+    },
+    {
+      "id": "accept-031", "split": "development", "category": "continent_border",
+      "question": "does this country touch south america", "route": "local",
+      "supported_ast": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}},
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}},
+      "meaning_guard": "Touch means a land neighbor is in South America, not the target itself.",
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "continent", "value": "South America"}],
+      "explanatory_notes": "Production answered Panama's continental membership instead of its border with Colombia.", "notes": "Production continent-border regression."
+    },
+    {
+      "id": "accept-032", "split": "development", "category": "continent_border",
+      "question": "Czy ten kraj graniczy z Ameryką Południową?", "route": "local",
+      "supported_ast": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}},
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}},
+      "meaning_guard": "The Polish border relation binds land neighbors, not target continental membership.",
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "continent", "value": "South America"}],
+      "explanatory_notes": "The active Polish path uses the model and must retain the same neighbor predicate.", "notes": "Polish continent-border regression."
+    },
+    {
+      "id": "accept-033", "split": "development", "category": "continent_border_compound",
+      "question": "Does it touch South America and not lie in South America?", "route": "local",
+      "supported_ast": {"operator": "and", "conditions": [{"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}}, {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "South America"}}}]},
+      "gold_plan": {"operator": "and", "conditions": [{"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}}, {"operator": "not", "condition": {"operator": "contains", "left": {"entity": "target_country", "relation": "continent"}, "right": {"value": "South America"}}}]},
+      "meaning_guard": "AND a South American neighbor with the target not being in South America; preserve quantifier scope.",
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "not", "relation": "continent"}],
+      "explanatory_notes": "Panama distinguishes border membership from target membership within one question.", "notes": "Compound neighbor and target predicate."
+    },
+    {
+      "id": "accept-034", "split": "development", "category": "continent_border_typo",
+      "question": "does this country touch south amerca", "route": "local",
+      "supported_ast": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}},
+      "gold_plan": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}},
+      "meaning_guard": "Repair the ordinary continent typo without changing touch into location.",
+      "required_atoms": [{"operator": "any", "relation": "borders_country"}, {"operator": "contains", "relation": "continent", "value": "South America"}],
+      "explanatory_notes": "Unknown spellings decline deterministic compilation and use the model's semantic repair.", "notes": "Continent spelling repair."
+    },
+    {
+      "id": "accept-035", "split": "development", "category": "negated_continent_border",
+      "question": "Czy ten kraj nie graniczy z Ameryką Południową?", "route": "local",
+      "supported_ast": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}}},
+      "gold_plan": {"operator": "not", "condition": {"operator": "any", "items": {"entity": "target_country", "relation": "borders_country"}, "condition": {"operator": "contains", "left": {"entity": "item", "relation": "continent"}, "right": {"value": "South America"}}}},
+      "meaning_guard": "Negate the existence of a South American neighbor, not target membership or a single neighbor's membership.",
+      "required_atoms": [{"operator": "not", "relation": "borders_country"}, {"operator": "any", "relation": "borders_country"}],
+      "explanatory_notes": "None of the land neighbors may satisfy the South America predicate.", "notes": "Polish negated continent border."
     }
   ]
 }
