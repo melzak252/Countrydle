@@ -29,17 +29,13 @@ interface LocationFacts {
 interface LocationFieldNotesProps {
   targetName?: string;
   mode: AnswerReportMode;
-  gamePath: string;
-  targetCountryCode?: string;
 }
 
 export default function LocationFieldNotes({
   targetName,
   mode,
-  gamePath: _gamePath,
-  targetCountryCode: _targetCountryCode,
 }: LocationFieldNotesProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isPl = i18n.language.startsWith('pl');
 
   const [facts, setFacts] = useState<LocationFacts | null>(null);
@@ -116,20 +112,20 @@ export default function LocationFieldNotes({
   const hopMode = mode === 'us_statedle' ? 'us_states' : 'countries';
 
   return (
-    <div className="rounded-sm border border-white/10 bg-obsidian-900/50 p-4 sm:p-5 text-left space-y-4">
+    <div className="text-left space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
         <div className="flex items-center gap-2">
           <BookOpen size={18} className="text-emerald-400" />
-          <h3 className="font-mono text-sm font-semibold tracking-wide text-sand-100 uppercase">
-            {isPl ? 'Notatki Terenowe' : 'Location Field Notes'}
+          <h3 className="font-mono text-xs font-semibold tracking-wide text-sand-100 uppercase">
+            {t('fieldNotes.title', 'Location Field Notes')}
           </h3>
         </div>
         <Link
           to="/explore"
           className="text-xs text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1"
         >
-          <span>{isPl ? 'Przewodnik' : 'Atlas Guide'}</span>
+          <span>{t('fieldNotes.atlasGuide', 'Atlas Guide')}</span>
           <ExternalLink size={12} />
         </Link>
       </div>
@@ -142,14 +138,14 @@ export default function LocationFieldNotes({
         <>
           {/* Key Metrics Grid */}
           {facts && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5 rounded-sm bg-obsidian-900/40 p-4 text-xs">
               {/* Capital or Seat */}
               {(facts.capital || facts.seat) && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {facts.capital ? (isPl ? 'Stolica' : 'Capital') : (isPl ? 'Siedziba' : 'Seat')}
                   </span>
-                  <span className="font-semibold text-sand-100 truncate block mt-0.5">
+                  <span className="font-semibold text-sand-100 break-words block mt-1">
                     {facts.capital || facts.seat}
                   </span>
                 </div>
@@ -157,11 +153,11 @@ export default function LocationFieldNotes({
 
               {/* Population */}
               {facts.population !== undefined && facts.population !== null && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {isPl ? 'Populacja' : 'Population'}
                   </span>
-                  <span className="font-semibold font-mono text-sand-100 truncate block mt-0.5">
+                  <span className="font-semibold font-mono text-sand-100 break-words block mt-1">
                     {Number(facts.population).toLocaleString()}
                   </span>
                 </div>
@@ -169,11 +165,11 @@ export default function LocationFieldNotes({
 
               {/* Area */}
               {(facts.area_km2 || facts.area_sq_mi) && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {isPl ? 'Powierzchnia' : 'Area'}
                   </span>
-                  <span className="font-semibold font-mono text-sand-100 truncate block mt-0.5">
+                  <span className="font-semibold font-mono text-sand-100 break-words block mt-1">
                     {facts.area_km2
                       ? `${Number(facts.area_km2).toLocaleString()} km²`
                       : `${Number(facts.area_sq_mi).toLocaleString()} sq mi`}
@@ -183,7 +179,7 @@ export default function LocationFieldNotes({
 
               {/* Region or Voivodeship or Admission Year */}
               {(facts.subregion || facts.region || facts.voivodeship || facts.admission_year) && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {facts.voivodeship
                       ? (isPl ? 'Województwo' : 'Voivodeship')
@@ -191,7 +187,7 @@ export default function LocationFieldNotes({
                       ? (isPl ? 'Rok przyjęcia' : 'Admission')
                       : (isPl ? 'Region' : 'Region')}
                   </span>
-                  <span className="font-semibold text-sand-100 truncate block mt-0.5">
+                  <span className="font-semibold text-sand-100 break-words block mt-1">
                     {facts.voivodeship || facts.admission_year || facts.subregion || facts.region}
                   </span>
                 </div>
@@ -199,11 +195,11 @@ export default function LocationFieldNotes({
 
               {/* Plates for Powiaty */}
               {facts.registration_plates && facts.registration_plates.length > 0 && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {isPl ? 'Tablice' : 'Plates'}
                   </span>
-                  <span className="font-semibold font-mono text-sand-100 truncate block mt-0.5">
+                  <span className="font-semibold font-mono text-sand-100 break-words block mt-1">
                     {facts.registration_plates.join(', ')}
                   </span>
                 </div>
@@ -211,23 +207,23 @@ export default function LocationFieldNotes({
 
               {/* Languages for Countries */}
               {facts.languages && facts.languages.length > 0 && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {isPl ? 'Języki' : 'Languages'}
                   </span>
-                  <span className="font-semibold text-sand-100 truncate block mt-0.5">
-                    {facts.languages.slice(0, 2).join(', ')}
+                  <span className="font-semibold text-sand-100 break-words block mt-1">
+                    {facts.languages.join(', ')}
                   </span>
                 </div>
               )}
 
               {/* Water Access */}
               {facts.water_access !== undefined && (
-                <div className="p-2.5 rounded-sm bg-obsidian-950/40 border border-white/5">
+                <div className="min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
                     {isPl ? 'Dostęp do wody' : 'Water Access'}
                   </span>
-                  <span className="font-semibold text-sand-100 truncate block mt-0.5">
+                  <span className="font-semibold text-sand-100 break-words block mt-1">
                     {facts.is_island
                       ? (isPl ? 'Wyspa' : 'Island')
                       : facts.water_access && facts.water_access.length > 0
@@ -245,11 +241,11 @@ export default function LocationFieldNotes({
               <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
                 {isPl ? `Graniczące jednostki (${rawBorders.length})` : `Bordering Neighbors (${rawBorders.length})`}
               </span>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar pr-1">
+              <div className="flex flex-wrap gap-1.5">
                 {rawBorders.map((nbr) => (
                   <span
                     key={nbr}
-                    className="inline-flex items-center gap-1 rounded-xs bg-white/5 border border-white/10 px-2 py-0.5 text-[11px] text-zinc-300 font-medium"
+                    className="inline-flex items-center gap-1 rounded-xs bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-zinc-300"
                   >
                     <MapPin size={10} className="text-zinc-500" />
                     {nbr}
@@ -260,7 +256,7 @@ export default function LocationFieldNotes({
           )}
 
           {/* Border Hop Bridge Card */}
-          <div className="rounded-sm border border-emerald-500/20 bg-emerald-950/20 p-3.5 space-y-2.5">
+          <div className="rounded-sm border border-emerald-500/25 bg-emerald-950/25 p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Route size={16} className="text-emerald-400" />
@@ -280,13 +276,13 @@ export default function LocationFieldNotes({
                 {isPl ? (
                   <>
                     Czy potrafisz przejść z <strong className="text-sand-100">{challenge.start}</strong> do{' '}
-                    <strong className="text-sand-100">{targetName}</strong> przez sąsiadujące granice w{' '}
+                    <strong className="text-sand-100">{challenge.target}</strong> przez sąsiadujące granice w{' '}
                     <strong className="text-emerald-400">{challenge.optimal_hops} przeskokach</strong>?
                   </>
                 ) : (
                   <>
                     Can you navigate from <strong className="text-sand-100">{challenge.start}</strong> to{' '}
-                    <strong className="text-sand-100">{targetName}</strong> across bordering territories in{' '}
+                    <strong className="text-sand-100">{challenge.target}</strong> across bordering territories in{' '}
                     <strong className="text-emerald-400">{challenge.optimal_hops} hops</strong>?
                   </>
                 )}
@@ -316,8 +312,8 @@ export default function LocationFieldNotes({
             <div className="pt-0.5">
               {challenge?.connected && challenge.start ? (
                 <Link
-                  to={`/border-hop?mode=${hopMode}&start=${encodeURIComponent(challenge.start)}&target=${encodeURIComponent(targetName)}`}
-                  className="inline-flex min-h-9 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3.5 py-1.5 text-xs font-bold text-obsidian-950 transition-colors hover:bg-emerald-300"
+                  to={`/border-hop?mode=${hopMode}&start=${encodeURIComponent(challenge.start)}&target=${encodeURIComponent(challenge.target)}`}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3.5 py-2 text-xs font-bold text-obsidian-950 transition-colors hover:bg-emerald-300"
                 >
                   <Route size={14} />
                   <span>
@@ -330,7 +326,7 @@ export default function LocationFieldNotes({
               ) : (
                 <Link
                   to="/border-hop"
-                  className="inline-flex min-h-9 items-center justify-center gap-2 rounded-sm bg-emerald-400/90 px-3.5 py-1.5 text-xs font-bold text-obsidian-950 transition-colors hover:bg-emerald-300"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400/90 px-3.5 py-2 text-xs font-bold text-obsidian-950 transition-colors hover:bg-emerald-300"
                 >
                   <Globe size={14} />
                   <span>{isPl ? 'Zagraj w Daily Border Hop' : 'Play Daily Border Hop'}</span>

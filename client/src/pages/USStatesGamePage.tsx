@@ -47,7 +47,6 @@ export default function USStatesGamePage() {
     askQuestion,
     makeGuess,
     syncGuestData,
-    isGuest,
     dailyDate,
   } = useUSStatesGameStore();
   const { t, i18n } = useTranslation();
@@ -402,10 +401,10 @@ export default function USStatesGamePage() {
           aria-modal="true"
           aria-label="Daily Results"
           onClick={() => setIsResultDismissed(true)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer overflow-y-auto"
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
         >
           <div
-            className="relative z-10 w-full max-w-2xl sm:max-w-3xl max-h-[calc(var(--app-height,100dvh)-1.5rem)] overflow-y-auto rounded-sm shadow-2xl my-auto cursor-default"
+            className="relative z-10 w-full max-w-2xl sm:max-w-3xl rounded-sm shadow-2xl cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <ShareResultCard
@@ -419,7 +418,6 @@ export default function USStatesGamePage() {
               guessesMade={gameState.guesses_made}
               maxGuesses={3}
               targetName={correctState?.name || guesses.find((g) => g.answer)?.guess}
-              isGuest={isGuest}
               onClose={() => setIsResultDismissed(true)}
               questions={sortedQuestions}
               mode="us_statedle"
