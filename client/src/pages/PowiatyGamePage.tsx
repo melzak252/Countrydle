@@ -3,12 +3,12 @@ import { usePowiatyGameStore } from '../stores/gameStore';
 import QuestionInput from '../components/QuestionInput';
 import GuessInput from '../components/GuessInput';
 import GameActionComposer from '../components/GameActionComposer';
+import BackToMapButton from '../components/BackToMapButton';
 import PowiatyMap from '../components/PowiatyMap';
 import GameInstructions from '../components/GameInstructions';
 import QuestionChat from '../components/QuestionChat';
 import {
   Loader2,
-  ChevronDown,
   ChevronUp,
   X,
   Check,
@@ -261,16 +261,7 @@ export default function PowiatyGamePage() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(false)}
-                className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-sm px-2 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-                title={i18n.language.startsWith('pl') ? 'Pokaż mapę' : 'Show map'}
-                aria-label={i18n.language.startsWith('pl') ? 'Pokaż mapę' : 'Show map'}
-              >
-                <span className="text-xs md:hidden">{i18n.language.startsWith('pl') ? 'Mapa' : 'Map'}</span>
-                <ChevronDown size={14} />
-              </button>
+              <BackToMapButton onClick={() => setIsChatOpen(false)} />
             </div>
 
             {/* Tab 1: Questions Stream */}

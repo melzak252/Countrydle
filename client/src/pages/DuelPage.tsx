@@ -10,7 +10,6 @@ import {
   Zap,
   Dices,
   Clock,
-  ChevronDown,
   ChevronUp,
   X,
   MessageSquare,
@@ -23,6 +22,7 @@ import type { FriendEntity, FriendMode, FriendSnapshot } from '../types/friendMa
 import GuessInput from '../components/GuessInput';
 import QuestionInput from '../components/QuestionInput';
 import GameActionComposer from '../components/GameActionComposer';
+import BackToMapButton from '../components/BackToMapButton';
 import FriendDuelMap from '../components/friendDuel/FriendDuelMap';
 import DuelHistory from '../components/friendDuel/DuelHistory';
 import FriendQuestionModal from '../components/friendDuel/FriendQuestionModal';
@@ -650,15 +650,10 @@ function DuelRoom({ code }: { code?: string }) {
                 {showSecret ? <EyeOff size={11} /> : <Eye size={11} />}
               </button>
               {isHistoryOpen && (
-                <button
-                  type="button"
+                <BackToMapButton
                   onClick={() => setIsHistoryOpen(false)}
-                  className="duel-compact-map min-h-11 min-w-11 items-center justify-center gap-1 px-2 text-zinc-400 hover:text-sand-100"
-                  aria-label={i18n.language.startsWith('pl') ? 'Pokaż mapę' : 'Show map'}
-                >
-                  <span>{i18n.language.startsWith('pl') ? 'Mapa' : 'Map'}</span>
-                  <ChevronDown size={14} />
-                </button>
+                  className="duel-compact-map"
+                />
               )}
             </div>
           )}
@@ -760,16 +755,7 @@ function DuelRoom({ code }: { code?: string }) {
                   <span>Deduction Chat</span>
                   <span className="text-zinc-500 font-normal">({snapshot.history.length})</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="flex min-h-11 min-w-11 md:min-h-0 md:min-w-0 items-center justify-center gap-1 rounded-sm text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-                  title={copy.collapseMap}
-                  aria-label={i18n.language.startsWith('pl') ? 'Pokaż mapę' : 'Show map'}
-                >
-                  <span className="text-xs md:hidden">{i18n.language.startsWith('pl') ? 'Mapa' : 'Map'}</span>
-                  <ChevronDown size={14} />
-                </button>
+                <BackToMapButton onClick={() => setIsHistoryOpen(false)} />
               </div>
               {snapshot.status === 'active' && (
                 <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-obsidian-950/70 px-3 py-1.5 font-mono text-[10px] text-zinc-300 md:hidden">

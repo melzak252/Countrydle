@@ -891,6 +891,7 @@ const resources = {
       },
       game: {
         alreadyGuessed: 'You already guessed this location!',
+        backToMap: 'Back to map',
       },
       home: {
         heroTitle: 'Explore the World',
@@ -1157,6 +1158,9 @@ const resources = {
   },
   pl: {
     translation: {
+      game: {
+        backToMap: 'Wróć do mapy',
+      },
       header: {
         howItWorks: 'Jak działają pytania',
         nextDailyIn: 'Nowe państwo za',

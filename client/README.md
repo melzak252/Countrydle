@@ -117,7 +117,8 @@ safe-area padding. Interface labels are localized in English and Polish.
   equal-width sections. It remains visible with either the map or notebook open.
   Active duels use two rows to retain player counts, countdown, and secret controls.
 - Daily map games and friend duels open a full-height action panel on phones,
-  filling the game area below the status row. `Map` collapses the notebook;
+  filling the game area below the status row. A high-contrast, 44px `Back to map`
+  (`Wróć do mapy`) button collapses the notebook;
   `Ask`/`Guess` restores the corresponding history and input.
 - Opening or switching histories scrolls to the newest response or guess. History
   scrolls independently above the pinned composer; manual scrolling remains
@@ -126,8 +127,12 @@ safe-area padding. Interface labels are localized in English and Polish.
   accounting for browser chrome and reduced keyboard space. At 560px viewport
   height or less on phones, quick-question suggestions hide to leave room for the input
   and history. Expanded active duels retain their turn status and countdown;
-  at reduced heights, `Map` moves into the status row and the redundant notebook
+  at reduced heights, `Back to map` moves into the status row and the redundant notebook
   heading and optional composer hint hide so the input stays visible.
+- The mobile version badge uses readable text on a dark background and respects
+  the bottom safe area without intercepting taps. The client version comes from
+  `package.json`, including when Vite is launched directly rather than through npm.
+  Desktop keeps the compact map-return icon and subdued version label.
 - Phone map taps mark red; repeating a tap removes the mark. The colour picker
   is desktop-only. Zoom, reset, reference-line, clear and revealed-target controls
   form a left column with 44px touch targets. Regional maps also expose reset view;
