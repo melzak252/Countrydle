@@ -1,5 +1,5 @@
 {
-  "version": "1.22.0",
-  "title": "Smoother map interactions and faster navigation",
-  "body": "MAP PERFORMANCE & INTERACTIONS\n- Smoother panning, faster map tile rendering, and refined touch interactions on mobile and desktop.\n- Improved reference line toggles and map reset performance during active games.\n- Your daily question and guess limits are unchanged."
+  "version": "1.23.0",
+  "title": "Redesigned results cards and streamlined challenge navigation",
+  "body": "RESULTS CARD & POST-GAME DISCOVERY\n- Redesigned daily results cards with clearer mystery location reveals, visual question deduction history, and prominent stats.\n- Post-game field notes now display directly within the result summary for seamless geographic exploration.\n- Streamlined mode selector when challenging friends to real-time duels.\n- Your daily question and guess limits are unchanged."
 }
