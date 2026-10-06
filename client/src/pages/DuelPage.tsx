@@ -243,8 +243,6 @@ function DuelRoom({ code }: { code?: string }) {
   const [entryUncertain, setEntryUncertain] = useState(false);
   const entryRequest = useRef<{ name: string; mode: FriendMode; request_id: string } | null>(null);
   const entryInFlight = useRef(false);
-  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
-  const modeDropdownRef = useRef<HTMLDivElement>(null);
   const [entityPool, setEntityPool] = useState<{ mode: FriendMode; entities: FriendEntity[] } | null>(null);
   const [entitiesError, setEntitiesError] = useState('');
   const [entityReload, setEntityReload] = useState(0);
@@ -285,15 +283,6 @@ function DuelRoom({ code }: { code?: string }) {
     return () => { alive = false; };
   }, [viewMode, entityReload, copy.error]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
-        setModeDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const enter = async () => {
     if (authLoading || entryInFlight.current || (!entryRequest.current && !name.trim())) return;
@@ -414,16 +403,16 @@ function DuelRoom({ code }: { code?: string }) {
           </div>
         </div>
         <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
+          role="region"
+          aria-labelledby="friend-entry-title"
+          className="absolute inset-0 z-[1000] flex items-start justify-center overflow-y-auto p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
         >
           <div className="relative z-10 my-auto max-h-[calc(var(--app-height,100dvh)-1.5rem)] w-full max-w-md overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 shadow-2xl space-y-4 sm:p-6">
             <div>
               <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-400">
                 {copy.multiplayer}
               </p>
-              <h2 className="text-xl font-bold text-sand-100">
+              <h2 id="friend-entry-title" className="text-xl font-bold text-sand-100">
                 {code ? copy.join : copy.create}
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-zinc-400">{copy.subtitle}</p>
@@ -477,114 +466,40 @@ function DuelRoom({ code }: { code?: string }) {
                 </div>
 
                 {!code && (
-                  <div className="relative" ref={modeDropdownRef}>
-                    <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-mode-btn">
+                  <div>
+                    <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-mode">
                       {copy.mode}
                     </label>
-                    <button
-                      id="duel-mode-btn"
-                      type="button"
-                      className="flex max-md:min-h-11 w-full items-center justify-between rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-base md:text-sm text-sand-100 text-left cursor-pointer"
+                    <select
+                      id="duel-mode"
+                      className="min-h-11 w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-base md:text-sm text-sand-100 [color-scheme:dark] focus:border-emerald-500/70 focus:outline-none"
+                      value={mode}
                       disabled={entryBusy || entryUncertain}
-                      onClick={() => setModeDropdownOpen(open => !open)}
-                      aria-haspopup="listbox"
-                      aria-expanded={modeDropdownOpen}
+                      onChange={event => setMode(event.target.value as FriendMode)}
                     >
-                      <span className="truncate">{copy[mode]}</span>
-                      <ChevronDown size={14} className={`text-zinc-400 transition-transform ${modeDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {modeDropdownOpen && (
-                      <div
-                        className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(18rem,calc(var(--app-height,100dvh)-9rem))] overflow-y-auto divide-y divide-white/10 rounded-sm border border-white/15 bg-obsidian-900 shadow-2xl p-2 space-y-2"
-                        role="listbox"
-                      >
-                        <div>
-                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                            {copy.groupGlobal}
-                          </span>
-                          <div className="flex flex-col gap-1">
-                            {(['countrydle'] as const).map(item => (
-                              <button
-                                key={item}
-                                type="button"
-                                role="option"
-                                aria-selected={mode === item}
-                                className={`flex max-md:min-h-11 items-center justify-between gap-1.5 rounded-sm px-2.5 py-2 text-sm text-left transition-colors cursor-pointer ${
-                                  mode === item ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                                }`}
-                                onClick={() => {
-                                  setMode(item);
-                                  setModeDropdownOpen(false);
-                                }}
-                              >
-                                <span>{copy[item]}</span>
-                                <span className="text-[10px] font-mono text-zinc-400">195</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="pt-2">
-                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                            {copy.groupContinents}
-                          </span>
-                          <div className="grid grid-cols-2 gap-1">
-                            {([
-                              { id: 'europe', badge: '47' },
-                              { id: 'asia', badge: '46' },
-                              { id: 'africa', badge: '54' },
-                              { id: 'americas', badge: '35' },
-                            ] as const).map(item => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                role="option"
-                                aria-selected={mode === item.id}
-                                className={`flex max-md:min-h-11 items-center justify-between gap-1.5 rounded-sm px-2.5 py-2 text-sm text-left transition-colors cursor-pointer ${
-                                  mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                                }`}
-                                onClick={() => {
-                                  setMode(item.id);
-                                  setModeDropdownOpen(false);
-                                }}
-                              >
-                                <span className="truncate">{copy[item.id]}</span>
-                                <span className="shrink-0 text-[10px] font-mono text-zinc-400">{item.badge}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="pt-2">
-                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                            {copy.groupRegional}
-                          </span>
-                          <div className="flex flex-col gap-1">
-                            {([
-                              { id: 'us_statedle', badge: '50' },
-                              { id: 'wojewodztwodle', badge: '16' },
-                              { id: 'powiatdle', badge: '380' },
-                            ] as const).map(item => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                role="option"
-                                aria-selected={mode === item.id}
-                                className={`flex max-md:min-h-11 items-center justify-between gap-1.5 rounded-sm px-2.5 py-2 text-sm text-left transition-colors cursor-pointer ${
-                                  mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                                }`}
-                                onClick={() => {
-                                  setMode(item.id);
-                                  setModeDropdownOpen(false);
-                                }}
-                              >
-                                <span>{copy[item.id]}</span>
-                                <span className="text-[10px] font-mono text-zinc-400">{item.badge}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      <optgroup label={copy.groupGlobal}>
+                        <option value="countrydle">{copy.countrydle} (195)</option>
+                      </optgroup>
+                      <optgroup label={copy.groupContinents}>
+                        {([
+                          { id: 'europe', badge: '47' },
+                          { id: 'asia', badge: '46' },
+                          { id: 'africa', badge: '54' },
+                          { id: 'americas', badge: '35' },
+                        ] as const).map(item => (
+                          <option key={item.id} value={item.id}>{copy[item.id]} ({item.badge})</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label={copy.groupRegional}>
+                        {([
+                          { id: 'us_statedle', badge: '50' },
+                          { id: 'wojewodztwodle', badge: '16' },
+                          { id: 'powiatdle', badge: '380' },
+                        ] as const).map(item => (
+                          <option key={item.id} value={item.id}>{copy[item.id]} ({item.badge})</option>
+                        ))}
+                      </optgroup>
+                    </select>
                   </div>
                 )}
 

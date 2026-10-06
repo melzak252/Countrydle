@@ -84,6 +84,32 @@ conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
 
+## Daily results explorer
+
+World, continental, US state, powiat, and voivodeship results share
+`ShareResultCard.tsx`. The card owns modal scrolling; neither its dialog overlay
+nor its wrapper adds a second scrollbar. Outcome, score, attempt counts, the
+next-puzzle countdown, and share actions precede the geographic details.
+Sharing uses native sharing when available and otherwise copies spoiler-free
+result text; Copy Card always copies that text.
+
+Location Field Notes is the initial explorer panel. Question History appears
+only when both the question count and saved question list are nonzero. Tabs
+support Left/Right, Home/End, and normal keyboard activation. Both panels remain
+in server-rendered markup, with the inactive panel hidden from display and the
+accessibility tree. Results use `ResultsQuestionHistory.tsx`, not the live-game
+chat bubbles: wrapped question/answer rows start collapsed, and selecting a row
+reveals its complete explanation, copy action, and report controls. Only one row
+expands at a time. Notices retain chronological ordering and their full details.
+Facts, neighbors, and expanded explanations use the card's sole scrollbar;
+the page behind the modal is scroll-locked until dismissal. Answer reports
+retain their original mode and question identifiers. Regional modes use the
+returned daily Border Hop
+target rather than treating a county or voivodeship as a country.
+
+The footer retains cross-game navigation and Close and View Map, with mobile
+safe-area padding. Interface labels are localized in English and Polish.
+
 ## Mobile layout
 
 - Daily map games use a full-width, 44px status row immediately below the app
@@ -213,6 +239,12 @@ Fact databases, entity names, and server answering are unchanged.
 ## Friend duels
 
 Create a duel at `/friends`; invitations open `/duel/:code`.
+
+The create/join entry backdrop is confined to the game area below the navbar.
+Entry is a labelled page region, not a modal dialog; desktop navigation and
+the mobile menu remain available while choosing a geography or guest name.
+Geography uses a grouped native select with entity counts; the browser/device
+picker is not clipped by the entry card and supports keyboard and touch selection.
 
 - Questions and guesses have no per-match limit. Daily-mode quotas do not apply.
 - Each question or guess spends one turn; turn timers and final-reply rules still apply.
