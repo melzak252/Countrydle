@@ -1,5 +1,5 @@
 {
-  "version": "1.23.1",
-  "title": "Clearer privacy and data disclosures",
-  "body": "POLICY & PRIVACY DISCLOSURES\n- Updated Cookie Policy, Privacy Policy, and Terms of Service with precise disclosures on local browser storage, authentication cookies, analytics, and advertising.\n- Your daily game progress, streak records, and question limits are unchanged."
+  "version": "1.23.3",
+  "title": "Clearer mobile map navigation and accurate continent-border answers",
+  "body": "MOBILE GAMEPLAY\n- Added a high-contrast Back to map button in daily-game and friend-duel notebooks, with English and Polish labels.\n- Improved mobile version-label contrast and safe-area placement while keeping desktop controls compact.\n- The client version now stays visible when the development server is launched directly.\n\nQUESTION ACCURACY\n- Questions about touching or bordering a continent now check land-border neighbors rather than the country's own continent.\n- Preserved this distinction in Polish questions, spelling repairs, negation, and compound questions.\n- Retired cached country-question plans from the previous planner revision.\n\nYour saved game progress, streaks, and question limits are unchanged."
 }
