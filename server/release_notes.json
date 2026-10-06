@@ -1,5 +1,5 @@
 {
-  "version": "1.23.0",
-  "title": "Redesigned results cards and streamlined challenge navigation",
-  "body": "RESULTS CARD & POST-GAME DISCOVERY\n- Redesigned daily results cards with clearer mystery location reveals, visual question deduction history, and prominent stats.\n- Post-game field notes now display directly within the result summary for seamless geographic exploration.\n- Streamlined mode selector when challenging friends to real-time duels.\n- Your daily question and guess limits are unchanged."
+  "version": "1.23.1",
+  "title": "Clearer privacy and data disclosures",
+  "body": "POLICY & PRIVACY DISCLOSURES\n- Updated Cookie Policy, Privacy Policy, and Terms of Service with precise disclosures on local browser storage, authentication cookies, analytics, and advertising.\n- Your daily game progress, streak records, and question limits are unchanged."
 }
