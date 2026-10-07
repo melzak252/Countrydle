@@ -106,6 +106,7 @@ def _evaluate_flag(question: str, entity_name: str, evidence: dict):
     return SimpleNamespace(
         valid=True, answer=answer.answer, question=answer.question,
         explanation=answer.explanation, context=f"flag_kb:{answer.relation}",
+        fact_provenance=answer.fact_provenance,
     ), plan, "flag_kb"
 
 
@@ -168,6 +169,7 @@ async def evaluate_question_test(
                 duration_ms=round((perf_counter() - started) * 1000),
                 plan=_plan_diagnostics(plan),
                 diagnostics=QuestionDiagnostics.model_validate(evidence),
+                fact_provenance=getattr(answer, "fact_provenance", []),
             )
     except HTTPException:
         raise

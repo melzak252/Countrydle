@@ -1,3 +1,150 @@
+## Installation and verification
+
+Use **Bun 1.3.14** for the frontend regression suite. Supported Node build
+runtimes are **20.19+ within Node 20, or 22.12+** (Vite 7's requirement);
+the system Node 18 is not supported. Python **3.10+**, Linux and Chrome/Chromium
+are needed for the build's prerender step; set `CHROME_BIN` if not auto-detected.
+
+From `client/`:
+
+```bash
+# Reproduce the committed npm dependency lock; use a supported Node version.
+npm ci
+
+# Complete existing regression suite, including bun:test and node:test files.
+bun run test
+
+# TypeScript project-reference check, Vite bundle, then Python prerender.
+# Choose the local backend built from this revision, not another running preview.
+VITE_API_URL=/api PRERENDER_API_TARGET=http://127.0.0.1:8086 bun run --bun build
+
+# Local frontend, using the backend at the configured API proxy target.
+API_PROXY_TARGET=http://127.0.0.1:8080 bun run --bun dev
+```
+
+`test` runs `bun test ./tests` and then the Python prerender regressions, not an
+enumerated TypeScript file list: existing Bun/Node test-API files and newly added
+tests in that directory are included.
+Assertion failures must return nonzero. To prove propagation, use an isolated checkout/copy, add
+a temporary `tests/controlledFailure.test.ts` containing
+`import { test, expect } from 'bun:test'; test('controlled failure', () => expect(1).toBe(2));`,
+run `bun run test`, and remove that file afterward. Never commit that probe.
+
+### Static HTML snapshots
+
+`build` runs `tsc -b`, Vite, and `python3 scripts/prerender.py`; the Python step
+uses only the standard library and the Chrome/Chromium CLI. The supported
+container runtime is Linux with Node 20.19+, Python 3.10+ and Chromium
+(`client/Dockerfile` installs Python/Chromium in its Node 20 Alpine build stage).
+
+Use an installed Chrome/Chromium **CLI** for prerendering, not automatically
+the E2E runner's executable. CDP/Playwright compatibility does not establish
+working `--headless --dump-dom` process-exit behavior. The hardening smoke used
+system Google Chrome and the container's Chromium; the host's Playwright-bundled
+Chrome timed out even for `about:blank`, independently of the application/API.
+
+Set `PRERENDER_API_TARGET` to the **matching local backend origin**, for example
+`http://127.0.0.1:8086`. An explicitly supplied `API_PROXY_TARGET` is also accepted;
+`PRERENDER_API_TARGET` takes precedence. Origins must be local HTTP addresses,
+without `/api`, credentials, query parameters or fragments. Compile with
+`VITE_API_URL=/api` so browser requests use the snapshot server's selected proxy,
+not an absolute API URL baked into the bundle. There is no implicit port-8080
+fallback. Start the matched backend before building and use disposable
+local data, without production credentials/providers.
+
+The step snapshots all sixteen declared routes, `/blog`, and every post returned
+by the existing `/blog?limit=50` discovery query. Discovery failure is an error,
+not permission to silently drop post snapshots. Browser traffic can only reach
+the temporary asset server; its `/api/` proxy forwards **GETs only** to the selected
+backend. Backend redirects, external ads/analytics and browser background traffic
+are blocked during rendering, without removing their tags from output.
+
+For a deliberately backend-free build, explicitly set `PRERENDER_STATIC_ONLY=1`
+and leave both backend-target variables unset:
+
+```bash
+VITE_API_URL=/api PRERENDER_STATIC_ONLY=1 bun run --bun build
+```
+
+This still snapshots **all sixteen declared routes and `/blog`**. It logs
+STATIC-ONLY, makes no backend requests, and returns real HTTP 503 responses for
+API GETs: API-dependent pages therefore render their unavailable state, not
+invented content. Dynamic post snapshots are intentionally unavailable in this
+mode; use the configured-backend mode for complete data-backed output. Selecting
+both static-only and a backend target is an error, not an ambiguous fallback.
+
+The Docker build explicitly defaults to static-only for backend-free CI and
+forwards `PRERENDER_STATIC_ONLY` and `PRERENDER_API_TARGET` build args. To include
+dynamic posts, set `--build-arg PRERENDER_STATIC_ONLY=0` and
+`--build-arg PRERENDER_API_TARGET=http://127.0.0.1:8086`; that matching local
+backend must be reachable inside the build network (for example Linux
+`--network=host`). A configured backend failure still fails the build; it does
+not switch to static-only automatically.
+
+Each route has a fresh private browser profile and a fixed 15-second browser
+deadline; backend GETs and idle asset connections have five-second timeouts.
+Asset/API requests are served concurrently. The script kills/reaps only its owned
+browser processes (including detached helpers), removes profiles, and closes its
+server on success, failure, Ctrl-C or SIGTERM. It reports the actual combined
+route denominator and exits nonzero for missing prerequisites, configured-backend
+discovery/API failures, failed Chrome execution or an empty/incomplete rendered
+application. Failed renders are not written as successful snapshots.
+
+Focused lifecycle/proxy regressions, separate from the Bun TypeScript suite:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_prerender.py' -v
+```
+
+### Browser journeys (opt-in locally)
+
+Playwright is a pinned development dependency, executed under supported **Node**
+(not forced through Bun's runtime). Ordinary `test` does not run browser journeys;
+both desktop and mobile projects are mandatory in CI.
+
+Provision a disposable loopback PostgreSQL database named `countrydle_e2e`,
+owned by a non-superuser login named `e2e`, with `vector` installed by the
+bootstrap administrator. Do not reuse the application's normal database/user.
+Supply that explicit URL and a Python 3.12 interpreter with the locked server
+dependencies:
+
+```bash
+bunx playwright install chromium
+export E2E_DATABASE_URL='postgresql+asyncpg://e2e:DISPOSABLE_PASSWORD@127.0.0.1:5432/countrydle_e2e'
+E2E_PYTHON=/path/to/locked/python bun run test:e2e
+```
+
+CI Linux provisioning can use `bunx playwright install --with-deps chromium`.
+The configuration owns frontend/API startup on `E2E_WEB_PORT`/`E2E_API_PORT`
+(defaults 5181/8087) and a fresh `countrydle_e2e_<hex>` schema; occupied ports,
+wrong database/role/host, version or source-fingerprint mismatches fail rather
+than attaching to an unrelated preview. Its private fact snapshot is a reviewed
+small fixture, not a complete geography database.
+The sandbox disables dotenv, paid providers, mail, schedulers and production
+startup effects; actual HTTP handlers, cookies, PostgreSQL and React stores are
+used. Owned schema/processes are removed on exit. No live-player accounts,
+production credentials or gameplay writes are permitted.
+
+The journeys cover guest reload, false/unresolved question accounting, rejected
+guesses, win/loss, login/sync, failed-sync recovery and authoritative account
+precedence, with no project filter. Accessibility journeys exercise actual
+eligible entity lists, keyboard markings, modal focus containment/restoration,
+Escape, changing focusable controls and localized desktop/mobile surfaces.
+Captured/frozen answering boundaries are behavioral fixtures, not live
+interpretation or answer-quality evidence.
+
+### Dependency lock regeneration
+
+Edit `package.json` only for an intentional dependency change, then run:
+
+```bash
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+```
+
+Keep the existing lock present and review/commit `package.json` and
+`package-lock.json` together. Do not use `npm update` or delete the lock during
+routine regeneration: that would upgrade unrelated dependencies.
+
 ## Admin workspace
 
 `/admin` provides thirteen direct destinations: Overview, Sessions, Live feed,
@@ -110,6 +257,14 @@ target rather than treating a county or voivodeship as a country.
 The footer retains cross-game navigation and Close and View Map, with mobile
 safe-area padding. Interface labels are localized in English and Polish.
 
+Question History renders `FactProvenance.tsx` only from the server's terminal
+`fact_provenance` records. Citation, effective interval, retrieval/update dates
+and convention are localized labels; unknown values stay visibly unknown.
+Active question/state responses contain no detailed target-linked evidence.
+Admin facts allow evidence-only edits without altering the selected fact value.
+Membership accession evidence and the disputed São Tomé and Príncipe hemisphere
+convention are preserved end-to-end; displaying the dispute does not resolve it.
+
 ## Mobile layout
 
 - Daily map games use a full-width, 44px status row immediately below the app
@@ -152,6 +307,37 @@ safe-area padding. Interface labels are localized in English and Polish.
 Daily pages load game state and entities through their mode's Zustand store, then
 mount the world/continental or regional map. Friend duels supply the same controlled
 maps with their own interaction state.
+
+`EntityMarkControls.tsx` supplies a keyboard-operable eligible entity selector
+and candidate, exclusion and removal controls beside every affected daily/duel
+map. Pressed state and a live marking announcement use the map's existing
+interaction state; no second marking store is introduced. The selector locks
+revealed targets. Pointer/context-menu and trusted touch events still toggle
+the actual Canvas geometry; mobile map/notebook switching retains those marks.
+
+`src/hooks/useModalFocus.ts` owns the affected dialogs' shared lifecycle: initial
+focus inside, Tab/Shift+Tab containment, Escape where dismissal is permitted,
+scroll locking and restoration to a usable opener/fallback. Dynamic disabled
+controls and Strict Mode mounts are part of the browser regressions.
+
+Readability changes preserve geometry, hierarchy and dark/green styling:
+important small labels use at least 12px, notebook text/placeholder contrast is
+raised, controls retain visible focus and mobile targets are at least 44px.
+The actual 390×844 error/active surface measured 45 visible normal/large text
+pairs with no AA failures (minimum 6.19:1; composer placeholder 6.91:1).
+Observed composer border contrast was 6.91:1 and its green focus indicator
+9.22:1 against the opaque composer background, above the 3:1 non-text threshold.
+Disabled controls are distinct and exempt from the normal-text contrast check.
+Empty, active, error, disabled and result surfaces were inspected; viewport
+scroll width remained 390px. Native 200% desktop zoom was also exercised.
+The desktop browser's actual safe-area inset is zero; physical iOS notch and
+virtual-keyboard behavior are not certified by desktop emulation.
+
+Guest persistence is a server projection, not authoritative localStorage
+counters. `gameStore.ts` single-flights account/date sync and retires only the
+exact successful snapshot; a failed sync or newly saved snapshot remains
+retryable. Existing meaningful account progress takes precedence. These rules
+are shared by the factory's daily consumers, with explicit mode quotas/scoring.
 
 - `src/lib/mapData.ts` shares parsed GeoJSON and in-flight requests by URL across
   map mounts. County geometry no longer uses a timestamp cache-buster. Failed

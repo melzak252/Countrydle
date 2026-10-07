@@ -1,10 +1,12 @@
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from fastapi import HTTPException, status
 from sqlalchemy import (
     String,
+    JSON,
+    cast,
     and_,
     case,
     desc,
@@ -18,11 +20,13 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from daily_clock import utc_today
 from db.models.answer_report import AnswerReport
 from db.models.continental import ContinentalDay, ContinentalGuess, ContinentalQuestion, ContinentalState
 from db.models.country import Country
 from db.models.countrydle import CountrydleDay, CountrydleState
 from db.models.guess import CountrydleGuess
+from db.models.flagdle import FlagdleDay, FlagdleGuess, FlagdleQuestion, FlagdleState
 from db.models.guest_participation import GuestParticipation
 from db.models.powiat import Powiat
 from db.models.powiatdle import PowiatdleDay, PowiatdleGuess, PowiatdleQuestion, PowiatdleState
@@ -56,7 +60,7 @@ class AdminModeConfig:
     target_name_col: Any
     target_subtitle_col: Any
     default_subtitle: str
-    max_questions: int
+    max_questions: int | None
     max_guesses: int
 
 
@@ -136,6 +140,14 @@ ADMIN_MODE_CONFIGS: dict[str, AdminModeConfig] = {
         max_questions=8,
         max_guesses=3,
     ),
+    "flagdle": AdminModeConfig(
+        mode_key="flagdle", display_name="Flags",
+        question_model=FlagdleQuestion, guess_model=FlagdleGuess,
+        day_model=FlagdleDay, state_model=FlagdleState,
+        target_model=Country, target_fk_col=FlagdleDay.country_id,
+        target_name_col=Country.name, target_subtitle_col=None,
+        default_subtitle="Country", max_questions=None, max_guesses=12,
+    ),
 }
 
 
@@ -199,6 +211,10 @@ def _build_mode_question_query(
     col_explanation = cfg.question_model.explanation.label("explanation")
     col_context = cfg.question_model.context.label("context")
     col_asked_at = cfg.question_model.asked_at.label("asked_at")
+    col_fact_provenance = (
+        cfg.question_model.fact_provenance if hasattr(cfg.question_model, "fact_provenance")
+        else cast(literal(None), JSON)
+    ).label("fact_provenance")
     col_report_id = AnswerReport.id.label("report_id")
 
     where_clauses = []
@@ -287,6 +303,7 @@ def _build_mode_question_query(
             col_context,
             col_asked_at,
             col_report_id,
+            col_fact_provenance,
         )
         .join(cfg.day_model, cfg.question_model.day_id == cfg.day_model.id)
         .join(cfg.target_model, cfg.target_fk_col == cfg.target_model.id)
@@ -399,6 +416,7 @@ async def query_admin_questions(
                 asked_at=r.asked_at,
                 has_report=r.report_id is not None,
                 report_id=r.report_id,
+                fact_provenance=getattr(r, "fact_provenance", None) or [],
             )
         )
 
@@ -447,7 +465,7 @@ async def query_admin_game_sessions(
     cfg = ADMIN_MODE_CONFIGS.get(mode_key, ADMIN_MODE_CONFIGS["countrydle"])
 
     if not target_date:
-        target_date = datetime.now(timezone.utc).date()
+        target_date = utc_today()
 
     day, target_name, target_subtitle = await _resolve_day_and_target(session, cfg, target_date, clean_mode)
     if not day:
@@ -508,7 +526,7 @@ async def query_admin_game_sessions(
                 gp_status = (
                     "won"
                     if gp.won
-                    else ("lost" if (gp.guesses_made >= cfg.max_guesses or gp.questions_asked >= cfg.max_questions) else "in_progress")
+                    else ("lost" if (gp.guesses_made >= cfg.max_guesses or (cfg.max_questions is not None and gp.questions_asked >= cfg.max_questions)) else "in_progress")
                 )
                 candidates.append({
                     "is_guest": True,
@@ -685,7 +703,7 @@ async def query_admin_target_stats(
     cfg = ADMIN_MODE_CONFIGS.get(mode_key, ADMIN_MODE_CONFIGS["countrydle"])
 
     if not target_date:
-        target_date = datetime.now(timezone.utc).date()
+        target_date = utc_today()
 
     day, target_name, target_subtitle = await _resolve_day_and_target(session, cfg, target_date, clean_mode)
     if not day:

@@ -145,13 +145,11 @@ async def test_admin_overview_uses_utc_date_and_fetches_stats(participation_test
     monkeypatch.setattr(admin.PowiatdleDayRepository, "get_today_powiat", AsyncMock(return_value=None))
     monkeypatch.setattr(admin.WojewodztwodleDayRepository, "get_today_wojewodztwo", AsyncMock(return_value=None))
 
-    # Mock datetime in admin to return TODAY as UTC
-    class MockDatetime(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return datetime(TODAY.year, TODAY.month, TODAY.day, 12, 0, 0, tzinfo=timezone.utc)
+    # UTC has rolled over while the western local date is still yesterday.
+    import daily_clock
 
-    monkeypatch.setattr(admin, "datetime", MockDatetime)
+    local_now = datetime(2026, 9, 28, 20, 0, tzinfo=timezone(timedelta(hours=-7)))
+    monkeypatch.setattr(daily_clock, "utc_now", lambda: local_now.astimezone(timezone.utc))
 
     overview = await admin.get_admin_overview(admin=None, session=session)
 
@@ -159,6 +157,8 @@ async def test_admin_overview_uses_utc_date_and_fetches_stats(participation_test
     assert overview.today.total_winners == 1
     assert overview.today.total_questions == 3
     assert overview.today.total_guesses == 1
+    assert overview.history_14d[0].date == TODAY
+    assert overview.history_14d[0].total_players == 2
 
 
 @pytest.mark.anyio

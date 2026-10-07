@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import re
 import sqlite3
@@ -96,31 +98,6 @@ def analyze_question(
 
     load_dotenv()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or "gemini-2.5-flash-lite"
-    version = f"{PLANNER_VERSION}:{model}"
-    cached = plan_cache.get(config.mode_name, question, version=version) if use_cache else None
-    if evidence is not None:
-        evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)
-    if cached is not None:
-        return replace(cached, original_question=question)
-
-    try:
-        from generic_template_compiler import compile_generic_template_plan
-        tpl_res = compile_generic_template_plan(question, config.mode_name)
-        if tpl_res is not None:
-            tpl_ast, tpl_improved = tpl_res
-            plan = QuestionPlan(
-                original_question=question,
-                valid=True,
-                supported=True,
-                improved_question=tpl_improved,
-                explanation="Deterministic template match.",
-                plan=tpl_ast,
-            )
-            if use_cache:
-                plan_cache.set(config.mode_name, question, plan, version=version)
-            return plan
-    except Exception:
-        pass
     relations = "\n".join(f"- {r}" for r in config.supported_relations)
     entity_relations = ", ".join(sorted(config.entity_list_relations)) or "(none)"
     neighbor_example = ""
@@ -138,7 +115,7 @@ Nodes 0 and 1 compare the same property and value on DIFFERENT entities; neither
 Node 1 belongs only inside quantifier 2. The outer or combines target predicate 0 with quantifier 2,
 never with the unbound item predicate 1.
 """.strip()
-    prompt = f"""
+    instruction_prompt = f"""
 You are a validator and planner for a yes/no guessing game.
 Game mode: {config.mode_name}
 Target entity placeholder: {config.target_entity}
@@ -225,9 +202,8 @@ Unsupported format:
 Mode-specific planning notes (apply these to positive predicates AND their negations):
 {config.mode_notes or "- None"}
 
-
-User question: {question}
 """.strip()
+    prompt = f"{instruction_prompt}\n\nUser question: {question}"
     allowed_relations = config.scalar_relations.keys() | config.list_relations.keys() | {"name"}
     operators = (PLANNER_OPERATORS - {"contains"}) | {"contains_exact", "contains_partial", "any", "all"}
     allow_named_entities = config.mode_name in {"Countrydle", "Powiatdle", "USStatedle", "Wojewodztwodle"}
@@ -235,6 +211,43 @@ User question: {question}
         relations=allowed_relations, operators=operators, target_entity=config.target_entity,
         allow_named_entities=allow_named_entities,
     )
+    semantic_config = {
+        "prompt": instruction_prompt, "schema": schema, "table": config.table,
+        "name_column": config.name_column, "fk_column": config.fk_column,
+        "scalar_relations": config.scalar_relations, "list_relations": config.list_relations,
+        "language": config.language, "entity_relations": sorted(config.entity_list_relations),
+        "generation": {"temperature": 0, "max_output_tokens": PLANNER_MAX_OUTPUT_TOKENS,
+                       "thinking_budget": PLANNER_THINKING_BUDGET if model.startswith("gemini-2.5-flash-lite") else None},
+    }
+    identity = hashlib.sha256(json.dumps(
+        semantic_config, sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+    version = f"{PLANNER_VERSION}:{model}:{identity}"
+    cached = plan_cache.get(config.mode_name, question, version=version) if use_cache else None
+    if evidence is not None:
+        evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION,
+                        semantic_identity=identity, cache_identity=version,
+                        prompt_sha256=hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+                        cache_hit=cached is not None, cache_origin="unknown" if cached is not None else None)
+    if cached is not None:
+        return replace(cached, original_question=question)
+    try:
+        from generic_template_compiler import compile_generic_template_plan
+        tpl_res = compile_generic_template_plan(question, config.mode_name)
+    except Exception:
+        tpl_res = None
+    if tpl_res is not None:
+        tpl_ast, tpl_improved = tpl_res
+        plan = QuestionPlan(
+            original_question=question, valid=True, supported=True,
+            improved_question=tpl_improved, explanation="Deterministic template match.",
+            plan=tpl_ast,
+        )
+        if evidence is not None:
+            evidence["provider"] = "template"
+        if use_cache:
+            plan_cache.set(config.mode_name, question, plan, version=version)
+        return plan
     data = gemini_json(prompt, response_schema=schema, evidence=evidence)
     ast = compile_planner_response(
         data, relations=allowed_relations, operators=operators, target_entity=config.target_entity,

@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import List, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from schemas.user import ProfileDisplay, UserDisplay
 from schemas.country import CountryCount, CountryDisplay, DayCountryDisplay
 from version import SERVER_VERSION
 from schemas.answer_report import ReportableQuestion
+from schemas.fact_provenance import FactProvenanceRecord, PublicFactEvidence
 
 
 class QuestionBase(BaseModel):
@@ -32,11 +33,17 @@ class QuestionCreate(QuestionEnhanced):
     context: str | None
     guest_id: str | None = None
     server_version: str | None = SERVER_VERSION
+    fact_provenance: list[dict] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator("fact_provenance", mode="before")
+    @classmethod
+    def validated_evidence(cls, value):
+        return [FactProvenanceRecord.model_validate(item).model_dump(mode="json") for item in value]
 
-class QuestionDisplay(ReportableQuestion):
+
+class QuestionDisplay(ReportableQuestion, PublicFactEvidence):
     report_mode = "countrydle"
     id: int
     original_question: str
@@ -59,7 +66,7 @@ class FullQuestionDisplay(QuestionDisplay):
     model_config = ConfigDict(from_attributes=True)
 
 
-class InvalidQuestionDisplay(ReportableQuestion):
+class InvalidQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     report_mode = "countrydle"
     id: int
     original_question: str

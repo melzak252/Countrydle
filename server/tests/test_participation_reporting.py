@@ -1,5 +1,4 @@
 from datetime import date, timedelta
-from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import create_engine
@@ -154,7 +153,7 @@ async def test_dashboard_deduplicates_people_across_modes_but_win_rate_counts_ga
     async def no_target(_):
         return None
 
-    monkeypatch.setattr(admin, "date", SimpleNamespace(today=lambda: TODAY))
+    monkeypatch.setattr(admin, "utc_today", lambda: TODAY)
     monkeypatch.setattr(admin.CountrydleRepository, "get_today_country", no_target)
     monkeypatch.setattr(admin.USStatedleDayRepository, "get_today_us_state", no_target)
     monkeypatch.setattr(admin.PowiatdleDayRepository, "get_today_powiat", no_target)
@@ -163,6 +162,8 @@ async def test_dashboard_deduplicates_people_across_modes_but_win_rate_counts_ga
     assert overview.today.total_players == 3
     assert overview.today.total_winners == 4
     assert overview.today.win_rate_pct == 50.0
+    assert overview.history_14d[0].date == TODAY
+    assert overview.history_14d[1].date == TODAY - timedelta(days=1)
     assert overview.history_14d[0].total_players == 3
     assert overview.history_14d[1].total_players == 1
     assert overview.history_14d[2].total_players == 0

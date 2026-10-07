@@ -7,8 +7,8 @@ WORKDIR /usr/src/app
 # Copy the requirements.txt file first, to leverage Docker layer caching
 COPY requirements.txt .
 
-# Install the dependencies
-RUN pip install -r requirements.txt
+# Install only hash-verified, locked dependencies without resolving new versions.
+RUN pip install --no-cache-dir --require-hashes --no-deps -r requirements.txt
 
 # Copy the rest of the project files into the container
 COPY . .
@@ -16,4 +16,4 @@ COPY . .
 # RUN alembic upgrade head
 
 # Run the application when the container starts
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--lifespan", "on", "--no-proxy-headers"]

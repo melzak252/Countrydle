@@ -1,5 +1,5 @@
 """Exercise solo API activity with real repositories in a disposable PostgreSQL schema."""
-from datetime import date
+from daily_clock import utc_today
 from importlib import import_module
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 
 from db.models.guest_participation import GuestParticipation
+from countrydle.local_answering import LocalAnswer
 from tests.test_guest_participation import participation_db
 from utils.guest_session import GUEST_IDENTITY_COOKIE
 
@@ -29,7 +30,7 @@ async def solo_client(participation_db):
         "Powiat", "PowiatdleDay", "PowiatdleState", "PowiatdleQuestion", "PowiatdleGuess",
         "Wojewodztwo", "WojewodztwodleDay", "WojewodztwodleState", "WojewodztwodleQuestion", "WojewodztwodleGuess",
         "ContinentalDay", "ContinentalState", "ContinentalQuestion", "ContinentalGuess",
-        "FlagdleDay", "FlagdleState", "FlagdleGuess",
+        "FlagdleDay", "FlagdleState", "FlagdleGuess", "FlagdleQuestion",
     )
     async with participation_db() as session:
         connection = await session.connection()
@@ -45,12 +46,12 @@ async def solo_client(participation_db):
         ])
         await session.flush()
         session.add_all([
-            models.CountrydleDay(id=1, country_id=1, date=date.today()),
-            models.USStatedleDay(id=1, us_state_id=1, date=date.today()),
-            models.PowiatdleDay(id=1, powiat_id=1, date=date.today()),
-            models.WojewodztwodleDay(id=1, wojewodztwo_id=1, date=date.today()),
-            models.ContinentalDay(id=1, continent=models.ContinentCode.EUROPE, country_id=1, date=date.today()),
-            models.FlagdleDay(id=1, country_id=1, date=date.today()),
+            models.CountrydleDay(id=1, country_id=1, date=utc_today()),
+            models.USStatedleDay(id=1, us_state_id=1, date=utc_today()),
+            models.PowiatdleDay(id=1, powiat_id=1, date=utc_today()),
+            models.WojewodztwodleDay(id=1, wojewodztwo_id=1, date=utc_today()),
+            models.ContinentalDay(id=1, continent=models.ContinentCode.EUROPE, country_id=1, date=utc_today()),
+            models.FlagdleDay(id=1, country_id=1, date=utc_today()),
         ])
         await session.commit()
 
@@ -148,11 +149,11 @@ async def test_only_valid_questions_create_participation(
 
 async def test_flag_questions_and_sync_keep_question_only_player(solo_client, participation_db, monkeypatch):
     from app import app
-    from db.models.flagdle import FlagdleState
+    from db.models.flagdle import FlagdleState, FlagdleQuestion
     from users.utils import get_current_user, get_current_or_guest_user
     plan = SimpleNamespace(valid=False, plan=None, improved_question="Is it red?", explanation="Invalid")
     monkeypatch.setattr("flagdle.analyze_question_for_local_plan", lambda _: plan)
-    monkeypatch.setattr("flagdle.execute_local_plan", lambda *args, **kwargs: SimpleNamespace(
+    monkeypatch.setattr("flagdle.execute_local_plan", lambda *args, **kwargs: LocalAnswer(
         question="Is it red?", answer=True, explanation="Red stripe", relation="colors",
     ))
     invalid = await solo_client.post("/flagdle/question", json={"question": "Is it red?"})
@@ -166,7 +167,7 @@ async def test_flag_questions_and_sync_keep_question_only_player(solo_client, pa
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_current_or_guest_user] = lambda: user
     payload = {
-        "date": str(date.today()), "guesses": [],
+        "date": str(utc_today()), "guesses": [],
         "state": {"remaining_guesses": 12, "guesses_made": 0, "revealed_stage": 1, "is_game_over": False, "won": False},
     }
     for _ in range(2):
@@ -179,6 +180,11 @@ async def test_flag_questions_and_sync_keep_question_only_player(solo_client, pa
         state = (await session.scalars(select(FlagdleState))).one()
         assert (guest.user_id, guest.questions_asked, guest.guesses_made) == (1, 1, 0)
         assert (state.questions_asked, state.guesses_made) == (2, 0)
+        history = (await session.scalars(select(FlagdleQuestion).order_by(FlagdleQuestion.id))).all()
+        assert [(row.id, row.user_id, row.answer) for row in history] == [
+            (result.json()["id"], 1, True), (account_question.json()["id"], 1, True),
+        ]
+        assert history[0].guest_id == guest.guest_id and history[1].guest_id is None
 
 
 async def test_sync_links_guest_even_when_account_already_has_progress(solo_client, participation_db):
@@ -197,7 +203,7 @@ async def test_sync_links_guest_even_when_account_already_has_progress(solo_clie
     account_guess = await solo_client.post("/countrydle/guess", json={"guess": "Germany", "country_id": 2})
     assert account_guess.status_code == 200, account_guess.text
     payload = {
-        "date": str(date.today()), "questions": [],
+        "date": str(utc_today()), "questions": [],
         "guesses": [{"guess": "Germany", "country_id": 2}],
         "state": {"remaining_questions": 10, "questions_asked": 0, "remaining_guesses": 2,
                   "guesses_made": 1, "is_game_over": False, "won": False},

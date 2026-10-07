@@ -1,13 +1,16 @@
-from db.models import USStatedleState
+import os
+
+from db.models import USStatedleState, USStatedleGuess, USStatedleQuestion
 from db.repositories.question_accounting import (
     consume_question, is_answered, unresolved_question, require_question_available,
-    lock_question_state, claim_guest_questions,
+    get_daily_state, require_guess_available,
 )
 from typing import Union, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
-    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    create_guest_game_token, record_guest_action, get_guest_progress, guest_game_over,
+    check_guest_question_available, claim_guest_history,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -38,7 +41,7 @@ from schemas.us_statedle import (
 )
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import us_statedle.utils as uutils
-from game_logic import GameConfig, GameRules, GameState, is_valid_synced_game_state
+from game_logic import GameConfig, GameRules, GameState
 from utils.geo import enhance_guess_with_hint
 
 
@@ -74,6 +77,7 @@ def format_us_state_guesses(guesses: list, target_state_id: int, target_name: st
             us_state_id=getattr(g, "us_state_id", None) if isinstance(getattr(g, "us_state_id", None), int) else None,
             answer=bool(getattr(g, "answer", False) if isinstance(getattr(g, "answer", False), bool) else False),
             guessed_at=getattr(g, "guessed_at", None) or datetime.now(),
+            elapsed_seconds=getattr(g, "elapsed_seconds", None),
             distance_km=hint.get("distance_km"),
             bearing_degrees=hint.get("bearing_degrees"),
             bearing_direction=hint.get("bearing_direction"),
@@ -83,18 +87,6 @@ def format_us_state_guesses(guesses: list, target_state_id: int, target_name: st
     return formatted
 
 
-async def normalize_state_limits(state, session: AsyncSession):
-    expected_questions = max(0, USSTATEDLE_CONFIG.max_questions - state.questions_asked)
-    expected_guesses = max(0, USSTATEDLE_CONFIG.max_guesses - state.guesses_made)
-    if (
-        state.remaining_questions != expected_questions
-        or state.remaining_guesses != expected_guesses
-    ):
-        state = await lock_question_state(session, USStatedleState, state.user_id, state.day_id)
-        state.remaining_questions = max(0, USSTATEDLE_CONFIG.max_questions - state.questions_asked)
-        state.remaining_guesses = max(0, USSTATEDLE_CONFIG.max_guesses - state.guesses_made)
-        await USStatedleStateRepository(session).update_state(state)
-    return state
 
 
 @router.post("/sync", response_model=USStatedleStateResponse)
@@ -115,73 +107,29 @@ async def sync_guest_data(
     if not day_state:
         raise HTTPException(status_code=404, detail="Game for this date not found.")
 
-    state = await USStatedleStateRepository(session).get_state(user, day_state)
-    if state is None:
-        state = await USStatedleStateRepository(session).create_state(
-            user,
-            day_state,
-            max_questions=USSTATEDLE_CONFIG.max_questions,
-            max_guesses=USSTATEDLE_CONFIG.max_guesses,
+    try:
+        state = await get_daily_state(
+            session, USStatedleState, user.id, day_state.id,
+            USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
         )
-    state = await lock_question_state(session, USStatedleState, user.id, day_state.id) or state
-    
-    if state.questions_asked > 0 or state.guesses_made > 0:
-        linked = await link_guest_participation(session, request, "us_statedle", day_state.id, user.id)
-        if linked is not None:
-            await session.commit()
-        return await get_state(user, session)
-
-    sync_state = getattr(sync_data, "state", None)
-    if sync_state is not None and not is_valid_synced_game_state(
-        USSTATEDLE_CONFIG,
-        guesses_made=sync_state.guesses_made,
-        remaining_guesses=sync_state.remaining_guesses,
-        is_game_over=sync_state.is_game_over,
-        won=sync_state.won,
-        correct_guesses=[
-            guess.us_state_id == day_state.us_state_id for guess in sync_data.guesses
-        ],
-        questions_asked=sync_state.questions_asked,
-        remaining_questions=sync_state.remaining_questions,
-        synced_questions=len(sync_data.questions),
-    ):
-        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
-
-    from db.models import USStatedleQuestion
-    await claim_guest_questions(
-        session, USStatedleQuestion, state, sync_data.questions, USSTATEDLE_CONFIG.max_questions,
-    )
-
-    for guess in sync_data.guesses:
-        is_correct = False
-        if guess.us_state_id:
-            is_correct = guess.us_state_id == day_state.us_state_id
-            
-        guess_create = USStateGuessCreate(
-            guess=guess.guess,
-            us_state_id=guess.us_state_id,
-            day_id=day_state.id,
-            user_id=user.id,
-            answer=is_correct,
+        imported = await claim_guest_history(
+            session, request, state, "us_statedle", USStatedleGuess, USStatedleQuestion,
+            USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
         )
-        await USStatedleGuessRepository(session).add_guess(guess_create, commit=False)
-
-    state.remaining_guesses = sync_data.state.remaining_guesses
-    state.guesses_made = sync_data.state.guesses_made
-    state.is_game_over = sync_data.state.is_game_over
-    state.won = sync_data.state.won
-    
-    if state.won:
-        streak = (await USStatedleStateRepository(session).get_current_streak(user.id, day_state.date)) + 1
-        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
-        state.points = await USStatedleStateRepository(session).calc_points(
-            state, elapsed_seconds=elapsed, streak=streak
-        )
-    if state.questions_asked > 0 or state.guesses_made > 0:
-        await link_guest_participation(session, request, "us_statedle", day_state.id, user.id)
-    await USStatedleStateRepository(session).update_state(state)
-    
-    return await get_state(user, session)
+        if imported and state.won:
+            guesses = await USStatedleGuessRepository(session).get_user_day_guesses(user, day_state)
+            elapsed = guesses[-1].elapsed_seconds if guesses else None
+            streak = (await USStatedleStateRepository(session).get_current_streak(user.id, day_state.date)) + 1
+            state.points = await USStatedleStateRepository(session).calc_points(
+                state, elapsed_seconds=elapsed, streak=streak,
+            )
+        await USStatedleStateRepository(session).update_state(state, commit=False)
+        result = await _state_response(user, session, day_state)
+        await session.commit()
+        return result
+    except Exception:
+        await session.rollback()
+        raise
 
 
 @router.get("/history", response_model=List[DayUSStateDisplay])
@@ -202,73 +150,50 @@ async def get_state(
     if not day_state:
         day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
 
+    try:
+        result = await _state_response(user, session, day_state, request, response)
+        await session.commit()
+        return result
+    except Exception:
+        await session.rollback()
+        raise
+
+
+async def _state_response(user, session, day_state, request=None, response=None):
+    us_state = await USStateRepository(session).get(day_state.us_state_id)
     if user is None:
-        if request is not None and response is not None:
-            from utils.guest_session import get_guest_identity
-            get_guest_identity(request, response)
-        return USStatedleStateResponse(
-            user=None,
-            date=str(day_state.date),
-            state=USStatedleStateSchema(
-                id=0,
-                user_id=0,
-                day_id=day_state.id,
-                remaining_questions=USSTATEDLE_CONFIG.max_questions,
-                remaining_guesses=USSTATEDLE_CONFIG.max_guesses,
-                questions_asked=0,
-                guesses_made=0,
-                is_game_over=False,
-                won=False,
-                points=0,
-            ),
-            guesses=[],
-            questions=[],
-            us_state=None,
+        participation, guesses, questions = await get_guest_progress(
+            session, request, response, "us_statedle", day_state.id,
+            USStatedleGuess, USStatedleQuestion,
         )
-
-    state = await USStatedleStateRepository(session).get_state(user, day_state)
-
-    if state is None:
-        state = await USStatedleStateRepository(session).create_state(
-            user,
-            day_state,
-            max_questions=USSTATEDLE_CONFIG.max_questions,
-            max_guesses=USSTATEDLE_CONFIG.max_guesses,
+        questions_asked = participation.questions_asked if participation else 0
+        guesses_made = participation.guesses_made if participation else 0
+        is_game_over = guest_game_over(participation, USSTATEDLE_CONFIG.max_guesses)
+        state_display = USStatedleStateSchema(
+            id=0, user_id=0, day_id=day_state.id,
+            remaining_questions=max(0, USSTATEDLE_CONFIG.max_questions - questions_asked),
+            remaining_guesses=max(0, USSTATEDLE_CONFIG.max_guesses - guesses_made),
+            questions_asked=questions_asked, guesses_made=guesses_made,
+            is_game_over=is_game_over, won=participation.won if participation else False,
+            points=0,
         )
-
-    state = await normalize_state_limits(state, session)
-
-    guesses = await USStatedleGuessRepository(session).get_user_day_guesses(
-        user, day_state
-    )
-    questions = await USStatedleQuestionRepository(session).get_user_day_questions(
-        user, day_state
-    )
-
-    if state.is_game_over:
-        us_state = await USStateRepository(session).get(day_state.us_state_id)
-        return USStatedleEndStateResponse(
-            user=user,
-            date=str(day_state.date),
-            state=USStatedleStateSchema.model_validate(state),
-            guesses=format_us_state_guesses(guesses, day_state.us_state_id, us_state.name if us_state else None),
-            questions=questions,
-            us_state=us_state,
+    else:
+        state = await get_daily_state(
+            session, USStatedleState, user.id, day_state.id,
+            USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
         )
-
-    questions_display = [
-        USStateQuestionDisplay.model_validate(question)
-        for question in questions
-    ]
-
-    us_state_rec = await USStateRepository(session).get(day_state.us_state_id)
+        state.remaining_questions = max(0, USSTATEDLE_CONFIG.max_questions - state.questions_asked)
+        state.remaining_guesses = max(0, USSTATEDLE_CONFIG.max_guesses - state.guesses_made)
+        state.is_game_over = state.is_game_over or state.won or state.guesses_made >= USSTATEDLE_CONFIG.max_guesses
+        guesses = await USStatedleGuessRepository(session).get_user_day_guesses(user, day_state)
+        questions = await USStatedleQuestionRepository(session).get_user_day_questions(user, day_state)
+        state_display = USStatedleStateSchema.model_validate(state)
+        is_game_over = state.is_game_over
     return USStatedleStateResponse(
-        user=user,
-        date=str(day_state.date),
-        state=USStatedleStateSchema.model_validate(state),
-        guesses=format_us_state_guesses(guesses, day_state.us_state_id, us_state_rec.name if us_state_rec else None),
-        questions=questions_display,
-        us_state=None,
+        user=user, date=str(day_state.date), state=state_display,
+        guesses=format_us_state_guesses(guesses, day_state.us_state_id, us_state.name if us_state else None),
+        questions=[USStateQuestionDisplay.model_validate(question) for question in questions],
+        us_state=us_state if is_game_over else None,
     )
 
 
@@ -351,6 +276,11 @@ async def _do_ask_question(
     if user is not None:
         state = await USStatedleStateRepository(session).get_state(user, day_state)
         require_question_available(state, USSTATEDLE_CONFIG.max_questions)
+    else:
+        await check_guest_question_available(
+            session, request, response, "us_statedle", day_state.id,
+            USSTATEDLE_CONFIG.max_questions, max_guesses=USSTATEDLE_CONFIG.max_guesses,
+        )
 
     # End the day/quota read transaction before planner or provider work.
     await session.commit()
@@ -376,17 +306,22 @@ async def _do_ask_question(
         return unresolved_question(question_create, USStateQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day_state.id
+    guest_id = None
     if user is None:
-        await record_guest_action(
+        participation = await record_guest_action(
             session, request, response, "us_statedle", day_state.id,
+            max_guesses=USSTATEDLE_CONFIG.max_guesses,
             question=True, max_questions=USSTATEDLE_CONFIG.max_questions,
         )
+        guest_id = participation.guest_id
     else:
         await consume_question(
             session, USStatedleState, user.id, day_state.id,
             USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
         )
-    new_question = await USStatedleQuestionRepository(session).create_question(question_create)
+    new_question = await USStatedleQuestionRepository(session).create_question(
+        question_create, guest_id=guest_id,
+    )
     result = USStateQuestionDisplay.model_validate(new_question)
     await session.commit()
     if question_vector:
@@ -406,6 +341,7 @@ async def _do_ask_question(
 @router.get("/reveal", response_model=USStateDisplay)
 async def reveal_us_state(
     request: Request,
+    response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
@@ -417,21 +353,24 @@ async def reveal_us_state(
         
     if user is not None:
         state = await USStatedleStateRepository(session).get_state(user, day_state)
-        if state and not state.is_game_over:
+        if state is None or not (state.is_game_over or state.won or state.guesses_made >= USSTATEDLE_CONFIG.max_guesses):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal state before game is over.",
             )
     else:
-        cookie = request.cookies.get("guest_us_statedle")
-        guest_state = read_guest_game_token(cookie, "us_statedle", day_state.id)
-        if not guest_state["is_game_over"]:
+        participation, _, _ = await get_guest_progress(
+            session, request, response, "us_statedle", day_state.id,
+            USStatedleGuess, USStatedleQuestion,
+        )
+        if not guest_game_over(participation, USSTATEDLE_CONFIG.max_guesses):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal state before game is over.",
             )
             
     us_state = await USStateRepository(session).get(day_state.us_state_id)
+    await session.commit()
     return us_state
 
 @router.post("/guess", response_model=USStateGuessDisplay)
@@ -442,6 +381,14 @@ async def make_guess(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    try:
+        return await _do_make_guess(guess, request, response, user, session)
+    except Exception:
+        await session.rollback()
+        raise
+
+
+async def _do_make_guess(guess, request, response, user, session):
     day_state = await USStatedleDayRepository(session).get_today_us_state()
     if not day_state:
         day_state = await USStatedleDayRepository(session).generate_new_day_us_state()
@@ -457,68 +404,57 @@ async def make_guess(
         if is_correct:
             guess.us_state_id = day_state.us_state_id
 
-    guess_num = 1
     if user is None:
-        cookie = request.cookies.get("guest_us_statedle")
-        guest_state = read_guest_game_token(cookie, "us_statedle", day_state.id)
-        guesses_count = guest_state["guesses_count"] + 1
-        guess_num = guesses_count
-        won = is_correct
-        is_game_over = is_correct or (guesses_count >= USSTATEDLE_CONFIG.max_guesses)
-        token = create_guest_game_token("us_statedle", day_state.id, guesses_count, is_game_over, won)
-        response.set_cookie("guest_us_statedle", token, httponly=True, samesite="lax", max_age=86400 * 2)
-
-        guess_create = USStateGuessCreate(
-            guess=guess.guess,
-            us_state_id=guess.us_state_id,
-            day_id=day_state.id,
-            user_id=None,
-            answer=is_correct,
-            elapsed_seconds=guess.elapsed_seconds,
+        participation = await record_guest_action(
+            session, request, response, "us_statedle", day_state.id,
+            max_guesses=USSTATEDLE_CONFIG.max_guesses, won=is_correct,
         )
-        await record_guest_action(session, request, response, "us_statedle", day_state.id, won=is_correct)
-        saved_guess = await USStatedleGuessRepository(session).add_guess(guess_create)
-
+        guess_create = USStateGuessCreate(
+            guess=guess.guess, us_state_id=guess.us_state_id, day_id=day_state.id,
+            user_id=None, answer=is_correct, elapsed_seconds=guess.elapsed_seconds,
+        )
+        saved_guess = await USStatedleGuessRepository(session).add_guess(
+            guess_create, guest_id=participation.guest_id, commit=False,
+        )
         hint = enhance_guess_with_hint(
-            mode="us_statedle",
-            guess_record=saved_guess,
-            guess_number=guess_num,
+            mode="us_statedle", guess_record=saved_guess,
+            guess_number=participation.guesses_made,
             max_guesses=USSTATEDLE_CONFIG.max_guesses,
             target_id=day_state.us_state_id,
             target_name=target_state.name if target_state else None,
         )
-
-        return USStateGuessDisplay(
-            id=saved_guess.id,
-            guess=saved_guess.guess,
-            us_state_id=saved_guess.us_state_id,
-            answer=saved_guess.answer,
-            guessed_at=saved_guess.guessed_at,
-            **hint,
+        result = USStateGuessDisplay(
+            id=saved_guess.id, guess=saved_guess.guess, us_state_id=saved_guess.us_state_id,
+            elapsed_seconds=getattr(saved_guess, "elapsed_seconds", None),
+            answer=saved_guess.answer, guessed_at=saved_guess.guessed_at, **hint,
         )
-    state = await USStatedleStateRepository(session).get_state(user, day_state)
-    if state is None:
-        state = await USStatedleStateRepository(session).create_state(
-            user, day_state,
-            max_questions=USSTATEDLE_CONFIG.max_questions,
-            max_guesses=USSTATEDLE_CONFIG.max_guesses,
+        token = create_guest_game_token(
+            "us_statedle", day_state.id, participation.guesses_made,
+            guest_game_over(participation, USSTATEDLE_CONFIG.max_guesses), participation.won,
         )
+        await session.commit()
+        response.set_cookie(
+            "guest_us_statedle", token, httponly=True, samesite="lax",
+            secure=request.url.scheme == "https" or os.getenv("FRIEND_COOKIE_SECURE", "").lower() in {"true", "1", "yes"}, max_age=86400 * 2,
+        )
+        return result
 
+    state = await get_daily_state(
+        session, USStatedleState, user.id, day_state.id,
+        USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
+    )
+    require_guess_available(state, USSTATEDLE_CONFIG.max_guesses)
     current_game_state = db_state_to_game_state(state)
-    if not game_rules.can_make_guess(current_game_state):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No more guesses left or game over!",
-        )
     guess_create = USStateGuessCreate(
         guess=guess.guess,
         us_state_id=guess.us_state_id,
         day_id=day_state.id,
         user_id=user.id,
         answer=is_correct,
+        elapsed_seconds=guess.elapsed_seconds,
     )
 
-    new_guess = await USStatedleGuessRepository(session).add_guess(guess_create)
+    new_guess = await USStatedleGuessRepository(session).add_guess(guess_create, commit=False)
 
     # Update state
     new_game_state = game_rules.process_guess(current_game_state, is_correct)
@@ -534,7 +470,7 @@ async def make_guess(
         state.points = await USStatedleStateRepository(session).calc_points(
             state, elapsed_seconds=guess.elapsed_seconds, streak=streak
         )
-    await USStatedleStateRepository(session).update_state(state)
+    await USStatedleStateRepository(session).update_state(state, commit=False)
 
     hint = enhance_guess_with_hint(
         mode="us_statedle",
@@ -545,14 +481,17 @@ async def make_guess(
         target_name=target_state.name if target_state else None,
     )
     from datetime import datetime
-    return USStateGuessDisplay(
+    result = USStateGuessDisplay(
         id=int(getattr(new_guess, "id", 0) or 0),
         guess=str(getattr(new_guess, "guess", guess.guess) or guess.guess),
         us_state_id=getattr(new_guess, "us_state_id", guess.us_state_id) if isinstance(getattr(new_guess, "us_state_id", guess.us_state_id), int) else guess.us_state_id,
         answer=is_correct,
         guessed_at=getattr(new_guess, "guessed_at", None) or datetime.now(),
+        elapsed_seconds=getattr(new_guess, "elapsed_seconds", None),
         distance_km=hint.get("distance_km"),
         bearing_degrees=hint.get("bearing_degrees"),
         bearing_direction=hint.get("bearing_direction"),
         bearing_arrow=hint.get("bearing_arrow"),
     )
+    await session.commit()
+    return result

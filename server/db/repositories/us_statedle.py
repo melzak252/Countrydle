@@ -1,5 +1,6 @@
 from datetime import date
 
+from daily_clock import utc_today
 from typing import List, Optional
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import joinedload
@@ -16,6 +17,7 @@ from schemas.us_statedle import USStateGuessCreate, USStateQuestionCreate
 from schemas.countrydle import LeaderboardEntry
 from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from game_logic import count_consecutive_daily_wins
+from db.repositories.question_accounting import get_daily_state, lock_question_state
 
 
 class USStatedleDayRepository:
@@ -23,7 +25,7 @@ class USStatedleDayRepository:
         self.session = session
 
     async def get_today_us_state(self) -> Optional[USStatedleDay]:
-        today = func.current_date()
+        today = utc_today()
         result = await self.session.execute(
             select(USStatedleDay).where(USStatedleDay.date == today)
         )
@@ -36,6 +38,7 @@ class USStatedleDayRepository:
         return result.scalar_one_or_none()
 
     async def generate_new_day_us_state(self, cooldown_days: int = 25) -> USStatedleDay:
+        target_date = utc_today()
         import random
         recent_subq = (
             select(USStatedleDay.us_state_id)
@@ -55,19 +58,19 @@ class USStatedleDayRepository:
 
         us_state = random.choice(eligible)
 
-        new_day = USStatedleDay(us_state_id=us_state.id)
+        new_day = USStatedleDay(us_state_id=us_state.id, date=target_date)
         self.session.add(new_day)
         await self.session.commit()
         await self.session.refresh(new_day)
         return new_day
 
     async def get_history(self) -> List[USStatedleDay]:
-        from datetime import date
+        today = utc_today()
 
         result = await self.session.execute(
             select(USStatedleDay)
             .options(joinedload(USStatedleDay.us_state))
-            .where(USStatedleDay.date < date.today())
+            .where(USStatedleDay.date < today)
             .order_by(USStatedleDay.date.desc())
         )
         return result.scalars().all()
@@ -80,14 +83,7 @@ class USStatedleStateRepository:
     async def get_state(
         self, user: User, day: USStatedleDay
     ) -> Optional[USStatedleState]:
-        result = await self.session.execute(
-            select(USStatedleState).where(
-                and_(
-                    USStatedleState.user_id == user.id, USStatedleState.day_id == day.id
-                )
-            )
-        )
-        return result.scalar_one_or_none()
+        return await lock_question_state(self.session, USStatedleState, user.id, day.id)
 
     async def create_state(
         self,
@@ -95,27 +91,22 @@ class USStatedleStateRepository:
         day: USStatedleDay,
         max_questions: int = 8,
         max_guesses: int = 3,
+        *,
+        commit: bool = True,
     ) -> USStatedleState:
-        from db.repositories.question_accounting import lock_question_state
-        existing = await lock_question_state(self.session, USStatedleState, user.id, day.id)
-        if existing is not None:
-            await self.session.commit()
-            return existing
-        new_state = USStatedleState(
-            user_id=user.id,
-            day_id=day.id,
-            remaining_questions=max_questions,
-            remaining_guesses=max_guesses,
+        state = await get_daily_state(
+            self.session, USStatedleState, user.id, day.id, max_questions, max_guesses,
         )
-        self.session.add(new_state)
-        await self.session.commit()
-        await self.session.refresh(new_state)
-        return new_state
+        if commit:
+            await self.session.commit()
+        return state
 
-    async def update_state(self, state: USStatedleState) -> USStatedleState:
+    async def update_state(self, state: USStatedleState, *, commit: bool = True) -> USStatedleState:
         self.session.add(state)
-        await self.session.commit()
-        await self.session.refresh(state)
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         return state
 
     async def get_current_streak(self, user_id: int, puzzle_date: date) -> int:
@@ -166,8 +157,10 @@ class USStatedleGuessRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_guess(self, guess_create: USStateGuessCreate, *, commit: bool = True) -> USStatedleGuess:
-        new_guess = USStatedleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
+    async def add_guess(
+        self, guess_create: USStateGuessCreate, *, commit: bool = True, guest_id: str | None = None
+    ) -> USStatedleGuess:
+        new_guess = USStatedleGuess(**guess_create.model_dump(), guest_id=guest_id)
         self.session.add(new_guess)
         if commit:
             await self.session.commit()
@@ -196,12 +189,14 @@ class USStatedleQuestionRepository:
         self.session = session
 
     async def create_question(
-        self, question_create: USStateQuestionCreate
+        self, question_create: USStateQuestionCreate, *, guest_id: str | None = None
     ) -> USStatedleQuestion:
         data = question_create.model_dump()
         # Remove fields that are not in the DB model
         data.pop("intent", None)
         data.pop("required_info", None)
+        data.pop("fact_provenance", None)
+        data["guest_id"] = guest_id
         new_question = USStatedleQuestion(**data)
         self.session.add(new_question)
         await self.session.flush()

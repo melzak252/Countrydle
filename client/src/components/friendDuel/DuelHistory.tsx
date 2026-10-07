@@ -329,7 +329,6 @@ export default function DuelHistory({
 
   const scrollRef = useRef<HTMLDivElement>(null);
   
-
   const combined = useMemo(() => {
     const map = new Map(older.map(item => [item.id, item]));
     for (const item of snapshot.history) {

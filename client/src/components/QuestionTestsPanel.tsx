@@ -5,6 +5,7 @@ import { Loader2, Play, RefreshCw, Sparkles, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { adminService } from '../services/api';
 import type { AnswerReport, QuestionTestEntity, QuestionTestMode, QuestionTestRequest, QuestionTestResult } from '../types';
+import FactProvenance from './FactProvenance';
 
 const MODE_LABELS: Record<QuestionTestMode | 'continental', string> = {
   countrydle: 'Countrydle',
@@ -271,6 +272,7 @@ export default function QuestionTestsPanel({
             <div><dt className="text-sm text-slate-400">{t('historicalServer')}</dt><dd className="break-words font-mono text-sm text-slate-300">{report.details.server_version ?? t('notRecorded')}</dd></div>
             <div><dt className="text-sm text-slate-400">{t('historicalExplanation')}</dt><dd className="whitespace-pre-wrap break-words text-slate-300">{report.details.explanation || t('noExplanation')}</dd></div>
           </dl>
+          <FactProvenance records={report.details.fact_provenance} />
         </article>}
         {completed ? <article className={cardClass} aria-labelledby="current-answer-title">
           <h2 id="current-answer-title" className="text-lg font-semibold text-sand-100">{t('currentResult')}</h2>
@@ -293,6 +295,7 @@ export default function QuestionTestsPanel({
             <div><dt className="text-sm text-slate-400">{t('serverDuration')}</dt><dd className="text-slate-300">{completed.result.duration_ms.toLocaleString(i18n.language)} ms</dd></div>
             <div className="min-w-0 sm:col-span-2"><dt className="text-sm text-slate-400">{t('currentServer')}</dt><dd className="break-words font-mono text-sm text-slate-300">{completed.result.server_version}</dd></div>
           </dl>
+          <FactProvenance records={completed.result.fact_provenance} />
           <details className="min-w-0 border-t border-white/10 pt-3">
             <summary className="cursor-pointer text-sm text-emerald-300">{t('diagnostics')}</summary>
             <p className="mt-2 text-sm text-slate-300">{t('diagnosticsHelp')}</p>

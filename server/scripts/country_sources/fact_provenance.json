@@ -1,0 +1,17 @@
+[
+  {
+    "country_name": "Poland",
+    "relation": "membership",
+    "value": "NATO",
+    "provenance": {
+      "status": "cited",
+      "citation": "NATO, Poland and NATO: On 12 March 1999, the Polish Foreign Minister submitted the country's Instrument of Accession to the US Secretary of State.",
+      "source_url": "https://www.nato.int/en/about-us/nato-history/history-by-theme/my-country-and-nato/poland-and-nato",
+      "effective_from": "1999-03-12",
+      "effective_to": null,
+      "retrieved_at": null,
+      "updated_at": null,
+      "convention": "Current membership; accession inclusive. Null effective_to means no recorded end, not proof of historical membership before accession."
+    }
+  }
+]

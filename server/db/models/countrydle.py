@@ -12,8 +12,8 @@ from sqlalchemy import (
     and_,
 )
 from sqlalchemy.orm import relationship, foreign
-from sqlalchemy.sql import func
 
+from daily_clock import utc_today
 from db.base import Base
 from db.models.guess import CountrydleGuess
 from db.models.question import CountrydleQuestion
@@ -25,7 +25,7 @@ class CountrydleDay(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     country_id = Column(Integer, ForeignKey("countries.id"))
-    date = Column(Date, nullable=False, default=func.now())
+    date = Column(Date, nullable=False, default=utc_today)
 
     country = relationship("Country")
 

@@ -10,9 +10,11 @@ import csv
 import json
 import os
 import sqlite3
+import sys
 from pathlib import Path
 
 SOURCE_DIR = Path(__file__).with_name("country_sources")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def provision_country_sources(data_dir: Path) -> None:
@@ -90,6 +92,8 @@ def add_kosovo_facts(connection: sqlite3.Connection) -> bool:
             "ON CONFLICT (country_id, border_country_name) DO UPDATE SET border_cca3 = excluded.border_cca3",
             (border_name,),
         )
+    from country_fact_provenance import ensure_schema
+    ensure_schema(connection)
     return True
 
 

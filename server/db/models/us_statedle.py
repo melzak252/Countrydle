@@ -4,12 +4,14 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
+from daily_clock import utc_today
 from db.base import Base
 
 
@@ -18,7 +20,7 @@ class USStatedleDay(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     us_state_id = Column(Integer, ForeignKey("us_states.id"))
-    date = Column(Date, nullable=False, default=func.now())
+    date = Column(Date, nullable=False, default=utc_today)
 
     us_state = relationship("USState")
 
@@ -43,10 +45,13 @@ class USStatedleState(Base):
 
 class USStatedleGuess(Base):
     __tablename__ = "us_statedle_guesses"
+    __table_args__ = (Index("ix_us_statedle_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("us_statedle_days.id"))
+    elapsed_seconds = Column(Integer, nullable=True)
     guess = Column(String, nullable=False)
     us_state_id = Column(Integer, ForeignKey("us_states.id"), nullable=True)
     guessed_at = Column(DateTime, default=func.now())
@@ -59,9 +64,11 @@ class USStatedleGuess(Base):
 
 class USStatedleQuestion(Base):
     __tablename__ = "us_statedle_questions"
+    __table_args__ = (Index("ix_us_statedle_questions_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("us_statedle_days.id"))
     context = Column(String)
     original_question = Column(String, nullable=False)

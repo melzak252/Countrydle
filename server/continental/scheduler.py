@@ -1,6 +1,6 @@
 import logging
 import random
-from datetime import date, timedelta
+from datetime import timedelta
 from typing import Set
 
 from sqlalchemy import and_, select
@@ -9,13 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from continental.utils import get_continent_country_ids
 from db.models.continental import ContinentCode, ContinentalDay
 from db.repositories.continental import COOLDOWN_DAYS
+from daily_clock import utc_today
 
 logger = logging.getLogger("countrydle.continental.scheduler")
 
 
 async def generate_continental_days(session: AsyncSession, days_ahead: int = 5):
     """Generate daily puzzles for Europe, Asia, Africa, and Americas for the next N days."""
-    today = date.today()
+    today = utc_today()
     for offset in range(days_ahead):
         day_date = today + timedelta(days=offset)
 
@@ -49,8 +50,7 @@ async def generate_continental_days(session: AsyncSession, days_ahead: int = 5):
             # Fetch candidate countries for this continent
             candidate_ids = await get_continent_country_ids(continent, session)
             if not candidate_ids:
-                logger.error("No candidate countries found for %s", continent)
-                continue
+                raise ValueError(f"No candidate countries found for {continent.value}")
 
             # Eligible = candidate - recent cooldown - countries already picked today in other continental modes
             eligible_ids = [

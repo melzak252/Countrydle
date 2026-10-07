@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.user import UserDisplay
+from schemas.fact_provenance import FactProvenance, FactProvenanceRecord
 
 
 class CountryFactCountry(BaseModel):
@@ -43,6 +44,7 @@ class CountryFactsResponse(BaseModel):
     country: CountryFactCountry
     scalar_facts: list[ScalarCountryFact]
     list_facts: list[ListCountryFact]
+    fact_provenance: list[FactProvenanceRecord] = Field(default_factory=list)
 
 
 class ScalarFactUpdate(BaseModel):
@@ -72,6 +74,14 @@ class ListFactDelete(BaseModel):
     value: str
     note: str | None = None
 
+
+
+class FactProvenanceUpdate(BaseModel):
+    country_id: int = Field(ge=1)
+    relation: str
+    value: str | None
+    provenance: FactProvenance
+    note: str | None = None
 
 class CountryFactChangeLogDisplay(BaseModel):
     id: int

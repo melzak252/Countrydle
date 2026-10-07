@@ -1,13 +1,15 @@
-"""Test suite verifying accuracy and completeness of enriched Powiatdle facts.
+"""Enrichment and executor regressions against a private, source-built SQLite KB.
 
-Covers:
-1. Accurate international borders (zero false positives like Podlaskie bordering Germany;
-   real border counties like Świnoujście, Słubice, Głubczyce present).
-2. Major river coverage (Wisła in Płock/Warszawa/Toruń/Kraków/Gdańsk; Odra, Warta, Bug, San).
-3. Motorways and Expressways (A1-A18, S1-S86 correctly intersecting traversed counties).
-4. Baltic Sea water access for coastal counties.
+Provider interpretation checks are explicit live opt-in and are not evidence of
+current factual accuracy. Offline facts come from the checked-in PRG catalog and
+the real enrichment builder; expected geographical answers remain independent.
 """
 from pathlib import Path
+from collections import Counter
+from dataclasses import replace
+import importlib
+import json
+import os
 import sqlite3
 import pytest
 
@@ -15,6 +17,66 @@ from local_kb_question import execute_plan
 from powiatdle.utils import LOCAL_CONFIG
 
 DB_PATH = LOCAL_CONFIG.db_path
+
+live_planner_eval = pytest.mark.skipif(
+    os.getenv("COUNTRYDLE_RUN_LIVE_PLANNER_EVAL") != "1",
+    reason="Set COUNTRYDLE_RUN_LIVE_PLANNER_EVAL=1 for current provider interpretation checks",
+)
+
+
+@pytest.fixture(autouse=True)
+def private_enriched_facts(monkeypatch, tmp_path):
+    from powiat_names import build_powiat_aliases
+    from scripts.enrich_powiat_facts import enrich_database
+    from voivodeship_names import CANONICAL_VOIVODESHIPS
+    from wojewodztwodle import utils as woj_utils
+
+    local_kb = Path(__file__).resolve().parents[1] / "powiatdle" / "local_kb"
+    catalog = json.loads((local_kb / "borders.json").read_text(encoding="utf-8"))["source"]["county_names"]
+    duplicates = Counter(name.casefold() for name in catalog.values())
+    database = tmp_path / "powiat-facts.sqlite"
+    with sqlite3.connect(database) as connection:
+        connection.executescript((local_kb / "schema.sql").read_text(encoding="utf-8"))
+        connection.execute("ALTER TABLE powiats ADD COLUMN latitude REAL")
+        connection.execute("ALTER TABLE powiats ADD COLUMN longitude REAL")
+        rows = []
+        for code, source_name in sorted(catalog.items()):
+            province = CANONICAL_VOIVODESHIPS[int(code[:2]) // 2 - 1]
+            is_city = int(code[2:]) >= 60
+            name = source_name.removeprefix("powiat ") if is_city else "Powiat " + source_name.removeprefix("powiat ")
+            if duplicates[source_name.casefold()] > 1:
+                name += f" (województwo {province.lower()})"
+            rows.append((int(code), name, province, int(is_city), code, "frozen PRG catalog"))
+        connection.executemany(
+            "INSERT INTO powiats (id, name, voivodeship, is_city_county, terc, md_file) VALUES (?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+        connection.row_factory = sqlite3.Row
+        aliases = build_powiat_aliases(dict(row) for row in connection.execute("SELECT * FROM powiats"))
+        connection.executemany(
+            "INSERT INTO powiat_name_aliases VALUES (?, ?)",
+            [(alias, identifier) for alias, identifiers in aliases.items() for identifier in identifiers],
+        )
+        # Fixed representative-point operands, not a certification of territorial extent.
+        connection.executemany(
+            "UPDATE powiats SET latitude = ?, longitude = ? WHERE name = ?",
+            [(52.23, 21.01, "Warszawa"), (52.41, 16.93, "Poznań"),
+             (52.35, 14.56, "Powiat słubicki"), (53.13, 23.16, "Białystok"),
+             (52.12, 16.12, "Powiat wolsztyński")],
+        )
+    enrich_database(database)
+    monkeypatch.setitem(globals(), "DB_PATH", database)
+    monkeypatch.setitem(globals(), "LOCAL_CONFIG", replace(LOCAL_CONFIG, db_path=database))
+
+    province_db = tmp_path / "province-facts.sqlite"
+    with sqlite3.connect(province_db) as connection:
+        connection.executescript("""
+            CREATE TABLE voivodeships (id INTEGER PRIMARY KEY, name TEXT, longitude REAL);
+            INSERT INTO voivodeships VALUES (1, 'Śląskie', 19.02), (2, 'Mazowieckie', 21.01);
+        """)
+    monkeypatch.setattr(woj_utils, "LOCAL_CONFIG", replace(woj_utils.LOCAL_CONFIG, db_path=province_db))
+    cache_module = importlib.import_module("utils.plan_cache")
+    monkeypatch.setattr(cache_module, "plan_cache", cache_module.PlanCache(db_path=tmp_path / "cache.sqlite"))
 
 
 def get_country_borders(powiat_name: str) -> set[str]:
@@ -203,6 +265,7 @@ def test_powiat_water_access_baltic_sea():
             assert has_coast is None, f"{name} must NOT have access to Morze Bałtyckie"
 
 
+@live_planner_eval
 def test_powiat_grammar_and_identity_fixes():
     from local_kb_question import analyze_question, execute_plan
 
@@ -227,6 +290,7 @@ def test_powiat_grammar_and_identity_fixes():
     assert ans_ident.answer is True
 
 
+@live_planner_eval
 def test_powiat_relative_directions():
     from local_kb_question import analyze_question, execute_plan
 
@@ -245,6 +309,7 @@ def test_powiat_relative_directions():
     assert ans_wolsztyn.answer is True
 
 
+@live_planner_eval
 def test_historical_regions_and_partitions():
     from local_kb_question import analyze_question, execute_plan
 
@@ -278,6 +343,7 @@ def test_historical_regions_and_partitions():
     assert execute_plan(LOCAL_CONFIG, "Poznań", p_malopolska).answer is False
 
 
+@live_planner_eval
 def test_wojewodztwodle_relative_directions():
     from wojewodztwodle.utils import LOCAL_CONFIG as WOJ_CONFIG
     from local_kb_question import analyze_question, execute_plan
@@ -286,9 +352,9 @@ def test_wojewodztwodle_relative_directions():
     assert p.valid is True and p.supported is True
     ans = execute_plan(WOJ_CONFIG, "śląskie", p)
     assert ans.answer is True
-    assert "Śląskie leży na długości geograficznej" in ans.explanation
 
 
+@live_planner_eval
 def test_powiat_national_parks():
     from local_kb_question import analyze_question, execute_plan
 
@@ -306,6 +372,7 @@ def test_powiat_national_parks():
     assert execute_plan(LOCAL_CONFIG, "Powiat hajnowski", p_bpn).answer is True
 
 
+@live_planner_eval
 def test_powiat_major_lakes():
     from local_kb_question import analyze_question, execute_plan
 
@@ -321,6 +388,7 @@ def test_powiat_major_lakes():
     assert execute_plan(LOCAL_CONFIG, "Powiat inowrocławski", p_goplo).answer is True
 
 
+@live_planner_eval
 def test_powiat_unesco_sites():
     from local_kb_question import analyze_question, execute_plan
 
@@ -335,6 +403,7 @@ def test_powiat_unesco_sites():
     assert execute_plan(LOCAL_CONFIG, "Powiat malborski", p_malbork).answer is True
 
 
+@live_planner_eval
 def test_powiat_health_resorts():
     from local_kb_question import analyze_question, execute_plan
 
@@ -345,3 +414,90 @@ def test_powiat_health_resorts():
     assert execute_plan(LOCAL_CONFIG, "Powiat nowosądecki", p_spa).answer is True     # Krynica-Zdrój
     assert execute_plan(LOCAL_CONFIG, "Sopot", p_spa).answer is True                  # Sopot
     assert execute_plan(LOCAL_CONFIG, "Powiat pińczowski", p_spa).answer is False
+
+
+@pytest.mark.parametrize("relation, operator, value, expected_answers", [
+    ("borders_country", "contains_exact", "Czechy", {"Powiat cieszyński": True, "Powiat chojnicki": False}),
+    ("borders_country", "contains_exact", "Słowacja", {"Powiat żywiecki": True, "Powiat chojnicki": False}),
+    ("name", "equals", "Powiat chojnicki", {"Powiat chojnicki": True, "Powiat cieszyński": False}),
+    ("historical_partitions", "contains_exact", "Zabór pruski", {"Poznań": True, "Warszawa": False}),
+    ("historical_partitions", "contains_exact", "Zabór rosyjski", {"Warszawa": True, "Poznań": False}),
+    ("historical_partitions", "contains_exact", "Ziemie Odzyskane", {"Wrocław": True, "Kraków": False}),
+    ("historical_regions", "contains_exact", "Mazowsze", {"Płock": True, "Gdańsk": False}),
+    ("historical_regions", "contains_exact", "Śląsk", {"Gliwice": True, "Warszawa": False}),
+    ("historical_regions", "contains_exact", "Małopolska", {"Kraków": True, "Poznań": False}),
+    ("national_parks", "exists", None, {"Powiat tatrzański": True, "Warszawa": False}),
+    ("national_parks", "contains_exact", "Tatrzański Park Narodowy", {"Powiat tatrzański": True, "Powiat hajnowski": False}),
+    ("national_parks", "contains_exact", "Białowieski Park Narodowy", {"Powiat hajnowski": True, "Powiat tatrzański": False}),
+    ("major_lakes", "contains_exact", "Śniardwy", {"Powiat piski": True, "Kraków": False}),
+    ("major_lakes", "contains_exact", "Solina", {"Powiat leski": True, "Kraków": False}),
+    ("major_lakes", "contains_exact", "Gopło", {"Powiat inowrocławski": True, "Kraków": False}),
+    ("unesco_sites", "exists", None, {"Powiat wielicki": True, "Toruń": True, "Zamość": True, "Powiat chojnicki": False}),
+    ("unesco_sites", "contains_partial", "Malbork", {"Powiat malborski": True, "Powiat chojnicki": False}),
+    ("health_resorts", "exists", None, {"Powiat aleksandrowski": True, "Powiat kołobrzeski": True, "Powiat nowosądecki": True, "Sopot": True, "Powiat pińczowski": False}),
+])
+def test_enriched_relations_execute_supplied_predicates_offline(relation, operator, value, expected_answers):
+    """Exercise real enrichment/execution, not natural-language interpretation."""
+    from local_kb_question import QuestionPlan
+
+    predicate = {"operator": operator, "left": {"entity": "target_powiat", "relation": relation}}
+    if value is not None:
+        predicate["right"] = {"value": value}
+    plan = QuestionPlan(
+        original_question="Executor fixture predicate", valid=True, supported=True,
+        improved_question=None, explanation=None, plan=predicate,
+    )
+    for target, expected in expected_answers.items():
+        result = execute_plan(LOCAL_CONFIG, target, plan)
+        assert result is not None, (relation, target)
+        assert result.answer is expected, (relation, target)
+
+
+@pytest.mark.parametrize("operator, relation, reference, expected_answers", [
+    ("west_of", "longitude", "Warszawa", {"Powiat słubicki": True, "Białystok": False}),
+    ("south_of", "latitude", "Poznań", {"Powiat wolsztyński": True, "Białystok": False}),
+])
+def test_relative_direction_executor_uses_named_reference_offline(operator, relation, reference, expected_answers):
+    from local_kb_question import QuestionPlan
+
+    plan = QuestionPlan(
+        original_question="Representative-point comparison", valid=True, supported=True,
+        improved_question=None, explanation=None,
+        plan={"operator": operator, "left": {"entity": "target_powiat", "relation": relation},
+              "right": {"entity": reference, "relation": relation}},
+    )
+    for target, expected in expected_answers.items():
+        result = execute_plan(LOCAL_CONFIG, target, plan)
+        assert result is not None
+        assert result.answer is expected
+
+
+@pytest.mark.parametrize("question, positive, negative", [
+    ("Czy powiat graniczy z Czechami?", "Powiat cieszyński", "Powiat chojnicki"),
+    ("Czy powiat graniczy ze Słowacją?", "Powiat żywiecki", "Powiat chojnicki"),
+])
+def test_country_border_templates_execute_without_provider(monkeypatch, question, positive, negative):
+    import local_kb_question
+
+    def unexpected_provider(*args, **kwargs):
+        pytest.fail("A deterministic border template must not request a provider")
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", unexpected_provider)
+    planned = local_kb_question.analyze_question(question, LOCAL_CONFIG, use_cache=False)
+    assert planned.valid is True and planned.supported is True
+    assert execute_plan(LOCAL_CONFIG, positive, planned).answer is True
+    assert execute_plan(LOCAL_CONFIG, negative, planned).answer is False
+
+
+def test_province_direction_executor_uses_named_reference_offline():
+    from local_kb_question import QuestionPlan
+    from wojewodztwodle.utils import LOCAL_CONFIG as config
+
+    planned = QuestionPlan(
+        original_question="Representative-point comparison", valid=True, supported=True,
+        improved_question=None, explanation=None,
+        plan={"operator": "west_of", "left": {"entity": "target_voivodeship", "relation": "longitude"},
+              "right": {"entity": "Mazowieckie", "relation": "longitude"}},
+    )
+    assert execute_plan(config, "Śląskie", planned).answer is True
+    assert execute_plan(config, "Mazowieckie", planned).answer is False

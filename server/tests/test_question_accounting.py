@@ -1,20 +1,22 @@
 """Question accounting against real PostgreSQL transactions, never provider APIs."""
 import asyncio
 import os
-from datetime import date, datetime
+from http.cookies import SimpleCookie
 from importlib import import_module
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException, Request, Response
-from utils.guest_session import check_guest_question_available
+from daily_clock import utc_today
+from utils.guest_session import GUEST_IDENTITY_COOKIE, check_guest_question_available, get_guest_identity
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from db.base import Base
 import db.models as models
+from countrydle.local_answering import LocalAnswer
 from db.models import Country, CountrydleDay, CountrydleQuestion, CountrydleState, User
 from db.models.continental import ContinentalDay, ContinentalQuestion, ContinentalState, ContinentCode
 from db.models.guest_participation import GuestParticipation
@@ -31,6 +33,15 @@ MODES = [
     ("powiatdle", PowiatdleDay, PowiatdleState, PowiatdleQuestion, "PowiatdleDayRepository", "get_today_powiat", "putils", 15),
     ("wojewodztwodle", WojewodztwodleDay, WojewodztwodleState, WojewodztwodleQuestion, "WojewodztwodleDayRepository", "get_today_wojewodztwo", "wutils", 5),
 ]
+
+
+def http_request(path="/question", *, method="POST", headers=()):
+    return Request({
+        "type": "http", "http_version": "1.1", "method": method, "scheme": "https",
+        "path": path, "raw_path": path.encode(), "root_path": "", "query_string": b"",
+        "headers": list(headers), "server": ("accounting.test", 443),
+        "client": ("127.0.0.1", 12345),
+    })
 
 
 @pytest.fixture
@@ -50,7 +61,7 @@ async def accounting_db():
             models_needed = (
                 "User", "Country", "GuestParticipation", "USState", "Powiat", "Wojewodztwo",
                 "CountrydleGuess", "ContinentalGuess", "USStatedleGuess", "PowiatdleGuess",
-                "WojewodztwodleGuess", "FlagdleDay", "FlagdleState",
+                "WojewodztwodleGuess", "FlagdleDay", "FlagdleState", "FlagdleQuestion",
             )
             tables = [getattr(models, name) for name in models_needed]
             for _, day, state, question, *_ in MODES:
@@ -76,7 +87,7 @@ async def accounting_db():
 async def daily_mode(request, accounting_db, monkeypatch):
     name, day_model, state_model, question_model, repo_name, day_method, utils_name, maximum = request.param
     module = import_module(name)
-    day_values = {"id": 1, "date": date.today()}
+    day_values = {"id": 1, "date": utc_today()}
     if name == "continental":
         day_values["continent"] = ContinentCode.EUROPE
     if name in {"countrydle", "continental"}:
@@ -90,16 +101,27 @@ async def daily_mode(request, accounting_db, monkeypatch):
         return day
 
     monkeypatch.setattr(getattr(module, repo_name), day_method, get_day)
-    return SimpleNamespace(module=module, name=name, state_model=state_model, question_model=question_model,
-                           utils=getattr(module, utils_name), maximum=maximum, factory=accounting_db)
+    response = Response()
+    identity = get_guest_identity(http_request("/state", method="GET"), response)
+    cookie = SimpleCookie()
+    cookie.load(response.headers["set-cookie"])
+    return SimpleNamespace(
+        module=module, name=name, state_model=state_model, question_model=question_model,
+        utils=getattr(module, utils_name), maximum=maximum, factory=accounting_db,
+        day=day, identity=identity, token=cookie[GUEST_IDENTITY_COOKIE].value,
+        participation_mode="continental:europe" if name == "continental" else name,
+        max_guesses=2 if name == "wojewodztwodle" else 3,
+    )
+
+
+def guest_request(mode):
+    return http_request(headers=[(b"cookie", f"{GUEST_IDENTITY_COOKIE}={mode.token}".encode())])
 
 
 async def request_question(mode, user_id=1):
     async with mode.factory() as session:
         user = await session.get(User, user_id) if user_id else None
-        request = Request({"type": "http", "method": "POST", "scheme": "http", "path": "/question", "headers": []})
-        # The same durable browser identity across concurrent guest requests.
-        request.state.guest_identity = "00000000-0000-0000-0000-000000000001"
+        request = guest_request(mode)
         kwargs = dict(question=QuestionBase(question="Is it in Europe?"), user=user,
                       session=session, request=request, response=Response())
         if mode.name == "continental":
@@ -185,8 +207,8 @@ async def test_concurrent_last_slot_commits_one_question(daily_mode, monkeypatch
     mode = daily_mode
     async with mode.factory() as session:
         if guest:
-            session.add(GuestParticipation(guest_id="00000000-0000-0000-0000-000000000001",
-                mode="continental:europe" if mode.name == "continental" else mode.name,
+            session.add(GuestParticipation(guest_id=mode.identity,
+                mode=mode.participation_mode,
                 day_id=1, questions_asked=mode.maximum - 1, guesses_made=0, won=False))
         else:
             session.add(mode.state_model(user_id=1, day_id=1, questions_asked=mode.maximum - 1,
@@ -280,50 +302,110 @@ async def test_rejected_persistence_rolls_back_question_and_quota(daily_mode, mo
         assert all(state.questions_asked == 0 for state in (await session.scalars(select(mode.state_model))).all())
 
 
-@pytest.mark.parametrize("question_ids", [[1, 1, 2, 3, 4], [1, 2, 3, 4, 999999]])
-async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_existing_progress(daily_mode, question_ids):
+@pytest.mark.parametrize("claim_case", ["empty_account", "existing_account", "missing_identity"])
+async def test_guest_sync_claims_original_identity_history_without_overwriting_account_progress(daily_mode, claim_case):
     mode = daily_mode
+    existing_progress = claim_case == "existing_account"
+    signed_identity = claim_case != "missing_identity"
     async with mode.factory() as session:
         session.add_all([
-            mode.question_model(id=1, day_id=1, original_question="Known yes?", question="Known yes?",
+            User(id=2, username="other", email="other@example.com", hashed_password="unused"),
+            GuestParticipation(guest_id=mode.identity, mode=mode.participation_mode, day_id=1,
+                               questions_asked=2, guesses_made=0, won=False),
+            mode.question_model(id=1, guest_id=mode.identity, day_id=1,
+                                original_question="Known yes?", question="Known yes?",
                                 valid=True, answer=True, explanation="Verified fact"),
-            mode.question_model(id=2, day_id=1, original_question="Known no?", question="Known no?",
+            mode.question_model(id=2, guest_id=mode.identity, day_id=1,
+                                original_question="Known no?", question="Known no?",
                                 valid=True, answer=False, explanation="Verified fact"),
-            mode.question_model(id=3, day_id=1, original_question="Unknown?", question="Unknown?",
-                                valid=True, answer=None, explanation="No evidence"),
-            mode.question_model(id=4, day_id=1, original_question="Invalid?", question="Invalid?",
-                                valid=False, answer=False, explanation="Invalid"),
+            mode.question_model(id=3, guest_id=str(uuid4()), day_id=1,
+                                original_question="Other browser?", question="Other browser?",
+                                valid=True, answer=True, explanation="Verified fact"),
+            mode.question_model(id=4, day_id=1, original_question="Legacy unidentified?",
+                                question="Legacy unidentified?", valid=True, answer=True,
+                                explanation="Verified fact"),
         ])
+        if existing_progress:
+            session.add(mode.state_model(user_id=1, day_id=1, questions_asked=1,
+                                         remaining_questions=mode.maximum - 1,
+                                         guesses_made=0, remaining_guesses=mode.max_guesses))
+            session.add(mode.question_model(id=5, user_id=1, day_id=1,
+                                           original_question="Account history?", question="Account history?",
+                                           valid=True, answer=False, explanation="Verified fact"))
         await session.commit()
     schema_name = {
         "countrydle": "CountrydleSyncSchema", "continental": "ContinentalSyncSchema",
         "us_statedle": "USStatedleSyncSchema", "powiatdle": "PowiatdleSyncSchema",
         "wojewodztwodle": "WojewodztwodleSyncSchema",
     }[mode.name]
-    schema = getattr(mode.module, schema_name)
-    body = schema.model_validate({
-        "date": str(date.today()), "questions": question_ids, "guesses": [],
-        "state": {"questions_asked": len(question_ids), "remaining_questions": mode.maximum - len(question_ids), "guesses_made": 0,
-                  "remaining_guesses": 2 if mode.name == "wojewodztwodle" else 3,
+    body = getattr(mode.module, schema_name).model_validate({
+        "date": str(mode.day.date), "questions": [1, 1, 2, 3, 4, 999999], "guesses": [],
+        "state": {"questions_asked": mode.maximum, "remaining_questions": 0,
+                  "guesses_made": 0, "remaining_guesses": mode.max_guesses,
                   "won": False, "is_game_over": False},
     })
-    for _ in range(2):
+    for user_id in (1, 1, 2):
         async with mode.factory() as session:
-            user = await session.get(User, 1)
-            kwargs = dict(sync_data=body, user=user, session=session,
-                          request=Request({"type": "http", "headers": []}))
+            kwargs = dict(sync_data=body, user=await session.get(User, user_id),
+                          session=session, request=guest_request(mode) if signed_identity
+                          else http_request("/sync"))
             if mode.name == "continental":
                 kwargs["continent"] = ContinentCode.EUROPE
             result = await mode.module.sync_guest_data(**kwargs)
-            assert (result.state.questions_asked, result.state.remaining_questions) == (2, mode.maximum - 2)
-            assert {question.id: question.answer for question in result.questions} == {1: True, 2: False}
+            expected_count = (1 if existing_progress else int(signed_identity) * 2) if user_id == 1 else 0
+            assert (result.state.questions_asked, result.state.remaining_questions) == (
+                expected_count, mode.maximum - expected_count,
+            )
+            expected_questions = ({5: False} if existing_progress else {1: True, 2: False}) if signed_identity and user_id == 1 else {}
+            assert {question.id: question.answer for question in result.questions} == expected_questions
     async with mode.factory() as session:
-        unresolved = await session.get(mode.question_model, 3)
-        invalid = await session.get(mode.question_model, 4)
-        assert unresolved.user_id is None and invalid.user_id is None
+        history = {row.id: row.user_id for row in (await session.scalars(select(mode.question_model))).all()}
+        expected_history = {1: None, 2: None, 3: None, 4: None}
+        if existing_progress:
+            expected_history[5] = 1
+        elif signed_identity:
+            expected_history.update({1: 1, 2: 1})
+        assert history == expected_history
+        participation = await session.scalar(select(GuestParticipation))
+        assert (participation.guest_id, participation.user_id, participation.questions_asked) == (
+            mode.identity, 1 if signed_identity else None, 2,
+        )
+
+
+@pytest.mark.parametrize("guest", [False, True])
+@pytest.mark.parametrize("terminal", ["won", "quota"])
+async def test_finite_completed_game_rejects_questions_without_changing_progress(daily_mode, monkeypatch, guest, terminal):
+    mode = daily_mode
+    guesses = 1 if terminal == "won" else mode.max_guesses
+    async with mode.factory() as session:
+        if guest:
+            session.add(GuestParticipation(
+                guest_id=mode.identity, mode=mode.participation_mode, day_id=1,
+                questions_asked=1, guesses_made=guesses, won=terminal == "won",
+            ))
+        else:
+            session.add(mode.state_model(
+                user_id=1, day_id=1, questions_asked=1, remaining_questions=mode.maximum - 1,
+                guesses_made=guesses, remaining_guesses=mode.max_guesses - guesses,
+                is_game_over=True, won=terminal == "won",
+            ))
+        await session.commit()
+
+    async def unexpected_analysis(*args, **kwargs):
+        pytest.fail("completed finite games must reject before question analysis")
+
+    monkeypatch.setattr(mode.utils, "analyze_and_answer_locally", unexpected_analysis)
+    with pytest.raises(HTTPException) as rejected:
+        await request_question(mode, None if guest else 1)
+    assert rejected.value.status_code == 400
+    async with mode.factory() as session:
+        assert await session.scalar(select(func.count()).select_from(mode.question_model)) == 0
+        progress = await session.scalar(select(GuestParticipation if guest else mode.state_model))
+        assert (progress.questions_asked, progress.guesses_made, progress.won) == (1, guesses, terminal == "won")
+
 
 async def test_country_guest_question_preflight_is_read_only_and_scoped(accounting_db):
-    request = Request({"type": "http", "headers": []})
+    request = http_request()
     request.state.guest_identity = "00000000-0000-0000-0000-000000000001"
     response = Response()
     async with accounting_db() as session:
@@ -347,21 +429,21 @@ async def test_country_guest_question_preflight_is_read_only_and_scoped(accounti
         ])
         await session.commit()
         with pytest.raises(HTTPException) as rejected:
-            await check_guest_question_available(session, request, response, "countrydle", 1, 10)
+            await check_guest_question_available(session, request, response, "countrydle", 1, 10, max_guesses=3)
         assert rejected.value.status_code == 400
-        await check_guest_question_available(session, request, response, "countrydle", 2, 11)
-        await check_guest_question_available(session, request, response, "powiatdle", 1, 11)
-        await check_guest_question_available(session, request, response, "countrydle", 3, 11)
+        await check_guest_question_available(session, request, response, "countrydle", 2, 11, max_guesses=3)
+        await check_guest_question_available(session, request, response, "powiatdle", 1, 11, max_guesses=3)
+        await check_guest_question_available(session, request, response, "countrydle", 3, 11, max_guesses=3)
         rows = (await session.scalars(select(GuestParticipation))).all()
         assert len(rows) == 4
         assert all(row.questions_asked == 10 for row in rows)
 
 
 async def test_country_guest_question_preflight_allows_under_limit_without_creating_row(accounting_db):
-    request = Request({"type": "http", "headers": []})
+    request = http_request()
     request.state.guest_identity = "00000000-0000-0000-0000-000000000003"
     async with accounting_db() as session:
-        await check_guest_question_available(session, request, Response(), "countrydle", 1, 10)
+        await check_guest_question_available(session, request, Response(), "countrydle", 1, 10, max_guesses=3)
         assert await session.scalar(select(func.count()).select_from(GuestParticipation)) == 0
 
 
@@ -370,7 +452,7 @@ async def test_country_guest_at_quota_is_rejected_before_local_analysis(accounti
 
     identity = "00000000-0000-0000-0000-000000000004"
     async with accounting_db() as session:
-        session.add(CountrydleDay(id=1, country_id=1, date=date.today()))
+        session.add(CountrydleDay(id=1, country_id=1, date=utc_today()))
         session.add(GuestParticipation(
             guest_id=identity, mode="countrydle", day_id=1,
             questions_asked=10, guesses_made=0, won=False,
@@ -385,7 +467,7 @@ async def test_country_guest_at_quota_is_rejected_before_local_analysis(accounti
 
     monkeypatch.setattr(countrydle.CountrydleRepository, "get_today_country", get_day)
     monkeypatch.setattr(countrydle.gutils, "analyze_and_answer_locally", unexpected_analysis)
-    request = Request({"type": "http", "method": "POST", "scheme": "http", "path": "/question", "headers": []})
+    request = http_request()
     request.state.guest_identity = identity
     async with accounting_db() as session:
         with pytest.raises(HTTPException) as rejected:
@@ -400,9 +482,11 @@ async def test_flag_null_is_unresolved_but_false_and_true_are_counted(accounting
     import flagdle
 
     async with accounting_db() as session:
-        session.add(models.FlagdleDay(id=1, country_id=1, date=date.today()))
+        session.add(models.FlagdleDay(id=1, country_id=1, date=utc_today()))
         await session.commit()
-    day = SimpleNamespace(id=1, country_id=1, country=SimpleNamespace(name="Poland"))
+    day = SimpleNamespace(id=1, country_id=1, country=SimpleNamespace(
+        name="Poland", official_name="Republic of Poland",
+    ))
 
     async def get_day(*args):
         return day
@@ -413,12 +497,12 @@ async def test_flag_null_is_unresolved_but_false_and_true_are_counted(accounting
     ))
     count = 0
     for answer in [None, False, True]:
-        monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: SimpleNamespace(
+        monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: LocalAnswer(
             answer=answer, question="Is it red?", explanation="Verified flag fact", relation="flag_colors",
         ))
         async with accounting_db() as session:
             user = None if guest else await session.get(User, 1)
-            request = Request({"type": "http", "scheme": "http", "path": "/question", "headers": []})
+            request = http_request()
             request.state.guest_identity = "00000000-0000-0000-0000-000000000001"
             result = await flagdle.ask_flag_question(
                 QuestionBase(question="Is it red?"), request, Response(), user, session,
@@ -429,6 +513,9 @@ async def test_flag_null_is_unresolved_but_false_and_true_are_counted(accounting
         async with accounting_db() as session:
             model = GuestParticipation if guest else models.FlagdleState
             assert await session.scalar(select(func.coalesce(func.sum(model.questions_asked), 0))) == count
+            history = list((await session.scalars(select(models.FlagdleQuestion).order_by(models.FlagdleQuestion.id))).all())
+            assert [row.answer for row in history] == [False, True][:count]
+            assert all(row.fact_provenance == [] for row in history)
 
 
 async def test_flag_planner_does_not_block_event_loop(accounting_db, monkeypatch):
@@ -453,7 +540,7 @@ async def test_flag_planner_does_not_block_event_loop(accounting_db, monkeypatch
     async with accounting_db() as session:
         task = asyncio.create_task(flagdle.ask_flag_question(
             QuestionBase(question="Unknown?"),
-            Request({"type": "http", "headers": []}), Response(), None, session,
+            http_request(), Response(), None, session,
         ))
         try:
             await asyncio.wait_for(entered.wait(), 1)
@@ -468,10 +555,13 @@ async def test_guest_sync_filling_quota_rejects_an_inflight_answer(daily_mode, m
     mode = daily_mode
     async with mode.factory() as session:
         session.add_all([
-            mode.question_model(day_id=1, original_question=f"Known {index}?", question=f"Known {index}?",
+            mode.question_model(guest_id=mode.identity, day_id=1,
+                                original_question=f"Known {index}?", question=f"Known {index}?",
                                 valid=True, answer=False, explanation="Verified fact")
             for index in range(mode.maximum)
         ])
+        session.add(GuestParticipation(guest_id=mode.identity, mode=mode.participation_mode, day_id=1,
+                                       questions_asked=mode.maximum, guesses_made=0, won=False))
         await session.commit()
         ids = list((await session.scalars(select(mode.question_model.id))).all())
     entered, release = asyncio.Event(), asyncio.Event()
@@ -491,7 +581,7 @@ async def test_guest_sync_filling_quota_rejects_an_inflight_answer(daily_mode, m
             "wojewodztwodle": "WojewodztwodleSyncSchema",
         }[mode.name]
         body = getattr(mode.module, schema_name).model_validate({
-            "date": str(date.today()), "questions": ids, "guesses": [],
+            "date": str(mode.day.date), "questions": ids, "guesses": [],
             "state": {"questions_asked": mode.maximum, "remaining_questions": 0, "guesses_made": 0,
                       "remaining_guesses": 2 if mode.name == "wojewodztwodle" else 3,
                       "won": False, "is_game_over": False},
@@ -499,7 +589,7 @@ async def test_guest_sync_filling_quota_rejects_an_inflight_answer(daily_mode, m
         async with mode.factory() as session:
             user = await session.get(User, 1)
             kwargs = dict(sync_data=body, user=user, session=session,
-                          request=Request({"type": "http", "headers": []}))
+                          request=guest_request(mode))
             if mode.name == "continental":
                 kwargs["continent"] = ContinentCode.EUROPE
             synced = await asyncio.wait_for(mode.module.sync_guest_data(**kwargs), 2)
@@ -514,18 +604,19 @@ async def test_guest_sync_filling_quota_rejects_an_inflight_answer(daily_mode, m
         assert await session.scalar(select(func.count()).select_from(mode.question_model)) == mode.maximum
 
 
-async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
+async def test_concurrent_guess_only_sync_claims_one_original_once(daily_mode):
     mode = daily_mode
     guess_model = getattr(models, {
         "countrydle": "CountrydleGuess", "continental": "ContinentalGuess",
         "us_statedle": "USStatedleGuess", "powiatdle": "PowiatdleGuess",
         "wojewodztwodle": "WojewodztwodleGuess",
     }[mode.name])
-    repository = getattr(mode.module, {
-        "countrydle": "CountrydleGuessRepository", "continental": "ContinentalGuessRepository",
-        "us_statedle": "USStatedleGuessRepository", "powiatdle": "PowiatdleGuessRepository",
-        "wojewodztwodle": "WojewodztwodleGuessRepository",
-    }[mode.name])
+    entity_field = {
+        "countrydle": "country_id", "continental": "country_id", "us_statedle": "us_state_id",
+        "powiatdle": "powiat_id", "wojewodztwodle": "wojewodztwo_id",
+    }[mode.name]
+    guess_name = {"us_statedle": "Nevada", "powiatdle": "Warszawa", "wojewodztwodle": "Małopolskie"}.get(mode.name, "Germany")
+    persisted_entity = {entity_field: 2} if entity_field in guess_model.__table__.columns else {}
     async with mode.factory() as session:
         session.add_all([
             Country(id=2, name="Germany", official_name="Germany", md_file="germany.md"),
@@ -533,22 +624,14 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
             models.USState(id=2, name="Nevada"),
             models.Powiat(id=1, nazwa="Kraków"), models.Wojewodztwo(id=1, nazwa="Dolnośląskie"),
             models.Powiat(id=2, nazwa="Warszawa"), models.Wojewodztwo(id=2, nazwa="Małopolskie"),
-            mode.state_model(user_id=1, day_id=1, questions_asked=0, remaining_questions=mode.maximum,
-                             guesses_made=0, remaining_guesses=2 if mode.name == "wojewodztwodle" else 3, is_game_over=False, won=False),
+            GuestParticipation(guest_id=mode.identity, mode=mode.participation_mode, day_id=1,
+                               questions_asked=0, guesses_made=1, won=False),
+            guess_model(id=1, guest_id=mode.identity, day_id=1, guess=guess_name,
+                        answer=False, **persisted_entity),
         ])
         await session.commit()
-    add_guess = repository.add_guess
-
-    async def yield_after_insert(self, guess, **kwargs):
-        result = await add_guess(self, guess, **kwargs)
-        # Force overlap between row insertion and final state update, not a timing assertion.
-        await asyncio.sleep(0.03)
-        return result
-
-    monkeypatch.setattr(repository, "add_guess", yield_after_insert)
-    guess_name = {"us_statedle": "Nevada", "powiatdle": "Warszawa", "wojewodztwodle": "Małopolskie"}.get(mode.name, "Germany")
     body = SimpleNamespace(
-        date=str(date.today()), questions=[],
+        date=str(mode.day.date), questions=[],
         guesses=[SimpleNamespace(guess=guess_name, country_id=2, us_state_id=2, powiat_id=2,
                                  wojewodztwo_id=2, elapsed_seconds=None)],
         state=SimpleNamespace(guesses_made=1, remaining_guesses=1 if mode.name == "wojewodztwodle" else 2,
@@ -558,38 +641,64 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
     async def sync():
         async with mode.factory() as session:
             kwargs = dict(sync_data=body, user=await session.get(User, 1), session=session,
-                          request=Request({"type": "http", "headers": []}))
+                          request=guest_request(mode))
             if mode.name == "continental":
                 kwargs["continent"] = ContinentCode.EUROPE
             return await mode.module.sync_guest_data(**kwargs)
 
-    await asyncio.gather(sync(), sync())
+    results = await asyncio.gather(sync(), sync())
+    assert all(result.state.guesses_made == 1 for result in results)
+    assert all([guess.id for guess in result.guesses] == [1] for result in results)
     async with mode.factory() as session:
-        assert await session.scalar(select(func.count()).select_from(guess_model)) == 1
+        originals = (await session.scalars(select(guess_model))).all()
+        assert [(guess.id, guess.user_id, guess.guest_id, guess.guess, guess.answer) for guess in originals] == [
+            (1, 1, mode.identity, guess_name, False),
+        ]
         assert (await session.scalar(select(mode.state_model))).guesses_made == 1
+        participation = await session.scalar(select(GuestParticipation))
+        assert (participation.user_id, participation.guesses_made) == (1, 1)
 
 
-async def test_flag_post_game_questions_remain_unlimited(accounting_db, monkeypatch):
+@pytest.mark.parametrize("guest", [False, True])
+async def test_flag_post_game_questions_remain_unlimited(accounting_db, monkeypatch, guest):
     import flagdle
 
     async with accounting_db() as session:
-        session.add(models.FlagdleDay(id=1, country_id=1, date=date.today()))
+        session.add(models.FlagdleDay(id=1, country_id=1, date=utc_today()))
         await session.flush()
-        session.add(models.FlagdleState(user_id=1, day_id=1, is_game_over=True, remaining_guesses=0,
-                                       guesses_made=12, questions_asked=2))
+        if guest:
+            session.add(GuestParticipation(
+                guest_id="00000000-0000-0000-0000-000000000001", mode="flagdle",
+                day_id=1, guesses_made=12, questions_asked=2, won=False,
+            ))
+        else:
+            session.add(models.FlagdleState(user_id=1, day_id=1, is_game_over=True, remaining_guesses=0,
+                                           guesses_made=12, questions_asked=2))
         await session.commit()
     monkeypatch.setattr(flagdle, "analyze_question_for_local_plan", lambda _: SimpleNamespace(
         valid=True, plan={"operator": "exists"}, improved_question="Is it blue?", explanation=None,
     ))
-    monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: SimpleNamespace(
+    monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: LocalAnswer(
         answer=False, question="Is it blue?", explanation="No blue on the flag.", relation="flag_color",
     ))
     async with accounting_db() as session:
+        request = http_request()
+        request.state.guest_identity = "00000000-0000-0000-0000-000000000001"
         result = await flagdle.ask_flag_question(
-            QuestionBase(question="Is it blue?"), Request({"type": "http", "headers": []}), Response(),
-            await session.get(User, 1), session,
+            QuestionBase(question="Is it blue?"), request, Response(),
+            None if guest else await session.get(User, 1), session,
         )
         assert result.valid is True and result.answer is False
     async with accounting_db() as session:
-        state = await session.scalar(select(models.FlagdleState))
-        assert state.questions_asked == 3 and state.is_game_over is True
+        if guest:
+            participation = await session.scalar(select(GuestParticipation))
+            assert (participation.questions_asked, participation.guesses_made, participation.won) == (3, 12, False)
+        else:
+            state = await session.scalar(select(models.FlagdleState))
+            assert state.questions_asked == 3 and state.is_game_over is True
+        history = (await session.scalars(select(models.FlagdleQuestion))).all()
+        assert len(history) == 1
+        assert (history[0].answer, history[0].user_id, history[0].guest_id) == (
+            False, None if guest else 1,
+            "00000000-0000-0000-0000-000000000001" if guest else None,
+        )

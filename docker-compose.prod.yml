@@ -48,7 +48,9 @@ services:
   backend:
     container_name: server
     image: ghcr.io/melzak252/countrydle-backend:latest
+    command: uvicorn app:app --host 0.0.0.0 --port 8080 --workers 1 --lifespan on --no-proxy-headers
     deploy:
+      replicas: 1
       resources:
         limits:
           cpus: '0.25'
@@ -65,8 +67,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - QUIZ_MODEL=${QUIZ_MODEL}
-      - SECRET_KEY=${SECRET_KEY}
-      - QUESTION_RATE_LIMIT_TRUST_X_REAL_IP=true
+      - SECRET_KEY=${SECRET_KEY:?Set a private persistent SECRET_KEY}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:?Set exact production HTTPS browser origins}
+      - WEB_CONCURRENCY=1
+      - QUESTION_RATE_LIMIT_TRUSTED_PROXIES=${QUESTION_RATE_LIMIT_TRUSTED_PROXIES:?Set only actual reverse-proxy peer CIDRs}
       - ALGORITHM=${ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
       - REMEMBER_ME_EXPIRE_DAYS=${REMEMBER_ME_EXPIRE_DAYS:-90}
@@ -81,7 +85,6 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - LOCAL_QUESTION_MODEL=${LOCAL_QUESTION_MODEL:-gemini-2.5-flash-lite}
       - FRIEND_COOKIE_SECURE=true
-      - FRIEND_ALLOWED_ORIGINS=${FRIEND_ALLOWED_ORIGINS:-}
       - FRIEND_MATCHES_ENABLED=${FRIEND_MATCHES_ENABLED:-true}
       - FRIEND_ACTIVE_ROOM_LIMIT=${FRIEND_ACTIVE_ROOM_LIMIT:-500}
       - FRIEND_AI_BACKLOG_LIMIT=${FRIEND_AI_BACKLOG_LIMIT:-100}

@@ -1,0 +1,26 @@
+# Direct dependencies, pinned to the existing Python 3.12 QA environment.
+# Keep the existing test dependencies here; requirements.txt locks the full closure.
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+asyncpg==0.31.0
+sqlalchemy[asyncio]==2.1.0
+langchain==1.4.2
+openai==3.19.2
+python-dotenv==1.2.3
+bcrypt==4.0.1
+python-jose[cryptography]==3.5.0
+passlib==1.7.4
+python-multipart==0.0.32
+apscheduler==3.11.3
+qdrant-client==1.19.1
+pgvector==0.5.0
+fastapi-mail==1.6.8
+alembic==1.20.0
+requests==2.34.2
+langchain-text-splitters==1.1.2
+pytest==8.3.4
+pytest-asyncio==0.24.0
+aiosqlite==0.22.1
+httpx==0.28.1
+psycopg2-binary==2.9.13
+shapely==2.1.2

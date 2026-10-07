@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import os
 from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from runtime_configuration import SECRET_KEY
 from utils.country_codes import COUNTRY_CCA2_MAP
 from utils.geo import calculate_bearing, calculate_distance_km
 
@@ -17,7 +17,6 @@ _DATA_DIR = (
     else _APP_DIR.parents[1] / "data"
 )
 FACTS_DB_PATH = _DATA_DIR / "country_facts.sqlite"
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback_countrydle_secret")
 
 UNMASK_ORDER = [0, 6, 11, 5, 3, 8, 1, 10, 2, 9, 4, 7]
 

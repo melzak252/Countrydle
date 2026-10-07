@@ -6,14 +6,16 @@ import type { AnswerReportMode, Question } from '../types';
 import type { GameplayNotice } from '../lib/gameplayNotices';
 import { getConversationMessages } from '../lib/chatMessages';
 import AnswerReportForm from './AnswerReportForm';
+import FactProvenance from './FactProvenance';
 
 interface ResultsQuestionHistoryProps {
   questions: Question[];
   mode: AnswerReportMode;
+  isGameOver: boolean;
   notices?: GameplayNotice[];
 }
 
-export default function ResultsQuestionHistory({ questions, mode, notices = [] }: ResultsQuestionHistoryProps) {
+export default function ResultsQuestionHistory({ questions, mode, isGameOver = false, notices = [] }: ResultsQuestionHistoryProps) {
   const { t } = useTranslation();
   const disclosureGroup = useId();
   const copyQuestion = async (text: string) => {
@@ -48,11 +50,11 @@ export default function ResultsQuestionHistory({ questions, mode, notices = [] }
           <li key={message.kind === 'question' ? `question-${message.question.id}` : `notice-${message.notice.id}`} className="min-w-0">
             <details name={disclosureGroup} className="group rounded-sm border border-white/10 bg-obsidian-900/40">
               <summary className="flex min-h-12 cursor-pointer list-none items-start gap-2 px-3 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 [&::-webkit-details-marker]:hidden">
-                <span className="w-5 shrink-0 pt-0.5 font-mono text-xs text-zinc-500">
+                <span className="w-5 shrink-0 pt-0.5 font-mono text-xs text-zinc-400">
                   {message.kind === 'question' ? message.index + 1 : '—'}
                 </span>
                 <span className="min-w-0 flex-1 leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{input}</span>
-                <span className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-1 text-[10px] font-semibold ${tone}`}>
+                <span className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-1 text-xs font-semibold ${tone}`}>
                   <Icon size={12} aria-hidden="true" />
                   {answer}
                 </span>
@@ -65,9 +67,12 @@ export default function ResultsQuestionHistory({ questions, mode, notices = [] }
                     <p className="whitespace-pre-wrap">{notice.reason}</p>
                     {notice.nextStep && <p className="text-amber-200/80">{notice.nextStep}</p>}
                   </div>
-                ) : question?.explanation ? (
+                ) : question?.explanation && (!question.valid || isGameOver) ? (
                   <p className="whitespace-pre-wrap">{question.explanation}</p>
                 ) : null}
+                {isGameOver && (mode === 'countrydle' || mode === 'continental') && question && (
+                  <FactProvenance records={question.fact_provenance} />
+                )}
                 <button
                   type="button"
                   onClick={() => void copyQuestion(input)}
@@ -76,7 +81,7 @@ export default function ResultsQuestionHistory({ questions, mode, notices = [] }
                   <Copy size={14} aria-hidden="true" />
                   {t('chat.copyQuestion', 'Copy question')}
                 </button>
-                {question && question.id > 0 && (
+                {isGameOver && question && question.id > 0 && (
                   <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} compact />
                 )}
               </div>

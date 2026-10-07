@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
+import { useModalFocus } from '../hooks/useModalFocus';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -116,13 +118,18 @@ function ResultsModal({
   busy,
   rematch,
   onClose,
+  returnFocusRef,
 }: {
   snapshot: FriendSnapshot;
   copy: DuelCopy;
   busy: boolean;
   rematch: () => void;
   onClose: () => void;
+  returnFocusRef: RefObject<HTMLElement | null>;
 }) {
+  const { i18n } = useTranslation();
+  const isPl = i18n.language.startsWith('pl');
+  const dialogRef = useModalFocus({ open: true, onDismiss: onClose, returnFocusRef });
   const self = snapshot.players.find(player => player.id === snapshot.you);
   const opponent = snapshot.players.find(player => player.id !== snapshot.you);
   const outcome = snapshot.result === 'draw'
@@ -139,6 +146,9 @@ function ResultsModal({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
+      aria-label={copy.results}
       role="dialog"
       aria-modal="true"
       onClick={onClose}
@@ -152,8 +162,8 @@ function ResultsModal({
           type="button"
           onClick={onClose}
           className="absolute right-3 top-3 max-md:min-h-11 max-md:min-w-11 flex items-center justify-center rounded-sm border border-white/10 bg-white/5 p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-          title="Inspect Map"
-          aria-label="Close modal and explore map"
+          title={isPl ? 'Zobacz mapę' : 'Inspect Map'}
+          aria-label={isPl ? 'Zamknij okno i zobacz mapę' : 'Close modal and explore map'}
         >
           <X size={15} />
         </button>
@@ -255,6 +265,14 @@ function DuelRoom({ code }: { code?: string }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isResultDismissed, setIsResultDismissed] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const rulesTriggerRef = useRef<HTMLButtonElement>(null);
+  const resultsTriggerRef = useRef<HTMLButtonElement>(null);
+  const turnFocusRef = useRef<HTMLDivElement>(null);
+  const rulesDialogRef = useModalFocus({
+    open: rulesOpen,
+    onDismiss: () => setRulesOpen(false),
+    returnFocusRef: rulesTriggerRef,
+  });
 
   useEffect(() => {
     if (!isMobile) {
@@ -391,6 +409,7 @@ function DuelRoom({ code }: { code?: string }) {
               <span className="hidden md:inline font-semibold text-sand-100">Multiplayer</span>
             </div>
             <button
+              ref={rulesTriggerRef}
               type="button"
               onClick={() => setRulesOpen(true)}
               className="flex min-h-11 md:min-h-0 shrink-0 items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-wider cursor-pointer whitespace-nowrap sm:tracking-[0.16em]"
@@ -521,6 +540,9 @@ function DuelRoom({ code }: { code?: string }) {
         {/* Rules Modal */}
         {rulesOpen && (
           <div
+            ref={rulesDialogRef}
+            tabIndex={-1}
+            aria-label={copy.rulesTitle}
             role="dialog"
             aria-modal="true"
             onClick={() => setRulesOpen(false)}
@@ -536,6 +558,7 @@ function DuelRoom({ code }: { code?: string }) {
                 </h3>
                 <button
                   type="button"
+                  aria-label={i18n.language.startsWith('pl') ? 'Zamknij zasady' : 'Close rules'}
                   onClick={() => setRulesOpen(false)}
                   className="max-md:min-h-11 max-md:min-w-11 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
                 >
@@ -603,7 +626,7 @@ function DuelRoom({ code }: { code?: string }) {
           </div>
 
           {/* Self status (compact on mobile) */}
-          <div className="flex min-h-11 items-center gap-1 px-2 md:min-h-0 md:gap-1.5 md:px-3">
+          <div ref={turnFocusRef} tabIndex={-1} aria-label={`${copy.you} · T${snapshot.turn} · ${myTurn ? copy.yourTurn : copy.waitingForFriend}`} className="flex min-h-11 items-center gap-1 px-2 md:min-h-0 md:gap-1.5 md:px-3">
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 hidden md:inline">{self?.name || copy.you}:</span>
             {!finished && <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 md:hidden">{copy.you}:</span>}
             <span className={`font-semibold ${myTurn && !finished ? 'text-emerald-400' : 'text-sand-100'}`}>
@@ -660,6 +683,7 @@ function DuelRoom({ code }: { code?: string }) {
 
           {/* Rules dialog trigger */}
           <button
+            ref={rulesTriggerRef}
             type="button"
             onClick={() => setRulesOpen(true)}
             className={`flex min-h-11 min-w-11 md:min-h-0 shrink-0 items-center justify-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-wider cursor-pointer whitespace-nowrap md:tracking-[0.16em] ${snapshot.status === 'active' ? 'max-md:col-start-3 max-md:row-start-2' : ''}`}
@@ -673,6 +697,7 @@ function DuelRoom({ code }: { code?: string }) {
           {/* Result modal reopen button */}
           {finished && (
             <button
+              ref={resultsTriggerRef}
               type="button"
               onClick={() => setIsResultDismissed(false)}
               className="flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
@@ -765,6 +790,7 @@ function DuelRoom({ code }: { code?: string }) {
                   {snapshot.deadline && <Countdown deadline={snapshot.deadline} copy={copy} />}
                 </div>
               )}
+
 
 
               {/* Body */}
@@ -884,6 +910,7 @@ function DuelRoom({ code }: { code?: string }) {
       {/* 3c. Friend Question Centered Modal */}
       {mustAnswer && pendingQuestion && (
         <FriendQuestionModal
+          returnFocusRef={turnFocusRef}
           pendingQuestion={pendingQuestion}
           opponentName={opponent?.name || 'Friend'}
           ownSecret={snapshot.own_secret}
@@ -981,6 +1008,7 @@ function DuelRoom({ code }: { code?: string }) {
       {finished && !isResultDismissed && (
         <ResultsModal
           snapshot={snapshot}
+          returnFocusRef={resultsTriggerRef}
           copy={copy}
           busy={busy}
           rematch={() => { void room.act('rematch', {}); }}
@@ -991,6 +1019,9 @@ function DuelRoom({ code }: { code?: string }) {
       {/* 7. Rules Modal */}
       {rulesOpen && (
         <div
+          ref={rulesDialogRef}
+          tabIndex={-1}
+          aria-label={copy.rulesTitle}
           role="dialog"
           aria-modal="true"
           onClick={() => setRulesOpen(false)}
@@ -1006,6 +1037,7 @@ function DuelRoom({ code }: { code?: string }) {
               </h3>
               <button
                 type="button"
+                aria-label={i18n.language.startsWith('pl') ? 'Zamknij zasady' : 'Close rules'}
                 onClick={() => setRulesOpen(false)}
                 className="max-md:min-h-11 max-md:min-w-11 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
               >

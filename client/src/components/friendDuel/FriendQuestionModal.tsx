@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useModalFocus } from '../../hooks/useModalFocus';
+import type { RefObject } from 'react';
 import {
   Zap,
   Clock,
@@ -25,6 +27,7 @@ interface FriendQuestionModalProps {
   copy: DuelCopy;
   busy: boolean;
   onAnswer: (answer: HumanAnswer) => void;
+  returnFocusRef: RefObject<HTMLElement | null>;
 }
 
 export default function FriendQuestionModal({
@@ -36,8 +39,10 @@ export default function FriendQuestionModal({
   copy,
   busy,
   onAnswer,
+  returnFocusRef,
 }: FriendQuestionModalProps) {
   const [now, setNow] = useState(Date.now);
+  const dialogRef = useModalFocus({ open: true, returnFocusRef });
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 500);
@@ -51,6 +56,8 @@ export default function FriendQuestionModal({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-labelledby="question-modal-title"

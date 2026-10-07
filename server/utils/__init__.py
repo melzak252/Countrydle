@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 import logging
 
 
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy import select
 
 from db.repositories.user import UserRepository
+from daily_clock import utc_today
 
 
 async def check_streaks():
@@ -20,7 +21,7 @@ async def check_streaks():
         cs_repo = CountrydleStateRepository(session)
 
         users = await u_repo.get_all_verified_users()
-        yesterday = date.today() - timedelta(days=1)
+        yesterday = utc_today() - timedelta(days=1)
         dc_yesterday = await CountrydleRepository(session).get_day_country_by_date(
             yesterday
         )
@@ -48,7 +49,8 @@ async def generate_day_countries():
     async with AsyncSessionLocal() as session:
         c_repo = CountrydleRepository(session)
 
-        for day_date in (date.today() + timedelta(days=n) for n in range(5)):
+        today = utc_today()
+        for day_date in (today + timedelta(days=n) for n in range(5)):
             # Existing rows, including preserved played targets, must not stop
             # generation for later dates. Gameplay lookups enforce eligibility.
             day_country = await session.scalar(
@@ -69,8 +71,7 @@ async def generate_day_flags():
 async def generate_yesterday_blog_post():
     from db.repositories.blog import BlogRepository
     from utils.blog_generator import create_daily_blog_post
-    from datetime import datetime, timezone
-    yesterday = datetime.now(timezone.utc).date() - timedelta(days=1)
+    yesterday = utc_today() - timedelta(days=1)
     async with AsyncSessionLocal() as session:
         repo = BlogRepository(session)
         existing = await repo.get_by_date(yesterday)
@@ -103,21 +104,21 @@ async def run_generate_continental_days():
             await generate_continental_days(session, days_ahead=5)
     except Exception as e:
         logging.error(f"Error generating continental days: {e}", exc_info=True)
+        raise
 
 
 async def purge_old_fallback_answers():
-    from datetime import datetime, timezone
     from db.repositories.fallback_answers import purge_old
 
     async with AsyncSessionLocal() as session:
-        await purge_old(session, before=datetime.now(timezone.utc).date())
+        await purge_old(session, before=utc_today())
         await session.commit()
 
 
-scheduler = AsyncIOScheduler()
-scheduler.add_job(generate_day_countries, CronTrigger(hour=0, minute=0))
-scheduler.add_job(check_streaks, CronTrigger(hour=0, minute=0))
-scheduler.add_job(generate_yesterday_blog_post, CronTrigger(hour=0, minute=5))
-scheduler.add_job(run_generate_continental_days, CronTrigger(hour=0, minute=0))
-scheduler.add_job(generate_day_flags, CronTrigger(hour=0, minute=0))
+scheduler = AsyncIOScheduler(timezone="UTC")
+scheduler.add_job(generate_day_countries, CronTrigger(hour=0, minute=0, timezone="UTC"))
+scheduler.add_job(check_streaks, CronTrigger(hour=0, minute=0, timezone="UTC"))
+scheduler.add_job(generate_yesterday_blog_post, CronTrigger(hour=0, minute=5, timezone="UTC"))
+scheduler.add_job(run_generate_continental_days, CronTrigger(hour=0, minute=0, timezone="UTC"))
+scheduler.add_job(generate_day_flags, CronTrigger(hour=0, minute=0, timezone="UTC"))
 scheduler.add_job(purge_old_fallback_answers, CronTrigger(hour=0, minute=10, timezone="UTC"))

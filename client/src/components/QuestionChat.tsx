@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { AnswerReportMode, Question } from '../types';
 import AnswerReportForm from './AnswerReportForm';
+import FactProvenance from './FactProvenance';
 import type { GameplayNotice } from '../lib/gameplayNotices';
 import { getConversationMessages } from '../lib/chatMessages';
 
@@ -144,6 +145,9 @@ export default function QuestionChat({
                     {!question.valid && <p className="mb-0.5 font-medium text-amber-200">Try rephrasing your question</p>}
                     <p className="text-zinc-400">{question.explanation}</p>
                   </div>
+                )}
+                {isGameOver && (mode === 'countrydle' || mode === 'continental') && (
+                  <FactProvenance records={question.fact_provenance} />
                 )}
                 {isGameOver && question.id > 0 && (
                   <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} compact />
