@@ -354,6 +354,13 @@ def is_self_reference(value: Any, row: sqlite3.Row, config: LocalModeConfig) -> 
     }
 
 
+def _canonical_us_region(value: Any) -> Any:
+    """Canonicalize a spelling alias, not a different regional category."""
+    if isinstance(value, str) and re.fullmatch(r"north[\s\-\u2010-\u2015]*east", value.strip(), re.I):
+        return "Northeast"
+    return value
+
+
 def evaluate(
     conn: sqlite3.Connection,
     config: LocalModeConfig,
@@ -393,6 +400,10 @@ def evaluate(
             resolved_v = resolve_voivodeship_name(right_val)
             if resolved_v is not None:
                 right_val = resolved_v
+        if config.mode_name == "USStatedle" and rel_name in {"region", "division", "regional_labels"}:
+            right_val = _canonical_us_region(right_val)
+            if isinstance(rel_items, list):
+                rel_items = [_canonical_us_region(value) for value in rel_items]
         if right_val is None:
             return None
         if is_self_reference(right_val, row, config):
@@ -481,6 +492,16 @@ def evaluate(
 
     left = resolve_ref(conn, config, row, left_node, item_value)
     right = resolve_ref(conn, config, row, right_node, item_value)
+    if (
+        config.mode_name == "USStatedle"
+        and isinstance(left_node, dict)
+        and left_node.get("relation") in {"region", "division", "regional_labels"}
+        and op in {"contains", "contains_exact", "equals", "exists"}
+    ):
+        # Apply at each predicate so existing nested/negated cached ASTs agree
+        # with new deterministic plans without weakening exact membership.
+        left = [_canonical_us_region(value) for value in left] if isinstance(left, list) else _canonical_us_region(left)
+        right = _canonical_us_region(right)
     if config.mode_name in {"Wojewodztwodle", "Powiatdle"} and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
         if config.mode_name == "Wojewodztwodle":
             is_coast = bool(row["is_coastal"])

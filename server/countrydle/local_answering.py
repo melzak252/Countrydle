@@ -1634,7 +1634,55 @@ def plan_relations(node: dict | None) -> set[str]:
     return found
 
 
+_CONTINENT_UNIONS = {
+    "america": ("North America", "South America"),
+    "americas": ("North America", "South America"),
+    "eurasia": ("Europe", "Asia"),
+}
+
+
+def normalize_continent_unions(node: dict | None) -> dict | None:
+    """Expand physical continent unions without changing bindings or the input AST."""
+    if not isinstance(node, dict):
+        return node
+    normalized = dict(node)
+    if isinstance(normalized.get("condition"), dict):
+        normalized["condition"] = normalize_continent_unions(normalized["condition"])
+    if isinstance(normalized.get("conditions"), list):
+        normalized["conditions"] = [
+            normalize_continent_unions(condition) for condition in normalized["conditions"]
+        ]
+    left = normalized.get("left")
+    right = normalized.get("right")
+    if (
+        normalized.get("operator") == "contains"
+        and isinstance(left, dict)
+        and left.get("relation") == "continent"
+        and isinstance(right, dict)
+        and isinstance(right.get("value"), str)
+    ):
+        continents = _CONTINENT_UNIONS.get(normalize(right["value"]))
+        if continents is not None:
+            return {
+                "operator": "or",
+                "conditions": [
+                    {
+                        **normalized,
+                        "left": dict(left),
+                        "right": {**right, "value": continent},
+                    }
+                    for continent in continents
+                ],
+            }
+    return normalized
+
+
 def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) -> dict | None:
+    """Canonicalize physical continent unions and the stored geographic-area layer."""
+    return _normalize_geographic_area_plan(conn, normalize_continent_unions(node))
+
+
+def _normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) -> dict | None:
     """Treat region and subregion planner output as one geographic-area layer."""
     if not isinstance(node, dict):
         return node
@@ -1678,10 +1726,10 @@ def normalize_geographic_area_plan(conn: sqlite3.Connection, node: dict | None) 
             return None
         right["value"] = canonical_area
     if isinstance(normalized.get("condition"), dict):
-        normalized["condition"] = normalize_geographic_area_plan(conn, normalized["condition"])
+        normalized["condition"] = _normalize_geographic_area_plan(conn, normalized["condition"])
     if isinstance(normalized.get("conditions"), list):
         normalized["conditions"] = [
-            normalize_geographic_area_plan(conn, condition)
+            _normalize_geographic_area_plan(conn, condition)
             if isinstance(condition, dict)
             else condition
             for condition in normalized["conditions"]

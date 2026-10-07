@@ -123,6 +123,18 @@ decline the template rather than lose modifiers. Polish questions and spelling
 repairs use the model; its prompt preserves the border relation and quantifier
 scope. “In/part of a continent” remains a target-membership question.
 
+Reported-answer regressions cover Americas within disjunctions and negations,
+neighbor-item bindings, and preservation of North/South qualifiers. US Statedle
+regressions distinguish broad Atlantic access through the Gulf of Mexico from
+direct Atlantic coastline and East Coast membership; they also exercise Northeast
+spelling aliases, negation, and compound conditions against real local facts.
+The shared planner contract is `27`, excluding previous cached interpretations
+in all modes. This does not rewrite persisted answers or review reports.
+
+```bash
+python -m pytest -q tests/test_countrydle_audit_regressions.py tests/test_local_kb_other_modes.py tests/test_generic_template_compiler.py tests/test_slot_template_engine.py
+```
+
 ```bash
 python -m pytest -q tests/test_template_compiler.py tests/test_countrydle_semantic_preservation.py tests/test_countrydle_audit_regressions.py tests/test_countrydle_english_corpus.py
 ```

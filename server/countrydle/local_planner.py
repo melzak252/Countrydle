@@ -423,6 +423,7 @@ def analyze_question_for_local_plan(
                 target_entity="target_country", allow_named_entities=True,
             )
     if entity is not None or template is not None:
+        ast = local_answering.normalize_continent_unions(ast)
         if evidence is not None:
             evidence.update(
                 provider="template", contract_version="countrydle-strict-v2", cache_hit=False,
@@ -480,6 +481,7 @@ def analyze_question_for_local_plan(
         allow_named_entities=True,
     )
         if ast is not None:
+            ast = local_answering.normalize_continent_unions(ast)
             _validate_country_plan(ast, question)
     except Exception as exc:
         ast = None

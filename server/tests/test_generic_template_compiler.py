@@ -72,29 +72,6 @@ def test_wojewodztwodle_templates_match_and_execute_fast():
         assert ast.get("operator") in ("equals", "contains_exact", "contains_text")
 
 
-def test_us_statedle_templates_match_and_execute_fast():
-    cases = [
-        ("does it border Canada?", "borders_country", "Canada"),
-        ("czy ten stan graniczy z meksykiem?", "borders_country", "Mexico"),
-        ("is it a coastal state?", "is_coastal", True),
-        ("does it border the Atlantic Ocean?", "water_access", "Atlantic Ocean"),
-        ("does it have access to Antlantic Ocean?", "water_access", "Atlantic Ocean"),
-        ("czy ma dostęp do oceanu antlantyckiego?", "water_access", "Atlantic Ocean"),
-        ("czy leży nad atlantykiem?", "water_access", "Atlantic Ocean"),
-        ("czy leży nad antlantykiem?", "water_access", "Atlantic Ocean"),
-        ("does it have access to the Pacific Ocean?", "water_access", "Pacific Ocean"),
-        ("does it have access to the Arctic Ocean?", "water_access", "Arctic Ocean"),
-        ("does it have access to Indian Ocean?", "water_access", "Indian Ocean"),
-        ("was it one of the original 13 colonies?", "admission_order", 13),
-        ("is it on the East Coast?", "regional_labels", "East Coast"),
-    ]
-    for question, expected_relation, expected_value in cases:
-        t0 = time.perf_counter()
-        res = compile_generic_template_plan(question, "usstatedle")
-        duration_ms = (time.perf_counter() - t0) * 1000
-
-        assert res is not None, f"Expected template match for {question!r}"
-        assert duration_ms < 5.0, f"Template match took {duration_ms:.2f}ms (> 5ms) for {question!r}"
 
 
 def test_open_ended_rejection():

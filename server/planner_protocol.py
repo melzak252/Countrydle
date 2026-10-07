@@ -5,7 +5,7 @@ from math import isfinite
 from typing import Any
 
 # Bump whenever prompts, AST semantics, schema, or generation settings change.
-PLANNER_VERSION = "26"
+PLANNER_VERSION = "27"
 # Flash Lite needs reasoning for composed predicates; total output includes it.
 PLANNER_THINKING_BUDGET = 1024
 PLANNER_MAX_OUTPUT_TOKENS = 2048

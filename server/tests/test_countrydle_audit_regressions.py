@@ -211,3 +211,61 @@ def test_continent_border_preserves_continent_polarity_and_location(
 ):
     provider([predicate("contains", "continent", {"value": "South America"})])
     assert answer(question, target).answer is expected
+
+
+@pytest.mark.parametrize("target, expected", [
+    ("Panama", True), ("Colombia", True), ("Germany", True), ("Japan", False),
+])
+def test_reported_americas_or_europe_uses_both_american_continents(
+    border_facts, provider, target, expected,
+):
+    provider([
+        predicate("contains", "continent", {"value": "Americas"}),
+        predicate("contains", "continent", {"value": "Europe"}),
+        {"operator": "or", "args": [0, 1]},
+    ])
+    result = answer("Is this country in the americas or europe", target)
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize("target, expected", [
+    ("Panama", False), ("Colombia", False), ("Germany", True), ("Japan", True),
+])
+def test_american_continent_union_preserves_nested_negation(
+    border_facts, provider, target, expected,
+):
+    provider([
+        predicate("contains", "continent", {"value": "Americas"}),
+        {"operator": "not", "args": [0]},
+    ])
+    assert answer("Is the country not in the Americas?", target).answer is expected
+
+
+@pytest.mark.parametrize("target, expected", [
+    ("Panama", True), ("Germany", False),
+])
+def test_continental_union_preserves_neighbor_item_binding(
+    border_facts, provider, target, expected,
+):
+    provider([
+        predicate("contains", "continent", {"value": "Americas"}, "item"),
+        {"operator": "any", "items": reference("target_country", "borders_country"), "args": [0]},
+    ])
+    assert answer("Does it have any land neighbor in the Americas?", target).answer is expected
+
+
+@pytest.mark.parametrize("continent, target, expected", [
+    ("North America", "Panama", True),
+    ("North America", "Colombia", False),
+    ("South America", "Panama", False),
+    ("South America", "Colombia", True),
+])
+def test_continental_union_does_not_drop_north_south_qualifiers(
+    border_facts, provider, continent, target, expected,
+):
+    provider([
+        predicate("contains", "continent", {"value": continent}),
+        predicate("contains", "continent", {"value": "Europe"}),
+        {"operator": "or", "args": [0, 1]},
+    ])
+    assert answer(f"Is it in {continent} or Europe?", target).answer is expected
