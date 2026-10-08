@@ -143,11 +143,21 @@ test('H05 expired signed session rejects the action and reauthentication recover
   await signIn(page, username);
   await ready(page);
   expect((await ask(page)).status()).toBe(200);
+  await ready(page);
+  // The guess's real state refresh renews the cookie; finish it before expiring the session.
+  const hydration = page.waitForResponse(response =>
+    response.url().endsWith('/api/countrydle/state') && response.request().method() === 'GET');
   await guess(page, 'Germany');
+  const hydrated = await hydration;
+  expect(hydrated.status()).toBe(200);
+  await hydrated.finished();
+  await questionTab(page).click();
+  await ready(page);
   const before = await readAccount(page);
   expectProgress(before, 1, 1);
   await page.context().addCookies([{ name: 'access_token', value: manifest.expiredTokens[username], url: baseURL!, httpOnly: true, sameSite: 'Lax' }]);
   const rejected = await ask(page);
+  expect((await rejected.request().allHeaders()).cookie?.split('; ').includes(`access_token=${manifest.expiredTokens[username]}`)).toBe(true);
   expect(rejected.status()).toBe(401);
   await expect(page).toHaveURL(/\/login$/);
   await signIn(page, username);

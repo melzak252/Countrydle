@@ -119,11 +119,13 @@ E2E_PYTHON=/path/to/locked/python bun run test:e2e
 ```
 
 CI Linux provisioning can use `bunx playwright install --with-deps chromium`.
-The configuration owns frontend/API startup on `E2E_WEB_PORT`/`E2E_API_PORT`
-(defaults 5181/8087) and a fresh `countrydle_e2e_<hex>` schema; occupied ports,
-wrong database/role/host, version or source-fingerprint mismatches fail rather
-than attaching to an unrelated preview. Its private fact snapshot is a reviewed
-small fixture, not a complete geography database.
+The configuration compiles and serves this worktree's production bundle through
+Vite preview and its API proxy, rather than loading the development module graph.
+It owns frontend/API startup on `E2E_WEB_PORT`/`E2E_API_PORT` (defaults 5181/8087)
+and a fresh `countrydle_e2e_<hex>` schema; occupied ports, wrong database/role/host,
+version or source-fingerprint mismatches fail rather than attaching to an unrelated
+preview. Its private fact snapshot is a reviewed small fixture, not a complete
+geography database.
 The sandbox disables dotenv, paid providers, mail, schedulers and production
 startup effects; actual HTTP handlers, cookies, PostgreSQL and React stores are
 used. Owned schema/processes are removed on exit. No live-player accounts,
