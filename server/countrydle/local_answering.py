@@ -1741,6 +1741,9 @@ def generate_factual_explanation(
     *,
     item_value: str | None = None,
 ) -> str:
+    def number(value: int | float) -> str:
+        return f"{value:,}".removesuffix(".0")
+
     name = country["app_country_name"]
     node = plan if isinstance(plan, dict) else {}
     op = node.get("operator")
@@ -1804,7 +1807,7 @@ def generate_factual_explanation(
                 if (op == "any" and answer) or (op == "all" and not answer):
                     break
         if facts:
-            scope = f"Among {subject_name}'s land-border neighbors: " if neighbors else "Among the listed countries: "
+            scope = f"Among {subject_name}'s land-border neighbors: " if neighbors else "Among the listed items: "
             return scope + " ".join(facts)
         if not items:
             return f"{subject_name} has no land-border neighbors." if neighbors else "There are no items to check."
@@ -1816,12 +1819,65 @@ def generate_factual_explanation(
             country = subject
             name = country["app_country_name"]
 
+    if (
+        isinstance(right, dict)
+        and right.get("entity")
+        and right.get("relation")
+        and op not in {"north_of", "south_of", "east_of", "west_of"}
+    ):
+        other = resolve_entity(conn, right["entity"], target_country, item_value)
+        if rel == "name" and right["relation"] == "name" and op == "equals" and other is not None:
+            if country["id"] == other["id"]:
+                return f"The country is {name}."
+            return f"{name} and {other['app_country_name']} are different countries."
+        value = resolve_ref(conn, right, target_country, item_value)
+        if value is not None:
+            detail = generate_factual_explanation(
+                conn, target_country, {**node, "right": {"value": value}}, answer,
+                item_value=item_value,
+            )
+            other_detail = generate_factual_explanation(
+                conn, target_country, {"operator": "exists", "left": right}, bool(value),
+                item_value=item_value,
+            )
+            return " ".join(dict.fromkeys(fact for fact in (detail, other_detail) if fact))
+
+    if (
+        rel in LIST_RELATION_QUERIES
+        and op in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"}
+        and type(target_val) is not bool
+        and (isinstance(target_val, (int, float)) or isinstance(target_val, str) and target_val.isdigit())
+    ):
+        values = resolve_ref(conn, left, target_country, item_value)
+        if isinstance(values, list):
+            if rel == "borders_country":
+                canonical = set()
+                for value in values:
+                    neighbor = find_country(conn, str(value))
+                    canonical.add(neighbor["app_country_name"] if neighbor is not None else str(value))
+                values = sorted(canonical)
+            labels = {
+                "continent": ("continent", "continents"),
+                "region": ("region", "regions"),
+                "subregion": ("subregion", "subregions"),
+                "geographic_area": ("geographic area", "geographic areas"),
+                "borders_country": ("land-border neighbor", "land-border neighbors"),
+                "water_access": ("water-access entry", "water-access entries"),
+                "marine_access": ("marine-access entry", "marine-access entries"),
+                "currency": ("currency name or code", "currency names or codes"),
+                "official_language": ("official language", "official languages"),
+                "membership": ("membership", "memberships"),
+                "major_rivers": ("major river", "major rivers"),
+                "flag_color": ("flag color", "flag colors"),
+                "flag_symbol": ("flag symbol", "flag symbols"),
+                "historical_union": ("historical union", "historical unions"),
+                "hemisphere": ("hemisphere", "hemispheres"),
+            }
+            label = labels[rel][0 if len(values) == 1 else 1]
+            listing = f": {', '.join(map(str, values))}" if values else ""
+            return f"{name} has {len(values)} {label} recorded{listing}."
+
     if rel == "borders_country":
-        if isinstance(target_val, (int, float)) or (isinstance(target_val, str) and str(target_val).isdigit()):
-            raw_b = [r[0] for r in conn.execute("SELECT border_country_name FROM country_borders WHERE country_id=?", (country["id"],))]
-            canonical_b = sorted(set(find_country(conn, b)["app_country_name"] for b in raw_b if find_country(conn, b)))
-            b_str = f" ({', '.join(canonical_b)})" if canonical_b else ""
-            return f"{country['app_country_name']} borders {len(canonical_b)} neighboring countries{b_str}."
         if target_val:
             resolved = find_country(conn, target_val)
             if resolved is not None:
@@ -1834,6 +1890,10 @@ def generate_factual_explanation(
             else:
                 b_str = ", ".join(sorted(set(borders))) if borders else "none"
                 return f"{name} does not border {target_val}. Its land borders are: {b_str}."
+        borders = resolve_ref(conn, left, target_country, item_value)
+        if borders:
+            return f"{name} shares land borders with {', '.join(sorted(set(borders)))}."
+        return f"{name} has no land-border neighbors."
 
     if rel == "marine_access":
         db_waters = sorted(set(r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))))
@@ -1896,15 +1956,16 @@ def generate_factual_explanation(
                 return f"{name} is completely landlocked with no direct coastline."
 
 
-    if rel == "hemisphere" and target_val:
+    if rel == "hemisphere":
         db_hemis = [r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))]
-        h_str = ", ".join(sorted(db_hemis))
-        plural = "s" if len(db_hemis) > 1 else ""
-        target_display = re.sub(r"\s*hemisphere\s*", "", str(target_val), flags=re.I).strip().capitalize()
-        if answer:
-            return f"{name} is located in the {target_display} Hemisphere (territory spans: {h_str} hemisphere{plural})."
-        else:
-            return f"{name} is not located in the {target_display} Hemisphere. Its territory spans: {h_str} hemisphere{plural}."
+        h_str = " and the ".join(f"{hemisphere} Hemisphere" for hemisphere in sorted(db_hemis))
+        if target_val:
+            target_display = normalize_hemisphere(str(target_val)).capitalize()
+            if answer:
+                return f"{name} is located in the {target_display} Hemisphere."
+            actual = f" It is located in the {h_str}." if h_str else ""
+            return f"{name} is not located in the {target_display} Hemisphere.{actual}"
+        return f"{name} is located in the {h_str}." if h_str else f"No hemispheres are recorded for {name}."
     if rel == "is_island":
         if country["is_island"]:
             return f"{name} is an island nation."
@@ -1914,129 +1975,104 @@ def generate_factual_explanation(
     if rel == "continent":
         conts = [r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))]
         c_str = ", ".join(conts)
-        if answer:
-            return f"{name} is located in {c_str}."
-        else:
-            return f"{name} is not located in {target_val or 'that continent'}; it is in {c_str}."
+        if not conts:
+            return f"No continents are recorded for {name}."
+        if target_val and not answer:
+            return f"{name} is not located in {target_val}; it is in {c_str}."
+        return f"{name} is located in {c_str}."
 
-    if rel in ("geographic_area", "region", "subregion") and target_val:
+    if rel in ("geographic_area", "region", "subregion"):
         subregs = [r[0] for r in conn.execute("SELECT subregion_name FROM country_subregions WHERE country_id=?", (country["id"],))]
         regs = [r[0] for r in conn.execute("SELECT region_name FROM country_regions WHERE country_id=?", (country["id"],))]
         all_areas = sorted(set(subregs + regs))
         areas_str = ", ".join(all_areas)
-        if answer:
-            return f"{name} is located in {target_val}."
-        else:
-            return f"{name} is not located in {target_val}. Its geographic regions are: {areas_str}."
+        if target_val:
+            if answer:
+                return f"{name} is located in {target_val}."
+            return f"{name} is not located in {target_val}. Its geographic regions are {areas_str or 'not recorded'}."
+        return f"The geographic regions recorded for {name} are {areas_str}." if all_areas else f"No geographic regions are recorded for {name}."
 
     if rel == "currency":
         curr_rows = conn.execute("SELECT currency_name, currency_code FROM country_currencies WHERE country_id=?", (country["id"],)).fetchall()
-        currs_str = ", ".join(f"{r[0]} ({r[1]})" if r[1] else r[0] for r in curr_rows) if curr_rows else "no data"
-        if answer:
-            return f"The official currency of {name} is: {currs_str}."
-        else:
-            return f"The currency of {name} is not {target_val}. Official currency: {currs_str}."
+        if not curr_rows:
+            return f"No official currencies are recorded for {name}."
+        currs_str = ", ".join(f"{r[0]} ({r[1]})" if r[1] else r[0] for r in curr_rows)
+        label = "currency" if len(curr_rows) == 1 else "currencies"
+        verb = "is" if len(curr_rows) == 1 else "are"
+        actual = f"The official {label} of {name} {verb} {currs_str}."
+        return actual if answer or target_val is None else f"{target_val} is not an official currency of {name}. {actual}"
 
     if rel == "official_language":
         langs = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id=?", (country["id"],))]
-        langs_str = ", ".join(langs) if langs else "no data"
-        if answer:
-            return f"An official language of {name} is: {target_val} (official language(s): {langs_str})."
-        else:
-            return f"{target_val} is not an official language of {name}. Official language(s): {langs_str}."
+        if not langs:
+            return f"No official languages are recorded for {name}."
+        langs_str = ", ".join(langs)
+        label = "language" if len(langs) == 1 else "languages"
+        verb = "is" if len(langs) == 1 else "are"
+        actual = f"The official {label} of {name} {verb} {langs_str}."
+        return actual if answer or target_val is None else f"{target_val} is not an official language of {name}. {actual}"
 
     if rel == "major_rivers":
         rivers = [r[0] for r in conn.execute("SELECT river_name FROM country_major_rivers WHERE country_id=?", (country["id"],))]
-        riv_str = ", ".join(rivers) if rivers else "no major rivers recorded"
-        if answer:
-            return f"The river {target_val} flows through {name}."
-        else:
-            return f"The river {target_val} does not flow through {name}. Major rivers include: {riv_str}."
-
-    if rel in ("historical_union", "membership") and target_val:
-        if rel == "membership":
+        if target_val:
             if answer:
-                return f"{name} is a member of {target_val}."
-            else:
-                return f"{name} is not a member of {target_val}."
-        else:
-            if answer:
-                return f"{name} was historically part of {target_val}."
-            else:
-                return f"{name} was not part of {target_val}."
+                return f"The river {target_val} flows through {name}."
+            actual = f" Major rivers include {', '.join(rivers)}." if rivers else ""
+            return f"The river {target_val} does not flow through {name}.{actual}"
+        return f"Major rivers in {name} include {', '.join(rivers)}." if rivers else f"No major rivers are recorded for {name}."
 
-    if rel == "flag_color" and target_val:
+    if rel in ("historical_union", "membership"):
+        if target_val:
+            if rel == "membership":
+                return f"{name} {'is' if answer else 'is not'} a member of {target_val}."
+            return f"{name} {'was historically part' if answer else 'was not part'} of {target_val}."
+        values = resolve_ref(conn, left, target_country, item_value)
+        if values:
+            listing = ", ".join(values)
+            return f"{name} is a member of {listing}." if rel == "membership" else f"{name} was historically part of {listing}."
+        label = "memberships" if rel == "membership" else "historical unions"
+        return f"No {label} are recorded for {name}."
+
+    if rel == "flag_color":
         colors = [r[0] for r in conn.execute("SELECT color FROM country_flag_colors WHERE country_id=?", (country["id"],))]
-        c_str = ", ".join(colors)
-        if answer:
-            return f"The flag of {name} includes the color {target_val}. Flag colors: {c_str}."
-        else:
-            return f"The flag of {name} does not include {target_val}. Flag colors: {c_str}."
+        if not colors:
+            return f"No flag colors are recorded for {name}."
+        actual = f"The flag of {name} contains {', '.join(colors)}."
+        return actual if answer or target_val is None else f"The flag of {name} does not include {target_val}. {actual}"
 
-    if rel == "flag_symbol" and target_val:
+    if rel == "flag_symbol":
         symbols = [r[0] for r in conn.execute("SELECT symbol FROM country_flag_symbols WHERE country_id=?", (country["id"],))]
-        s_str = ", ".join(symbols) if symbols else "none (plain stripes/colors)"
-        if answer:
-            return f"The flag of {name} features: {target_val}."
-        else:
-            return f"The flag of {name} does not feature {target_val}. Elements on flag: {s_str}."
+        if target_val and answer:
+            return f"The flag of {name} features {target_val}."
+        actual = f"The flag of {name} features {', '.join(symbols)}." if symbols else f"No flag symbols are recorded for {name}."
+        return actual if target_val is None else f"The flag of {name} does not feature {target_val}. {actual}"
 
     if rel == "driving_side":
         side_en = "left" if country["driving_side"] == "left" else "right"
         return f"Traffic in {name} drives on the {side_en} side."
 
-    if rel == "capital":
-        cap = country["capital"]
-        if target_val and not answer:
-            return f"The capital of {name} is {cap}, not {target_val}."
-        return f"The capital of {name} is {cap}."
 
-    if (
-        op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"}
-        and isinstance(left, dict)
-        and isinstance(right, dict)
-        and left.get("entity")
-        and right.get("entity")
-        and left.get("relation") == right.get("relation")
-        and left.get("relation") in {"population", "area", "area_km2"}
-    ):
-        left_country = resolve_entity(conn, left["entity"], target_country, item_value)
-        right_country = resolve_entity(conn, right["entity"], target_country, item_value)
-        if left_country is not None and right_country is not None:
-            relation = left["relation"]
-            if relation == "population":
-                left_fact = f"{left_country['population']:,}"
-                right_fact = f"{right_country['population']:,}"
-                measure = "population"
-            else:
-                left_fact = f"{left_country['area_km2']:,} km²"
-                right_fact = f"{right_country['area_km2']:,} km²"
-                measure = "area"
-            return (
-                f"{left_country['app_country_name']} has a {measure} of {left_fact}; "
-                f"{right_country['app_country_name']} has a {measure} of {right_fact}."
-            )
     if rel == "population":
         pop = country["population"]
-        if target_val is not None and op in ("greater_than", "less_than"):
+        if target_val is not None and op in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"}:
             try:
                 val_num = float(target_val)
                 comparison = "equal to" if pop == val_num else "more than" if pop > val_num else "fewer than"
-                return f"{name} has a population of approximately {pop:,} ({comparison} {val_num:,})."
+                return f"{name} has a population of approximately {number(pop)} ({comparison} {number(val_num)})."
             except (ValueError, TypeError):
                 pass
-        return f"{name} has a population of approximately {pop:,}."
+        return f"{name} has a population of approximately {number(pop)}."
 
     if rel in ("area_km2", "area"):
         area = country["area_km2"]
-        if target_val is not None and op in ("greater_than", "less_than"):
+        if target_val is not None and op in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"}:
             try:
                 val_num = float(target_val)
                 comparison = "equal to" if area == val_num else "larger than" if area > val_num else "smaller than"
-                return f"The area of {name} is approximately {area:,} km² (it is {comparison} {val_num:,} km²)."
+                return f"The area of {name} is approximately {number(area)} km², {comparison} {number(val_num)} km²."
             except (ValueError, TypeError):
                 pass
-        return f"The area of {name} is approximately {area:,.0f} km²."
+        return f"The area of {name} is approximately {number(area)} km²."
 
     if rel == "dominant_religion":
         relig = country["dominant_religion"]
@@ -2051,70 +2087,109 @@ def generate_factual_explanation(
         return f"The government type of {name} is {gov}."
 
     if op in ("north_of", "south_of", "east_of", "west_of"):
-        other_entity_name = None
-        if isinstance(right, dict):
-            other_entity_name = right.get("entity")
-        other_country = resolve_entity(conn, other_entity_name, target_country) if other_entity_name else None
-        c_lat = country["latitude"]
-        c_lon = country["longitude"]
-        if other_country:
-            o_name = other_country["app_country_name"]
-            o_lat = other_country["latitude"]
-            o_lon = other_country["longitude"]
-            if op in ("north_of", "south_of"):
-                actual_dir_en = "north" if c_lat > o_lat else "south"
-                lat_card = "N" if c_lat >= 0 else "S"
-                o_lat_card = "N" if o_lat >= 0 else "S"
-                return f"{name} ({abs(c_lat):.1f}°{lat_card}) is located {actual_dir_en} of {o_name} ({abs(o_lat):.1f}°{o_lat_card})."
-            if op in ("east_of", "west_of"):
-                actual_dir_en = "east" if c_lon > o_lon else "west"
-                lon_card = "E" if c_lon >= 0 else "W"
-                o_lon_card = "E" if o_lon >= 0 else "W"
-                return f"{name} ({abs(c_lon):.1f}°{lon_card}) is located {actual_dir_en} of {o_name} ({abs(o_lon):.1f}°{o_lon_card})."
+        other_entity_name = right.get("entity") if isinstance(right, dict) else None
+        other_country = resolve_entity(conn, other_entity_name, target_country, item_value) if other_entity_name else None
+        if other_country is not None:
+            axis = "latitude" if op in ("north_of", "south_of") else "longitude"
+            coordinate = country[axis]
+            other_coordinate = other_country[axis]
+            positive, negative = ("N", "S") if axis == "latitude" else ("E", "W")
+            cardinal = positive if coordinate >= 0 else negative
+            other_cardinal = positive if other_coordinate >= 0 else negative
+            coordinate_text = f"{number(abs(coordinate))}°{cardinal}"
+            other_text = f"{number(abs(other_coordinate))}°{other_cardinal}"
+            other_name = other_country["app_country_name"]
+            if coordinate == other_coordinate:
+                return f"{name} and {other_name} have the same recorded {axis} ({coordinate_text})."
+            directions = ("north", "south") if axis == "latitude" else ("east", "west")
+            direction = directions[0 if coordinate > other_coordinate else 1]
+            return (
+                f"By the recorded coordinates, {name} ({coordinate_text}) is {direction} "
+                f"of {other_name} ({other_text})."
+            )
 
-    left_rel = left.get("relation") if isinstance(left, dict) else rel
-    if left_rel == "name":
-        if op == "has_space":
-            return f"The name {name} {'contains' if answer else 'does not contain'} a space."
+    if rel in {
+        "coordinates.latitude", "coordinates.longitude", "latitude", "longitude",
+        "min_latitude", "max_latitude", "min_longitude", "max_longitude",
+    }:
+        coordinate = resolve_ref(conn, left, target_country, item_value)
+        if coordinate is not None:
+            axis = "latitude" if "latitude" in rel else "longitude"
+            positive, negative = ("N", "S") if axis == "latitude" else ("E", "W")
+            cardinal = positive if coordinate >= 0 else negative
+            label = rel.removeprefix("coordinates.").replace("min_", "minimum ").replace("max_", "maximum ")
+            return f"The recorded {label} of {name} is {number(abs(coordinate))}°{cardinal}."
+
+    if rel in {"name", "capital"}:
+        text = name if rel == "name" else country["capital"]
+        intro = "" if rel == "name" else f"The capital of {name} is {text}. "
+        label = f"The name {text}" if rel == "name" else "Its name"
+        if op in {"has_space", "has_hyphen"}:
+            present = " " in text.strip() if op == "has_space" else any(
+                char in text for char in "-\u2010\u2011"
+            )
+            mark = "a space" if op == "has_space" else "a hyphen"
+            return intro + f"{label} {'contains' if present else 'does not contain'} {mark}."
         if op and op.startswith("word_count"):
-            wc = word_count(name)
-            return f"The name {name} consists of {wc} {'words' if wc != 1 else 'word'}."
+            count = word_count(text)
+            return intro + f"{label} consists of {count} {'words' if count != 1 else 'word'}."
         if op and op.startswith("char_count"):
-            cc = char_count(name)
-            return f"The name {name} has {cc} letters."
-        if op == "ends_with" and target_val:
-            last_let = name[-1].upper()
-            val_u = str(target_val).upper()
-            if answer:
-                return f"The name {name} ends with the letter '{val_u}'."
-            else:
-                return f"The name {name} ends with the letter '{last_let}', not '{val_u}'."
-    if left_rel == "name" and op == "has_hyphen":
-        return f"The name {name} {'contains' if answer else 'does not contain'} a hyphen."
+            count = char_count(text)
+            return intro + f"{label} has {count} characters, excluding spaces and hyphens."
+        if op in {"starts_with", "ends_with", "contains_text"} and target_val is not None:
+            positive, negative = {
+                "starts_with": ("starts with", "does not start with"),
+                "ends_with": ("ends with", "does not end with"),
+                "contains_text": ("contains", "does not contain"),
+            }[op]
+            return intro + f"{label} {positive if answer else negative} “{target_val}”."
+        return f"The country is {name}." if rel == "name" else intro.strip()
 
+    left_value = resolve_ref(conn, left, target_country, item_value)
+    right_value = resolve_ref(conn, right, target_country, item_value)
+    if op == "exists":
+        return f"The provided value is {'nonempty' if bool(left_value) else 'empty'}."
+    if isinstance(left_value, str):
+        if op and op.startswith("word_count"):
+            count = word_count(left_value)
+            return f"The text “{left_value}” consists of {count} {'words' if count != 1 else 'word'}."
+        if op and op.startswith("char_count"):
+            return f"The text “{left_value}” has {char_count(left_value)} characters, excluding spaces and hyphens."
+        if op in {"has_space", "has_hyphen"}:
+            present = " " in left_value.strip() if op == "has_space" else any(
+                char in left_value for char in "-\u2010\u2011"
+            )
+            mark = "a space" if op == "has_space" else "a hyphen"
+            return f"The text “{left_value}” {'contains' if present else 'does not contain'} {mark}."
+        if op in {"starts_with", "ends_with", "contains_text"}:
+            positive, negative = {
+                "starts_with": ("starts with", "does not start with"),
+                "ends_with": ("ends with", "does not end with"),
+                "contains_text": ("contains", "does not contain"),
+            }[op]
+            return f"The text “{left_value}” {positive if answer else negative} “{right_value}”."
+    if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "north_of", "south_of", "east_of", "west_of"}:
+        try:
+            left_number = float(left_value)
+            right_number = float(right_value)
+            comparison = "equal to" if left_number == right_number else "greater than" if left_number > right_number else "less than"
+            return f"{number(left_number)} is {comparison} {number(right_number)}."
+        except (TypeError, ValueError):
+            return ""
+    if op == "equals":
+        def display(value) -> str:
+            if isinstance(value, str):
+                return f"“{value}”"
+            if isinstance(value, bool):
+                return "true" if value else "false"
+            if isinstance(value, (int, float)):
+                return number(value)
+            return "an empty value" if value is None else "a provided value"
 
-    # Handle starts_with single letter questions
-    if rel == "name" and op == "starts_with" and target_val:
-        first_letter = name[0].upper()
-        val_u = str(target_val).upper()
-        if answer:
-            return f"The name {name} starts with the letter '{val_u}'."
-        else:
-            return f"The name {name} starts with the letter '{first_letter}', not '{val_u}'."
-
-    facts = []
-    for operand in (left, right):
-        if not isinstance(operand, dict) or "relation" not in operand:
-            continue
-        subject = resolve_entity(conn, operand["entity"], target_country, item_value)
-        value = resolve_ref(conn, operand, target_country, item_value)
-        if subject is not None and value is not None:
-            label = operand["relation"].replace("_", " ").replace(".", " ")
-            display_value = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
-            facts.append(f"{subject['app_country_name']}: {label} = {display_value or 'none'}.")
-    if facts:
-        return " ".join(facts)
-    return f"The compared values are {resolve_ref(conn, left, target_country, item_value)!r} and {resolve_ref(conn, right, target_country, item_value)!r}."
+        return f"{display(left_value)} is {'equal' if answer else 'not equal'} to {display(right_value)}."
+    if op == "contains" and isinstance(left_value, list):
+        return f"The provided list {'contains' if answer else 'does not contain'} “{right_value}”."
+    return ""
 
 
 def execute_local_plan(

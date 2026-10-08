@@ -394,9 +394,9 @@ const createGameStore = (gameType: MapGameType) => {
       try {
         const question = await service.askQuestion(trimmed);
 
-        // Ensure sufficient thinking animation display so user perceives the response and has time to read notices
+        // Keep fast answers readable without adding a delay to slower requests.
         const elapsed = Date.now() - startTime;
-        const minDisplayTime = elapsed > 1150 ? Math.max(elapsed + 1000, 2600) : 1400;
+        const minDisplayTime = 1000;
         if (elapsed < minDisplayTime) {
           const { promise, resolve } = promiseWithResolvers<void>();
           setTimeout(resolve, minDisplayTime - elapsed);

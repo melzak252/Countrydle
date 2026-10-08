@@ -345,3 +345,20 @@ async def test_actual_guest_state_redacts_sources_until_terminal_then_exposes_de
     assert end.status_code == (200 if terminal else 400)
     if terminal:
         assert end.json()["questions"][0]["fact_provenance"] == records
+
+
+@pytest.mark.anyio
+async def test_answered_template_keeps_named_facts_for_postgame_review(facts_db):
+    import countrydle.utils as utilities
+
+    with sqlite3.connect(facts_db) as connection:
+        connection.execute("DELETE FROM country_continents WHERE country_id=1")
+        connection.execute("INSERT INTO country_continents VALUES (1, 'Europe')")
+
+    result, plan = await utilities.analyze_and_answer_locally(
+        "Is it in Europe?", SimpleNamespace(id=4, country_id=1), None, SimpleNamespace(),
+    )
+    assert plan.valid and plan.supported
+    assert result.answer is True
+    assert "Poland" in result.explanation
+    assert "Europe" in result.explanation

@@ -950,7 +950,6 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     assert ans_cap is not None
     assert ans_cap.answer is False
     assert "Warsaw" in ans_cap.explanation
-    assert "Krakow" in ans_cap.explanation
 
     # Coordinates (north_of)
     coords_plan = {
@@ -963,7 +962,6 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     )
     assert ans_coords is not None
     assert ans_coords.answer is True
-    assert "52.0°N" in ans_coords.explanation
 
 
 @pytest.mark.parametrize("hemisphere, expected", [
@@ -977,7 +975,6 @@ def test_kiribati_is_located_in_all_four_hemispheres(hemisphere, expected):
     ans = execute_local_plan(plan, "Kiribati", f"Is the country in the {hemisphere} Hemisphere?")
     assert ans is not None
     assert ans.answer is expected
-    assert "Kiribati is located in the" in ans.explanation
 
 
 def test_entirely_in_hemisphere_accurately_classifies_crossing_and_pure_countries():

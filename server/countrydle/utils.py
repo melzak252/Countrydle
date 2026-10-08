@@ -169,10 +169,9 @@ async def analyze_and_answer_locally(
         valid=True,
         question=local_answer.question,
         answer=local_answer.answer,
-        explanation=sanitize_explanation_for_player(
-            local_answer.explanation,
-            entity_names=[name for name in (country.name, country.official_name) if name],
-        ),
+        # Factual details are stored for post-game review; public serializers
+        # suppress them during play and never expose them as warning guidance.
+        explanation=sanitize_explanation_for_player(local_answer.explanation),
         intent=f"Local KB relation: {local_answer.relation}",
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",

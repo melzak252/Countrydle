@@ -269,3 +269,27 @@ async def test_flagdle_history_endpoint(async_client):
         assert data[0]["id"] == 55
         assert data[0]["date"] == "2026-09-21"
         assert data[0]["country"]["name"] == "France"
+
+
+@pytest.mark.real_database
+@pytest.mark.anyio
+async def test_flagdle_named_facts_are_private_until_win_and_available_to_later_questions(daily_api_client, flag_day):
+    active = await daily_api_client.post("/flagdle/question", json={"question": "Is it in Europe?"})
+    assert active.status_code == 200, active.text
+    assert active.json()["valid"] is True and active.json()["answer"] is True
+    assert not active.json()["explanation"]
+
+    win = await daily_api_client.post("/flagdle/guess", json={"country_id": 143, "guess": "Romania"})
+    assert win.status_code == 200, win.text
+    assert win.json()["answer"] is True
+
+    later = await daily_api_client.post("/flagdle/question", json={"question": "Is it in Europe?"})
+    assert later.status_code == 200, later.text
+    assert later.json()["valid"] is True and later.json()["answer"] is True
+    assert "Romania" in later.json()["explanation"]
+    assert "Europe" in later.json()["explanation"]
+
+    state = await daily_api_client.get("/flagdle/state")
+    assert state.status_code == 200, state.text
+    assert state.json()["state"]["is_game_over"] is True
+    assert all("Romania" in question["explanation"] for question in state.json()["questions"])

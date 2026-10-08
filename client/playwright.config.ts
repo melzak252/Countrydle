@@ -80,9 +80,9 @@ export default defineConfig({
       gracefulShutdown: { signal: 'SIGTERM', timeout: 20_000 },
     },
     {
-      // Compile and bundle this worktree, then use its Vite HTTP proxy. This
-      // intentionally does not invoke SEO prerendering/Chrome or an older API.
-      command: `bunx --bun tsc -b && bunx --bun vite build --mode e2e && bunx --bun vite --mode e2e --host 127.0.0.1 --port ${webPort} --strictPort`,
+      // Compile and serve this worktree's bundle through Vite's API proxy.
+      // Avoid dev-server module requests; never invoke SEO prerendering here.
+      command: `bunx --bun tsc -b && bunx --bun vite build --mode e2e && bunx --bun vite preview --mode e2e --host 127.0.0.1 --port ${webPort} --strictPort`,
       cwd: client, url: baseURL, timeout: 120_000, reuseExistingServer: false,
       env: { ...env, API_PROXY_TARGET: apiURL, VITE_API_URL: '/api', VITE_GOOGLE_CLIENT_ID: 'offline-browser-suite' },
       gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },

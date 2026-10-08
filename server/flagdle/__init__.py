@@ -507,23 +507,23 @@ async def ask_flag_question(
             original_question=question.question, question=answer.question,
             valid=True, answer=answer.answer, user_id=user_id, day_id=day_id,
             guest_id=get_guest_identity(request, response) if user is None else None,
-            explanation=sanitize_explanation_for_player(
-                answer.explanation,
-                entity_names=[name for name in (target_country.name, target_country.official_name) if name],
-            ), context=f"flag_kb:{answer.relation}",
+            explanation=sanitize_explanation_for_player(answer.explanation),
+            context=f"flag_kb:{answer.relation}",
             fact_provenance=answer.fact_provenance,
         )
         if user is None:
-            await record_guest_action(
+            participation = await record_guest_action(
                 session, request, response, "flagdle", day_id,
                 max_guesses=FLAGDLE_CONFIG.max_guesses, question=True,
             )
+            terminal = guest_game_over(participation, FLAGDLE_CONFIG.max_guesses)
         else:
-            await consume_question(
+            state = await consume_question(
                 session, FlagdleState, user_id, day_id, None, FLAGDLE_CONFIG.max_guesses,
             )
+            terminal = state.is_game_over
         saved_question = await FlagdleQuestionRepository(session).create_question(question_create)
-        result = FlagdleQuestionDisplay.model_validate(saved_question)
+        result = FlagdleQuestionDisplay.model_validate(saved_question, context={"terminal": terminal})
         await session.commit()
         return result
     except HTTPException:

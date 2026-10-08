@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, ClassVar, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_field, model_validator
 
 from report_tokens import create_report_token
 from schemas.fact_provenance import FactProvenanceRecord
@@ -14,6 +14,21 @@ AnswerReportStatus = Literal["open", "reviewed", "all"]
 class ReportableQuestion(BaseModel):
     id: int
     report_mode: ClassVar[AnswerReportMode]
+
+    @model_validator(mode="after")
+    def protect_unverified_feedback(self):
+        if getattr(self, "valid", None) is True and type(getattr(self, "answer", None)) is bool:
+            return self
+        # Provider diagnostics can disclose facts even after names are removed.
+        # Warnings contain fixed guidance and only the player's original input.
+        fields = type(self).model_fields
+        if "explanation" in fields:
+            self.explanation = "This question could not be verified. Please ask a clear yes/no question."
+        if "question" in fields:
+            self.question = self.original_question
+        if "fact_provenance" in fields:
+            self.fact_provenance = []
+        return self
 
     @computed_field
     @property

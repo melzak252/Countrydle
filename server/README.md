@@ -293,6 +293,7 @@ fragments.
 - Generic-mode `any`/`all` binds neighboring entity rows only for configured same-type lists: `borders_powiat`, `borders_voivodeship` in Wojewodztwodle, and `borders_state`. `item.is_city_county`, for example, reads the neighboring county's classification, not its name or the hidden target's classification. Other lists and literal arrays remain primitive values accessible through `item.name`. Nested quantifiers retain the original target and restore the enclosing item scope. Missing facts remain unknown; decisive `and`/`or`/`any`/`all` results short-circuit without turning unknown into false.
 - Question validity is independent of local fact and operator coverage: a precise historical, biographical, landmark, or character-position question can be valid but require fallback. Underspecified criteria require clarification; the planner must not invent a numeric threshold. Present membership and past membership remain distinct even when the organization is dissolved.
 - Numeric predicates distinguish strict comparisons from `greater_than_or_equal` / `less_than_or_equal`. `has_space` and `has_hyphen` are unary text predicates; a hyphen is not an en/em dash. Country text predicates preserve punctuation and whitespace instead of normalizing punctuation into an empty search string. SQLite numeric boolean values compare numerically with JSON booleans; factual explanations use the stored property rather than the truth of a possibly inverted comparison.
+- Country text explanations derive spaces and hyphens from the resolved text, not an alias-sensitive predicate answer. Counts that preserve punctuation are labelled characters, excluding spaces and hyphens, rather than letters. Generic-mode explanations stop at the same decisive logical or quantifier boundary as the evaluator; skipped predicates do not become new failures during rendering.
 - A valid question outside the local relations can continue through Qdrant retrieval and the existing answer model. Retrieval uses the planner's rewritten question when provided, otherwise the original player text; an omitted optional rewrite must not bypass fragment lookup.
 - Countrydle does not pass planner coverage notes to the answer model as factual evidence. Missing SQLite coverage is not proof that a historical association or geographic concept does not exist. Fallback preserves the original predicate and may use reliable general knowledge when retrieved fragments are irrelevant; genuinely undetermined answers remain `null`.
 - Country list relations require membership/nonemptiness operators, not scalar `equals`. Unknown historical-union names remain unknown; active organizations such as Benelux use `membership`, not the closed set of dissolved `historical_union` associations. Logical `and` is never rewritten to `or`. Explanations describe the evaluated entity and bound neighbor facts, including under negation.
@@ -786,10 +787,18 @@ The existing fact builder upgrades SQLite additively, preserves unchanged fact
 evidence and invalidates evidence when its value/relation changes. Admin evidence
 edits do not change fact values. Admin fact controls and `/admin/question-tests`
 return the same records that evaluation stores on accepted questions.
-Public active question/state responses return `fact_provenance=[]`; post-game
-review returns only evidence used by that answer. Historical questions remain
-unknown rather than being assigned current citations retrospectively. The new
-Flagdle question table is forward-only; no old question history is reconstructed.
+Public active Countrydle, continental and Flagdle question/state responses suppress
+answered factual explanations and return `fact_provenance=[]`. Explicit terminal
+serialization enables post-game review of only the facts/evidence used by that
+answer. Local template records retain the country name (for example, `Poland is
+located in Europe.`); fallback answer sanitization is unchanged.
+Invalid or unverified daily-game feedback always uses target-free guidance and
+the player's original input, never provider diagnostics, target-bearing rewrites
+or fact evidence—even in terminal historical responses. Private retrieval context
+remains excluded; admin evaluation/report snapshots retain their canonical detail.
+Historical answered questions retain their stored explanation and unknown evidence
+rather than receiving current names/citations retrospectively. The Flagdle question
+table remains forward-only; no old question history is reconstructed.
 
 Stored hemisphere conventions explicitly identify bundled geometry and sovereign
 territory overrides. The São Tomé and Príncipe audit claim remains unverified and
