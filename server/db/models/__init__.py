@@ -13,7 +13,7 @@ from .continental import (
     ContinentalGuess,
     ContinentalQuestion,
 )
-from .flagdle import FlagdleDay, FlagdleState, FlagdleGuess
+from .flagdle import FlagdleDay, FlagdleState, FlagdleGuess, FlagdleQuestion
 from .question import CountrydleQuestion
 from .country_fact_change_log import CountryFactChangeLog
 from .fragment import CountryFragment, PowiatFragment, WojewodztwoFragment, USStateFragment

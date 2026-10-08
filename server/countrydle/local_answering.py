@@ -8,12 +8,13 @@ general-knowledge fallback without turning missing knowledge into false.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import re
 import sqlite3
 import unicodedata
 from typing import Iterable
+from country_fact_provenance import RELATIONS as EVIDENCE_RELATIONS, read_record
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,7 @@ class LocalAnswer:
     answer: bool | None
     explanation: str
     relation: str
+    fact_provenance: list[dict] = field(default_factory=list)
 
 
 POLISH_COUNTRY_ALIASES = {
@@ -1060,6 +1062,7 @@ class LocalCountryFacts:
             answer=answer,
             explanation=f"{country['app_country_name']} {'is' if answer else 'is not'} a member of {target}.",
             relation="membership",
+            fact_provenance=[read_record(conn, country["id"], "membership", target if answer else None)],
         )
 
     def _answer_population_or_area(self, conn, country, original, q):
@@ -1377,25 +1380,59 @@ def word_count(value: str) -> int:
 def char_count(value: str) -> int:
     return len(re.sub(r"[\s\-\u2010\u2011]+", "", value))
 
+def collect_ref_evidence(conn, ref, target_country, item_value, evidence, *, contains_value=None):
+    if evidence is None or not isinstance(ref, dict) or "value" in ref:
+        return
+    relation = ref.get("relation")
+    if relation not in EVIDENCE_RELATIONS:
+        return
+    entity = resolve_entity(conn, ref.get("entity"), target_country, item_value)
+    if entity is None:
+        return
+    value = None
+    if contains_value is not None:
+        actual = resolve_ref(conn, ref, target_country, item_value)
+        canonical = normalize_hemisphere if relation == "hemisphere" else normalize_value
+        value = next((item for item in actual if canonical(item) == canonical(contains_value)), None)
+    record = read_record(conn, entity["id"], relation, value)
+    if record not in evidence:
+        evidence.append(record)
+
+
+def merge_used_evidence(evidence, results, branches, *, decisive):
+    if evidence is None:
+        return
+    has_decisive = any(result is decisive for result in results)
+    for result, branch in zip(results, branches):
+        if not has_decisive or result is decisive:
+            for record in branch:
+                if record not in evidence:
+                    evidence.append(record)
+
+
 def evaluate_plan_node(
     conn: sqlite3.Connection,
     node: dict,
     target_country: sqlite3.Row,
     item_value: str | None = None,
+    fact_provenance: list[dict] | None = None,
 ) -> bool | None:
     if not isinstance(node, dict):
         return None
     operator = node.get("operator")
 
     if operator == "not":
-        result = evaluate_plan_node(conn, node.get("condition"), target_country, item_value)
+        result = evaluate_plan_node(conn, node.get("condition"), target_country, item_value, fact_provenance)
         return None if result is None else not result
 
     if operator in {"and", "or"}:
         conditions = node.get("conditions")
         if not isinstance(conditions, list) or not conditions:
             return None
-        results = [evaluate_plan_node(conn, condition, target_country, item_value) for condition in conditions]
+        branches = [[] for _ in conditions] if fact_provenance is not None else [None] * len(conditions)
+        results = [evaluate_plan_node(conn, condition, target_country, item_value, branch)
+                   for condition, branch in zip(conditions, branches)]
+        merge_used_evidence(fact_provenance, results, branches, decisive=operator == "or")
         if operator == "or":
             if any(result is True for result in results):
                 return True
@@ -1412,6 +1449,7 @@ def evaluate_plan_node(
         value = resolve_ref(conn, node.get("left", {}), target_country, item_value)
         if value is None:
             return None
+        collect_ref_evidence(conn, node.get("left", {}), target_country, item_value, fact_provenance)
         if isinstance(value, list):
             return bool(value)
         return bool(value)
@@ -1443,6 +1481,9 @@ def evaluate_plan_node(
         right = resolve_ref(conn, node.get("right", {}), target_country, item_value)
         if left is None or (operator not in {"has_space", "has_hyphen"} and right is None):
             return None
+        collect_ref_evidence(conn, node.get("left", {}), target_country, item_value, fact_provenance,
+                             contains_value=right if operator == "contains" else None)
+        collect_ref_evidence(conn, node.get("right", {}), target_country, item_value, fact_provenance)
         left_ref = node.get("left", {})
         relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
         if operator == "equals" and relation == "currency" and isinstance(left, list):
@@ -1604,7 +1645,11 @@ def evaluate_plan_node(
         condition = node.get("condition")
         if not isinstance(items, list) or condition is None:
             return None
-        results = [evaluate_plan_node(conn, condition, target_country, str(item)) for item in items]
+        collect_ref_evidence(conn, node.get("items", {}), target_country, item_value, fact_provenance)
+        branches = [[] for _ in items] if fact_provenance is not None else [None] * len(items)
+        results = [evaluate_plan_node(conn, condition, target_country, str(item), branch)
+                   for item, branch in zip(items, branches)]
+        merge_used_evidence(fact_provenance, results, branches, decisive=operator == "any")
         if operator == "any":
             if any(result is True for result in results):
                 return True
@@ -2157,7 +2202,8 @@ def execute_local_plan(
         plan = normalize_geographic_area_plan(conn, plan)
         if plan is None:
             return None
-        answer = evaluate_plan_node(conn, plan, country)
+        fact_provenance = []
+        answer = evaluate_plan_node(conn, plan, country, fact_provenance=fact_provenance)
         if answer is None:
             return None
         relations = sorted(plan_relations(plan)) or ["local_plan"]
@@ -2169,4 +2215,5 @@ def execute_local_plan(
             answer=answer,
             explanation=explanation,
             relation="+".join(relations),
+            fact_provenance=fact_provenance,
         )

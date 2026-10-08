@@ -1,5 +1,9 @@
 """Cache isolation, eviction and retry-after-failure are observable planner behavior."""
 import json
+import importlib
+import sqlite3
+from dataclasses import replace
+from pathlib import Path
 
 import httpx
 import pytest
@@ -13,15 +17,38 @@ from utils.plan_cache import PlanCache, plan_cache
 
 
 @pytest.fixture(autouse=True)
-def isolated_cache(monkeypatch):
-    plan_cache.clear()
+def isolated_cache(monkeypatch, tmp_path):
+    cache = PlanCache(db_path=tmp_path / "planner-cache.sqlite")
+    monkeypatch.setattr(importlib.import_module("utils.plan_cache"), "plan_cache", cache)
+    monkeypatch.setitem(globals(), "plan_cache", cache)
     monkeypatch.setenv("GEMINI_API_KEY", "test-only-key")
-    yield
-    plan_cache.clear()
 
 
-def test_cache_normalization_preserves_mode_and_contract_boundaries():
-    cache = PlanCache(max_size=5)
+@pytest.fixture(autouse=True)
+def private_facts(monkeypatch, tmp_path):
+    from countrydle import local_answering
+
+    country_db = tmp_path / "countries.sqlite"
+    snapshot = json.loads((Path(__file__).parent / "countrydle_english_facts.json").read_text(encoding="utf-8"))
+    with sqlite3.connect(country_db) as connection:
+        for table in snapshot["tables"]:
+            columns = ", ".join(f'"{name}" {datatype}' for name, datatype in table["columns"])
+            connection.execute(f'CREATE TABLE "{table["name"]}" ({columns})')
+            placeholders = ", ".join("?" for _ in table["columns"])
+            connection.executemany(f'INSERT INTO "{table["name"]}" VALUES ({placeholders})', table["rows"])
+    monkeypatch.setattr(local_answering, "DEFAULT_DB_PATH", country_db)
+
+    state_db = tmp_path / "states.sqlite"
+    with sqlite3.connect(state_db) as connection:
+        connection.executescript("""
+            CREATE TABLE us_states (id INTEGER PRIMARY KEY, name TEXT, is_coastal INTEGER);
+            INSERT INTO us_states VALUES (1, 'California', 1), (2, 'Indiana', 0);
+        """)
+    monkeypatch.setitem(globals(), "LOCAL_CONFIG", replace(LOCAL_CONFIG, db_path=state_db))
+
+
+def test_cache_normalization_preserves_mode_and_contract_boundaries(tmp_path):
+    cache = PlanCache(max_size=5, db_path=tmp_path / "cache.sqlite")
     cache.set("Countrydle", "Czy państwo leży w Europie?", "country-plan", version="v2:model-a")
     assert cache.get("countrydle", "  CZY panstwo  lezy w Europie ", version="v2:model-a") == "country-plan"
     assert cache.get("us_statedle", "Czy państwo leży w Europie?", version="v2:model-a") is None
@@ -29,8 +56,8 @@ def test_cache_normalization_preserves_mode_and_contract_boundaries():
     assert cache.get("countrydle", "Czy państwo leży w Europie?", version="v2:model-b") is None
 
 
-def test_plan_cache_evicts_least_recently_used_interpretation():
-    cache = PlanCache(max_size=2)
+def test_plan_cache_evicts_least_recently_used_interpretation(tmp_path):
+    cache = PlanCache(max_size=2, db_path=tmp_path / "cache.sqlite")
     cache.set("mode", "q1", "p1", version="v2")
     cache.set("mode", "q2", "p2", version="v2")
     assert cache.get("mode", "q1", version="v2") == "p1"
@@ -98,8 +125,14 @@ def test_cached_plan_remains_target_independent_and_skips_provider(monkeypatch, 
     with httpx.Client(transport=httpx.MockTransport(generate)) as client:
         monkeypatch.setattr(ai_clients, "_http_client", client)
         analyze = analyze_question_for_local_plan if country else lambda q, **kwargs: analyze_question(q, LOCAL_CONFIG, **kwargs)
-        first = analyze("Does it have shoreline access?")
-        second = analyze("  DOES it have shoreline access? ")
+        first_evidence = {}
+        first = analyze("Does it have shoreline access?", evidence=first_evidence)
+        hit_evidence = {}
+        second = analyze("  DOES it have shoreline access? ", evidence=hit_evidence)
+        assert calls == 1
+        assert first_evidence["cache_hit"] is False
+        assert hit_evidence["cache_hit"] is True
+        assert "usage" not in hit_evidence
         if country:
             assert execute_local_plan(first.plan, "Portugal", first.original_question).answer is True
             assert execute_local_plan(second.plan, "Switzerland", second.original_question).answer is False
@@ -109,38 +142,30 @@ def test_cached_plan_remains_target_independent_and_skips_provider(monkeypatch, 
 
 
 def test_country_prompt_cutover_ignores_old_interpretation(monkeypatch):
-    from countrydle.local_planner import DEFAULT_MODEL, QuestionPlan
-    from planner_protocol import PLANNER_VERSION
+    from countrydle import local_planner
 
-    monkeypatch.setenv("LOCAL_QUESTION_MODEL", DEFAULT_MODEL)
-    question = "Does the country have at least ten million people?"
-    old_plan = QuestionPlan(
-        original_question=question, valid=True, supported=True,
-        improved_question=None, explanation=None,
-        plan={"operator": "less_than",
-              "left": {"entity": "target_country", "relation": "population"},
-              "right": {"value": 10_000_000}},
-    )
-    plan_cache.set(
-        "countrydle", question, old_plan, version=f"{PLANNER_VERSION}:{DEFAULT_MODEL}",
-    )
-    response = {
-        "route": "local", "plan": [{
-            "operator": "greater_than_or_equal",
-            "left": {"entity": "target_country", "relation": "population"},
-            "right": {"value": 10_000_000},
-        }],
-    }
+    question = "Does it have shoreline access?"
+    coastal = {"operator": "exists", "left": {"entity": "target_country", "relation": "water_access"}}
     responses = iter([
-        httpx.Response(200, json={
-            "candidates": [{"content": {"parts": [{"text": json.dumps(response)}]}}],
-        }),
+        {"route": "local", "plan": [coastal, {"operator": "not", "args": [0]}]},
+        {"route": "local", "plan": [coastal]},
     ])
-    with httpx.Client(transport=httpx.MockTransport(lambda request: next(responses))) as client:
+
+    def generate(request):
+        return httpx.Response(200, json={
+            "candidates": [{"content": {"parts": [{"text": json.dumps(next(responses))}]}}],
+        })
+
+    with httpx.Client(transport=httpx.MockTransport(generate)) as client:
         monkeypatch.setattr(ai_clients, "_http_client", client)
-        fresh = analyze_question_for_local_plan(question)
+        old = analyze_question_for_local_plan(question)
+        assert execute_local_plan(old.plan, "Portugal", question).answer is False
+        monkeypatch.setattr(local_planner, "COUNTRYDLE_PROMPT_REVISION", local_planner.COUNTRYDLE_PROMPT_REVISION + "-changed")
+        evidence = {}
+        fresh = analyze_question_for_local_plan(question, evidence=evidence)
         reused = analyze_question_for_local_plan(question.upper())
-        assert execute_local_plan(fresh.plan, "Poland", question).answer is True
+        assert evidence["cache_hit"] is False
+        assert execute_local_plan(fresh.plan, "Portugal", question).answer is True
         assert execute_local_plan(reused.plan, "Switzerland", question).answer is False
 
 

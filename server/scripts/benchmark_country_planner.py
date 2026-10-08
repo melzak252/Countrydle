@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""Opt-in live comparison harness for Countrydle local planner prompts.
+"""Isolated Countrydle quality gate: offline semantics or explicitly bounded live stages.
 
-Gemini Flash-Lite cost estimates use fixed USD rates: $0.10 / 1M uncached
-input tokens, $0.01 / 1M cached input tokens, and $0.40 / 1M output tokens.
-Provider-reported thought tokens are priced as output tokens and added to
-candidatesTokenCount. Rates are intentionally fixed for reproducibility;
-update them explicitly when pricing changes.
+Supplied gold plans never establish current provider accuracy. Live execution requires
+model-specific approved prices and reserves worst-case cost before every HTTP call.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import importlib.util
 import json
@@ -17,13 +15,13 @@ import math
 import os
 import sqlite3
 import statistics
+import subprocess
 import sys
 import tempfile
 import time
 import threading
 import types
 from contextlib import contextmanager
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -81,11 +79,8 @@ def connect_readonly(path: Path):
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SERVER_DIR = ROOT_DIR / "server"
-DEFAULT_CORPUS = SERVER_DIR / "tests" / "country_planner_benchmark.json"
+DEFAULT_CORPUS = SERVER_DIR / "tests" / "answer_quality_corpus.json"
 DEFAULT_DB = SERVER_DIR / "data" / "country_facts.sqlite"
-INPUT_RATE = 0.10
-CACHED_INPUT_RATE = 0.01
-OUTPUT_RATE = 0.40
 RATE_UNIT = 1_000_000
 
 
@@ -110,7 +105,12 @@ def prepare_environment(env_file: Path | None) -> None:
 
 
 def isolate_plan_cache() -> None:
-    """Prevent the planner's lazy cache import from initializing app storage."""
+    """Load real pure submodules without application package startup or cache access."""
+    for package_name in ("countrydle", "utils"):
+        package = types.ModuleType(package_name)
+        package.__path__ = [str(SERVER_DIR / package_name)]
+        sys.modules[package_name] = package
+
     class DisabledPlanCache:
         def get(self, *args, **kwargs):
             raise AssertionError("Planner cache access is forbidden; use_cache=False is required")
@@ -165,6 +165,15 @@ def load_corpus(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 raise ValueError(f"Case {case['id']}: each required atom needs operator and relation")
             if "value" in atom and not (atom["value"] is None or type(atom["value"]) in (bool, int, float, str)):
                 raise ValueError(f"Case {case['id']}: required atom value must be a scalar")
+        if "expected_answers" in case:
+            answers = case["expected_answers"]
+            if not isinstance(answers, dict) or any(
+                not isinstance(target, str) or not target or (answer is not None and type(answer) is not bool)
+                for target, answer in answers.items()
+            ):
+                raise ValueError(f"Case {case['id']}: reviewed answers require named targets and bool/null")
+            if any(target not in answers for target in case.get("unreviewed_targets", [])):
+                raise ValueError(f"Case {case['id']}: unreviewed targets must be explicitly represented")
     return corpus, corpus["cases"]
 
 
@@ -420,43 +429,346 @@ def _denotation(module, plan: Any, countries: list[str], question: str) -> tuple
     for country in countries:
         try:
             result = module.local_answering.execute_local_plan(plan, country, question)
-            answers[country] = result.answer if result is not None else None
+            if result is not None:
+                answers[country] = result.answer
         except Exception:
             failures += 1
-            answers[country] = None
     return answers, failures
 
 
 def _compare_denotations(actual: dict[str, Any], gold: dict[str, Any]) -> dict[str, Any]:
     mismatches = []
     for country in gold:
-        if actual.get(country) != gold[country]:
-            mismatches.append({"country": country, "gold": gold[country], "actual": actual.get(country)})
+        if country not in actual or actual[country] is not gold[country]:
+            mismatch = {"country": country, "gold": gold[country], "actual": actual.get(country)}
+            if country not in actual:
+                mismatch["missing"] = True
+            mismatches.append(mismatch)
     return {"compared_entities": len(gold), "mismatch_count": len(mismatches), "mismatches": mismatches}
 
 
-def _cost(usage: dict[str, Any] | None) -> float | None:
-    if not usage:
-        return None
-    inp = usage.get("input_tokens")
-    out = usage.get("output_tokens")
-    thoughts = usage.get("thought_tokens")
-    if type(inp) is not int or type(out) is not int or type(thoughts) is not int:
-        return None
-    cached = usage.get("cached_input_tokens")
-    if type(cached) is not int or cached < 0 or cached > inp:
-        return None
-    return ((inp - cached) * INPUT_RATE + cached * CACHED_INPUT_RATE + (out + thoughts) * OUTPUT_RATE) / RATE_UNIT
+PATHS = ("template", "model_planned_local", "fallback")
+POLICY_ID = "h10-pre-score-20261006-v1"
+_live_budget = None
 
-def _cost_uncached_upper_bound(usage: dict[str, Any] | None) -> float | None:
-    if not usage:
+
+def json_identity(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
+                                     separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def load_pricing(path: Path) -> dict[str, Any]:
+    pricing = json.loads(path.read_text(encoding="utf-8"))
+    if pricing.get("currency") != "USD" or not pricing.get("as_of") or pricing.get("approved") is not True:
+        raise ValueError("Pricing requires approved=true, currency=USD, and as_of date")
+    models = pricing.get("models")
+    if not isinstance(models, dict) or not models:
+        raise ValueError("Pricing requires model-specific entries")
+    for model, rates in models.items():
+        if not isinstance(model, str) or not isinstance(rates, dict):
+            raise ValueError("Invalid model pricing entry")
+        for key in ("input_usd_per_million", "cached_input_usd_per_million", "output_usd_per_million"):
+            value = rates.get(key)
+            if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
+                raise ValueError(f"{model}: missing/invalid {key}")
+        if rates["cached_input_usd_per_million"] > rates["input_usd_per_million"]:
+            raise ValueError(f"{model}: cached rate exceeds uncached reservation rate")
+        if type(rates.get("max_input_tokens")) is not int or rates["max_input_tokens"] < 1:
+            raise ValueError(f"{model}: positive approved max_input_tokens required")
+    return pricing
+
+
+def stage_cost(usage: dict | None, rates: dict | None, *, uncached=False) -> float | None:
+    if not isinstance(usage, dict) or rates is None:
         return None
-    inp = usage.get("input_tokens")
-    out = usage.get("output_tokens")
-    thoughts = usage.get("thought_tokens")
-    if type(inp) is not int or type(out) is not int or type(thoughts) is not int:
+    if any(type(usage.get(key)) is not int or usage[key] < 0
+           for key in ("input_tokens", "output_tokens", "thought_tokens")):
         return None
-    return (inp * INPUT_RATE + (out + thoughts) * OUTPUT_RATE) / RATE_UNIT
+    cached = 0 if uncached else usage.get("cached_input_tokens")
+    if type(cached) is not int or not 0 <= cached <= usage["input_tokens"]:
+        return None
+    return ((usage["input_tokens"] - cached) * rates["input_usd_per_million"]
+            + cached * rates["cached_input_usd_per_million"]
+            + (usage["output_tokens"] + usage["thought_tokens"]) * rates["output_usd_per_million"]) / RATE_UNIT
+
+
+class LiveBudget:
+    """Reservations never reclaimed, including failures; every retry reserves."""
+
+    def __init__(self, pricing: dict, max_calls: int, max_cost_usd: float):
+        if type(max_calls) is not int or not 1 <= max_calls <= 100:
+            raise ValueError("Live provider cap must be between 1 and 100 calls")
+        if not math.isfinite(max_cost_usd) or not 0 < max_cost_usd <= 1:
+            raise ValueError("Live cost cap must be positive and at most USD 1")
+        self.pricing = pricing
+        self.max_calls = max_calls
+        self.max_cost_usd = max_cost_usd
+        self.reservations: list[dict] = []
+
+    def reserve(self, model: str, body: dict) -> dict:
+        rates = self.pricing["models"].get(model)
+        if rates is None:
+            raise ValueError(f"No approved pricing for model {model}")
+        generation = body.get("generationConfig", {})
+        output = generation.get("maxOutputTokens")
+        thinking = generation.get("thinkingConfig", {}).get("thinkingBudget")
+        if type(output) is not int or output < 1 or type(thinking) is not int or thinking < 0:
+            raise ValueError("Live calls require finite explicit output AND thinking token bounds")
+        # UTF-8 bytes conservatively bound text/schema tokens. Reserve the full
+        # approved ceiling, including fixed request-envelope headroom.
+        request_bytes = len(json.dumps(body, ensure_ascii=False).encode("utf-8"))
+        if request_bytes + 4096 > rates["max_input_tokens"]:
+            raise ValueError("Request exceeds approved conservative input-token bound")
+        reserved = (rates["max_input_tokens"] * rates["input_usd_per_million"]
+                    + (output + thinking) * rates["output_usd_per_million"]) / RATE_UNIT
+        if len(self.reservations) >= self.max_calls or self.reserved_cost_usd + reserved > self.max_cost_usd:
+            raise RuntimeError("Live budget exhausted before provider call")
+        entry = {"call": len(self.reservations) + 1, "model": model,
+                 "reserved_cost_usd": reserved, "max_input_tokens": rates["max_input_tokens"],
+                 "max_output_tokens": output, "max_thought_tokens": thinking}
+        self.reservations.append(entry)
+        return entry
+
+    @property
+    def reserved_cost_usd(self) -> float:
+        return sum(item["reserved_cost_usd"] for item in self.reservations)
+
+
+def load_fallback_prompt_builder():
+    """Load the actual pure prompt builder without importing gameplay/DB/Qdrant."""
+    from countrydle.template_compiler import _bind_named_country_subject
+    source = SERVER_DIR / "countrydle" / "utils.py"
+    tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                    and node.name == "answer_prompts")
+    namespace = {"QuestionEnhanced": Any, "_bind_named_country_subject": _bind_named_country_subject}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), str(source), "exec"), namespace)
+    return namespace["answer_prompts"]
+
+
+class IsolatedFallback:
+    """Actual answer stage, conditional on immutable pre-retrieved context.
+
+    No live embedding/vector search, gameplay imports, caches or history writes.
+    This is not a measurement of live retrieval accuracy or answer reuse.
+    """
+
+    def __init__(self, snapshot_path: Path, model: str):
+        snapshot_bytes = snapshot_path.read_bytes()
+        snapshot = json.loads(snapshot_bytes)
+        if snapshot.get("schema_version") != 1 or not isinstance(snapshot.get("contexts"), dict):
+            raise ValueError("Retrieval snapshot requires schema_version=1 and contexts map")
+        self.contexts = snapshot["contexts"]
+        self.snapshot_sha256 = hashlib.sha256(snapshot_bytes).hexdigest()
+        self.model = model
+        self.prompt_builder = load_fallback_prompt_builder()
+
+    def answer(self, case: dict, target: str) -> tuple[Any, dict]:
+        from utils.fallback_answers import get_answer
+        context = self.contexts.get(case["id"], {}).get(target)
+        if not isinstance(context, dict) or not isinstance(context.get("text"), str):
+            raise ValueError(f"Missing frozen retrieval context: {case['id']}/{target}")
+        question = types.SimpleNamespace(original_question=case["question"], question=case["question"])
+        started = time.perf_counter()
+        system, user = self.prompt_builder(question, target, context["text"])
+        evidence = {"stage": "fallback", "model": self.model, "retrieval": context,
+                    "retrieval_snapshot_sha256": self.snapshot_sha256,
+                    "retrieval_mode": "immutable_pre_retrieved_context",
+                    "embedding_provider_calls": 0, "retrieval_provider_calls": 0,
+                    "prompt_sha256": hashlib.sha256(f"{system.strip()}\n\n{user.strip()}".encode("utf-8")).hexdigest()}
+        try:
+            result = get_answer(system, user, model=self.model, evidence=evidence, request_timeout=30)
+            evidence.update(answer=result["answer"], explanation=result["explanation"])
+        except Exception as exc:
+            evidence["error"] = _safe_exception(exc)
+            evidence["error_kind"] = "provider_error" if evidence.get("provider_call_attempted") else "pre_call_blocked"
+            result = None
+        evidence["duration_ms"] = (time.perf_counter() - started) * 1000
+        return result, evidence
+
+
+def assess_targets(case: dict, answers: dict, *, executed: bool, route: str,
+                   errors: dict | None = None, provider_error: str | None = None,
+                   artifacts: dict | None = None) -> list[dict]:
+    reviewed = case.get("expected_answers", {})
+    assessments = []
+    for target in dict.fromkeys([*reviewed, *case.get("unreviewed_targets", [])]):
+        expected = reviewed.get(target)
+        row = {"target": target, "expected": expected, "actual": answers.get(target),
+               "answerable": expected is not None, "route_correct": route == case["route"],
+               "interpretation_correct": None, "factual_correct": None,
+               "evaluator_correct": None, "grounding": "unassessed", "causal_evidence": []}
+        error = (errors or {}).get(target)
+        if provider_error or error:
+            row["outcome"] = "provider_error" if provider_error else (
+                error.get("kind", "execution_error") if isinstance(error, dict) else "execution_error")
+            row["error"] = provider_error or (error.get("message") if isinstance(error, dict) else error)
+        elif target in case.get("unreviewed_targets", []) or target not in reviewed:
+            row["outcome"] = "needs_adjudication"
+        elif not executed:
+            row["outcome"] = "unassessed"
+        elif target not in answers:
+            row["outcome"] = "missing_result"
+        elif answers[target] is None:
+            row["outcome"] = "correct_abstention" if expected is None else "avoidable_abstention"
+        elif expected is None:
+            row["outcome"] = "wrong_answer"
+            row["unknown_to_boolean"] = True
+        else:
+            row["outcome"] = "correct_answer" if answers[target] is expected else "wrong_answer"
+            row["factual_correct"] = answers[target] is expected
+        artifact = (artifacts or {}).get(target)
+        row["assessment_artifact_sha256"] = artifact
+        adjudication = case.get("causal_reviews", {}).get(target, {})
+        if (adjudication.get("reviewed") is True and artifact is not None
+                and adjudication.get("observed_artifact_sha256") == artifact
+                and adjudication.get("evidence")):
+            row["causal_evidence"] = list(adjudication["evidence"])
+            row["causes"] = list(adjudication.get("causes", []))
+            row["grounding"] = adjudication.get("grounding", "unassessed")
+        assessments.append(row)
+    return assessments
+
+
+def finish_assessment(record: dict, case: dict, *, executed: bool, errors: dict | None = None) -> None:
+    errors = dict(errors or {})
+    if record.get("route_error") and not record.get("provider_call"):
+        errors.update({target: {"kind": "pre_call_blocked", "message": record["route_error"]}
+                       for target in case.get("expected_answers", {})})
+    explanations = {stage["target"]: stage.get("explanation") for stage in record.get("stages", []) if stage.get("target")}
+    artifacts = {target: json_identity({"answer": answer, "plan": record.get("compiled_plan"),
+                                       "explanation": explanations.get(target), "route": record["actual_route"]})
+                 for target, answer in record.get("actual_denotation", {}).items()}
+    assessments = assess_targets(case, record.get("actual_denotation", {}), executed=executed,
+                                 route=record["actual_route"], errors=errors, artifacts=artifacts,
+                                 provider_error=record.get("route_error") if record.get("provider_call") else None)
+    record["target_assessments"] = assessments
+    record["reviewed_answer_comparison"] = _compare_denotations(
+        record.get("actual_denotation", {}),
+        {target: value for target, value in case.get("expected_answers", {}).items()
+         if target not in case.get("unreviewed_targets", [])},
+    ) if executed else None
+    if any(row["outcome"] in {"wrong_answer", "avoidable_abstention", "missing_result",
+                             "provider_error", "execution_error", "pre_call_blocked"} for row in assessments):
+        record.update(semantic_correct=False, semantic_status="incorrect")
+    elif not executed or not assessments or any(row["outcome"] in {"needs_adjudication", "unassessed"} for row in assessments):
+        record.update(semantic_correct=None, semantic_status="needs_adjudication" if executed else "unassessed")
+    elif record.get("required_atoms_missing"):
+        record.update(semantic_correct=None, semantic_status="needs_adjudication")
+    else:
+        record["semantic_correct"] = record["route_matches"] is True
+        record["semantic_status"] = "correct" if record["semantic_correct"] else "incorrect"
+    for row in assessments:
+        if record.get("required_atoms_missing"):
+            row["causal_evidence"].append({"kind": "required_predicates_guard",
+                                          "predicates": record["required_atoms_missing"],
+                                          "status": "advisory_not_equivalence_proof"})
+            if (row["outcome"] == "wrong_answer" and row["target"] in record.get("gold_denotation", {})
+                    and record["gold_denotation"][row["target"]] is row["expected"]):
+                row["interpretation_correct"] = False
+                row.setdefault("causes", []).append("interpretation_error")
+                row["causal_evidence"].append({"kind": "missing_predicate_and_reviewed_gold_correct_actual_wrong"})
+        if row["target"] in record.get("gold_denotation", {}) and record["gold_denotation"][row["target"]] is not row["expected"]:
+            if row["factual_correct"] is False:
+                row["fact_or_evaluator_disagreement"] = True
+                row["causal_evidence"].append({"kind": "gold_executor_disagrees_with_reviewed_answer",
+                                              "cause": "unadjudicated_fact_or_evaluator"})
+
+
+def path_quality(records: list[dict], corpus: dict, *, live: bool) -> dict:
+    """Frozen before scoring: template zero errors, local 95%, fallback 90%."""
+    output = {}
+    for path in PATHS:
+        rows = [row for row in records if row.get("path") == path]
+        targets = [item for row in rows for item in row.get("target_assessments", [])]
+        outcomes = {}
+        for item in targets:
+            outcomes[item["outcome"]] = outcomes.get(item["outcome"], 0) + 1
+        answerable = [item for item in targets if item["answerable"] and item["outcome"] not in {"unassessed", "needs_adjudication"}]
+        correct = sum(item["outcome"] == "correct_answer" for item in answerable)
+        held = [row for row in rows if row["split"] == "held_out"]
+        held_targets = {(row["case_id"], item["target"]) for row in held
+                        for item in row.get("target_assessments", [])}
+        languages = {lang: len({row["case_id"] for row in held if row.get("language") == lang})
+                     for lang in ("en", "pl")}
+        fatal_outcomes = ("provider_error", "execution_error", "pre_call_blocked", "missing_result")
+        fatal_failures = sum(outcomes.get(key, 0) for key in fatal_outcomes)
+        unknown_to_false = sum(item.get("unknown_to_boolean") is True and item["actual"] is False for item in targets)
+        interpretation_errors = sum(item.get("interpretation_correct") is False for item in targets)
+        causes = {cause: sum(cause in item.get("causes", []) for item in targets)
+                  for cause in ("interpretation_error", "stale_fact", "incorrect_fact", "unsupported_route")}
+        route_rows = [row for row in records if row.get("route_matches") is not None
+                      and (row.get("interpretation_path") == "model_planned_local" if path == "model_planned_local"
+                           else row.get("path") == path)]
+        route_rate = sum(row["route_matches"] is True for row in route_rows) / len(route_rows) if route_rows else None
+        rate = correct / len(answerable) if answerable else None
+        held_answerable = [item for row in held for item in row.get("target_assessments", [])
+                           if item["answerable"] and item["outcome"] not in {"unassessed", "needs_adjudication"}]
+        held_rate = sum(item["outcome"] == "correct_answer" for item in held_answerable) / len(held_answerable) if held_answerable else None
+        held_routes = [row for row in route_rows if row["split"] == "held_out"]
+        held_route_rate = sum(row["route_matches"] is True for row in held_routes) / len(held_routes) if held_routes else None
+        reasons, insufficient = [], []
+        development_regressions = any(item["outcome"] in {"wrong_answer", "avoidable_abstention"}
+                                      for row in rows if row["split"] == "development"
+                                      for item in row.get("target_assessments", []))
+        template_errors = path == "template" and any(outcomes.get(key, 0) for key in ("wrong_answer", "avoidable_abstention"))
+        unresolved_fact_disputes = sum(item.get("fact_or_evaluator_disagreement") is True for item in targets)
+        if (fatal_failures or interpretation_errors or any(causes.values()) or unknown_to_false
+                or development_regressions or template_errors or unresolved_fact_disputes):
+            reasons.append("observed_quality_failure")
+        if path != "template" and held_rate is not None and held_rate < (0.95 if path == "model_planned_local" else 0.90):
+            reasons.append("below_frozen_answer_threshold")
+        if path == "model_planned_local" and held_route_rate is not None and held_route_rate < 0.95:
+            reasons.append("below_frozen_route_threshold")
+        if not live:
+            insufficient.append("offline_deterministic_evidence_is_not_live_accuracy")
+        if corpus.get("release_policy", {}).get("policy_id") != POLICY_ID:
+            insufficient.append("missing_frozen_release_policy")
+        if any(row.get("path") not in PATHS for row in records):
+            insufficient.append("unknown_answering_path")
+        if live and any(row.get("evidence_origin") != "live_provider_or_template" for row in rows if not row.get("declined")):
+            insufficient.append("supplied_or_unverified_outputs_are_not_live_accuracy")
+        if any(row.get("experimental_generation_override") for row in rows):
+            insufficient.append("generation_override_outside_frozen_release_settings")
+        if len(held_targets) < 20 or any(count < 5 for count in languages.values()):
+            insufficient.append("insufficient_held_out_targets_or_languages")
+        if not held or any(len({row["repeat"] for row in held if row["case_id"] == case_id}) < 3
+                           for case_id in {row["case_id"] for row in held}):
+            insufficient.append("insufficient_live_repeats")
+        if any(outcomes.get(key, 0) for key in ("unassessed", "needs_adjudication")) or not targets:
+            insufficient.append("unassessed_or_unreviewed_results")
+        if any(row.get("semantic_status") == "needs_adjudication" for row in rows):
+            insufficient.append("interpretation_adjudication_pending")
+        if corpus.get("review", {}).get("independent_external_fact_review") is not True:
+            insufficient.append("independent_factual_review_missing")
+        if corpus.get("release_policy", {}).get("current_corpus_is_release_sufficient") is False:
+            insufficient.append("corpus_declared_release_insufficient")
+        stages = [stage for row in rows for stage in row.get("stages", []) if stage.get("provider_call_attempted")]
+        if any(stage.get("actual_cost_usd") is None or not stage.get("model_version")
+               or not stage.get("request_semantic_identity") for stage in stages):
+            insufficient.append("incomplete_provider_cost_or_revision")
+        if path == "fallback" and any(item["grounding"] == "unassessed" for item in targets):
+            insufficient.append("fallback_grounding_unreviewed")
+        if path == "fallback" and any(stage.get("retrieval_mode") == "immutable_pre_retrieved_context"
+                                      for row in rows for stage in row.get("stages", [])):
+            insufficient.append("live_retrieval_not_assessed_conditional_answer_stage_only")
+        if any(item["grounding"] == "unsupported" for item in targets):
+            reasons.append("unsupported_grounding_claim")
+        output[path] = {"records": len(rows), "declines": sum(row.get("declined") is True for row in rows),
+                        "outcomes": outcomes, "reviewed_causes": causes, "interpretation_errors": interpretation_errors,
+                        "route_mismatches": sum(row.get("route_matches") is False for row in route_rows),
+                        "unsupported_routes": sum(row.get("route_assessment", {}).get("outcome") == "unsupported_route" for row in rows),
+                        "unknown_to_false_conversions": unknown_to_false, "unresolved_fact_disputes": unresolved_fact_disputes,
+                        "held_out_answerable_attempts": len(held_answerable), "held_out_correct_answer_rate": held_rate,
+                        "held_out_route_accuracy": held_route_rate,
+                        "template_coverage": sum(not row.get("declined") for row in rows) / len(rows) if rows and path == "template" else None,
+                        "answerable_attempts": len(answerable), "correct_answer_rate": rate, "route_accuracy": route_rate,
+                        "held_out_unique_targets": len(held_targets), "held_out_cases_by_language": languages,
+                        "release_status": "fail" if reasons else ("insufficient" if insufficient else "pass"),
+                        "failure_reasons": reasons, "insufficiency_reasons": insufficient}
+    return output
+
+
 
 
 def _percentile95(values: list[float]) -> float | None:
@@ -510,6 +822,16 @@ def install_provider_capture() -> None:
 
         class CapturedHttpClient:
             def post(self, *args, **kwargs):
+                evidence = getattr(_provider_evidence_local, "evidence", None)
+                if _live_budget is None:
+                    raise RuntimeError("Provider calls require an explicit approved live budget")
+                url = args[0] if args else kwargs.get("url", "")
+                model = str(url).split("/models/", 1)[-1].split(":generateContent", 1)[0]
+                reservation = _live_budget.reserve(model, kwargs.get("json", {}))
+                if isinstance(evidence, dict):
+                    evidence["provider_call_attempted"] = True
+                    evidence["request_semantic_identity"] = json_identity({"model": model, "request": kwargs.get("json", {})})
+                    evidence.setdefault("reservations", []).append(reservation)
                 response = _provider_original_http_getter().post(*args, **kwargs)
                 return CapturedResponse(response)
 
@@ -519,7 +841,8 @@ def install_provider_capture() -> None:
         def capture(*args, **kwargs):
             evidence = kwargs.get("evidence")
             if isinstance(evidence, dict):
-                evidence["provider_call_attempted"] = True
+                evidence["prompt"] = args[0] if args else kwargs.get("prompt")
+                evidence["model"] = kwargs.get("model", evidence.get("model"))
             _provider_evidence_local.evidence = evidence
             try:
                 parsed = _provider_original(*args, **kwargs)
@@ -533,17 +856,20 @@ def install_provider_capture() -> None:
 
 
 def _summary(records: list[dict[str, Any]]) -> dict[str, Any]:
-    good_usage = [row["usage"] for row in records if isinstance(row.get("usage"), dict)]
-    costs = [row["actual_cost_usd"] for row in records if row.get("actual_cost_usd") is not None]
-    upper_bounds = [row["uncached_input_cost_upper_bound_usd"] for row in records if row.get("uncached_input_cost_upper_bound_usd") is not None]
-    provider_calls = sum(row.get("provider_call") is True for row in records)
+    stages = [stage for row in records for stage in row.get("stages", [])]
+    attempts = [attempt for stage in stages for attempt in stage.get("attempts", [])]
+    good_usage = [attempt["usage"] for attempt in attempts if isinstance(attempt.get("usage"), dict)]
+    costs = [cost for stage in stages for cost in stage.get("attempt_costs_usd", []) if cost is not None]
+    upper_bounds = [cost for stage in stages for cost in stage.get("attempt_uncached_upper_bounds_usd", []) if cost is not None]
+    provider_calls = sum(stage.get("provider_calls", 0) for stage in stages)
     full_coverage = len(costs) == provider_calls
     bound_coverage = len(upper_bounds) == provider_calls
     def token_stats(key: str):
         values = [u[key] for u in good_usage if type(u.get(key)) is int]
         return {"observed_count": len(values), "mean": _mean(values), "p95": _percentile95(values), "sum": sum(values) if values else None}
-    attempted = len(records)
-    resolved = sum(row.get("actual_route") == "local" and row.get("execution_ok") is True for row in records)
+    attempted = sum(not row.get("declined") for row in records)
+    resolved = sum(row.get("execution_ok") is True and any(
+        item.get("actual") is not None for item in row.get("target_assessments", [])) for row in records)
     total_cost = sum(costs) if full_coverage else None
     total_upper_bound = sum(upper_bounds) if bound_coverage else None
     return {
@@ -571,134 +897,237 @@ def _summary(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def run_one(module, variant: str, case: dict[str, Any], repeat: int, db_path: Path, countries: list[str]) -> dict[str, Any]:
-    # The executor points only at the copied facts DB selected by the harness.
+def finalize_stage(evidence: dict, pricing: dict | None) -> dict:
+    stage = dict(evidence)
+    rates = pricing.get("models", {}).get(stage.get("model")) if pricing else None
+    attempts = [attempt for attempt in stage.get("attempts", []) if "http_status" in attempt or attempt.get("usage")]
+    # Network exceptions have no HTTP status/usage, but still consumed a call.
+    count = len(stage.get("reservations", []))
+    stage["provider_calls"] = count
+    stage["attempt_costs_usd"] = [stage_cost(attempt.get("usage"), rates) for attempt in attempts]
+    stage["attempt_uncached_upper_bounds_usd"] = [stage_cost(attempt.get("usage"), rates, uncached=True) for attempt in attempts]
+    costs = stage["attempt_costs_usd"]
+    bounds = stage["attempt_uncached_upper_bounds_usd"]
+    stage["actual_cost_usd"] = sum(costs) if count and len(costs) == count and all(cost is not None for cost in costs) else None
+    stage["uncached_input_cost_upper_bound_usd"] = sum(bounds) if count and len(bounds) == count and all(cost is not None for cost in bounds) else None
+    if stage.get("prompt"):
+        stage["prompt_sha256"] = hashlib.sha256(stage["prompt"].encode("utf-8")).hexdigest()
+    return stage
+
+
+def run_one(module, variant: str, case: dict[str, Any], repeat: int, db_path: Path,
+            countries: list[str], *, fallback=None, pricing=None, origin="supplied_or_unverified") -> dict[str, Any]:
     module.local_answering.DEFAULT_DB_PATH = db_path
-    evidence: dict[str, Any] = {}
-    record: dict[str, Any] = {"variant": variant, "case_id": case["id"], "split": case["split"], "category": case["category"], "question": case["question"], "repeat": repeat, "provider_call": False, "usage": None, "actual_cost_usd": None}
+    targets = list(case.get("expected_answers", {})) or countries
+    evidence: dict[str, Any] = {"stage": "interpretation"}
+    record: dict[str, Any] = {
+        "variant": variant, "case_id": case["id"], "split": case["split"],
+        "category": case["category"], "language": case.get("language"),
+        "family": case.get("family"), "question": case["question"], "repeat": repeat,
+        "evidence_origin": origin, "provider_call": False, "usage": None,
+        "actual_cost_usd": None, "execution_ms": None, "execution_ok": None,
+        "semantic_correct": None, "actual_denotation": {}, "gold_route": case["route"],
+        "application_cache_bypassed": True, "history_writes": False,
+    }
     started = time.perf_counter()
     plan_result = None
     try:
-        plan_result = module.analyze_question_for_local_plan(case["question"], use_cache=False, strict_errors=True, evidence=evidence)
-        record["plan_ms"] = (time.perf_counter() - started) * 1000
-        record.update({"valid": getattr(plan_result, "valid", None), "supported": getattr(plan_result, "supported", None), "actual_route": "local" if getattr(plan_result, "supported", False) else ("clarify" if not getattr(plan_result, "valid", True) else "fallback"), "improved_question": getattr(plan_result, "improved_question", None), "explanation": getattr(plan_result, "explanation", None), "fallback_reason": getattr(plan_result, "fallback_reason", None), "compiled_plan": getattr(plan_result, "plan", None)})
+        plan_result = module.analyze_question_for_local_plan(
+            case["question"], use_cache=False, strict_errors=True, evidence=evidence,
+        )
+        record.update({
+            "valid": getattr(plan_result, "valid", None), "supported": getattr(plan_result, "supported", None),
+            "actual_route": "local" if getattr(plan_result, "supported", False) else
+                            ("clarify" if not getattr(plan_result, "valid", True) else "fallback"),
+            "improved_question": getattr(plan_result, "improved_question", None),
+            "explanation": getattr(plan_result, "explanation", None),
+            "fallback_reason": getattr(plan_result, "fallback_reason", None),
+            "compiled_plan": getattr(plan_result, "plan", None),
+        })
     except Exception as exc:
-        record["plan_ms"] = (time.perf_counter() - started) * 1000
-        record["route_error"] = _safe_exception(exc)
-        record["actual_route"] = "error"
-        record["compiled_plan"] = None
-    record["provider"] = evidence.get("provider")
-    record["model"] = evidence.get("model")
-    record["contract_version"] = evidence.get("contract_version")
-    record["cache_hit"] = evidence.get("cache_hit")
+        record.update(route_error=_safe_exception(exc), actual_route="error", compiled_plan=None)
+    record["plan_ms"] = (time.perf_counter() - started) * 1000
+    evidence["duration_ms"] = record["plan_ms"]
+    for key in ("provider", "model", "contract_version", "cache_hit", "usage", "prompt"):
+        record[key] = evidence.get(key)
     record["provider_call"] = evidence.get("provider_call_attempted") is True
     record["provider_response_id"] = evidence.get("response_id")
     record["provider_model_version"] = evidence.get("model_version")
-    record["usage"] = evidence.get("usage")
-    cached_tokens = record["usage"].get("cached_input_tokens") if isinstance(record["usage"], dict) else None
-    record["provider_cache_observed"] = None if type(cached_tokens) is not int else cached_tokens > 0
-    record["actual_cost_usd"] = _cost(record["usage"]) if record["provider_call"] else None
-    record["uncached_input_cost_upper_bound_usd"] = _cost_uncached_upper_bound(record["usage"]) if record["provider_call"] else None
-    record["prompt"] = evidence.get("prompt")
     record["raw_provider_output"] = evidence.get("raw_output")
     record["raw_provider_text"] = evidence.get("raw_output_text")
     record["raw_finish_reason"] = evidence.get("raw_finish_reason")
-    if isinstance(record.get("fallback_reason"), str) and record["fallback_reason"].startswith("Plan compilation failed:"):
-        record["route_error"] = "Malformed planner response: " + record["fallback_reason"]
-    record["execution_ms"] = None
-    record["execution_ok"] = None
-    record["semantic_correct"] = None
-    record["gold_route"] = case["route"]
-    if case["route"] == record.get("actual_route"):
-        record["route_matches"] = True
-    else:
-        record["route_matches"] = False
-    actual_plan = record.get("compiled_plan")
-    if isinstance(actual_plan, (dict, list)) and record["actual_route"] == "local" and case["route"] == "local":
-        t_exec = time.perf_counter()
-        try:
-            answers, execution_exceptions = _denotation(module, actual_plan, countries, case["question"])
-            record["execution_ms"] = (time.perf_counter() - t_exec) * 1000
-            record["execution_exceptions"] = execution_exceptions
-            record["execution_ok"] = len(answers) == len(countries) and execution_exceptions == 0 and any(value is not None for value in answers.values())
-            gold_answers, gold_exceptions = _denotation(module, case["gold_plan"], countries, case["question"])
-            record["gold_execution_exceptions"] = gold_exceptions
-            record["denotation_comparison"] = _compare_denotations(answers, gold_answers)
+    cached_tokens = record["usage"].get("cached_input_tokens") if isinstance(record["usage"], dict) else None
+    record["provider_cache_observed"] = None if type(cached_tokens) is not int else cached_tokens > 0
+    record["interpretation_path"] = "template" if record["provider"] == "template" else "model_planned_local"
+    record["path"] = "fallback" if record["actual_route"] == "fallback" else record["interpretation_path"]
+    if record["cache_hit"]:
+        record["path"] = "unknown_cached_origin"
+    record["route_matches"] = record["actual_route"] == case["route"]
+    record["route_assessment"] = {
+        "expected": case["route"], "actual": record["actual_route"],
+        "outcome": "correct_route" if record["route_matches"] else
+                   ("provider_error" if record["actual_route"] == "error" and record["provider_call"] else
+                    ("pre_call_blocked" if record["actual_route"] == "error" else "unsupported_route")),
+    }
+    record["experimental_generation_override"] = getattr(module, "_benchmark_generation_override", False)
+    stages = [finalize_stage(evidence, pricing)]
+    errors = {}
+    executed = False
+    execution_started = time.perf_counter()
+    if record["actual_route"] == "local" and isinstance(record["compiled_plan"], (dict, list)):
+        executed = True
+        answers, exceptions = _denotation(module, record["compiled_plan"], targets, case["question"])
+        record.update(actual_denotation=answers, execution_exceptions=exceptions,
+                      execution_ok=not exceptions and len(answers) == len(targets))
+        if exceptions:
+            errors = {target: "Local executor exception (not an abstention)" for target in targets if target not in answers}
+        if case["gold_plan"] is not None:
+            gold, gold_exceptions = _denotation(module, case["gold_plan"], targets, case["question"])
+            record.update(gold_denotation=gold, gold_execution_exceptions=gold_exceptions,
+                          denotation_comparison=_compare_denotations(answers, gold))
             with connect_readonly(db_path) as conn:
                 conn.row_factory = sqlite3.Row
-                required_missing = atoms_missing(actual_plan, case["required_atoms"], module, conn)
-            record["required_atoms_missing"] = required_missing
-            record["actual_denotation"] = answers
-            if execution_exceptions or gold_exceptions or record["denotation_comparison"]["mismatch_count"]:
-                record["semantic_correct"] = False
-                record["semantic_status"] = "incorrect"
-            elif required_missing:
-                record["semantic_correct"] = None
-                record["semantic_status"] = "needs_adjudication"
-            else:
-                record["semantic_correct"] = True
-                record["semantic_status"] = "correct"
-        except Exception as exc:
-            record["execution_ms"] = (time.perf_counter() - t_exec) * 1000
-            record["execution_ok"] = False
-            record["semantic_correct"] = False
-            record["semantic_status"] = "incorrect"
-            record["execution_error"] = _safe_exception(exc)
-    elif record["actual_route"] == case["route"] and case["route"] != "local":
-        record["execution_ok"] = True
-        record["semantic_correct"] = True
-        record["semantic_status"] = "correct"
-    else:
-        record["execution_ok"] = False if record["actual_route"] == "local" else None
-        record["semantic_correct"] = False
-        record["semantic_status"] = "incorrect"
-    record["raw_plan_result"] = None if plan_result is None else {"original_question": getattr(plan_result, "original_question", None), "valid": getattr(plan_result, "valid", None), "supported": getattr(plan_result, "supported", None), "improved_question": getattr(plan_result, "improved_question", None), "explanation": getattr(plan_result, "explanation", None), "fallback_reason": getattr(plan_result, "fallback_reason", None), "plan": getattr(plan_result, "plan", None)}
+                record["required_atoms_missing"] = atoms_missing(record["compiled_plan"], case["required_atoms"], module, conn)
+    elif record["actual_route"] == "clarify":
+        executed = True
+        record.update(actual_denotation={target: None for target in targets}, execution_ok=True)
+    elif record["actual_route"] == "fallback" and fallback is not None:
+        executed = True
+        for target in targets:
+            try:
+                result, stage = fallback.answer(case, target)
+                stage["target"] = target
+                stages.append(finalize_stage(stage, pricing))
+                if result is not None:
+                    record["actual_denotation"][target] = result["answer"]
+                else:
+                    errors[target] = {"kind": stage.get("error_kind", "missing_result"),
+                                      "message": stage.get("error", "Missing fallback result")}
+            except Exception as exc:
+                errors[target] = {"kind": "pre_call_blocked", "message": _safe_exception(exc)}
+        record["execution_ok"] = not errors and len(record["actual_denotation"]) == len(targets)
+    record["execution_ms"] = (time.perf_counter() - execution_started) * 1000 if executed else None
+    record["stages"] = stages
+    record["actual_cost_usd"] = sum(stage["actual_cost_usd"] for stage in stages if stage["provider_calls"]) if all(
+        stage["actual_cost_usd"] is not None for stage in stages if stage["provider_calls"]) and any(
+        stage["provider_calls"] for stage in stages) else None
+    record["uncached_input_cost_upper_bound_usd"] = sum(
+        stage["uncached_input_cost_upper_bound_usd"] for stage in stages if stage["provider_calls"]
+    ) if all(stage["uncached_input_cost_upper_bound_usd"] is not None for stage in stages if stage["provider_calls"]) and any(
+        stage["provider_calls"] for stage in stages) else None
+    finish_assessment(record, case, executed=executed, errors=errors)
+    if record.get("execution_exceptions"):
+        record.update(semantic_correct=False, semantic_status="incorrect")
+    record["raw_plan_result"] = None if plan_result is None else {
+        key: getattr(plan_result, key, None) for key in
+        ("original_question", "valid", "supported", "improved_question", "explanation", "fallback_reason", "plan")
+    }
     return record
 
 
+def offline_planner(module, case: dict, *, template: bool):
+    if template:
+        # Probe current fast-path eligibility, then exercise the real planner.
+        # A decline never runs Gemini in offline mode.
+        entity = module.compile_entity_question(case["question"])
+        compiled = module.compile_template_plan(case["question"], english_only=True) if entity is None else None
+        if entity is None and compiled is None:
+            return None
+        return module
+    def analyze(question, **kwargs):
+        kwargs["evidence"].update(provider="supplied_gold", contract_version=POLICY_ID)
+        return types.SimpleNamespace(valid=case["route"] != "clarify", supported=case["route"] == "local",
+                                     plan=case["gold_plan"], improved_question=None)
+    return types.SimpleNamespace(local_answering=module.local_answering, analyze_question_for_local_plan=analyze)
+
+
 def main(argv: list[str] | None = None) -> int:
+    global _live_budget
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--env-file", type=Path, help="Optional dotenv credentials file; values are never printed")
+    parser.add_argument("--env-file", type=Path, help="Live credentials only; values never printed")
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
-    parser.add_argument("--database", type=Path, default=DEFAULT_DB, help="Copied country facts SQLite database (read-only)")
-    parser.add_argument("--baseline-planner", type=Path, help="Path to saved baseline local_planner.py")
-    parser.add_argument("--variant", choices=("baseline", "current", "both"), default="both")
+    parser.add_argument("--database", type=Path, default=DEFAULT_DB, help="Private country facts SQLite snapshot")
+    parser.add_argument("--baseline-planner", type=Path)
+    parser.add_argument("--variant", choices=("baseline", "current", "both"), default="current")
     parser.add_argument("--split", choices=("development", "held_out", "all"), default="all")
-    parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--output", type=Path, default=SERVER_DIR / "test_reports" / "country_planner_benchmark.json", help="JSON evidence output path")
+    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--output", type=Path, default=SERVER_DIR / "test_reports" / "country_planner_benchmark.json")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--repeat", type=int, default=1)
-    parser.add_argument("--thinking-budget", type=int, help="Experiment-only planner thinking budget override")
-    parser.add_argument("--validate-only", "--validate-gold-only", dest="validate_only", action="store_true", help="Validate gold AST shape, relations, country literals, and guard atoms without provider calls")
+    parser.add_argument("--thinking-budget", type=int, help="Existing experiment-only override; never release approval")
+    execution = parser.add_mutually_exclusive_group()
+    execution.add_argument("--live", action="store_true", help="Opt in to bounded real provider execution")
+    execution.add_argument("--offline", action="store_true", help="Key-free templates and supplied-plan semantics (default)")
+    parser.add_argument("--pricing", type=Path, help="Approved model-specific USD pricing/context bounds JSON")
+    parser.add_argument("--max-provider-calls", type=int)
+    parser.add_argument("--max-cost-usd", type=float)
+    parser.add_argument("--execute-fallback", action="store_true", help="Run actual isolated fallback answer stage")
+    parser.add_argument("--retrieval-snapshot", type=Path, help="Frozen pre-retrieved contexts; no live vector service")
+    parser.add_argument("--fallback-model", help="Explicit real fallback model, with approved pricing")
+    parser.add_argument("--validate-only", "--validate-gold-only", dest="validate_only", action="store_true")
     args = parser.parse_args(argv)
-    if args.workers < 1 or args.repeat < 1 or (args.limit is not None and args.limit < 1) or (args.thinking_budget is not None and args.thinking_budget < 0):
-        parser.error("workers/repeat/limit must be positive and thinking-budget non-negative")
-    database_path = args.database.resolve()
-    protected = [args.corpus, database_path, Path(__file__), SERVER_DIR / "countrydle" / "local_planner.py"]
-    protected.extend(Path(f"{database_path}{suffix}") for suffix in ("-wal", "-shm", "-journal"))
-    if args.baseline_planner is not None:
-        protected.append(args.baseline_planner)
-    if args.env_file is not None:
-        protected.append(args.env_file)
+    if args.workers != 1 or args.repeat < 1 or (args.limit is not None and args.limit < 1):
+        parser.error("Exactly one worker required; repeat/limit must be positive")
+    if args.thinking_budget is not None and args.thinking_budget < 0:
+        parser.error("thinking-budget must be non-negative")
+    protected = [args.corpus, args.database, Path(__file__), SERVER_DIR / "countrydle" / "local_planner.py"]
+    protected.extend((
+        SERVER_DIR / "planner_protocol.py", SERVER_DIR / "countrydle" / "local_answering.py",
+        SERVER_DIR / "countrydle" / "template_compiler.py", SERVER_DIR / "countrydle" / "utils.py",
+        SERVER_DIR / "utils" / "ai_clients.py", SERVER_DIR / "utils" / "fallback_answers.py",
+    ))
+    protected.extend(Path(f"{args.database}{suffix}") for suffix in ("-wal", "-shm", "-journal"))
+    protected.extend(path for path in (args.baseline_planner, args.env_file, args.pricing, args.retrieval_snapshot) if path is not None)
     try:
         validate_output_path(args.output, protected)
     except ValueError as exc:
         parser.error(str(exc))
     if not args.database.is_file():
         parser.error(f"Copied facts database not found: {args.database}")
-    prepare_environment(args.env_file)
+    if args.execute_fallback and (not args.live or not args.retrieval_snapshot or not args.fallback_model):
+        parser.error("--execute-fallback requires --live, --retrieval-snapshot and --fallback-model")
+    if not args.live and args.env_file is not None:
+        parser.error("Offline evaluation must not load live credentials")
+    if args.live and (args.pricing is None or args.max_provider_calls is None or args.max_cost_usd is None):
+        parser.error("--live requires --pricing, --max-provider-calls and --max-cost-usd")
+    prepare_environment(args.env_file if args.live else None)
+    isolate_plan_cache()
+    if not args.live:
+        os.environ["GEMINI_API_KEY"] = ""
+    pricing = None
+    _live_budget = None
+    if args.live:
+        try:
+            pricing = load_pricing(args.pricing)
+            _live_budget = LiveBudget(pricing, args.max_provider_calls, args.max_cost_usd)
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        planner_model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or "gemini-2.5-flash-lite"
+        os.environ["LOCAL_QUESTION_MODEL"] = planner_model
+        if not planner_model.startswith("gemini-2.5-flash-lite"):
+            parser.error("Planner model has no finite explicit thinking bound in the current adapter")
+        models = [planner_model] + ([args.fallback_model] if args.execute_fallback else [])
+        if any(model not in pricing["models"] for model in models):
+            parser.error("Every executing model requires exact approved pricing")
+        if args.execute_fallback and not args.fallback_model.startswith("gemini-2.5"):
+            parser.error("Fallback model has no finite explicit thinking bound in the current adapter")
+        if not os.environ.get("GEMINI_API_KEY") and not args.validate_only:
+            parser.error("Live execution requires GEMINI_API_KEY")
+        install_provider_capture()
+    corpus_bytes = args.corpus.read_bytes()
     corpus, cases = load_corpus(args.corpus)
+    # Freeze the identity/policy before any interpretation or answer call.
+    frozen_policy = {"policy_id": POLICY_ID, "template_max_errors": 0,
+                     "model_planned_local_min_answer_rate": 0.95, "model_planned_local_min_route_rate": 0.95,
+                     "fallback_min_answer_rate": 0.90, "minimum_held_out_targets_per_path": 20,
+                     "minimum_cases_per_language_per_path": 5, "minimum_live_repeats": 3,
+                     "unreviewed_missing_unknown_cost_or_grounding": "insufficient"}
     with private_database_snapshot(args.database) as (database_path, database_checksum):
-        isolate_plan_cache()
         current = load_module(SERVER_DIR / "countrydle" / "local_planner.py", "countrydle_current_planner")
         current.local_answering.DEFAULT_DB_PATH = database_path
         gold_validation = validate_gold(cases, current, database_path)
         if args.validate_only:
-            print(json.dumps({
-                "database_source_path": str(args.database.resolve()),
-                "database_source_sha256": database_checksum,
-                "gold_validation": gold_validation,
-            }, ensure_ascii=False, indent=2))
+            print(json.dumps({"database_source_sha256": database_checksum, "gold_validation": gold_validation}, indent=2))
             return 0 if gold_validation["valid"] else 2
         if not gold_validation["valid"]:
             parser.error("Gold corpus validation failed; run --validate-only for details")
@@ -708,70 +1137,99 @@ def main(argv: list[str] | None = None) -> int:
             cases = cases[:args.limit]
         if args.variant in ("baseline", "both") and args.baseline_planner is None:
             parser.error("--baseline-planner is required for baseline/both variants")
-        variants: list[tuple[str, Any]] = []
+        variants = []
         if args.variant in ("baseline", "both"):
-            baseline = load_module(args.baseline_planner, "countrydle_baseline_planner")
-            variants.append(("baseline", baseline))
+            variants.append(("baseline", load_module(args.baseline_planner, "countrydle_baseline_planner")))
         if args.variant in ("current", "both"):
             variants.append(("current", current))
         if args.thinking_budget is not None:
             for _, module in variants:
                 module.PLANNER_THINKING_BUDGET = args.thinking_budget
+                module._benchmark_generation_override = True
+        fallback = IsolatedFallback(args.retrieval_snapshot, args.fallback_model) if args.execute_fallback else None
+        if fallback:
+            # Reject missing evidence snapshots before any paid planning.
+            for case in cases:
+                for target in case.get("expected_answers", {}):
+                    context = fallback.contexts.get(case["id"], {}).get(target)
+                    if not isinstance(context, dict) or not isinstance(context.get("text"), str):
+                        parser.error(f"Missing frozen retrieval context: {case['id']}/{target}")
         countries = get_countries(database_path)
-        records: list[dict[str, Any]] = []
-        jobs = []
-        install_provider_capture()
-        with ThreadPoolExecutor(max_workers=args.workers) as pool:
-            for name, module in variants:
-                for case in cases:
-                    for repeat in range(1, args.repeat + 1):
-                        jobs.append(pool.submit(run_one, module, name, case, repeat, database_path, countries))
-            for future in as_completed(jobs):
-                records.append(future.result())
-        records.sort(key=lambda r: (r["variant"], r["case_id"], r["repeat"]))
-        by_variant = {}
+        records = []
+        for name, module in variants:
+            for case in cases:
+                for repeat in range(1, args.repeat + 1):
+                    if args.live:
+                        record = run_one(module, name, case, repeat, database_path, countries,
+                                         fallback=fallback, pricing=pricing, origin="live_provider_or_template")
+                        records.append(record)
+                        if name == "current" and record["interpretation_path"] != "template":
+                            records.append({"variant": name, "case_id": case["id"], "split": case["split"],
+                                            "language": case.get("language"), "repeat": repeat, "path": "template",
+                                            "declined": True, "route_matches": None, "target_assessments": [],
+                                            "evidence_origin": "live_provider_or_template", "stages": []})
+                    else:
+                        template = offline_planner(current, case, template=True)
+                        if template is not None:
+                            records.append(run_one(template, name, case, repeat, database_path, countries,
+                                                   origin="offline_actual_template"))
+                        else:
+                            records.append({"variant": name, "case_id": case["id"], "split": case["split"],
+                                            "language": case.get("language"), "repeat": repeat, "path": "template",
+                                            "declined": True, "route_matches": None, "target_assessments": [],
+                                            "evidence_origin": "offline_actual_template", "stages": []})
+                        supplied = offline_planner(module, case, template=False)
+                        records.append(run_one(supplied, name, case, repeat, database_path, countries,
+                                               origin="offline_supplied_gold_not_provider_accuracy"))
+        records.sort(key=lambda row: (row["variant"], row["case_id"], row["repeat"], row["path"]))
+        summaries = {}
         for name, _ in variants:
-            by_variant[name] = {}
-            for split in ("development", "held_out"):
-                by_variant[name][split] = _summary([row for row in records if row["variant"] == name and row["split"] == split])
-            by_variant[name]["all"] = _summary([row for row in records if row["variant"] == name])
-            by_variant[name]["cache_observed_cohorts_by_split"] = {}
+            summaries[name] = {}
             for split in ("development", "held_out", "all"):
-                split_rows = [row for row in records if row["variant"] == name and (split == "all" or row["split"] == split)]
-                cohorts = {}
-                for observed in (True, False, None):
-                    label = "unknown" if observed is None else str(observed).lower()
-                    cohorts[label] = _summary([row for row in split_rows if row.get("provider_cache_observed") is observed])
-                by_variant[name]["cache_observed_cohorts_by_split"][split] = cohorts
+                cohort = [row for row in records if row["variant"] == name and (split == "all" or row["split"] == split)]
+                summaries[name][split] = {"quality_by_path": path_quality(cohort, corpus, live=args.live),
+                                         "cost_latency": _summary(cohort)}
+        quality = path_quality(records, corpus, live=args.live)
+        status = "fail" if any(row["release_status"] == "fail" for row in quality.values()) else (
+            "pass" if all(row["release_status"] == "pass" for row in quality.values()) else "insufficient")
+        revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR, capture_output=True, text=True, check=False)
         report = {
-            "description": corpus.get("description"), "corpus_path": str(args.corpus.resolve()),
+            "description": corpus["description"], "mode": "live" if args.live else "offline",
+            "accuracy_claim": "Corpus-scoped live path assessment" if args.live else "Deterministic semantics only; no current provider accuracy claim",
+            "application_revision": revision.stdout.strip() if revision.returncode == 0 else None,
+            "application_source_sha256": {
+                str(path.relative_to(SERVER_DIR)): hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in (SERVER_DIR / "planner_protocol.py", SERVER_DIR / "countrydle" / "local_answering.py",
+                             SERVER_DIR / "countrydle" / "template_compiler.py", SERVER_DIR / "countrydle" / "utils.py",
+                             SERVER_DIR / "utils" / "ai_clients.py", SERVER_DIR / "utils" / "fallback_answers.py")
+            },
+            "corpus_path": str(args.corpus.resolve()), "corpus_sha256": hashlib.sha256(corpus_bytes).hexdigest(),
             "database_source_path": str(args.database.resolve()), "database_source_sha256": database_checksum,
+            "fact_snapshot_sha256": hashlib.sha256(database_path.read_bytes()).hexdigest(),
+            "retrieval_snapshot_sha256": fallback.snapshot_sha256 if fallback else None,
+            "split_exposure": corpus.get("split_policy"), "fact_review": corpus.get("review"),
             "split": args.split, "limit": args.limit, "repeat": args.repeat, "workers": args.workers,
-            "variants": [name for name, _ in variants], "planner_version": {name: getattr(module, "PLANNER_VERSION", None) for name, module in variants},
-            "thinking_budget_override": args.thinking_budget,
-            "planner_settings": {
-                name: {
-                    "model": os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or getattr(module, "DEFAULT_MODEL", None),
-                    "thinking_budget": module.PLANNER_THINKING_BUDGET,
-                    "max_output_tokens": getattr(module, "PLANNER_MAX_OUTPUT_TOKENS", None),
-                }
-                for name, module in variants
-            },
-            "pricing": {
-                "input_usd_per_million": INPUT_RATE,
-                "cached_input_usd_per_million": CACHED_INPUT_RATE,
-                "output_usd_per_million": OUTPUT_RATE,
-                "formula": "(input_tokens-cached_input_tokens)*0.10 + cached_input_tokens*0.01 + (candidate_output_tokens+thought_tokens)*0.40, divided by 1,000,000",
-                "incomplete_usage": "Actual cost is withheld unless input, cached-input, candidate-output, and thought token counts are all observed. An uncached-input cost upper bound is reported only when input, output, and thought counts are observed; absent cache metadata is treated as all input uncached for this bound.",
-            },
-            "gold_validation": gold_validation, "summary": by_variant,
-            "cache_note": "Cache observations are reported as observed; planner calls use_cache=False. No claim of a cold provider cache is made.",
+            "frozen_release_policy": frozen_policy, "release_policy_sha256": json_identity(frozen_policy),
+            "release_status": status, "quality_by_path": quality,
+            "planner_settings": {name: {"model": os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or module.DEFAULT_MODEL,
+                                       "version": module.PLANNER_VERSION, "thinking_budget": module.PLANNER_THINKING_BUDGET,
+                                       "max_output_tokens": module.PLANNER_MAX_OUTPUT_TOKENS,
+                                       "source_sha256": hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()}
+                                 for name, module in variants},
+            "pricing": pricing,
+            "live_budget": {"max_provider_calls": _live_budget.max_calls, "max_cost_usd": _live_budget.max_cost_usd,
+                            "reserved_cost_usd": _live_budget.reserved_cost_usd, "reservations": _live_budget.reservations} if _live_budget else None,
+            "gold_validation": gold_validation, "summary": summaries,
+            "isolation": "Private read-only fact backup; immutable pre-retrieved contexts; no gameplay imports, history or application cache calls.",
+            "fallback_scope": "Real answer stage conditional on frozen retrieval; embedding/vector retrieval not executed or assessed.",
+            "cache_note": "Application caches bypassed; provider cache observations are not claims of cold-cache control.",
             "records": records,
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-        print(json.dumps({"output": str(args.output), "records": len(records), "summary": by_variant}, ensure_ascii=False, indent=2))
-        return 0
+        print(json.dumps({"output": str(args.output), "records": len(records), "release_status": status,
+                          "quality_by_path": quality}, ensure_ascii=False, indent=2))
+        return 0 if status == "pass" else (1 if status == "fail" else 3)
 
 if __name__ == "__main__":
     raise SystemExit(main())

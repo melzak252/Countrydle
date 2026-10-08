@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from admin import router
+from countrydle.local_answering import LocalAnswer
 from countrydle.local_planner import QuestionPlan
 from db import get_db
 from db.models import Country, Powiat, USState, Wojewodztwo
@@ -94,7 +95,7 @@ def patch_country_local(monkeypatch, question_plan=None):
     def execute(ast, name, question):
         if not question_plan.supported:
             return None
-        return SimpleNamespace(
+        return LocalAnswer(
             answer=name == "Poland", question=question,
             explanation=f"Local facts for {name}", relation="continent",
         )

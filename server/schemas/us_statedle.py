@@ -45,6 +45,7 @@ class USStateGuessDisplay(BaseModel):
     guess: str
     us_state_id: Optional[int]
     guessed_at: datetime
+    elapsed_seconds: Optional[int] = None
     answer: bool
     distance_km: Optional[int] = None
     bearing_degrees: Optional[int] = None

@@ -147,6 +147,22 @@ body {
   visibility: hidden;
 }
 
+/* Readable secondary game text; never change public/admin zinc utilities. */
+:is(.game-status-bar, .game-notebook-layer, .game-action-composer) .text-zinc-500 {
+  color: #a1a1aa;
+}
+
+:is(.game-status-bar, .game-notebook-layer, .game-action-composer) :is(.text-\[10px\], .text-\[11px\]) {
+  font-size: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .game-status-bar button {
+    min-height: 24px;
+    min-width: 24px;
+  }
+}
+
 .duel-compact-map {
   display: none;
 }

@@ -1,11 +1,12 @@
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import String, case, desc, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from daily_clock import utc_today
 from db import get_db
 from db.models.blog import DailyBlogPost
 from db.models.continental import ContinentCode, ContinentalDay, ContinentalGuess, ContinentalQuestion
@@ -63,9 +64,7 @@ router.include_router(country_costs_router)
 
 
 def get_today_date() -> date:
-    if not isinstance(date, type):
-        return date.today()
-    return datetime.now(timezone.utc).date()
+    return utc_today()
 
 
 def _mode_today(stats, mode_key: str, mode_label: str, target_name: str) -> AdminModeToday:

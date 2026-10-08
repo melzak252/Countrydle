@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     String,
     Text,
     and_,
@@ -34,6 +35,7 @@ class CountrydleQuestion(Base):
     answer = Column(Boolean)
     explanation = Column(String, nullable=False)
     server_version = Column(String, nullable=True)
+    fact_provenance = Column(JSON, nullable=False, default=list, server_default="[]")
     asked_at = Column(DateTime, default=func.now())
 
     user = relationship("User", back_populates="countrydle_questions")

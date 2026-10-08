@@ -176,6 +176,7 @@ async def analyze_and_answer_locally(
         intent=f"Local KB relation: {local_answer.relation}",
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",
+        fact_provenance=local_answer.fact_provenance,
     ), planned_question
 
 

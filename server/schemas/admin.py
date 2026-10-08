@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from schemas.fact_provenance import FactProvenanceRecord
 
 
 class AdminModeToday(BaseModel):
@@ -173,6 +174,7 @@ class AdminQuestionTestResponse(BaseModel):
     duration_ms: int
     plan: Dict[str, Any] | None
     diagnostics: QuestionDiagnostics
+    fact_provenance: list[FactProvenanceRecord] = Field(default_factory=list)
 
 
 AdminQuestionSource = Literal["local_kb", "fallback", "invalid"]
@@ -200,6 +202,7 @@ class AdminQuestionItem(BaseModel):
     asked_at: Optional[datetime] = None
     has_report: bool = False
     report_id: Optional[int] = None
+    fact_provenance: list[FactProvenanceRecord] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

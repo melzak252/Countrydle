@@ -6,6 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from countrydle.local_answering import LocalAnswer as CountryLocalAnswer
+from local_kb_question import LocalAnswer
+
 
 MODES = [
     ("countrydle", "CountryRepository", "country_id", "name"),
@@ -228,10 +231,16 @@ async def test_local_fact_execution_does_not_block_loop(
         valid=True, supported=True, plan={"operator": "test"},
         improved_question="Is it coastal?", explanation="Coastline check",
     )
-    local_answer = SimpleNamespace(
-        question="Is it coastal?", answer=False, explanation="It is inland.",
-        relation="coast", relations=["coast"],
-    )
+    if mode == "countrydle":
+        local_answer = CountryLocalAnswer(
+            question="Is it coastal?", answer=False, explanation="It is inland.",
+            relation="coast",
+        )
+    else:
+        local_answer = LocalAnswer(
+            question="Is it coastal?", answer=False, explanation="It is inland.",
+            relations=["coast"],
+        )
 
     def execute(*args, **kwargs):
         blocking()

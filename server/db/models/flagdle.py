@@ -4,6 +4,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     String,
@@ -12,6 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
+from daily_clock import utc_today
 from db.base import Base
 
 
@@ -20,7 +22,7 @@ class FlagdleDay(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="CASCADE"), nullable=False)
-    date = Column(Date, unique=True, index=True, nullable=False, default=func.current_date())
+    date = Column(Date, unique=True, index=True, nullable=False, default=utc_today)
     created_at = Column(DateTime, default=func.now())
 
     country = relationship("Country")
@@ -53,9 +55,11 @@ class FlagdleState(Base):
 
 class FlagdleGuess(Base):
     __tablename__ = "flagdle_guesses"
+    __table_args__ = (Index("ix_flagdle_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("flagdle_days.id", ondelete="CASCADE"), nullable=False, index=True)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="CASCADE"), nullable=True)
     guess = Column(String, nullable=False)
@@ -78,3 +82,24 @@ class FlagdleGuess(Base):
     day = relationship("FlagdleDay")
     user = relationship("User")
     country = relationship("Country", foreign_keys=[country_id])
+
+
+class FlagdleQuestion(Base):
+    __tablename__ = "flagdle_questions"
+    __table_args__ = (Index("ix_flagdle_questions_guest_day", "guest_id", "day_id"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    guest_id = Column(String(36), nullable=True)
+    day_id = Column(Integer, ForeignKey("flagdle_days.id", ondelete="CASCADE"), nullable=False, index=True)
+    original_question = Column(String, nullable=False)
+    question = Column(String)
+    valid = Column(Boolean, nullable=False)
+    answer = Column(Boolean)
+    explanation = Column(String, nullable=False)
+    context = Column(String)
+    fact_provenance = Column(JSON, nullable=False, default=list, server_default="[]")
+    asked_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    day = relationship("FlagdleDay")
+    user = relationship("User")

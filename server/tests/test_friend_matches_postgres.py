@@ -216,10 +216,16 @@ async def test_retention_deletes_old_ordinary_but_keeps_reported_and_pending_evi
     assert (await service.get_snapshot(state["id"], first))["status"] == "finished"
 
 
-async def test_bootstrap_survives_lost_create_join_responses_without_seat_theft(duel_db):
+async def test_bootstrap_survives_lost_create_join_responses_without_seat_theft(duel_db, monkeypatch):
     from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient
     from friend_matches.routes import COOKIE_NAME, router
+    from friend_matches import routes
+
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "http://test")
+    # The test app uses an already imported router; configure its startup
+    # snapshot explicitly rather than granting the request Host implicitly.
+    monkeypatch.setattr(routes, "CORS_ALLOWED_ORIGINS", ("http://test",))
 
     app = FastAPI()
     app.include_router(router)

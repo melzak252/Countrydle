@@ -16,6 +16,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT_DIR / "server"))
+import country_fact_provenance as fact_provenance
 DEFAULT_DB_PATH = ROOT_DIR / "data" / "country_facts.sqlite"
 GEOJSON_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"
 
@@ -65,6 +67,7 @@ def ensure_schema(conn: sqlite3.Connection):
         );
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_country_hemispheres ON country_hemispheres(hemisphere);")
+        fact_provenance.ensure_schema(conn)
 
 
 def populate_boxes_and_hemispheres(db_path: Path):
@@ -120,6 +123,7 @@ def populate_boxes_and_hemispheres(db_path: Path):
         for h in hemispheres:
             hemisphere_rows.append((cid, h))
 
+    previous = {c["id"]: fact_provenance.values(conn, c["id"], "hemisphere") for c in db_countries}
     with conn:
         conn.executemany(
             "UPDATE countries SET min_latitude=?, max_latitude=?, min_longitude=?, max_longitude=? WHERE id=?",
@@ -127,6 +131,13 @@ def populate_boxes_and_hemispheres(db_path: Path):
         )
         conn.execute("DELETE FROM country_hemispheres")
         conn.executemany("INSERT INTO country_hemispheres(country_id, hemisphere) VALUES (?, ?)", hemisphere_rows)
+        for c in db_countries:
+            cid = c["id"]
+            fact_provenance.reconcile(conn, cid, "hemisphere", previous[cid])
+            if not previous[cid]:
+                convention = {**fact_provenance.UNKNOWN, "convention": fact_provenance.GEOMETRY_CONVENTION}
+                for value in [None, *sorted(fact_provenance.values(conn, cid, "hemisphere"))]:
+                    fact_provenance.put(conn, cid, "hemisphere", value, convention)
 
     print(f"Updated bounding boxes for {len(box_updates)} countries.")
     print(f"Populated {len(hemisphere_rows)} country hemisphere associations.")

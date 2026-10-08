@@ -4,6 +4,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -11,6 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
+from daily_clock import utc_today
 from db.base import Base
 
 
@@ -19,7 +21,7 @@ class PowiatdleDay(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     powiat_id = Column(Integer, ForeignKey("powiaty.id"))
-    date = Column(Date, nullable=False, default=func.now())
+    date = Column(Date, nullable=False, default=utc_today)
 
     powiat = relationship("Powiat")
 
@@ -44,10 +46,13 @@ class PowiatdleState(Base):
 
 class PowiatdleGuess(Base):
     __tablename__ = "powiatdle_guesses"
+    __table_args__ = (Index("ix_powiatdle_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("powiatdle_days.id"))
+    elapsed_seconds = Column(Integer, nullable=True)
     guess = Column(String, nullable=False)
     powiat_id = Column(Integer, ForeignKey("powiaty.id"), nullable=True)
     guessed_at = Column(DateTime, default=func.now())
@@ -60,9 +65,11 @@ class PowiatdleGuess(Base):
 
 class PowiatdleQuestion(Base):
     __tablename__ = "powiatdle_questions"
+    __table_args__ = (Index("ix_powiatdle_questions_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("powiatdle_days.id"))
     context = Column(String)
     original_question = Column(String, nullable=False)

@@ -21,6 +21,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import ShareResultCard from '../components/ShareResultCard';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { useModalFocus } from '../hooks/useModalFocus';
 
 export type ContinentKey = 'europe' | 'asia' | 'africa' | 'americas';
 interface ContinentalGamePageProps {
@@ -142,6 +143,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     activeMarkerColor,
     setActiveMarkerColor,
     handleEntityMapClick,
+    toggleEntityMarker,
     clearMapMarkings,
   } = useStore();
 
@@ -159,6 +161,13 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   );
   const activeChatTab = activeInputTab === 'question' ? 'questions' : 'guesses';
   const [isResultDismissed, setIsResultDismissed] = useState(false);
+  const resultsTriggerRef = useRef<HTMLButtonElement>(null);
+  const showResultModal = Boolean(gameState?.is_game_over) && !isResultDismissed;
+  const resultDialogRef = useModalFocus({
+    open: showResultModal,
+    onDismiss: () => setIsResultDismissed(true),
+    returnFocusRef: resultsTriggerRef,
+  });
 
   useEffect(() => {
     if (!isMobile) {
@@ -201,7 +210,6 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
   const sortedQuestions = [...questions].sort((a, b) => a.id - b.id);
   const isGameOver = Boolean(gameState.is_game_over);
-  const showResultModal = isGameOver && !isResultDismissed;
 
   const handleAsk = async (q: string) => {
     setUserSelectedTab('question');
@@ -259,6 +267,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             activeMarkerColor,
             setActiveMarkerColor,
             handleEntityMapClick,
+            toggleEntityMarker,
             clearMapMarkings,
             isGameOver: !!gameState.is_game_over,
           }}
@@ -278,7 +287,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">Q:</span>
             <span className="font-semibold text-sand-100">
               {gameState.remaining_questions}
-              <span className="text-[10px] text-zinc-500">/8</span>
+              <span className="text-xs text-zinc-400">/8</span>
             </span>
           </div>
 
@@ -286,7 +295,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">G:</span>
             <span className="font-semibold text-emerald-400">
               {gameState.remaining_guesses}
-              <span className="text-[10px] text-zinc-500">/3</span>
+              <span className="text-xs text-zinc-400">/3</span>
             </span>
           </div>
 
@@ -349,6 +358,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             </button>
           </div>
         ) : (
+          /* Expanded Chat */
           <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950 pb-[env(safe-area-inset-bottom)] shadow-2xl transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:bg-obsidian-900/85 md:pb-0">
 
             {/* Notebook Tabbed Header */}
@@ -367,7 +377,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   <MessageSquare size={12} className={`hidden md:block ${activeChatTab === 'questions' ? 'text-emerald-400' : ''}`} />
                   <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Pytaj' : 'Ask'}</span>
                   <span className="hidden md:inline">{i18n.language.startsWith('pl') ? 'Pytania' : 'Questions'}</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({questions.length}/8)</span>
+                  <span className="font-mono text-xs text-zinc-400">({questions.length}/8)</span>
                 </button>
 
                 <button
@@ -383,7 +393,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   <Target size={12} className={`hidden md:block ${activeChatTab === 'guesses' ? 'text-emerald-400' : ''}`} />
                   <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zgadnij' : 'Guess'}</span>
                   <span className="hidden md:inline">{i18n.language.startsWith('pl') ? 'Zgadnięcia' : 'Guesses'}</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({guesses.length}/3)</span>
+                  <span className="font-mono text-xs text-zinc-400">({guesses.length}/3)</span>
                 </button>
               </div>
 
@@ -506,6 +516,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   <span className="font-mono text-xs text-emerald-400">{gameState.points} pts</span>
                 </div>
                 <button
+                  ref={resultsTriggerRef}
                   type="button"
                   onClick={() => setIsResultDismissed(false)}
                   className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
@@ -522,9 +533,11 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
       {/* 5. Game Over Modal Overlay */}
       {isGameOver && showResultModal && (
         <div
+          ref={resultDialogRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
-          aria-label="Daily Results"
+          aria-label={i18n.language.startsWith('pl') ? 'Wyniki dnia' : 'Daily Results'}
           onClick={() => setIsResultDismissed(true)}
           className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
         >
@@ -533,6 +546,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             onClick={(e) => e.stopPropagation()}
           >
             <ShareResultCard
+              isGameOver={isGameOver}
               gameName={title}
               gamePath={meta.path}
               date={dailyDate}

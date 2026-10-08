@@ -17,8 +17,13 @@ class CountrydleGuessRepository:
 
         return result.scalars().first()
 
-    async def add_guess(self, guess: GuessCreate, *, commit: bool = True) -> CountrydleGuess:
-        new_entry = CountrydleGuess(**guess.model_dump(exclude={"country_id", "elapsed_seconds"}))
+    async def add_guess(
+        self, guess: GuessCreate, *, commit: bool = True, guest_id: str | None = None
+    ) -> CountrydleGuess:
+        data = guess.model_dump(exclude={"country_id"})
+        if guest_id is not None:
+            data["guest_id"] = guest_id
+        new_entry = CountrydleGuess(**data)
         self.session.add(new_entry)
 
         try:

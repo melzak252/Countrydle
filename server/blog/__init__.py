@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from daily_clock import utc_today
 from db import get_db
 from db.models.countrydle import CountrydleDay, CountrydleQuestion, CountrydleGuess, CountrydleState
 from db.repositories.blog import BlogRepository
@@ -351,7 +352,7 @@ async def generate_yesterday_post_endpoint(
                 detail="Invalid date format, use YYYY-MM-DD",
             )
     else:
-        eval_date = date.today() - timedelta(days=1)
+        eval_date = utc_today() - timedelta(days=1)
 
     repo = BlogRepository(session)
     existing = await repo.get_by_date(eval_date)

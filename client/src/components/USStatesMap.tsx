@@ -8,6 +8,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
+import EntityMarkControls from './EntityMarkControls';
 import { useMapData } from '../hooks/useMapData';
 import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
@@ -19,6 +20,7 @@ type FeatureLayer = L.Path & { feature?: Feature };
 interface USStatesMapProps {
   correctStateName?: string;
   className?: string;
+  markingDisabled?: boolean;
   onStateClick?: (name: string) => void;
 }
 
@@ -77,12 +79,14 @@ function MapController({ correctName, geoJsonData, isGameOver }: { correctName?:
 export default function USStatesMap({ correctStateName, className }: USStatesMapProps) {
   const state = useUSStatesGameStore();
   return <ControlledUSStatesMap className={className}
+    eligibleEntities={state.entities}
     correctStateName={correctStateName || state.correctEntity?.name}
     interaction={{
       entityMarkings: state.entityMarkings,
       activeMarkerColor: state.activeMarkerColor,
       setActiveMarkerColor: state.setActiveMarkerColor,
       handleEntityMapClick: state.handleEntityMapClick,
+      toggleEntityMarker: state.toggleEntityMarker,
       clearMapMarkings: state.clearMapMarkings,
       isGameOver: !!state.gameState?.is_game_over,
     }} />;
@@ -93,7 +97,9 @@ export function ControlledUSStatesMap({
   className,
   onStateClick,
   interaction,
-}: USStatesMapProps & { interaction: MapInteractionState }) {
+  eligibleEntities,
+  markingDisabled = false,
+}: USStatesMapProps & { interaction: MapInteractionState; eligibleEntities: readonly { name: string }[] }) {
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/us-states.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
@@ -356,6 +362,7 @@ export function ControlledUSStatesMap({
 
         <MapController correctName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
+      <EntityMarkControls entities={eligibleEntities} interaction={interaction} lockedEntityName={revealedName} disabled={markingDisabled} />
     </div>
   );
 }

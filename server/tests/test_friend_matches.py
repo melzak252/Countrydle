@@ -199,10 +199,24 @@ def test_reply_deadline_confirms_pending_winner_as_solved():
     assert expire_match(game, seats, NOW + timedelta(seconds=121))
     assert game.result == "solved" and game.winner_id == seats[0].id
 
-def test_origin_checks_reject_hostile_private_reads_missing_mutation_origin_and_null_origin(monkeypatch):
+@pytest.fixture
+def friend_origin_allowlist(monkeypatch):
+    from friend_matches import routes
+
+    origins = (
+        "https://countrydle.online",
+        "https://www.countrydle.online",
+        "http://localhost:5178",
+    )
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", ",".join(origins))
+    # conftest imports the app before fixtures run. Set the standalone router's
+    # startup snapshot explicitly instead of depending on implicit site defaults.
+    monkeypatch.setattr(routes, "CORS_ALLOWED_ORIGINS", origins)
+
+
+def test_origin_checks_reject_hostile_private_reads_missing_mutation_origin_and_null_origin(friend_origin_allowlist):
     from types import SimpleNamespace
     from friend_matches.routes import require_origin
-    monkeypatch.setenv("FRIEND_ALLOWED_ORIGINS", "http://localhost:5178")
     def request(origin):
         return SimpleNamespace(headers={"origin": origin, "host": "internal:8080"},
                                url=SimpleNamespace(scheme="http"))
@@ -223,12 +237,11 @@ def test_origin_checks_reject_hostile_private_reads_missing_mutation_origin_and_
     ("http://countrydle.online", 403),
     ("https://countrydle.online.evil.example", 403),
 ])
-async def test_session_admission_allows_countrydle_https_origins_only(monkeypatch, origin, expected_status):
+async def test_session_admission_allows_countrydle_https_origins_only(monkeypatch, friend_origin_allowlist, origin, expected_status):
     from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient
     from friend_matches.routes import COOKIE_NAME, router
 
-    monkeypatch.delenv("FRIEND_ALLOWED_ORIGINS", raising=False)
     monkeypatch.delenv("FRIEND_COOKIE_SECURE", raising=False)
     app = FastAPI()
     app.include_router(router)

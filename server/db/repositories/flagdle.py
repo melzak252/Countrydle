@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 import random
 from typing import List, Optional
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from daily_clock import utc_today
 from db.models.country import Country
-from db.models.flagdle import FlagdleDay, FlagdleState, FlagdleGuess
+from db.models.flagdle import FlagdleDay, FlagdleState, FlagdleGuess, FlagdleQuestion
 from db.models.user import User
 from game_logic import calculate_flagdle_points, count_consecutive_daily_wins
 from schemas.flagdle import FlagdleGuessCreate
@@ -16,6 +17,7 @@ from country_eligibility import require_eligible_target
 from db.repositories.country import CountryRepository
 from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from schemas.countrydle import LeaderboardEntry
+from db.repositories.question_accounting import get_daily_state, lock_question_state
 
 
 class FlagdleDayRepository:
@@ -23,29 +25,33 @@ class FlagdleDayRepository:
         self.session = session
 
     async def get_today_flag(self) -> Optional[FlagdleDay]:
-        today = datetime.now(timezone.utc).date()
+        today = utc_today()
         result = await self.session.execute(
             select(FlagdleDay)
             .options(joinedload(FlagdleDay.country))
             .where(FlagdleDay.date == today)
         )
-        return require_eligible_target(result.scalars().first())
+        return require_eligible_target(result.scalars().first(), today=today)
 
-    async def get_day_flag_by_date(self, target_date: date) -> Optional[FlagdleDay]:
+    async def get_day_flag_by_date(
+        self, target_date: date, *, today: date | None = None
+    ) -> Optional[FlagdleDay]:
+        today = today if today is not None else utc_today()
         result = await self.session.execute(
             select(FlagdleDay)
             .options(joinedload(FlagdleDay.country))
             .where(FlagdleDay.date == target_date)
         )
-        return require_eligible_target(result.scalars().first())
+        return require_eligible_target(result.scalars().first(), today=today)
 
     async def generate_new_day_flag(
         self, target_date: Optional[date] = None, cooldown_days: int = 90
     ) -> FlagdleDay:
+        today = utc_today()
         if target_date is None:
-            target_date = date.today()
+            target_date = today
 
-        existing = await self.get_day_flag_by_date(target_date)
+        existing = await self.get_day_flag_by_date(target_date, today=today)
         if existing:
             return existing
 
@@ -71,7 +77,7 @@ class FlagdleDayRepository:
         return new_day
 
     async def get_history(self) -> List[FlagdleDay]:
-        today = date.today()
+        today = utc_today()
         result = await self.session.execute(
             select(FlagdleDay)
             .options(joinedload(FlagdleDay.country))
@@ -88,44 +94,34 @@ class FlagdleStateRepository:
     async def get_state(self, user: Optional[User], day_flag: FlagdleDay) -> Optional[FlagdleState]:
         if not user:
             return None
-        result = await self.session.execute(
-            select(FlagdleState).where(
-                and_(
-                    FlagdleState.user_id == user.id,
-                    FlagdleState.day_id == day_flag.id,
-                )
-            )
-        )
-        return result.scalar_one_or_none()
+        return await lock_question_state(self.session, FlagdleState, user.id, day_flag.id)
 
     async def create_state(
-        self, user: Optional[User], day_flag: FlagdleDay, max_guesses: int = 12
+        self, user: Optional[User], day_flag: FlagdleDay, max_guesses: int = 12,
+        *, commit: bool = True,
     ) -> FlagdleState:
         if user is not None:
-            from db.repositories.question_accounting import lock_question_state
-            existing = await lock_question_state(self.session, FlagdleState, user.id, day_flag.id)
-            if existing is not None:
-                await self.session.commit()
-                return existing
-        state = FlagdleState(
-            user_id=user.id if user else None,
-            day_id=day_flag.id,
-            remaining_guesses=max_guesses,
-            guesses_made=0,
-            revealed_stage=1,
-            is_game_over=False,
-            won=False,
-            points=0,
-        )
-        self.session.add(state)
-        await self.session.commit()
-        await self.session.refresh(state)
+            state = await get_daily_state(
+                self.session, FlagdleState, user.id, day_flag.id, None, max_guesses,
+            )
+        else:
+            state = FlagdleState(
+                user_id=None, day_id=day_flag.id, remaining_guesses=max_guesses,
+                questions_asked=0, guesses_made=0, revealed_stage=1,
+                is_game_over=False, won=False, points=0,
+            )
+            self.session.add(state)
+            await self.session.flush()
+        if commit:
+            await self.session.commit()
         return state
 
-    async def update_state(self, state: FlagdleState) -> FlagdleState:
+    async def update_state(self, state: FlagdleState, *, commit: bool = True) -> FlagdleState:
         self.session.add(state)
-        await self.session.commit()
-        await self.session.refresh(state)
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         return state
 
     async def get_current_streak(self, user_id: int, puzzle_date: date) -> int:
@@ -189,12 +185,15 @@ class FlagdleGuessRepository:
         )
         return list(result.scalars().all())
 
-    async def add_guess(self, guess_create: FlagdleGuessCreate, *, commit: bool = True) -> FlagdleGuess:
+    async def add_guess(
+        self, guess_create: FlagdleGuessCreate, *, commit: bool = True, guest_id: str | None = None
+    ) -> FlagdleGuess:
         guess = FlagdleGuess(
             guess=guess_create.guess,
             country_id=guess_create.country_id,
             day_id=guess_create.day_id,
             user_id=guess_create.user_id,
+            guest_id=guest_id,
             answer=guess_create.answer,
             distance_km=guess_create.distance_km,
             bearing_degrees=guess_create.bearing_degrees,
@@ -214,3 +213,26 @@ class FlagdleGuessRepository:
             await self.session.flush()
         await self.session.refresh(guess)
         return guess
+
+
+class FlagdleQuestionRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create_question(self, question_create):
+        data = question_create.model_dump()
+        for field in ("intent", "required_info", "server_version"):
+            data.pop(field, None)
+        question = FlagdleQuestion(**data)
+        self.session.add(question)
+        await self.session.flush()
+        return question
+
+    async def get_user_day_questions(self, user_id: int, day_id: int):
+        result = await self.session.execute(
+            select(FlagdleQuestion).where(
+                FlagdleQuestion.user_id == user_id, FlagdleQuestion.day_id == day_id,
+                FlagdleQuestion.valid.is_(True), FlagdleQuestion.answer.is_not(None),
+            ).order_by(FlagdleQuestion.id)
+        )
+        return list(result.scalars().all())

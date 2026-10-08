@@ -5,7 +5,7 @@ from http.cookies import SimpleCookie
 from uuid import uuid4
 
 import pytest
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,7 +15,6 @@ from db.models.user import User
 from utils.guest_session import (
     GUEST_IDENTITY_COOKIE,
     get_guest_identity,
-    link_guest_participation,
     read_guest_identity,
     record_guest_action,
 )
@@ -87,18 +86,34 @@ async def test_concurrent_actions_count_one_guest_without_lost_updates(participa
 
     async def act(question, won=None):
         async with participation_db() as session:
-            await record_guest_action(session, request, Response(), "countrydle", 7, question=question, won=won)
+            participation = await record_guest_action(
+                session, request, Response(), "countrydle", 7,
+                max_guesses=3, max_questions=10, question=question, won=won,
+            )
+            assert participation.guest_id == identity
+            assert participation.guesses_made >= int(not question)
+            assert participation.questions_asked >= int(question)
             await session.commit()
 
-    await asyncio.gather(act(True), act(True), act(False, True), act(False, False))
+    await asyncio.gather(act(True), act(True), act(False, False), act(False, False))
+    await act(False, True)
+    for question in (False, True):
+        async with participation_db() as session:
+            with pytest.raises(HTTPException) as rejected:
+                await record_guest_action(
+                    session, request, Response(), "countrydle", 7,
+                    max_guesses=3, max_questions=10, question=question,
+                )
+            assert rejected.value.status_code == 400
+            await session.rollback()
     async with participation_db() as session:
         row = (await session.scalars(select(GuestParticipation))).one()
-        assert (row.guest_id, row.questions_asked, row.guesses_made, row.won) == (identity, 2, 2, True)
+        assert (row.guest_id, row.questions_asked, row.guesses_made, row.won) == (identity, 2, 3, True)
 
 
 @pytest.mark.real_database
 @pytest.mark.anyio
-async def test_people_modes_days_and_sync_remain_distinct(participation_db):
+async def test_people_modes_and_days_remain_distinct(participation_db):
     identity, first = identity_request()
     other_identity, second = identity_request()
     async with participation_db() as session:
@@ -106,35 +121,25 @@ async def test_people_modes_days_and_sync_remain_distinct(participation_db):
             (first, "countrydle", 7), (second, "countrydle", 7),
             (first, "countrydle", 8), (first, "continental:europe", 7),
         ):
-            await record_guest_action(session, request, Response(), mode, day, question=True)
-        await session.commit()
-        await link_guest_participation(session, first, "countrydle", 7, 1)
-        await link_guest_participation(session, first, "countrydle", 7, 1)
-        await link_guest_participation(session, second, "countrydle", 999, 1)
+            await record_guest_action(
+                session, request, Response(), mode, day,
+                max_guesses=3, max_questions=8 if mode.startswith("continental:") else 10,
+                question=True,
+            )
         await session.commit()
         rows = (await session.scalars(select(GuestParticipation))).all()
         assert len(rows) == 4
         assert {(r.guest_id, r.mode, r.day_id) for r in rows if r.user_id is None} == {
-            (other_identity, "countrydle", 7), (identity, "countrydle", 8),
+            (identity, "countrydle", 7), (other_identity, "countrydle", 7), (identity, "countrydle", 8),
             (identity, "continental:europe", 7),
         }
-        # Another account cannot steal a participation already linked during sync.
-        await link_guest_participation(session, first, "countrydle", 7, 2)
-        await session.commit()
-        owner = await session.scalar(select(GuestParticipation.user_id).where(
-            GuestParticipation.guest_id == identity, GuestParticipation.mode == "countrydle",
-            GuestParticipation.day_id == 7,
-        ))
-        assert owner == 1
 
 
 @pytest.mark.real_database
 @pytest.mark.anyio
-async def test_failed_action_rolls_back_participation_and_missing_identity_does_not_sync(participation_db):
+async def test_failed_action_rolls_back_participation(participation_db):
     _, request = identity_request()
     async with participation_db() as session:
-        await record_guest_action(session, request, Response(), "flagdle", 1, won=False)
+        await record_guest_action(session, request, Response(), "flagdle", 1, max_guesses=12, won=False)
         await session.rollback()
-        await link_guest_participation(session, request_with_cookie(), "flagdle", 1, 1)
-        await session.commit()
         assert await session.scalar(select(func.count()).select_from(GuestParticipation)) == 0

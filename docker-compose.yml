@@ -40,7 +40,9 @@ services:
   backend:
     container_name: server
     build: ./server
-    command: uvicorn app:app --host 0.0.0.0 --port 8080
+    command: uvicorn app:app --host 0.0.0.0 --port 8080 --workers 1 --lifespan on --no-proxy-headers
+    deploy:
+      replicas: 1
     networks:
       - countrydle
     ports:
@@ -54,7 +56,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - QUIZ_MODEL=${QUIZ_MODEL}
-      - SECRET_KEY=${SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY:?Set a private persistent SECRET_KEY}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:?Set exact browser origins}
+      - WEB_CONCURRENCY=1
+      - QUESTION_RATE_LIMIT_TRUSTED_PROXIES=${QUESTION_RATE_LIMIT_TRUSTED_PROXIES:-}
       - ALGORITHM=${ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
       - REMEMBER_ME_EXPIRE_DAYS=${REMEMBER_ME_EXPIRE_DAYS:-90}

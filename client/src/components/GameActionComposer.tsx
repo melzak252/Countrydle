@@ -46,7 +46,7 @@ export default function GameActionComposer({
                 }`}
               >
                 <span>{isPl ? 'Pytanie' : 'Question'}</span>
-                {questionCount && <span className="font-mono text-[10px] text-zinc-500">({questionCount})</span>}
+                {questionCount && <span className="font-mono text-xs text-zinc-400">({questionCount})</span>}
               </button>
               <button
                 type="button"
@@ -59,7 +59,7 @@ export default function GameActionComposer({
                 }`}
               >
                 <span>{isPl ? 'Strzał' : 'Guess'}</span>
-                {guessCount && <span className="font-mono text-[10px] text-zinc-500">({guessCount})</span>}
+                {guessCount && <span className="font-mono text-xs text-zinc-400">({guessCount})</span>}
               </button>
             </div>
           )}

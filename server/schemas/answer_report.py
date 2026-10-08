@@ -4,9 +4,10 @@ from typing import Annotated, ClassVar, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_field
 
 from report_tokens import create_report_token
+from schemas.fact_provenance import FactProvenanceRecord
 
 
-AnswerReportMode = Literal["countrydle", "us_statedle", "powiatdle", "wojewodztwodle", "continental"]
+AnswerReportMode = Literal["countrydle", "us_statedle", "powiatdle", "wojewodztwodle", "continental", "flagdle"]
 AnswerReportStatus = Literal["open", "reviewed", "all"]
 
 
@@ -44,6 +45,7 @@ class AnswerReportDetails(BaseModel):
     game_date: str
     target_name: str
     server_version: str | None
+    fact_provenance: list[FactProvenanceRecord] = Field(default_factory=list)
 
 
 class AnswerReportDisplay(BaseModel):

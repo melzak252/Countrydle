@@ -8,6 +8,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
+import EntityMarkControls from './EntityMarkControls';
 import { useMapData } from '../hooks/useMapData';
 import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
@@ -19,6 +20,7 @@ type FeatureLayer = L.Path & { feature?: Feature };
 interface WojewodztwaMapProps {
   correctWojewodztwoName?: string;
   className?: string;
+  markingDisabled?: boolean;
   onWojewodztwoClick?: (name: string) => void;
 }
 
@@ -77,12 +79,14 @@ function MapController({ correctName, geoJsonData, isGameOver }: { correctName?:
 export default function WojewodztwaMap({ correctWojewodztwoName, className }: WojewodztwaMapProps) {
   const state = useWojewodztwaGameStore();
   return <ControlledWojewodztwaMap className={className}
+    eligibleEntities={state.entities.map(entity => ({ name: entity.nazwa }))}
     correctWojewodztwoName={correctWojewodztwoName || state.correctEntity?.nazwa}
     interaction={{
       entityMarkings: state.entityMarkings,
       activeMarkerColor: state.activeMarkerColor,
       setActiveMarkerColor: state.setActiveMarkerColor,
       handleEntityMapClick: state.handleEntityMapClick,
+      toggleEntityMarker: state.toggleEntityMarker,
       clearMapMarkings: state.clearMapMarkings,
       isGameOver: !!state.gameState?.is_game_over,
     }} />;
@@ -93,7 +97,9 @@ export function ControlledWojewodztwaMap({
   className,
   onWojewodztwoClick,
   interaction,
-}: WojewodztwaMapProps & { interaction: MapInteractionState }) {
+  eligibleEntities,
+  markingDisabled = false,
+}: WojewodztwaMapProps & { interaction: MapInteractionState; eligibleEntities: readonly { name: string }[] }) {
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/wojewodztwa.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
@@ -356,6 +362,7 @@ export function ControlledWojewodztwaMap({
 
         <MapController correctName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
+      <EntityMarkControls entities={eligibleEntities} interaction={interaction} lockedEntityName={revealedName} disabled={markingDisabled} />
     </div>
   );
 }

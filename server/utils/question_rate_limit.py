@@ -11,30 +11,45 @@ from collections.abc import Callable
 
 from fastapi import HTTPException, Request
 
-from utils.guest_session import SECRET_KEY
+from runtime_configuration import SECRET_KEY
 
 
 QUESTION_LIMIT = 30
 QUESTION_WINDOW_SECONDS = 60
 MAX_TRACKED_CLIENTS = 10_000
-TRUST_X_REAL_IP = os.getenv("QUESTION_RATE_LIMIT_TRUST_X_REAL_IP", "false").lower() in {
-    "1", "true", "yes",
-}
+
+
+def _trusted_proxy_networks() -> tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...]:
+    configured = os.getenv("QUESTION_RATE_LIMIT_TRUSTED_PROXIES", "")
+    try:
+        return tuple(ipaddress.ip_network(value.strip()) for value in configured.split(",") if value.strip())
+    except ValueError as error:
+        raise RuntimeError("QUESTION_RATE_LIMIT_TRUSTED_PROXIES must contain comma-separated proxy CIDRs") from error
+
+
+TRUSTED_PROXIES = _trusted_proxy_networks()
 
 
 def client_network_key(request: Request) -> str:
     """Hash a normalized client network; never retain or log the raw address."""
-    address_text = request.client.host if request.client else "unknown"
-    if TRUST_X_REAL_IP:
+    peer_text = request.client.host if request.client else "unknown"
+    try:
+        address = ipaddress.ip_address(peer_text.split("%", 1)[0])
+    except ValueError:
+        address = None
+
+    if address is not None and any(address in network for network in TRUSTED_PROXIES):
         forwarded_ip = request.headers.get("x-real-ip")
         if forwarded_ip:
-            address_text = forwarded_ip.strip()
+            try:
+                address = ipaddress.ip_address(forwarded_ip.strip())
+            except ValueError:
+                pass  # Malformed forwarding never changes the actual-peer key.
 
-    try:
-        address = ipaddress.ip_address(address_text.split("%", 1)[0])
+    if address is not None:
         prefix = 32 if address.version == 4 else 64
         network = ipaddress.ip_network(f"{address}/{prefix}", strict=False).with_prefixlen
-    except ValueError:
+    else:
         network = "unknown"
 
     return hmac.new(

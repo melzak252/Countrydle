@@ -80,7 +80,19 @@ interface GuestSnapshot {
   correctEntity?: unknown;
 }
 
-const readGuestSnapshot = (key: string): { raw: string; snapshot: GuestSnapshot } | null => {
+interface FlagdleGuestSnapshot {
+  state: FlagdleState;
+  questions: Question[];
+  guesses: FlagdleGuess[];
+  correctEntity?: Country | null;
+}
+
+interface StoredGuestSnapshot {
+  raw: string;
+  snapshot: GuestSnapshot;
+}
+
+const readGuestSnapshot = (key: string): StoredGuestSnapshot | null => {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
@@ -101,7 +113,7 @@ const readGuestSnapshot = (key: string): { raw: string; snapshot: GuestSnapshot 
   }
 };
 
-const saveGuestSnapshot = (key: string, snapshot: GuestSnapshot): void => {
+const saveGuestSnapshot = (key: string, snapshot: GuestSnapshot | FlagdleGuestSnapshot): void => {
   try {
     localStorage.setItem(key, JSON.stringify(snapshot));
   } catch {
@@ -175,6 +187,27 @@ const guessMapping: Record<MapGameType, (guess: Guess) => SyncedGuess> = {
 
 type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'europe' | 'asia' | 'africa' | 'americas';
 
+const FLAG_GUEST_GUESS_BONUSES = [1500, 1300, 1100, 950, 800, 650, 500, 400, 300, 200, 100, 50] as const;
+
+// Existing guest display estimates only; authenticated awards belong to the server.
+function estimateGuestPoints(mode: MapGameType | 'flagdle', questionsAsked: number, guessesMade: number, elapsedSeconds?: number | null): number {
+  if (mode === 'flagdle') {
+    const speedBonus = elapsedSeconds != null && elapsedSeconds > 0
+      ? Math.floor(300 * Math.pow(Math.max(0, (180 - elapsedSeconds) / 180), 1.5))
+      : 0;
+    return 500 + FLAG_GUEST_GUESS_BONUSES[guessesMade - 1] + speedBonus + 50;
+  }
+  const maxQ = gameLimits[mode].maxQuestions;
+  const maxG = gameLimits[mode].maxGuesses;
+  const qRatio = Math.max(0, (maxQ - questionsAsked) / maxQ);
+  const qBonus = Math.round(1500 * Math.pow(qRatio, 1.5));
+  const gRatio = Math.max(0, (maxG - guessesMade + 1) / maxG);
+  const gBonus = Math.round(500 * gRatio);
+  const speedBonus = elapsedSeconds != null ? Math.max(0, Math.min(300, 300 - elapsedSeconds)) : 0;
+  const difficultyBonus = mode === 'powiaty' ? 500 : mode === 'us_states' ? 200 : 0;
+  return 500 + qBonus + gBonus + speedBonus + 50 + difficultyBonus;
+}
+
 // Factory to create stores for different game types
 const createGameStore = (gameType: MapGameType) => {
   const service: any = {
@@ -187,6 +220,31 @@ const createGameStore = (gameType: MapGameType) => {
     africa: africaService,
     americas: americasService,
   }[gameType];
+  const pendingGuestSyncs = new Map<string, Promise<void>>();
+  const syncStoredGuestProgress = async (date: string, userId: number, stored: StoredGuestSnapshot) => {
+    const identity = `${userId}:${date}`;
+    const active = pendingGuestSyncs.get(identity);
+    if (active) return active;
+    const localKey = getLocalStateKey(gameType, date);
+    const pending = (async () => {
+      // A completed sync may have retired a snapshot captured by another caller.
+      if (localStorage.getItem(localKey) !== stored.raw) return;
+      const parsed = stored.snapshot;
+      await service.syncGuestData({
+        state: normalizeGameState(gameType, parsed.state, parsed.questions, parsed.guesses),
+        questions: parsed.questions.map(q => q.id),
+        guesses: parsed.guesses.map(guessMapping[gameType]),
+        date,
+      });
+      removeGuestSnapshot(localKey, stored.raw);
+    })();
+    pendingGuestSyncs.set(identity, pending);
+    try {
+      await pending;
+    } finally {
+      pendingGuestSyncs.delete(identity);
+    }
+  };
 
   return create<GameData & GameActions>((set, get) => ({
     notices: [],
@@ -223,7 +281,7 @@ const createGameStore = (gameType: MapGameType) => {
         const localKey = getLocalStateKey(gameType, data.date);
         const stored = readGuestSnapshot(localKey);
         const localData = stored?.snapshot;
-        if (localData && data.date) {
+        if (localData && data.date && data.user !== null) {
             recordGuestCompletion(gameType, data.date, normalizeGameState(
                 gameType, localData.state, localData.questions, localData.guesses
             ), data.date);
@@ -234,18 +292,7 @@ const createGameStore = (gameType: MapGameType) => {
             const parsed = localData;
             if (parsed.questions.length > 0 || parsed.guesses.length > 0) {
                 try {
-                    await service.syncGuestData({
-                        state: normalizeGameState(
-                            gameType,
-                            parsed.state,
-                            parsed.questions,
-                            parsed.guesses
-                        ),
-                        questions: parsed.questions.map((q: any) => q.id),
-                        guesses: parsed.guesses.map(guessMapping[gameType]),
-                        date: data.date
-                    });
-                    removeGuestSnapshot(localKey, stored.raw);
+                    await syncStoredGuestProgress(data.date, data.user.id, stored);
                     
                     // Fetch the state again to get the merged data
                     const syncedData = await service.getState();
@@ -276,30 +323,28 @@ const createGameStore = (gameType: MapGameType) => {
 
 
         if (isActuallyGuest) {
-            // If we are guest, we ignore server's questions/guesses (they might belong to a stale session)
-            // and load from local storage instead.
-            gameState = createGuestGameState(gameType) as any;
-            questions = [];
-            guesses = [];
-            // correctEntity is already set from data.country || ... at line 109
-
-            if (data.date && localData) {
-                const parsed = localData;
-                questions = parsed.questions || [];
-                guesses = parsed.guesses || [];
-                gameState = normalizeGameState(gameType, parsed.state, questions, guesses) as any;
-                if (parsed.correctEntity) {
-                    correctEntity = parsed.correctEntity;
+            if (data.user === null) {
+                // Signed-guest GET owns progress and original history, even without browser storage.
+                if (gameState.is_game_over && gameState.won && (gameState.points === undefined || gameState.points === 0)) {
+                    const elapsed = guesses.find((guess: Guess) => guess.answer === true)?.elapsed_seconds;
+                    gameState = { ...gameState, points: estimateGuestPoints(gameType, gameState.questions_asked, gameState.guesses_made, elapsed) };
                 }
-
-                // Persist the migrated state so old 10/3 guest entries do not stay in localStorage.
-                saveGuestSnapshot(localKey, {
-                    ...parsed,
-                    state: gameState,
-                    questions,
-                    guesses,
-                    correctEntity: parsed.correctEntity || correctEntity,
-                });
+                saveGuestSnapshot(localKey, { state: gameState, questions, guesses, correctEntity });
+                recordGuestCompletion(gameType, data.date, gameState, data.date);
+            } else {
+                // A stale authenticated cookie must not expose that account's history or evidence.
+                gameState = createGuestGameState(gameType);
+                questions = [];
+                guesses = [];
+                correctEntity = null;
+                if (data.date && localData) {
+                    const parsed = localData;
+                    questions = parsed.questions.map(question => ({ ...question, fact_provenance: [] }));
+                    guesses = parsed.guesses;
+                    gameState = normalizeGameState(gameType, parsed.state, questions, guesses);
+                    correctEntity = parsed.correctEntity || null;
+                    saveGuestSnapshot(localKey, { ...parsed, state: gameState, questions, guesses, correctEntity });
+                }
             }
         }
         
@@ -449,21 +494,7 @@ const createGameStore = (gameType: MapGameType) => {
               const q = guessText.trim().toLowerCase();
               correctEntity = entities.find(e => (e.name || (e as any).nazwa || '').toLowerCase() === q) || null;
             }
-            const maxQ = gameLimits[gameType].maxQuestions;
-            const maxG = gameLimits[gameType].maxGuesses;
-            const qRatio = Math.max(0, (maxQ - newGameState.questions_asked) / maxQ);
-            const qBonus = Math.round(1500 * Math.pow(qRatio, 1.5));
-            const gRatio = Math.max(0, (maxG - newGameState.guesses_made + 1) / maxG);
-            const gBonus = Math.round(500 * gRatio);
-            const speedBonus = elapsed_seconds !== undefined ? Math.max(0, Math.min(300, 300 - elapsed_seconds)) : 0;
-            const difficultyBonus = gameType === 'powiaty' ? 500 : gameType === 'us_states' ? 200 : 0;
-            newGameState.points = 500 + qBonus + gBonus + speedBonus + 50 + difficultyBonus;
-          } else if (newGameState.is_game_over && service.reveal) {
-            try {
-              correctEntity = await service.reveal();
-            } catch (e) {
-              console.error("Failed to reveal correct entity", e);
-            }
+            newGameState.points = estimateGuestPoints(gameType, newGameState.questions_asked, newGameState.guesses_made, elapsed_seconds);
           }
 
           saveGuestSnapshot(getLocalStateKey(gameType, dailyDate), {
@@ -472,7 +503,6 @@ const createGameStore = (gameType: MapGameType) => {
             guesses: newGuesses,
             correctEntity
           });
-          recordGuestCompletion(gameType, dailyDate, newGameState, dailyDate);
 
           set({
             guesses: newGuesses,
@@ -481,7 +511,7 @@ const createGameStore = (gameType: MapGameType) => {
             isLoading: false
           });
 
-          // We don't need to fetchGameState here anymore because we already revealed the entity
+          if (newGameState.is_game_over) await get().fetchGameState();
         } else {
           await get().fetchGameState();
         }
@@ -522,20 +552,7 @@ const createGameStore = (gameType: MapGameType) => {
                     gameType, parsed.state, parsed.questions, parsed.guesses
                 ), dailyDate);
                 if (parsed.questions.length > 0 || parsed.guesses.length > 0) {
-                    await service.syncGuestData({
-                        state: normalizeGameState(
-                            gameType,
-                            parsed.state,
-                            parsed.questions,
-                            parsed.guesses
-                        ),
-                        questions: parsed.questions.map((q: any) => q.id),
-                        guesses: parsed.guesses.map(guessMapping[gameType]),
-                        date: dailyDate
-                    });
-                    if (removeGuestSnapshot(localKey, stored.raw)) {
-                        await get().fetchGameState();
-                    }
+                    await get().fetchGameState();
                 } else {
                     removeGuestSnapshot(localKey, stored.raw);
                 }
@@ -684,53 +701,51 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
     try {
       const data = await flagdleService.getState();
       const localKey = `guess_game_flagdle_${data.date}`;
-      const localRaw = localStorage.getItem(localKey);
-      let localGuesses: FlagdleGuess[] = [];
-      let localQuestions: Question[] = [];
+      const isGuest = data.user === null || useAuthStore.getState().user === null;
       let effectiveState = data.state;
-      const isGuest = !data.user;
+      let combinedGuesses = data.guesses;
+      let questions = data.questions.filter(isAnsweredQuestion);
+      let revealedCountry = data.country || null;
 
-      if (localRaw) {
+      if (isGuest && data.user !== null) {
+        // Isolate a stale authenticated cookie instead of attaching its private history.
+        effectiveState = { remaining_guesses: 12, guesses_made: 0, revealed_stage: 1, is_game_over: false, won: false, points: 0 };
+        combinedGuesses = [];
+        questions = [];
+        revealedCountry = null;
         try {
-          const parsed = JSON.parse(localRaw);
-          if (isGuest && parsed && Array.isArray(parsed.guesses)) {
-            localGuesses = parsed.guesses;
-          }
-          if (parsed && Array.isArray(parsed.questions)) {
-            localQuestions = parsed.questions.filter(isAnsweredQuestion);
-            saveGuestSnapshot(localKey, { ...parsed, questions: localQuestions });
-          }
-          if (isGuest && parsed && parsed.state) {
-            effectiveState = { ...effectiveState, ...parsed.state };
-          }
-          if (effectiveState.is_game_over) {
-            recordGuestCompletion('flagdle', data.date, effectiveState, data.date);
-            notifyGuestHistoryChanged();
+          const localRaw = localStorage.getItem(localKey);
+          if (localRaw) {
+            const parsed = JSON.parse(localRaw);
+            if (parsed && Array.isArray(parsed.guesses)) combinedGuesses = parsed.guesses;
+            if (parsed && Array.isArray(parsed.questions)) {
+              const savedQuestions: Question[] = parsed.questions;
+              questions = savedQuestions.filter(isAnsweredQuestion).map(question => ({ ...question, fact_provenance: [] }));
+            }
+            if (parsed && parsed.state) effectiveState = { ...effectiveState, ...parsed.state };
+            revealedCountry = parsed?.correctEntity || null;
+            saveGuestSnapshot(localKey, { state: effectiveState, guesses: combinedGuesses, questions, correctEntity: revealedCountry });
           }
         } catch {
-          // ignore invalid local storage
+          // An unavailable recovery snapshot must not expose authenticated data.
         }
+      } else if (data.user === null) {
+        if (effectiveState.is_game_over && effectiveState.won && effectiveState.points === 0) {
+          const elapsed = combinedGuesses.find(guess => guess.answer === true)?.elapsed_seconds;
+          effectiveState = { ...effectiveState, points: estimateGuestPoints('flagdle', 0, effectiveState.guesses_made, elapsed) };
+        }
+        saveGuestSnapshot(localKey, { state: effectiveState, guesses: combinedGuesses, questions, correctEntity: revealedCountry });
+        recordGuestCompletion('flagdle', data.date, effectiveState, data.date);
       }
-
-      const combinedGuesses = isGuest && localGuesses.length > 0 ? localGuesses : data.guesses;
       const calculatedStage = effectiveState.is_game_over
         ? 12
         : Math.min(12, Math.max(effectiveState.revealed_stage, combinedGuesses.length + 1));
 
-      let revealedCountry = data.country || null;
-      if (effectiveState.is_game_over && !revealedCountry) {
-        try {
-          const endRes = await flagdleService.getEndState();
-          revealedCountry = endRes.country || null;
-        } catch {
-          // silent fallback
-        }
-      }
 
       set({
         gameState: effectiveState,
         guesses: combinedGuesses,
-        questions: localQuestions,
+        questions,
         stage: calculatedStage,
         flagAssetUrl: data.flag_asset_url || null,
         correctCountry: revealedCountry,
@@ -746,7 +761,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
   },
 
   askQuestion: async (questionText: string) => {
-    if (get().isLoading || get().gameState?.is_game_over) return;
+    if (get().isLoading) return;
     set({ isLoading: true, error: null });
     try {
       const q = await flagdleService.askQuestion(questionText);
@@ -756,14 +771,14 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         return;
       }
       const nextQuestions = [...get().questions, q];
-      const { dailyDate, gameState } = get();
-      if (dailyDate && gameState) {
-        const localKey = `guess_game_flagdle_${dailyDate}`;
-        const existing = localStorage.getItem(localKey);
-        const parsed = existing ? JSON.parse(existing) : {};
-        localStorage.setItem(localKey, JSON.stringify({ ...parsed, state: gameState, questions: nextQuestions }));
+      const { dailyDate, gameState, guesses, isGuest, correctCountry } = get();
+      if (isGuest && dailyDate && gameState) {
+        saveGuestSnapshot(`guess_game_flagdle_${dailyDate}`, {
+          state: gameState, questions: nextQuestions, guesses, correctEntity: correctCountry,
+        });
       }
       set({ questions: nextQuestions, isLoading: false });
+      if (gameState?.is_game_over) await get().fetchGameState();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to evaluate question.';
       toast.error(msg);
@@ -782,64 +797,35 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         country_id: countryId,
         elapsed_seconds: elapsed,
       });
-      if (!isGuest && (guessRes.answer || get().guesses.length + 1 >= 12)) {
-        await get().fetchGameState();
-        return;
-      }
 
       const nextGuesses = [...get().guesses, { ...guessRes, elapsed_seconds: elapsed }];
       const isWon = guessRes.answer;
-      const isGameOver = isWon || nextGuesses.length >= 12;
+      const isGameOver = isWon || gameState.remaining_guesses <= 1;
+      if (!isGuest && isGameOver) {
+        await get().fetchGameState();
+        return;
+      }
       const nextStage = isGameOver ? 12 : Math.min(12, nextGuesses.length + 1);
 
       const nextState: FlagdleState = {
         ...gameState,
-        guesses_made: nextGuesses.length,
-        remaining_guesses: Math.max(0, 12 - nextGuesses.length),
+        guesses_made: gameState.guesses_made + 1,
+        remaining_guesses: Math.max(0, gameState.remaining_guesses - 1),
         revealed_stage: nextStage,
         is_game_over: isGameOver,
         won: isWon,
       };
       if (isWon) {
-        const guessBonuses = [1500, 1300, 1100, 950, 800, 650, 500, 400, 300, 200, 100, 50];
-        const speedBonus = elapsed > 0
-          ? Math.floor(300 * Math.pow(Math.max(0, (180 - elapsed) / 180), 1.5))
-          : 0;
-        nextState.points = 500 + guessBonuses[nextGuesses.length - 1] + speedBonus + 50;
+        nextState.points = estimateGuestPoints('flagdle', 0, nextState.guesses_made, elapsed);
       } else {
         nextState.points = 0;
       }
 
-      if (dailyDate) {
-        localStorage.setItem(
-          `guess_game_flagdle_${dailyDate}`,
-          JSON.stringify({ state: nextState, guesses: nextGuesses })
-        );
-      }
-
-      let revealedCountry = get().correctCountry;
-      if (isWon) {
-        const found = get().countries.find(
-          (c) => c.name.toLowerCase() === countryName.trim().toLowerCase()
-        );
-        revealedCountry = (found as any) || { id: countryId || 0, name: countryName };
-      } else if (isGameOver) {
-        try {
-          const endState = await flagdleService.getEndState();
-          revealedCountry = (endState.country as any) || null;
-        } catch {
-          try {
-            const rev = await flagdleService.reveal();
-            revealedCountry = (rev as any) || null;
-          } catch {
-            // fallback
-          }
-        }
-      }
-
-      if (isGameOver && isGuest && dailyDate) {
-        recordGuestCompletion('flagdle', dailyDate, nextState, dailyDate);
-        notifyGuestHistoryChanged();
+      const revealedCountry = get().correctCountry;
+      if (isGuest && dailyDate) {
+        saveGuestSnapshot(`guess_game_flagdle_${dailyDate}`, {
+          state: nextState, guesses: nextGuesses, questions: get().questions, correctEntity: revealedCountry,
+        });
       }
 
       set({
@@ -849,6 +835,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         correctCountry: revealedCountry,
         isLoading: false,
       });
+      if (isGameOver) await get().fetchGameState();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error submitting guess.';
       toast.error(msg);

@@ -1,9 +1,10 @@
 from db.models.continental import ContinentalState
 from db.repositories.question_accounting import (
     consume_question, is_answered, unresolved_question, check_question_available,
-    lock_question_state, claim_guest_questions,
+    get_daily_state, require_guess_available,
 )
-from datetime import date, datetime
+from datetime import datetime
+import os
 from typing import List, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -32,7 +33,7 @@ from db.repositories.continental import (
 )
 from db.repositories.country import CountryRepository
 from db.repositories.user import UserRepository
-from game_logic import CONTINENTAL_CONFIG, GameRules, GameState, is_valid_synced_game_state
+from game_logic import CONTINENTAL_CONFIG
 from qdrant.utils import add_question_to_qdrant
 from schemas.continental import (
     ContinentalEndStateResponse,
@@ -53,7 +54,8 @@ from schemas.user import UserDisplay
 from users.utils import get_admin_user, get_current_or_guest_user, get_current_user
 from utils.geo import enhance_guess_with_hint
 from utils.guest_session import (
-    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    create_guest_game_token, record_guest_action, get_guest_identity, guest_game_over,
+    get_guest_progress, claim_guest_history, check_guest_question_available,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -61,17 +63,6 @@ from utils.question_rate_limit import enforce_question_attempt_limit
 
 router = APIRouter(prefix="/continental")
 
-game_rules = GameRules(CONTINENTAL_CONFIG)
-
-
-def db_state_to_game_state(db_state) -> GameState:
-    """Convert DB state to logic GameState."""
-    return GameState(
-        questions_used=db_state.questions_asked,
-        guesses_used=db_state.guesses_made,
-        is_won=db_state.won,
-        is_lost=db_state.is_game_over and not db_state.won,
-    )
 
 
 @router.get("/admin/questions")
@@ -109,83 +100,32 @@ async def sync_guest_data(
     if not day:
         raise HTTPException(status_code=404, detail="Game for this date not found.")
 
-    state = await state_repo.get_state(
-        user,
-        day,
-        max_questions=CONTINENTAL_CONFIG.max_questions,
-        max_guesses=CONTINENTAL_CONFIG.max_guesses,
-    )
-    state = await lock_question_state(session, ContinentalState, user.id, day.id) or state
-
-    # If user already has progress on server, ignore guest sync
-    if state.questions_asked > 0 or state.guesses_made > 0:
-        linked = await link_guest_participation(session, request, f"continental:{continent.value}", day.id, user.id)
-        if linked is not None:
-            await session.commit()
-        return await get_state(continent, user, session)
-
-    sync_state = getattr(sync_data, "state", None)
-    if sync_state is not None and not is_valid_synced_game_state(
-        CONTINENTAL_CONFIG,
-        guesses_made=sync_state.guesses_made,
-        remaining_guesses=sync_state.remaining_guesses,
-        is_game_over=sync_state.is_game_over,
-        won=sync_state.won,
-        correct_guesses=[
-            guess.country_id == day.country_id for guess in sync_data.guesses
-        ],
-        questions_asked=sync_state.questions_asked,
-        remaining_questions=sync_state.remaining_questions,
-        synced_questions=len(sync_data.questions),
-    ):
-        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
-
-    country_repo = CountryRepository(session)
-    for guess in sync_data.guesses:
-        await country_repo.validate_guess(guess.country_id, guess.guess, continent.value)
-        if not is_eligible_candidate(guess.guess, continent):
-            raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
-
-    await claim_guest_questions(
-        session, ContinentalQuestion, state, sync_data.questions, CONTINENTAL_CONFIG.max_questions,
-    )
-
-    # Add guesses
-    guess_repo = ContinentalGuessRepository(session)
-    for g in sync_data.guesses:
-        is_correct = False
-        if g.country_id is not None:
-            is_correct = (g.country_id == day.country_id)
-
-        guess_create = ContinentalGuessCreate(
-            guess=g.guess,
-            country_id=g.country_id,
-            day_id=day.id,
-            user_id=user.id,
-            answer=is_correct,
-            elapsed_seconds=g.elapsed_seconds,
+    try:
+        state = await get_daily_state(
+            session, ContinentalState, user.id, day.id,
+            CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
         )
-        await guess_repo.add_guess(guess_create, commit=False)
-
-    state.remaining_guesses = sync_data.state.remaining_guesses
-    state.guesses_made = sync_data.state.guesses_made
-    state.is_game_over = sync_data.state.is_game_over
-    state.won = sync_data.state.won
-
-    if state.won:
-        current_streak = (await state_repo.get_current_streak(user.id, day.date, continent)) + 1
-        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
-        state.points = await state_repo.calc_points(
-            state, elapsed_seconds=elapsed, streak=current_streak
+        imported = await claim_guest_history(
+            session, request, state, f"continental:{continent.value}",
+            ContinentalGuess, ContinentalQuestion,
+            CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
+            validate_original_guess=lambda country_id, name: CountryRepository(session).validate_guess(
+                country_id, name, continent.value,
+            ),
         )
-
-    if state.is_game_over:
-        await UserRepository(session).update_points(user.id, state)
-
-    if state.questions_asked > 0 or state.guesses_made > 0:
-        await link_guest_participation(session, request, f"continental:{continent.value}", day.id, user.id)
-    await state_repo.update_state(state)
-    return await get_state(continent, user, session)
+        if imported and state.won:
+            guesses = await ContinentalGuessRepository(session).get_user_guesses(user.id, day.id)
+            streak = (await state_repo.get_current_streak(user.id, day.date, continent)) + 1
+            elapsed = guesses[-1].elapsed_seconds if guesses else None
+            state.points = await state_repo.calc_points(state, elapsed_seconds=elapsed, streak=streak)
+        if imported and state.is_game_over:
+            await UserRepository(session).update_points(user.id, state, commit=False)
+        await state_repo.update_state(state, commit=False)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    return await get_state(continent=continent, user=user, session=session, request=request)
 
 
 @router.get(
@@ -207,34 +147,34 @@ async def get_state(
     target_country = await CountryRepository(session).get(day.country_id)
 
     if user is None:
-        if request is not None and response is not None:
-            from utils.guest_session import get_guest_identity
-            get_guest_identity(request, response)
+        participation, guesses, questions = await get_guest_progress(
+            session, request, response, f"continental:{continent.value}", day.id,
+            ContinentalGuess, ContinentalQuestion,
+        )
+        guesses_made = participation.guesses_made if participation else 0
+        questions_asked = participation.questions_asked if participation else 0
+        terminal = guest_game_over(participation, CONTINENTAL_CONFIG.max_guesses)
         guest_state = ContinentalStateSchema(
-            remaining_questions=CONTINENTAL_CONFIG.max_questions,
-            remaining_guesses=CONTINENTAL_CONFIG.max_guesses,
-            questions_asked=0,
-            guesses_made=0,
-            is_game_over=False,
-            won=False,
-            points=0,
+            remaining_questions=max(0, CONTINENTAL_CONFIG.max_questions - questions_asked),
+            remaining_guesses=max(0, CONTINENTAL_CONFIG.max_guesses - guesses_made),
+            questions_asked=questions_asked, guesses_made=guesses_made,
+            is_game_over=terminal, won=bool(participation and participation.won), points=0,
         )
         return ContinentalStateResponse(
-            user=None,
-            date=str(day.date),
-            state=guest_state,
-            questions=[],
-            guesses=[],
-            country=None,
+            user=None, date=str(day.date), state=guest_state,
+            questions=[ContinentalQuestionDisplay.model_validate(q, context={"terminal": terminal}) for q in questions],
+            guesses=format_continental_guesses(
+                guesses, day.country_id, target_country.name if target_country else None,
+                max_guesses=CONTINENTAL_CONFIG.max_guesses,
+            ),
+            country=CountryDisplay.model_validate(target_country) if terminal and target_country else None,
         )
 
-    state_repo = ContinentalStateRepository(session)
-    state = await state_repo.get_state(
-        user,
-        day,
-        max_questions=CONTINENTAL_CONFIG.max_questions,
-        max_guesses=CONTINENTAL_CONFIG.max_guesses,
+    state = await get_daily_state(
+        session, ContinentalState, user.id, day.id,
+        CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
     )
+    await session.commit()
 
     questions_db = await ContinentalQuestionRepository(session).get_user_questions(
         user.id, day.id
@@ -258,7 +198,7 @@ async def get_state(
         user=UserDisplay.model_validate(user),
         date=str(day.date),
         state=ContinentalStateSchema.model_validate(state),
-        questions=[ContinentalQuestionDisplay.model_validate(q) for q in questions_db],
+        questions=[ContinentalQuestionDisplay.model_validate(q, context={"terminal": state.is_game_over}) for q in questions_db],
         guesses=formatted_guesses,
         country=country_display,
     )
@@ -276,12 +216,29 @@ async def get_countries(
 @router.get("/{continent}/reveal", response_model=CountryDisplay)
 async def reveal_country(
     continent: ContinentCode,
+    request: Request,
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     day_repo = ContinentalDayRepository(session)
     day = await day_repo.get_today_day(continent)
     if not day:
         day = await day_repo.generate_new_day(continent)
+
+    if user is not None:
+        state = await get_daily_state(
+            session, ContinentalState, user.id, day.id,
+            CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
+        )
+        terminal = state.is_game_over
+    else:
+        participation, _, _ = await get_guest_progress(
+            session, request, None, f"continental:{continent.value}", day.id,
+            ContinentalGuess, ContinentalQuestion,
+        )
+        terminal = guest_game_over(participation, CONTINENTAL_CONFIG.max_guesses)
+    if not terminal:
+        raise HTTPException(status_code=400, detail="Cannot reveal country before game is over.")
 
     target_country = await CountryRepository(session).get(day.country_id)
     if not target_country:
@@ -337,6 +294,12 @@ async def _do_ask_question(
         await check_question_available(
             session, ContinentalState, user.id, day.id, CONTINENTAL_CONFIG.max_questions,
         )
+    else:
+        await check_guest_question_available(
+            session, request, response, f"continental:{continent.value}", day.id,
+            CONTINENTAL_CONFIG.max_questions, max_guesses=CONTINENTAL_CONFIG.max_guesses,
+        )
+    await session.commit()
 
     question_create, planned_question = await gutils.analyze_and_answer_locally(
         original_question=question.question, day_country=day, user=user, session=session,
@@ -363,13 +326,17 @@ async def _do_ask_question(
         await record_guest_action(
             session, request, response, f"continental:{continent.value}", day.id,
             question=True, max_questions=CONTINENTAL_CONFIG.max_questions,
+            max_guesses=CONTINENTAL_CONFIG.max_guesses,
         )
     else:
         await consume_question(
             session, ContinentalState, user.id, day.id,
             CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
         )
-    new_question = await ContinentalQuestionRepository(session).create_question(question_create)
+    new_question = await ContinentalQuestionRepository(session).create_question(
+        question_create,
+        guest_id=get_guest_identity(request, response) if user is None else None,
+    )
     result = ContinentalQuestionDisplay.model_validate(new_question)
     await session.commit()
     if question_vector:
@@ -394,6 +361,14 @@ async def make_guess(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    try:
+        return await _do_make_guess(continent, guess, request, response, user, session)
+    except Exception:
+        await session.rollback()
+        raise
+
+
+async def _do_make_guess(continent, guess, request, response, user, session):
     await CountryRepository(session).validate_guess(guess.country_id, guess.guess, continent.value)
     # Rule 2: Whitelist enforcement
     candidate_name = guess.guess.strip()
@@ -430,18 +405,13 @@ async def make_guess(
 
     # Guest player
     if user is None:
-        cookie_name = f"guest_continental_{continent.value}"
-        cookie = request.cookies.get(cookie_name)
-        guest_state = read_guest_game_token(cookie, f"continental_{continent.value}", day.id)
-        guesses_count = guest_state["guesses_count"] + 1
-        won = is_correct
-        is_game_over = is_correct or (guesses_count >= CONTINENTAL_CONFIG.max_guesses)
-        token = create_guest_game_token(
-            f"continental_{continent.value}", day.id, guesses_count, is_game_over, won
+        participation = await record_guest_action(
+            session, request, response, f"continental:{continent.value}", day.id,
+            max_guesses=CONTINENTAL_CONFIG.max_guesses, won=is_correct,
         )
-        response.set_cookie(
-            cookie_name, token, httponly=True, samesite="lax", max_age=86400 * 2
-        )
+        guesses_count = participation.guesses_made
+        won = participation.won
+        is_game_over = guest_game_over(participation, CONTINENTAL_CONFIG.max_guesses)
 
         guess_create = ContinentalGuessCreate(
             guess=candidate_name,
@@ -451,8 +421,18 @@ async def make_guess(
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )
-        await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, won=is_correct)
-        saved_guess = await ContinentalGuessRepository(session).add_guess(guess_create)
+        saved_guess = await ContinentalGuessRepository(session).add_guess(
+            guess_create, commit=False, guest_id=get_guest_identity(request, response),
+        )
+        await session.commit()
+        token = create_guest_game_token(
+            f"continental_{continent.value}", day.id, participation.guesses_made,
+            guest_game_over(participation, CONTINENTAL_CONFIG.max_guesses), participation.won,
+        )
+        response.set_cookie(
+            f"guest_continental_{continent.value}", token, httponly=True, samesite="lax", max_age=86400 * 2,
+            secure=request.url.scheme == "https" or os.getenv("FRIEND_COOKIE_SECURE", "").strip().lower() in {"true", "1", "yes"},
+        )
 
         hint = enhance_guess_with_hint(
             mode="countrydle",
@@ -478,19 +458,11 @@ async def make_guess(
 
     # Authenticated player
     state_repo = ContinentalStateRepository(session)
-    state = await state_repo.get_state(
-        user,
-        day,
-        max_questions=CONTINENTAL_CONFIG.max_questions,
-        max_guesses=CONTINENTAL_CONFIG.max_guesses,
+    state = await get_daily_state(
+        session, ContinentalState, user.id, day.id,
+        CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
     )
-
-    current_game_state = db_state_to_game_state(state)
-    if not game_rules.can_make_guess(current_game_state):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User has no more guesses left or game is over!",
-        )
+    require_guess_available(state, CONTINENTAL_CONFIG.max_guesses)
 
     guess_num = state.guesses_made + 1
 
@@ -502,14 +474,16 @@ async def make_guess(
         answer=is_correct,
         elapsed_seconds=guess.elapsed_seconds,
     )
-    new_guess = await ContinentalGuessRepository(session).add_guess(guess_create)
+    new_guess = await ContinentalGuessRepository(session).add_guess(guess_create, commit=False)
 
     state = await state_repo.guess_made(
-        state, new_guess, elapsed_seconds=guess.elapsed_seconds, continent=continent, puzzle_date=day.date
+        state, new_guess, elapsed_seconds=guess.elapsed_seconds, continent=continent,
+        puzzle_date=day.date, commit=False,
     )
 
     if state.is_game_over:
-        await UserRepository(session).update_points(user.id, state)
+        await UserRepository(session).update_points(user.id, state, commit=False)
+    await session.commit()
 
     hint = enhance_guess_with_hint(
         mode="countrydle",

@@ -5,6 +5,12 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from schemas.user import UserDisplay
 from schemas.country import CountryDisplay
+from schemas.countrydle import QuestionDisplay
+
+
+class FlagdleQuestionDisplay(QuestionDisplay):
+    report_mode = "flagdle"
+    explanation: str
 
 
 class FlagdleGuessBase(BaseModel):
@@ -46,6 +52,7 @@ class FlagdleGuessDisplay(BaseModel):
     matched_symbols: List[str] = Field(default_factory=list)
     revealed_tile: Optional[int] = None
     guessed_at: datetime
+    elapsed_seconds: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +73,7 @@ class FlagdleStateResponse(BaseModel):
     date: str
     state: FlagdleStateSchema
     guesses: List[FlagdleGuessDisplay] = Field(default_factory=list)
+    questions: List[FlagdleQuestionDisplay] = Field(default_factory=list)
     flag_asset_url: Optional[str] = None
     country: Optional[CountryDisplay] = None
 
