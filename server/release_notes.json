@@ -1,5 +1,5 @@
 {
-  "version": "1.23.4",
-  "title": "More accurate ocean and regional answers",
-  "body": "- Corrected Atlantic Ocean access for Gulf Coast states while keeping direct coastline and East Coast questions distinct.\n- Fixed Americas membership in compound country questions, including negation and questions about neighboring countries.\n- Fixed Northeast regional questions in US Statedle, including alternate spellings.\n\nYour saved game progress, streaks, and question limits are unchanged."
+  "version": "1.24.0",
+  "title": "Safer gameplay and clearer fact sources",
+  "body": "- Hardened guest progress, reloads, login synchronization, and question and guess limits across game modes.\n- Added fact-source information and improved keyboard navigation, map controls, and modal accessibility.\n- Standardized daily puzzle dates on UTC and tightened application configuration and deployment checks.\n- Added isolated desktop and mobile gameplay checks while preserving the ocean and regional answer fixes from 1.23.4.\n\nYour saved game progress, streaks, and daily question and guess limits are unchanged."
 }
