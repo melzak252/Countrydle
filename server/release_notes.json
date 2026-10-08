@@ -1,5 +1,5 @@
 {
-  "version": "1.24.0",
+  "version": "1.24.1",
   "title": "Faster English questions",
   "body": "- Reduced the daily question animation minimum to one second, without adding display delay to responses that already take longer.\n- Expanded local English templates for this country and hidden country wording, population and area thresholds, and capital-name length.\n- Kept full-question matching: extra conditions and incompatible units are not silently discarded.\n\nPolish question templates, game rules, and saved progress are unchanged."
 }
