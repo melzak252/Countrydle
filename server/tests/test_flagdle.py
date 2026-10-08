@@ -256,8 +256,12 @@ async def test_flagdle_guess_correct_flow(async_client):
 
 
 @pytest.mark.anyio
-async def test_flagdle_flag_asset_stream(async_client):
+async def test_flagdle_flag_asset_stream(async_client, tmp_path, monkeypatch):
     """GET /flagdle/flag-asset with valid token returns SVG."""
+    monkeypatch.setattr("flagdle.FLAG_SVG_CACHE_DIR", tmp_path)
+    (tmp_path / "fr.svg").write_bytes(
+        b'<svg xmlns="http://www.w3.org/2000/svg"><rect fill="#fff"/></svg>'
+    )
     with (
         patch(
             "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
