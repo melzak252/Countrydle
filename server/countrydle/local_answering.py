@@ -1380,6 +1380,14 @@ def word_count(value: str) -> int:
 def char_count(value: str) -> int:
     return len(re.sub(r"[\s\-\u2010\u2011]+", "", value))
 
+
+def _hyphenated_country_alias(name: str) -> str | None:
+    for alias, canonical in COUNTRY_NAME_SYNONYMS.items():
+        if canonical == name and any(char in alias for char in "-\u2010\u2011"):
+            return alias
+    return None
+
+
 def collect_ref_evidence(conn, ref, target_country, item_value, evidence, *, contains_value=None):
     if evidence is None or not isinstance(ref, dict) or "value" in ref:
         return
@@ -1582,10 +1590,7 @@ def evaluate_plan_node(
             left_text = text_value(left) or ""
             if any(char in left_text for char in "-\u2010\u2011"):
                 return True
-            for syn, canon in COUNTRY_NAME_SYNONYMS.items():
-                if canon == target_country["app_country_name"] and any(char in syn for char in "-\u2010\u2011"):
-                    return True
-            return False
+            return relation == "name" and _hyphenated_country_alias(left_text) is not None
         if operator in {"starts_with", "ends_with", "contains_text"}:
             left_text = normalize(text_value(left) or "", preserve_separators=True)
             right_text = normalize(text_value(right) or "", preserve_separators=True)
@@ -1876,7 +1881,8 @@ def generate_factual_explanation(
         other = resolve_entity(conn, right["entity"], target_country, item_value)
         if rel == "name" and right["relation"] == "name" and op == "equals" and other is not None:
             if country["id"] == other["id"]:
-                return f"The country is {name}."
+                role = "target" if country["id"] == target_country["id"] else "referenced"
+                return f"{name} is the {role} country."
             return f"{name} and {other['app_country_name']} are different countries."
         value = resolve_ref(conn, right, target_country, item_value)
         if value is not None:
@@ -2176,6 +2182,10 @@ def generate_factual_explanation(
             present = " " in text.strip() if op == "has_space" else any(
                 char in text for char in "-\u2010\u2011"
             )
+            if op == "has_hyphen" and rel == "name" and not present:
+                alias = _hyphenated_country_alias(text)
+                if alias is not None:
+                    return f"The accepted alias “{alias}” for {name} contains a hyphen."
             mark = "a space" if op == "has_space" else "a hyphen"
             return intro + f"{label} {'contains' if present else 'does not contain'} {mark}."
         if op and op.startswith("word_count"):
@@ -2191,7 +2201,10 @@ def generate_factual_explanation(
                 "contains_text": ("contains", "does not contain"),
             }[op]
             return intro + f"{label} {positive if answer else negative} “{target_val}”."
-        return f"The country is {name}." if rel == "name" else intro.strip()
+        if rel == "name":
+            role = "target" if country["id"] == target_country["id"] else "referenced"
+            return f"{name} is the {role} country."
+        return intro.strip()
 
     left_value = resolve_ref(conn, left, target_country, item_value)
     right_value = resolve_ref(conn, right, target_country, item_value)

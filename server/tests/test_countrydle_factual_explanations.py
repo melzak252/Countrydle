@@ -101,6 +101,7 @@ def test_country_alias_hyphen_does_not_become_a_fact_about_capital_text(
         },
     }
     answer = evaluate_plan_node(conn, plan, target)
+    assert answer is False
     explanation = generate_factual_explanation(conn, target, plan, answer)
     assert "Dili" in explanation
     assert re.search(r"does not contain.*hyphen", explanation)
@@ -129,3 +130,50 @@ def test_punctuated_capital_count_is_described_as_characters_not_letters(
     assert "N'Djamena" in explanation
     assert re.search(r"\b9\b.*\bcharacters\b", explanation)
     assert not re.search(r"\b9\b.*\bletters\b", explanation)
+
+
+@pytest.mark.parametrize("relation,expected", [("capital", False), ("name", True)])
+def test_named_reference_is_not_described_as_the_target(country_facts, relation, expected):
+    conn, target = country_facts
+    plan = {
+        "operator": "equals",
+        "left": {
+            "entity": "target_country" if relation == "capital" else "Beta",
+            "relation": relation,
+        },
+        "right": {"entity": "Beta", "relation": "name"},
+    }
+    assert evaluate_plan_node(conn, plan, target) is expected
+    explanation = generate_factual_explanation(conn, target, plan, expected).lower()
+    assert re.search(r"referenc.*\bbeta\b|\bbeta\b.*referenc", explanation)
+    if relation == "capital":
+        assert "alpha city" in explanation
+
+
+@pytest.mark.parametrize("negated", [False, True])
+def test_country_name_hyphen_explains_the_accepted_alias(country_facts, negated):
+    conn, _ = country_facts
+    conn.execute("UPDATE countries SET app_country_name='East Timor' WHERE id=1")
+    target = conn.execute("SELECT * FROM countries WHERE id=1").fetchone()
+    predicate = {
+        "operator": "has_hyphen",
+        "left": {"entity": "target_country", "relation": "name"},
+    }
+    plan = {"operator": "not", "condition": predicate} if negated else predicate
+    answer = evaluate_plan_node(conn, plan, target)
+    assert answer is not negated
+    explanation = generate_factual_explanation(conn, target, plan, answer).lower()
+    assert "east timor" in explanation and "timor-leste" in explanation
+    assert re.search(r"contain.*hyphen", explanation)
+
+
+def test_country_alias_hyphen_uses_the_named_operand_not_the_target(country_facts):
+    conn, target = country_facts
+    conn.execute("UPDATE countries SET app_country_name='East Timor' WHERE id=2")
+    plan = {
+        "operator": "has_hyphen",
+        "left": {"entity": "East Timor", "relation": "name"},
+    }
+    assert evaluate_plan_node(conn, plan, target) is True
+    explanation = generate_factual_explanation(conn, target, plan, True).lower()
+    assert "east timor" in explanation and "timor-leste" in explanation

@@ -130,8 +130,9 @@ Invalid/unverified feedback is target-free in both active and terminal responses
 including rewritten questions and evidence. Fallback answer sanitization is unchanged.
 
 `test_countrydle_factual_explanations.py` covers coordinate equality, bound
-directional references, language counts, capital hyphen facts and punctuated
-character-count units with isolated SQLite facts.
+directional and country-name references, language counts, alias-aware country
+hyphens, capital/literal operand isolation, and punctuated character-count units
+with isolated SQLite facts.
 `test_local_mode_explanation_facts.py` covers localized stored facts, inverted
 coastal predicates, named operands, logical/quantified facts, list text counts
 and decisive short-circuit boundaries for `and`/`or`/`any`/`all`.
