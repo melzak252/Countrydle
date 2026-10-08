@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from math import isfinite
 import re
 import unicodedata
 
@@ -142,6 +143,9 @@ _ENTITY_UNIONS = {
     "eurasia": ("Europe", "Asia"),
     "americas": ("North America", "South America"),
 }
+_TARGET_SUBJECT_PREFIX = re.compile(
+    r"^(is|does) (?:this country|the hidden country|hidden country) "
+)
 _LOCATIVE_PREFIX = re.compile(r"^(?:is (?:it|the country) in|in)\s+(?:the\s+)?(.+)$")
 _IDENTITY_PREFIX = re.compile(r"^(?:is (?:it|the country|this))\s+(?:the\s+)?(.+)$")
 _BARE_PREFIX = re.compile(r"^(?:the\s+)?(.+)$")
@@ -164,7 +168,8 @@ def _normalized_english_question(question: str) -> str | None:
             for char in unicodedata.normalize("NFKD", question)
         ):
             return None
-    return " ".join(_norm(question).split()).rstrip(" ?!.")
+    text = " ".join(_norm(question).split()).rstrip(" ?!.")
+    return _TARGET_SUBJECT_PREFIX.sub(r"\1 it ", text)
 
 
 def compile_entity_question(question: str) -> tuple[dict, str] | None:
@@ -272,6 +277,84 @@ _COUNTRY_COMPARISON_OPERATORS = {
 _SHARED_CONTINENTS = (*CONTINENTS, "Antarctica")
 _ENGLISH_CONTINENTS = {continent.casefold(): continent for continent in _SHARED_CONTINENTS}
 
+_LITERAL_COMPARISONS = {
+    "greater than": "greater_than", "more than": "greater_than",
+    "larger than": "greater_than", "higher than": "greater_than",
+    "over": "greater_than", "above": "greater_than",
+    "less than": "less_than", "fewer than": "less_than",
+    "smaller than": "less_than", "lower than": "less_than",
+    "under": "less_than", "below": "less_than",
+    "at least": "greater_than_or_equal", "at most": "less_than_or_equal",
+    "equal to": "equals", "exactly": "equals",
+}
+_NUMBER_SCALE_EXPONENTS = {"thousand": 3, "k": 3, "million": 6, "m": 6, "billion": 9, "b": 9}
+_LITERAL_COMPARISON_PATTERN = "|".join(_LITERAL_COMPARISONS)
+_NUMERIC_FACT_QUESTION = re.compile(
+    r"(?:does (?:it|the country) have (?:an? )?|is (?:its|the) )"
+    r"(?P<relation>population|area) "
+    rf"(?P<comparison>{_LITERAL_COMPARISON_PATTERN}) "
+    r"(?P<number>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)"
+    r"(?: ?(?P<scale>thousand|million|billion|k|m|b))?"
+    r"(?: ?(?P<unit>people|inhabitants|km2|sq km|square kilometres|square kilometers))?"
+)
+_CAPITAL_TEXT = r"(?:its|the|(?:the|this) country['\u2019]s) capital(?: name)?"
+_CAPITAL_LENGTH_QUESTION = re.compile(
+    rf"is {_CAPITAL_TEXT} (?P<comparison>longer than|shorter than) "
+    r"(?P<number>\d+) letters?"
+)
+_CAPITAL_LETTERS_QUESTION = re.compile(
+    rf"does {_CAPITAL_TEXT} have (?P<comparison>{_LITERAL_COMPARISON_PATTERN}) "
+    r"(?P<number>\d+) letters?"
+)
+
+
+def _english_number(number: str, scale: str | None) -> int | float | None:
+    whole, _, fraction = number.replace(",", "").partition(".")
+    coefficient = int(whole + fraction)
+    exponent = _NUMBER_SCALE_EXPONENTS.get(scale, 0)
+    power = len(fraction) - exponent
+    try:
+        if power <= 0:
+            value = coefficient * 10 ** -power
+        else:
+            divisor = 10 ** power
+            quotient, remainder = divmod(coefficient, divisor)
+            value = quotient if remainder == 0 else coefficient / divisor
+        return value if isfinite(value) else None
+    except OverflowError:
+        return None
+
+
+def _compile_english_numeric_question(question: str) -> tuple[list[dict], str] | None:
+    match = _NUMERIC_FACT_QUESTION.fullmatch(question)
+    if match is not None:
+        relation, unit = match["relation"], match["unit"]
+        if unit is not None and (unit in {"people", "inhabitants"}) != (relation == "population"):
+            return None
+        value = _english_number(match["number"], match["scale"])
+        if value is None:
+            return None
+        operator = _LITERAL_COMPARISONS[match["comparison"]]
+        suffix = " km²" if relation == "area" else ""
+        return [_node(operator, relation, value)], (
+            f"Is the country's {relation} {match['comparison']} {value:,}{suffix}?"
+        )
+    match = _CAPITAL_LENGTH_QUESTION.fullmatch(question) or _CAPITAL_LETTERS_QUESTION.fullmatch(question)
+    if match is None:
+        return None
+    comparison = match["comparison"]
+    if comparison == "longer than":
+        comparison = "greater than"
+    elif comparison == "shorter than":
+        comparison = "less than"
+    operator, value = _LITERAL_COMPARISONS[comparison], int(match["number"])
+    if operator in {"greater_than_or_equal", "less_than_or_equal"}:
+        opposite = "less_than" if operator == "greater_than_or_equal" else "greater_than"
+        nodes = [_node(f"char_count_{opposite}", "capital", value), {"operator": "not", "args": [0]}]
+    else:
+        nodes = [_node(f"char_count_{operator}", "capital", value)]
+    return nodes, f"Does the capital name have {comparison} {value} letters?"
+
 
 def _english_reference_country(match: re.Match | None) -> str | None:
     if match is None:
@@ -377,6 +460,9 @@ def compile_template_plan(
             return nodes, f"Does the country {'not ' if negative else ''}have a land border with a country in {continent}?"
     if _UNHANDLED_ENGLISH.search(q):
         return None
+    numeric = _compile_english_numeric_question(q)
+    if numeric is not None:
+        return numeric
     comparison = re.fullmatch(
         r"does (?P<subject>[a-z0-9 '\u2019&.]+) have (?:a )?"
         r"(?P<relation>population|area) (?P<comparison>greater|larger|higher|less|smaller|lower) "

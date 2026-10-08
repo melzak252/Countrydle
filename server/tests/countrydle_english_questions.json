@@ -4341,13 +4341,6 @@
       ]
     },
     {
-      "question": "Does this country have a coastline?",
-      "expected_plan": null,
-      "origins": [
-        "SurfaceFormContrastAttack"
-      ]
-    },
-    {
       "question": "Does this country have no coastline?",
       "expected_plan": null,
       "origins": [
@@ -6696,13 +6689,6 @@
       ]
     },
     {
-      "question": "Is the hidden country north of the equator?",
-      "expected_plan": null,
-      "origins": [
-        "SpatialContrastAttack"
-      ]
-    },
-    {
       "question": "Is the hidden country north of France?",
       "expected_plan": [
         {
@@ -7141,13 +7127,6 @@
     },
     {
       "question": "Is the hidden country located within Italy?",
-      "expected_plan": null,
-      "origins": [
-        "SpatialContrastAttack"
-      ]
-    },
-    {
-      "question": "Is the hidden country Italy?",
       "expected_plan": null,
       "origins": [
         "SpatialContrastAttack"
@@ -8320,13 +8299,6 @@
     },
     {
       "question": "Does the hidden country extend across both hemispheres?",
-      "expected_plan": null,
-      "origins": [
-        "SpatialContrastAttack"
-      ]
-    },
-    {
-      "question": "Does the hidden country straddle the equator?",
       "expected_plan": null,
       "origins": [
         "SpatialContrastAttack"
@@ -27759,20 +27731,6 @@
           ]
         }
       ],
-      "origins": [
-        "FixedSmoke-corpus"
-      ]
-    },
-    {
-      "question": "Is its population greater than 2363314?",
-      "expected_plan": null,
-      "origins": [
-        "FixedSmoke-corpus"
-      ]
-    },
-    {
-      "question": "Is its area less than 2586 square kilometers?",
-      "expected_plan": null,
       "origins": [
         "FixedSmoke-corpus"
       ]

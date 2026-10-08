@@ -61,13 +61,14 @@ def semantic_facts(tmp_path, monkeypatch):
         conn.executescript("""
             CREATE TABLE countries (
                 id INTEGER PRIMARY KEY, app_country_name TEXT, official_name TEXT,
-                is_island INTEGER
+                is_island INTEGER, population INTEGER, area_km2 REAL, capital TEXT
             );
             INSERT INTO countries VALUES
-                (1, 'Italy', 'Italian Republic', 0),
-                (2, 'Vatican City', 'Vatican City State', 0),
-                (3, 'Kiribati', 'Republic of Kiribati', 1),
-                (4, 'Federated States of Micronesia', 'Federated States of Micronesia', 1);
+                (1, 'Italy', 'Italian Republic', 0, 60000000, 300000, 'Rome'),
+                (2, 'Vatican City', 'Vatican City State', 0, 1000, 0.5, 'Vatican City'),
+                (3, 'Kiribati', 'Republic of Kiribati', 1, 100000, 811, 'South-Tarawa'),
+                (4, 'Federated States of Micronesia', 'Federated States of Micronesia', 1,
+                    100000, 702, 'Palikir');
             CREATE TABLE country_water_access (country_id INTEGER, water_body TEXT);
             INSERT INTO country_water_access VALUES (1, 'Mediterranean Sea'), (3, 'Pacific Ocean');
             CREATE TABLE country_continents (country_id INTEGER, continent TEXT);
@@ -100,6 +101,85 @@ def test_active_planner_answers_exact_predicates_offline(offline_planner, semant
     assert plan.valid and plan.supported
     answer = local_answering.execute_local_plan(plan.plan, target, plan.improved_question)
     assert answer.answer is expected
+
+
+@pytest.mark.parametrize("question, target, expected", [
+    ("Does this country have a coastline?", "Italy", True),
+    ("Does this country have a coastline?", "Vatican City", False),
+    ("Does the hidden country have a coastline?", "Kiribati", True),
+    ("Is this country in Europe?", "Italy", True),
+    ("Is this country in Europe?", "Kiribati", False),
+    ("Is hidden country an island country?", "Kiribati", True),
+    ("Does this country cross the equator?", "Italy", False),
+    ("Does this country cross the equator?", "Kiribati", True),
+    ("Does the hidden country straddle the equator?", "Italy", False),
+    ("Does the hidden country straddle the equator?", "Kiribati", True),
+    ("Is the hidden country north of the equator?", "Italy", True),
+    ("Is the hidden country Italy?", "Italy", True),
+    ("Is the hidden country Italy?", "Kiribati", False),
+    ("Does the country have a population greater than 10000000?", "Italy", True),
+    ("Does the country have a population greater than 10000000?", "Vatican City", False),
+    ("Does this country have a population greater than 60 million?", "Italy", False),
+    ("Is the population greater than 60 million?", "Italy", False),
+    ("Is the population below 60 million?", "Italy", False),
+    ("Is its population more than 59,999,999?", "Italy", True),
+    ("Is its population at least 60m?", "Italy", True),
+    ("Is the population at most 60 million inhabitants?", "Italy", True),
+    ("Is the population exactly 0.06 billion?", "Italy", True),
+    ("Is the population exactly 0.001 million?", "Vatican City", True),
+    ("Is its area larger than 300,000 km2?", "Italy", False),
+    ("Is the area under 300001 square kilometres?", "Italy", True),
+    ("Does this country have an area greater than 299.999 thousand sq km?", "Italy", True),
+    ("Is the area exactly 0.5 km²?", "Vatican City", True),
+    ("Is its capital name longer than 5 letters?", "Italy", False),
+    ("Is its capital name longer than 5 letters?", "Vatican City", True),
+    ("Is the capital name shorter than 4 letters?", "Italy", False),
+    ("Is this country's capital name longer than 10 letters?", "Kiribati", True),
+    ("Is its capital name longer than 11 letters?", "Kiribati", False),
+    ("Does its capital name have exactly 4 letters?", "Italy", True),
+    ("Does the capital name have at least 4 letters?", "Italy", True),
+    ("Does the capital name have at least 5 letters?", "Italy", False),
+    ("Does its capital name have at most 4 letters?", "Italy", True),
+    ("Does its capital name have at most 3 letters?", "Italy", False),
+])
+def test_new_english_templates_answer_offline(
+    offline_planner, semantic_facts, question, target, expected,
+):
+    plan = local_planner.analyze_question_for_local_plan(
+        question, use_cache=False, strict_errors=True,
+    )
+    answer = local_answering.execute_local_plan(plan.plan, target, plan.improved_question)
+    assert answer is not None
+    assert answer.answer is expected
+
+
+@pytest.mark.parametrize("question", [
+    "Does this country have a coastline only?",
+    "Does this country have a coastline in winter?",
+    "Does this country not have a coastline?",
+    "Is this country entirely in Europe?",
+    "Does the country have a population greater than 10 million and less than 20 million?",
+    "Is the population greater than 10 million in 1990?",
+    "Is the population greater than 10 million or is it an island?",
+    "Is the population greater than 10,00,000?",
+    "Is the population greater than 10 million km2?",
+    "Is the population greater than 10 million squared?",
+    "Is the area greater than 10 million people?",
+    "Is its area larger than 500 square miles?",
+    "Is its area larger than 500 km?",
+    "Is France's population greater than 10 million?",
+    "Is the population of France greater than 10 million?",
+    "Is the population greater than -10?",
+    "Is the population greater than 1e7?",
+    "Is its capital name longer than 5 letters and shorter than 10 letters?",
+    "Is its capital name not longer than 5 letters?",
+    "Is France's capital name longer than 5 letters?",
+    "Is the capital name longer than 5 words?",
+    "Is its capital name longer than 5 letters without spaces?",
+])
+def test_new_english_templates_do_not_drop_unparsed_meaning(offline_planner, question):
+    plan = local_planner.analyze_question_for_local_plan(question, use_cache=False)
+    assert plan.plan is None
 
 
 @pytest.mark.parametrize("question", [

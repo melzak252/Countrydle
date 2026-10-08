@@ -1,5 +1,5 @@
 {
   "version": "1.24.0",
-  "title": "Safer gameplay and clearer fact sources",
-  "body": "- Hardened guest progress, reloads, login synchronization, and question and guess limits across game modes.\n- Added fact-source information and improved keyboard navigation, map controls, and modal accessibility.\n- Standardized daily puzzle dates on UTC and tightened application configuration and deployment checks.\n- Added isolated desktop and mobile gameplay checks while preserving the ocean and regional answer fixes from 1.23.4.\n\nYour saved game progress, streaks, and daily question and guess limits are unchanged."
+  "title": "Faster English questions",
+  "body": "- Reduced the daily question animation minimum to one second, without adding display delay to responses that already take longer.\n- Expanded local English templates for this country and hidden country wording, population and area thresholds, and capital-name length.\n- Kept full-question matching: extra conditions and incompatible units are not silently discarded.\n\nPolish question templates, game rules, and saved progress are unchanged."
 }
