@@ -54,12 +54,11 @@ export default function CacheStatsPanel() {
 
   const stats = snapshot?.stats;
   const lookups = stats ? stats.hits + stats.misses : 0;
-  const occupancy = stats && stats.max_size > 0 ? stats.size / stats.max_size * 100 : 0;
   const metrics = stats ? [
     { label: t('hitRate'), value: lookups ? `${numberFormat.format(stats.hit_ratio_percent)}%` : '—', detail: lookups ? t('lookups', { count: lookups }) : t('noLookups'), icon: Activity },
     { label: t('hits'), value: numberFormat.format(stats.hits), detail: t('hitsDetail'), icon: CheckCircle2 },
     { label: t('misses'), value: numberFormat.format(stats.misses), detail: t('missesDetail'), icon: Search },
-    { label: t('storedPlans'), value: numberFormat.format(stats.size), detail: t('limit', { count: stats.max_size }), icon: Database },
+    { label: t('storedPlans'), value: numberFormat.format(stats.size), detail: t('storedPlansDetail'), icon: Database },
   ] : [];
 
   return (
@@ -113,22 +112,9 @@ export default function CacheStatsPanel() {
           </div>
 
           <div className="admin-panel space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="cache-occupancy-label" className="text-base font-semibold text-sand-100">{t('occupancy')}</h2>
-              <span className="font-mono text-sm tabular-nums text-emerald-300">{numberFormat.format(occupancy)}%</span>
-            </div>
-            <div
-              role="progressbar"
-              aria-labelledby="cache-occupancy-label"
-              aria-valuemin={0}
-              aria-valuemax={stats.max_size}
-              aria-valuenow={stats.size}
-              aria-valuetext={t('occupancyValue', { size: numberFormat.format(stats.size), max: numberFormat.format(stats.max_size) })}
-              className="h-2 overflow-hidden rounded-full bg-white/10"
-            >
-              <div className="h-full rounded-full bg-emerald-400 transition-[width]" style={{ width: `${occupancy}%` }} />
-            </div>
-            <p className="text-sm leading-relaxed text-slate-300">{t('occupancySummary')}</p>
+            <h2 className="text-base font-semibold text-sand-100">{t('storage')}</h2>
+            <p className="font-mono text-sm text-emerald-300">{stats.storage.toUpperCase()}</p>
+            <p className="text-sm leading-relaxed text-slate-300">{t('storageSummary')}</p>
             {lookups === 0 && <p className="text-sm text-slate-300">{t('noRecordedLookups')}</p>}
           </div>
         </div>

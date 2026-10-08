@@ -5,6 +5,8 @@ from db.models.flagdle import FlagdleState, FlagdleQuestion
 from db.repositories.question_accounting import consume_question, lock_question_state
 from datetime import date, datetime
 import logging
+import os
+import tempfile
 from typing import List, Optional, Union
 from countrydle.local_planner import analyze_question_for_local_plan
 from countrydle.local_answering import execute_local_plan
@@ -47,6 +49,7 @@ from utils.question_rate_limit import enforce_question_attempt_limit
 from utils.explanation_sanitizer import sanitize_explanation_for_player
 
 from flagdle.utils import (
+    FACTS_DB_PATH,
     UNMASK_ORDER,
     evaluate_flag_clues,
     generate_asset_token,
@@ -58,26 +61,54 @@ logger = logging.getLogger("countrydle.flagdle")
 
 router = APIRouter(prefix="/flagdle", tags=["flagdle"])
 
-_FLAG_SVG_CACHE: dict[str, bytes] = {}
+FLAG_SVG_CACHE_DIR = FACTS_DB_PATH.parent / "flag_svg_cache"
 
 
 def _get_or_fetch_flag_svg(iso2: str) -> bytes:
     code = iso2.lower()
-    if code in _FLAG_SVG_CACHE:
-        return _FLAG_SVG_CACHE[code]
-
-    url = f"https://flagcdn.com/{code}.svg"
     try:
+        if len(code) != 2 or not all("a" <= char <= "z" for char in code):
+            raise ValueError("Flag asset requires a two-letter ASCII ISO2 code")
+
+        cache_path = FLAG_SVG_CACHE_DIR / f"{code}.svg"
+        try:
+            return cache_path.read_bytes()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            logger.warning("Failed to read cached SVG for %s: %s", code, exc)
+
+        url = f"https://flagcdn.com/{code}.svg"
         req = urllib.request.Request(url, headers={"User-Agent": "Countrydle/1.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             content = resp.read()
-            _FLAG_SVG_CACHE[code] = content
-            return content
     except Exception as exc:
         logger.warning("Failed to fetch SVG for %s from flagcdn: %s", code, exc)
         # Simple generic fallback SVG
         fallback = f'<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#1e293b"/><text x="450" y="300" fill="#94a3b8" font-size="40" font-family="sans-serif" text-anchor="middle">Flag of {code.upper()}</text></svg>'
         return fallback.encode("utf-8")
+
+    temporary_path = None
+    try:
+        FLAG_SVG_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            dir=FLAG_SVG_CACHE_DIR, prefix=f".{code}.", suffix=".tmp", delete=False
+        ) as temporary:
+            temporary_path = temporary.name
+            temporary.write(content)
+        os.replace(temporary_path, cache_path)
+        temporary_path = None
+    except OSError as exc:
+        logger.warning("Failed to cache SVG for %s: %s", code, exc)
+    finally:
+        if temporary_path is not None:
+            try:
+                os.unlink(temporary_path)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                logger.warning("Failed to remove temporary SVG for %s: %s", code, exc)
+    return content
 
 
 @router.get("/leaderboard", response_model=List[LeaderboardEntry])
@@ -137,7 +168,7 @@ async def get_flag_asset(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target country not found.")
 
     iso2 = get_country_iso2(target_country.name)
-    svg_bytes = _get_or_fetch_flag_svg(iso2)
+    svg_bytes = await asyncio.to_thread(_get_or_fetch_flag_svg, iso2)
     return RawResponse(
         content=svg_bytes,
         media_type="image/svg+xml",

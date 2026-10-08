@@ -162,7 +162,7 @@ export interface CacheStats {
   hits: number;
   misses: number;
   size: number;
-  max_size: number;
+  storage: 'sqlite';
   hit_ratio_percent: number;
 }
 

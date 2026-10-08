@@ -3,14 +3,13 @@ import pytest
 
 import local_kb_question as local
 from us_statedle.utils import LOCAL_CONFIG
-from utils.plan_cache import plan_cache
+from utils import plan_cache as plan_cache_module
 
 
 @pytest.fixture(autouse=True)
-def empty_plan_cache():
-    plan_cache.clear()
-    yield
-    plan_cache.clear()
+def empty_plan_cache(monkeypatch, tmp_path):
+    cache = plan_cache_module.PlanCache(db_path=tmp_path / "plan_cache.sqlite")
+    monkeypatch.setattr(plan_cache_module, "plan_cache", cache)
 
 
 @pytest.mark.parametrize("response", [
@@ -26,7 +25,7 @@ def test_daily_planner_rejects_provider_protocol_errors(monkeypatch, response):
     monkeypatch.setattr(local, "gemini_json", lambda *args, **kwargs: response)
     with pytest.raises(RuntimeError):
         local.analyze_question("Is it in the West?", LOCAL_CONFIG)
-    assert plan_cache.stats()["size"] == 0
+    assert plan_cache_module.plan_cache.stats()["size"] == 0
 
 
 def test_cache_does_not_reuse_a_different_model_interpretation(monkeypatch):
@@ -118,7 +117,7 @@ def test_compilation_rejects_non_tree_or_unbound_plans(monkeypatch, nodes):
     })
     with pytest.raises(RuntimeError):
         local.analyze_question("Is it in the West?", LOCAL_CONFIG)
-    assert plan_cache.stats()["size"] == 0
+    assert plan_cache_module.plan_cache.stats()["size"] == 0
 
 
 def test_forward_referenced_predicate_retains_negation(monkeypatch):

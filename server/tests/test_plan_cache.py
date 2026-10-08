@@ -1,4 +1,4 @@
-"""Cache isolation, eviction and retry-after-failure are observable planner behavior."""
+"""Disk-backed cache isolation and retry-after-failure are observable planner behavior."""
 import json
 
 import httpx
@@ -8,20 +8,20 @@ from countrydle.local_answering import execute_local_plan
 from countrydle.local_planner import analyze_question_for_local_plan
 from local_kb_question import analyze_question, execute_plan
 from us_statedle.utils import LOCAL_CONFIG
-from utils import ai_clients
-from utils.plan_cache import PlanCache, plan_cache
+from utils import ai_clients, plan_cache as plan_cache_module
+from utils.plan_cache import PlanCache
 
 
 @pytest.fixture(autouse=True)
-def isolated_cache(monkeypatch):
-    plan_cache.clear()
+def isolated_cache(monkeypatch, tmp_path):
+    cache = PlanCache(db_path=tmp_path / "shared_plan_cache.sqlite")
+    monkeypatch.setattr(plan_cache_module, "plan_cache", cache)
     monkeypatch.setenv("GEMINI_API_KEY", "test-only-key")
-    yield
-    plan_cache.clear()
+    return cache
 
 
-def test_cache_normalization_preserves_mode_and_contract_boundaries():
-    cache = PlanCache(max_size=5)
+def test_cache_normalization_preserves_mode_and_contract_boundaries(tmp_path):
+    cache = PlanCache(db_path=tmp_path / "plan_cache.sqlite")
     cache.set("Countrydle", "Czy państwo leży w Europie?", "country-plan", version="v2:model-a")
     assert cache.get("countrydle", "  CZY panstwo  lezy w Europie ", version="v2:model-a") == "country-plan"
     assert cache.get("us_statedle", "Czy państwo leży w Europie?", version="v2:model-a") is None
@@ -29,23 +29,12 @@ def test_cache_normalization_preserves_mode_and_contract_boundaries():
     assert cache.get("countrydle", "Czy państwo leży w Europie?", version="v2:model-b") is None
 
 
-def test_plan_cache_evicts_least_recently_used_interpretation():
-    cache = PlanCache(max_size=2)
-    cache.set("mode", "q1", "p1", version="v2")
-    cache.set("mode", "q2", "p2", version="v2")
-    assert cache.get("mode", "q1", version="v2") == "p1"
-    cache.set("mode", "q3", "p3", version="v2")
-    assert cache.get("mode", "q1", version="v2") == "p1"
-    assert cache.stats()["size"] == 2
-    assert cache.get("mode", "q2", version="v2") == "p2"
-    assert cache.get("mode", "q3", version="v2") == "p3"
-
 def test_plan_cache_persists_plans_across_instances(tmp_path):
     database = tmp_path / "plan_cache.sqlite"
-    first = PlanCache(max_size=5, db_path=database)
+    first = PlanCache(db_path=database)
     first.set("countrydle", "Is it coastal?", {"route": "local", "plan": [{"operator": "exists"}]}, version="v2")
 
-    second = PlanCache(max_size=5, db_path=database)
+    second = PlanCache(db_path=database)
     assert second.get("countrydle", "is it coastal", version="v2") == {
         "route": "local", "plan": [{"operator": "exists"}],
     }
@@ -67,7 +56,7 @@ def test_plan_cache_persists_question_plan_fields(tmp_path):
     assert loaded == plan
 
 
-def test_plan_cache_reads_l2_after_another_instance_writes(tmp_path):
+def test_plan_cache_reads_after_another_instance_writes(tmp_path):
     database = tmp_path / "plan_cache.sqlite"
     reader = PlanCache(db_path=database)
     assert reader.get("mode", "question", version="v2") is None
@@ -108,7 +97,7 @@ def test_cached_plan_remains_target_independent_and_skips_provider(monkeypatch, 
             assert execute_plan(LOCAL_CONFIG, "Indiana", second).answer is False
 
 
-def test_country_prompt_cutover_ignores_old_interpretation(monkeypatch):
+def test_country_prompt_cutover_ignores_old_interpretation(monkeypatch, isolated_cache):
     from countrydle.local_planner import DEFAULT_MODEL, QuestionPlan
     from planner_protocol import PLANNER_VERSION
 
@@ -121,7 +110,7 @@ def test_country_prompt_cutover_ignores_old_interpretation(monkeypatch):
               "left": {"entity": "target_country", "relation": "population"},
               "right": {"value": 10_000_000}},
     )
-    plan_cache.set(
+    isolated_cache.set(
         "countrydle", question, old_plan, version=f"{PLANNER_VERSION}:{DEFAULT_MODEL}",
     )
     response = {
@@ -159,3 +148,66 @@ def test_provider_failure_does_not_poison_next_attempt(monkeypatch, country):
             analyze("Does it have an ancient observatory?")
         result = analyze("Does it have an ancient observatory?")
         assert result.valid is True and result.supported is False
+
+
+def test_reader_observes_replaced_plan_from_another_instance(tmp_path):
+    database = tmp_path / "plan_cache.sqlite"
+    writer = PlanCache(db_path=database)
+    reader = PlanCache(db_path=database)
+    writer.set("countrydle", "Is it coastal?", {"supported": False}, version="v2")
+    assert reader.get("countrydle", "Is it coastal?", version="v2") == {"supported": False}
+
+    writer.set("countrydle", "Is it coastal?", {"supported": True}, version="v2")
+    assert reader.get("countrydle", "Is it coastal?", version="v2") == {"supported": True}
+
+
+def test_lookup_deserializes_only_requested_row(tmp_path, monkeypatch):
+    database = tmp_path / "plan_cache.sqlite"
+    writer = PlanCache(db_path=database)
+    writer.set("mode", "other question", {"plan": "unrelated"}, version="v2")
+    writer.set("mode", "question", {"plan": "requested"}, version="v2")
+    reader = PlanCache(db_path=database)
+    deserialize = reader._deserialize
+    deserialized = []
+
+    def track_deserialization(plan_json):
+        plan = deserialize(plan_json)
+        deserialized.append(plan)
+        return plan
+
+    monkeypatch.setattr(reader, "_deserialize", track_deserialization)
+    assert reader.get("mode", "missing question", version="v2") is None
+    assert deserialized == []
+    assert reader.get("mode", "question", version="v2") == {"plan": "requested"}
+    assert deserialized == [{"plan": "requested"}]
+
+
+def test_stats_count_persistent_rows_and_clear_is_visible_to_existing_reader(tmp_path):
+    database = tmp_path / "plan_cache.sqlite"
+    writer = PlanCache(db_path=database)
+    reader = PlanCache(db_path=database)
+    writer.set("mode", "question", "current", version="v2")
+    writer.set("other mode", "question", "old", version="v1")
+    assert reader.stats() == {
+        "hits": 0, "misses": 0, "size": 2, "storage": "sqlite", "hit_ratio_percent": 0.0,
+    }
+    assert reader.get("mode", "question", version="v2") == "current"
+    assert reader.get("mode", "missing", version="v2") is None
+    assert reader.stats() == {
+        "hits": 1, "misses": 1, "size": 2, "storage": "sqlite", "hit_ratio_percent": 50.0,
+    }
+
+    writer.clear()
+
+    assert writer.stats() == {
+        "hits": 0, "misses": 0, "size": 0, "storage": "sqlite", "hit_ratio_percent": 0.0,
+    }
+    assert reader.get("mode", "question", version="v2") is None
+    assert reader.get("other mode", "question", version="v1") is None
+    assert reader.stats() == {
+        "hits": 1, "misses": 3, "size": 0, "storage": "sqlite", "hit_ratio_percent": 25.0,
+    }
+    reader.clear()
+    assert reader.stats() == {
+        "hits": 0, "misses": 0, "size": 0, "storage": "sqlite", "hit_ratio_percent": 0.0,
+    }
