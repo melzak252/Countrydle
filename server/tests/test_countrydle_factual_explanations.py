@@ -161,7 +161,7 @@ def test_country_name_hyphen_explains_the_accepted_alias(country_facts, negated)
     }
     plan = {"operator": "not", "condition": predicate} if negated else predicate
     answer = evaluate_plan_node(conn, plan, target)
-    assert answer is not negated
+    assert answer is (not negated)
     explanation = generate_factual_explanation(conn, target, plan, answer).lower()
     assert "east timor" in explanation and "timor-leste" in explanation
     assert re.search(r"contain.*hyphen", explanation)
