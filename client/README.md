@@ -404,8 +404,10 @@ prove usability.
 ## Display geometry
 
 `scripts/simplify-map-geometry.mjs` regenerates display-only GeoJSON through pinned
-Mapshaper 0.7.76, without adding a runtime dependency. It jointly simplifies shared
-boundaries in EPSG:3857; intervals are projected metres, not ground distances.
+Mapshaper 0.7.76, installed as a development dependency by `npm ci`. The generator
+uses the locked local CLI without downloading dependencies during generation or
+tests; Mapshaper is not included in the browser runtime. It jointly simplifies
+shared boundaries in EPSG:3857; intervals are projected metres, not ground distances.
 Always use an unsimplified source asset, never a previously generated output:
 
 ```sh

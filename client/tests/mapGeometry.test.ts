@@ -1,4 +1,9 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { simplifyMapGeometry } from '../scripts/simplify-map-geometry.mjs';
 
 const toleranceMeters = 150;
@@ -206,6 +211,30 @@ describe('simplifyMapGeometry', () => {
     }, 20);
     const polygon = result.features[0].geometry.coordinates as PolygonCoordinates;
     expect(boundaryContainsPoint([0.201, -0.001], polygon[0], 0.0001)).toBe(true);
+  });
+
+  test('keeps holes excluded and tiny islands selectable when run through Node CLI', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'countrydle-geometry-test-'));
+    const input = join(directory, 'input.geojson');
+    const output = join(directory, 'output.geojson');
+    try {
+      writeFileSync(input, JSON.stringify(collection));
+      const script = fileURLToPath(new URL('../scripts/simplify-map-geometry.mjs', import.meta.url));
+      const result = spawnSync('node', [script, input, output, String(toleranceMeters)], { encoding: 'utf8' });
+      if (result.error) throw result.error;
+      if (result.status !== 0) throw new Error(result.stderr || `Node CLI exited with ${result.status}`);
+      const regenerated = JSON.parse(readFileSync(output, 'utf8')) as typeof simplified;
+      const group = regenerated.features.find((candidate) => candidate.properties.entityId === 'island-group');
+      if (!group || group.geometry.type !== 'MultiPolygon') {
+        throw new Error('Node CLI did not preserve the island group');
+      }
+      expect(pointInPolygon([0.53, 0.03], group.geometry.coordinates[0])).toBe(true);
+      expect(pointInPolygon([0.6, 0.1], group.geometry.coordinates[0])).toBe(false);
+      expect(pointInPolygon([0.8001, 0.0401], group.geometry.coordinates[1])).toBe(true);
+      expect(pointInPolygon([0.8401, 0.0401], group.geometry.coordinates[2])).toBe(true);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
 });
