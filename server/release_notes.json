@@ -1,5 +1,5 @@
 {
   "version": "1.25.0",
   "title": "Clearer facts after your game",
-  "body": "- Improved local question explanations with readable stored facts, comparisons, and reference entities.\n- Kept factual explanations and source evidence hidden in active games and available after the game ends.\n- Replaced unverified question feedback with safe guidance without exposing provider facts or target-bearing rewrites.\n- Corrected country-alias hyphen checks so capital and literal-text questions use their own text.\n- Preserved the one-second question animation minimum and faster English templates.\n\nGame rules, saved progress, and question and guess limits are unchanged."
+  "body": "- Improved local question explanations with readable stored facts, comparisons, and reference entities.\n- Kept Countrydle, continental, and Flagdle factual explanations and source evidence hidden during play and available after the game ends.\n- Replaced unverified question feedback with safe guidance without exposing provider facts or target-bearing rewrites.\n- Corrected country-alias hyphen checks so capital and literal-text questions use their own text.\n- Preserved the one-second question animation minimum and faster English templates.\n\nGame rules, saved progress, and question and guess limits are unchanged."
 }
