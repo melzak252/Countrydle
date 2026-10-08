@@ -59,6 +59,10 @@ feedback is available immediately. Post-game answer reports retain their mode an
 question identifiers. `QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
 `GameActionComposer.tsx` hosts the active form in the chat footer.
 
+Returned question responses keep the loading animation visible until at least
+1,000 ms after submission. Responses taking one second or longer incur no extra
+display delay. HTTP/network errors retain the existing immediate error feedback.
+
 In daily games, the top `Questions`/`Guesses` tabs choose both displayed history and
 active input; no second selector appears by the composer. Phone labels are shortened
 to `Ask`/`Guess`, with attempt counts. Friend-duel controls remain in their chat footer.

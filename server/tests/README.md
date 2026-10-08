@@ -63,6 +63,14 @@ typed country-reference families:
 - `Does <subject> share a/any continent with <country>?` or
   `Does <subject> have a/any continent in common with <country>?`.
 
+Exact leading `this country`, `the hidden country`, and `hidden country` target
+subjects reuse the existing `it` skeletons. Standalone population/area thresholds
+also accept strict, inclusive, and equality comparisons, grouped/decimal numbers,
+and thousand/million/billion scales. Area means stored square kilometres;
+incompatible units and malformed numbers decline. Capital-name length supports
+longer/shorter, equality, and inclusive bounds using the existing game convention
+that excludes spaces and hyphens. Named-country possessives are not rewritten.
+
 An explicitly named country **subject** still denotes the hidden target;
 named comparison/object references remain named. Directions use matching
 latitude/longitude operands, and shared continents use an OR of per-continent
@@ -142,12 +150,14 @@ python -m pytest -q tests/test_template_compiler.py tests/test_countrydle_semant
 `test_countrydle_semantic_preservation.py` covers positive skeleton controls,
 generated modifier perturbations, isolated SQLite execution, offline planner
 routing, operator-text parity, player-response name redaction, and fallback
-subject/reference boundaries.
+subject/reference boundaries. New English coverage exercises actual answers at
+strict/inclusive numeric boundaries, exact decimal scales, compatible/incompatible
+units, and space/hyphen-insensitive capital-name length rather than pinning ASTs.
 `test_countrydle_audit_regressions.py` guards target binding, typed spatial and
 quantifier operands, shared continents, displayed grouping, named-object
 references, truthful equality explanations, and continent-border versus target
 membership semantics, including negation and countries with no land neighbors.
-`test_countrydle_english_corpus.py` covers all 3,809 collected adversarial/control
+`test_countrydle_english_corpus.py` covers all 3,803 collected adversarial/control
 questions plus 88 captured real-provider responses across 229 target scenarios,
 through the actual planner, SQLite evaluator and player helper. Its committed
 JSON fixtures contain reviewed expected plans/answers and a minimal frozen fact
