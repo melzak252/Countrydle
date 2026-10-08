@@ -155,6 +155,10 @@ test('H05 expired signed session rejects the action and reauthentication recover
   await ready(page);
   const before = await readAccount(page);
   expectProgress(before, 1, 1);
+  // Let the successful guess's state refresh finish before expiring the cookie;
+  // otherwise that background GET can redirect before the action under test.
+  await questionTab(page).click();
+  await ready(page);
   await page.context().addCookies([{ name: 'access_token', value: manifest.expiredTokens[username], url: baseURL!, httpOnly: true, sameSite: 'Lax' }]);
   const rejected = await ask(page);
   expect((await rejected.request().allHeaders()).cookie?.split('; ').includes(`access_token=${manifest.expiredTokens[username]}`)).toBe(true);
@@ -208,4 +212,40 @@ test('H05 browser-local failed sync retains guest progress and later real sync r
   await ready(page);
   expectProgress(await readAccount(page), 1, 1);
   expect(successes).toEqual([200]);
+});
+
+test('named factual explanations appear only after the game ends; warnings remain target-free', async ({ page }, testInfo) => {
+  await openGame(page);
+  const warning = await ask(page, unresolvedQuestion);
+  expect(warning.status()).toBe(503);
+  expect(await warning.text()).not.toMatch(/\b(?:Poland|Warsaw)\b/i);
+  await expect(page.getByRole('alert').filter({ hasText: /question/i }).first()).toBeVisible();
+  expect((await page.getByRole('alert').allTextContents()).join(' ')).not.toMatch(/\b(?:Poland|Warsaw)\b/i);
+  expectProgress(await readAccount(page), 0, 0);
+
+  const answered = await ask(page);
+  expect(answered.status()).toBe(200);
+  const activeQuestion = await answered.json();
+  expect(activeQuestion).toMatchObject({ valid: true, answer: true });
+  expect(activeQuestion.explanation).toBeFalsy();
+  expect(JSON.stringify(activeQuestion)).not.toMatch(/\bPoland\b/i);
+  await expectGuestProgress(page, 1, 0);
+  await expect(page.getByRole('list', { name: 'Question conversation', exact: true }).getByText(/Poland.*Europe/)).toHaveCount(0);
+
+  await guess(page, 'Poland');
+  const stateResponse = await page.request.get('/api/countrydle/state');
+  const terminal = await stateResponse.json();
+  expect(terminal.state).toMatchObject({ is_game_over: true, won: true });
+  expect(terminal.questions[0].explanation).toMatch(/\bPoland\b/);
+  expect(terminal.questions[0].explanation).toMatch(/\bEurope\b/);
+  await page.getByRole('tab', { name: /Question History/ }).click();
+  const history = page.getByRole('list', { name: 'Question History', exact: true });
+  await history.locator('summary').filter({ hasText: answeredQuestion }).click();
+  await expect(history.getByText(/Poland.*Europe/)).toBeVisible();
+  await testInfo.attach('named-post-game-template-explanation', { body: await page.screenshot(), contentType: 'image/png' });
+
+  await page.reload();
+  const restored = await (await page.request.get('/api/countrydle/state')).json();
+  expect(restored.questions[0].explanation).toMatch(/\bPoland\b/);
+  expect(restored.questions[0].explanation).toMatch(/\bEurope\b/);
 });

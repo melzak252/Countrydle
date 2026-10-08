@@ -123,8 +123,21 @@ Identity and location are distinct: `Is it Italy?` checks the name, whereas
 `Is it in Italy?` declines local compilation because country containment is not
 a local fact relation. `Is it in Micronesia?` checks the geographic area;
 `Is it Micronesia?` checks Federated States of Micronesia identity.
-Locally evaluated explanations are sanitized for both common and official
-target names before creating the player-facing response.
+Local template records retain factual country names for post-game review.
+Countrydle, continental and Flagdle public serializers suppress answered
+explanations during play; explicit terminal context enables disclosure.
+Invalid/unverified feedback is target-free in both active and terminal responses,
+including rewritten questions and evidence. Fallback answer sanitization is unchanged.
+
+`test_countrydle_factual_explanations.py` covers coordinate equality, bound
+directional references, language counts, capital hyphen facts and punctuated
+character-count units with isolated SQLite facts.
+`test_local_mode_explanation_facts.py` covers localized stored facts, inverted
+coastal predicates, named operands, logical/quantified facts, list text counts
+and decisive short-circuit boundaries for `and`/`or`/`any`/`all`.
+`test_question_context_privacy.py` checks public disclosure and nested terminal
+state serialization. The real PostgreSQL Flagdle regression also verifies questions
+asked after a win, since that mode allows unlimited post-game questions.
 
 Countrydle fallback uses the same subject/reference policy. Before the provider
 call, bounded English auxiliary/country/predicate prefixes replace a named

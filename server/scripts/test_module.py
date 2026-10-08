@@ -13,6 +13,7 @@ TEST_DIR = SERVER_DIR / "tests"
 TEST_GROUPS: dict[str, tuple[str, ...]] = {
     "countrydle": (
         "test_countrydle_local_kb.py",
+        "test_countrydle_factual_explanations.py",
         "test_countrydle_fallback.py",
         "test_countrydle_pipeline_eval_csv.py",
         "test_countrydle_semantic_preservation.py",
@@ -71,11 +72,13 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
         "test_question_context_privacy.py",
         "test_countrydle_fallback.py",
         "test_countrydle_local_kb.py",
+        "test_countrydle_factual_explanations.py",
         "test_countrydle_semantic_preservation.py",
         "test_countrydle_audit_regressions.py",
         "test_countrydle_english_corpus.py",
         "test_generic_template_compiler.py",
         "test_local_kb_other_modes.py",
+        "test_local_mode_explanation_facts.py",
         "test_plan_cache.py",
         "test_planner_contract.py",
         "test_question_accounting.py",

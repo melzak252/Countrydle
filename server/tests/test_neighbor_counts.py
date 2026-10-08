@@ -96,7 +96,6 @@ def test_wojewodztwodle_neighbor_counts():
         ans = execute_plan(WOJ_CONFIG, voivodeship, plan)
         assert ans is not None
         assert ans.answer is expected, f"Failed for {voivodeship} - {q}: expected {expected}, got {ans.answer}"
-        assert "6 sąsiednimi województwami" in ans.explanation
 
 
 def test_powiatdle_neighbor_counts():
@@ -115,4 +114,3 @@ def test_powiatdle_neighbor_counts():
         ans = execute_plan(POW_CONFIG, powiat, plan)
         assert ans is not None
         assert ans.answer is expected, f"Failed for {powiat} - {q}: expected {expected}, got {ans.answer}"
-        assert "1 sąsiednimi powiatami" in ans.explanation

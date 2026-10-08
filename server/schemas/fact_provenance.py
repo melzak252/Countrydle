@@ -43,7 +43,7 @@ class FactProvenanceRecord(BaseModel):
 
 
 class PublicFactEvidence(BaseModel):
-    """Default-deny evidence; terminal serializers explicitly opt in."""
+    """Default-deny target-linked explanations/evidence; terminal serializers opt in."""
     fact_provenance: list[FactProvenanceRecord] = Field(default_factory=list)
 
     @field_validator("fact_provenance", mode="before")
@@ -52,3 +52,11 @@ class PublicFactEvidence(BaseModel):
         if not (info.context or {}).get("terminal"):
             return []
         return value or []
+
+    @field_validator("explanation", check_fields=False)
+    @classmethod
+    def protect_factual_explanation(cls, value, info):
+        answered = info.data.get("valid") is True and type(info.data.get("answer")) is bool
+        if answered and not (info.context or {}).get("terminal"):
+            return ""
+        return value

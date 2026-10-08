@@ -207,9 +207,13 @@ they are not exposed in a public feed.
 continental, US state, powiat, and voivodeship game pages. Pages provide questions
 in chronological order and retain ownership of scrolling and game state.
 Player questions appear on the right; replies and answer status appear on the left.
-Valid explanations are not mounted until the game is over; invalid-question
-feedback is available immediately. Post-game answer reports retain their mode and
-question identifiers. `QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
+Valid explanations are not mounted until the game is over. Local Countrydle,
+continental and Flagdle template explanations then include the country name and
+readable stored facts. Their active API responses also omit factual explanations,
+not merely hide them in the DOM. Invalid/unverified feedback remains available
+immediately, with target-free guidance rather than provider facts or target-bearing
+rewrites. Post-game answer reports retain their mode and question identifiers.
+`QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
 `GameActionComposer.tsx` hosts the active form in the chat footer.
 
 Returned question responses keep the loading animation visible until at least

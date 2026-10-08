@@ -201,39 +201,17 @@ def test_active_planner_declines_complex_and_country_containment_queries(offline
     ("Does it have a coastline?", "Italy", True),
     ("Is it Italy?", "Italy", True),
 ])
-def test_local_player_response_preserves_predicate_and_hides_target(
+def test_local_question_record_preserves_answer_and_named_facts(
     monkeypatch, offline_planner, semantic_facts, question, target, expected,
 ):
     monkeypatch.setattr(utils.CountryRepository, "get", AsyncMock(return_value=SimpleNamespace(
         name=target, official_name="Italian Republic" if target == "Italy" else "Vatican City State",
     )))
-    response, plan = asyncio.run(utils.analyze_and_answer_locally(
+    response, _ = asyncio.run(utils.analyze_and_answer_locally(
         question, SimpleNamespace(id=1, country_id=1), None, AsyncMock(),
     ))
     assert response.answer is expected
-    assert target.casefold() not in response.explanation.casefold()
-    assert response.question == plan.improved_question
-    if "landlocked" in question:
-        assert "landlocked" in response.question
-        assert "not" == plan.plan["operator"]
-    else:
-        assert response.answer is True
-
-
-def test_local_response_redacts_common_and_official_names(monkeypatch, offline_planner):
-    monkeypatch.setattr(utils.CountryRepository, "get", AsyncMock(return_value=SimpleNamespace(
-        name="Italy", official_name="Italian Republic",
-    )))
-    monkeypatch.setattr(utils, "execute_local_plan", lambda *args: local_answering.LocalAnswer(
-        question="Does the country have a coastline?", answer=True, relation="water_access",
-        explanation="Italy's coastline gives the Italian Republic access to the Mediterranean Sea.",
-    ))
-    response, _ = asyncio.run(utils.analyze_and_answer_locally(
-        "Does it have a coastline?", SimpleNamespace(id=1, country_id=1), None, AsyncMock(),
-    ))
-    assert "Italy" not in response.explanation
-    assert "Italian Republic" not in response.explanation
-    assert "Mediterranean Sea" in response.explanation
+    assert target.casefold() in response.explanation.casefold()
 
 
 def predicate_node(operator, relation, value=None):
