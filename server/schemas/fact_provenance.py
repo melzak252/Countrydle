@@ -60,3 +60,10 @@ class PublicFactEvidence(BaseModel):
         if answered and not (info.context or {}).get("terminal"):
             return ""
         return value
+
+    @field_validator("question", check_fields=False)
+    @classmethod
+    def protect_provider_rewrite(cls, value, info):
+        if not (info.context or {}).get("terminal"):
+            return info.data.get("original_question", value)
+        return value

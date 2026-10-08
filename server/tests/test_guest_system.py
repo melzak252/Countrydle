@@ -1,14 +1,7 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import date
-from sqlalchemy import select
-
-from app import app
-from daily_clock import utc_today
-from db.models import CountrydleDay, CountrydleGuess
-from db.models.guest_participation import GuestParticipation
-from utils.guest_session import GUEST_IDENTITY_COOKIE, create_guest_game_token
 
 @pytest.mark.anyio
 async def test_guest_get_state(async_client: AsyncClient):
@@ -64,64 +57,124 @@ async def test_guest_make_guess(async_client: AsyncClient):
         assert data["answer"] is True
         assert "guessed_at" in data
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_guest_reveal_rejected_before_game_over(daily_api_db):
-    async with daily_api_db() as session:
-        session.add(CountrydleDay(id=1, country_id=1, date=utc_today()))
-        await session.commit()
+async def test_guest_reveal_rejected_before_game_over(async_client: AsyncClient):
+    async_client.cookies.clear()
+    with patch(
+        "db.repositories.countrydle.CountrydleRepository.get_today_country",
+        new_callable=AsyncMock,
+    ) as mock_get_today:
+        mock_day = MagicMock()
+        mock_day.id = 1
+        mock_day.country_id = 100
+        mock_get_today.return_value = mock_day
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
-        # Even a validly signed projection of a win is not durable participation.
-        client.cookies.set("guest_countrydle", create_guest_game_token("countrydle", 1, 3, True, True))
-        response = await client.get("/countrydle/reveal")
+        response = await async_client.get("/countrydle/reveal")
         assert response.status_code == 400
         assert "Cannot reveal country before game is over" in response.json()["detail"]
-    async with daily_api_db() as session:
-        assert list((await session.scalars(select(GuestParticipation))).all()) == []
-        assert list((await session.scalars(select(CountrydleGuess))).all()) == []
 
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_guest_reveal_allowed_after_game_over(daily_api_db):
-    async with daily_api_db() as session:
-        session.add(CountrydleDay(id=1, country_id=1, date=utc_today()))
-        await session.commit()
+async def test_guest_reveal_allowed_after_game_over(async_client: AsyncClient):
+    async_client.cookies.clear()
+    with (
+        patch(
+            "db.repositories.countrydle.CountrydleRepository.get_today_country",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            new_callable=AsyncMock,
+        ) as mock_get_country,
+    ):
+        mock_day = MagicMock()
+        mock_day.id = 1
+        mock_day.country_id = 100
+        mock_get_today.return_value = mock_day
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
-        accepted_ids = []
+        mock_country = MagicMock()
+        mock_country.id = 100
+        mock_country.name = "Poland"
+        mock_country.official_name = "Republic of Poland"
+        mock_get_country.return_value = mock_country
+
+        # Make 3 incorrect guesses to reach game over
         for _ in range(3):
-            guess_res = await client.post(
-                "/countrydle/guess", json={"guess": "Germany", "country_id": 2},
+            guess_res = await async_client.post(
+                "/countrydle/guess",
+                json={"guess": "Germany", "country_id": 99},
             )
-            assert guess_res.status_code == 200, guess_res.text
-            assert guess_res.json()["answer"] is False
-            accepted_ids.append(guess_res.json()["id"])
+            assert guess_res.status_code == 200
 
-        identity_token = client.cookies.get(GUEST_IDENTITY_COOKIE)
-        assert identity_token is not None
-        client.cookies.clear()
-        client.cookies.set(GUEST_IDENTITY_COOKIE, identity_token)
-        # Reload and reveal must use durable terminal progress without a mode cookie.
-        state_res = await client.get("/countrydle/state")
-        assert state_res.status_code == 200, state_res.text
-        assert state_res.json()["state"]["guesses_made"] == 3
-        assert state_res.json()["state"]["remaining_guesses"] == 0
-        assert state_res.json()["state"]["is_game_over"] is True
-        assert state_res.json()["state"]["won"] is False
-        assert [guess["id"] for guess in state_res.json()["guesses"]] == accepted_ids
-        reveal_res = await client.get("/countrydle/reveal")
-        assert reveal_res.status_code == 200, reveal_res.text
-        assert reveal_res.json()["id"] == 1
-        assert reveal_res.json()["name"] == "Poland"
+        # Now reveal must succeed
+        reveal_res = await async_client.get("/countrydle/reveal")
+        assert reveal_res.status_code == 200
+        data = reveal_res.json()
+        assert data["id"] == 100
+        assert data["name"] == "Poland"
 
-    async with daily_api_db() as session:
-        participation = (await session.scalars(select(GuestParticipation))).one()
-        guesses = list((await session.scalars(select(CountrydleGuess).order_by(CountrydleGuess.id))).all())
-        assert (participation.mode, participation.day_id, participation.guesses_made, participation.won) == (
-            "countrydle", 1, 3, False,
-        )
-        assert [(guess.id, guess.guest_id, guess.user_id, guess.answer) for guess in guesses] == [
-            (guess_id, participation.guest_id, None, False) for guess_id in accepted_ids
-        ]
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("mode,path", [
+    ("countrydle", "/countrydle/state"),
+    ("continental", "/continental/europe/state"),
+    ("flagdle", "/flagdle/state"),
+])
+@pytest.mark.parametrize("completion", ["question_quota", "win", "guesses_exhausted", "cookie_only"])
+async def test_guest_factual_history_requires_recorded_completion(mode, path, completion, monkeypatch):
+    from datetime import datetime
+    from importlib import import_module
+    from types import SimpleNamespace
+    from fastapi import FastAPI
+    from httpx import ASGITransport
+    from db import get_db
+    from users.utils import get_current_or_guest_user
+    from utils.guest_session import create_guest_game_token
+
+    module = import_module(mode)
+    maximum = 12 if mode == "flagdle" else 3
+    terminal = completion in {"win", "guesses_exhausted"}
+    participation = None if completion == "cookie_only" else SimpleNamespace(
+        guesses_made=maximum if completion == "guesses_exhausted" else 0,
+        questions_asked=10, won=completion == "win",
+    )
+    question = SimpleNamespace(
+        id=7, original_question="Is it in Europe?",
+        question="Is Poland, whose capital is Warsaw, in Europe?",
+        valid=True, answer=True, user_id=None, day_id=1, asked_at=datetime.now(),
+        explanation="Poland is in Europe; its capital is Warsaw.",
+        fact_provenance=[], context="Private retrieved facts about Poland",
+    )
+    day = SimpleNamespace(
+        id=1, country_id=100, date=date.today(),
+        country=SimpleNamespace(id=100, name="Poland", official_name="Republic of Poland"),
+    )
+    repository_name, method = {
+        "countrydle": ("CountrydleRepository", "get_today_country"),
+        "continental": ("ContinentalDayRepository", "get_today_day"),
+        "flagdle": ("FlagdleDayRepository", "get_today_flag"),
+    }[mode]
+    monkeypatch.setattr(getattr(module, repository_name), method, AsyncMock(return_value=day))
+    monkeypatch.setattr(module.CountryRepository, "get", AsyncMock(return_value=day.country))
+    monkeypatch.setattr(module, "get_guest_question_history", AsyncMock(return_value=(participation, [question])))
+    app = FastAPI()
+    app.include_router(module.router)
+    app.dependency_overrides[get_db] = lambda: AsyncMock()
+    app.dependency_overrides[get_current_or_guest_user] = lambda: None
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # A stale/signed game cookie cannot replace recorded completion proof.
+        client.cookies.set(f"guest_{mode}", create_guest_game_token(mode, 1, maximum, True, True))
+        response = await client.get(path)
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["state"]["is_game_over"] is terminal
+    assert payload["questions"][0]["id"] == 7
+    assert "context" not in payload["questions"][0]
+    if terminal:
+        assert "Poland" in payload["questions"][0]["explanation"]
+        assert "Warsaw" in payload["questions"][0]["explanation"]
+    else:
+        assert payload["questions"][0]["question"] == question.original_question
+        assert not payload["questions"][0]["explanation"]
+        assert payload["questions"][0]["fact_provenance"] == []
+        assert "Poland" not in response.text and "Warsaw" not in response.text

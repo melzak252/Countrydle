@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from fastapi import HTTPException, status
@@ -20,7 +20,6 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from daily_clock import utc_today
 from db.models.answer_report import AnswerReport
 from db.models.continental import ContinentalDay, ContinentalGuess, ContinentalQuestion, ContinentalState
 from db.models.country import Country
@@ -465,7 +464,7 @@ async def query_admin_game_sessions(
     cfg = ADMIN_MODE_CONFIGS.get(mode_key, ADMIN_MODE_CONFIGS["countrydle"])
 
     if not target_date:
-        target_date = utc_today()
+        target_date = datetime.now(timezone.utc).date()
 
     day, target_name, target_subtitle = await _resolve_day_and_target(session, cfg, target_date, clean_mode)
     if not day:
@@ -703,7 +702,7 @@ async def query_admin_target_stats(
     cfg = ADMIN_MODE_CONFIGS.get(mode_key, ADMIN_MODE_CONFIGS["countrydle"])
 
     if not target_date:
-        target_date = utc_today()
+        target_date = datetime.now(timezone.utc).date()
 
     day, target_name, target_subtitle = await _resolve_day_and_target(session, cfg, target_date, clean_mode)
     if not day:

@@ -50,11 +50,6 @@ function MatchMap({
       const color = mapClickColor(activeMarkerColor, isSecondary);
       setEntityMarkings(markings => toggleMapMarking(markings, name, color));
     },
-    toggleEntityMarker: (name, color) => {
-      if (isLobby || !eligibleCountries.some(entity => entity.name.toUpperCase() === name.toUpperCase())) return;
-      if (finished && name.toUpperCase() === revealedEntityName?.toUpperCase()) return;
-      setEntityMarkings(markings => toggleMapMarking(markings, name, color));
-    },
     clearMapMarkings: () => setEntityMarkings({}),
     isGameOver: finished,
   };
@@ -62,11 +57,10 @@ function MatchMap({
 
   switch (mode) {
     case 'countrydle':
-      return <ControlledMapBox markingDisabled={isLobby} interaction={interaction} correctCountryName={revealedName} className={className} onCountryClick={onEntitySelect} eligibleCountries={eligibleCountries} countryMode={mode} />;
+      return <ControlledMapBox interaction={interaction} correctCountryName={revealedName} className={className} onCountryClick={onEntitySelect} eligibleCountries={eligibleCountries} countryMode={mode} />;
     case 'europe':
       return (
         <ControlledMapBox
-          markingDisabled={isLobby}
           eligibleCountries={eligibleCountries}
           countryMode={mode}
           interaction={interaction}
@@ -83,7 +77,6 @@ function MatchMap({
     case 'asia':
       return (
         <ControlledMapBox
-          markingDisabled={isLobby}
           eligibleCountries={eligibleCountries}
           countryMode={mode}
           interaction={interaction}
@@ -100,7 +93,6 @@ function MatchMap({
     case 'africa':
       return (
         <ControlledMapBox
-          markingDisabled={isLobby}
           eligibleCountries={eligibleCountries}
           countryMode={mode}
           interaction={interaction}
@@ -117,7 +109,6 @@ function MatchMap({
     case 'americas':
       return (
         <ControlledMapBox
-          markingDisabled={isLobby}
           eligibleCountries={eligibleCountries}
           countryMode={mode}
           interaction={interaction}
@@ -132,11 +123,11 @@ function MatchMap({
         />
       );
     case 'us_statedle':
-      return <ControlledUSStatesMap markingDisabled={isLobby} eligibleEntities={eligibleCountries} interaction={interaction} correctStateName={revealedName} className={className} onStateClick={onEntitySelect} />;
+      return <ControlledUSStatesMap interaction={interaction} correctStateName={revealedName} className={className} onStateClick={onEntitySelect} />;
     case 'wojewodztwodle':
-      return <ControlledWojewodztwaMap markingDisabled={isLobby} eligibleEntities={eligibleCountries} interaction={interaction} correctWojewodztwoName={revealedName} className={className} onWojewodztwoClick={onEntitySelect} />;
+      return <ControlledWojewodztwaMap interaction={interaction} correctWojewodztwoName={revealedName} className={className} onWojewodztwoClick={onEntitySelect} />;
     case 'powiatdle':
-      return <ControlledPowiatyMap markingDisabled={isLobby} eligibleEntities={eligibleCountries} interaction={interaction} correctPowiatName={revealedName} className={className} onPowiatClick={onEntitySelect} />;
+      return <ControlledPowiatyMap interaction={interaction} correctPowiatName={revealedName} className={className} onPowiatClick={onEntitySelect} />;
   }
 }
 

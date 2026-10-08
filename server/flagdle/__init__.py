@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from db.models.flagdle import FlagdleState, FlagdleGuess, FlagdleQuestion
-from db.repositories.question_accounting import consume_question, get_daily_state, require_guess_available
-from daily_clock import utc_today
-from datetime import datetime
+from db.models.flagdle import FlagdleState, FlagdleQuestion
+from db.repositories.question_accounting import consume_question, lock_question_state
+from datetime import date, datetime
 import logging
-import os
 from typing import List, Optional, Union
 from countrydle.local_planner import analyze_question_for_local_plan
 from countrydle.local_answering import execute_local_plan
@@ -27,23 +25,23 @@ from db.repositories.flagdle import (
     FlagdleStateRepository,
     FlagdleQuestionRepository,
 )
-from game_logic import FLAGDLE_CONFIG
+from game_logic import FLAGDLE_CONFIG, GameRules, GameState, is_valid_synced_game_state
 from schemas.country import CountryDisplay
 from schemas.flagdle import (
     DayFlagdleDisplay,
     FlagdleCountryDisplay,
     FlagdleGuessBase,
     FlagdleGuessCreate,
-    FlagdleQuestionDisplay,
     FlagdleGuessDisplay,
+    FlagdleQuestionDisplay,
     FlagdleStateResponse,
     FlagdleStateSchema,
     FlagdleSyncSchema,
 )
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.guest_session import (
-    create_guest_game_token, record_guest_action, get_guest_identity,
-    get_guest_progress, claim_guest_history, guest_game_over,
+    create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    get_guest_identity, get_guest_question_history,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 from utils.explanation_sanitizer import sanitize_explanation_for_player
@@ -164,15 +162,15 @@ async def get_state(
     if not target_country:
         target_country = await CountryRepository(session).get(today_flag.country_id)
 
-    today_str = today_flag.date.strftime("%Y-%m-%d") if today_flag.date else utc_today().strftime("%Y-%m-%d")
+    today_str = today_flag.date.strftime("%Y-%m-%d") if today_flag.date else date.today().strftime("%Y-%m-%d")
     asset_token = generate_asset_token(today_flag.id)
     flag_asset_url = f"/flagdle/flag-asset?token={asset_token}"
 
     if user:
-        state = await get_daily_state(
-            session, FlagdleState, user.id, today_flag.id, None, FLAGDLE_CONFIG.max_guesses,
-        )
-        await session.commit()
+        state_repo = FlagdleStateRepository(session)
+        state = await state_repo.get_state(user, today_flag)
+        if not state:
+            state = await state_repo.create_state(user, today_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
 
         guess_repo = FlagdleGuessRepository(session)
         db_guesses = await guess_repo.get_user_day_guesses(user, today_flag.id)
@@ -196,7 +194,6 @@ async def get_state(
                     matched_symbols=g.matched_symbols or [],
                     revealed_tile=g.revealed_tile,
                     guessed_at=g.guessed_at or datetime.now(),
-                    elapsed_seconds=getattr(g, "elapsed_seconds", None),
                 )
             )
 
@@ -214,12 +211,24 @@ async def get_state(
             country=revealed_country,
         )
     else:
-        participation, db_guesses, questions = await get_guest_progress(
-            session, request, response, "flagdle", today_flag.id, FlagdleGuess, FlagdleQuestion,
+        # Guest session
+        if response is not None:
+            from utils.guest_session import get_guest_identity
+            get_guest_identity(request, response)
+        cookie = request.cookies.get("guest_flagdle")
+        guest_state = read_guest_game_token(cookie, "flagdle", today_flag.id)
+
+        guesses_made = guest_state["guesses_count"]
+        is_won = guest_state["won"]
+        is_game_over = guest_state["is_game_over"]
+        participation, questions = await get_guest_question_history(
+            session, request, "flagdle", today_flag.id, FlagdleQuestion,
         )
-        guesses_made = participation.guesses_made if participation else 0
-        is_won = bool(participation and participation.won)
-        is_game_over = guest_game_over(participation, FLAGDLE_CONFIG.max_guesses)
+        terminal = bool(participation and (participation.won or participation.guesses_made >= FLAGDLE_CONFIG.max_guesses))
+        is_game_over = terminal
+        if participation is not None:
+            guesses_made = participation.guesses_made
+            is_won = participation.won
         remaining_guesses = max(0, FLAGDLE_CONFIG.max_guesses - guesses_made)
         revealed_stage = 12 if is_game_over else min(12, guesses_made + 1)
 
@@ -240,8 +249,8 @@ async def get_state(
             user=None,
             date=today_str,
             state=state_schema,
-            guesses=[FlagdleGuessDisplay.model_validate(g) for g in db_guesses],
-            questions=[FlagdleQuestionDisplay.model_validate(q, context={"terminal": is_game_over}) for q in questions],
+            guesses=[],
+            questions=[FlagdleQuestionDisplay.model_validate(q, context={"terminal": terminal}) for q in questions],
             flag_asset_url=flag_asset_url,
             country=revealed_country,
         )
@@ -255,14 +264,6 @@ async def make_guess(
     user: Optional[User] = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
-    try:
-        return await _do_make_guess(guess_in, request, response, user, session)
-    except Exception:
-        await session.rollback()
-        raise
-
-
-async def _do_make_guess(guess_in, request, response, user, session):
     """Processes a Flagdle guess and returns tile reveal, color match, symbol match, and geo clues."""
     await CountryRepository(session).validate_guess(guess_in.country_id, guess_in.guess)
     day_repo = FlagdleDayRepository(session)
@@ -297,22 +298,23 @@ async def _do_make_guess(guess_in, request, response, user, session):
     # Determine current guess index and check game status
     if user:
         state_repo = FlagdleStateRepository(session)
-        state = await get_daily_state(
-            session, FlagdleState, user.id, today_flag.id, None, FLAGDLE_CONFIG.max_guesses,
-        )
-        require_guess_available(state, FLAGDLE_CONFIG.max_guesses)
+        state = await state_repo.get_state(user, today_flag)
+        if not state:
+            state = await state_repo.create_state(user, today_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
+
+        if state.is_game_over or state.remaining_guesses <= 0:
+            raise HTTPException(status_code=400, detail="Game is already over.")
 
         current_guess_idx = state.guesses_made
         existing_guesses = await FlagdleGuessRepository(session).get_user_day_guesses(user, today_flag.id)
     else:
-        participation = await record_guest_action(
-            session, request, response, "flagdle", today_flag.id,
-            max_guesses=FLAGDLE_CONFIG.max_guesses, won=guessed_country.id == target_country.id,
-        )
-        current_guess_idx = participation.guesses_made - 1
-        _, existing_guesses, _ = await get_guest_progress(
-            session, request, response, "flagdle", today_flag.id, FlagdleGuess,
-        )
+        cookie = request.cookies.get("guest_flagdle")
+        guest_state = read_guest_game_token(cookie, "flagdle", today_flag.id)
+        if guest_state["is_game_over"] or guest_state["guesses_count"] >= FLAGDLE_CONFIG.max_guesses:
+            raise HTTPException(status_code=400, detail="Game is already over.")
+
+        current_guess_idx = guest_state["guesses_count"]
+        existing_guesses = []
 
     # Gather prior matched colors for cumulative remaining count
     all_matched_colors = set()
@@ -376,7 +378,7 @@ async def _do_make_guess(guess_in, request, response, user, session):
             revealed_tile=revealed_tile,
             elapsed_seconds=guess_in.elapsed_seconds,
         )
-        saved_guess = await guess_repo.add_guess(guess_create, commit=False)
+        saved_guess = await guess_repo.add_guess(guess_create)
 
         state.guesses_made = new_guesses_made
         state.remaining_guesses = new_remaining
@@ -390,8 +392,7 @@ async def _do_make_guess(guess_in, request, response, user, session):
                 state, elapsed_seconds=guess_in.elapsed_seconds, streak=streak
             )
 
-        await state_repo.update_state(state, commit=False)
-        await session.commit()
+        await state_repo.update_state(state)
 
         return FlagdleGuessDisplay(
             id=saved_guess.id,
@@ -408,9 +409,11 @@ async def _do_make_guess(guess_in, request, response, user, session):
             matched_symbols=saved_guess.matched_symbols or [],
             revealed_tile=saved_guess.revealed_tile,
             guessed_at=saved_guess.guessed_at or now,
-            elapsed_seconds=getattr(saved_guess, "elapsed_seconds", None),
         )
     else:
+        # Guest update
+        token = create_guest_game_token("flagdle", today_flag.id, new_guesses_made, is_game_over, won)
+        response.set_cookie("guest_flagdle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
         guest_guess_create = FlagdleGuessCreate(
             guess=guessed_country.name,
@@ -429,18 +432,8 @@ async def _do_make_guess(guess_in, request, response, user, session):
             revealed_tile=revealed_tile,
             elapsed_seconds=guess_in.elapsed_seconds,
         )
-        saved_guess = await FlagdleGuessRepository(session).add_guess(
-            guest_guess_create, commit=False, guest_id=get_guest_identity(request, response),
-        )
-        await session.commit()
-        token = create_guest_game_token(
-            "flagdle", today_flag.id, participation.guesses_made,
-            guest_game_over(participation, FLAGDLE_CONFIG.max_guesses), participation.won,
-        )
-        response.set_cookie(
-            "guest_flagdle", token, httponly=True, samesite="lax", max_age=86400 * 2,
-            secure=request.url.scheme == "https" or os.getenv("FRIEND_COOKIE_SECURE", "").strip().lower() in {"true", "1", "yes"},
-        )
+        await record_guest_action(session, request, response, "flagdle", today_flag.id, won=is_correct)
+        saved_guess = await FlagdleGuessRepository(session).add_guess(guest_guess_create)
 
         return FlagdleGuessDisplay(
             id=saved_guess.id,
@@ -457,7 +450,6 @@ async def _do_make_guess(guess_in, request, response, user, session):
             matched_symbols=saved_guess.matched_symbols or [],
             revealed_tile=saved_guess.revealed_tile,
             guessed_at=saved_guess.guessed_at or now,
-            elapsed_seconds=getattr(saved_guess, "elapsed_seconds", None),
         )
 
 
@@ -512,11 +504,11 @@ async def ask_flag_question(
             fact_provenance=answer.fact_provenance,
         )
         if user is None:
-            participation = await record_guest_action(
-                session, request, response, "flagdle", day_id,
-                max_guesses=FLAGDLE_CONFIG.max_guesses, question=True,
+            await record_guest_action(session, request, response, "flagdle", day_id, question=True)
+            participation, _ = await get_guest_question_history(
+                session, request, "flagdle", day_id, FlagdleQuestion,
             )
-            terminal = guest_game_over(participation, FLAGDLE_CONFIG.max_guesses)
+            terminal = bool(participation and (participation.won or participation.guesses_made >= FLAGDLE_CONFIG.max_guesses))
         else:
             state = await consume_question(
                 session, FlagdleState, user_id, day_id, None, FLAGDLE_CONFIG.max_guesses,
@@ -551,19 +543,16 @@ async def reveal_country(
         raise HTTPException(status_code=404, detail="No game today.")
 
     if user:
-        state = await get_daily_state(
-            session, FlagdleState, user.id, today_flag.id, None, FLAGDLE_CONFIG.max_guesses,
-        )
-        if not state.is_game_over:
+        state = await FlagdleStateRepository(session).get_state(user, today_flag)
+        if state and not state.is_game_over:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal country before game is over.",
             )
     else:
-        participation, _, _ = await get_guest_progress(
-            session, request, None, "flagdle", today_flag.id, FlagdleGuess,
-        )
-        if not guest_game_over(participation, FLAGDLE_CONFIG.max_guesses):
+        cookie = request.cookies.get("guest_flagdle")
+        guest_state = read_guest_game_token(cookie, "flagdle", today_flag.id)
+        if not guest_state["is_game_over"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reveal country before game is over.",
@@ -599,7 +588,7 @@ async def sync_guest_data(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
-    """Claim this browser's original durable guest progress once."""
+    """Reconciles guest localStorage progress into user profile upon authentication."""
     try:
         game_date = datetime.strptime(sync_data.date, "%Y-%m-%d").date()
     except ValueError:
@@ -610,24 +599,109 @@ async def sync_guest_data(
     if not day_flag:
         raise HTTPException(status_code=404, detail="Game for this date not found.")
 
+    target_country = day_flag.country
+    if not target_country:
+        target_country = await CountryRepository(session).get(day_flag.country_id)
+
     state_repo = FlagdleStateRepository(session)
-    try:
-        state = await get_daily_state(
-            session, FlagdleState, user.id, day_flag.id, None, FLAGDLE_CONFIG.max_guesses,
+    state = await state_repo.get_state(user, day_flag)
+    if state is None:
+        state = await state_repo.create_state(user, day_flag, max_guesses=FLAGDLE_CONFIG.max_guesses)
+
+    state = await lock_question_state(session, FlagdleState, user.id, day_flag.id) or state
+    # Server state takes strict precedence if user already played on server
+    if state.guesses_made > 0:
+        linked = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)
+        if linked is not None:
+            state.questions_asked = max(state.questions_asked, linked)
+            await state_repo.update_state(state)
+        return await get_state(request=request, user=user, session=session)
+
+    correct_guesses = [
+        (
+            guess.country_id == target_country.id
+            if guess.country_id is not None
+            else bool(target_country and guess.guess.strip().casefold() == target_country.name.casefold())
         )
-        imported = await claim_guest_history(
-            session, request, state, "flagdle", FlagdleGuess, FlagdleQuestion,
-            None, FLAGDLE_CONFIG.max_guesses,
-            validate_original_guess=CountryRepository(session).validate_guess,
+        for guess in sync_data.guesses
+    ]
+    sync_state = getattr(sync_data, "state", None)
+    if sync_state is not None and not is_valid_synced_game_state(
+        FLAGDLE_CONFIG,
+        guesses_made=sync_state.guesses_made,
+        remaining_guesses=sync_state.remaining_guesses,
+        is_game_over=sync_state.is_game_over,
+        won=sync_state.won,
+        correct_guesses=correct_guesses,
+    ):
+        raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
+
+    for guess in sync_data.guesses:
+        await CountryRepository(session).validate_guess(guess.country_id, guess.guess)
+
+    guess_repo = FlagdleGuessRepository(session)
+    country_repo = CountryRepository(session)
+
+    all_matched_colors = set()
+    for idx, g in enumerate(sync_data.guesses):
+        guessed_country = None
+        if g.country_id:
+            guessed_country = await country_repo.get(g.country_id)
+        if not guessed_country and g.guess:
+            all_countries = await country_repo.get_all_countries()
+            for c in all_countries:
+                if c.name.lower() == g.guess.strip().lower():
+                    guessed_country = c
+                    break
+
+        if not guessed_country:
+            continue
+
+        is_correct = target_country and (guessed_country.id == target_country.id)
+        clues = evaluate_flag_clues(
+            target_country_id=target_country.id if target_country else 0,
+            guessed_country_id=guessed_country.id,
+            target_country_name=target_country.name if target_country else None,
+            guessed_country_name=guessed_country.name,
+            all_matched_colors_so_far=all_matched_colors,
         )
-        if imported and state.won:
-            guesses = await FlagdleGuessRepository(session).get_user_day_guesses(user, day_flag.id)
-            streak = (await state_repo.get_current_streak(user.id, day_flag.date)) + 1
-            elapsed = guesses[-1].elapsed_seconds if guesses else None
-            state.points = await state_repo.calc_points(state, elapsed_seconds=elapsed, streak=streak)
-        await state_repo.update_state(state, commit=False)
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
+        if clues["matched_colors"]:
+            all_matched_colors.update(clues["matched_colors"])
+
+        revealed_tile = UNMASK_ORDER[min(idx, 11)]
+
+        guess_create = FlagdleGuessCreate(
+            guess=guessed_country.name,
+            country_id=guessed_country.id,
+            day_id=day_flag.id,
+            user_id=user.id,
+            answer=is_correct,
+            distance_km=clues["distance_km"],
+            bearing_degrees=clues["bearing_degrees"],
+            bearing_direction=clues["bearing_direction"],
+            bearing_arrow=clues["bearing_arrow"],
+            matched_colors=clues["matched_colors"],
+            missed_colors=clues["missed_colors"],
+            remaining_colors_count=clues["remaining_colors_count"],
+            matched_symbols=clues["matched_symbols"],
+            revealed_tile=revealed_tile,
+            elapsed_seconds=g.elapsed_seconds,
+        )
+        await guess_repo.add_guess(guess_create, commit=False)
+
+    state.remaining_guesses = sync_data.state.remaining_guesses
+    state.guesses_made = sync_data.state.guesses_made
+    state.revealed_stage = sync_data.state.revealed_stage
+    state.is_game_over = sync_data.state.is_game_over
+    state.won = sync_data.state.won
+
+    if state.won:
+        streak = (await state_repo.get_current_streak(user.id, day_flag.date)) + 1
+        elapsed = sync_data.guesses[-1].elapsed_seconds if sync_data.guesses else None
+        state.points = await state_repo.calc_points(state, elapsed_seconds=elapsed, streak=streak)
+
+    linked_questions = await link_guest_participation(session, request, "flagdle", day_flag.id, user.id)
+    if linked_questions is not None:
+        state.questions_asked = max(state.questions_asked, linked_questions)
+    await state_repo.update_state(state)
     return await get_state(request=request, user=user, session=session)

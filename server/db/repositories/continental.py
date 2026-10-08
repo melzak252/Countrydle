@@ -5,7 +5,6 @@ from sqlalchemy import and_, or_, cast, desc, func, Integer, select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from daily_clock import utc_today
 from db.models import Country, User
 from db.models.continental import (
     ContinentCode,
@@ -20,7 +19,6 @@ from schemas.countrydle import LeaderboardEntry
 from continental.utils import get_continent_country_ids
 from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from country_eligibility import require_eligible_target
-from db.repositories.question_accounting import get_daily_state, lock_question_state, require_guess_available
 
 
 COOLDOWN_DAYS: dict[ContinentCode, int] = {
@@ -36,7 +34,7 @@ class ContinentalDayRepository:
         self.session = session
 
     async def get_today_day(self, continent: ContinentCode) -> Optional[ContinentalDay]:
-        today = utc_today()
+        today = func.current_date()
         result = await self.session.execute(
             select(ContinentalDay)
             .options(joinedload(ContinentalDay.country))
@@ -48,12 +46,11 @@ class ContinentalDayRepository:
             )
             .order_by(ContinentalDay.id.desc())
         )
-        return require_eligible_target(result.scalars().first(), continent.value, today=today)
+        return require_eligible_target(result.scalars().first(), continent.value)
 
     async def get_day_by_date(
-        self, continent: ContinentCode, day_date: date, *, today: date | None = None
+        self, continent: ContinentCode, day_date: date
     ) -> Optional[ContinentalDay]:
-        today = today if today is not None else utc_today()
         result = await self.session.execute(
             select(ContinentalDay)
             .options(joinedload(ContinentalDay.country))
@@ -64,17 +61,16 @@ class ContinentalDayRepository:
                 )
             )
         )
-        return require_eligible_target(result.scalars().first(), continent.value, today=today)
+        return require_eligible_target(result.scalars().first(), continent.value)
 
     async def get_history(self, continent: ContinentCode) -> List[ContinentalDay]:
-        today = utc_today()
         result = await self.session.execute(
             select(ContinentalDay)
             .options(joinedload(ContinentalDay.country))
             .where(
                 and_(
                     ContinentalDay.continent == continent,
-                    ContinentalDay.date < today,
+                    ContinentalDay.date < date.today(),
                 )
             )
             .order_by(ContinentalDay.date.desc())
@@ -87,8 +83,7 @@ class ContinentalDayRepository:
         day_date: Optional[date] = None,
         excluded_ids: Optional[Set[int]] = None,
     ) -> ContinentalDay:
-        today = utc_today()
-        target_date = day_date if day_date is not None else today
+        target_date = day_date or date.today()
         cooldown = COOLDOWN_DAYS.get(continent, 30)
 
         recent_subq = (
@@ -132,7 +127,7 @@ class ContinentalDayRepository:
         await self.session.refresh(new_day)
 
         # Eagerly load country relationship
-        day_with_country = await self.get_day_by_date(continent, target_date, today=today)
+        day_with_country = await self.get_day_by_date(continent, target_date)
         return day_with_country or new_day
 
 
@@ -146,24 +141,42 @@ class ContinentalStateRepository:
         day: ContinentalDay,
         max_questions: int = CONTINENTAL_CONFIG.max_questions,
         max_guesses: int = CONTINENTAL_CONFIG.max_guesses,
-        *,
-        commit: bool = True,
     ) -> ContinentalState:
-        state = await lock_question_state(self.session, ContinentalState, user.id, day.id)
-        if state is None:
-            state = await get_daily_state(
-                self.session, ContinentalState, user.id, day.id, max_questions, max_guesses,
+        result = await self.session.execute(
+            select(ContinentalState).where(
+                and_(
+                    ContinentalState.user_id == user.id,
+                    ContinentalState.day_id == day.id,
+                )
             )
-            if commit:
+        )
+        state = result.scalar_one_or_none()
+        if not state:
+            from db.repositories.question_accounting import lock_question_state
+            state = await lock_question_state(self.session, ContinentalState, user.id, day.id)
+            if state is not None:
                 await self.session.commit()
+                return state
+            state = ContinentalState(
+                user_id=user.id,
+                day_id=day.id,
+                remaining_questions=max_questions,
+                remaining_guesses=max_guesses,
+                questions_asked=0,
+                guesses_made=0,
+                is_game_over=False,
+                won=False,
+                points=0,
+            )
+            self.session.add(state)
+            await self.session.commit()
+            await self.session.refresh(state)
         return state
 
-    async def update_state(self, state: ContinentalState, *, commit: bool = True) -> ContinentalState:
+    async def update_state(self, state: ContinentalState) -> ContinentalState:
         self.session.add(state)
-        if commit:
-            await self.session.commit()
-        else:
-            await self.session.flush()
+        await self.session.commit()
+        await self.session.refresh(state)
         return state
 
     async def get_current_streak(
@@ -216,9 +229,7 @@ class ContinentalStateRepository:
         continent: ContinentCode | None = None,
         *,
         puzzle_date: date,
-        commit: bool = True,
     ) -> ContinentalState:
-        require_guess_available(state, CONTINENTAL_CONFIG.max_guesses)
         state.guesses_made += 1
         state.remaining_guesses = max(0, CONTINENTAL_CONFIG.max_guesses - state.guesses_made)
 
@@ -233,7 +244,7 @@ class ContinentalStateRepository:
             state.is_game_over = True
             state.points = 0
 
-        return await self.update_state(state, commit=commit)
+        return await self.update_state(state)
 
     async def get_leaderboard(
         self, continent: ContinentCode, type: str = "monthly"
@@ -252,12 +263,9 @@ class ContinentalGuessRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_guess(
-        self, guess_create: ContinentalGuessCreate, *, commit: bool = True, guest_id: str | None = None
-    ) -> ContinentalGuess:
+    async def add_guess(self, guess_create: ContinentalGuessCreate, *, commit: bool = True) -> ContinentalGuess:
         new_guess = ContinentalGuess(
             user_id=guess_create.user_id,
-            guest_id=guest_id,
             day_id=guess_create.day_id,
             guess=guess_create.guess,
             country_id=guess_create.country_id,
@@ -294,12 +302,10 @@ class ContinentalQuestionRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_question(
-        self, question_create, *, guest_id: str | None = None
-    ) -> ContinentalQuestion:
+    async def create_question(self, question_create) -> ContinentalQuestion:
         new_quest = ContinentalQuestion(
             user_id=getattr(question_create, "user_id", None),
-            guest_id=guest_id,
+            guest_id=getattr(question_create, "guest_id", None),
             day_id=question_create.day_id,
             original_question=question_create.original_question,
             question=getattr(question_create, "question", None),
@@ -307,7 +313,7 @@ class ContinentalQuestionRepository:
             answer=getattr(question_create, "answer", None),
             explanation=getattr(question_create, "explanation", None),
             context=getattr(question_create, "context", None),
-            fact_provenance=getattr(question_create, "fact_provenance", []),
+            fact_provenance=question_create.fact_provenance,
         )
         self.session.add(new_quest)
         await self.session.flush()

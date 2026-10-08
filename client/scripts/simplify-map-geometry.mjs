@@ -1,11 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdtempSync, openSync, readFileSync, rmSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 
-const MAPSHAPER_CLI = createRequire(import.meta.url).resolve('mapshaper/bin/mapshaper');
+const MAPSHAPER_VERSION = '0.7.76';
 const RING_ID_FIELD = '__countrydle_ring_id';
 const MAX_BUFFER_BYTES = 256 * 1024 * 1024;
 
@@ -175,24 +174,22 @@ export function simplifyMapGeometry(collection, toleranceMeters) {
 
   if (rings.length === 0) return { ...collection, features };
   const tempDirectory = mkdtempSync(`${tmpdir()}/countrydle-mapshaper-`);
-  const inputPath = `${tempDirectory}/input.geojson`;
   const outputPath = `${tempDirectory}/simplified.geojson`;
   // Route stdout to a file descriptor because Bun's buffered capture truncates large GeoJSON results.
   const outputFd = openSync(outputPath, 'w');
   let simplified;
   try {
-    // Mapshaper reopens stdin, so use a file to support both Node and Bun.
-    writeFileSync(inputPath, JSON.stringify({ type: 'FeatureCollection', features: rings }));
     // Tolerance is measured in projected EPSG:3857 metres for Leaflet display fidelity.
-    const result = spawnSync(process.execPath, [
-      MAPSHAPER_CLI,
-      '-i', inputPath, '-proj', 'init=EPSG:4326', 'crs=EPSG:3857',
+    const result = spawnSync('bunx', [
+      '--bun', '--package', `mapshaper@${MAPSHAPER_VERSION}`, 'mapshaper',
+      '-i', '-', '-proj', 'init=EPSG:4326', 'crs=EPSG:3857',
       '-simplify', 'dp', `interval=${toleranceMeters}m`, 'keep-shapes',
       '-proj', 'crs=EPSG:4326', '-o', 'format=geojson', 'precision=0.000001', '-',
     ], {
+      input: JSON.stringify({ type: 'FeatureCollection', features: rings }),
       encoding: 'utf8',
       maxBuffer: MAX_BUFFER_BYTES,
-      stdio: ['ignore', outputFd, 'pipe'],
+      stdio: ['pipe', outputFd, 'pipe'],
     });
     if (result.error) throw result.error;
     if (result.status !== 0) throw new Error(`Mapshaper failed: ${result.stderr || result.stdout}`);

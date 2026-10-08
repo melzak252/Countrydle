@@ -14,6 +14,7 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
     "countrydle": (
         "test_countrydle_local_kb.py",
         "test_countrydle_factual_explanations.py",
+        "test_fact_provenance.py",
         "test_countrydle_fallback.py",
         "test_countrydle_pipeline_eval_csv.py",
         "test_countrydle_semantic_preservation.py",
@@ -55,6 +56,7 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
     ),
     "flagdle": (
         "test_flagdle.py",
+        "test_question_context_privacy.py",
         "test_expansions.py",
         "test_scoring_streaks.py",
         "test_zero_500.py",
@@ -73,6 +75,7 @@ TEST_GROUPS: dict[str, tuple[str, ...]] = {
         "test_countrydle_fallback.py",
         "test_countrydle_local_kb.py",
         "test_countrydle_factual_explanations.py",
+        "test_fact_provenance.py",
         "test_countrydle_semantic_preservation.py",
         "test_countrydle_audit_regressions.py",
         "test_countrydle_english_corpus.py",
@@ -160,6 +163,7 @@ SOURCE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("server/qdrant/", ("question-engine",)),
     ("server/game_logic.py", ("game-rules", "api")),
     ("server/local_kb_question.py", ("question-engine",)),
+    ("server/country_fact_provenance.py", ("countrydle", "question-engine")),
     ("server/generic_template_compiler.py", ("question-engine",)),
     ("server/slot_template_engine.py", ("question-engine",)),
     ("server/app.py", ("api",)),

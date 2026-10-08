@@ -1,5 +1,4 @@
-import { useState, useRef } from 'react';
-import { useModalFocus } from '../hooks/useModalFocus';
+import { useState, useEffect } from 'react';
 import {
   HelpCircle,
   Trophy,
@@ -48,8 +47,15 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
     }
   };
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useModalFocus<HTMLElement>({ open: isOpen, onDismiss: handleClose, returnFocusRef: triggerRef });
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   const modalContent = (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6 overflow-y-auto animate-in fade-in duration-200" style={{ maxHeight: 'var(--app-height, 100dvh)' }}>
@@ -62,8 +68,6 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
 
       {/* Spacious, Uncluttered Modal Dialog */}
       <section
-        ref={dialogRef}
-        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={t('instructions.title', 'How to Play & Guide')}
@@ -86,8 +90,8 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
             type="button"
             onClick={handleClose}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
-            aria-label={isPl ? 'Zamknij' : 'Close'}
-            title={isPl ? 'Zamknij' : 'Close'}
+            aria-label="Close"
+            title="Close"
           >
             <X size={16} />
           </button>
@@ -227,7 +231,6 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
   return (
     <>
       <button
-        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(true)}
         className={`${triggerClassName || "flex h-9 items-center gap-1.5 px-3 rounded-sm border border-white/15 bg-obsidian-900 text-zinc-300 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors text-xs font-semibold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"} ${compact ? 'max-md:h-11 max-md:flex-1 max-md:justify-center max-md:px-2' : ''}`}

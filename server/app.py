@@ -1,4 +1,6 @@
-from runtime_configuration import CORS_ALLOWED_ORIGINS
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import logging
 import time
@@ -10,7 +12,6 @@ from fastapi_mail import MessageSchema
 from utils.google import verify_google_token
 
 import datetime
-from daily_clock import next_utc_midnight, utc_now
 from utils.app import lifespan
 from countrydle import router as countrydle_router
 from powiatdle import router as powiatdle_router
@@ -63,7 +64,15 @@ logging.basicConfig(level=logging.INFO)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:80",
+        "http://localhost",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:80",
+        "http://127.0.0.1",
+    ],
+    allow_origin_regex="https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -270,9 +279,24 @@ async def get_cache_stats():
 
 @app.get("/time")
 async def get_server_time():
-    """Return one UTC instant and its next daily puzzle rollover."""
-    now = utc_now()
-    next_midnight = next_utc_midnight(now)
+    """Returns the current server time and the time until the next midnight (UTC)"""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    tomorrow = now + datetime.timedelta(days=1)
+    next_midnight = datetime.datetime(
+        year=tomorrow.year,
+        month=tomorrow.month,
+        day=tomorrow.day,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+        tzinfo=datetime.timezone.utc
+    )
+    
+    # If the server uses local time for date.today(), we should probably use local time here too.
+    # However, standard practice is usually UTC. 
+    # Let's check if date.today() is timezone aware. It usually returns local date.
+    # If the server is running in UTC (which it likely is in Docker), then UTC is correct.
     
     return {
         "server_time": now.isoformat(),

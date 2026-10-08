@@ -124,32 +124,29 @@ class UserRepository:
 
         return user
 
-    async def add_user_points(self, user_id: int, *, commit: bool = True) -> UserPoints:
-        # Different puzzles share this ledger. NO KEY UPDATE also serializes its
-        # first creation without conflicting with history/state foreign-key locks.
-        await self.session.scalar(
-            select(User.id).where(User.id == user_id).with_for_update(key_share=True)
-        )
-        user_points = await self.session.scalar(
-            select(UserPoints).where(UserPoints.user_id == user_id)
-            .with_for_update().execution_options(populate_existing=True)
-        )
-        if user_points is None:
-            user_points = UserPoints(user_id=user_id, points=0, streak=0, longest_streak=0)
-            self.session.add(user_points)
-            await self.session.flush()
-        if commit:
+    async def add_user_points(self, user_id: int) -> UserPoints:
+        user_points = await self.get_user_points(user_id)
+        if not user_points:
+            new_points = UserPoints(user_id=user_id)
+            self.session.add(new_points)
             await self.session.commit()
+            await self.session.refresh(new_points)
+            return new_points
+
+        await self.session.commit()
+        await self.session.refresh(user_points)
+
         return user_points
 
-    async def update_points(self, user_id: int, state: CountrydleState, *, commit: bool = True):
-        user_points = await self.add_user_points(user_id, commit=False)
+    async def update_points(self, user_id: int, state: CountrydleState):
+        user_points = await self.get_user_points(user_id)
+        if not user_points:
+            user_points = await self.add_user_points(user_id)
+
         user_points.streak = user_points.streak + 1 if state.won else 0
         user_points.points += state.points
-        if commit:
-            await self.session.commit()
-        else:
-            await self.session.flush()
+
+        await self.session.commit()
 
     async def get_last_user_update(self, user_id: int) -> AccountUpdate | None:
         since = datetime.now() - timedelta(days=30)

@@ -21,7 +21,7 @@ export default function GuessHistory({ guesses }: GuessHistoryProps) {
 
   if (guesses.length === 0) {
     return (
-      <p className="text-sm leading-relaxed text-zinc-400">
+      <p className="text-sm leading-relaxed text-zinc-500">
         {t('gamePage.makeAGuess')}
       </p>
     );

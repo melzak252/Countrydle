@@ -3,7 +3,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "c9d0e1f2a3b4"
-down_revision = "b8c9d0e1f2a3"
+down_revision = "f6a8c2d4e901"
 branch_labels = None
 depends_on = None
 
@@ -11,6 +11,8 @@ depends_on = None
 def upgrade():
     for table in ("countrydle_questions", "continental_questions"):
         op.add_column(table, sa.Column("fact_provenance", sa.JSON(), nullable=False, server_default="[]"))
+    op.add_column("continental_questions", sa.Column("guest_id", sa.String(36), nullable=True))
+    op.create_index("ix_continental_questions_guest_day", "continental_questions", ["guest_id", "day_id"])
     op.create_table(
         "flagdle_questions",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -34,5 +36,7 @@ def upgrade():
 
 def downgrade():
     op.drop_table("flagdle_questions")
+    op.drop_index("ix_continental_questions_guest_day", table_name="continental_questions")
+    op.drop_column("continental_questions", "guest_id")
     for table in ("continental_questions", "countrydle_questions"):
         op.drop_column(table, "fact_provenance")

@@ -13,7 +13,6 @@ from schemas.wojewodztwodle import (
 )
 from db.repositories.wojewodztwo import WojewodztwoRepository
 from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
-from utils.explanation_sanitizer import sanitize_explanation_for_player
 
 
 LOCAL_CONFIG = LocalModeConfig(
@@ -128,7 +127,7 @@ async def analyze_and_answer_locally(
         question=answer.question,
         valid=True,
         answer=answer.answer,
-        explanation=sanitize_explanation_for_player(answer.explanation, {wojewodztwo.nazwa}, "to województwo"),
+        explanation=answer.explanation,
         context="local_kb:" + ",".join(answer.relations),
         intent=plan.explanation,
         required_info=", ".join(answer.relations),
@@ -284,9 +283,7 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict.get("answer"),
-        explanation=sanitize_explanation_for_player(
-            answer_dict.get("explanation") or "Brak wyjaśnienia.", {wojewodztwo.nazwa}, "to województwo",
-        ),
+        explanation=answer_dict.get("explanation") or "Brak wyjaśnienia.",
         context=context,
     )
     return question_create, question_vector

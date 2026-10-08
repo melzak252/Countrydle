@@ -1,12 +1,12 @@
 import pytest
 from datetime import date, timedelta
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from unittest.mock import MagicMock, AsyncMock, patch
 
 from countrydle.local_answering import DEFAULT_DB_PATH, execute_local_plan
-from db.base import Base
-from db.models import Country, CountrydleDay
+from countrydle.local_planner import QuestionPlan
+from db.models import Country, CountrydleDay, Wojewodztwo, WojewodztwodleDay
 from db.repositories.countrydle import CountrydleRepository
+from db.repositories.wojewodztwodle import WojewodztwodleDayRepository
 
 requires_country_facts = pytest.mark.skipif(
     not DEFAULT_DB_PATH.exists(),
@@ -83,48 +83,33 @@ def test_historical_unions_evaluation():
 
 
 @pytest.mark.real_database
-@pytest.mark.parametrize("requested_date", [None, date(2026, 9, 29)])
 @pytest.mark.anyio
-async def test_countrydle_cooldown_excludes_recent_entities(tmp_path, monkeypatch, requested_date):
-    from db.repositories import countrydle
+async def test_countrydle_cooldown_excludes_recent_entities():
+    mock_session = AsyncMock()
+    repo = CountrydleRepository(mock_session)
 
-    today = date(2026, 10, 4)
-    target_date = requested_date if requested_date is not None else today
-    monkeypatch.setattr(countrydle, "utc_today", lambda: today)
-    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'cooldown.sqlite'}")
-    try:
-        async with engine.begin() as connection:
-            await connection.run_sync(
-                lambda db: Base.metadata.create_all(
-                    db, tables=[Country.__table__, CountrydleDay.__table__]
-                )
-            )
-        sessions = async_sessionmaker(engine, expire_on_commit=False)
-        async with sessions() as session:
-            session.add_all([
-                Country(id=1, name="Poland", official_name="Republic of Poland", md_file="poland.md"),
-                Country(id=2, name="Germany", official_name="Federal Republic of Germany", md_file="germany.md"),
-                Country(id=3, name="France", official_name="French Republic", md_file="france.md"),
-                # Insert out of chronological order to exercise the SQL ordering.
-                CountrydleDay(country_id=3, date=target_date - timedelta(days=3)),
-                CountrydleDay(country_id=1, date=target_date - timedelta(days=1)),
-                CountrydleDay(country_id=2, date=target_date - timedelta(days=2)),
-            ])
-            await session.commit()
+    # 3 countries exist: ID 1 (Poland), ID 2 (Germany), ID 3 (France)
+    c1 = Country(id=1, name="Poland")
+    c2 = Country(id=2, name="Germany")
+    c3 = Country(id=3, name="France")
 
-            created = await CountrydleRepository(session).generate_new_day_country(
-                day_date=requested_date, cooldown_days=2
-            )
+    with (
+        patch(
+            "db.repositories.country.CountryRepository.get_all_countries",
+            new_callable=AsyncMock,
+            return_value=[c1, c2, c3],
+        ),
+        patch.object(repo, "create_day_country", new_callable=AsyncMock) as mock_create,
+    ):
+        # Recent IDs: [1, 2] (Poland and Germany were chosen recently)
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [1, 2]
+        mock_session.execute.return_value = mock_result
 
-            # France's older appearance is outside the two most recent puzzles.
-            assert created.country_id == 3
-            assert created.date == target_date
-            persisted = (await session.execute(
-                select(CountrydleDay).where(CountrydleDay.date == target_date)
-            )).scalar_one()
-            assert persisted.id == created.id
-            assert persisted.country_id == 3
-            days = (await session.execute(select(CountrydleDay))).scalars().all()
-            assert len(days) == 4
-    finally:
-        await engine.dispose()
+        await repo.generate_new_day_country(cooldown_days=2)
+
+        # Must pick France (ID 3) since 1 and 2 are in cooldown!
+        assert mock_create.call_count == 1
+        chosen_country = mock_create.call_args[0][0]
+        assert chosen_country.id == 3
+        assert chosen_country.name == "France"

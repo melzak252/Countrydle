@@ -40,12 +40,10 @@ server/
 
 ### Prerequisites
 1.  **Docker & Docker Compose**: For running PostgreSQL and Qdrant.
-2.  **Python 3.12**: The hash-locked server/test environment and container runtime.
+2.  **Python 3.11+**: For running the server and scripts.
 
 ### Environment Setup
-Create `server/.env`, or use the checkout's root `.env` if there is no server file.
-Explicit process environment takes precedence. Files outside this checkout are
-not searched; `PYTHON_DOTENV_DISABLED=1` disables file loading for isolated runs.
+Create a `.env` file in the `server/` directory:
 
 ```ini
 DATABASE_URL=postgresql+asyncpg://postgres:root@localhost:5432/guess_country
@@ -56,22 +54,10 @@ EMBEDDING_MODEL=text-embedding-ada-002
 EMBEDDING_SIZE=1536
 OPENAI_API_KEY=sk-...
 QUIZ_MODEL=gpt-4o-mini
-SECRET_KEY=
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-WEB_CONCURRENCY=1
-QUESTION_RATE_LIMIT_TRUSTED_PROXIES=
+SECRET_KEY=...
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
-
-Generate a private persistent signing key (for example with
-`python -c "import secrets; print(secrets.token_urlsafe(48))"`) and set
-`SECRET_KEY` securely before starting. Missing, blank, whitespace-only and known
-public placeholder keys fail startup; no fallback key is generated. Valid key
-bytes are preserved. Key replacement invalidates existing signed sessions and
-requires an explicit operator rotation, not an incidental deployment change.
-Origins are an exact comma-separated allowlist: no wildcard, `null`, or implicit
-localhost grant. Keep production HTTPS origins separate from development.
 
 ### Running Services
 Start the database and vector store:
@@ -370,8 +356,8 @@ rejects such paths before provider setup, including symlink and hardlink aliases
 Run from `server/`; provider-free gold validation needs no API key:
 
 ```bash
-python scripts/benchmark_country_planner.py --offline --corpus tests/country_planner_final.json --validate-only --output /tmp/planner-gold.json
-python scripts/benchmark_country_planner.py --live --corpus tests/country_planner_final.json --variant both --baseline-planner /path/to/unchanged/local_planner.py --env-file /path/to/local/.env --pricing /path/to/reviewed-pricing.json --max-provider-calls 100 --max-cost-usd 1 --output /tmp/planner-comparison.json
+python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --validate-only --output /tmp/planner-gold.json
+python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --variant both --baseline-planner /path/to/unchanged/local_planner.py --env-file /path/to/local/.env --output /tmp/planner-comparison.json
 ```
 
 The complete [research and measurement report](../docs/planner_compaction_research.md)
@@ -596,34 +582,9 @@ All natural-language question endpoints share a limit of 30 attempts per source 
 
 The limiter keeps only keyed hashes in process memory; raw IP addresses are neither retained nor logged by it. IPv4 addresses are limited individually; IPv6 addresses are grouped by `/64`. Users behind one public IP (for example, a shared network) share the allowance.
 
-`QUESTION_RATE_LIMIT_TRUSTED_PROXIES` is an explicit comma-separated list of
-actual reverse-proxy **peer CIDRs**, empty by default. Only a socket peer in that
-list may supply `X-Real-IP`; malformed headers fall back to the peer. Nginx must
-overwrite this header from its connected client. `X-Forwarded-For` is not an
-identity source. The old boolean trust setting is removed, not an alias.
+`QUESTION_RATE_LIMIT_TRUST_X_REAL_IP` is disabled by default. Production enables it because Nginx sets `X-Real-IP` from the connected client address. Only enable it behind a trusted reverse proxy that overwrites this header; otherwise callers can spoof their address.
 
-Only **one backend process/replica per PostgreSQL database** is supported.
-Compose and the image command pin one Uvicorn worker, enable lifespan and disable
-automatic forwarded-header interpretation. `WEB_CONCURRENCY`, when supplied,
-must be exactly `1`. A dedicated PostgreSQL session holds a database-wide advisory
-lease before migrations, provisioning, daily catch-up, schedulers or duel workers
-start; a competitor fails before those effects or readiness.
-The admitted process owns every scheduler and the aggregate process-local quota.
-Counters reset on restart; the lease does not turn the limiter into a distributed
-store and this release does not support horizontal replicas.
-
-Lease loss/uncertainty exits the process. A replacement catches up existing
-Countrydle, Flagdle and continental day generation without reassigning generated
-targets. Shutdown stops workers/schedulers while ownership is still held.
-The monitor depends on event-loop progress: this is admission plus fail-closed
-ownership monitoring, not distributed fencing during an indefinitely stalled
-process. Do not disable lifespan or scale around the guard.
-
-Behind TLS termination, production sets `FRIEND_COOKIE_SECURE=true` for friend
-and authentication cookies; direct HTTPS is always Secure even if the override
-is false. Credentialed CORS is not a general CSRF defense. Friend session/create,
-mutation and WebSocket admission also check the exact configured Origin;
-missing, `null` and unapproved Origins are rejected on those required paths.
+Counters are process-local and reset when the backend restarts. The current backend runs one worker. If deploying multiple workers or replicas, use a shared rate-limit store before scaling; otherwise each process has a separate allowance.
 
 ### Leaderboards
 
@@ -663,25 +624,11 @@ the same continent), ending yesterday. The current win is excluded from the
 history before its bonus is calculated; losses and missing dates break the
 streak. Playing another mode does not increase that mode's scoring bonus.
 
-Daily question/guess acceptance locks the account or durable signed guest
-participation for the puzzle day. Guess insertion, counters, terminal status,
-streak and points award commit together; concurrent/replayed terminal guesses
-cannot award a second win. Countrydle, Flagdle, all four continental challenges,
-US states, counties and voivodeships use the same bounded acceptance invariants.
-
-Guest history lives in PostgreSQL under a signed browser identity, not submitted
-localStorage counters or a stateless guessed-history token. False answers consume
-a question; invalid/unresolved answers do not. Guest sync claims original saved
-question/guess rows once, retains their IDs and validated timing, and awards at
-most once. Existing meaningful account progress takes precedence; client history
-cannot replace it or import invented attempts. Anonymous identity is a browser
-participation, not proof of a unique human; recreating identities is not ranked
-account scoring and does not bypass the network question-attempt limit.
-
-The frontend single-flights sync by account/date and only retires the exact
-successfully synchronized stored snapshot. Failed syncs and newer snapshots
-remain available for retry. Authenticated results refresh from canonical server
-state. Mode quotas and scoring formulas remain mode-specific.
+Guest sync validates attempt counts, budgets, the final winning guess, and
+terminal state before awarding points. Timing comes from the final submitted
+attempt, and the client retains it through login. Flagdle shows calculated
+guest points and refreshes authenticated results from the persisted server
+state. Repeating a completed sync does not award points again.
 
 These corrections apply to new scoring and sync operations; historical
 awards are not recalculated.
@@ -761,74 +708,65 @@ The game uses RAG to answer "True/False" questions about entities.
 *   **Day Table**: Determines the "Answer" for the current 24h period.
 *   **State Table**: Tracks a specific user's progress (guesses made, questions asked, won/lost) for that specific Day.
 
-## Unreleased application hardening
+## Selective application-hardening rollback
 
-- Transactional daily acceptance and one-time durable guest-history claims;
-  no historical points recalculation.
-- Required persistent signing configuration, exact credentialed browser origins,
-  explicit trusted proxy peers and enforced single-process scheduler ownership.
-- Explicit UTC puzzle dates/rollovers and additive PostgreSQL/SQLite migrations;
-  existing targets, history and awards remain unchanged.
-- Reproducible Python 3.12 hash lock and npm lock, Bun regression command,
-  mandatory matching desktop/mobile browser gates, and build-before-publication
-  dependencies. No registry publication or deployment is implied by local proof.
-- Per-fact membership/hemisphere evidence, with unknown fields kept unknown and
-  detailed target-linked citations exposed only after the game ends.
-- Separate template/local-planner/fallback quality gates. Deterministic AST
-  evaluation is not a claim that probabilistic interpretation or facts are correct.
-- Keyboard markings, shared modal focus lifecycle and targeted readability
-  improvements; map geometry, dark/green identity and game rules are unchanged.
-- Aggregate-only product evidence, with unresolved collection/cohort gaps
-  documented in [product evidence](../docs/product-evidence.md).
+The replacement retains the English template planner and factual-explanation
+features, including later operand/reference and strict Boolean alias corrections.
+Ordinary application hardening and its CI-only repairs are removed. Signing,
+proxy headers, worker startup, CORS and daily scheduling use the pre-hardening
+policy; no runtime-configuration/topology module or CI bootstrap is required.
 
-### Fact provenance and compatibility
+### Retained factual-explanation dependencies
 
-`country_fact_provenance` binds canonical JSON values to a country and selected
-relation (`membership`, `hemisphere`); JSON `null` describes the whole relation
-or absence rather than an invented list member. Each record carries evidence
-status, citation, URL, effective interval, retrieval/update dates and convention.
-Unknown dates are null, never the country row's build timestamp.
+`schemas/fact_provenance.py` and `country_fact_provenance.py` define selected
+membership/hemisphere evidence. The additive SQLite table, existing fact builder,
+source file and fact editors preserve unchanged evidence and invalidate evidence
+when the underlying value/set changes. Unknown dates remain null rather than
+being inferred from a build timestamp. Read-only legacy SQLite files yield
+explicit unknown evidence; readers do not create tables or change facts.
 
-The existing fact builder upgrades SQLite additively, preserves unchanged fact
-evidence and invalidates evidence when its value/relation changes. Admin evidence
-edits do not change fact values. Admin fact controls and `/admin/question-tests`
-return the same records that evaluation stores on accepted questions.
-Public active Countrydle, continental and Flagdle question/state responses suppress
-answered factual explanations and return `fact_provenance=[]`. Explicit terminal
-serialization enables post-game review of only the facts/evidence used by that
-answer. Local template records retain the country name (for example, `Poland is
-located in Europe.`); fallback answer sanitization is unchanged.
-Invalid or unverified daily-game feedback always uses target-free guidance and
-the player's original input, never provider diagnostics, target-bearing rewrites
-or fact evidence—even in terminal historical responses. Private retrieval context
-remains excluded; admin evaluation/report snapshots retain their canonical detail.
-Historical answered questions retain their stored explanation and unknown evidence
-rather than receiving current names/citations retrospectively. The Flagdle question
-table remains forward-only; no old question history is reconstructed.
+Accepted Countrydle/continental questions persist only answer-used evidence.
+Flagdle retains its natural-question table/model/repository/API history so
+post-game explanations are available again and can inform subsequent questions.
+Admin fact controls, question evaluation and answer-report snapshots retain
+canonical explanations and evidence. No historical answers are reconstructed.
 
-Stored hemisphere conventions explicitly identify bundled geometry and sovereign
-territory overrides. The São Tomé and Príncipe audit claim remains unverified and
-disputed; adding provenance does not silently correct its existing classification.
+Public active Countrydle, continental and Flagdle question/state responses hide
+factual explanations, evidence and provider rewrites. Terminal serialization
+reveals the stored explanation and only evidence used by that answer. Private
+retrieval context remains excluded. Invalid/unverified feedback uses target-free
+fixed guidance and the player's original input, even in terminal history.
+Country/continental guest question history uses the existing production guest
+identity/participation mechanism; Flagdle keeps its existing per-game cookie.
+Only a win or exhausted guesses unlocks guest facts, not exhausted questions.
+No new durable guess identity, locked guest claims or signing policy is retained.
 
-### Verification and release boundary
+### Migration and verification boundary
 
-The regression/publication workflow requires backend regressions, regular
-frontend regressions, matching desktop/mobile browser journeys and both image
-builds. A failed, cancelled or skipped dependency prevents publishing. Pull
-requests have read-only repository permission, no registry login and no package
-write; only trusted pushes to `main` or `v*` tags may publish after all gates.
-Live provider evaluations are opt-in, bounded and not substitutes for those gates.
-Dependency success follows
-[GitHub's documented `needs` semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds);
-publication jobs do not use a status override such as `always()`.
+The never-deployed guest-identity (`a7b8c9d0e1f2`) and UTC-default
+(`b8c9d0e1f2a3`) migrations remain removed. The retained explanation migration
+`c9d0e1f2a3b4` now follows deployed `f6a8c2d4e901` directly: it adds evidence
+columns, the forward-only Flagdle question table and only the continental
+question guest identity/index needed for private guest post-game history.
+All already-applied revisions remain in the chain. Do not downgrade or stamp
+production. Upgrade and exercise this chain only on a disposable copy first.
 
-The bounded hardening evaluation used a frozen small EN/PL development/held-out
-corpus with three repeats, 60 real provider calls, a 100-call/USD 1 cap and a
-USD 0.466944 conservative reservation. Its release result was **FAIL**:
-undersized/unindependently reviewed cohorts, unresolved disputed facts,
-incomplete usage/cost metadata and unreviewed fallback grounding prevent
-approval. A saved retrieval snapshot is not live vector-retrieval evidence.
-No provider-success or end-to-end accuracy claim is derived from captured plans.
-See [quality gate instructions](tests/README.md#answer-quality-release-gates)
-for the offline/live distinction and prerequisites.
+From `server/`, with the normal backend environment configured:
 
+```bash
+python -m pytest -q tests/test_countrydle_factual_explanations.py tests/test_countrydle_semantic_preservation.py tests/test_countrydle_english_corpus.py tests/test_local_mode_explanation_facts.py tests/test_question_context_privacy.py tests/test_fact_provenance.py tests/test_flagdle.py tests/test_guest_system.py
+alembic history
+alembic upgrade head
+```
+
+For a runtime smoke test on a disposable database, start the unchanged Uvicorn
+entry point behind the existing production proxy policy. In a fresh guest
+browser, ask a verified English question in Countrydle, a continental mode and
+Flagdle: active JSON/history must contain no target facts, source links, private
+context or provider rewrite. Exhaust questions without exhausting guesses and
+confirm facts remain hidden. Win or exhaust guesses, then fetch state again:
+the matching stored question IDs must expose factual explanations/evidence.
+Reload the completed browser and, in Flagdle, ask another verified question:
+its factual explanation must remain available. Repeat with an account and with
+unverified questions. The replacement is not approved by these instructions;
+record actual test, migration and browser results before replacing production.

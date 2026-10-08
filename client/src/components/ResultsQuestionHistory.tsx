@@ -15,7 +15,7 @@ interface ResultsQuestionHistoryProps {
   notices?: GameplayNotice[];
 }
 
-export default function ResultsQuestionHistory({ questions, mode, isGameOver = false, notices = [] }: ResultsQuestionHistoryProps) {
+export default function ResultsQuestionHistory({ questions, mode, isGameOver, notices = [] }: ResultsQuestionHistoryProps) {
   const { t } = useTranslation();
   const disclosureGroup = useId();
   const copyQuestion = async (text: string) => {
@@ -50,11 +50,11 @@ export default function ResultsQuestionHistory({ questions, mode, isGameOver = f
           <li key={message.kind === 'question' ? `question-${message.question.id}` : `notice-${message.notice.id}`} className="min-w-0">
             <details name={disclosureGroup} className="group rounded-sm border border-white/10 bg-obsidian-900/40">
               <summary className="flex min-h-12 cursor-pointer list-none items-start gap-2 px-3 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 [&::-webkit-details-marker]:hidden">
-                <span className="w-5 shrink-0 pt-0.5 font-mono text-xs text-zinc-400">
+                <span className="w-5 shrink-0 pt-0.5 font-mono text-xs text-zinc-500">
                   {message.kind === 'question' ? message.index + 1 : '—'}
                 </span>
                 <span className="min-w-0 flex-1 leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{input}</span>
-                <span className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-1 text-xs font-semibold ${tone}`}>
+                <span className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-1 text-[10px] font-semibold ${tone}`}>
                   <Icon size={12} aria-hidden="true" />
                   {answer}
                 </span>

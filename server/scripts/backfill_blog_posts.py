@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+from datetime import date
 from dotenv import load_dotenv
 from sqlalchemy import desc, select
 from sqlalchemy.orm import joinedload
@@ -10,7 +11,6 @@ from sqlalchemy.orm import joinedload
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
-from daily_clock import utc_today
 from db import AsyncSessionLocal
 from db.models.blog import DailyBlogPost
 from db.models.countrydle import CountrydleDay
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 async def backfill_blog_posts(days_count: int = 5):
     logger.info(f"Starting blog post backfill for up to {days_count} past days...")
-    today = utc_today()
+    today = date.today()
 
     async with AsyncSessionLocal() as session:
         repo = BlogRepository(session)

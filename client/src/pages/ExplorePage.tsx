@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useModalFocus } from '../hooks/useModalFocus';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, 
@@ -33,10 +32,6 @@ export default function ExplorePage() {
   const [selectedState, setSelectedState] = useState<any | null>(null);
   const [selectedVoivodeship, setSelectedVoivodeship] = useState<any | null>(null);
   const [, setModalLoading] = useState(false);
-  const detailsOpenerRef = useRef<HTMLButtonElement>(null);
-  const countryDialogRef = useModalFocus({ open: Boolean(selectedCountry), onDismiss: () => setSelectedCountry(null), returnFocusRef: detailsOpenerRef });
-  const stateDialogRef = useModalFocus({ open: Boolean(selectedState), onDismiss: () => setSelectedState(null), returnFocusRef: detailsOpenerRef });
-  const voivodeshipDialogRef = useModalFocus({ open: Boolean(selectedVoivodeship), onDismiss: () => setSelectedVoivodeship(null), returnFocusRef: detailsOpenerRef });
 
   // Fetch Modes on mount
   useEffect(() => {
@@ -319,10 +314,10 @@ export default function ExplorePage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredCountries.map((c) => (
-              <button type="button"
+              <div
                 key={c.id}
-                onClick={(event) => { detailsOpenerRef.current = event.currentTarget; void openCountryModal(c.cca3 || c.app_country_name); }}
-                className="group text-left cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                onClick={() => openCountryModal(c.cca3 || c.app_country_name)}
+                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -349,7 +344,7 @@ export default function ExplorePage() {
                     <span className="text-sand-100 block">{c.population ? Number(c.population).toLocaleString() : 'N/A'}</span>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </section>
@@ -365,10 +360,10 @@ export default function ExplorePage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredUSStates.map((s) => (
-              <button type="button"
+              <div
                 key={s.id}
-                onClick={(event) => { detailsOpenerRef.current = event.currentTarget; void openStateModal(s.name); }}
-                className="group text-left cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                onClick={() => openStateModal(s.name)}
+                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -395,7 +390,7 @@ export default function ExplorePage() {
                     <span className="text-sand-100 block">{s.population ? Number(s.population).toLocaleString() : 'N/A'}</span>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </section>
@@ -411,10 +406,10 @@ export default function ExplorePage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredVoivodeships.map((v) => (
-              <button type="button"
+              <div
                 key={v.id}
-                onClick={(event) => { detailsOpenerRef.current = event.currentTarget; void openVoivodeshipModal(v.name); }}
-                className="group text-left cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                onClick={() => openVoivodeshipModal(v.name)}
+                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -441,7 +436,7 @@ export default function ExplorePage() {
                     <span className="text-sand-100 block">{v.urbanization_percent}%</span>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </section>
@@ -450,9 +445,6 @@ export default function ExplorePage() {
       {/* Modal: Country Details */}
       {selectedCountry && (
         <div 
-          ref={countryDialogRef}
-          tabIndex={-1}
-          aria-labelledby="explore-country-title"
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedCountry(null)}
@@ -475,7 +467,7 @@ export default function ExplorePage() {
               <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
                 {selectedCountry.cca3} &bull; {selectedCountry.region}
               </span>
-              <h2 id="explore-country-title" className="font-serif text-3xl font-bold mt-1 text-sand-100">
+              <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
                 {selectedCountry.app_country_name}
               </h2>
               <p className="text-xs text-zinc-400 mt-1">
@@ -573,9 +565,6 @@ export default function ExplorePage() {
       {/* Modal: State Details */}
       {selectedState && (
         <div 
-          ref={stateDialogRef}
-          tabIndex={-1}
-          aria-labelledby="explore-state-title"
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedState(null)}
@@ -598,7 +587,7 @@ export default function ExplorePage() {
               <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
                 #{selectedState.admission_order} Admitted &bull; {selectedState.region}
               </span>
-              <h2 id="explore-state-title" className="font-serif text-3xl font-bold mt-1 text-sand-100">
+              <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
                 {selectedState.name}
               </h2>
               <p className="text-xs text-zinc-400 mt-1 italic">
@@ -676,9 +665,6 @@ export default function ExplorePage() {
       {/* Modal: Voivodeship Details */}
       {selectedVoivodeship && (
         <div 
-          ref={voivodeshipDialogRef}
-          tabIndex={-1}
-          aria-labelledby="explore-voivodeship-title"
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedVoivodeship(null)}
@@ -701,7 +687,7 @@ export default function ExplorePage() {
               <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
                 TERYT {selectedVoivodeship.teryt} &bull; Makroregion {selectedVoivodeship.macroregion}
               </span>
-              <h2 id="explore-voivodeship-title" className="font-serif text-3xl font-bold mt-1 text-sand-100">
+              <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
                 Województwo {selectedVoivodeship.name}
               </h2>
               <p className="text-xs text-zinc-400 mt-1">

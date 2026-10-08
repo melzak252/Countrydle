@@ -20,12 +20,18 @@ SERVER_DIR = ROOT_DIR / "server"
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
+from dotenv import load_dotenv
+if (Path("/home/melzak/dev/Countrydle/.env")).exists():
+    load_dotenv("/home/melzak/dev/Countrydle/.env", override=True)
+else:
+    load_dotenv(ROOT_DIR / ".env", override=False)
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("LOCAL_QUESTION_MODEL", "gemini-2.5-flash-lite")
 os.environ.setdefault("GEMINI_QUESTION_MODEL", "gemini-2.5-flash-lite")
 os.environ.setdefault("EMAIL_USERNAME", "test@example.com")
 os.environ.setdefault("NOREPLY_EMAIL", "test@example.com")
 os.environ.setdefault("EMAIL_PASSWORD", "test-password")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-1234567890123456")
 os.environ.setdefault("ALGORITHM", "HS256")
 os.environ.setdefault("GEMINI_QUESTION_MODEL", "gemini-2.5-flash-lite")
 

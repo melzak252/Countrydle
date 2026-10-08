@@ -119,8 +119,8 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
     <form onSubmit={handleSubmit} className="flex min-h-0 w-full flex-col">
       <div className="mb-2 max-md:[@media(max-height:560px)]:hidden">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <p className="text-xs font-medium text-zinc-400">{t('inputs.quickQuestions')}</p>
-          <span className="shrink-0 text-xs text-zinc-400" aria-hidden="true">{isPl ? 'Przewiń →' : 'Scroll →'}</span>
+          <p className="text-[11px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
+          <span className="shrink-0 text-[10px] text-zinc-500" aria-hidden="true">{isPl ? 'Przewiń →' : 'Scroll →'}</span>
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label={t('inputs.quickQuestions')}>
           {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
@@ -137,7 +137,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
         </div>
       </div>
       <label htmlFor={inputId} className="sr-only">{isPl ? 'Pytanie tak lub nie' : 'Yes-or-no question'}</label>
-      <div className="relative rounded-2xl border border-zinc-400 bg-zinc-900 p-1 shadow-lg shadow-black/20 transition-colors focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400">
+      <div className="relative rounded-2xl border border-white/10 bg-zinc-900/90 p-1 shadow-lg shadow-black/20 transition-colors focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
         <input
           id={inputId}
           autoComplete="off"
@@ -149,14 +149,14 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
           placeholder={placeholder || defaultPlaceholder}
           minLength={minLength}
           maxLength={maxLength}
-          className="w-full rounded-xl border-0 bg-transparent py-3 pl-4 pr-14 text-base text-sand-100 placeholder:text-zinc-400 focus:outline-none focus:ring-0 disabled:opacity-40 sm:text-sm"
+          className="w-full rounded-xl border-0 bg-transparent py-3 pl-4 pr-14 text-base text-sand-100 placeholder:text-zinc-500 focus:outline-none focus:ring-0 disabled:opacity-40 sm:text-sm"
           disabled={unavailable}
         />
         <button
           type="submit"
           aria-label={isPl ? 'Zadaj pytanie' : 'Ask question'}
           disabled={question.trim().length < minLength || unavailable}
-          className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-transparent text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40 enabled:bg-emerald-400 enabled:text-obsidian-950 enabled:hover:bg-emerald-300"
+          className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-transparent text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40 enabled:bg-emerald-500 enabled:text-white enabled:hover:bg-emerald-400"
         >
 
           {isLoading ? (

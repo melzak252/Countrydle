@@ -323,11 +323,11 @@ async def test_actual_guest_state_redacts_sources_until_terminal_then_exposes_de
         return SimpleNamespace(id=1, name="Poland", official_name="Republic of Poland", md_file="poland.md")
 
     async def progress(*args, **kwargs):
-        return SimpleNamespace(guesses_made=0, questions_asked=1, won=terminal), [], [question]
+        return SimpleNamespace(guesses_made=0, questions_asked=1, won=terminal), [question]
 
     monkeypatch.setattr(countrydle.CountrydleRepository, "get_today_country", get_day)
     monkeypatch.setattr(countrydle.CountryRepository, "get", get_country)
-    monkeypatch.setattr(countrydle, "get_guest_progress", progress)
+    monkeypatch.setattr(countrydle, "get_guest_question_history", progress)
     response = await http_client.get("/countrydle/state")
     assert response.status_code == 200, response.text
     payload = response.json()

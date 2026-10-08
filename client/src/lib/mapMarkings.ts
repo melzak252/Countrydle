@@ -5,7 +5,6 @@ export interface MapInteractionState {
   activeMarkerColor: MapMarkerColor;
   setActiveMarkerColor: (color: MapMarkerColor) => void;
   handleEntityMapClick: (name: string, isSecondary?: boolean) => void;
-  toggleEntityMarker: (name: string, color: MapMarkerColor) => void;
   clearMapMarkings: () => void;
   isGameOver: boolean;
 }

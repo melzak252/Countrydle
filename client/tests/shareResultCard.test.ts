@@ -47,7 +47,6 @@ function renderCard(props: Partial<Parameters<typeof ShareResultCard>[0]> = {}) 
         I18nextProvider,
         { i18n },
         createElement(ShareResultCard, {
-          isGameOver: true,
           gameName: 'Countrydle',
           gamePath: '/game',
           date: '2026-09-29',

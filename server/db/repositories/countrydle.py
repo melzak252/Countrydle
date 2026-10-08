@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 import random
 from typing import List
 from pydantic import BaseModel
@@ -6,7 +6,6 @@ from sqlalchemy import Integer, and_, case, cast, func, or_, select
 from sqlalchemy.orm import joinedload, aliased, contains_eager
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from daily_clock import utc_today
 from db.models import Country, CountrydleState, CountrydleDay, User
 from db.repositories.country import CountryRepository
 from country_eligibility import require_eligible_target
@@ -19,7 +18,6 @@ from db.models.question import CountrydleQuestion
 from db.repositories.question import CountrydleQuestionsRepository
 from db.repositories.guess import CountrydleGuessRepository
 from game_logic import count_consecutive_daily_wins
-from db.repositories.question_accounting import get_daily_state, lock_question_state, require_guess_available
 
 MAX_GUESSES = 3
 MAX_QUESTIONS = 10
@@ -38,34 +36,31 @@ class CountrydleRepository:
         return result.scalars().first()
 
     async def get_day_country_by_date(self, day_date: date) -> CountrydleDay | None:
-        today = utc_today()
         result = await self.session.execute(
             select(CountrydleDay).options(joinedload(CountrydleDay.country)).where(CountrydleDay.date == day_date)
         )
 
-        return require_eligible_target(result.scalars().first(), today=today)
+        return require_eligible_target(result.scalars().first())
 
     async def get_today_country(self) -> CountrydleDay | None:
-        today = utc_today()
         result = await self.session.execute(
             select(CountrydleDay)
             .options(joinedload(CountrydleDay.country))
-            .where(CountrydleDay.date == today)
+            .where(CountrydleDay.date == datetime.now(timezone.utc).date())
             .order_by(CountrydleDay.id.desc())
         )
 
-        return require_eligible_target(result.scalars().first(), today=today)
+        return require_eligible_target(result.scalars().first())
 
     async def get_today_country_sync(self) -> CountrydleDay | None:
         # This is for debugging purposes if needed, but we should use async
-        today = utc_today()
         result = await self.session.execute(
             select(CountrydleDay)
             .options(joinedload(CountrydleDay.country))
-            .where(CountrydleDay.date == today)
+            .where(CountrydleDay.date == datetime.now(timezone.utc).date())
             .order_by(CountrydleDay.id.desc())
         )
-        return require_eligible_target(result.scalars().first(), today=today)
+        return require_eligible_target(result.scalars().first())
 
     async def get_last_added_day_country(self) -> CountrydleDay | None:
         result = await self.session.execute(
@@ -75,7 +70,7 @@ class CountrydleRepository:
         return result.scalars().first()
 
     async def create_day_country(self, country: Country) -> CountrydleDay:
-        new_entry = CountrydleDay(country_id=country.id, date=utc_today())
+        new_entry = CountrydleDay(country_id=country.id)
 
         self.session.add(new_entry)
 
@@ -107,7 +102,6 @@ class CountrydleRepository:
     async def generate_new_day_country(
         self, day_date: date | None = None, cooldown_days: int = 60
     ) -> CountrydleDay:
-        target_date = day_date if day_date is not None else utc_today()
         recent_subq = (
             select(CountrydleDay.country_id)
             .where(CountrydleDay.country_id.isnot(None))
@@ -125,23 +119,24 @@ class CountrydleRepository:
             eligible = all_countries
 
         country = random.choice(eligible)
-        new_country = await self.create_day_country_with_date(country, target_date)
+        if not day_date:
+            new_country = await self.create_day_country(country)
+        else:
+            new_country = await self.create_day_country_with_date(country, day_date)
 
         return new_country
 
     async def get_countrydle_history(self):
-        today = utc_today()
         result = await self.session.execute(
             select(CountrydleDay)
             .options(joinedload(CountrydleDay.country))
-            .where(CountrydleDay.date < today)
+            .where(CountrydleDay.date < date.today())
             .order_by(CountrydleDay.date.desc())
         )
 
         return result.scalars().all()
 
     async def get_countries_count(self):
-        today = utc_today()
         dc = aliased(CountrydleDay)
         stmt = (
             select(
@@ -151,7 +146,7 @@ class CountrydleRepository:
                 func.max(dc.date).label("last"),
             )
             .outerjoin(dc, Country.id == dc.country_id)
-            .where(dc.date < today)
+            .where(dc.date < date.today())
             .group_by(Country.id, Country.name)
             .order_by(
                 func.count(dc.id).desc(), func.max(dc.date).desc(), Country.name.asc()
@@ -267,10 +262,7 @@ class CountrydleStateRepository:
         guess: CountrydleGuess,
         puzzle_date: date,
         elapsed_seconds: int | None = None,
-        *,
-        commit: bool = True,
     ) -> CountrydleState:
-        require_guess_available(state, MAX_GUESSES)
         state.guesses_made += 1
         state.remaining_guesses -= 1
 
@@ -291,12 +283,9 @@ class CountrydleStateRepository:
             state.points = points
 
         if state.is_game_over:
-            await UserRepository(self.session).update_points(state.user_id, state, commit=False)
+            await UserRepository(self.session).update_points(state.user_id, state)
 
-        if commit:
-            await self.session.commit()
-        else:
-            await self.session.flush()
+        await self.session.commit()
 
         return state
 
@@ -306,15 +295,25 @@ class CountrydleStateRepository:
         day: CountrydleDay,
         max_questions: int = 10,
         max_guesses: int = 3,
-        *,
-        commit: bool = True,
     ) -> CountrydleState:
-        return await self.get_state(user, day, max_questions, max_guesses, commit=commit)
+        result = await self.session.execute(
+            select(CountrydleState)
+            .where(CountrydleState.user_id == user.id, CountrydleState.day_id == day.id)
+            .order_by(CountrydleState.id.asc())
+        )
+
+        state = result.scalars().first()
+
+        if state is None:
+            return await self.add_countrydle_state(
+                user, day, max_questions, max_guesses
+            )
+
+        return state
 
     async def get_player_countrydle_states(
         self, user: User, show_today: bool = True
     ) -> List[CountrydleState]:
-        today = utc_today() if not show_today else None
         result = await self.session.execute(
             select(CountrydleState)
             .options(
@@ -335,7 +334,7 @@ class CountrydleStateRepository:
 
         if not show_today:
             for state in states:
-                if state.day.date == today:
+                if state.day.date == date.today():
                     state.day.country = None
 
         return states
@@ -346,15 +345,32 @@ class CountrydleStateRepository:
         day: CountrydleDay,
         max_questions: int = MAX_QUESTIONS,
         max_guesses: int = MAX_GUESSES,
-        *,
-        commit: bool = True,
     ) -> CountrydleState:
-        state = await get_daily_state(
-            self.session, CountrydleState, user.id, day.id, max_questions, max_guesses,
-        )
-        if commit:
+        from db.repositories.question_accounting import lock_question_state
+        existing = await lock_question_state(self.session, CountrydleState, user.id, day.id)
+        if existing is not None:
             await self.session.commit()
-        return state
+            return existing
+
+        new_entry = CountrydleState(
+            user_id=user.id,
+            day_id=day.id,
+            remaining_questions=max_questions,
+            remaining_guesses=max_guesses,
+            questions_asked=0,
+            guesses_made=0,
+        )
+
+        self.session.add(new_entry)
+
+        try:
+            await self.session.commit()  # Commit the transaction
+            await self.session.refresh(new_entry)  # Refresh the instance to get the ID
+        except Exception as ex:
+            await self.session.rollback()
+            raise ex
+
+        return new_entry
 
     async def get_state(
         self,
@@ -362,23 +378,30 @@ class CountrydleStateRepository:
         day: CountrydleDay,
         max_questions: int = 10,
         max_guesses: int = 3,
-        *,
-        commit: bool = True,
     ) -> CountrydleState:
-        state = await lock_question_state(self.session, CountrydleState, user.id, day.id)
+        result = await self.session.execute(
+            select(CountrydleState)
+            .where(CountrydleState.user_id == user.id, CountrydleState.day_id == day.id)
+            .order_by(CountrydleState.id.asc())
+        )
+
+        state = result.scalars().first()
 
         if state is None:
             return await self.add_countrydle_state(
-                user, day, max_questions, max_guesses, commit=commit,
+                user, day, max_questions, max_guesses
             )
 
         return state
 
-    async def update_countrydle_state(self, state: CountrydleState, *, commit: bool = True):
-        self.session.add(state)
-        if commit:
+    async def update_countrydle_state(self, state: CountrydleState):
+        await self.session.merge(state)
+
+        try:
             await self.session.commit()
-        else:
-            await self.session.flush()
+            await self.session.refresh(state)
+        except Exception as ex:
+            await self.session.rollback()
+            raise ex
 
         return state

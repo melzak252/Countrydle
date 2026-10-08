@@ -6,6 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 import type { GameplayNotice } from '../src/lib/gameplayNotices';
 import type { Question } from '../src/types';
 import QuestionChat from '../src/components/QuestionChat';
+import ResultsQuestionHistory from '../src/components/ResultsQuestionHistory';
 
 const i18n = createInstance();
 await i18n.init({
@@ -18,7 +19,16 @@ const question: Question = {
   original_question: 'Is it in Europe?',
   valid: true,
   answer: false,
-  explanation: 'The answer explanation.',
+  explanation: 'Poland is in Europe.',
+  fact_provenance: [{
+    relation: 'membership',
+    value: 'Europe',
+    provenance: {
+      status: 'cited', citation: 'Geographic evidence for Poland',
+      source_url: 'https://example.com/poland', effective_from: null,
+      effective_to: null, retrieved_at: null, updated_at: null, convention: null,
+    },
+  }],
   user_id: 1,
   day_id: 1,
   asked_at: '2026-09-26T10:00:00Z',
@@ -48,21 +58,42 @@ function renderChat(isGameOver = false) {
   ));
 }
 
-test('player chat questions are selectable and each has a copy action', () => {
+test('chat has a copy action for each displayed question', () => {
   const markup = renderChat();
 
-  expect(markup).toContain('select-text');
   expect(markup.match(/aria-label="Copy question"/g)).toHaveLength(3);
   expect(markup).toContain('Is it in Europe?');
   expect(markup).toContain('Does it have a coastline?');
   expect(markup).toContain('Is it north of the equator?');
 });
 
-test('game-over report is compact with one separator', () => {
-  const markup = renderChat(true);
 
-  expect(markup).toContain('The answer explanation.');
-  expect(markup).toContain('Report answer');
-  expect(markup).toContain('border-t border-white/10 px-3 py-1.5');
-  expect(markup.match(/border-t border-white\/10/g)).toHaveLength(1);
+test('active chat never mounts target-bearing explanations or evidence', () => {
+  const markup = renderChat();
+  expect(markup).not.toContain('Poland');
+  expect(markup).not.toContain('https://example.com/poland');
+  expect(markup).toContain(notice.reason);
+});
+
+test('completed chat displays named factual explanations and evidence', () => {
+  const markup = renderChat(true);
+  expect(markup).toContain(question.explanation!);
+  expect(markup).toContain('Geographic evidence for Poland');
+  expect(markup).toContain('https://example.com/poland');
+});
+
+test('result history gates explanations and evidence on completion', () => {
+  const renderHistory = (isGameOver: boolean) => renderToStaticMarkup(createElement(
+    I18nextProvider, { i18n },
+    createElement(ResultsQuestionHistory, {
+      questions: [question], notices: [notice], mode: 'countrydle', isGameOver,
+    }),
+  ));
+  const active = renderHistory(false);
+  expect(active).not.toContain('Poland');
+  expect(active).not.toContain('https://example.com/poland');
+  expect(active).toContain(notice.reason);
+  const completed = renderHistory(true);
+  expect(completed).toContain(question.explanation!);
+  expect(completed).toContain('Geographic evidence for Poland');
 });

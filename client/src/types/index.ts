@@ -40,7 +40,6 @@ export interface FactProvenance {
 
 export interface FactProvenanceRecord {
   relation: FactProvenanceRelation;
-  // Null is evidence for the complete relation/absence, never a list value.
   value: string | null;
   provenance: FactProvenance;
 }
@@ -55,8 +54,8 @@ export interface Question {
   day_id: number;
   asked_at: string;
   explanation?: string;
-  report_token?: string | null;
   fact_provenance?: FactProvenanceRecord[];
+  report_token?: string | null;
 }
 
 export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'continental';
@@ -81,7 +80,6 @@ export interface AnswerReport {
     game_date: string;
     target_name: string;
     server_version: string | null;
-    fact_provenance?: FactProvenanceRecord[];
   };
 }
 
@@ -152,7 +150,6 @@ export interface QuestionTestResult {
   server_version: string;
   duration_ms: number;
   plan: Record<string, unknown> | null;
-  fact_provenance: FactProvenanceRecord[];
   diagnostics: {
     planner: QuestionModelDiagnostics | null;
     local_duration_ms: number | null;
@@ -178,7 +175,7 @@ export interface Guess {
   powiat_id?: number;
   answer?: boolean;
   guessed_at: string;
-  elapsed_seconds?: number | null;
+  elapsed_seconds?: number;
   distance_km?: number | null;
   bearing_degrees?: number | null;
   bearing_direction?: string | null;
@@ -225,7 +222,7 @@ export interface FlagdleGuess {
   id: number;
   guess: string;
   country_id?: number | null;
-  elapsed_seconds?: number | null;
+  elapsed_seconds?: number;
   answer: boolean;
   distance_km?: number | null;
   bearing_degrees?: number | null;
@@ -252,8 +249,8 @@ export interface FlagdleStateResponse {
   user: User | null;
   date: string;
   state: FlagdleState;
-  questions: Question[];
   guesses: FlagdleGuess[];
+  questions: Question[];
   flag_asset_url?: string | null;
   country?: Country | null;
 }
@@ -318,7 +315,6 @@ export interface AdminQuestionItem {
   source: AdminQuestionSource;
   relation?: string | null;
   asked_at?: string | null;
-  fact_provenance?: FactProvenanceRecord[];
   has_report: boolean;
   report_id?: number | null;
 }

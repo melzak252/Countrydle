@@ -2,8 +2,6 @@ import os
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from runtime_configuration import ALGORITHM, SECRET_KEY
-
 from fastapi_mail import MessageSchema
 
 from db import get_db
@@ -17,6 +15,8 @@ from jose.exceptions import ExpiredSignatureError
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.email import fm, fm_noreply
 
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 REMEMBER_ME_EXPIRE_DAYS = int(os.getenv("REMEMBER_ME_EXPIRE_DAYS", "90"))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -34,7 +34,7 @@ def set_access_cookie(response: Response, request: Request, email: str, *, remem
         key="access_token",
         value=token,
         httponly=True,
-        secure=request.url.scheme == "https" or os.getenv("FRIEND_COOKIE_SECURE", "").lower() in {"true", "1", "yes"},
+        secure=request.url.scheme == "https",
         samesite="lax",
         path="/",
         expires=expiration,
@@ -46,7 +46,7 @@ def clear_access_cookie(response: Response, request: Request):
     response.delete_cookie(
         key="access_token",
         httponly=True,
-        secure=request.url.scheme == "https" or os.getenv("FRIEND_COOKIE_SECURE", "").lower() in {"true", "1", "yes"},
+        secure=request.url.scheme == "https",
         samesite="lax",
         path="/",
     )

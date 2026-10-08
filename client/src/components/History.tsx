@@ -18,7 +18,7 @@ export default function History({ questions, mode, isGameOver = false }: History
     return (
       <div className="border border-dashed border-white/10 px-4 py-7 text-center">
         <HelpCircle size={22} className="mx-auto mb-3 text-zinc-600" aria-hidden="true" />
-        <p className="text-sm leading-relaxed text-zinc-400">{t('history.empty')}</p>
+        <p className="text-sm leading-relaxed text-zinc-500">{t('history.empty')}</p>
       </div>
     );
   }

@@ -11,8 +11,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from admin import router
-from countrydle.local_answering import LocalAnswer
 from countrydle.local_planner import QuestionPlan
+from countrydle.local_answering import LocalAnswer
 from db import get_db
 from db.models import Country, Powiat, USState, Wojewodztwo
 from db.repositories.country import CountryRepository

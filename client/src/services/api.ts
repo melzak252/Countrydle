@@ -10,7 +10,6 @@ import type {
   AnswerReportStatus,
   CacheStats,
   CountryDisplay,
-  FactProvenanceRecord,
   FlagdleCountry,
   FlagdleGuess,
   FlagdleStateResponse,
@@ -137,6 +136,10 @@ export const gameService = {
     const response = await api.post('/countrydle/sync', data);
     return response.data;
   },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get('/countrydle/reveal');
+    return response.data;
+  },
 };
 
 export const powiatService = {
@@ -166,6 +169,10 @@ export const powiatService = {
   },
   syncGuestData: async (data: any): Promise<any> => {
     const response = await api.post('/powiatdle/sync', data);
+    return response.data;
+  },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/powiatdle/reveal');
     return response.data;
   },
 };
@@ -199,6 +206,10 @@ export const usStateService = {
     const response = await api.post('/us_statedle/sync', data);
     return response.data;
   },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/us_statedle/reveal');
+    return response.data;
+  },
 };
 
 export const wojewodztwoService = {
@@ -228,6 +239,10 @@ export const wojewodztwoService = {
   },
   syncGuestData: async (data: any): Promise<any> => {
     const response = await api.post('/wojewodztwodle/sync', data);
+    return response.data;
+  },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/wojewodztwodle/reveal');
     return response.data;
   },
 };
@@ -261,6 +276,10 @@ export const createContinentalService = (continent: string) => ({
     const response = await api.post(`/continental/${continent}/sync`, data);
     return response.data;
   },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get(`/continental/${continent}/reveal`);
+    return response.data;
+  },
 });
 
 export const europeService = createContinentalService('europe');
@@ -290,6 +309,14 @@ export const flagdleService = {
   },
   askQuestion: async (question: string): Promise<Question> => {
     const response = await api.post('/flagdle/question', { question });
+    return response.data;
+  },
+  reveal: async (): Promise<CountryDisplay> => {
+    const response = await api.get('/flagdle/reveal');
+    return response.data;
+  },
+  getEndState: async (): Promise<FlagdleStateResponse> => {
+    const response = await api.get('/flagdle/end/state');
     return response.data;
   },
   syncGuestData: async (data: unknown): Promise<FlagdleStateResponse> => {
@@ -426,7 +453,6 @@ export type CountryFactsResponse = {
     metadata_columns: string[];
     values: Array<{ value: string; metadata: Record<string, any> }>;
   }>;
-  fact_provenance: FactProvenanceRecord[];
 };
 
 export type CountryFactChangeLogEntry = {
@@ -652,16 +678,6 @@ export const adminService = {
   },
   deleteCountryListFact: async (countryId: number, relation: string, value: string, note?: string, gameType = 'countrydle'): Promise<CountryFactsResponse> => {
     const response = await api.delete('/countrydle/admin/country-facts/list-values', { data: { game_type: gameType, entity_id: countryId, country_id: countryId, relation, value, note } });
-    return response.data;
-  },
-  updateCountryFactProvenance: async (countryId: number, record: FactProvenanceRecord, note?: string): Promise<CountryFactsResponse> => {
-    const response = await api.patch<CountryFactsResponse>('/countrydle/admin/country-facts/provenance', {
-      country_id: countryId,
-      relation: record.relation,
-      value: record.value,
-      provenance: record.provenance,
-      ...(note === undefined ? {} : { note }),
-    });
     return response.data;
   },
   getCountryFactChangeLog: async (limit = 50, offset = 0): Promise<CountryFactChangeLogEntry[]> => {

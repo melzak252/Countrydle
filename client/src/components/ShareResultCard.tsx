@@ -33,7 +33,6 @@ interface ShareResultCardProps {
   onClose?: () => void;
   questions?: Question[];
   mode?: AnswerReportMode;
-  isGameOver: boolean;
   notices?: GameplayNotice[];
 }
 export default function ShareResultCard({
@@ -51,7 +50,6 @@ export default function ShareResultCard({
   onClose,
   questions,
   mode,
-  isGameOver,
   notices,
 }: ShareResultCardProps) {
   const { t, i18n } = useTranslation();
@@ -180,15 +178,15 @@ export default function ShareResultCard({
 
   return (
     <section
-      aria-label={i18n.language.startsWith('pl') ? `Wynik ${gameName}` : `${gameName} result`}
+      aria-label={`${gameName} result`}
       className="relative w-full max-h-[calc(var(--app-height,100dvh)-2rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] space-y-4 rounded-sm border border-white/15 bg-obsidian-950 p-4 sm:p-6 text-left"
     >
       <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">
+          <span className="font-mono text-[10px] sm:text-xs uppercase tracking-wider text-emerald-400 font-semibold">
             {t('share.resultTitle', '{{gameName}} Result', { gameName })}
           </span>
-          <time dateTime={displayDate} className="font-mono text-xs text-zinc-400">
+          <time dateTime={displayDate} className="font-mono text-[10px] sm:text-xs text-zinc-400">
             {displayDate}
           </time>
         </div>
@@ -215,7 +213,7 @@ export default function ShareResultCard({
             />
           )}
           <div className="min-w-0">
-            <span className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-semibold">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 font-semibold">
               {t('share.mysteryLocation', 'The Mystery Location')}
             </span>
             <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
@@ -247,7 +245,7 @@ export default function ShareResultCard({
 
       <dl className="grid grid-cols-3 divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900/60">
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-xs uppercase font-mono tracking-wide text-zinc-400">
+          <dt className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wide text-zinc-400">
             {t('share.questionsUsed', 'Questions Used')}
           </dt>
           <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-sand-100">
@@ -255,7 +253,7 @@ export default function ShareResultCard({
           </dd>
         </div>
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-xs uppercase font-mono tracking-wide text-zinc-400">
+          <dt className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wide text-zinc-400">
             {t('share.guessesMade', 'Guesses Made')}
           </dt>
           <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-sand-100">
@@ -263,7 +261,7 @@ export default function ShareResultCard({
           </dd>
         </div>
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-xs uppercase font-mono tracking-wide text-zinc-400">
+          <dt className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wide text-zinc-400">
             {t('share.nextPuzzle', 'Next Puzzle')}
           </dt>
           <dd className="mt-0.5 font-mono text-sm sm:text-base font-semibold text-emerald-400">
@@ -323,7 +321,7 @@ export default function ShareResultCard({
           className="flex min-h-11 items-center justify-between gap-2 rounded-sm border border-amber-400/25 bg-amber-400/5 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-xs uppercase font-bold text-amber-300">
+            <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-300">
               {t('share.duel', '1v1 Duel')}
             </span>
             <span>{t('share.challengeFriend', 'Challenge a friend in real-time')}</span>
@@ -372,7 +370,7 @@ export default function ShareResultCard({
             >
               <MessageSquare size={16} className="shrink-0" aria-hidden="true" />
               <span>{t('chat.historyTitle', 'Question History')}</span>
-              <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-xs">{questions?.length}</span>
+              <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">{questions?.length}</span>
             </button>
           </div>
         )}
@@ -403,7 +401,7 @@ export default function ShareResultCard({
               questions={questions}
               notices={notices}
               mode={resolvedMode}
-              isGameOver={isGameOver}
+              isGameOver
             />
           </div>
         )}

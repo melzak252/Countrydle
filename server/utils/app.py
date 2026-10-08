@@ -15,8 +15,6 @@ from friend_matches import start_workers, stop_workers
 from countrydle.local_answering import DEFAULT_DB_PATH
 from scripts.country_additions import provision_country_additions
 from utils.ai_clients import close_ai_clients
-from utils.runtime_topology import singleton_owner, validate_worker_configuration
-import runtime_configuration  # Validate signing/origin configuration at startup.
 
 
 async def init_models(engine: AsyncEngine):
@@ -42,68 +40,37 @@ async def init_models(engine: AsyncEngine):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    validate_worker_configuration()
     engine = get_engine()
-    owned = False
-    scheduler_started = False
-    workers_started = False
-    providers_started = False
-    blog_task = None
     try:
-        async with singleton_owner(engine):
-            owned = True
-            try:
-                await init_models(engine)
-                await asyncio.to_thread(provision_country_additions, DEFAULT_DB_PATH.parent)
+        await init_models(engine)
+        await asyncio.to_thread(provision_country_additions, DEFAULT_DB_PATH.parent)
 
-                async with AsyncSessionLocal() as session:
-                    await ucrud.add_base_permissions(session)
-                    providers_started = True
-                    await init_qdrant(session)
-                await utils.purge_old_fallback_answers()
+        async with AsyncSessionLocal() as session:
+            await ucrud.add_base_permissions(session)
+            await init_qdrant(session)
+        await utils.purge_old_fallback_answers()
 
-                # Catch up the existing UTC generation horizon before readiness;
-                # each generator preserves already selected targets.
-                await utils.generate_day_countries()
-                await utils.generate_day_flags()
-                await utils.run_generate_continental_days()
+        utils.scheduler.start()
+        asyncio.create_task(utils.generate_yesterday_blog_post())
+        asyncio.create_task(utils.run_generate_continental_days())
+        await start_workers()
 
-                scheduler_started = True
-                utils.scheduler.start()
-                blog_task = asyncio.create_task(utils.generate_yesterday_blog_post())
-                workers_started = True
-                await start_workers()
-                yield
-            finally:
-                # A rejected competitor must not touch global resource aliases.
-                # Retain the database lease throughout owned runtime shutdown.
-                logging.info("Shutting down owned application runtime...")
-                try:
-                    if workers_started:
-                        await stop_workers()
-                finally:
-                    try:
-                        if scheduler_started:
-                            utils.scheduler.shutdown(wait=True)
-                            await asyncio.sleep(0)
-                    finally:
-                        try:
-                            if blog_task is not None:
-                                blog_task.cancel()
-                                try:
-                                    await blog_task
-                                except asyncio.CancelledError:
-                                    pass
-                        finally:
-                            if providers_started:
-                                try:
-                                    close_qdrant_client()
-                                finally:
-                                    await asyncio.to_thread(close_ai_clients)
-    except Exception:
-        logging.error("Exiting application due to startup/runtime failure.", exc_info=True)
+        yield
+    except ConnectionRefusedError:
+        logging.error("Exiting application due to database connection failure.")
+        await asyncio.sleep(10)
         raise
+    except Exception as e:
+        logging.error(f"Exiting application due to error: {e}", exc_info=True)
+        raise e
     finally:
-        if owned:
+        try:
+            logging.info("Shutting down application...")
+            await stop_workers()
+            utils.scheduler.shutdown(wait=True)
+            close_qdrant_client()
+            await asyncio.to_thread(close_ai_clients)
             await engine.dispose()
-            logging.info("Owned application shutdown complete.")
+            logging.info("Application shutdown complete.")
+        except Exception as e:
+            logging.error(f"Error during shutdown: {e}")

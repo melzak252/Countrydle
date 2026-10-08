@@ -30,7 +30,6 @@ class CountrydleGuess(Base):
     guess = Column(String, nullable=False)
     guessed_at = Column(DateTime, default=func.now())
     answer = Column(Boolean)
-    elapsed_seconds = Column(Integer, nullable=True)
 
     user = relationship("User", back_populates="countrydle_guesses")
     day = relationship("CountrydleDay")

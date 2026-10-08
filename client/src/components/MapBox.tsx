@@ -8,7 +8,6 @@ import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check, Compass, RotateCcw } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
-import EntityMarkControls from './EntityMarkControls';
 import { isCountryAvailable } from '../lib/countryEligibility';
 import { useMapData } from '../hooks/useMapData';
 import { useMapZoomSync } from '../hooks/useMapZoomSync';
@@ -113,7 +112,6 @@ interface MapBoxProps {
   maxZoom?: number;
   onCountryClick?: (name: string) => void;
   geoJsonUrl?: string;
-  markingDisabled?: boolean;
   eligibleCountries: readonly { name: string }[];
   countryMode?: string;
 }
@@ -294,7 +292,6 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
       activeMarkerColor: state.activeMarkerColor,
       setActiveMarkerColor: state.setActiveMarkerColor,
       handleEntityMapClick: state.handleEntityMapClick,
-      toggleEntityMarker: state.toggleEntityMarker,
       clearMapMarkings: state.clearMapMarkings,
       isGameOver: !!state.gameState?.is_game_over,
     }} />;
@@ -397,7 +394,6 @@ export function ControlledMapBox({
   geoJsonUrl = '/countries_50m.geojson',
   eligibleCountries,
   countryMode,
-  markingDisabled = false,
 }: MapBoxProps & { interaction: MapInteractionState }) {
   const targetUrl = geoJsonUrl || '/countries_50m.geojson';
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData(targetUrl);
@@ -633,12 +629,6 @@ export function ControlledMapBox({
         defaultZoom={zoom}
         showReferenceLines={showReferenceLines}
         onToggleReferenceLines={() => setShowReferenceLines((prev) => !prev)}
-      />
-      <EntityMarkControls
-        entities={eligibleCountries.filter(country => isCountryAvailable(country.name, countryMode))}
-        interaction={interaction}
-        lockedEntityName={revealedName}
-        disabled={markingDisabled}
       />
     </div>
   );

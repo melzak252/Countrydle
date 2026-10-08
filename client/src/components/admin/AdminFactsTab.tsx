@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Database, FileText, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { adminService, type CountryFactsResponse } from '../../services/api';
-import type { AnswerReportMode, FactProvenance as FactProvenanceData, FactProvenanceRecord } from '../../types';
-import FactProvenance from '../FactProvenance';
-import { factProvenanceLabels, PROVENANCE_TEXT_FIELDS, safeFactSourceUrl, UNKNOWN_FACT_PROVENANCE } from '../../lib/factProvenance';
+import type { CountryFactsResponse } from '../../services/api';
+import type { AnswerReportMode } from '../../types';
 
 export interface EntityOption {
   id: number;
@@ -32,82 +30,6 @@ interface AdminFactsTabProps {
 }
 
 const FACT_MODES: AnswerReportMode[] = ['countrydle', 'powiatdle', 'wojewodztwodle', 'us_statedle'];
-function ProvenanceEditor({ record, disabled, onSave }: {
-  record: FactProvenanceRecord;
-  disabled: boolean;
-  onSave: (record: FactProvenanceRecord) => Promise<void>;
-}) {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
-  const labels = factProvenanceLabels(isPl);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<FactProvenanceData>({ ...record.provenance });
-  const [error, setError] = useState<string | null>(null);
-
-  const save = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (disabled) return;
-    setError(null);
-    if (draft.source_url && !safeFactSourceUrl(draft.source_url)) {
-      setError(isPl ? 'Źródło musi być bezwzględnym adresem HTTP(S) bez danych logowania.' : 'Source must be an absolute HTTP(S) URL without credentials.');
-      return;
-    }
-    if (draft.status === 'cited' && (!draft.citation || !draft.source_url)) {
-      setError(isPl ? 'Status ze źródłem wymaga cytatu i adresu źródła.' : 'Cited evidence requires a citation and source URL.');
-      return;
-    }
-    if (draft.effective_from && draft.effective_to && draft.effective_to < draft.effective_from) {
-      setError(isPl ? 'Data końcowa nie może poprzedzać daty początkowej.' : 'Effective to must not precede effective from.');
-      return;
-    }
-    try {
-      await onSave({ relation: record.relation, value: record.value, provenance: { ...draft } });
-      setEditing(false);
-    } catch {
-      setError(isPl ? 'Nie udało się zapisać pochodzenia. Sprawdź format dat (ISO 8601) i spróbuj ponownie.' : 'Could not save provenance. Check date formats (ISO 8601) and retry.');
-    }
-  };
-
-  return (
-    <div className="min-w-0 space-y-2">
-      <FactProvenance records={[record]} />
-      {!editing ? (
-        <button type="button" className="admin-button" disabled={disabled} onClick={() => {
-          setDraft({ ...record.provenance });
-          setError(null);
-          setEditing(true);
-        }}>{labels.edit}: {record.value ?? labels.aggregate}</button>
-      ) : (
-        <form onSubmit={(event) => void save(event)} className="min-w-0 space-y-3 rounded-sm border border-emerald-400/30 p-3">
-          <p className="text-sm text-slate-300">{isPl ? 'Edytujesz wyłącznie dowody, nie wartość faktu. Puste pola oznaczają „Nieznane”.' : 'Editing evidence only, not the fact value. Empty fields mean “Unknown”.'}</p>
-          <label className="block space-y-1 text-sm text-slate-300">
-            <span>{labels.status}</span>
-            <select className="admin-control" value={draft.status} disabled={disabled} onChange={(event) => setDraft({ ...draft, status: event.target.value as FactProvenanceData['status'] })}>
-              <option value="unknown">{labels.unknown}</option>
-              <option value="cited">{labels.cited}</option>
-            </select>
-          </label>
-          {PROVENANCE_TEXT_FIELDS.map(field => (
-            <label key={field} className="block space-y-1 text-sm text-slate-300">
-              <span>{labels[field]}{(field === 'retrieved_at' || field === 'updated_at') && ' (ISO 8601)'}</span>
-              {field === 'citation' || field === 'convention' ? (
-                <textarea className="admin-control" rows={3} value={draft[field] ?? ''} placeholder={labels.unknown} disabled={disabled} required={field === 'citation' && draft.status === 'cited'} onChange={(event) => setDraft({ ...draft, [field]: event.target.value.trim() ? event.target.value : null })} />
-              ) : (
-                <input className="admin-control" type={field === 'source_url' ? 'url' : field === 'effective_from' || field === 'effective_to' ? 'date' : 'text'} value={draft[field] ?? ''} placeholder={labels.unknown} disabled={disabled} required={field === 'source_url' && draft.status === 'cited'} onChange={(event) => setDraft({ ...draft, [field]: event.target.value.trim() || null })} />
-              )}
-            </label>
-          ))}
-          {error && <p role="alert" className="text-sm text-rose-200">{error}</p>}
-          <div className="flex flex-wrap gap-2">
-            <button type="submit" className="admin-button admin-button-primary" disabled={disabled}>{isPl ? 'Zapisz pochodzenie' : 'Save provenance'}</button>
-            <button type="button" className="admin-button" disabled={disabled} onClick={() => setEditing(false)}>{isPl ? 'Anuluj' : 'Cancel'}</button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-}
-
 
 export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
   factMode,
@@ -244,14 +166,6 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
               <div className="space-y-4 min-[1280px]:max-h-[500px] min-[1280px]:overflow-y-auto">
                 {entityFacts.list_facts.map((listFact) => {
                   const relation = listFact.relation.replace(/_/g, ' ');
-                  const evidenceRelation = listFact.relation === 'membership' || listFact.relation === 'hemisphere' ? listFact.relation : null;
-                  const evidenceRecords: FactProvenanceRecord[] = factMode === 'countrydle' && evidenceRelation
-                    ? [null, ...listFact.values.map(value => value.value)].map(value => ({
-                      relation: evidenceRelation,
-                      value,
-                      provenance: entityFacts.fact_provenance?.find(record => record.relation === evidenceRelation && record.value === value)?.provenance ?? UNKNOWN_FACT_PROVENANCE,
-                    }))
-                    : [];
                   return (
                     <div key={listFact.relation} className="space-y-3 border-b border-white/10 pb-4">
                       <h4 className="font-medium capitalize text-sand-100">{relation} <span className="admin-meta">({numberFormat.format(listFact.values.length)})</span></h4>
@@ -265,17 +179,6 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
                           </li>
                         ))}
                       </ul>
-                      {evidenceRecords.map(record => (
-                        <ProvenanceEditor
-                          key={`${entityFacts.country.id}:${record.relation}:${JSON.stringify(record.value)}`}
-                          record={record}
-                          disabled={writesDisabled}
-                          onSave={(updated) => runWrite(async () => {
-                            await adminService.updateCountryFactProvenance(entityFacts.country.id, updated);
-                            await onRefresh();
-                          })}
-                        />
-                      ))}
                       <div className="flex flex-wrap gap-2">
                         <label className="w-full text-sm font-medium text-slate-300" htmlFor={`fact-add-${listFact.relation}`}>{t('adminFacts.newValue', { relation })}</label>
                         <input id={`fact-add-${listFact.relation}`} type="text" value={newListValues[listFact.relation] ?? ''} onChange={(event) => onNewListValueChange(listFact.relation, event.target.value)} placeholder={t('adminFacts.newValue', { relation })} className="admin-control min-w-0 flex-1" disabled={writesDisabled} />

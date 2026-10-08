@@ -7,15 +7,14 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
-    Index,
     Integer,
+    Index,
     JSON,
     String,
     UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import relationship
-from daily_clock import utc_today
 from db.base import Base
 
 
@@ -41,13 +40,7 @@ class ContinentalDay(Base):
         index=True,
     )
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="CASCADE"), nullable=False)
-    date = Column(
-        Date,
-        nullable=False,
-        default=utc_today,
-        server_default=func.date(func.timezone("UTC", func.current_timestamp())),
-        index=True,
-    )
+    date = Column(Date, nullable=False, default=func.now(), index=True)
 
     country = relationship("Country")
 
@@ -80,11 +73,9 @@ class ContinentalState(Base):
 
 class ContinentalGuess(Base):
     __tablename__ = "continental_guesses"
-    __table_args__ = (Index("ix_continental_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("continental_days.id", ondelete="CASCADE"), nullable=False, index=True)
     guess = Column(String, nullable=False)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="SET NULL"), nullable=True)

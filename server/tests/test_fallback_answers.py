@@ -1,6 +1,6 @@
 """Durable fallback-answer reuse through the production async runner and SQL cache."""
 from collections import deque
-from datetime import date
+from datetime import date, datetime, timezone
 import asyncio
 import threading
 from types import SimpleNamespace
@@ -9,6 +9,14 @@ import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from db.base import Base
+
+
+class FixedDateTime:
+    current = date(2026, 10, 4)
+
+    @classmethod
+    def now(cls, tz):
+        return datetime.combine(cls.current, datetime.min.time(), tzinfo=timezone.utc)
 
 
 @pytest.fixture
@@ -39,15 +47,15 @@ def fallback(monkeypatch, fallback_db):
     from utils import fallback as runner
     from utils import fallback_answers
 
+    monkeypatch.setattr(runner, "datetime", FixedDateTime)
+    monkeypatch.setattr(FixedDateTime, "current", date(2026, 10, 4))
     monkeypatch.setenv("GEMINI_QUIZ_MODEL", "test-model-a")
     responses = deque()
     provider_calls = []
     retrievals = []
     state = SimpleNamespace(context="Poland hosted the event in 2001.",
                             prompts=("Stable game rules.", "Exact question data."),
-                            provider_entered=None, provider_release=None,
-                            today=date(2026, 10, 4))
-    monkeypatch.setattr(runner, "utc_today", lambda: state.today)
+                            provider_entered=None, provider_release=None)
 
     def provider(*args, **kwargs):
         if state.provider_entered is not None:
@@ -158,7 +166,7 @@ async def test_changed_evidence_model_prompt_or_daily_date_cannot_reuse(fallback
     elif change == "question prompt":
         fallback.state.prompts = ("Stable game rules.", "Revised exact question data.")
     else:
-        fallback.state.today = date(2026, 10, 5)
+        FixedDateTime.current = date(2026, 10, 5)
     result, _, _ = await fallback.run()
     assert result["answer"] is False
     assert len(fallback.provider_calls) == 2
@@ -227,7 +235,7 @@ async def test_report_committed_during_generation_prevents_late_cache_repopulati
                 report_session, mode="countrydle", entity_name="Poland",
                 original_question=fallback.arguments["question"].original_question,
                 question=fallback.arguments["question"].question,
-                context=fallback.state.context, game_date=fallback.state.today,
+                context=fallback.state.context, game_date=FixedDateTime.current,
             )
             await report_session.commit()
     finally:

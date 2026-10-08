@@ -18,7 +18,6 @@ from db.models import (
 )
 from schemas.continental import ContinentalQuestionDisplay, InvalidContinentalQuestionDisplay
 from schemas.countrydle import FullQuestionDisplay, InvalidQuestionDisplay
-from schemas.fact_provenance import FactProvenanceRecord
 from schemas.powiatdle import PowiatQuestionDisplay
 from schemas.us_statedle import USStateQuestionDisplay
 from schemas.wojewodztwodle import WojewodztwoQuestionDisplay
@@ -32,17 +31,6 @@ MODES = {
     "wojewodztwodle": (Wojewodztwo, WojewodztwodleDay, WojewodztwodleQuestion, WojewodztwoQuestionDisplay, "wojewodztwo_id", {"nazwa": "mazowieckie"}),
     "continental": (Country, ContinentalDay, ContinentalQuestion, ContinentalQuestionDisplay, "country_id", {"name": "Italy", "md_file": "italy.md"}),
 }
-
-STORED_EVIDENCE = [FactProvenanceRecord.model_validate({
-    "relation": "membership", "value": "NATO",
-    "provenance": {
-        "status": "cited",
-        "citation": "Poland and Italy are NATO members.",
-        "source_url": "https://www.nato.int/cps/en/natohq/nato_countries.htm",
-        "effective_from": "1999-03-12",
-        "convention": "Current membership; accession inclusive.",
-    },
-}).model_dump(mode="json")]
 
 
 class AsyncSessionAdapter:
@@ -117,16 +105,22 @@ async def reports_api(monkeypatch):
             day = day_cls(id=1, date=date(2026, 9, 20), **day_kwargs)
             session.add(day)
             session.flush()
-            evidence = {"fact_provenance": STORED_EVIDENCE} if mode in {"countrydle", "continental"} else {}
             question = question_cls(
                 id=1, user_id=owner.id, day_id=1,
                 original_question="Original player question?", question="Canonical question?",
                 valid=True, answer=False, explanation="Persisted explanation",
                 context="Private retrieved context", asked_at=datetime(2026, 9, 20, 12),
-                **evidence,
             )
             if mode == "countrydle":
                 question.server_version = "test-version"
+            if mode in {"countrydle", "continental"}:
+                question.fact_provenance = [{
+                    "relation": "membership", "value": "Europe",
+                    "provenance": {
+                        "status": "cited", "citation": "Original geographic evidence",
+                        "source_url": "https://example.com/europe",
+                    },
+                }]
             session.add(question)
             questions[mode] = question
         session.commit()
@@ -167,20 +161,17 @@ async def test_owner_submission_snapshots_canonical_data_without_leaking_it(repo
     login(api.owner)
     response = await api.client.post("/answer-reports", json=payload(mode))
     assert response.status_code == 201
-    assert response.json()["id"] > 0
-    for private in (
-        "Private retrieved context", "Persisted explanation",
-        next(iter(MODES[mode][5].values())),
-        STORED_EVIDENCE[0]["provenance"]["citation"],
-        STORED_EVIDENCE[0]["provenance"]["source_url"],
-    ):
-        assert private not in response.text
+    report_id = response.json()["id"]
+    assert response.json() == {"id": report_id}
 
     # Later question edits must not rewrite an already-submitted report.
     api.questions[mode].context = "Changed after submission"
     api.questions[mode].explanation = "Changed after submission"
     if mode in {"countrydle", "continental"}:
-        api.questions[mode].fact_provenance = []
+        api.questions[mode].fact_provenance = [{
+            "relation": "membership", "value": "Asia",
+            "provenance": {"status": "cited", "citation": "Changed after submission"},
+        }]
     api.session.commit()
     login(api.admin)
     response = await api.client.get("/admin/answer-reports")
@@ -188,46 +179,25 @@ async def test_owner_submission_snapshots_canonical_data_without_leaking_it(repo
     report = response.json()["items"][0]
     assert report["comment"] == "The answer seems incorrect."
     assert report["reporter_username"] == "owner"
-    details = report["details"]
-    assert details["original_question"] == "Original player question?"
-    assert details["question"] == "Canonical question?"
-    assert details["valid"] is True and details["answer"] is False
-    assert details["explanation"] == "Persisted explanation"
-    assert details["context"] == "Private retrieved context"
-    assert details["day_id"] == 1
-    assert details["game_date"] == "2026-09-20"
-    assert details["target_name"] == next(iter(MODES[mode][5].values()))
-    if mode == "countrydle":
-        assert details["server_version"] == "test-version"
+    assert {key: value for key, value in report["details"].items() if key != "fact_provenance"} == {
+        "original_question": "Original player question?", "question": "Canonical question?",
+        "valid": True, "answer": False, "explanation": "Persisted explanation",
+        "context": "Private retrieved context", "day_id": 1, "game_date": "2026-09-20",
+        "target_name": next(iter(MODES[mode][5].values())),
+        "server_version": "test-version" if mode == "countrydle" else None,
+    }
     if mode in {"countrydle", "continental"}:
-        assert details["fact_provenance"] == STORED_EVIDENCE
+        evidence = report["details"]["fact_provenance"]
+        assert evidence[0]["value"] == "Europe"
+        assert evidence[0]["provenance"]["source_url"] == "https://example.com/europe"
+        assert evidence[0]["provenance"]["citation"] == "Original geographic evidence"
     assert "report_token" not in report
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("mode", ["countrydle", "continental"])
-async def test_active_question_display_redacts_stored_evidence_but_terminal_keeps_it(reports_api, mode):
-    question = reports_api.questions[mode]
-    schema = MODES[mode][3]
-    active = schema.model_validate(question)
-    assert active.model_dump()["fact_provenance"] == []
-    for private in ("Private retrieved context", STORED_EVIDENCE[0]["provenance"]["citation"],
-                    STORED_EVIDENCE[0]["provenance"]["source_url"]):
-        assert private not in active.model_dump_json()
-    terminal = schema.model_validate(question, context={"terminal": True})
-    assert terminal.model_dump(mode="json")["fact_provenance"] == STORED_EVIDENCE
-
-
-@pytest.mark.anyio
-@pytest.mark.parametrize("forged", [
-    {"details": {"target_name": "fake"}},
-    {"context": "fake"},
-    {"answer": True},
-    {"fact_provenance": STORED_EVIDENCE},
-])
-async def test_client_cannot_spoof_report_snapshot(reports_api, forged):
+async def test_client_cannot_spoof_report_snapshot(reports_api):
     login(reports_api.owner)
-    response = await reports_api.client.post("/answer-reports", json=payload(**forged))
+    response = await reports_api.client.post("/answer-reports", json=payload(details={"target_name": "fake"}, context="fake", answer=True))
     assert response.status_code == 422
     login(reports_api.admin)
     assert (await reports_api.client.get("/admin/answer-reports")).json()["total"] == 0

@@ -13,7 +13,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from daily_clock import utc_today
 from db.base import Base
 
 
@@ -22,7 +21,7 @@ class FlagdleDay(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="CASCADE"), nullable=False)
-    date = Column(Date, unique=True, index=True, nullable=False, default=utc_today)
+    date = Column(Date, unique=True, index=True, nullable=False, default=func.current_date())
     created_at = Column(DateTime, default=func.now())
 
     country = relationship("Country")
@@ -55,11 +54,9 @@ class FlagdleState(Base):
 
 class FlagdleGuess(Base):
     __tablename__ = "flagdle_guesses"
-    __table_args__ = (Index("ix_flagdle_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
-    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("flagdle_days.id", ondelete="CASCADE"), nullable=False, index=True)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="CASCADE"), nullable=True)
     guess = Column(String, nullable=False)

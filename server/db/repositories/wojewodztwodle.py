@@ -1,6 +1,5 @@
 from datetime import date
 
-from daily_clock import utc_today
 from typing import List, Optional
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import joinedload
@@ -17,7 +16,6 @@ from schemas.wojewodztwodle import WojewodztwoGuessCreate, WojewodztwoQuestionCr
 from schemas.countrydle import LeaderboardEntry
 from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from game_logic import count_consecutive_daily_wins
-from db.repositories.question_accounting import get_daily_state, lock_question_state
 
 
 class WojewodztwodleDayRepository:
@@ -25,7 +23,7 @@ class WojewodztwodleDayRepository:
         self.session = session
 
     async def get_today_wojewodztwo(self) -> Optional[WojewodztwodleDay]:
-        today = utc_today()
+        today = func.current_date()
         result = await self.session.execute(
             select(WojewodztwodleDay).where(WojewodztwodleDay.date == today)
         )
@@ -38,7 +36,6 @@ class WojewodztwodleDayRepository:
         return result.scalar_one_or_none()
 
     async def generate_new_day_wojewodztwo(self, cooldown_days: int = 10) -> WojewodztwodleDay:
-        target_date = utc_today()
         import random
         recent_subq = (
             select(WojewodztwodleDay.wojewodztwo_id)
@@ -58,19 +55,19 @@ class WojewodztwodleDayRepository:
 
         wojewodztwo = random.choice(eligible)
 
-        new_day = WojewodztwodleDay(wojewodztwo_id=wojewodztwo.id, date=target_date)
+        new_day = WojewodztwodleDay(wojewodztwo_id=wojewodztwo.id)
         self.session.add(new_day)
         await self.session.commit()
         await self.session.refresh(new_day)
         return new_day
 
     async def get_history(self) -> List[WojewodztwodleDay]:
-        today = utc_today()
+        from datetime import date
 
         result = await self.session.execute(
             select(WojewodztwodleDay)
             .options(joinedload(WojewodztwodleDay.wojewodztwo))
-            .where(WojewodztwodleDay.date < today)
+            .where(WojewodztwodleDay.date < date.today())
             .order_by(WojewodztwodleDay.date.desc())
         )
         return result.scalars().all()
@@ -83,7 +80,15 @@ class WojewodztwodleStateRepository:
     async def get_state(
         self, user: User, day: WojewodztwodleDay
     ) -> Optional[WojewodztwodleState]:
-        return await lock_question_state(self.session, WojewodztwodleState, user.id, day.id)
+        result = await self.session.execute(
+            select(WojewodztwodleState).where(
+                and_(
+                    WojewodztwodleState.user_id == user.id,
+                    WojewodztwodleState.day_id == day.id,
+                )
+            )
+        )
+        return result.scalar_one_or_none()
 
     async def create_state(
         self,
@@ -91,24 +96,27 @@ class WojewodztwodleStateRepository:
         day: WojewodztwodleDay,
         max_questions: int = 5,
         max_guesses: int = 2,
-        *,
-        commit: bool = True,
     ) -> WojewodztwodleState:
-        state = await get_daily_state(
-            self.session, WojewodztwodleState, user.id, day.id, max_questions, max_guesses,
+        from db.repositories.question_accounting import lock_question_state
+        existing = await lock_question_state(self.session, WojewodztwodleState, user.id, day.id)
+        if existing is not None:
+            await self.session.commit()
+            return existing
+        new_state = WojewodztwodleState(
+            user_id=user.id,
+            day_id=day.id,
+            remaining_questions=max_questions,
+            remaining_guesses=max_guesses,
         )
-        if commit:
-            await self.session.commit()
-        return state
+        self.session.add(new_state)
+        await self.session.commit()
+        await self.session.refresh(new_state)
+        return new_state
 
-    async def update_state(
-        self, state: WojewodztwodleState, *, commit: bool = True
-    ) -> WojewodztwodleState:
+    async def update_state(self, state: WojewodztwodleState) -> WojewodztwodleState:
         self.session.add(state)
-        if commit:
-            await self.session.commit()
-        else:
-            await self.session.flush()
+        await self.session.commit()
+        await self.session.refresh(state)
         return state
 
     async def get_current_streak(self, user_id: int, puzzle_date: date) -> int:
@@ -158,9 +166,9 @@ class WojewodztwodleGuessRepository:
         self.session = session
 
     async def add_guess(
-        self, guess_create: WojewodztwoGuessCreate, *, commit: bool = True, guest_id: str | None = None
+        self, guess_create: WojewodztwoGuessCreate, *, commit: bool = True
     ) -> WojewodztwodleGuess:
-        new_guess = WojewodztwodleGuess(**guess_create.model_dump(), guest_id=guest_id)
+        new_guess = WojewodztwodleGuess(**guess_create.model_dump(exclude={"elapsed_seconds"}))
         self.session.add(new_guess)
         if commit:
             await self.session.commit()
@@ -190,14 +198,12 @@ class WojewodztwodleQuestionRepository:
         self.session = session
 
     async def create_question(
-        self, question_create: WojewodztwoQuestionCreate, *, guest_id: str | None = None
+        self, question_create: WojewodztwoQuestionCreate
     ) -> WojewodztwodleQuestion:
         data = question_create.model_dump()
         # Remove fields that are not in the DB model
         data.pop("intent", None)
         data.pop("required_info", None)
-        data.pop("fact_provenance", None)
-        data["guest_id"] = guest_id
         new_question = WojewodztwodleQuestion(**data)
         self.session.add(new_question)
         await self.session.flush()

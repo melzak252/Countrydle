@@ -5,7 +5,6 @@ import csv
 import os
 from pathlib import Path
 from types import SimpleNamespace
-from tests.test_guess_accounting import guess_db
 
 # Use the existing database for tests (or a separate test DB if configured)
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -96,32 +95,19 @@ def mock_common_database_repositories(monkeypatch, request):
     the suite fail on machines without the Docker `db` host. These defaults are
     intentionally small and can still be overridden by per-test patches.
     """
-    if request.node.get_closest_marker("real_database") or "daily_api_db" in request.fixturenames:
+    if request.node.get_closest_marker("real_database"):
         return
 
     # Endpoint unit tests replace action repositories; participation shares their
     # transaction and must not open a separate connection to the application DB.
     from importlib import import_module
     from unittest.mock import AsyncMock
-    from utils.guest_session import get_guest_identity
-
-    async def record_guest_action(
-        session, request, response, mode, day_id, *, max_guesses,
-        question=False, won=None, max_questions=None,
-    ):
-        return SimpleNamespace(
-            guest_id=get_guest_identity(request, response),
-            mode=mode, day_id=day_id, user_id=None,
-            questions_asked=int(question), guesses_made=int(not question), won=bool(won),
-        )
-
     for mode in ("countrydle", "continental", "flagdle", "us_statedle", "powiatdle", "wojewodztwodle"):
         module = import_module(mode)
-        monkeypatch.setattr(module, "record_guest_action", record_guest_action)
-        monkeypatch.setattr(module, "get_guest_progress", AsyncMock(return_value=(None, [], [])))
-        monkeypatch.setattr(module, "claim_guest_history", AsyncMock(return_value=False))
-        if hasattr(module, "check_guest_question_available"):
-            monkeypatch.setattr(module, "check_guest_question_available", AsyncMock(return_value=None))
+        monkeypatch.setattr(module, "record_guest_action", AsyncMock(return_value=None))
+        monkeypatch.setattr(module, "link_guest_participation", AsyncMock(return_value=None))
+        if hasattr(module, "get_guest_question_history"):
+            monkeypatch.setattr(module, "get_guest_question_history", AsyncMock(return_value=(None, [])))
 
     async def register_user(self, user):
         return make_test_user(username=user.username, email=user.email)
@@ -161,9 +147,9 @@ def mock_common_database_repositories(monkeypatch, request):
             is_game_over=False,
         )
 
-    async def update_countrydle_state(self, state, *, commit=True):
+    async def update_countrydle_state(self, state):
         return state
-    async def flagdle_add_guess(self, guess_create, *, commit=True):
+    async def flagdle_add_guess(self, guess_create):
         from types import SimpleNamespace
         from datetime import datetime
         return SimpleNamespace(
@@ -238,34 +224,3 @@ async def auth_client(async_client, token):
     async_client.cookies.delete("access_token")
     app.dependency_overrides.pop(get_current_user, None)
     app.dependency_overrides.pop(get_current_or_guest_user, None)
-
-
-@pytest.fixture
-async def daily_api_db(guess_db, monkeypatch):
-    """Real daily/account/guest repositories in an owned disposable PostgreSQL schema."""
-    from db import get_db
-    from utils import guest_session
-
-    monkeypatch.setattr(guest_session, "SECRET_KEY", "isolated-daily-api-signing-key-20261007")
-
-    async def isolated_session():
-        async with guess_db.factory() as session:
-            try:
-                yield session
-            except BaseException:
-                await session.rollback()
-                raise
-
-    previous = dict(app.dependency_overrides)
-    app.dependency_overrides[get_db] = isolated_session
-    try:
-        yield guess_db.factory
-    finally:
-        app.dependency_overrides.clear()
-        app.dependency_overrides.update(previous)
-
-
-@pytest.fixture
-async def daily_api_client(daily_api_db):
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
-        yield client

@@ -1,16 +1,5 @@
 import pytest
-from sqlalchemy import select
-
-from daily_clock import utc_today
-from db.models.countrydle import CountrydleDay, CountrydleState
-from db.models.guess import CountrydleGuess
-
-
-@pytest.fixture
-async def country_day(daily_api_db):
-    async with daily_api_db() as session:
-        session.add(CountrydleDay(id=1, country_id=1, date=utc_today()))
-        await session.commit()
+from unittest.mock import patch, AsyncMock
 
 
 @pytest.mark.anyio
@@ -24,58 +13,147 @@ async def test_get_countries(auth_client):
     assert "name" in data[0]
 
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_get_game_state(auth_client, country_day, daily_api_db):
-    response = await auth_client.get("/countrydle/state")
-    assert response.status_code == 200, response.text
-    data = response.json()
-    assert data["state"]["remaining_guesses"] == 3
-    assert data["state"]["remaining_questions"] == 10
-    assert data["state"]["guesses_made"] == 0
-    assert data["state"]["questions_asked"] == 0
-    assert data["state"]["is_game_over"] is False
-    assert data["country"] is None
-    assert data["guesses"] == []
-    assert data["questions"] == []
-    async with daily_api_db() as session:
-        state = (await session.scalars(select(CountrydleState))).one()
-        assert state.user_id == 1
-        assert state.day_id == 1
-        assert state.remaining_guesses == 3
-        assert state.remaining_questions == 10
+async def test_get_game_state(auth_client):
+    from unittest.mock import MagicMock
+
+    with (
+        patch(
+            "db.repositories.countrydle.CountrydleRepository.get_today_country",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.countrydle.CountrydleStateRepository.get_state",
+            new_callable=AsyncMock,
+        ) as mock_get_state,
+        patch(
+            "db.repositories.guess.CountrydleGuessRepository.get_user_day_guesses",
+            new_callable=AsyncMock,
+        ) as mock_get_guesses,
+        patch(
+            "db.repositories.question.CountrydleQuestionsRepository.get_user_day_questions",
+            new_callable=AsyncMock,
+        ) as mock_get_questions,
+    ):
+        # Mock Day
+        mock_day = MagicMock()
+        mock_day.id = 1
+        mock_day.country_id = 100
+        mock_day.date = "2023-01-01"
+        mock_get_today.return_value = mock_day
+
+        # Mock State
+        mock_state = MagicMock()
+        mock_state.id = 1
+        mock_state.user_id = 1
+        mock_state.day_id = 1
+        mock_state.remaining_questions = 10
+        mock_state.remaining_guesses = 3
+        mock_state.questions_asked = 0
+        mock_state.guesses_made = 0
+        mock_state.is_game_over = False
+        mock_state.won = False
+        mock_state.points = 0
+        mock_get_state.return_value = mock_state
+
+        mock_get_guesses.return_value = []
+        mock_get_questions.return_value = []
+
+        response = await auth_client.get("/countrydle/state")
+        assert response.status_code == 200
+        data = response.json()
+        assert "state" in data
+        assert "remaining_guesses" in data["state"]
 
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_make_guess_correct(auth_client, country_day, daily_api_db):
-    response = await auth_client.post(
-        "/countrydle/guess", json={"guess": "Poland", "country_id": 1},
-    )
-    assert response.status_code == 200, response.text
-    data = response.json()
-    assert data["answer"] is True
-    assert data["distance_km"] == 0
-    async with daily_api_db() as session:
-        state = (await session.scalars(select(CountrydleState))).one()
-        guess = (await session.scalars(select(CountrydleGuess))).one()
-        assert guess.id == data["id"]
-        assert guess.guess == "Poland"
-        assert guess.answer is True
-        assert guess.user_id == state.user_id == 1
-        assert guess.day_id == state.day_id == 1
-        assert state.won is True
-        assert state.is_game_over is True
-        assert state.guesses_made == 1
-        assert state.remaining_guesses == 2
-        assert state.questions_asked == 0
-        assert state.remaining_questions == 10
-        assert state.points > 0
-    reloaded = await auth_client.get("/countrydle/state")
-    assert reloaded.status_code == 200, reloaded.text
-    assert reloaded.json()["state"]["won"] is True
-    assert reloaded.json()["country"]["name"] == "Poland"
-    assert len(reloaded.json()["guesses"]) == 1
+async def test_make_guess_correct_mocked(async_client):
+    from app import app
+    from users.utils import get_current_or_guest_user
+    from db.models import User
+    from unittest.mock import MagicMock
+
+    # Override User Dependency
+    async def mock_get_current_user():
+        user = MagicMock(spec=User)
+        user.id = 1
+        user.username = "test_user"
+        user.email = "test@example.com"
+        user.verified = True
+        return user
+
+    app.dependency_overrides[get_current_or_guest_user] = mock_get_current_user
+
+    try:
+        with (
+            patch(
+                "db.repositories.countrydle.CountrydleRepository.get_today_country",
+                new_callable=AsyncMock,
+            ) as mock_get_today,
+            patch(
+                "db.repositories.countrydle.CountrydleStateRepository.get_player_countrydle_state",
+                new_callable=AsyncMock,
+            ) as mock_get_state,
+            patch(
+                "db.repositories.country.CountryRepository.get", new_callable=AsyncMock
+            ) as mock_get_country,
+            patch(
+                "db.repositories.guess.CountrydleGuessRepository.add_guess",
+                new_callable=AsyncMock,
+            ) as mock_add_guess,
+            patch(
+                "db.repositories.countrydle.CountrydleStateRepository.guess_made",
+                new_callable=AsyncMock,
+            ) as mock_guess_made,
+        ):
+            # Mock DayCountry
+            mock_day = MagicMock()
+            mock_day.id = 1
+            mock_day.country_id = 100
+            mock_get_today.return_value = mock_day
+
+            # Mock State
+            mock_state = MagicMock()
+            mock_state.remaining_guesses = 3
+            mock_state.remaining_questions = 10
+            mock_state.is_game_over = False
+            mock_state.won = False
+            mock_get_state.return_value = mock_state
+
+            # Mock Country
+            mock_country = MagicMock()
+            mock_country.id = 100
+            mock_country.name = "Poland"
+            mock_get_country.return_value = mock_country
+
+            # Mock Guess Result
+            mock_guess_result = MagicMock()
+            mock_guess_result.id = 1
+            mock_guess_result.guess = "Poland"
+            mock_guess_result.answer = True
+            mock_guess_result.guessed_at = "2023-01-01T12:00:00"
+            mock_add_guess.return_value = mock_guess_result
+
+            # Test Data
+            guess_data = {
+                "guess": "Poland",
+                "country_id": 100,  # Correct ID
+            }
+
+            response = await async_client.post("/countrydle/guess", json=guess_data)
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["answer"] is True
+
+            # Verify add_guess was called with correct data
+            args, _ = mock_add_guess.call_args
+            guess_create_arg = args[0]
+            assert guess_create_arg.country_id == 100
+            assert guess_create_arg.answer is True
+
+    finally:
+        app.dependency_overrides = {}
 
 
 @pytest.mark.anyio

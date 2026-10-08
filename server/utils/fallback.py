@@ -2,10 +2,9 @@ import asyncio
 import logging
 import os
 import time
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any, Callable
 
-from daily_clock import utc_today
 logger = logging.getLogger(__name__)
 FALLBACK_DEADLINE_SECONDS = float(os.getenv("FALLBACK_DEADLINE_SECONDS", "15.0"))
 from qdrant.utils import get_fragments_matching_question
@@ -30,7 +29,6 @@ async def retrieve_and_answer(
     game_date: date | None = None,
 ) -> tuple[dict, str, list[float]]:
     """Retrieve fresh evidence and answer within one bounded daily request."""
-    target_date = game_date if game_date is not None else utc_today()
     deadline = time.monotonic() + FALLBACK_DEADLINE_SECONDS
     fragments = []
     question_vector: list[float] = []
@@ -73,7 +71,7 @@ async def retrieve_and_answer(
                     original_question=question.original_question, question=question.question,
                     context=context, system_prompt=system_prompt, question_prompt=question_prompt,
                     model=model,
-                    game_date=target_date,
+                    game_date=game_date if game_date is not None else datetime.now(timezone.utc).date(),
                 )
                 cached = await answer_cache.lookup(session, identity)
                 await session.commit()

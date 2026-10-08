@@ -8,7 +8,6 @@ import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
 import { Check } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
-import EntityMarkControls from './EntityMarkControls';
 import { useMapData } from '../hooks/useMapData';
 import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
@@ -20,7 +19,6 @@ type FeatureLayer = L.Path & { feature?: Feature };
 interface PowiatyMapProps {
   correctPowiatName?: string;
   className?: string;
-  markingDisabled?: boolean;
   onPowiatClick?: (name: string) => void;
 }
 
@@ -79,14 +77,12 @@ function MapController({ correctName, geoJsonData, isGameOver }: { correctName?:
 export default function PowiatyMap({ correctPowiatName, className }: PowiatyMapProps) {
   const state = usePowiatyGameStore();
   return <ControlledPowiatyMap className={className}
-    eligibleEntities={state.entities.map(entity => ({ name: entity.nazwa }))}
     correctPowiatName={correctPowiatName || state.correctEntity?.nazwa}
     interaction={{
       entityMarkings: state.entityMarkings,
       activeMarkerColor: state.activeMarkerColor,
       setActiveMarkerColor: state.setActiveMarkerColor,
       handleEntityMapClick: state.handleEntityMapClick,
-      toggleEntityMarker: state.toggleEntityMarker,
       clearMapMarkings: state.clearMapMarkings,
       isGameOver: !!state.gameState?.is_game_over,
     }} />;
@@ -97,9 +93,7 @@ export function ControlledPowiatyMap({
   className,
   onPowiatClick,
   interaction,
-  eligibleEntities,
-  markingDisabled = false,
-}: PowiatyMapProps & { interaction: MapInteractionState; eligibleEntities: readonly { name: string }[] }) {
+}: PowiatyMapProps & { interaction: MapInteractionState }) {
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/powiaty-min.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
@@ -362,7 +356,6 @@ export function ControlledPowiatyMap({
 
         <MapController correctName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
       </MapContainer>
-      <EntityMarkControls entities={eligibleEntities} interaction={interaction} lockedEntityName={revealedName} disabled={markingDisabled} />
     </div>
   );
 }

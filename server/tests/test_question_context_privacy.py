@@ -66,6 +66,8 @@ def test_country_explanation_is_disclosed_only_after_an_answered_game_ends(schem
     assert "Poland" in terminal["explanation"]
     assert "Europe" in terminal["explanation"]
     assert "Warsaw" in terminal["explanation"]
+    assert active["question"] == active["original_question"]
+    assert terminal["question"] == "Is Poland, whose capital is Warsaw, in Europe?"
 
 
 @pytest.mark.parametrize("question_schema,state_schema", [

@@ -52,7 +52,6 @@ class FlagdleGuessDisplay(BaseModel):
     matched_symbols: List[str] = Field(default_factory=list)
     revealed_tile: Optional[int] = None
     guessed_at: datetime
-    elapsed_seconds: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 

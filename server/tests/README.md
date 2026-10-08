@@ -4,42 +4,6 @@ This directory contains the backend regression suite. Keep tests in the existing
 flat `tests/` directory and organize them by concern in `test_*.py` modules. The
 Python runner and environment assumptions live under `server/`.
 
-## Install and regenerate dependencies
-
-Use Python 3.12. From `server/`, create a clean environment and install the
-committed, hash-verified lock (the container uses the same command):
-
-```bash
-python3.12 -m venv .venv
-. .venv/bin/activate
-python -m pip install --require-hashes --no-deps -r requirements.txt
-```
-
-`requirements.in` contains the direct requirements; `requirements.txt` contains
-their fully pinned transitive closure and distribution hashes. The initial lock
-preserves the versions in the existing Python 3.12 QA environment, including
-the existing pytest dependencies. No separate development dependency convention
-is introduced. Do not edit transitive pins or hashes manually.
-
-Regenerate with **uv 0.12.2**, Python 3.12, and the existing lock present:
-
-```bash
-# Install the lock generator in a separate tooling environment, if needed.
-python3.12 -m venv /tmp/countrydle-lock-tools
-/tmp/countrydle-lock-tools/bin/python -m pip install uv==0.12.2
-/tmp/countrydle-lock-tools/bin/uv pip compile --python-version 3.12 --generate-hashes --no-emit-index-url requirements.in --output-file requirements.txt
-```
-
-Normal regeneration reuses existing pins. For an intentional dependency update,
-change its direct pin in `requirements.in`, then regenerate and review both files.
-To intentionally update one transitive dependency, add `--upgrade-package NAME`.
-Use the same generator version and package index for deterministic regeneration;
-do not delete the existing lock or use an unbounded `--upgrade`.
-
-Build the locked backend container from `server/` with
-`docker build -t countrydle-backend-hardening .`. Installation/build verification
-must use disposable environments and data, never the live player database.
-
 ## Run only the affected tests
 
 Run commands from `server/` with the backend virtual environment active and its
@@ -70,7 +34,8 @@ game mode normally needs its mode group and the affected test module, not the
 full suite. Changes to `server/app.py`, shared request wiring, common database
 models/repositories, or cross-mode question evaluation need the broader groups
 selected by `--changed` and may justify the full suite. Frontend tests are
-separate: run `bun run test` from `client/` for the complete Bun/Node-test suite.
+separate: run them from `client/`, for example
+`bun test tests/gameActionComposer.test.ts`.
 
 `--changed BASE` compares the branch with `BASE` and includes staged, unstaged,
 and untracked files. It selects a changed test file directly; known source paths
@@ -139,6 +104,27 @@ and decisive short-circuit boundaries for `and`/`or`/`any`/`all`.
 `test_question_context_privacy.py` checks public disclosure and nested terminal
 state serialization. The real PostgreSQL Flagdle regression also verifies questions
 asked after a win, since that mode allows unlimited post-game questions.
+
+The PostgreSQL Flagdle feature regression reuses the existing isolated accounting
+fixture (`QUESTION_TEST_DATABASE_URL`, or `FRIEND_TEST_DATABASE_URL`); it does not
+depend on removed hardening/CI bootstrap fixtures. Run it against a disposable
+database, not production. `test_fact_provenance.py` covers additive SQLite
+evidence, value-bound evaluation and terminal question-history serialization.
+`test_guest_system.py::test_guest_factual_history_requires_recorded_completion`
+checks Countrydle/continental/Flagdle question history, including question quota
+exhaustion and a stale game cookie without server-recorded completion.
+
+The retained migration is `f6a8c2d4e901 -> c9d0e1f2a3b4`; the never-deployed
+guest-guess identity and UTC-default migrations are not prerequisites. The
+retained migration adds only question evidence/history dependencies. See the
+server README's selective-rollback section for disposable migration/runtime
+smoke instructions and the production release boundary.
+
+Answer-report regressions keep cited membership evidence immutable after the
+underlying question is edited. Provider-boundary fixtures use the actual local
+answer dataclasses, and disposable schema fixtures include retained Flagdle
+question storage. Mock-echo question forwarding is not treated as behavior
+coverage; real PostgreSQL accounting and active/terminal disclosure cover it.
 
 Countrydle fallback uses the same subject/reference policy. Before the provider
 call, bounded English auxiliary/country/predicate prefixes replace a named
@@ -217,12 +203,12 @@ and are not implied by passing these deterministic regressions.
 
 `country_planner_acceptance.json` also includes five production-derived
 development cases for continent borders: English, Polish, compound, misspelled,
-and negated questions. Live interpretation comparison is opt-in and requires
-explicit approved pricing and call/cost caps. Development-only comparison does
-not establish held-out accuracy or approve a release:
+and negated questions. The opt-in harness compares each generated plan's answers
+against the gold plan across the country fact snapshot; it never writes the
+application fact database or plan cache:
 
 ```bash
-python scripts/benchmark_country_planner.py --live --variant current --corpus tests/country_planner_acceptance.json --split development --repeat 3 --env-file /path/to/private/.env --pricing /path/to/reviewed-pricing.json --max-provider-calls 100 --max-cost-usd 1 --output /tmp/country-planner-continent-borders.json
+python scripts/benchmark_country_planner.py --variant current --corpus tests/country_planner_acceptance.json --split development --repeat 3 --env-file ../.env --output /tmp/country-planner-continent-borders.json
 ```
 
 The three opt-in real-provider fallback regressions cover historical membership,
@@ -236,86 +222,6 @@ COUNTRYDLE_RUN_LIVE_FALLBACK_EVAL=1 python -m pytest -q tests/test_countrydle_fa
 Supply a working `GEMINI_API_KEY` in addition to the normal backend environment.
 Run this specific node rather than enabling all optional integration tests;
 other live tests can require PostgreSQL, Qdrant, and additional provider keys.
-
-## Answer-quality release gates
-
-`scripts/benchmark_country_planner.py` defaults to the frozen
-`tests/answer_quality_corpus.json`, split into development and held-out EN/PL
-cases with multiple targets, negation, compounds, temporal qualifiers,
-unsupported facts and unresolved/disputed expectations.
-It reports **template**, **model-planned local** and **fallback** separately.
-Correct answers, wrong answers, correct abstentions, missing answers, route/
-interpretation errors, fact issues, unreviewed targets and provider failures
-remain distinct. Evaluation correctness, factual correctness, interpretation
-and grounding are separate fields, not one inferred success flag.
-
-```bash
-# Key-free deterministic semantics; no env file, providers, history or caches.
-python scripts/benchmark_country_planner.py --offline --repeat 3 --output /tmp/answer-quality-offline.json
-
-# Opt-in actual interpretation and actual fallback answer stage; single worker.
-python scripts/benchmark_country_planner.py --live --variant current --workers 1 --repeat 3 \
-  --env-file /path/to/private/.env --pricing /path/to/reviewed-pricing.json \
-  --max-provider-calls 100 --max-cost-usd 1 --execute-fallback \
-  --fallback-model gemini-2.5-flash-lite \
-  --retrieval-snapshot /path/to/reviewed-retrieval.json \
-  --output /tmp/answer-quality-live.json
-```
-
-Offline supplied/captured plans are **not** current end-to-end accuracy evidence.
-Release fail/insufficient returns nonzero, including for a successful semantic
-run on a corpus too small to approve a release. Do not disable CI regressions
-because this opt-in release assessment correctly declines approval.
-
-The policy is frozen before executing held-out cases: zero template errors;
-local answer/route rate at least 0.95; conditional fallback answer rate at least
-0.90; at least 20 held-out targets per path, five cases per language/path and
-three live repeats. Unreviewed expectations, absent revision/usage/cost or
-grounding evidence are insufficient. The committed small corpus cannot certify
-these denominators; independent adjudication and a larger reviewed cohort are
-prerequisites, not permission to tune thresholds against observed scores.
-
-Pricing JSON must contain `approved: true`, `currency: "USD"`, `as_of`, and a
-`models` entry for every executing model, with nonnegative
-`input_usd_per_million`, `cached_input_usd_per_million`,
-`output_usd_per_million` and an approved positive `max_input_tokens`.
-Verify the dated rates against the
-[provider's published pricing](https://ai.google.dev/gemini-api/docs/pricing).
-The token bound is an operator-approved conservative reservation bound, not an
-assertion of the model's context window. Every provider retry reserves a call
-and worst-case input/output/thought cost before transmission; reservations are
-never refunded. Caps cannot exceed 100 calls or USD 1 in this adapter.
-Missing cached/thought usage is unknown, not silently zero or a fully observed
-bill. Actual observed costs and conservative reservations are reported separately.
-
-Fallback uses the production pure prompt builder and real answer adapter,
-conditional on immutable **pre-retrieved** context. The JSON has
-`schema_version: 1` and `contexts[case_id][target]` records with explicit `text`,
-citation/retrieval facts and their review status; every attempted case/target
-must be present. Empty/unreviewed context stays missing evidence.
-This does not measure live embeddings, vector retrieval or answer-cache reuse.
-Only a reviewed grounding assessment can certify grounding; a provider's
-self-report or a cited URL alone cannot.
-
-Reports record corpus/fact/source/cache identity, requested and observed model
-revision, repeated attempts, latency, usage missingness and bounded spend.
-Facts are read from a private SQLite snapshot; cache adapters and provider
-configuration are isolated without application imports or gameplay writes.
-Report output cannot alias inputs, source, credentials or SQLite sidecars.
-Generic-mode plan-cache identity includes semantic/prompt/configuration version:
-change that identity when interpretation semantics change, never reuse a stale
-plan merely because the question string matches.
-
-## Hardening regression and publication boundary
-
-The mandatory workflow runs the complete offline backend suite with a disposable
-non-superuser PostgreSQL role, regular frontend Bun/Python tests, both matching
-desktop/mobile Playwright projects and both container builds.
-Publication needs all four job groups; failed/cancelled/skipped gates block it.
-Fork/PR jobs use read-only repository permission and cannot log into the registry
-or publish. Live evaluations remain separate opt-in bounded operator commands,
-not mandatory CI secrets or evidence implied by deterministic regressions.
-Local command/image proof does not mean the remote workflow or registry was run.
 
 ## Where tests belong
 

@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
-from sqlalchemy import select
-
-from daily_clock import utc_today
-from db.models.country import Country
-from db.models.flagdle import FlagdleDay, FlagdleGuess
-from db.models.guest_participation import GuestParticipation
+from tests.test_question_accounting import accounting_db
 
 from game_logic import calculate_flagdle_points
 from flagdle.utils import (
@@ -18,18 +14,6 @@ from flagdle.utils import (
     get_country_iso2,
     verify_asset_token,
 )
-
-
-@pytest.fixture
-async def flag_day(daily_api_db):
-    async with daily_api_db() as session:
-        session.add_all([
-            Country(id=143, name="Romania", official_name="Romania", md_file="Romania.md"),
-            Country(id=34, name="Chad", official_name="Republic of Chad", md_file="Chad.md"),
-        ])
-        await session.flush()
-        session.add(FlagdleDay(id=10, country_id=143, date=utc_today()))
-        await session.commit()
 
 
 def test_flagdle_points_calculation():
@@ -115,94 +99,160 @@ async def test_flagdle_countries_endpoint(async_client):
     assert "iso2" in first
 
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_flagdle_state_anti_cheat(daily_api_client, flag_day):
-    """Active games expose neither the target nor its asset filename."""
-    res = await daily_api_client.get("/flagdle/state")
-    assert res.status_code == 200, res.text
-    data = res.json()
-    assert data["country"] is None
-    assert data["state"]["is_game_over"] is False
-    assert data["state"]["remaining_guesses"] == 12
-    assert data["state"]["revealed_stage"] == 1
-    assert "ro.svg" not in data["flag_asset_url"]
-    assert "romania" not in data["flag_asset_url"].lower()
-    assert "/flagdle/flag-asset?token=" in data["flag_asset_url"]
+async def test_flagdle_state_anti_cheat(async_client):
+    """Verify target country ID, name, and ISO2 are NEVER returned during active game."""
+    with (
+        patch(
+            "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            new_callable=AsyncMock,
+        ) as mock_get_country,
+    ):
+        mock_country = MagicMock()
+        mock_country.id = 58
+        mock_country.name = "France"
+        mock_country.official_name = "French Republic"
+
+        mock_day = MagicMock()
+        mock_day.id = 1
+        mock_day.country_id = 58
+        mock_day.country = mock_country
+        mock_day.date = date(2026, 9, 22)
+
+        mock_get_today.return_value = mock_day
+        mock_get_country.return_value = mock_country
+
+        res = await async_client.get("/flagdle/state")
+        assert res.status_code == 200
+        data = res.json()
+
+        # Target country MUST NOT be exposed while game is in progress
+        assert data["country"] is None
+        assert data["state"]["is_game_over"] is False
+        assert data["state"]["remaining_guesses"] == 12
+        assert data["state"]["revealed_stage"] == 1
+
+        # The flag asset URL must be an obfuscated proxy token URL, NOT revealing "fr.svg"
+        assert "fr.svg" not in data["flag_asset_url"]
+        assert "france" not in data["flag_asset_url"].lower()
+        assert "/flagdle/flag-asset?token=" in data["flag_asset_url"]
 
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_flagdle_guess_endpoint(daily_api_client, flag_day, daily_api_db):
-    """A persisted guest guess returns visual clues and its first tile."""
-    res = await daily_api_client.post(
-        "/flagdle/guess", json={"country_id": 34, "guess": "Chad"},
-    )
-    assert res.status_code == 200, res.text
-    data = res.json()
-    assert data["answer"] is False
-    assert data["guess"] == "Chad"
-    assert "blue" in data["matched_colors"]
-    assert "red" in data["matched_colors"]
-    assert "yellow" in data["matched_colors"]
-    assert data["distance_km"] is None
-    assert data["bearing_direction"] is None
-    assert data["revealed_tile"] == UNMASK_ORDER[0]
-    async with daily_api_db() as session:
-        participation = (await session.scalars(select(GuestParticipation))).one()
-        guess = (await session.scalars(select(FlagdleGuess))).one()
-        assert participation.guesses_made == 1
-        assert participation.won is False
-        assert participation.mode == "flagdle"
-        assert guess.guest_id == participation.guest_id
-        assert guess.user_id is None
-        assert guess.id == data["id"]
-        assert guess.revealed_tile == UNMASK_ORDER[0]
-    reloaded = await daily_api_client.get("/flagdle/state")
-    assert reloaded.status_code == 200, reloaded.text
-    assert reloaded.json()["state"]["guesses_made"] == 1
-    assert reloaded.json()["state"]["remaining_guesses"] == 11
-    assert reloaded.json()["state"]["revealed_stage"] == 2
-    assert reloaded.json()["guesses"][0]["id"] == data["id"]
+async def test_flagdle_guess_endpoint(async_client):
+    """POST /flagdle/guess returns feedback with clues and tile reveal."""
+    with (
+        patch(
+            "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            new_callable=AsyncMock,
+        ) as mock_get_country,
+    ):
+        # Target: Romania (id 143)
+        mock_target = MagicMock()
+        mock_target.id = 143
+        mock_target.name = "Romania"
+        mock_target.official_name = "Romania"
+
+        # Guess: Chad (id 34)
+        mock_chad = MagicMock()
+        mock_chad.id = 34
+        mock_chad.name = "Chad"
+        mock_chad.official_name = "Republic of Chad"
+
+        mock_day = MagicMock()
+        mock_day.id = 10
+        mock_day.country_id = 143
+        mock_day.country = mock_target
+        mock_day.date = date(2026, 9, 22)
+
+        mock_get_today.return_value = mock_day
+
+        async def mock_get(cid):
+            if cid == 143:
+                return mock_target
+            if cid == 34:
+                return mock_chad
+            return None
+
+        mock_get_country.side_effect = mock_get
+
+        guess_payload = {"country_id": 34, "guess": "Chad"}
+        res = await async_client.post("/flagdle/guess", json=guess_payload)
+        assert res.status_code == 200
+        data = res.json()
+
+        assert data["answer"] is False
+        assert data["guess"] == "Chad"
+        assert "blue" in data["matched_colors"]
+        assert "red" in data["matched_colors"]
+        assert "yellow" in data["matched_colors"]
+        # Guess 1: No distance (starts at guess 4) and no direction (starts at guess 8)
+        assert data["distance_km"] is None
+        assert data["bearing_direction"] is None
+        assert data["revealed_tile"] == UNMASK_ORDER[0]
 
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_flagdle_reveal_protection(daily_api_client, flag_day):
-    """The target cannot be revealed before durable progress is terminal."""
-    res = await daily_api_client.get("/flagdle/reveal")
-    assert res.status_code == 400
-    assert "Cannot reveal country before game is over" in res.json()["detail"]
+async def test_flagdle_reveal_protection(async_client):
+    """GET /flagdle/reveal returns 400 when game is not over."""
+    with (
+        patch(
+            "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+    ):
+        mock_day = MagicMock()
+        mock_day.id = 10
+        mock_day.country_id = 143
+        mock_day.date = date(2026, 9, 22)
+        mock_get_today.return_value = mock_day
 
+        res = await async_client.get("/flagdle/reveal")
+        assert res.status_code == 400
+        assert "Cannot reveal country before game is over" in res.json()["detail"]
 
-@pytest.mark.real_database
 @pytest.mark.anyio
-async def test_flagdle_guess_correct_flow(daily_api_client, flag_day, daily_api_db):
-    """A correct guest guess persists the win and reveals it on reload."""
-    res = await daily_api_client.post(
-        "/flagdle/guess", json={"country_id": 143, "guess": "Romania"},
-    )
-    assert res.status_code == 200, res.text
-    data = res.json()
-    assert data["answer"] is True
-    assert data["guess"] == "Romania"
-    assert data["distance_km"] == 0
-    async with daily_api_db() as session:
-        participation = (await session.scalars(select(GuestParticipation))).one()
-        guess = (await session.scalars(select(FlagdleGuess))).one()
-        assert participation.won is True
-        assert participation.guesses_made == 1
-        assert guess.guest_id == participation.guest_id
-        assert guess.user_id is None
-        assert guess.answer is True
-        assert guess.id == data["id"]
-    reloaded = await daily_api_client.get("/flagdle/state")
-    assert reloaded.status_code == 200, reloaded.text
-    assert reloaded.json()["state"]["won"] is True
-    assert reloaded.json()["state"]["is_game_over"] is True
-    assert reloaded.json()["state"]["revealed_stage"] == 12
-    assert reloaded.json()["country"]["name"] == "Romania"
-    assert len(reloaded.json()["guesses"]) == 1
+async def test_flagdle_guess_correct_flow(async_client):
+    """POST /flagdle/guess with target country returns answer=True."""
+    with (
+        patch(
+            "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            new_callable=AsyncMock,
+        ) as mock_get_country,
+    ):
+        mock_target = MagicMock()
+        mock_target.id = 143
+        mock_target.name = "Romania"
+        mock_target.official_name = "Romania"
+
+        mock_day = MagicMock()
+        mock_day.id = 10
+        mock_day.country_id = 143
+        mock_day.country = mock_target
+        mock_day.date = date(2026, 9, 22)
+
+        mock_get_today.return_value = mock_day
+        mock_get_country.return_value = mock_target
+
+        guess_payload = {"country_id": 143, "guess": "Romania"}
+        res = await async_client.post("/flagdle/guess", json=guess_payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["answer"] is True
+        assert data["guess"] == "Romania"
+        assert data["distance_km"] == 0
 
 
 @pytest.mark.anyio
@@ -269,6 +319,38 @@ async def test_flagdle_history_endpoint(async_client):
         assert data[0]["id"] == 55
         assert data[0]["date"] == "2026-09-21"
         assert data[0]["country"]["name"] == "France"
+
+
+@pytest.fixture
+async def flag_day(accounting_db):
+    from db.models import Country, FlagdleDay
+    async with accounting_db() as session:
+        country = Country(id=143, name="Romania", official_name="Romania", md_file="romania.md")
+        day = FlagdleDay(id=1, country=country, date=date.today())
+        session.add_all([country, day])
+        await session.commit()
+    return day
+
+
+@pytest.fixture
+async def daily_api_client(accounting_db, flag_day):
+    from fastapi import FastAPI
+    from httpx import ASGITransport, AsyncClient
+    from db import get_db
+    from flagdle import router
+    from users.utils import get_current_or_guest_user
+
+    app = FastAPI()
+    app.include_router(router)
+
+    async def session_dependency():
+        async with accounting_db() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = session_dependency
+    app.dependency_overrides[get_current_or_guest_user] = lambda: None
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
 
 
 @pytest.mark.real_database

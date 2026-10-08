@@ -10,7 +10,6 @@ from sqlalchemy.exc import IntegrityError
 
 from db import AsyncSessionLocal
 from db.repositories.user import UserRepository
-from runtime_configuration import CORS_ALLOWED_ORIGINS
 from users.utils import get_admin_user, verify_access_token
 from . import service
 from .providers import list_entities
@@ -20,13 +19,21 @@ router = APIRouter(tags=["friend-matches"])
 logger = logging.getLogger(__name__)
 COOKIE_NAME = "friend_duel_seat"
 COOKIE_AGE = 60 * 60 * 24 * 365
+DEFAULT_ORIGINS = {
+    "http://localhost", "http://localhost:80", "http://localhost:5173", "http://localhost:5174",
+    "http://127.0.0.1", "http://127.0.0.1:80", "http://127.0.0.1:5173", "http://127.0.0.1:5174",
+    "https://countrydle.online", "https://www.countrydle.online",
+}
 
 
 def require_origin(connection, *, required=True):
     origin = connection.headers.get("origin")
     if not origin and not required:
         return
-    if not origin or origin == "null" or origin not in CORS_ALLOWED_ORIGINS:
+    scheme = connection.url.scheme.replace("wss", "https").replace("ws", "http")
+    same_origin = f"{scheme}://{connection.headers.get('host', '')}"
+    configured = {value.strip().rstrip("/") for value in os.getenv("FRIEND_ALLOWED_ORIGINS", "").split(",") if value.strip()}
+    if not origin or origin == "null" or origin not in DEFAULT_ORIGINS | configured | {same_origin}:
         raise HTTPException(status_code=403, detail="This origin is not allowed to access friend duels.")
 
 
@@ -53,7 +60,8 @@ def admission_digest(request):
 
 def issue_guest(request, response):
     token = guest_token(request) or secrets.token_urlsafe(32)
-    secure = request.url.scheme == "https" or os.getenv("FRIEND_COOKIE_SECURE", "").lower() in {"true", "1", "yes"}
+    configured = os.getenv("FRIEND_COOKIE_SECURE")
+    secure = configured.lower() in {"true", "1", "yes"} if configured is not None else request.url.scheme == "https"
     response.set_cookie(COOKIE_NAME, token, httponly=True, secure=secure, samesite="lax",
                         path="/", max_age=COOKIE_AGE)
     # Path=/ is required: existing proxies strip the public /api prefix.

@@ -18,15 +18,11 @@ class CountrydleQuestionsRepository:
 
         return result.scalars().first()
 
-    async def create_question(
-        self, quesiton: QuestionCreate, *, guest_id: str | None = None
-    ) -> CountrydleQuestion:
+    async def create_question(self, quesiton: QuestionCreate) -> CountrydleQuestion:
         data = quesiton.model_dump()
         # Remove fields that are not in the DB model
         data.pop("intent", None)
         data.pop("required_info", None)
-        if guest_id is not None:
-            data["guest_id"] = guest_id
         new_entry = CountrydleQuestion(**data)
 
         self.session.add(new_entry)
