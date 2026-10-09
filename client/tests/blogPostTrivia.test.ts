@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { getFalseDistractor } from "../src/pages/BlogPostPage";
+import { getFalseDistractor } from "../src/lib/blogTrivia";
 
 describe("getFalseDistractor", () => {
   it("generates a guaranteed-false statement for African countries (like Tunisia)", () => {

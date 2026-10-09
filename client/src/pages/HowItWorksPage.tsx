@@ -719,12 +719,12 @@ export default function HowItWorksPage() {
       </section>
 
       {/* 3. Interactive Live Pipeline Inspector (GRID LAYOUT) */}
-      <section aria-labelledby="interactive-inspector-title" className="space-y-6">
+      <section aria-labelledby="interactive-inspector-title" className="min-w-0 space-y-6 break-words">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 id="interactive-inspector-title" className="font-serif text-2xl text-sand-100 sm:text-3xl flex items-center gap-2.5">
-              <Binary className="text-cyan-400" size={26} aria-hidden="true" />
-              <span>{isPl ? 'Interaktywny Inspektor Zapytań' : 'Interactive Pipeline Inspector'}</span>
+          <div className="min-w-0">
+            <h2 id="interactive-inspector-title" className="min-w-0 font-serif text-2xl text-sand-100 sm:text-3xl flex items-center gap-2.5">
+              <Binary className="shrink-0 text-cyan-400" size={26} aria-hidden="true" />
+              <span className="min-w-0">{isPl ? 'Interaktywny Inspektor Zapytań' : 'Interactive Pipeline Inspector'}</span>
             </h2>
             <p className="mt-1 text-sm text-zinc-400">
               {isPl
@@ -749,7 +749,7 @@ export default function HowItWorksPage() {
                 aria-pressed={isSelected}
                 onClick={() => setSelectedExampleId(ex.id)}
                 className={cn(
-                  'flex flex-col justify-between rounded-sm border p-4 text-left transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 min-h-[140px]',
+                  'flex min-w-0 flex-col justify-between rounded-sm border p-4 text-left transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 min-h-[140px]',
                   isSelected
                     ? 'border-emerald-400/60 bg-emerald-400/10 shadow-lg shadow-emerald-950/40 ring-1 ring-emerald-400/30'
                     : 'border-white/10 bg-obsidian-900/90 hover:border-white/20 hover:bg-obsidian-900 text-zinc-400'
@@ -784,25 +784,25 @@ export default function HowItWorksPage() {
         </div>
 
         {/* Selected Example Detail Card */}
-        <div className="overflow-hidden rounded-md border border-white/10 bg-obsidian-900">
+        <div className="min-w-0 rounded-md border border-white/10 bg-obsidian-900">
           {/* Card Top Banner */}
           <div className="flex flex-col gap-4 border-b border-white/10 bg-obsidian-950/60 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={cn('rounded px-2 py-0.5 font-mono text-[11px] font-semibold border', currentExample.stageColor)}>
+            <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className={cn('max-w-full rounded px-2 py-0.5 font-mono text-[11px] font-semibold border', currentExample.stageColor)}>
                   {currentExample.stageBadge}
                 </span>
-                <span className="font-mono text-xs text-zinc-400">{currentExample.mode}</span>
+                <span className="min-w-0 font-mono text-xs text-zinc-400 [overflow-wrap:anywhere]">{currentExample.mode}</span>
                 <span className="font-mono text-xs text-zinc-600">&bull;</span>
                 <span className="font-mono text-xs text-emerald-400">{currentExample.latency}</span>
               </div>
-              <h3 className="mt-2 font-serif text-2xl text-sand-100">
+              <h3 className="mt-2 min-w-0 font-serif text-2xl text-sand-100">
                 "{isPl ? currentExample.questionPl : currentExample.questionEn}"
               </h3>
             </div>
 
             {/* Verdict Box with Crisp Lucide Icons */}
-            <div className="flex items-center gap-3 self-start rounded-sm border border-white/10 bg-obsidian-900 px-4 py-2.5 sm:self-auto">
+            <div className="flex max-w-full shrink-0 items-center gap-3 self-start rounded-sm border border-white/10 bg-obsidian-900 px-4 py-2.5 sm:self-auto">
               <div className="text-right">
                 <span className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   {isPl ? 'Wynik Prawdy' : 'Truth Verdict'}
@@ -831,57 +831,57 @@ export default function HowItWorksPage() {
           </div>
 
           {/* Sub-tab Navigation */}
-          <div className="flex border-b border-white/10 bg-obsidian-950/30 px-5 text-xs font-mono">
+          <div className="flex min-w-0 flex-col border-b border-white/10 bg-obsidian-950/30 px-5 text-xs font-mono sm:flex-row sm:flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab('ast')}
               className={cn(
-                'flex items-center gap-2 border-b-2 py-3 px-3 transition-colors',
+                'flex min-h-[44px] min-w-0 items-center gap-2 border-b-2 py-3 px-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-400',
                 activeTab === 'ast'
                   ? 'border-emerald-400 text-emerald-300 font-semibold'
                   : 'border-transparent text-zinc-400 hover:text-sand-100'
               )}
             >
-              <Code2 size={14} />
-              {isPl ? 'Drzewo AST (JSON)' : 'AST Wire Plan (JSON)'}
+              <Code2 size={14} className="shrink-0" aria-hidden="true" />
+              <span className="min-w-0">{isPl ? 'Drzewo AST (JSON)' : 'AST Wire Plan (JSON)'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('sql')}
               className={cn(
-                'flex items-center gap-2 border-b-2 py-3 px-3 transition-colors',
+                'flex min-h-[44px] min-w-0 items-center gap-2 border-b-2 py-3 px-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-400',
                 activeTab === 'sql'
                   ? 'border-emerald-400 text-emerald-300 font-semibold'
                   : 'border-transparent text-zinc-400 hover:text-sand-100'
               )}
             >
-              <Database size={14} />
-              {isPl ? 'Kwerenda SQLite / Wektory' : 'Database Query / Facts'}
+              <Database size={14} className="shrink-0" aria-hidden="true" />
+              <span className="min-w-0">{isPl ? 'Kwerenda SQLite / Wektory' : 'Database Query / Facts'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('details')}
               className={cn(
-                'flex items-center gap-2 border-b-2 py-3 px-3 transition-colors',
+                'flex min-h-[44px] min-w-0 items-center gap-2 border-b-2 py-3 px-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-400',
                 activeTab === 'details'
                   ? 'border-emerald-400 text-emerald-300 font-semibold'
                   : 'border-transparent text-zinc-400 hover:text-sand-100'
               )}
             >
-              <Layers size={14} />
-              {isPl ? 'Uzasadnienie & Audyt' : 'Explanation & Audit'}
+              <Layers size={14} className="shrink-0" aria-hidden="true" />
+              <span className="min-w-0">{isPl ? 'Uzasadnienie & Audyt' : 'Explanation & Audit'}</span>
             </button>
           </div>
 
           {/* Tab Content */}
-          <div className="p-5 sm:p-6">
+          <div className="min-w-0 p-5 sm:p-6">
             {activeTab === 'ast' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span className="font-mono">{isPl ? 'Sformalizowany Plan Wykonawczy (AST)' : 'Formal Abstract Syntax Tree (AST)'}</span>
-                  <span className="font-mono text-emerald-400">Operator: {currentExample.operator}</span>
+              <div className="min-w-0 space-y-4">
+                <div className="flex min-w-0 flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <span id="inspector-ast-label" className="min-w-0 font-mono">{isPl ? 'Sformalizowany Plan Wykonawczy (AST)' : 'Formal Abstract Syntax Tree (AST)'}</span>
+                  <span className="min-w-0 font-mono text-emerald-400 [overflow-wrap:anywhere]">Operator: {currentExample.operator}</span>
                 </div>
-                <pre className="overflow-x-auto rounded-sm border border-white/10 bg-obsidian-950 p-4 font-mono text-xs leading-relaxed text-sand-200">
+                <pre tabIndex={0} aria-labelledby="inspector-ast-label" className="min-w-0 max-w-full overflow-x-auto rounded-sm border border-white/10 bg-obsidian-950 p-4 font-mono text-xs leading-relaxed text-sand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
                   <code>{currentExample.planJson}</code>
                 </pre>
                 <p className="text-xs leading-relaxed text-zinc-400">
@@ -891,15 +891,15 @@ export default function HowItWorksPage() {
             )}
 
             {activeTab === 'sql' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span className="font-mono">{isPl ? 'Fizyczne Wykonanie na SQLite' : 'Physical Execution on SQLite / Vector Database'}</span>
-                  <span className="font-mono text-indigo-400">{currentExample.targetEntity}</span>
+              <div className="min-w-0 space-y-4">
+                <div className="flex min-w-0 flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <span id="inspector-sql-label" className="min-w-0 font-mono">{isPl ? 'Fizyczne Wykonanie na SQLite' : 'Physical Execution on SQLite / Vector Database'}</span>
+                  <span className="min-w-0 font-mono text-indigo-400 [overflow-wrap:anywhere]">{currentExample.targetEntity}</span>
                 </div>
-                <pre className="overflow-x-auto rounded-sm border border-white/10 bg-obsidian-950 p-4 font-mono text-xs leading-relaxed text-sand-200">
+                <pre tabIndex={0} aria-labelledby="inspector-sql-label" className="min-w-0 max-w-full overflow-x-auto rounded-sm border border-white/10 bg-obsidian-950 p-4 font-mono text-xs leading-relaxed text-sand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
                   <code>{currentExample.sqlQuery}</code>
                 </pre>
-                <div className="rounded-sm border border-white/10 bg-obsidian-950/40 p-4">
+                <div className="min-w-0 rounded-sm border border-white/10 bg-obsidian-950/40 p-4">
                   <span className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                     {isPl ? 'Fakt w Bazie Danych' : 'Extracted Factual Ground Truth'}
                   </span>
@@ -911,8 +911,8 @@ export default function HowItWorksPage() {
             )}
 
             {activeTab === 'details' && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-sm border border-white/10 bg-obsidian-950/60 p-4">
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="min-w-0 rounded-sm border border-white/10 bg-obsidian-950/60 p-4">
                   <span className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                     {isPl ? 'Uzasadnienie Odpowiedzi' : 'Human-Readable Explanation'}
                   </span>
@@ -921,13 +921,13 @@ export default function HowItWorksPage() {
                   </p>
                 </div>
 
-                <div className="rounded-sm border border-white/10 bg-obsidian-950/60 p-4">
+                <div className="min-w-0 rounded-sm border border-white/10 bg-obsidian-950/60 p-4">
                   <span className="block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                     {isPl ? 'Tag Audytowy Relacji' : 'Audit Relation Tag'}
                   </span>
-                  <div className="mt-2 inline-flex items-center gap-2 rounded bg-white/5 px-2.5 py-1 font-mono text-xs text-emerald-300 border border-white/10">
-                    <FileCode size={13} />
-                    {currentExample.auditTag}
+                  <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded bg-white/5 px-2.5 py-1 font-mono text-xs text-emerald-300 border border-white/10">
+                    <FileCode size={13} className="shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{currentExample.auditTag}</span>
                   </div>
                   <p className="mt-3 text-xs text-zinc-500">
                     {isPl

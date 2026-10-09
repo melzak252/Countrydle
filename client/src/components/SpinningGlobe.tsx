@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pause, Play } from 'lucide-react';
 import { CONTINENT_POINTS } from './globeData';
 
 interface SpinningGlobeProps {
@@ -10,6 +12,8 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
   className = '',
   size = 340,
 }) => {
+  const { i18n } = useTranslation();
+  const isPl = i18n.language.startsWith('pl');
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hudCoords, setHudCoords] = useState<{ lon: string; tilt: string; isStopped: boolean }>({
@@ -51,6 +55,16 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleMotionPreference = () => {
+      if (motionPreference.matches) {
+        rotationRef.current.velLon = 0;
+        rotationRef.current.velLat = 0;
+        setHudCoords((coords) => ({ ...coords, isStopped: true }));
+      }
+    };
+    handleMotionPreference();
+    motionPreference.addEventListener('change', handleMotionPreference);
 
     let animationFrameId: number;
     let lastTime = performance.now();
@@ -66,7 +80,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     const render = (time: number) => {
       const dt = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
-      pulseTime += dt;
+      if (!motionPreference.matches) pulseTime += dt;
 
       const state = rotationRef.current;
 
@@ -423,6 +437,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      motionPreference.removeEventListener('change', handleMotionPreference);
     };
   }, []);
 
@@ -469,6 +484,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     } catch {
       // Ignored if capture already lost
     }
+    if (!rotationRef.current.isDragging) return;
     const state = rotationRef.current;
     const now = performance.now();
 
@@ -508,6 +524,18 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     state.isDragging = false;
     setIsInteracting(false);
   };
+  const handlePointerCancel = () => {
+    rotationRef.current.isDragging = false;
+    setIsInteracting(false);
+  };
+
+  const toggleRotation = () => {
+    const state = rotationRef.current;
+    const isStopped = Math.abs(state.velLon) < 0.0002;
+    state.velLon = isStopped ? 0.0035 : 0;
+    state.velLat = 0;
+    setHudCoords((coords) => ({ ...coords, isStopped: !isStopped }));
+  };
   // Safety listener so pointer release outside canvas/window never traps isDragging
   useEffect(() => {
     const handleGlobalRelease = () => {
@@ -527,9 +555,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
   return (
     <figure
       ref={containerRef}
-      className={`relative mx-auto flex flex-col items-center select-none ${className}`}
+      className={`relative mx-auto flex w-full min-w-0 flex-col items-center select-none ${className}`}
     >
-      <div className="relative cursor-grab active:cursor-grabbing">
+      <div className="relative aspect-[10/9] w-full cursor-grab active:cursor-grabbing" style={{ maxWidth: size }}>
         {/* Subtle background ambient radial bloom */}
         <div
           aria-hidden="true"
@@ -541,10 +569,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          className="block touch-none"
-          style={{ width: `${size}px`, height: `${size * 0.9}px` }}
-          aria-label="Interactive 3D animated green holographic globe"
+          onPointerCancel={handlePointerCancel}
+          className="absolute inset-0 block h-full w-full touch-pan-y"
+          aria-label={isPl ? 'Interaktywny animowany globus. Przeciągnij w bok, aby go obrócić; dotknij, aby zatrzymać lub wznowić obrót.' : 'Interactive animated globe. Drag sideways to rotate; tap to pause or resume.'}
           role="img"
         />
 
@@ -567,28 +594,28 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         />
       </div>
 
-      {/* Technical HUD Telemetry Strip */}
-      <figcaption className="mt-3 flex w-full max-w-[340px] items-center justify-between border-t border-emerald-500/20 pt-2 font-mono text-[10px] uppercase tracking-wider text-emerald-400/70">
-        <span className="flex items-center gap-1.5">
-          <span
-            className={`inline-block h-1.5 w-1.5 rounded-full ${
-              isInteracting
-                ? 'bg-emerald-300 animate-ping'
-                : hudCoords.isStopped
-                ? 'bg-zinc-500'
-                : 'bg-emerald-400 animate-pulse'
-            }`}
-          />
+      <figcaption className="mt-2 flex w-full items-center justify-between gap-2 border-t border-emerald-500/20 pt-1 text-xs text-emerald-300/80" style={{ maxWidth: size }}>
+        <span className="min-w-0">
           {isInteracting
-            ? 'MANUAL ROTATION'
+            ? (isPl ? 'Obracasz globus' : 'Rotating by hand')
             : hudCoords.isStopped
-            ? 'ROTATION PAUSED'
-            : 'LIVE 3D PROJECTION'}
+              ? (isPl ? 'Obrót wstrzymany' : 'Rotation paused')
+              : (isPl ? 'Przeciągnij globus' : 'Drag to explore')}
         </span>
-        <span className="text-zinc-400">
-          LON: <span className="font-semibold text-emerald-300">{hudCoords.lon}</span> · TILT:{' '}
-          <span className="font-semibold text-emerald-300">{hudCoords.tilt}</span>
-        </span>
+        <button
+          type="button"
+          onClick={toggleRotation}
+          aria-label={hudCoords.isStopped
+            ? (isPl ? 'Wznów obrót globusa' : 'Resume globe rotation')
+            : (isPl ? 'Wstrzymaj obrót globusa' : 'Pause globe rotation')}
+          title={hudCoords.isStopped
+            ? (isPl ? 'Wznów obrót globusa' : 'Resume globe rotation')
+            : (isPl ? 'Wstrzymaj obrót globusa' : 'Pause globe rotation')}
+          aria-pressed={hudCoords.isStopped}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-emerald-300 hover:bg-emerald-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+        >
+          {hudCoords.isStopped ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
+        </button>
       </figcaption>
     </figure>
   );
