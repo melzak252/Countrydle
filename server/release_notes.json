@@ -1,5 +1,5 @@
 {
-  "version": "1.25.3",
-  "title": "Persistent disk-backed caches",
-  "body": "- Question plans are now read individually from persistent SQLite storage instead of preloading and retaining a second application-memory cache.\n- Flagdle now keeps downloaded flag SVGs on the persistent data volume and reuses them after backend restarts.\n- Flag cache reads and downloads run off the request event loop; temporary upstream placeholders are not saved to disk.\n- The admin Cache page now shows durable stored-plan counts and SQLite storage rather than RAM capacity.\n\nExisting cached plans, saved player progress, game rules, and question and guess limits are unchanged."
+  "version": "1.25.4",
+  "title": "Map interaction and question focus",
+  "body": "- On desktop, the question field restores typing focus after submissions and mouse clicks or right-clicks on the map.\n- Map interactions during a pending question restore focus when the response arrives and the input is available again.\n- Map clicks preserve the draft and caret, and rejected submissions retain the draft.\n- Map controls, keyboard navigation, other forms, and touch interactions do not trigger map-click focus restoration; page load does not autofocus the question field.\n\nThis release also includes the previously prepared persistent disk-backed question-plan and flag-SVG caches. Saved player progress, game rules, and question and guess limits are unchanged."
 }
