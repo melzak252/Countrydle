@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import asyncio
 import logging
 import time
 import traceback
@@ -234,6 +235,7 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
         "<url><loc>https://countrydle.online/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>",
         "<url><loc>https://countrydle.online/game</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/flagdle</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
+        "<url><loc>https://countrydle.online/border-hop</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/europe</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/asia</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/africa</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
@@ -269,10 +271,10 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
     return Response(content=xml_content, media_type="application/xml")
 
 @app.get("/cache-stats")
-async def get_cache_stats():
-    """Returns runtime statistics for the in-memory question plan cache."""
+async def get_cache_stats() -> dict[str, int | float | str]:
+    """Return process-local lookup counters and the persistent SQLite plan count."""
     from utils.plan_cache import plan_cache
-    return plan_cache.stats()
+    return await asyncio.to_thread(plan_cache.stats)
 
 
 

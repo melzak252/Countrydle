@@ -46,6 +46,53 @@ beforeEach(() => {
 });
 afterEach(() => mock.restore());
 
+for (const responseTime of [25, 1000, 1500]) {
+  test(`thinking animation: a ${responseTime}ms response completes at max(response time, 1000ms)`, async () => {
+    let now = 0;
+    const timers: { at: number; run: () => void }[] = [];
+    spyOn(Date, 'now').mockImplementation(() => now);
+    spyOn(globalThis, 'setTimeout').mockImplementation(((run: () => void, delay = 0) => {
+      timers.push({ at: now + delay, run });
+      return 0;
+    }) as typeof setTimeout);
+    const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
+    const advance = async (time: number) => {
+      now = time;
+      for (const timer of timers.splice(0)) {
+        if (timer.at <= now) timer.run();
+        else timers.push(timer);
+      }
+      await flush();
+    };
+    useCountryGameStore.setState({ gameState: state(10), questions: [], guesses: [],
+      dailyDate: date, isGuest: true, isLoading: false, correctEntity: null });
+    const response = Promise.withResolvers<unknown>();
+    spyOn(gameService, 'askQuestion').mockImplementation(() => response.promise as never);
+    const pending = useCountryGameStore.getState().askQuestion('Is it in Europe?');
+    try {
+      expect(useCountryGameStore.getState().isLoading).toBe(true);
+      now = responseTime;
+      response.resolve(question(1, true));
+      await flush();
+      if (responseTime < 1000) {
+        await advance(999);
+        expect(useCountryGameStore.getState().isLoading).toBe(true);
+        expect(useCountryGameStore.getState().questions).toEqual([]);
+        expect(useCountryGameStore.getState().gameState).toEqual(state(10));
+        await advance(1000);
+      }
+      expect(timers).toEqual([]);
+      expect(useCountryGameStore.getState().isLoading).toBe(false);
+      expect(useCountryGameStore.getState().gameState?.questions_asked).toBe(1);
+      expect(useCountryGameStore.getState().gameState?.remaining_questions).toBe(9);
+      expect(useCountryGameStore.getState().questions.map(q => q.id)).toEqual([1]);
+    } finally {
+      for (const timer of timers.splice(0)) timer.run();
+      await pending;
+    }
+  });
+}
+
 for (const [mode, store, service, maximum] of modes) {
   const key = `guess_game_${mode}_${date}`;
   const initialize = () => store.setState({ gameState: state(maximum), questions: [], guesses: [],
@@ -220,4 +267,61 @@ test('flagdle: read-only storage must still restore guest counters and accepted 
   expect(useFlagdleGameStore.getState().gameState?.remaining_guesses).toBe(10);
   expect(useFlagdleGameStore.getState().gameState?.guesses_made).toBe(2);
   expect(useFlagdleGameStore.getState().questions.map(q => q.answer)).toEqual([false]);
+});
+
+for (const [mode, store, service, maximum] of modes.filter(([mode]) =>
+  ['country', 'europe', 'asia', 'africa', 'americas'].includes(mode))) {
+  test(`${mode}: completed guest history hydrates named explanations by question ID and survives reload`, async () => {
+    const key = `guess_game_${mode}_${date}`;
+    const completedState = { ...state(maximum), questions_asked: 1, remaining_questions: maximum - 1,
+      guesses_made: 1, remaining_guesses: 2, is_game_over: true, won: true };
+    const activeQuestion = { ...question(1, true), explanation: '' };
+    const completedQuestion = { ...activeQuestion, explanation: 'Poland is in Europe.' };
+    localStorage.setItem(key, JSON.stringify({
+      state: completedState, questions: [activeQuestion], guesses: [{ id: 1, guess: 'Poland', answer: true }],
+    }));
+    spyOn(service, 'getState').mockResolvedValue({
+      user: null, date, state: completedState, guesses: [], questions: [
+        completedQuestion, { ...completedQuestion, id: 999, explanation: 'Unrelated history' },
+      ],
+    } as never);
+    store.setState({ isGuest: true, dailyDate: date, questions: [], guesses: [], isLoading: false });
+    await store.getState().fetchGameState();
+    expect(store.getState().questions.map(q => q.explanation)).toEqual(['Poland is in Europe.']);
+    expect(JSON.parse(localStorage.getItem(key)!).questions[0].explanation).toBe('Poland is in Europe.');
+    store.getState().resetGame();
+    await store.getState().fetchGameState();
+    expect(store.getState().questions.map(q => q.explanation)).toEqual(['Poland is in Europe.']);
+  });
+}
+
+test('active guest history never hydrates terminal facts from a state response', async () => {
+  const key = `guess_game_country_${date}`;
+  localStorage.setItem(key, JSON.stringify({
+    state: { ...state(10), questions_asked: 1, remaining_questions: 9 },
+    questions: [{ ...question(1, true), explanation: '' }], guesses: [],
+  }));
+  spyOn(gameService, 'getState').mockResolvedValue({
+    user: null, date, state: { ...state(10), is_game_over: true }, guesses: [],
+    questions: [{ ...question(1, true), explanation: 'Poland is in Europe.' }],
+  } as never);
+  await useCountryGameStore.getState().fetchGameState();
+  expect(useCountryGameStore.getState().questions[0].explanation).toBe('');
+});
+
+test('Flagdle completed guest question history hydrates its own factual explanations', async () => {
+  const completedState = { remaining_guesses: 11, guesses_made: 1, revealed_stage: 12,
+    is_game_over: true, won: true, points: 2000 };
+  const activeQuestion = { ...question(1, true), explanation: '' };
+  localStorage.setItem(`guess_game_flagdle_${date}`, JSON.stringify({
+    state: completedState, questions: [activeQuestion], guesses: [],
+  }));
+  spyOn(flagdleService, 'getState').mockResolvedValue({
+    user: null, date, state: completedState, guesses: [],
+    country: { id: 1, name: 'Poland', iso2: 'PL', iso3: 'POL' },
+    questions: [{ ...activeQuestion, explanation: "Poland's flag contains red and white." }],
+  } as never);
+  await useFlagdleGameStore.getState().fetchGameState();
+  expect(useFlagdleGameStore.getState().questions.map(q => q.explanation))
+    .toEqual(["Poland's flag contains red and white."]);
 });

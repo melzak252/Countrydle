@@ -8,6 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 
+from countrydle.local_answering import LocalAnswer
 from db.models.guest_participation import GuestParticipation
 from tests.test_guest_participation import participation_db
 from utils.guest_session import GUEST_IDENTITY_COOKIE
@@ -30,7 +31,7 @@ async def solo_client(participation_db):
         "Powiat", "PowiatdleDay", "PowiatdleState", "PowiatdleQuestion", "PowiatdleGuess",
         "Wojewodztwo", "WojewodztwodleDay", "WojewodztwodleState", "WojewodztwodleQuestion", "WojewodztwodleGuess",
         "ContinentalDay", "ContinentalState", "ContinentalQuestion", "ContinentalGuess",
-        "FlagdleDay", "FlagdleState", "FlagdleGuess",
+        "FlagdleDay", "FlagdleState", "FlagdleGuess", "FlagdleQuestion",
     )
     async with participation_db() as session:
         connection = await session.connection()
@@ -153,7 +154,7 @@ async def test_flag_questions_and_sync_keep_question_only_player(solo_client, pa
     from users.utils import get_current_user, get_current_or_guest_user
     plan = SimpleNamespace(valid=False, plan=None, improved_question="Is it red?", explanation="Invalid")
     monkeypatch.setattr("flagdle.analyze_question_for_local_plan", lambda _: plan)
-    monkeypatch.setattr("flagdle.execute_local_plan", lambda *args, **kwargs: SimpleNamespace(
+    monkeypatch.setattr("flagdle.execute_local_plan", lambda *args, **kwargs: LocalAnswer(
         question="Is it red?", answer=True, explanation="Red stripe", relation="colors",
     ))
     invalid = await solo_client.post("/flagdle/question", json={"question": "Is it red?"})
@@ -269,7 +270,7 @@ async def test_countrydle_guest_events_are_reconstructible_by_browser_identity(
     from db.models import CountrydleGuess, CountrydleQuestion
     from schemas.countrydle import QuestionCreate
 
-    async def answer_locally(original_question, day_country, user, session):
+    async def answer_locally(original_question, day_country, user, session, *, evidence=None):
         return (
             QuestionCreate(
                 original_question=original_question,

@@ -82,7 +82,7 @@ class WojewodztwoQuestionDisplay(ReportableQuestion):
     asked_at: datetime
     user_id: Optional[int] = None
     day_id: int
-    context: Optional[str] = None
+    context: Optional[str] = Field(default=None, exclude=True)
     user: Optional[UserDisplay] = None
     wojewodztwo: Optional[WojewodztwoDisplay] = None
 

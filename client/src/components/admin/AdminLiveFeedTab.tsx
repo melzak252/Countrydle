@@ -1,224 +1,339 @@
-import React, { useState } from 'react';
-import { HelpCircle, Target, Sparkles, RefreshCw, Filter } from 'lucide-react';
-
-export interface LiveQuestionItem {
-  id: number;
-  mode: string;
-  username: string;
-  question: string;
-  improved_question?: string | null;
-  valid: boolean;
-  answer?: boolean | null;
-  explanation?: string | null;
-  asked_at?: string | null;
-}
-
-export interface LiveGuessItem {
-  id: number;
-  mode: string;
-  username: string;
-  guess: string;
-  answer: boolean;
-  guessed_at?: string | null;
-}
-
-export interface LiveFeedData {
-  recent_questions: LiveQuestionItem[];
-  recent_guesses: LiveGuessItem[];
-}
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Clock, HelpCircle, RefreshCw, Sparkles, Target } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { LiveFeedData, LiveQuestionItem } from '../../types';
 
 interface AdminLiveFeedTabProps {
   data: LiveFeedData;
   isLoading: boolean;
+  error: string | null;
+  hasLoaded: boolean;
+  lastUpdatedAt: string | null;
   onRefresh: (mode?: string) => Promise<void>;
+  onTestInQA?: (target: { mode: string; targetName?: string; questionText?: string }) => void;
 }
 
 const MODES = [
-  { id: 'all', label: 'All Modes' },
-  { id: 'countrydle', label: 'Countrydle' },
-  { id: 'continental', label: 'Continental' },
-  { id: 'powiatdle', label: 'Powiatdle' },
-  { id: 'wojewodztwodle', label: 'Województwa' },
-  { id: 'us_statedle', label: 'US States' },
+  { id: 'all', labelKey: 'modes.all' },
+  { id: 'countrydle', labelKey: 'modes.countries' },
+  { id: 'powiatdle', labelKey: 'modes.powiaty' },
+  { id: 'us_statedle', labelKey: 'modes.usStates' },
+  { id: 'wojewodztwodle', labelKey: 'modes.voivodeships' },
+  { id: 'continental', labelKey: 'modes.continental' },
 ];
 
-export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({ data, isLoading, onRefresh }) => {
-  const [selectedMode, setSelectedMode] = useState<string>('all');
+const AUTO_REFRESH_INTERVALS = [
+  { seconds: 0, labelKey: 'autoRefresh.paused' },
+  { seconds: 10, labelKey: 'autoRefresh.seconds', count: 10 },
+  { seconds: 30, labelKey: 'autoRefresh.seconds', count: 30 },
+];
 
-  const handleModeChange = async (mode: string) => {
-    setSelectedMode(mode);
-    await onRefresh(mode === 'all' ? undefined : mode);
-  };
+const EMPTY_FEED: LiveFeedData = { recent_questions: [], recent_guesses: [] };
 
-  const getModeBadgeColor = (mode: string) => {
-    switch (mode) {
-      case 'countrydle':
-        return 'text-sky-300 bg-sky-400/10 border-sky-400/20';
-      case 'continental':
-        return 'text-teal-300 bg-teal-400/10 border-teal-400/20';
-      case 'powiatdle':
-        return 'text-emerald-300 bg-emerald-400/10 border-emerald-400/20';
-      case 'wojewodztwodle':
-        return 'text-purple-300 bg-purple-400/10 border-purple-400/20';
-      case 'us_statedle':
-        return 'text-amber-300 bg-amber-400/10 border-amber-400/20';
-      default:
-        return 'text-zinc-300 bg-white/5 border-white/10';
+function formatTimestamp(timestamp: string | null, locale: string): string | null {
+  if (!timestamp) return null;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' }).format(date);
+}
+
+function getQuestionAnswer(question: LiveQuestionItem, t: (key: string) => string) {
+  if (!question.valid) {
+    return { label: t('adminLiveFeed.answers.invalid'), className: 'admin-badge admin-answer-invalid' };
+  }
+  if (question.answer === true) {
+    return { label: t('adminLiveFeed.answers.yes'), className: 'admin-badge admin-answer-yes' };
+  }
+  if (question.answer === false) {
+    return { label: t('adminLiveFeed.answers.no'), className: 'admin-badge admin-muted' };
+  }
+  return { label: t('adminLiveFeed.answers.noAnswer'), className: 'admin-badge admin-muted' };
+}
+
+export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
+  data,
+  isLoading,
+  error,
+  hasLoaded,
+  lastUpdatedAt,
+  onRefresh,
+  onTestInQA,
+}) => {
+  const { t, i18n } = useTranslation();
+  const [selectedMode, setSelectedMode] = useState('all');
+  const [autoRefreshSecs, setAutoRefreshSecs] = useState(10);
+  const [modeSnapshotReady, setModeSnapshotReady] = useState(false);
+  const [requestRevision, setRequestRevision] = useState(0);
+  const pendingRequests = useRef(0);
+  const isLoadingRef = useRef(isLoading);
+  const mounted = useRef(false);
+  isLoadingRef.current = isLoading;
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const requestFeed = useCallback(async (mode?: string) => {
+    pendingRequests.current += 1;
+    try {
+      await onRefresh(mode);
+    } finally {
+      pendingRequests.current -= 1;
+      if (mounted.current) setRequestRevision((revision) => revision + 1);
     }
+  }, [onRefresh]);
+
+  useEffect(() => {
+    void requestFeed(selectedMode === 'all' ? undefined : selectedMode).catch(() => undefined);
+  }, [requestFeed, selectedMode]);
+
+  useEffect(() => {
+    if (autoRefreshSecs === 0 || isLoading || pendingRequests.current > 0) return;
+    let active = true;
+    const timeout = window.setTimeout(() => {
+      if (!active || isLoadingRef.current || pendingRequests.current > 0) return;
+      void requestFeed(selectedMode === 'all' ? undefined : selectedMode).catch(() => undefined);
+    }, autoRefreshSecs * 1000);
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [autoRefreshSecs, isLoading, requestFeed, requestRevision, selectedMode]);
+
+  useEffect(() => {
+    if (hasLoaded && !error) setModeSnapshotReady(true);
+  }, [error, hasLoaded]);
+
+  const handleModeChange = (mode: string) => {
+    if (mode !== selectedMode) setModeSnapshotReady(false);
+    setSelectedMode(mode);
+  };
+  const hasCurrentSnapshot = hasLoaded && modeSnapshotReady;
+  const visibleData = hasCurrentSnapshot ? data : EMPTY_FEED;
+  const dateLocale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const lastUpdated = formatTimestamp(lastUpdatedAt, dateLocale);
+
+  const renderQuestion = (question: LiveQuestionItem) => {
+    const result = getQuestionAnswer(question, t);
+    const sourceLabel = question.source === 'local_kb'
+      ? t('adminLiveFeed.sources.localKb')
+      : question.source === 'fallback'
+        ? t('adminLiveFeed.sources.aiFallback')
+        : question.source;
+
+    return (
+      <article key={`${question.mode}:${question.id}`} className="space-y-3 rounded-md border border-white/10 bg-obsidian-950 p-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="break-words font-semibold text-sand-100">{question.username}</span>
+            <span className="admin-badge font-mono">{question.mode}</span>
+          </div>
+          {question.asked_at && (
+            <time className="admin-meta shrink-0" dateTime={question.asked_at}>
+              {formatTimestamp(question.asked_at, dateLocale)}
+            </time>
+          )}
+        </div>
+
+        {question.target_name && (
+          <p className="admin-meta break-words">
+            {t('adminLiveFeed.target')}: <span className="text-sand-100">{question.target_name}</span>
+            {question.target_subtitle && <span> ({question.target_subtitle})</span>}
+          </p>
+        )}
+
+        <p className="admin-question break-words">“{question.question}”</p>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+          <span className={result.className}>{result.label}</span>
+          {sourceLabel && <span className="admin-badge">{sourceLabel}</span>}
+          {onTestInQA && (
+            <button
+              type="button"
+              onClick={() => onTestInQA({
+                mode: question.mode,
+                targetName: question.target_name || undefined,
+                questionText: question.question,
+              })}
+              className="admin-button ml-auto"
+            >
+              <Sparkles size={16} aria-hidden="true" />
+              {t('adminLiveFeed.testInQa')}
+            </button>
+          )}
+        </div>
+
+        {question.explanation && (
+          <details className="border-t border-white/10 pt-2">
+            <summary className="text-sm font-medium text-sand-100">{t('adminLiveFeed.explanation')}</summary>
+            <p className="admin-muted break-words pb-2">{question.explanation}</p>
+          </details>
+        )}
+      </article>
+    );
   };
 
   return (
-    <div className="space-y-6 animate-message">
-      {/* Mode Filters & Quick Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2">
-          <Filter size={16} className="text-sand-100/65" />
-          <span className="text-xs uppercase font-mono tracking-wider text-sand-100/65 mr-2">Filter mode:</span>
-          <div className="flex flex-wrap gap-1.5">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => handleModeChange(m.id)}
-                className={`px-3 py-1 text-xs font-medium rounded-sm border transition-colors ${
-                  selectedMode === m.id
-                    ? 'bg-emerald-400/15 border-emerald-400/40 text-emerald-300'
-                    : 'bg-obsidian-900 border-white/10 text-sand-100/70 hover:text-sand-100 hover:border-white/20'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
+    <section className="space-y-4">
+      <div className="admin-toolbar" role="group" aria-label={t('adminLiveFeed.controls')}>
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:flex-1">
+          <div className="admin-field">
+            <label htmlFor="admin-live-feed-mode">{t('adminLiveFeed.mode')}</label>
+            <select
+              id="admin-live-feed-mode"
+              className="admin-control"
+              value={selectedMode}
+              onChange={(event) => handleModeChange(event.target.value)}
+            >
+              {MODES.map((mode) => (
+                <option key={mode.id} value={mode.id}>{t(`adminLiveFeed.${mode.labelKey}`)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="admin-field">
+            <label htmlFor="admin-live-feed-auto-refresh">{t('adminLiveFeed.autoRefresh.label')}</label>
+            <select
+              id="admin-live-feed-auto-refresh"
+              className="admin-control"
+              value={autoRefreshSecs}
+              onChange={(event) => setAutoRefreshSecs(Number(event.target.value))}
+            >
+              {AUTO_REFRESH_INTERVALS.map((option) => (
+                <option key={option.seconds} value={option.seconds}>
+                  {option.count
+                    ? t(`adminLiveFeed.${option.labelKey}`, { count: option.count })
+                    : t(`adminLiveFeed.${option.labelKey}`)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onRefresh(selectedMode === 'all' ? undefined : selectedMode)}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs bg-obsidian-900 hover:bg-white/5 text-sand-100 rounded-sm border border-white/10 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-          <span>Update Feed</span>
-        </button>
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <p className="admin-meta flex items-center gap-2" role="status">
+            <Clock size={16} aria-hidden="true" />
+            {lastUpdated && lastUpdatedAt
+              ? <time dateTime={lastUpdatedAt}>{t('adminLiveFeed.lastUpdated', { time: lastUpdated })}</time>
+              : t('adminLiveFeed.notUpdated')}
+          </p>
+          <button
+            type="button"
+            onClick={() => { void requestFeed(selectedMode === 'all' ? undefined : selectedMode).catch(() => undefined); }}
+            disabled={isLoading}
+            className="admin-button"
+          >
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />
+            {t('adminLiveFeed.refresh')}
+          </button>
+        </div>
       </div>
 
-      {/* Side-by-side feeds */}
-      <div className="min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Questions Feed */}
-        <div className="bg-obsidian-900 border border-white/10 rounded-sm min-w-0 p-4 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <h2 className="text-lg font-semibold text-sand-100 flex items-center gap-2">
-              <HelpCircle size={18} className="text-sand-100/80" />
-              <span>Real-Time Questions</span>
-            </h2>
-            <span className="text-xs text-sand-100/55 font-mono">
-              {data.recent_questions.length} items
-            </span>
-          </div>
+      {isLoading && !hasCurrentSnapshot && (
+        <p role="status" className="admin-panel admin-muted">{t('adminLiveFeed.loading')}</p>
+      )}
 
-          <div className="space-y-3 max-h-[650px] overflow-y-auto custom-scrollbar pr-1">
-            {data.recent_questions.length === 0 ? (
-              <p className="text-center py-10 text-xs text-zinc-500 font-mono">No recent questions logged.</p>
+      {error && (
+        <div role="alert" className="admin-panel border-rose-400/40 text-rose-200">
+          <p>{t('adminLiveFeed.requestFailed')}</p>
+          <p className="mt-2 break-words text-sm">{t(error)}</p>
+          {hasCurrentSnapshot && (
+            <p className="admin-meta mt-2">{t('adminLiveFeed.staleSnapshot')}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => { void requestFeed(selectedMode === 'all' ? undefined : selectedMode).catch(() => undefined); }}
+            disabled={isLoading}
+            className="admin-button mt-3"
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+            {t('adminLiveFeed.retry')}
+          </button>
+        </div>
+      )}
+
+      {isLoading && hasCurrentSnapshot && (
+        <p role="status" className="admin-meta">{t('adminLiveFeed.updating')}</p>
+      )}
+
+      {hasCurrentSnapshot && (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <section className="admin-panel space-y-4" aria-labelledby="admin-live-feed-questions-heading">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <h2 id="admin-live-feed-questions-heading" className="flex items-center gap-2">
+                <HelpCircle size={18} aria-hidden="true" />
+                {t('adminLiveFeed.questionsHeading')}
+              </h2>
+              <span className="admin-meta">
+                {t('adminLiveFeed.eventCount', { count: visibleData.recent_questions.length })}
+              </span>
+            </div>
+            {visibleData.recent_questions.length === 0 ? (
+              !error && <p className="admin-muted py-4">{t('adminLiveFeed.noQuestions')}</p>
             ) : (
-              data.recent_questions.map((q) => (
-                <div
-                  key={q.id}
-                  className="border-b border-white/10 pb-4 space-y-2 text-sm break-words"
-                >
-                  <div className="flex justify-between items-center text-sand-100/65 font-mono text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-emerald-300">{q.username}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-mono border ${getModeBadgeColor(q.mode)}`}>
-                        {q.mode}
-                      </span>
-                    </div>
-                    <span>{q.asked_at ? new Date(q.asked_at).toLocaleTimeString() : ''}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-sand-100 text-sm">
-                      "{q.question}"
-                    </div>
-                    {q.improved_question && q.question && q.improved_question !== q.question && (
-                      <div className="text-[11px] text-emerald-300 font-mono bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-sm flex items-center gap-1.5">
-                        <Sparkles size={11} className="text-emerald-400 shrink-0" />
-                        <span>AI plan: "{q.improved_question}"</span>
+              <div role="region" aria-labelledby="admin-live-feed-questions-heading" tabIndex={0} className="space-y-3 xl:max-h-[700px] xl:overflow-y-auto xl:pr-1">
+                {visibleData.recent_questions.map(renderQuestion)}
+              </div>
+            )}
+          </section>
+
+          <section className="admin-panel space-y-4" aria-labelledby="admin-live-feed-guesses-heading">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <h2 id="admin-live-feed-guesses-heading" className="flex items-center gap-2">
+                <Target size={18} aria-hidden="true" />
+                {t('adminLiveFeed.guessesHeading')}
+              </h2>
+              <span className="admin-meta">
+                {t('adminLiveFeed.eventCount', { count: visibleData.recent_guesses.length })}
+              </span>
+            </div>
+            {visibleData.recent_guesses.length === 0 ? (
+              !error && <p className="admin-muted py-4">{t('adminLiveFeed.noGuesses')}</p>
+            ) : (
+              <div role="region" aria-labelledby="admin-live-feed-guesses-heading" tabIndex={0} className="space-y-3 xl:max-h-[700px] xl:overflow-y-auto xl:pr-1">
+                {visibleData.recent_guesses.map((guess) => (
+                  <article
+                    key={`${guess.mode}:${guess.id}`}
+                    className="space-y-3 rounded-md border border-white/10 bg-obsidian-950 p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="break-words font-semibold text-sand-100">{guess.username}</span>
+                        <span className="admin-badge font-mono">{guess.mode}</span>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 pt-1 text-xs">
-                    {q.valid ? (
-                      <span className={`px-2 py-0.5 rounded font-semibold border ${
-                        q.answer ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-300 bg-rose-500/10 border-rose-500/30'
-                      }`}>
-                        {q.answer ? 'TAK / YES' : 'NIE / NO'}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-amber-300 bg-amber-500/10 border border-amber-500/30 font-semibold">
-                        INVALID
-                      </span>
-                    )}
-                    {q.explanation && (
-                      <span className="text-sand-100/55 truncate" title={q.explanation}>{q.explanation}</span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Guesses Feed */}
-        <div className="bg-obsidian-900 border border-white/10 rounded-sm min-w-0 p-4 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <h2 className="text-lg font-semibold text-sand-100 flex items-center gap-2">
-              <Target size={18} className="text-sand-100/80" />
-              <span>Real-Time Guesses</span>
-            </h2>
-            <span className="text-xs text-sand-100/55 font-mono">
-              {data.recent_guesses.length} items
-            </span>
-          </div>
-
-          <div className="space-y-3 max-h-[650px] overflow-y-auto custom-scrollbar pr-1">
-            {data.recent_guesses.length === 0 ? (
-              <p className="text-center py-10 text-xs text-zinc-500 font-mono">No recent guesses logged.</p>
-            ) : (
-              data.recent_guesses.map((g) => (
-                <div
-                  key={g.id}
-                  className="border-b border-white/10 pb-4 space-y-2 text-sm flex flex-wrap justify-between items-center gap-3 break-words"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sand-100/65 font-mono text-xs">
-                      <span className="font-semibold text-emerald-300">{g.username}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-mono border ${getModeBadgeColor(g.mode)}`}>
-                        {g.mode}
-                      </span>
-                      <span>•</span>
-                      <span>{g.guessed_at ? new Date(g.guessed_at).toLocaleTimeString() : ''}</span>
+                      {guess.guessed_at && (
+                        <time className="admin-meta shrink-0" dateTime={guess.guessed_at}>
+                          {formatTimestamp(guess.guessed_at, dateLocale)}
+                        </time>
+                      )}
                     </div>
-                    <div className="text-sm font-semibold text-sand-100">
-                      {g.guess}
-                    </div>
-                  </div>
 
-                  <div>
-                    <span className={`px-2.5 py-1 rounded text-xs font-semibold border ${
-                      g.answer
-                        ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-300'
-                        : 'border-white/10 bg-white/5 text-zinc-400'
-                    }`}>
-                      {g.answer ? '🎯 Solved / Hit' : '❌ Miss'}
-                    </span>
-                  </div>
-                </div>
-              ))
+                    {guess.target_name && (
+                      <p className="admin-meta break-words">
+                        {t('adminLiveFeed.target')}: <span className="text-sand-100">{guess.target_name}</span>
+                        {guess.target_subtitle && <span> ({guess.target_subtitle})</span>}
+                      </p>
+                    )}
+
+                    <p className="admin-question break-words">“{guess.guess}”</p>
+
+                    <div className="border-t border-white/10 pt-3">
+                      <span className={`admin-badge ${guess.answer ? 'admin-answer-yes' : 'admin-outcome-error'}`}>
+                        {guess.answer
+                          ? t('adminLiveFeed.outcomes.solved')
+                          : t('adminLiveFeed.outcomes.missed')}
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
             )}
-          </div>
+          </section>
         </div>
-      </div>
-    </div>
+      )}
+    </section>
   );
 };
 

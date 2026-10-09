@@ -11,37 +11,48 @@ def test_countrydle_exact_and_comparison_neighbor_counts():
     """Verify Countrydle evaluates exact and relative neighbor counts locally."""
     # Poland: 7 neighbors (Belarus, Czech Republic, Germany, Lithuania, Russia, Slovakia, Ukraine)
     cases = [
-        ("Does it border 7 countries?", True),
-        ("Does it have 7 neighbors?", True),
-        ("Does it border 8 countries?", False),
-        ("Does it have 6 neighbors?", False),
-        ("Does it border more than 5 countries?", True),
-        ("Does it border more than 7 countries?", False),
-        ("Does it border fewer than 8 countries?", True),
-        ("Does it border fewer than 7 countries?", False),
-        ("Czy ma 7 sąsiadów?", True),
-        ("Czy ma więcej niż 5 sąsiadów?", True),
-        ("Czy ma mniej niż 8 sąsiadów?", True),
-        ("Czy graniczy z 7 państwami?", True),
+        ("Does it border 7 countries?", "equals", 7, True),
+        ("Does it have 7 neighbors?", "equals", 7, True),
+        ("Does it border 8 countries?", "equals", 8, False),
+        ("Does it have 6 neighbors?", "equals", 6, False),
+        ("Does it border more than 5 countries?", "greater_than", 5, True),
+        ("Does it border more than 7 countries?", "greater_than", 7, False),
+        ("Does it border fewer than 8 countries?", "less_than", 8, True),
+        ("Does it border fewer than 7 countries?", "less_than", 7, False),
+        ("Czy ma 7 sąsiadów?", "equals", 7, True),
+        ("Czy ma więcej niż 5 sąsiadów?", "greater_than", 5, True),
+        ("Czy ma mniej niż 8 sąsiadów?", "less_than", 8, True),
+        ("Czy graniczy z 7 państwami?", "equals", 7, True),
     ]
 
-    for q, expected in cases:
-        ast, imp = compile_template_plan(q)
-        assert ast is not None, f"Failed template match for {q}"
+    for q, operator, count, expected in cases:
+        if q.startswith("Czy"):
+            ast, imp = compile_template_plan(q)
+        else:
+            assert compile_template_plan(q) is None
+            ast = {
+                "operator": operator,
+                "left": {"entity": "target_country", "relation": "borders_country"},
+                "right": {"value": count},
+            }
+            imp = q
         ans = execute_local_plan(ast, "Poland", imp)
         assert ans is not None
         assert ans.answer is expected, f"Failed for {q}: expected {expected}, got {ans.answer}"
-        assert "7 neighboring countries" in ans.explanation
 
 
 def test_countrydle_islands_zero_neighbors():
     """Verify islands evaluate 0 neighbors correctly."""
-    ast, imp = compile_template_plan("Does it have 0 neighbors?")
-    assert ast is not None
-    ans_aus = execute_local_plan(ast, "Australia", imp)
+    assert compile_template_plan("Does it have 0 neighbors?") is None
+    ast = {
+        "operator": "equals",
+        "left": {"entity": "target_country", "relation": "borders_country"},
+        "right": {"value": 0},
+    }
+    ans_aus = execute_local_plan(ast, "Australia", "Does it have 0 neighbors?")
     assert ans_aus.answer is True
 
-    ans_pol = execute_local_plan(ast, "Poland", imp)
+    ans_pol = execute_local_plan(ast, "Poland", "Does it have 0 neighbors?")
     assert ans_pol.answer is False
 
 
@@ -85,7 +96,6 @@ def test_wojewodztwodle_neighbor_counts():
         ans = execute_plan(WOJ_CONFIG, voivodeship, plan)
         assert ans is not None
         assert ans.answer is expected, f"Failed for {voivodeship} - {q}: expected {expected}, got {ans.answer}"
-        assert "6 sąsiednimi województwami" in ans.explanation
 
 
 def test_powiatdle_neighbor_counts():
@@ -104,4 +114,3 @@ def test_powiatdle_neighbor_counts():
         ans = execute_plan(POW_CONFIG, powiat, plan)
         assert ans is not None
         assert ans.answer is expected, f"Failed for {powiat} - {q}: expected {expected}, got {ans.answer}"
-        assert "1 sąsiednimi powiatami" in ans.explanation

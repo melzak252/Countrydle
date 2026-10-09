@@ -1,3 +1,44 @@
+## Client runtime and verification
+
+The client uses the standard Vite development server and TypeScript/Vite production
+build, with the existing Nginx container serving the built assets and forwarding API
+requests. The application-hardening managed Playwright/CI harness is not part of
+this rollback. Existing Bun unit tests cover question accounting, the one-second
+response animation and active-versus-completed explanation rendering.
+
+## Admin workspace
+
+`/admin` provides thirteen direct destinations: Overview, Sessions, Live feed,
+Users, Suggestions, Friend duels, Question audit, Player reports, Question testing,
+Template audit, Facts editor, Cache, and AI Costs. Desktop uses one sidebar grouped into
+Players, Knowledge & QA, and System; narrow layouts use a labelled native page
+selector. Each destination has one page heading. Styles are scoped to
+`.admin-workspace`, with visible keyboard focus and 44px primary controls; public
+game and contact layouts retain their own styling.
+
+- Sessions put the target, four summary metrics, and player list before optional
+  strategy analysis. Replays retain recorded chronological questions and guesses;
+  strategy lists show six entries initially.
+- Question audit uses six summary columns on desktop and equivalent cards on
+  phones. Details preserve complete questions, explanations, context, identifiers,
+  and invalidation actions. Filters and pagination do not present old rows as new
+  results while a query is pending or has failed.
+- Live feed supports paused, 10-second, and 30-second refresh. Automatic refresh
+  waits for completion before scheduling another request. Failed refreshes retain
+  an explicitly stale snapshot without changing the last-success timestamp;
+  switching modes clears the old snapshot.
+- Reports and template divergences retain review/reopen and QA handoffs. Question
+  testing uses current data/models, not a historical replay, and does not consume
+  attempts or change player progress. It offers the nine API-supported test modes.
+- Facts are selected by entity name and writes use the returned SQLite entity ID,
+  not the unrelated PostgreSQL selector ID. Saves, list additions, and deletions
+  take effect immediately; pending writes disable editing and failures remain visible.
+- Friend-duel agreements are comparisons, not verified truth. Cache counters are
+  scoped to one backend process and describe question plans, not target answers.
+
+Admin interface copy is available in English and Polish. Recorded player text,
+fact relation names, and technical identifiers retain their original values.
+
 ## General Suggestion Box
 
 `/contact` hosts the General Suggestion Box for guests and signed-in players.
@@ -9,7 +50,7 @@ available in English and Polish. Direct email support remains a separate link.
 Character limits count Unicode code points consistently with the backend.
 Submission cooldowns show a localized message and retain the draft for retry.
 
-In `/admin`, open **Gameplay & Players → Suggestions** to read the full message,
+In `/admin`, open **Players → Suggestions** to read the full message,
 topic, submission time, guest/player identity, and any provided contact details.
 The list is newest first, has 25 suggestions per page, and supports refresh and
 retry. Backend authorization protects the messages and contact information;
@@ -21,19 +62,41 @@ they are not exposed in a public feed.
 continental, US state, powiat, and voivodeship game pages. Pages provide questions
 in chronological order and retain ownership of scrolling and game state.
 Player questions appear on the right; replies and answer status appear on the left.
-Valid explanations are not mounted until the game is over; invalid-question
-feedback is available immediately. Post-game answer reports retain their mode and
-question identifiers. `QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
+Valid explanations are not mounted until the game is over. Local Countrydle,
+continental and Flagdle template explanations then include the country name and
+readable stored facts. Their active API responses also omit factual explanations,
+not merely hide them in the DOM. Invalid/unverified feedback remains available
+immediately, with target-free guidance rather than provider facts or target-bearing
+rewrites. Post-game answer reports retain their mode and question identifiers.
+`QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
 `GameActionComposer.tsx` hosts the active form in the chat footer.
 
+On desktop, the question form restores typing focus after a submission and after
+mouse clicks or right-clicks on the map. Map interaction during a pending request
+restores focus when the response arrives and the input is available again.
+The draft and caret survive map clicks; rejected submissions retain the draft.
+Map controls, keyboard navigation, guess forms, and touch interactions do not
+trigger this focus restoration. Nothing is focused automatically on page load.
+
+`FactProvenance.tsx` retains the read-only evidence renderer for completed Countrydle
+and continental questions; source links accept only HTTP(S) URLs. It does not restore
+the hardening facts-editor controls. Completed guest history refreshes explanations
+for its own stored question IDs without replacing browser-owned progress. Active
+chat and result history never mount valid factual explanations or evidence.
+
+Returned question responses keep the loading animation visible until at least
+1,000 ms after submission. Responses taking one second or longer incur no extra
+display delay. HTTP/network errors retain the existing immediate error feedback.
+
 In daily games, the top `Questions`/`Guesses` tabs choose both displayed history and
-active input; no second selector appears by the composer. On mobile, open the chat
-drawer to reach it. Friend-duel controls remain in their chat footer.
+active input; no second selector appears by the composer. Phone labels are shortened
+to `Ask`/`Guess`, with attempt counts. Friend-duel controls remain in their chat footer.
 
 Player questions, including pending and rejected submissions, remain text-selectable
 and each has a copy control that copies the original text. Map tooltips stay anchored
-to the hovered feature instead of following the pointer; regional map tiles update
-during zooming for steadier interactions.
+to the hovered feature instead of following the pointer. Desktop tiles refresh
+during pan; phone tiles wait for pan to settle. Existing background tiles remain
+visible during zoom before fresh detail appears.
 
 Rejected questions, duplicate guesses, and submission failures appear as chat
 notices with the submitted text, a reason, and a next step instead of expiring
@@ -56,9 +119,172 @@ continental APIs also reject text that is not a known country, so bypassing the
 client guard cannot consume an attempt. Selecting a valid country can still use
 the preserved final guess.
 
+## Daily results explorer
+
+World, continental, US state, powiat, and voivodeship results share
+`ShareResultCard.tsx`. The card owns modal scrolling; neither its dialog overlay
+nor its wrapper adds a second scrollbar. Outcome, score, attempt counts, the
+next-puzzle countdown, and share actions precede the geographic details.
+Sharing uses native sharing when available and otherwise copies spoiler-free
+result text; Copy Card always copies that text.
+
+Location Field Notes is the initial explorer panel. Question History appears
+only when both the question count and saved question list are nonzero. Tabs
+support Left/Right, Home/End, and normal keyboard activation. Both panels remain
+in server-rendered markup, with the inactive panel hidden from display and the
+accessibility tree. Results use `ResultsQuestionHistory.tsx`, not the live-game
+chat bubbles: wrapped question/answer rows start collapsed, and selecting a row
+reveals its complete explanation, copy action, and report controls. Only one row
+expands at a time. Notices retain chronological ordering and their full details.
+Facts, neighbors, and expanded explanations use the card's sole scrollbar;
+the page behind the modal is scroll-locked until dismissal. Answer reports
+retain their original mode and question identifiers. Regional modes use the
+returned daily Border Hop
+target rather than treating a county or voivodeship as a country.
+
+The footer retains cross-game navigation and Close and View Map, with mobile
+safe-area padding. Interface labels are localized in English and Polish.
+
+## Mobile layout
+
+- Daily map games use a full-width, 44px status row immediately below the app
+  header, with question count, guess count, and labelled `Guide` action sharing
+  equal-width sections. It remains visible with either the map or notebook open.
+  Active duels use two rows to retain player counts, countdown, and secret controls.
+- Daily map games and friend duels open a full-height action panel on phones,
+  filling the game area below the status row. A high-contrast, 44px `Back to map`
+  (`Wróć do mapy`) button collapses the notebook;
+  `Ask`/`Guess` restores the corresponding history and input.
+- Opening or switching histories scrolls to the newest response or guess. History
+  scrolls independently above the pinned composer; manual scrolling remains
+  unchanged until a new entry arrives or the selected history changes.
+- The shared fullscreen shell tracks `visualViewport` through `--app-height`,
+  accounting for browser chrome and reduced keyboard space. At 560px viewport
+  height or less on phones, quick-question suggestions hide to leave room for the input
+  and history. Expanded active duels retain their turn status and countdown;
+  at reduced heights, `Back to map` moves into the status row and the redundant notebook
+  heading and optional composer hint hide so the input stays visible.
+- The mobile version badge uses readable text on a dark background and respects
+  the bottom safe area without intercepting taps. The client version comes from
+  `package.json`, including when Vite is launched directly rather than through npm.
+  Desktop keeps the compact map-return icon and subdued version label.
+- Phone map taps mark red; repeating a tap removes the mark. The colour picker
+  is desktop-only. Zoom, reset, reference-line, clear and revealed-target controls
+  form a left column with 44px touch targets. Regional maps also expose reset view;
+  resetting the view preserves markings, while the eraser clears them.
+- Mobile inputs use 16px text; question and answer text uses 14px. Navigation,
+  autocomplete options and primary actions retain 44px touch targets. Dialogs and
+  lists scroll within the available height, with safe-area padding on bottom controls.
+- The phone menu fits narrow screens and restores focus to its trigger on Escape.
+  Archive uses a grouped mode selector; leaderboard rows retain rank, player, and
+  score without requiring horizontal scrolling.
+- Desktop map panels and multi-column browsing layouts retain their existing
+  breakpoint behavior. The dark palette, typography, routes, and gameplay rules are
+  unchanged.
+
+## Map interaction and loading
+
+Daily pages load game state and entities through their mode's Zustand store, then
+mount the world/continental or regional map. Friend duels supply the same controlled
+maps with their own interaction state.
+
+- `src/lib/mapData.ts` shares parsed GeoJSON and in-flight requests by URL across
+  map mounts. County geometry no longer uses a timestamp cache-buster. Failed
+  downloads are not cached, so an explicit retry can recover.
+- `src/hooks/useMapData.ts` ignores results from unmounted/obsolete loads and hides
+  old geometry when the asset URL changes. `MapLoading.tsx` preserves the caller's
+  map dimensions, announces loading/failure, and offers English/Polish retry copy.
+- All four maps use 60px wheel sensitivity and half-level zoom buttons. Wheel/pinch
+  zoom stays fractional, without snapping on release. Phone double-tap zoom is
+  disabled so quick repeat taps toggle a mark without moving the camera; desktop
+  double-click zoom remains enabled.
+- Tile buffers retain two rows instead of eight/twelve. Desktop pan loading uses
+  a 200ms update interval; phones use idle updates. Intermediate pinch zoom levels
+  are not requested, and existing tiles stay visible while moving.
+- Phone zoom, reset, clear, reference-line, and revealed-target controls have
+  44px hit targets; desktop controls retain their compact sizing.
+- `src/hooks/useMapZoomSync.ts` keeps the active background tile level synchronized
+  with the borders during zoom. Other tile levels wait until the animation ends;
+  late CSS transforms finish before new detail becomes visible.
+- `src/lib/mapRenderer.ts` gives each map its own Leaflet Canvas renderer. Zoom
+  transforms a prepainted border bitmap rather than complex SVG strokes. A
+  half-viewport buffer is refreshed during movement, before the visible camera
+  reaches its edge; redraw no longer waits solely for `moveend`. Continuous
+  pinch-out also rebases the bitmap before it shrinks below the viewport. The
+  small Leaflet 1.9 bounds/projection/update adapter is isolated in this file.
+  Same-size redraws reuse the backing bitmap and replace the context transform,
+  avoiding both bitmap reallocation and accumulated retina scaling. An unchanged
+  camera skips the duplicate movement-end redraw; view resets and viewport resizing
+  still refresh the renderer.
+- Collapsed desktop notebooks use content width instead of the expanded 28rem
+  width. Phone Ask/Guess bars remain full-width.
+- Stable GeoJSON style callbacks avoid redrawing borders when only the selected
+  marker color or unrelated game state changes. Latest interaction props are
+  published in `useLayoutEffect`, not during render; markings and reveals still
+  update layer styles immediately.
+- `src/lib/mapView.ts` replaces long fly-to sequences with short view transitions,
+  adds reveal padding, and respects reduced motion. Navigation requested during
+  Leaflet's animated zoom waits for that zoom to finish; the latest request wins.
+- Regional reset controls restore their original center/zoom without clearing
+  markings. Country/continental maps retain reset and reference-line controls.
+
+Regression checks: `bun test tests/mapData.test.ts tests/mapGeometry.test.ts`.
+Browser verification must also cover pan/zoom in both directions (wheel and phone
+pinch), in-motion border/background alignment, painted border pixels on the newly
+exposed side while a drag is still held, resize at normal/retina pixel ratios,
+reset during zoom, mark/unmark, reveal,
+map-asset failures, and collapsed desktop/phone layouts; unit checks alone do not
+prove usability.
+
+## Display geometry
+
+`scripts/simplify-map-geometry.mjs` regenerates display-only GeoJSON through pinned
+Mapshaper 0.7.76, without adding a runtime dependency. It jointly simplifies shared
+boundaries in EPSG:3857; intervals are projected metres, not ground distances.
+Always use an unsimplified source asset, never a previously generated output:
+
+```sh
+bun scripts/simplify-map-geometry.mjs /path/to/original/wojewodztwa.geojson public/wojewodztwa.geojson 200
+```
+
+The generator preserves feature IDs/properties/order, polygon parts, holes, and
+winding. Wrapped/dateline features, polar rings outside Web Mercator, and existing
+zero-area rings remain unchanged. Shared anchors and original zero-width boundary
+spurs are restored on both sides so selectable strokes are not silently removed.
+
+| Asset | Projected interval (m) | Vertices before → after |
+| --- | ---: | ---: |
+| `countries_50m.geojson` | 300 | 94,718 → 90,257 |
+| `europe.geojson` | 500 | 22,640 → 21,727 |
+| `asia.geojson` | 500 | 30,552 → 28,137 |
+| `africa.geojson` | 500 | 12,980 → 10,448 |
+| `americas.geojson` | 500 | 28,868 → 27,264 |
+| `wojewodztwa.geojson` | 200 | 76,881 → 18,198 |
+| `powiaty-min.geojson` | 75 | 18,931 → 18,829 |
+| `us-states.geojson` | 100 | 3,539 → 3,517 |
+
+Generation checks measured less than 2 CSS pixels of original-vertex-to-output-edge
+error at each map's maximum zoom, with unchanged entity/part/hole counts and shared
+entity-pair boundaries. Leaflet's runtime simplification is separate from this
+generation error budget. County/state sources were already coarse, so their
+reductions are deliberately small.
+
+Voivodeship vertices decreased 76.3%, and its payload decreased from 1,368,743 to
+325,437 bytes (76.2%). Six synchronous zoom changes in the same desktop browser
+measured a median 38.45ms with the original asset versus 15.05ms with the generated
+asset using the previous SVG renderer. This isolates geometry projection/redraw
+cost, not current Canvas performance or an FPS guarantee.
+Fact databases, entity names, and server answering are unchanged.
+
 ## Friend duels
 
 Create a duel at `/friends`; invitations open `/duel/:code`.
+
+The create/join entry backdrop is confined to the game area below the navbar.
+Entry is a labelled page region, not a modal dialog; desktop navigation and
+the mobile menu remain available while choosing a geography or guest name.
+Geography uses a grouped native select with entity counts; the browser/device
+picker is not clipped by the entry card and supports keyboard and touch selection.
 
 - Questions and guesses have no per-match limit. Daily-mode quotas do not apply.
 - Each question or guess spends one turn; turn timers and final-reply rules still apply.
@@ -111,20 +337,58 @@ including FAQ search, topic filters, and keyboard accordion controls.
 
 The `/contact` page uses `melzacki.jakub@gmail.com` for direct support and feedback submissions. Keep this address aligned with support contacts in server email templates.
 
+## Legal document presentation
+
+`/terms`, `/privacy-policy`, and `/cookie-policy` share
+`src/components/LegalDocument.tsx`: a left-aligned serif title, update date,
+readable document column, and thin section dividers matching the public pages.
+The component owns section, paragraph, list, and link styling; each policy page
+owns its wording, links, and update date. Presentation-only changes must preserve
+those values. Cookie Policy retains the existing `PrivacySettingsButton` and
+Google CMP behavior described below.
+
+Use **Countrydle** as the project name and `https://countrydle.online` for
+public-site links. Keep personal author attribution and the support address
+`melzacki.jakub@gmail.com` distinct from the project branding.
+
+The October 6, 2026 disclosure update distinguishes browser expiry from server
+retention, covers guest-to-account linking, Gemini question processing and
+OpenAI retrieval embeddings, and identifies persistent question-plan storage.
+Daily history, participation, answer reports, suggestions and planner-cache
+records have no general automatic expiry. Friend-duel cleanup remains subject
+to the existing 30/90-day rules and unresolved-work exceptions. Do not describe
+guest identifiers as anonymous or promise self-service account deletion.
+
+Keep the storage inventory aligned with `server/users/utils.py`,
+`server/utils/guest_session.py`, `server/friend_matches/routes.py`,
+`src/stores/gameStore.ts`, `src/stores/authStore.ts` and
+`src/lib/guestHistory.ts`. Login durations are configurable defaults; local
+history has no automatic expiry. Legal pages remain English-language documents,
+as before. Verify all three routes at desktop and mobile widths after copy edits.
+
+These disclosures do not establish deployment compliance. The operator must
+verify analytics collection/storage, provider account terms and international
+transfer arrangements, operational retention/deletion procedures (including
+logs and backups), and actual audience/children's-data handling. Do not add
+AdinPlay recipients or cookie entries until an integration actually exists.
+
 ## Advertising consent and public discovery
 
-`main.tsx` is the only AdSense loader. Set `VITE_GOOGLE_ADSENSE_ID` when building
-the frontend; without it, no AdSense script or account meta tag is added. Keep
-`public/ads.txt` aligned with that publisher account. Do not add another AdSense
-tag to `index.html`.
+`index.html` currently contains an unconditional AdSense script and publisher
+meta tag. `main.tsx` also has a build-configured loader, but its existing-meta
+check normally skips that branch. Setting `VITE_GOOGLE_ADSENSE_ID` blank does
+not disable the static tag. Keep `public/ads.txt` aligned with the deployed
+publisher account. Neither the AdSense loader nor the optional Rybbit loader
+has an application-side consent gate.
 
-Advertising consent is managed by Google's certified Privacy & messaging CMP,
-not by the former `cookie-consent` localStorage banner. Existing values of that
-old key are not treated as consent. `PrivacySettingsButton.tsx` invokes Google's
-supported callback queue and `showRevocationMessage()` API. It is available in
-the footer, desktop More menu, mobile menu, and Cookie Policy, including access
-from fullscreen games whose footer is hidden. If Google's API is unavailable,
-the button reports that no choices were changed.
+The privacy control delegates to Google's Privacy & messaging service, not the
+former `cookie-consent` localStorage banner. Existing values of that old key
+are not treated as consent. `PrivacySettingsButton.tsx` invokes Google's
+callback queue and `showRevocationMessage()` API. It is available in the footer,
+navigation menus and Cookie Policy. If Google's API is unavailable, the button
+reports that no choices were changed. This hook alone does not prove that a
+certified CMP is published, a particular TCF version is active, or that consent
+is enforced. Policy copy intentionally makes no such unverified promises.
 
 **Account prerequisite:** In AdSense → Privacy & messaging → European
 regulations, configure and publish the message for `countrydle.online`. Set the

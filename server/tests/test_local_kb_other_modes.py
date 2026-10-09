@@ -418,3 +418,104 @@ def test_wojewodztwodle_major_roads(road, voivodeship, expected):
     assert result is not None
     assert result.answer is expected
     assert "major_roads" in result.relations
+
+
+@pytest.mark.parametrize("state, expected", [
+    ("Mississippi", True), ("Louisiana", True), ("Alabama", True), ("Texas", True),
+    ("Florida", True), ("Maine", True), ("California", False), ("Arizona", False),
+])
+def test_reported_atlantic_access_includes_gulf_coast(state, expected):
+    from local_kb_question import analyze_question
+
+    plan = analyze_question(
+        "Does it have access to Atlantic Ocean?", US_STATE_CONFIG, use_cache=False,
+    )
+    result = execute_plan(US_STATE_CONFIG, state, plan)
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize("question", [
+    "Does the state border the Atlantic Ocean?",
+    "Does it have a direct coastline on the Atlantic Ocean?",
+    "Is the state located on the East Coast?",
+])
+@pytest.mark.parametrize("state, expected", [
+    ("Mississippi", False), ("Florida", True), ("California", False),
+])
+def test_direct_atlantic_coast_remains_distinct_from_ocean_access(question, state, expected):
+    from local_kb_question import analyze_question
+
+    plan = analyze_question(question, US_STATE_CONFIG, use_cache=False)
+    result = execute_plan(US_STATE_CONFIG, state, plan)
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize("value", ["North East", "north-east", "Northeast"])
+@pytest.mark.parametrize("state, expected", [
+    ("New Jersey", True), ("Maine", True), ("Mississippi", False),
+])
+def test_reported_northeast_alias_matches_canonical_region(value, state, expected):
+    plan = {
+        "operator": "contains_exact",
+        "left": left(US_STATE_CONFIG, "regional_labels"),
+        "right": {"value": value},
+    }
+    result = answer(US_STATE_CONFIG, state, plan)
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize("question", [
+    "is it in the north east", "Is it in the north-east?", "Is it in the Northeast?",
+])
+@pytest.mark.parametrize("state, expected", [("New Jersey", True), ("Mississippi", False)])
+def test_northeast_player_wording_evaluates_without_model(question, state, expected, monkeypatch):
+    import local_kb_question
+
+    def unexpected_provider(*args, **kwargs):
+        pytest.fail("A bounded Census-region question must compile without a model")
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", unexpected_provider)
+    plan = local_kb_question.analyze_question(question, US_STATE_CONFIG, use_cache=False)
+    result = execute_plan(US_STATE_CONFIG, state, plan)
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize("state, expected", [("New Jersey", False), ("Mississippi", True)])
+def test_regional_alias_normalization_preserves_negation(state, expected):
+    positive = {
+        "operator": "contains_exact",
+        "left": left(US_STATE_CONFIG, "regional_labels"),
+        "right": {"value": "North East"},
+    }
+    result = answer(US_STATE_CONFIG, state, {"operator": "not", "condition": positive})
+    assert result is not None
+    assert result.answer is expected
+
+
+@pytest.mark.parametrize("state, expected", [
+    ("Mississippi", True), ("Maine", False), ("California", False),
+])
+def test_compound_ocean_access_keeps_the_second_condition(state, expected, monkeypatch):
+    import local_kb_question
+
+    def provider(*args, **kwargs):
+        return {"route": "local", "plan": [
+            {"operator": "contains_exact", "left": left(US_STATE_CONFIG, "water_access"), "right": {"value": "Atlantic Ocean"}},
+            {"operator": "contains_exact", "left": left(US_STATE_CONFIG, "water_access"), "right": {"value": "Gulf of Mexico"}},
+            {"operator": "or", "args": [0, 1]},
+            {"operator": "equals", "left": left(US_STATE_CONFIG, "region"), "right": {"value": "South"}},
+            {"operator": "and", "args": [2, 3]},
+        ]}
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", provider)
+    plan = local_kb_question.analyze_question(
+        "Does it have access to the Atlantic Ocean and is it in the South?",
+        US_STATE_CONFIG, use_cache=False,
+    )
+    result = execute_plan(US_STATE_CONFIG, state, plan)
+    assert result is not None
+    assert result.answer is expected

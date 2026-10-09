@@ -10,7 +10,6 @@ import {
   Zap,
   Dices,
   Clock,
-  ChevronDown,
   ChevronUp,
   X,
   MessageSquare,
@@ -23,6 +22,7 @@ import type { FriendEntity, FriendMode, FriendSnapshot } from '../types/friendMa
 import GuessInput from '../components/GuessInput';
 import QuestionInput from '../components/QuestionInput';
 import GameActionComposer from '../components/GameActionComposer';
+import BackToMapButton from '../components/BackToMapButton';
 import FriendDuelMap from '../components/friendDuel/FriendDuelMap';
 import DuelHistory from '../components/friendDuel/DuelHistory';
 import FriendQuestionModal from '../components/friendDuel/FriendQuestionModal';
@@ -65,15 +65,16 @@ function InviteLink({ code, copy }: { code: string; copy: DuelCopy }) {
   const link = `${window.location.origin}/duel/${encodeURIComponent(code)}`;
 
   return (
-    <section className="rounded-sm border border-white/15 bg-obsidian-900/90 p-4 shadow-xl backdrop-blur-md max-w-sm" aria-label={copy.invite}>
+    <section className="w-full max-w-sm rounded-sm border border-white/15 bg-obsidian-900/90 p-4 shadow-xl" aria-label={copy.invite}>
       <h2 className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100">
         <Users size={14} className="text-emerald-400" />
         <span>{copy.invite}</span>
       </h2>
       <label className="sr-only" htmlFor="duel-invite-link">{copy.invite}</label>
-      <input
+      <textarea
         id="duel-invite-link"
-        className="w-full my-2.5 rounded-sm border border-white/15 bg-obsidian-950 px-3 py-1.5 font-mono text-xs text-sand-100 select-all"
+        className="my-2.5 min-h-11 w-full resize-none break-all rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 font-mono text-xs text-sand-100 select-all"
+        rows={2}
         value={link}
         readOnly
         onFocus={event => event.target.select()}
@@ -81,7 +82,7 @@ function InviteLink({ code, copy }: { code: string; copy: DuelCopy }) {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded-sm bg-emerald-400 hover:bg-emerald-300 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer"
+          className="min-h-11 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer"
           onClick={() => {
             if (!navigator.clipboard) { setNotice(copy.copyFailed); return; }
             void navigator.clipboard.writeText(link).then(() => setNotice(copy.copied)).catch(() => setNotice(copy.copyFailed));
@@ -92,7 +93,7 @@ function InviteLink({ code, copy }: { code: string; copy: DuelCopy }) {
         {typeof navigator.share === 'function' && (
           <button
             type="button"
-            className="rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-sand-100 transition-colors cursor-pointer"
+            className="min-h-11 rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-sand-100 transition-colors cursor-pointer"
             onClick={() => {
               void navigator.share({ title: copy.title, url: link }).catch(cause => {
                 if (!(cause instanceof DOMException && cause.name === 'AbortError')) setNotice(copy.copyFailed);
@@ -141,16 +142,16 @@ function ResultsModal({
       role="dialog"
       aria-modal="true"
       onClick={onClose}
-      className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+      className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
     >
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-5 sm:p-6 shadow-2xl cursor-default"
+        className="relative my-auto w-full max-w-lg max-h-[calc(var(--app-height,100dvh)-1.5rem)] overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 sm:p-6 shadow-2xl cursor-default"
         onClick={e => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-sm border border-white/10 bg-white/5 p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
+          className="absolute right-3 top-3 max-md:min-h-11 max-md:min-w-11 flex items-center justify-center rounded-sm border border-white/10 bg-white/5 p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
           title="Inspect Map"
           aria-label="Close modal and explore map"
         >
@@ -190,7 +191,7 @@ function ResultsModal({
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {snapshot.rematch_code ? (
-            <Link className="rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors" to={`/duel/${encodeURIComponent(snapshot.rematch_code)}`}>
+            <Link className="max-md:min-h-11 inline-flex items-center rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors" to={`/duel/${encodeURIComponent(snapshot.rematch_code)}`}>
               {copy.rematchOpen}
             </Link>
           ) : snapshot.players.length < 2 ? null : self?.rematch_ready ? (
@@ -198,16 +199,16 @@ function ResultsModal({
           ) : (
             <>
               {opponent?.rematch_ready && <p className="w-full text-sm font-medium text-emerald-300 font-mono">{copy.rematchReceived}</p>}
-              <button type="button" className="rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer" disabled={busy} onClick={rematch}>
+              <button type="button" className="max-md:min-h-11 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer" disabled={busy} onClick={rematch}>
                 {copy.rematch}
               </button>
             </>
           )}
-          <Link className="rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 font-mono text-xs uppercase tracking-wider text-sand-100 transition-colors" to="/friends">{copy.newDuel}</Link>
+          <Link className="max-md:min-h-11 inline-flex items-center rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 font-mono text-xs uppercase tracking-wider text-sand-100 transition-colors" to="/friends">{copy.newDuel}</Link>
 
           <button
             type="button"
-            className="flex items-center gap-1.5 px-4 py-2 font-mono text-xs uppercase tracking-wider text-zinc-300 hover:text-white rounded-sm border border-white/10 hover:bg-white/5 transition-colors cursor-pointer ml-auto"
+            className="ml-auto flex max-md:min-h-11 items-center gap-1.5 px-4 py-2 font-mono text-xs uppercase tracking-wider text-zinc-300 hover:text-white rounded-sm border border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
             onClick={onClose}
           >
             <Eye size={13} />
@@ -242,8 +243,6 @@ function DuelRoom({ code }: { code?: string }) {
   const [entryUncertain, setEntryUncertain] = useState(false);
   const entryRequest = useRef<{ name: string; mode: FriendMode; request_id: string } | null>(null);
   const entryInFlight = useRef(false);
-  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
-  const modeDropdownRef = useRef<HTMLDivElement>(null);
   const [entityPool, setEntityPool] = useState<{ mode: FriendMode; entities: FriendEntity[] } | null>(null);
   const [entitiesError, setEntitiesError] = useState('');
   const [entityReload, setEntityReload] = useState(0);
@@ -253,7 +252,7 @@ function DuelRoom({ code }: { code?: string }) {
 
   // Desktop & Mobile HUD & Chat state
   const isMobile = useIsMobile();
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isResultDismissed, setIsResultDismissed] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
 
@@ -284,15 +283,6 @@ function DuelRoom({ code }: { code?: string }) {
     return () => { alive = false; };
   }, [viewMode, entityReload, copy.error]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
-        setModeDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const enter = async () => {
     if (authLoading || entryInFlight.current || (!entryRequest.current && !name.trim())) return;
@@ -379,9 +369,9 @@ function DuelRoom({ code }: { code?: string }) {
   // SCENARIO A: Lobby Entry (no snapshot yet) -> Clean centered card layout
   if (!snapshot) {
     return (
-      <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
+      <div className="relative flex-1 min-h-0 h-full w-full overflow-hidden bg-obsidian-950 font-sans select-none">
         {/* Full-Canvas Background Map (previews selected mode!) */}
-        <div className="absolute inset-0 z-0 h-full w-full">
+        <div className="game-map-layer absolute inset-0 z-0 w-full">
           <FriendDuelMap
             eligibleCountries={entities}
             mode={viewMode}
@@ -393,35 +383,36 @@ function DuelRoom({ code }: { code?: string }) {
         </div>
 
         {/* Top Status HUD Bar */}
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 px-2">
-          <div className="pointer-events-auto flex h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
-            <div className="flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+        <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
+          <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono md:h-8 md:w-auto md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/90 md:shadow-lg">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 px-2 text-[10px] uppercase tracking-wider text-zinc-400 sm:gap-2 sm:px-3 sm:tracking-[0.16em] md:flex-none">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{copy[`play_${viewMode}`]}</span>
-              <span className="font-semibold text-sand-100">Multiplayer</span>
+              <span className="max-w-[35vw] truncate">{copy[`play_${viewMode}`]}</span>
+              <span className="hidden md:inline font-semibold text-sand-100">Multiplayer</span>
             </div>
             <button
               type="button"
               onClick={() => setRulesOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+              className="flex min-h-11 md:min-h-0 shrink-0 items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-wider cursor-pointer whitespace-nowrap sm:tracking-[0.16em]"
               title={copy.rulesTitle}
             >
               <HelpCircle size={13} className="text-emerald-400" />
-              <span>Rules</span>
+              <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zasady' : 'Guide'}</span>
+              <span className="hidden md:inline">{copy.rulesTitle}</span>
             </button>
           </div>
         </div>
         <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
+          role="region"
+          aria-labelledby="friend-entry-title"
+          className="absolute inset-0 z-[1000] flex items-start justify-center overflow-y-auto p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
         >
-          <div className="relative z-10 w-full max-w-md rounded-sm border border-white/20 bg-obsidian-950/95 p-6 shadow-2xl space-y-4">
+          <div className="relative z-10 my-auto max-h-[calc(var(--app-height,100dvh)-1.5rem)] w-full max-w-md overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 shadow-2xl space-y-4 sm:p-6">
             <div>
               <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-emerald-400">
                 {copy.multiplayer}
               </p>
-              <h2 className="text-xl font-bold text-sand-100">
+              <h2 id="friend-entry-title" className="text-xl font-bold text-sand-100">
                 {code ? copy.join : copy.create}
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-zinc-400">{copy.subtitle}</p>
@@ -463,7 +454,7 @@ function DuelRoom({ code }: { code?: string }) {
                   </label>
                   <input
                     id="duel-name"
-                    className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 placeholder:text-zinc-600 focus:border-emerald-500/70 focus:outline-none"
+                    className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2.5 text-base md:text-sm text-sand-100 placeholder:text-zinc-600 focus:border-emerald-500/70 focus:outline-none"
                     autoComplete="nickname"
                     value={name}
                     maxLength={40}
@@ -475,114 +466,40 @@ function DuelRoom({ code }: { code?: string }) {
                 </div>
 
                 {!code && (
-                  <div className="relative" ref={modeDropdownRef}>
-                    <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-mode-btn">
+                  <div>
+                    <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-300" htmlFor="duel-mode">
                       {copy.mode}
                     </label>
-                    <button
-                      id="duel-mode-btn"
-                      type="button"
-                      className="w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-sm text-sand-100 flex items-center justify-between text-left cursor-pointer"
+                    <select
+                      id="duel-mode"
+                      className="min-h-11 w-full rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2 text-base md:text-sm text-sand-100 [color-scheme:dark] focus:border-emerald-500/70 focus:outline-none"
+                      value={mode}
                       disabled={entryBusy || entryUncertain}
-                      onClick={() => setModeDropdownOpen(open => !open)}
-                      aria-haspopup="listbox"
-                      aria-expanded={modeDropdownOpen}
+                      onChange={event => setMode(event.target.value as FriendMode)}
                     >
-                      <span className="truncate">{copy[mode]}</span>
-                      <ChevronDown size={14} className={`text-zinc-400 transition-transform ${modeDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {modeDropdownOpen && (
-                      <div
-                        className="absolute left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto divide-y divide-white/10 rounded-sm border border-white/15 bg-obsidian-900 shadow-2xl z-50 p-2 space-y-2"
-                        role="listbox"
-                      >
-                        <div>
-                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                            {copy.groupGlobal}
-                          </span>
-                          <div className="flex flex-col gap-1">
-                            {(['countrydle'] as const).map(item => (
-                              <button
-                                key={item}
-                                type="button"
-                                role="option"
-                                aria-selected={mode === item}
-                                className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                                  mode === item ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                                }`}
-                                onClick={() => {
-                                  setMode(item);
-                                  setModeDropdownOpen(false);
-                                }}
-                              >
-                                <span>{copy[item]}</span>
-                                <span className="text-[10px] font-mono text-zinc-400">195</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="pt-2">
-                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                            {copy.groupContinents}
-                          </span>
-                          <div className="grid grid-cols-2 gap-1">
-                            {([
-                              { id: 'europe', badge: '47' },
-                              { id: 'asia', badge: '46' },
-                              { id: 'africa', badge: '54' },
-                              { id: 'americas', badge: '35' },
-                            ] as const).map(item => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                role="option"
-                                aria-selected={mode === item.id}
-                                className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                                  mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                                }`}
-                                onClick={() => {
-                                  setMode(item.id);
-                                  setModeDropdownOpen(false);
-                                }}
-                              >
-                                <span className="truncate">{copy[item.id]}</span>
-                                <span className="shrink-0 text-[10px] font-mono text-zinc-400">{item.badge}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="pt-2">
-                          <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                            {copy.groupRegional}
-                          </span>
-                          <div className="flex flex-col gap-1">
-                            {([
-                              { id: 'us_statedle', badge: '50' },
-                              { id: 'wojewodztwodle', badge: '16' },
-                              { id: 'powiatdle', badge: '380' },
-                            ] as const).map(item => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                role="option"
-                                aria-selected={mode === item.id}
-                                className={`flex items-center justify-between gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                                  mode === item.id ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                                }`}
-                                onClick={() => {
-                                  setMode(item.id);
-                                  setModeDropdownOpen(false);
-                                }}
-                              >
-                                <span>{copy[item.id]}</span>
-                                <span className="text-[10px] font-mono text-zinc-400">{item.badge}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      <optgroup label={copy.groupGlobal}>
+                        <option value="countrydle">{copy.countrydle} (195)</option>
+                      </optgroup>
+                      <optgroup label={copy.groupContinents}>
+                        {([
+                          { id: 'europe', badge: '47' },
+                          { id: 'asia', badge: '46' },
+                          { id: 'africa', badge: '54' },
+                          { id: 'americas', badge: '35' },
+                        ] as const).map(item => (
+                          <option key={item.id} value={item.id}>{copy[item.id]} ({item.badge})</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label={copy.groupRegional}>
+                        {([
+                          { id: 'us_statedle', badge: '50' },
+                          { id: 'wojewodztwodle', badge: '16' },
+                          { id: 'powiatdle', badge: '380' },
+                        ] as const).map(item => (
+                          <option key={item.id} value={item.id}>{copy[item.id]} ({item.badge})</option>
+                        ))}
+                      </optgroup>
+                    </select>
                   </div>
                 )}
 
@@ -591,7 +508,7 @@ function DuelRoom({ code }: { code?: string }) {
 
                 <button
                   type="submit"
-                  className="w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer disabled:opacity-40"
+                  className="max-md:min-h-11 w-full rounded-sm bg-emerald-400 hover:bg-emerald-300 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer disabled:opacity-40"
                   disabled={authLoading || entryBusy || !name.trim()}
                 >
                   {entryUncertain ? copy.retry : code ? copy.join : copy.create}
@@ -607,10 +524,10 @@ function DuelRoom({ code }: { code?: string }) {
             role="dialog"
             aria-modal="true"
             onClick={() => setRulesOpen(false)}
-            className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+            className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
           >
             <div
-              className="relative w-full max-w-md rounded-sm border border-white/20 bg-obsidian-950/95 p-5 shadow-2xl space-y-3 cursor-default"
+              className="relative my-auto max-h-[calc(var(--app-height,100dvh)-1.5rem)] w-full max-w-md overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 shadow-2xl space-y-3 cursor-default sm:p-5"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
@@ -620,7 +537,7 @@ function DuelRoom({ code }: { code?: string }) {
                 <button
                   type="button"
                   onClick={() => setRulesOpen(false)}
-                  className="text-zinc-400 hover:text-white cursor-pointer"
+                  className="max-md:min-h-11 max-md:min-w-11 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
                 >
                   <X size={15} />
                 </button>
@@ -636,9 +553,9 @@ function DuelRoom({ code }: { code?: string }) {
 
   // SCENARIO B: Active or Lobby Match -> Full Canvas Desktop HUD Redesign
   return (
-    <div className="relative h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
+    <div className={`relative flex-1 min-h-0 h-full w-full overflow-hidden bg-obsidian-950 font-sans select-none ${snapshot.status === 'active' ? 'duel-active' : ''} ${snapshot.status === 'lobby' ? 'max-md:[&_[role=toolbar]]:hidden' : ''}`}>
       {/* 1. Full-Canvas Duel Map */}
-      <div className="absolute inset-0 h-full w-full">
+      <div className="game-map-layer absolute inset-0 w-full">
         <FriendDuelMap
           eligibleCountries={entities}
           mode={viewMode}
@@ -673,11 +590,10 @@ function DuelRoom({ code }: { code?: string }) {
         </div>
       )}
       {/* 2. Top Unified Status HUD Strip */}
-      {/* 2. Top Unified Status HUD Strip */}
-      <div className="pointer-events-none absolute left-14 sm:left-1/2 top-2 sm:top-3 z-[1000] -translate-x-0 sm:-translate-x-1/2 px-1 sm:px-2 max-w-[calc(100vw-4.5rem)] sm:max-w-none">
-        <div className="pointer-events-auto flex h-7 sm:h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
+      <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
+        <div className={`pointer-events-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono md:flex md:h-8 md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/90 md:shadow-lg ${snapshot.status === 'active' ? 'max-md:h-[5.5rem]' : 'max-md:h-11'} ${finished ? 'max-md:grid-cols-[auto_minmax(0,1fr)_auto_auto]' : ''}`}>
           {/* Brand & Mode */}
-          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+          <div className="hidden md:flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span className="font-semibold text-sand-100 hidden sm:inline">{copy[`play_${viewMode}`]}</span>
             <span className="font-semibold text-sand-100 sm:hidden">Duel</span>
@@ -687,9 +603,9 @@ function DuelRoom({ code }: { code?: string }) {
           </div>
 
           {/* Self status (compact on mobile) */}
-          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 hidden sm:inline">{self?.name || copy.you}:</span>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 sm:hidden">You:</span>
+          <div className="flex min-h-11 items-center gap-1 px-2 md:min-h-0 md:gap-1.5 md:px-3">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 hidden md:inline">{self?.name || copy.you}:</span>
+            {!finished && <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400 md:hidden">{copy.you}:</span>}
             <span className={`font-semibold ${myTurn && !finished ? 'text-emerald-400' : 'text-sand-100'}`}>
               {snapshot.status === 'lobby'
                 ? self?.ready ? copy.ready : copy.notReady
@@ -697,16 +613,21 @@ function DuelRoom({ code }: { code?: string }) {
             </span>
           </div>
 
-          {/* Opponent status (desktop only in top HUD) */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">{opponent?.name || 'Friend'}:</span>
-            <span className={`font-semibold ${!myTurn && snapshot.status === 'active' && !finished ? 'text-blue-400' : 'text-zinc-300'}`}>
-              {opponent
-                ? snapshot.status === 'lobby'
-                  ? opponent.ready ? copy.ready : copy.notReady
-                  : `Q:${opponent.question_count ?? 0} G:${opponent.guess_count ?? 0}`
-                : copy.waitingFriend}
+          {/* Opponent status */}
+          <div className="flex min-w-0 flex-col justify-center gap-0.5 px-2 py-1 md:shrink-0 md:flex-row md:items-center md:gap-1.5 md:px-3 md:py-0">
+            <span className="min-w-0 text-[10px] uppercase tracking-normal text-zinc-400 md:tracking-[0.16em]" title={opponent?.name}>
+              {opponent?.name ? <span className="block truncate">{opponent.name}:</span> : <>
+                <span className="md:hidden">{copy.waitingForFriend}</span>
+                <span className="hidden md:inline">{copy.waitingFriend}</span>
+              </>}
             </span>
+            {opponent && (
+              <span className={`whitespace-nowrap font-semibold ${!myTurn && snapshot.status === 'active' && !finished ? 'text-blue-400' : 'text-zinc-300'}`}>
+                {snapshot.status === 'lobby'
+                  ? opponent.ready ? copy.ready : copy.notReady
+                  : `Q:${opponent.question_count ?? 0} G:${opponent.guess_count ?? 0}`}
+              </span>
+            )}
           </div>
 
           {/* Countdown timer */}
@@ -716,30 +637,37 @@ function DuelRoom({ code }: { code?: string }) {
 
           {/* Mobile Secret Pill inside HUD */}
           {snapshot.status === 'active' && snapshot.own_secret && (
-            <div className="sm:hidden flex items-center gap-1 px-2 text-[10px]">
+            <div className="col-span-2 flex min-h-11 min-w-0 items-center gap-1 px-2 text-[10px] md:hidden">
               <span className="font-semibold text-emerald-300 truncate max-w-[65px]">
                 {showSecret ? snapshot.own_secret.name : '••••'}
               </span>
               <button
                 type="button"
-                className="text-zinc-400 hover:text-sand-100 p-0.5"
+                className="flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-sand-100 p-0.5"
                 aria-label={showSecret ? copy.hideSecret : copy.showSecret}
                 onClick={() => setShowSecret(!showSecret)}
               >
                 {showSecret ? <EyeOff size={11} /> : <Eye size={11} />}
               </button>
+              {isHistoryOpen && (
+                <BackToMapButton
+                  onClick={() => setIsHistoryOpen(false)}
+                  className="duel-compact-map"
+                />
+              )}
             </div>
           )}
 
-          {/* Rules dialog trigger (desktop only in HUD) */}
+          {/* Rules dialog trigger */}
           <button
             type="button"
             onClick={() => setRulesOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+            className={`flex min-h-11 min-w-11 md:min-h-0 shrink-0 items-center justify-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-wider cursor-pointer whitespace-nowrap md:tracking-[0.16em] ${snapshot.status === 'active' ? 'max-md:col-start-3 max-md:row-start-2' : ''}`}
             title={copy.rulesTitle}
           >
             <HelpCircle size={13} className="text-emerald-400" />
-            <span>Rules</span>
+            <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zasady' : 'Guide'}</span>
+            <span className="hidden md:inline">{copy.rulesTitle}</span>
           </button>
 
           {/* Result modal reopen button */}
@@ -774,27 +702,35 @@ function DuelRoom({ code }: { code?: string }) {
       )}
 
       {/* 3. Unified Deduction & Duel History Overlay (Left Side on Map) */}
-      {/* 3. Unified Deduction & Duel History Overlay */}
-      {/* Mobile Drawer Backdrop */}
-      {isHistoryOpen && (
-        <div
-          onClick={() => setIsHistoryOpen(false)}
-          className="fixed inset-0 z-[1090] bg-black/60 backdrop-blur-xs md:hidden"
-          aria-hidden="true"
-        />
-      )}
 
       {(snapshot.status === 'active' || finished) && (
         <div className={`pointer-events-none ${
           isHistoryOpen
-            ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
-            : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+            ? 'game-notebook-layer max-md:absolute max-md:inset-0 max-md:z-[1100] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+            : 'max-md:absolute max-md:inset-x-0 max-md:bottom-0 max-md:z-[995] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)]'
         }`}>
           {!isHistoryOpen ? (
+            <>
+            <div className="pointer-events-auto flex items-center gap-2 border-t border-white/15 bg-obsidian-950/95 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] md:hidden">
+              <button
+                type="button"
+                onClick={() => { setActiveActionTab('question'); setIsHistoryOpen(true); }}
+                className="min-h-11 flex-1 rounded-sm bg-emerald-500/15 px-2 font-mono text-[10px] uppercase tracking-wider text-emerald-200"
+              >
+                {copy.question}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveActionTab('guess'); setIsHistoryOpen(true); }}
+                className="min-h-11 flex-1 rounded-sm bg-emerald-400 px-2 font-mono text-[10px] uppercase tracking-wider text-obsidian-950"
+              >
+                {copy.guess}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setIsHistoryOpen(true)}
-              className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
+              className="pointer-events-auto hidden min-h-11 md:min-h-0 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl hover:bg-obsidian-850 transition-colors cursor-pointer md:flex"
               aria-label="Expand Duel Chat"
             >
               <MessageSquare size={13} className="text-emerald-400" />
@@ -805,38 +741,31 @@ function DuelRoom({ code }: { code?: string }) {
               <span className="text-sand-200">M: {snapshot.history.length}</span>
               <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
             </button>
+            </>
           ) : (
             <div
               onWheel={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[82dvh] max-md:max-h-[88dvh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
+              className="pointer-events-auto flex h-full flex-col overflow-hidden bg-obsidian-950 shadow-2xl transition-all max-md:rounded-t-sm max-md:border-t max-md:border-white/20 max-md:pb-[env(safe-area-inset-bottom)] md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
             >
-              {/* Mobile Drag Handle (Tap to collapse) */}
-              <button
-                type="button"
-                onClick={() => setIsHistoryOpen(false)}
-                className="w-full flex items-center justify-center pt-2.5 pb-1 md:hidden cursor-pointer touch-manipulation focus:outline-none"
-                aria-label="Collapse duel chat"
-              >
-                <div className="h-1.5 w-12 rounded-full bg-white/30 hover:bg-white/50 active:bg-white/60 transition-colors" />
-              </button>
-
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 py-2 shrink-0">
+              <div className="duel-notebook-heading flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 md:py-2 shrink-0">
                 <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 font-semibold">
                   <MessageSquare size={13} className="text-emerald-400" />
                   <span>Deduction Chat</span>
                   <span className="text-zinc-500 font-normal">({snapshot.history.length})</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="rounded-sm p-1.5 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-                  title="Minimize chat"
-                >
-                  <ChevronDown size={14} />
-                </button>
+                <BackToMapButton onClick={() => setIsHistoryOpen(false)} />
               </div>
+              {snapshot.status === 'active' && (
+                <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-obsidian-950/70 px-3 py-1.5 font-mono text-[10px] text-zinc-300 md:hidden">
+                  <span className="truncate">
+                    T{snapshot.turn} · {mustAnswer ? copy.answering : myTurn ? copy.yourTurn : copy.waitingForFriend}
+                  </span>
+                  {snapshot.deadline && <Countdown deadline={snapshot.deadline} copy={copy} />}
+                </div>
+              )}
+
 
               {/* Body */}
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -905,11 +834,11 @@ function DuelRoom({ code }: { code?: string }) {
                   </GameActionComposer>
                 ) : (
                   <div className="shrink-0 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3 font-mono text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
                       <div className="flex items-center gap-2 text-zinc-400">
                         <Clock size={14} className="text-zinc-500 animate-spin-slow" />
                         <span>
-                          {copy.waiting}: {opponent?.name || 'Friend'} {snapshot.phase === 'answering' ? copy.awaitingAnswer : copy.theirTurn}
+                          {copy.waiting}: {opponent?.name || copy.waitingFriend} {snapshot.phase === 'answering' ? copy.awaitingAnswer : copy.theirTurn}
                         </span>
                       </div>
                       {snapshot.draw_offer_by === snapshot.you ? (
@@ -918,7 +847,7 @@ function DuelRoom({ code }: { code?: string }) {
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="rounded-sm bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-obsidian-950"
+                            className="max-md:min-h-11 rounded-sm bg-amber-400 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-obsidian-950"
                             disabled={busy}
                             onClick={() => { void room.act('accept_draw', {}); }}
                           >
@@ -926,7 +855,7 @@ function DuelRoom({ code }: { code?: string }) {
                           </button>
                           <button
                             type="button"
-                            className="rounded-sm border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300"
+                            className="max-md:min-h-11 rounded-sm border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-300"
                             disabled={busy}
                             onClick={() => { void room.act('decline_draw', {}); }}
                           >
@@ -936,7 +865,7 @@ function DuelRoom({ code }: { code?: string }) {
                       ) : (
                         <button
                           type="button"
-                          className="cursor-pointer text-[10px] uppercase tracking-wider text-zinc-500 hover:text-sand-100"
+                          className="max-md:min-h-11 cursor-pointer rounded-sm px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 hover:text-sand-100"
                           disabled={busy}
                           onClick={() => { void room.act('offer_draw', {}); }}
                         >
@@ -976,25 +905,25 @@ function DuelRoom({ code }: { code?: string }) {
       {snapshot.status === 'lobby' && (
         <>
           {/* Secret country selector floating bar */}
-          <div className="pointer-events-none absolute top-14 left-1/2 -translate-x-1/2 z-[1000] px-2 w-full max-w-lg">
-            <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-sm border border-white/15 bg-obsidian-900/90 px-3.5 py-2 shadow-xl backdrop-blur-md">
+          <div className="pointer-events-none absolute left-16 right-2 top-14 z-[1000] lg:left-auto lg:right-4 lg:top-14 lg:w-auto lg:px-0">
+            <div className="pointer-events-auto flex flex-col items-stretch justify-between gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-2 shadow-xl backdrop-blur-md sm:flex-row sm:items-center sm:gap-3 sm:px-3.5">
               <div className="flex items-center gap-2 min-w-0">
                 <EyeOff size={14} className="text-emerald-400 shrink-0" />
-                <div className="truncate">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 block">Your Secret:</span>
-                  <span className="font-semibold text-sand-100 text-xs truncate">
-                    {snapshot.own_secret ? snapshot.own_secret.name : 'Click map to choose'}
+                <div className="min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 block">{copy.secret}:</span>
+                  <span className="break-words font-semibold text-sand-100 text-xs">
+                    {snapshot.own_secret ? snapshot.own_secret.name : copy.chooseSecretOnMap}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-stretch justify-end gap-2">
                 {!self?.ready && (
                   <button
                     type="button"
                     onClick={() => { void room.act('randomize_secret', {}); }}
                     disabled={busy || entitiesLoading}
-                    className="flex items-center gap-1.5 rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-300 transition-colors cursor-pointer"
+                    className="flex max-md:min-h-11 max-md:flex-1 min-w-0 items-center justify-center gap-1.5 rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-amber-300 transition-colors cursor-pointer"
                     title={copy.random}
                   >
                     <Dices size={13} />
@@ -1006,7 +935,7 @@ function DuelRoom({ code }: { code?: string }) {
                   type="button"
                   onClick={() => { void room.act('ready', { ready: !self?.ready }); }}
                   disabled={busy || (!self?.ready && !snapshot.own_secret)}
-                  className={`rounded-sm px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                  className={`max-md:min-h-11 max-md:flex-1 min-w-0 rounded-sm px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                     self?.ready
                       ? 'bg-white/10 text-zinc-300 hover:bg-white/15 border border-white/15'
                       : 'bg-emerald-400 text-obsidian-950 hover:bg-emerald-300 disabled:opacity-40'
@@ -1019,7 +948,7 @@ function DuelRoom({ code }: { code?: string }) {
           </div>
 
           {/* Invite Link Card (stacked on mobile/tablet, right-floated on large desktop) */}
-          <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-28 lg:left-auto lg:translate-x-0 lg:right-4 lg:top-14 z-[990] w-full max-w-sm px-2 flex justify-center lg:block">
+          <div className="pointer-events-none absolute left-2 right-2 top-[11.5rem] z-[990] flex w-auto justify-center px-0 lg:left-auto lg:right-4 lg:top-14 lg:w-full lg:max-w-sm">
             <div className="pointer-events-auto">
               <InviteLink code={snapshot.invite_code} copy={copy} />
             </div>
@@ -1065,10 +994,10 @@ function DuelRoom({ code }: { code?: string }) {
           role="dialog"
           aria-modal="true"
           onClick={() => setRulesOpen(false)}
-          className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+          className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:items-center sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-black/70 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
         >
           <div
-            className="relative w-full max-w-md rounded-sm border border-white/20 bg-obsidian-950/95 p-5 shadow-2xl space-y-3 cursor-default"
+            className="relative my-auto max-h-[calc(var(--app-height,100dvh)-1.5rem)] w-full max-w-md overflow-y-auto rounded-sm border border-white/20 bg-obsidian-950/95 p-4 shadow-2xl space-y-3 cursor-default sm:p-5"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
@@ -1078,7 +1007,7 @@ function DuelRoom({ code }: { code?: string }) {
               <button
                 type="button"
                 onClick={() => setRulesOpen(false)}
-                className="text-zinc-400 hover:text-white cursor-pointer"
+                className="max-md:min-h-11 max-md:min-w-11 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
               >
                 <X size={15} />
               </button>

@@ -216,6 +216,34 @@ def test_origin_checks_reject_hostile_private_reads_missing_mutation_origin_and_
     require_origin(request("http://localhost:5178"))
 
 
+@pytest.mark.anyio
+@pytest.mark.parametrize(("origin", "expected_status"), [
+    ("https://countrydle.online", 200),
+    ("https://www.countrydle.online", 200),
+    ("http://countrydle.online", 403),
+    ("https://countrydle.online.evil.example", 403),
+])
+async def test_session_admission_allows_countrydle_https_origins_only(monkeypatch, origin, expected_status):
+    from fastapi import FastAPI
+    from httpx import ASGITransport, AsyncClient
+    from friend_matches.routes import COOKIE_NAME, router
+
+    monkeypatch.delenv("FRIEND_ALLOWED_ORIGINS", raising=False)
+    monkeypatch.delenv("FRIEND_COOKIE_SECURE", raising=False)
+    app = FastAPI()
+    app.include_router(router)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://internal") as client:
+        response = await client.post("/friend-matches/session", headers={"Origin": origin})
+
+    assert response.status_code == expected_status
+    if expected_status == 200:
+        cookie = next(cookie for cookie in response.cookies.jar if cookie.name == COOKIE_NAME)
+        assert cookie.secure
+        assert cookie.has_nonstandard_attr("HttpOnly")
+    else:
+        assert COOKIE_NAME not in response.cookies
+
+
 def test_human_answer_schema_rejects_public_explanations_and_sixth_answer():
     from pydantic import ValidationError
     with pytest.raises(ValidationError):

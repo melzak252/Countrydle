@@ -1,79 +1,114 @@
-import { motion } from 'framer-motion';
+import LegalDocument from '../components/LegalDocument';
 import { PrivacySettingsButton } from '../components/PrivacySettingsButton';
 
 export default function CookiePolicyPage() {
-  const lastUpdated = "September 26, 2026";
+  const lastUpdated = "October 6, 2026";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-6"
-      >
-        <h1 className="text-4xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
-          Cookie Policy
-        </h1>
-        
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 shadow-xl">
-          <p className="mb-6 text-zinc-400 italic text-sm text-right">Last updated: {lastUpdated}</p>
-          
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">1. What Are Cookies?</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              Cookies are small text files placed on your device to help the website function properly, analyze usage, and provide a personalized experience. They can be "session" cookies (deleted when you close your browser) or "persistent" cookies (remain until they expire or are deleted).
-            </p>
-          </section>
+    <LegalDocument title="Cookie Policy" lastUpdated={lastUpdated}>
+      <section>
+        <h2>1. Cookies and Browser Storage</h2>
+        <p>
+          Cookies are small values your browser sends with requests to a website. Countrydle also uses localStorage,
+          which keeps data in your browser between visits but does not automatically send it with every request.
+          This policy covers both. Clearing cookies alone may not clear localStorage; use your browser's site-data
+          controls to remove both.
+        </p>
+      </section>
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">2. How We Use Cookies</h2>
-            <p className="text-zinc-300 mb-4">We use cookies for the following purposes:</p>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">a. Strictly Necessary Cookies</h3>
-                <p className="text-zinc-300">Essential for the website to function, such as maintaining your login session and security.</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">b. Analytics Cookies</h3>
-                <p className="text-zinc-300">Help us understand how visitors interact with the website, allowing us to improve performance and user experience.</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-white mb-2">c. Advertising Cookies (Google AdSense)</h3>
-                <p className="text-zinc-300">Google AdSense may use cookies or similar technologies for advertising, including personalized advertising, according to your choices and applicable settings. Advertising choices are managed separately from essential cookies needed for the website to function.</p>
-              </div>
-            </div>
-          </section>
+      <section>
+        <h2>2. Storage Used by Countrydle</h2>
+        <p className="mb-4">
+          These first-party values support login, requested gameplay and interface preferences. Cookie lifetimes
+          describe browser access, not how long related server records are retained. Browser settings can remove
+          values earlier; the <a href="/privacy-policy">Privacy Policy</a> explains server-side processing.
+        </p>
+        <ul>
+          <li>
+            <strong>Login — <code>access_token</code> cookie:</strong> keeps you signed in. The default lifetime is
+            60 minutes, or 90 days if you select Remember me. These durations are configurable, and authenticated
+            requests can renew the selected lifetime. Logging out clears the login cookie on that browser.
+          </li>
+          <li>
+            <strong>Guest gameplay — <code>guest_identity</code> and game-state cookies:</strong> a pseudonymous
+            identifier associates accepted guest activity with server records; mode-specific cookies such as
+            <code> guest_countrydle</code> and <code>guest_flagdle</code> preserve guest game state. These cookies
+            have a two-day lifetime and may be set again during play.
+          </li>
+          <li>
+            <strong>Friend duels — <code>friend_duel_seat</code> cookie:</strong> preserves access to your guest
+            seats for up to 365 days. Removing it can prevent you from returning to those seats.
+          </li>
+          <li>
+            <strong>Daily guest progress — <code>guess_game_*</code> in localStorage:</strong> saves progress,
+            questions and guesses by game mode and date. Supported guest progress is sent to your account when
+            you sign in, and successfully synced snapshots are removed. Failed syncs retain the local snapshot.
+          </li>
+          <li>
+            <strong>Guest result history — <code>countrydle_guest_result_v1_*</code> in localStorage:</strong> saves
+            completed-game summaries used for your local history and statistics. These summaries have no automatic
+            expiry; a limited history display does not mean older records have been deleted.
+          </li>
+          <li>
+            <strong>Account display and interface state in localStorage:</strong> <code>user</code> caches account
+            display information, not the login token, and is removed on logout or an expired-session response.
+            <code> session_expired</code> supports the login notice and is removed when that notice is read.
+            <code> countrydle_guide_seen</code> and <code>flagdle_guide_seen</code> remember dismissed instructions.
+          </li>
+        </ul>
+        <p className="mt-4">
+          Local guest progress and instruction preferences have no general time-based expiry. They remain until
+          removed by the applicable sync or account flow, by you, or by your browser. Clearing browser data does
+          not delete records already stored on the server.
+        </p>
+      </section>
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">3. Third-Party Cookies</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              Google provides a consent message through its certified consent management platform (CMP) where a message applies. Google and other third parties may use cookies or similar technologies according to the choices made there and applicable settings.
-            </p>
-          </section>
+      <section>
+        <h2>3. Analytics, Advertising and External Services</h2>
+        <p className="mb-4">
+          Countrydle can load Rybbit analytics when enabled in the deployment to measure visits and navigation.
+          The external script and its configuration determine its collection and storage behavior; this policy
+          does not assume that analytics necessarily uses cookies. Analytics is distinct from storage needed to
+          keep your game or login working.
+        </p>
+        <p className="mb-4">
+          Google AdSense and its advertising partners may use cookies or similar technologies to deliver and
+          measure ads, including personalized ads according to applicable choices and settings. The site loads
+          Google's advertising script; Google's consent message and serving configuration govern available
+          advertising choices. We do not set a single first-party lifetime for Google's or its partners' storage.
+        </p>
+        <p>
+          Google's messages, where available, provide information about advertising purposes and partners.
+          See <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener noreferrer">Google's cookie information</a>
+          {' '}and <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">how Google uses information from partner sites</a>.
+        </p>
+      </section>
 
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">4. Managing Cookies and Advertising Choices</h2>
-            <p className="text-zinc-300 leading-relaxed mb-4">
-              You can use Privacy settings to reopen Google’s consent message and review or change your advertising choices when those settings are available:
-            </p>
-            <div className="mb-4">
-              <PrivacySettingsButton />
-            </div>
-            <p className="text-zinc-300 leading-relaxed mb-4">
-              If no consent message applies, there may be no message to display. If Google’s consent services are unavailable, the button reports that settings cannot be opened; it does not save or change an advertising choice. You can also block or delete cookies through your browser, though doing so may prevent login or other features from working. Browser cookie controls are separate from the Privacy settings for your advertising choices.
-            </p>
-          </section>
-
-          <section className="mb-8 border-t border-zinc-800 pt-8">
-            <h2 className="text-2xl font-semibold mb-4 text-white">5. Contact Us</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              If you have any questions about our use of cookies, please contact us at:<br />
-              Email: <strong>melzacki.jakub@gmail.com</strong>
-            </p>
-          </section>
+      <section>
+        <h2>4. Managing Cookies and Advertising Choices</h2>
+        <p className="mb-4">
+          You can use Privacy settings to reopen Google’s consent message and review or change your advertising choices when those settings are available:
+        </p>
+        <div className="mb-4">
+          <PrivacySettingsButton className="min-h-11 rounded-sm border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400" />
         </div>
-      </motion.div>
-    </div>
+        <p className="mb-4">
+          If no consent message applies, there may be no message to display. If Google's consent services are
+          unavailable, the button reports that settings cannot be opened; it does not save or change an
+          advertising choice. A failed request to open settings is not consent. Contact us if you cannot access
+          your choices. Browser controls can block or remove cookies and localStorage, but may also remove
+          progress or prevent login and other features from working. Those controls are separate from Google's
+          advertising choices; deleting browser data is not a request to erase server records.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Contact Us</h2>
+        <p>
+          Countrydle is operated by Jakub Melzacki. For storage or privacy questions, email
+          {' '}<a href="mailto:melzacki.jakub@gmail.com">melzacki.jakub@gmail.com</a>.
+        </p>
+      </section>
+    </LegalDocument>
   );
 }

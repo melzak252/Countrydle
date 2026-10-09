@@ -305,6 +305,7 @@ class ContinentalQuestionRepository:
     async def create_question(self, question_create) -> ContinentalQuestion:
         new_quest = ContinentalQuestion(
             user_id=getattr(question_create, "user_id", None),
+            guest_id=getattr(question_create, "guest_id", None),
             day_id=question_create.day_id,
             original_question=question_create.original_question,
             question=getattr(question_create, "question", None),
@@ -312,6 +313,7 @@ class ContinentalQuestionRepository:
             answer=getattr(question_create, "answer", None),
             explanation=getattr(question_create, "explanation", None),
             context=getattr(question_create, "context", None),
+            fact_provenance=question_create.fact_provenance,
         )
         self.session.add(new_quest)
         await self.session.flush()

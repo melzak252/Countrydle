@@ -299,7 +299,7 @@ def _fallback_context(request: _Fallback) -> tuple[str, dict]:
 
 
 def _answer_fallback(request: _Fallback) -> dict:
-    from countrydle.utils import gemini_json
+    from utils.ai_clients import gemini_json
 
     evidence = request.evidence
     context, evidence["context"] = _fallback_context(request)

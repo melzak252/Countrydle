@@ -5,7 +5,7 @@ import re
 from typing import Any
 import unicodedata
 
-from slot_template_engine import match_slot_template
+from slot_template_engine import build_us_state_water_plan, match_slot_template
 from voivodeship_names import resolve_voivodeship_name, CANONICAL_VOIVODESHIPS
 
 
@@ -239,10 +239,20 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
 def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | None:
     """Match high-frequency US Statedle player questions into canonical AST."""
     norm_q = _norm(question)
-    if re.search(r"\b(?:not|nie|never|neither|nor)\b", norm_q):
+    # These substring templates handle only a single affirmative predicate.
+    # Leave negations and additional conditions intact for the provider planner.
+    if re.search(r"\b(?:not|nie|never|neither|nor|no|without|bez|brak)\b|\b\w+n t\b", norm_q):
         return None
-    if re.search(r"\b(?:and|oraz)\b", norm_q):
+    if re.search(r"\b(?:and|or|but|if|unless|except|when|while|where|that|which|whose|whether|whereas|with|having|although|despite|until|provided|assuming|only|all|both|either|oraz|i|lub|albo|ale|jesli|jezeli|chyba|jednak)\b", norm_q):
         return None
+    if re.fullmatch(
+        r"is (?:it|the state) (?:located )?in (?:the )?north(?:[ -]?east)(?: region)?",
+        norm_q,
+    ):
+        return (
+            {"operator": "equals", "left": {"entity": "target_state", "relation": "region"}, "right": {"value": "Northeast"}},
+            "Is the state in the Northeast?",
+        )
     is_border_q = any(k in norm_q for k in ("border", "borders", "touch", "touches", "graniczy", "granica"))
     # 1. Foreign borders (Canada, Mexico)
     if is_border_q:
@@ -274,37 +284,42 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
         *_ATLANTIC_PATTERNS, *_PACIFIC_PATTERNS, *_ARCTIC_PATTERNS, *_INDIAN_PATTERNS, *_SOUTHERN_PATTERNS, *_GULF_PATTERNS,
     )
     if any(k in norm_q for k in _COASTAL_TRIGGERS):
-        # Check specific bodies first
-        if any(k in norm_q for k in _ATLANTIC_PATTERNS):
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Atlantic Ocean"}},
-                "Does the state have access to the Atlantic Ocean?",
-            )
-        if any(k in norm_q for k in _PACIFIC_PATTERNS):
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Pacific Ocean"}},
-                "Does the state have access to the Pacific Ocean?",
-            )
-        if any(k in norm_q for k in _ARCTIC_PATTERNS):
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Arctic Ocean"}},
-                "Does the state have access to the Arctic Ocean?",
-            )
-        if any(k in norm_q for k in _INDIAN_PATTERNS):
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Indian Ocean"}},
-                "Does the state have access to the Indian Ocean?",
-            )
-        if any(k in norm_q for k in _SOUTHERN_PATTERNS):
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Southern Ocean"}},
-                "Does the state have access to the Southern Ocean?",
-            )
-        if any(k in norm_q for k in _GULF_PATTERNS):
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "water_access"}, "right": {"value": "Gulf of Mexico"}},
-                "Does the state have access to the Gulf of Mexico?",
-            )
+        # Broad access can include a parent ocean reached through a gulf.
+        # Bordering, coastline, or explicitly direct access remains literal.
+        direct = (
+            is_border_q
+            or bool(re.search(r"\b(?:direct|directly|coast|coastline|shore|beach)\b|bezposredn|wybrzez|brzeg", norm_q))
+            or not bool(re.search(r"\baccess\b|dostep", norm_q))
+        )
+        for patterns, body in (
+            (_ATLANTIC_PATTERNS, "Atlantic Ocean"),
+            (_PACIFIC_PATTERNS, "Pacific Ocean"),
+            (_ARCTIC_PATTERNS, "Arctic Ocean"),
+            (_INDIAN_PATTERNS, "Indian Ocean"),
+            (_SOUTHERN_PATTERNS, "Southern Ocean"),
+            (_GULF_PATTERNS, "Gulf of Mexico"),
+        ):
+            if any(k in norm_q for k in patterns):
+                # Match the entire water question, not just an ocean substring:
+                # otherwise a trailing clause or an unrecognized modifier is lost.
+                body_pattern = (
+                    r"(?:gulf of mexico|zatok[ai] meksykansk[a-z]*)"
+                    if body == "Gulf of Mexico"
+                    else "(?:" + "|".join(re.escape(k) + r"[a-z]*" for k in patterns) + r")(?: ocean)?"
+                )
+                english = (
+                    r"(?:does (?:it|the state) (?:have (?:direct |a direct )?"
+                    r"(?:access to|coastline on|coast on|shoreline on)|(?:directly )?(?:border|touch))"
+                    r"|is (?:it|the state) (?:located )?(?:on|along|by)) (?:the )?"
+                )
+                polish = (
+                    r"czy (?:(?:ten )?stan )?(?:ma (?:bezposredni )?dostep do|"
+                    r"(?:bezposrednio )?graniczy z|lezy nad|jest nad|znajduje sie nad) "
+                    r"(?:oceanu |oceanem )?"
+                )
+                if not re.fullmatch("(?:" + english + "|" + polish + ")" + body_pattern, norm_q):
+                    return None
+                return build_us_state_water_plan(body, direct=direct)
         # Check regional labels (East Coast, West Coast, Gulf Coast, Great Lakes)
         if "east coast" in norm_q or "wschodnie wybrzez" in norm_q:
             return (

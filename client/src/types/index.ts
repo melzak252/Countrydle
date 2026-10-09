@@ -25,6 +25,25 @@ export interface Country {
   iso3: string;
 }
 
+export type FactProvenanceRelation = 'membership' | 'hemisphere';
+
+export interface FactProvenance {
+  status: 'unknown' | 'cited';
+  citation: string | null;
+  source_url: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  retrieved_at: string | null;
+  updated_at: string | null;
+  convention: string | null;
+}
+
+export interface FactProvenanceRecord {
+  relation: FactProvenanceRelation;
+  value: string | null;
+  provenance: FactProvenance;
+}
+
 export interface Question {
   id: number;
   original_question: string;
@@ -35,6 +54,7 @@ export interface Question {
   day_id: number;
   asked_at: string;
   explanation?: string;
+  fact_provenance?: FactProvenanceRecord[];
   report_token?: string | null;
 }
 
@@ -142,7 +162,7 @@ export interface CacheStats {
   hits: number;
   misses: number;
   size: number;
-  max_size: number;
+  storage: 'sqlite';
   hit_ratio_percent: number;
 }
 
@@ -230,6 +250,7 @@ export interface FlagdleStateResponse {
   date: string;
   state: FlagdleState;
   guesses: FlagdleGuess[];
+  questions: Question[];
   flag_asset_url?: string | null;
   country?: Country | null;
 }
@@ -270,4 +291,141 @@ export interface Suggestion {
 export interface AdminSuggestionsResponse {
   items: Suggestion[];
   total: number;
+}
+
+export type AdminQuestionSource = 'local_kb' | 'fallback' | 'invalid';
+
+export interface AdminQuestionItem {
+  id: number;
+  mode: string;
+  day_id: number;
+  game_date: string;
+  target_id: number;
+  target_name: string;
+  target_subtitle?: string | null;
+  user_id?: number | null;
+  username: string;
+  is_guest: boolean;
+  original_question: string;
+  question?: string | null;
+  valid: boolean;
+  answer?: boolean | null;
+  explanation: string;
+  context?: string | null;
+  source: AdminQuestionSource;
+  relation?: string | null;
+  asked_at?: string | null;
+  has_report: boolean;
+  report_id?: number | null;
+}
+
+export interface AdminQuestionsListResponse {
+  items: AdminQuestionItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminGameSessionTimelineEvent {
+  event_type: 'question' | 'guess';
+  id: number;
+  timestamp?: string | null;
+  question?: string | null;
+  original_question?: string | null;
+  valid?: boolean | null;
+  answer?: boolean | null;
+  explanation?: string | null;
+  source?: AdminQuestionSource | null;
+  relation?: string | null;
+  context?: string | null;
+  guess?: string | null;
+  correct?: boolean | null;
+}
+
+export interface AdminGameSessionItem {
+  session_id: string;
+  mode: string;
+  day_id: number;
+  game_date: string;
+  target_name: string;
+  target_subtitle?: string | null;
+  user_id?: number | null;
+  username: string;
+  is_guest: boolean;
+  status: 'won' | 'lost' | 'in_progress';
+  questions_asked: number;
+  guesses_made: number;
+  duration_seconds?: number | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  timeline: AdminGameSessionTimelineEvent[];
+}
+
+export interface AdminGameSessionsResponse {
+  items: AdminGameSessionItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminTopQuestionStat {
+  text: string;
+  count: number;
+  yes_pct: number;
+  win_correlation: number;
+}
+
+export interface AdminTopGuessStat {
+  guess: string;
+  count: number;
+  correct_pct: number;
+}
+
+export interface AdminTargetStrategyStats {
+  target_name: string;
+  target_subtitle?: string | null;
+  game_date: string;
+  total_players: number;
+  win_rate_pct: number;
+  top_questions: AdminTopQuestionStat[];
+  top_guesses: AdminTopGuessStat[];
+  avg_questions_winners: number;
+  avg_questions_losers: number;
+}
+
+export interface AdminInvalidateFallbackResponse {
+  success: boolean;
+  mode: string;
+  question_id: number;
+  message: string;
+}
+
+export interface LiveQuestionItem {
+  id: number;
+  mode: string;
+  username: string;
+  question: string;
+  valid: boolean;
+  answer?: boolean | null;
+  explanation?: string | null;
+  asked_at?: string | null;
+  target_name?: string | null;
+  target_subtitle?: string | null;
+  source?: string | null;
+}
+
+export interface LiveGuessItem {
+  id: number;
+  mode: string;
+  username: string;
+  guess: string;
+  answer: boolean;
+  guessed_at?: string | null;
+  target_name?: string | null;
+  target_subtitle?: string | null;
+}
+
+export interface LiveFeedData {
+  recent_questions: LiveQuestionItem[];
+  recent_guesses: LiveGuessItem[];
 }

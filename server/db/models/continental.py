@@ -8,6 +8,8 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Index,
+    JSON,
     String,
     UniqueConstraint,
     func,
@@ -88,9 +90,11 @@ class ContinentalGuess(Base):
 
 class ContinentalQuestion(Base):
     __tablename__ = "continental_questions"
+    __table_args__ = (Index("ix_continental_questions_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("continental_days.id", ondelete="CASCADE"), nullable=False, index=True)
     original_question = Column(String, nullable=False)
     question = Column(String, nullable=True)
@@ -98,6 +102,7 @@ class ContinentalQuestion(Base):
     answer = Column(Boolean, nullable=True)
     explanation = Column(String, nullable=True)
     context = Column(String, nullable=True)
+    fact_provenance = Column(JSON, nullable=False, default=list, server_default="[]")
     asked_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     user = relationship("User")

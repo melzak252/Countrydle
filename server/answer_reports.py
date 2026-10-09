@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
 from db.models import (
-    AnswerReport, ContinentalDay, ContinentalQuestion, Country, CountrydleDay,
+    AnswerReport, ContinentalDay, ContinentalQuestion, Country, CountrydleDay, FlagdleDay, FlagdleQuestion,
     CountrydleQuestion, Powiat, PowiatdleDay, PowiatdleQuestion, USState,
     USStatedleDay, USStatedleQuestion, User, Wojewodztwo, WojewodztwodleDay,
     WojewodztwodleQuestion,
@@ -16,6 +16,7 @@ from schemas.answer_report import (
     AnswerReportList, AnswerReportMode, AnswerReportReview, AnswerReportStatus,
 )
 from users.utils import get_admin_user, get_current_or_guest_user
+from db.repositories.fallback_answers import invalidate
 
 
 router = APIRouter(tags=["answer reports"])
@@ -28,6 +29,7 @@ MODELS = {
     "powiatdle": (PowiatdleQuestion, PowiatdleDay, Powiat, PowiatdleDay.powiat_id, Powiat.nazwa),
     "wojewodztwodle": (WojewodztwodleQuestion, WojewodztwodleDay, Wojewodztwo, WojewodztwodleDay.wojewodztwo_id, Wojewodztwo.nazwa),
     "continental": (ContinentalQuestion, ContinentalDay, Country, ContinentalDay.country_id, Country.name),
+    "flagdle": (FlagdleQuestion, FlagdleDay, Country, FlagdleDay.country_id, Country.name),
 }
 
 
@@ -74,16 +76,22 @@ async def submit_answer_report(
         game_date=game_date.isoformat(),
         target_name=target_name,
         server_version=getattr(question, "server_version", None),
+        fact_provenance=getattr(question, "fact_provenance", []) or [],
     )
     report = AnswerReport(
         mode=mode,
         question_id=question.id,
         reporter_id=user.id if user is not None else None,
         comment=payload.comment,
-        details=details.model_dump(),
+        details=details.model_dump(mode="json"),
     )
     session.add(report)
     try:
+        await invalidate(
+            session, mode=mode, entity_name=target_name,
+            original_question=details.original_question, question=details.question,
+            context=details.context, game_date=game_date,
+        )
         await session.commit()
     except IntegrityError:
         await session.rollback()

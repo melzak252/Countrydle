@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-from db.models.flagdle import FlagdleState
+from db.models.flagdle import FlagdleState, FlagdleQuestion
 from db.repositories.question_accounting import consume_question, lock_question_state
 from datetime import date, datetime
 import logging
+import os
+import tempfile
 from typing import List, Optional, Union
 from countrydle.local_planner import analyze_question_for_local_plan
 from countrydle.local_answering import execute_local_plan
-from schemas.countrydle import QuestionBase, FullQuestionDisplay, InvalidQuestionDisplay
+from schemas.countrydle import QuestionBase, QuestionCreate, InvalidQuestionDisplay
 from schemas.countrydle import LeaderboardEntry
 import urllib.request
 
@@ -23,6 +25,7 @@ from db.repositories.flagdle import (
     FlagdleDayRepository,
     FlagdleGuessRepository,
     FlagdleStateRepository,
+    FlagdleQuestionRepository,
 )
 from game_logic import FLAGDLE_CONFIG, GameRules, GameState, is_valid_synced_game_state
 from schemas.country import CountryDisplay
@@ -32,6 +35,7 @@ from schemas.flagdle import (
     FlagdleGuessBase,
     FlagdleGuessCreate,
     FlagdleGuessDisplay,
+    FlagdleQuestionDisplay,
     FlagdleStateResponse,
     FlagdleStateSchema,
     FlagdleSyncSchema,
@@ -39,10 +43,13 @@ from schemas.flagdle import (
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    get_guest_identity, get_guest_question_history,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
+from utils.explanation_sanitizer import sanitize_explanation_for_player
 
 from flagdle.utils import (
+    FACTS_DB_PATH,
     UNMASK_ORDER,
     evaluate_flag_clues,
     generate_asset_token,
@@ -54,26 +61,54 @@ logger = logging.getLogger("countrydle.flagdle")
 
 router = APIRouter(prefix="/flagdle", tags=["flagdle"])
 
-_FLAG_SVG_CACHE: dict[str, bytes] = {}
+FLAG_SVG_CACHE_DIR = FACTS_DB_PATH.parent / "flag_svg_cache"
 
 
 def _get_or_fetch_flag_svg(iso2: str) -> bytes:
     code = iso2.lower()
-    if code in _FLAG_SVG_CACHE:
-        return _FLAG_SVG_CACHE[code]
-
-    url = f"https://flagcdn.com/{code}.svg"
     try:
+        if len(code) != 2 or not all("a" <= char <= "z" for char in code):
+            raise ValueError("Flag asset requires a two-letter ASCII ISO2 code")
+
+        cache_path = FLAG_SVG_CACHE_DIR / f"{code}.svg"
+        try:
+            return cache_path.read_bytes()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            logger.warning("Failed to read cached SVG for %s: %s", code, exc)
+
+        url = f"https://flagcdn.com/{code}.svg"
         req = urllib.request.Request(url, headers={"User-Agent": "Countrydle/1.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             content = resp.read()
-            _FLAG_SVG_CACHE[code] = content
-            return content
     except Exception as exc:
         logger.warning("Failed to fetch SVG for %s from flagcdn: %s", code, exc)
         # Simple generic fallback SVG
         fallback = f'<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#1e293b"/><text x="450" y="300" fill="#94a3b8" font-size="40" font-family="sans-serif" text-anchor="middle">Flag of {code.upper()}</text></svg>'
         return fallback.encode("utf-8")
+
+    temporary_path = None
+    try:
+        FLAG_SVG_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            dir=FLAG_SVG_CACHE_DIR, prefix=f".{code}.", suffix=".tmp", delete=False
+        ) as temporary:
+            temporary_path = temporary.name
+            temporary.write(content)
+        os.replace(temporary_path, cache_path)
+        temporary_path = None
+    except OSError as exc:
+        logger.warning("Failed to cache SVG for %s: %s", code, exc)
+    finally:
+        if temporary_path is not None:
+            try:
+                os.unlink(temporary_path)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                logger.warning("Failed to remove temporary SVG for %s: %s", code, exc)
+    return content
 
 
 @router.get("/leaderboard", response_model=List[LeaderboardEntry])
@@ -133,7 +168,7 @@ async def get_flag_asset(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target country not found.")
 
     iso2 = get_country_iso2(target_country.name)
-    svg_bytes = _get_or_fetch_flag_svg(iso2)
+    svg_bytes = await asyncio.to_thread(_get_or_fetch_flag_svg, iso2)
     return RawResponse(
         content=svg_bytes,
         media_type="image/svg+xml",
@@ -170,6 +205,7 @@ async def get_state(
 
         guess_repo = FlagdleGuessRepository(session)
         db_guesses = await guess_repo.get_user_day_guesses(user, today_flag.id)
+        questions = await FlagdleQuestionRepository(session).get_user_day_questions(user.id, today_flag.id)
 
         guesses_display = []
         for g in db_guesses:
@@ -201,6 +237,7 @@ async def get_state(
             date=today_str,
             state=FlagdleStateSchema.model_validate(state),
             guesses=guesses_display,
+            questions=[FlagdleQuestionDisplay.model_validate(q, context={"terminal": state.is_game_over}) for q in questions],
             flag_asset_url=flag_asset_url,
             country=revealed_country,
         )
@@ -215,6 +252,14 @@ async def get_state(
         guesses_made = guest_state["guesses_count"]
         is_won = guest_state["won"]
         is_game_over = guest_state["is_game_over"]
+        participation, questions = await get_guest_question_history(
+            session, request, "flagdle", today_flag.id, FlagdleQuestion,
+        )
+        terminal = bool(participation and (participation.won or participation.guesses_made >= FLAGDLE_CONFIG.max_guesses))
+        is_game_over = terminal
+        if participation is not None:
+            guesses_made = participation.guesses_made
+            is_won = participation.won
         remaining_guesses = max(0, FLAGDLE_CONFIG.max_guesses - guesses_made)
         revealed_stage = 12 if is_game_over else min(12, guesses_made + 1)
 
@@ -236,6 +281,7 @@ async def get_state(
             date=today_str,
             state=state_schema,
             guesses=[],
+            questions=[FlagdleQuestionDisplay.model_validate(q, context={"terminal": terminal}) for q in questions],
             flag_asset_url=flag_asset_url,
             country=revealed_country,
         )
@@ -440,7 +486,7 @@ async def make_guess(
 
 @router.post(
     "/question",
-    response_model=Union[FullQuestionDisplay, InvalidQuestionDisplay],
+    response_model=Union[FlagdleQuestionDisplay, InvalidQuestionDisplay],
     dependencies=[Depends(enforce_question_attempt_limit)],
 )
 async def ask_flag_question(
@@ -480,18 +526,27 @@ async def ask_flag_question(
                 user_id=user_id, day_id=day_id, asked_at=now, explanation=explanation,
             )
 
-        result = FullQuestionDisplay(
-            id=int(now.timestamp()), original_question=question.question,
-            question=answer.question, valid=True, answer=answer.answer,
-            user_id=user_id, day_id=day_id, asked_at=now,
-            explanation=answer.explanation, context=f"flag_kb:{answer.relation}",
+        question_create = QuestionCreate(
+            original_question=question.question, question=answer.question,
+            valid=True, answer=answer.answer, user_id=user_id, day_id=day_id,
+            guest_id=get_guest_identity(request, response) if user is None else None,
+            explanation=sanitize_explanation_for_player(answer.explanation),
+            context=f"flag_kb:{answer.relation}",
+            fact_provenance=answer.fact_provenance,
         )
         if user is None:
             await record_guest_action(session, request, response, "flagdle", day_id, question=True)
+            participation, _ = await get_guest_question_history(
+                session, request, "flagdle", day_id, FlagdleQuestion,
+            )
+            terminal = bool(participation and (participation.won or participation.guesses_made >= FLAGDLE_CONFIG.max_guesses))
         else:
-            await consume_question(
+            state = await consume_question(
                 session, FlagdleState, user_id, day_id, None, FLAGDLE_CONFIG.max_guesses,
             )
+            terminal = state.is_game_over
+        saved_question = await FlagdleQuestionRepository(session).create_question(question_create)
+        result = FlagdleQuestionDisplay.model_validate(saved_question, context={"terminal": terminal})
         await session.commit()
         return result
     except HTTPException:

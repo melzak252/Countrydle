@@ -1,5 +1,5 @@
 {
-  "version": "1.20.0",
-  "title": "Send feedback and ideas directly from Countrydle",
-  "body": "SUGGESTIONS AND CONTACT\n- Send feedback, bug reports, data corrections, and feature ideas directly from the Suggestions and contact page.\n- Suggestions work for both guests and signed-in players.\n- You can optionally include your name and email address so we can follow up.\n- Direct email and GitHub contact options remain available."
+  "version": "1.25.4",
+  "title": "Map interaction and question focus",
+  "body": "- On desktop, the question field restores typing focus after submissions and mouse clicks or right-clicks on the map.\n- Map interactions during a pending question restore focus when the response arrives and the input is available again.\n- Map clicks preserve the draft and caret, and rejected submissions retain the draft.\n- Map controls, keyboard navigation, other forms, and touch interactions do not trigger map-click focus restoration; page load does not autofocus the question field.\n\nThis release also includes the previously prepared persistent disk-backed question-plan and flag-SVG caches. Saved player progress, game rules, and question and guess limits are unchanged."
 }

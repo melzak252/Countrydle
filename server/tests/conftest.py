@@ -106,6 +106,8 @@ def mock_common_database_repositories(monkeypatch, request):
         module = import_module(mode)
         monkeypatch.setattr(module, "record_guest_action", AsyncMock(return_value=None))
         monkeypatch.setattr(module, "link_guest_participation", AsyncMock(return_value=None))
+        if hasattr(module, "get_guest_question_history"):
+            monkeypatch.setattr(module, "get_guest_question_history", AsyncMock(return_value=(None, [])))
 
     async def register_user(self, user):
         return make_test_user(username=user.username, email=user.email)

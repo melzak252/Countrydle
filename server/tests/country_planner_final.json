@@ -1,0 +1,605 @@
+{
+  "description": "Twenty new prospective EN/PL stress cases authored and frozen before any generation at compact-v5-t1024; 10 EN/10 PL. Core truth/temporal, reference/operator, scope and unsupported boundaries. Curated, not production-frequency sample. Gold uses actual unchanged executor semantics.",
+  "cases": [
+    {
+      "id": "final-001",
+      "split": "held_out",
+      "category": "Present membership; clear false proposition is valid, not past membership or clarification.",
+      "question": "Does the country currently belong to the Soviet Union?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "membership"
+        },
+        "right": {
+          "value": "USSR"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "USSR"
+        }
+      ],
+      "notes": "Present membership; clear false proposition is valid, not past membership or clarification.",
+      "meaning_guard": "Present membership; clear false proposition is valid, not past membership or clarification."
+    },
+    {
+      "id": "final-002",
+      "split": "held_out",
+      "category": "Polish present dissolved-organization membership, distinct from past association.",
+      "question": "Czy kraj ma obecnie członkostwo w Związku Radzieckim?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "contains",
+        "left": {
+          "entity": "target_country",
+          "relation": "membership"
+        },
+        "right": {
+          "value": "USSR"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "USSR"
+        }
+      ],
+      "notes": "Polish present dissolved-organization membership, distinct from past association.",
+      "meaning_guard": "Polish present dissolved-organization membership, distinct from past association."
+    },
+    {
+      "id": "final-003",
+      "split": "held_out",
+      "category": "Clear Boolean contradiction remains valid; preserve both opposed clauses.",
+      "question": "Is the country both an island and not an island?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "is_island"
+            },
+            "right": {
+              "value": true
+            }
+          },
+          {
+            "operator": "not",
+            "condition": {
+              "operator": "equals",
+              "left": {
+                "entity": "target_country",
+                "relation": "is_island"
+              },
+              "right": {
+                "value": true
+              }
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "is_island",
+          "value": true
+        }
+      ],
+      "notes": "Clear Boolean contradiction remains valid; preserve both opposed clauses.",
+      "meaning_guard": "Clear Boolean contradiction remains valid; preserve both opposed clauses."
+    },
+    {
+      "id": "final-004",
+      "split": "held_out",
+      "category": "A false numeric proposition is valid; retain exact strict bound.",
+      "question": "Czy ludność kraju wynosi mniej niż zero osób?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "less_than",
+        "left": {
+          "entity": "target_country",
+          "relation": "population"
+        },
+        "right": {
+          "value": 0
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "less_than",
+          "relation": "population",
+          "value": 0
+        }
+      ],
+      "notes": "A false numeric proposition is valid; retain exact strict bound.",
+      "meaning_guard": "A false numeric proposition is valid; retain exact strict bound."
+    },
+    {
+      "id": "final-005",
+      "split": "held_out",
+      "category": "Named reference, inclusive population comparison; no invented literal.",
+      "question": "Is its population at least the population of Indonesia?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "greater_than_or_equal",
+        "left": {
+          "entity": "target_country",
+          "relation": "population"
+        },
+        "right": {
+          "entity": "Indonesia",
+          "relation": "population"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "greater_than_or_equal",
+          "relation": "population"
+        }
+      ],
+      "notes": "Named reference, inclusive population comparison; no invented literal.",
+      "meaning_guard": "Named reference, inclusive population comparison; no invented literal."
+    },
+    {
+      "id": "final-006",
+      "split": "held_out",
+      "category": "Named area reference and inclusive upper comparison; numeric not-greater-than is <=.",
+      "question": "Czy powierzchnia kraju nie jest większa niż powierzchnia Finlandii?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "less_than_or_equal",
+        "left": {
+          "entity": "target_country",
+          "relation": "area"
+        },
+        "right": {
+          "entity": "Finland",
+          "relation": "area"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "less_than_or_equal",
+          "relation": "area"
+        }
+      ],
+      "notes": "Named area reference and inclusive upper comparison; numeric not-greater-than is <=.",
+      "meaning_guard": "Named area reference and inclusive upper comparison; numeric not-greater-than is <=."
+    },
+    {
+      "id": "final-007",
+      "split": "held_out",
+      "category": "Named directional comparison; preserve compass operator and self-reference unknown.",
+      "question": "Is the country geographically north of Portugal?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "north_of",
+        "left": {
+          "entity": "target_country",
+          "relation": "coordinates.latitude"
+        },
+        "right": {
+          "entity": "Portugal",
+          "relation": "coordinates.latitude"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "north_of",
+          "relation": "coordinates.latitude"
+        }
+      ],
+      "notes": "Named directional comparison; preserve compass operator and self-reference unknown.",
+      "meaning_guard": "Named directional comparison; preserve compass operator and self-reference unknown."
+    },
+    {
+      "id": "final-008",
+      "split": "held_out",
+      "category": "Named longitude direction; preserve compass operator and self-reference unknown.",
+      "question": "Czy kraj leży geograficznie na zachód od Australii?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "west_of",
+        "left": {
+          "entity": "target_country",
+          "relation": "coordinates.longitude"
+        },
+        "right": {
+          "entity": "Australia",
+          "relation": "coordinates.longitude"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "west_of",
+          "relation": "coordinates.longitude"
+        }
+      ],
+      "notes": "Named longitude direction; preserve compass operator and self-reference unknown.",
+      "meaning_guard": "Named longitude direction; preserve compass operator and self-reference unknown."
+    },
+    {
+      "id": "final-009",
+      "split": "held_out",
+      "category": "Existential neighbor with inner negation, not global not-any; country item binding.",
+      "question": "Does any country on its land border lack EU membership?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "any",
+        "items": {
+          "entity": "target_country",
+          "relation": "borders_country"
+        },
+        "condition": {
+          "operator": "not",
+          "condition": {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "EU"
+            }
+          }
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "any",
+          "relation": "borders_country"
+        },
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "EU"
+        }
+      ],
+      "notes": "Existential neighbor with inner negation, not global not-any; country item binding.",
+      "meaning_guard": "Existential neighbor with inner negation, not global not-any; country item binding."
+    },
+    {
+      "id": "final-010",
+      "split": "held_out",
+      "category": "No neighbor is a NATO member; not-any and all-not are equivalent, preserve full quantifier scope.",
+      "question": "Czy prawdą jest, że żaden jego sąsiad lądowy nie należy do NATO?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "not",
+        "condition": {
+          "operator": "any",
+          "items": {
+            "entity": "target_country",
+            "relation": "borders_country"
+          },
+          "condition": {
+            "operator": "contains",
+            "left": {
+              "entity": "item",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "NATO"
+            }
+          }
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "NATO"
+        }
+      ],
+      "notes": "No neighbor is a NATO member; not-any and all-not are equivalent, preserve full quantifier scope.",
+      "meaning_guard": "No neighbor is a NATO member; not-any and all-not are equivalent, preserve full quantifier scope."
+    },
+    {
+      "id": "final-011",
+      "split": "held_out",
+      "category": "Explicit supported Protestant category, not broad four-category Christianity.",
+      "question": "Is Protestant Christianity its dominant religious grouping?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "equals",
+        "left": {
+          "entity": "target_country",
+          "relation": "dominant_religion"
+        },
+        "right": {
+          "value": "Protestant"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Protestant"
+        }
+      ],
+      "notes": "Explicit supported Protestant category, not broad four-category Christianity.",
+      "meaning_guard": "Explicit supported Protestant category, not broad four-category Christianity."
+    },
+    {
+      "id": "final-012",
+      "split": "held_out",
+      "category": "Ordinary Christianity umbrella spans all four supported Christian groupings.",
+      "question": "Czy kraj ma chrześcijaństwo jako przeważającą religię?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "or",
+        "conditions": [
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Catholic"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Orthodox"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Protestant"
+            }
+          },
+          {
+            "operator": "equals",
+            "left": {
+              "entity": "target_country",
+              "relation": "dominant_religion"
+            },
+            "right": {
+              "value": "Christianity"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Catholic"
+        },
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Orthodox"
+        },
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Protestant"
+        },
+        {
+          "operator": "equals",
+          "relation": "dominant_religion",
+          "value": "Christianity"
+        }
+      ],
+      "notes": "Ordinary Christianity umbrella spans all four supported Christian groupings.",
+      "meaning_guard": "Ordinary Christianity umbrella spans all four supported Christian groupings."
+    },
+    {
+      "id": "final-013",
+      "split": "held_out",
+      "category": "Clear cultural-country association; no cultural facts, not official-language/geography proxy.",
+      "question": "Is it culturally a Slavic country rather than a language-status question?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Clear cultural-country association; no cultural facts, not official-language/geography proxy.",
+      "meaning_guard": "Clear cultural-country association; no cultural facts, not official-language/geography proxy."
+    },
+    {
+      "id": "final-014",
+      "split": "held_out",
+      "category": "Language prevalence differs from legally official-language status.",
+      "question": "Czy dominującym językiem codziennej komunikacji jest niemiecki?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Language prevalence differs from legally official-language status.",
+      "meaning_guard": "Language prevalence differs from legally official-language status."
+    },
+    {
+      "id": "final-015",
+      "split": "held_out",
+      "category": "Official-name spelling unsupported; never substitute common-name suffix.",
+      "question": "Does its official state name end with the quoted letters \"ia\"?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Official-name spelling unsupported; never substitute common-name suffix.",
+      "meaning_guard": "Official-name spelling unsupported; never substitute common-name suffix."
+    },
+    {
+      "id": "final-016",
+      "split": "held_out",
+      "category": "Common English name prefix; preserve exact quoted text.",
+      "question": "Czy zwyczajowa angielska nazwa państwa zaczyna się dokładnym tekstem \"South\"?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "starts_with",
+        "left": {
+          "entity": "target_country",
+          "relation": "name"
+        },
+        "right": {
+          "value": "South"
+        }
+      },
+      "required_atoms": [
+        {
+          "operator": "starts_with",
+          "relation": "name",
+          "value": "South"
+        }
+      ],
+      "notes": "Common English name prefix; preserve exact quoted text.",
+      "meaning_guard": "Common English name prefix; preserve exact quoted text."
+    },
+    {
+      "id": "final-017",
+      "split": "held_out",
+      "category": "Target membership and bordering clause are separate, conjunctive and complete.",
+      "question": "Is it a NATO member and does it border France?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "membership"
+            },
+            "right": {
+              "value": "NATO"
+            }
+          },
+          {
+            "operator": "contains",
+            "left": {
+              "entity": "target_country",
+              "relation": "borders_country"
+            },
+            "right": {
+              "value": "France"
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "contains",
+          "relation": "membership",
+          "value": "NATO"
+        },
+        {
+          "operator": "contains",
+          "relation": "borders_country",
+          "value": "France"
+        }
+      ],
+      "notes": "Target membership and bordering clause are separate, conjunctive and complete.",
+      "meaning_guard": "Target membership and bordering clause are separate, conjunctive and complete."
+    },
+    {
+      "id": "final-018",
+      "split": "held_out",
+      "category": "(Republic OR island) AND no white flag color; retain narrow negation.",
+      "question": "Czy kraj jest republiką albo wyspą, ale nie ma białego koloru na fladze?",
+      "route": "local",
+      "gold_plan": {
+        "operator": "and",
+        "conditions": [
+          {
+            "operator": "or",
+            "conditions": [
+              {
+                "operator": "equals",
+                "left": {
+                  "entity": "target_country",
+                  "relation": "government_type"
+                },
+                "right": {
+                  "value": "Republic"
+                }
+              },
+              {
+                "operator": "equals",
+                "left": {
+                  "entity": "target_country",
+                  "relation": "is_island"
+                },
+                "right": {
+                  "value": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "condition": {
+              "operator": "contains",
+              "left": {
+                "entity": "target_country",
+                "relation": "flag_color"
+              },
+              "right": {
+                "value": "white"
+              }
+            }
+          }
+        ]
+      },
+      "required_atoms": [
+        {
+          "operator": "equals",
+          "relation": "government_type",
+          "value": "Republic"
+        },
+        {
+          "operator": "equals",
+          "relation": "is_island",
+          "value": true
+        },
+        {
+          "operator": "contains",
+          "relation": "flag_color",
+          "value": "white"
+        }
+      ],
+      "notes": "(Republic OR island) AND no white flag color; retain narrow negation.",
+      "meaning_guard": "(Republic OR island) AND no white flag color; retain narrow negation."
+    },
+    {
+      "id": "final-019",
+      "split": "held_out",
+      "category": "Missing reference country and quantitative distance criterion; do not invent either.",
+      "question": "Is it far north of some country?",
+      "route": "clarify",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Missing reference country and quantitative distance criterion; do not invent either.",
+      "meaning_guard": "Missing reference country and quantitative distance criterion; do not invent either."
+    },
+    {
+      "id": "final-020",
+      "split": "held_out",
+      "category": "Past membership of an active organization has no historical membership facts; do not substitute present EU membership.",
+      "question": "Czy ten kraj miał w przeszłości członkostwo w Unii Europejskiej?",
+      "route": "fallback",
+      "gold_plan": null,
+      "required_atoms": [],
+      "notes": "Past membership of an active organization has no historical membership facts; do not substitute present EU membership.",
+      "meaning_guard": "Past membership of an active organization has no historical membership facts; do not substitute present EU membership."
+    }
+  ]
+}

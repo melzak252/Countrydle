@@ -4,6 +4,7 @@ from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
+from tests.test_question_accounting import accounting_db
 
 from game_logic import calculate_flagdle_points
 from flagdle.utils import (
@@ -255,8 +256,12 @@ async def test_flagdle_guess_correct_flow(async_client):
 
 
 @pytest.mark.anyio
-async def test_flagdle_flag_asset_stream(async_client):
+async def test_flagdle_flag_asset_stream(async_client, tmp_path, monkeypatch):
     """GET /flagdle/flag-asset with valid token returns SVG."""
+    monkeypatch.setattr("flagdle.FLAG_SVG_CACHE_DIR", tmp_path)
+    (tmp_path / "fr.svg").write_bytes(
+        b'<svg xmlns="http://www.w3.org/2000/svg"><rect fill="#fff"/></svg>'
+    )
     with (
         patch(
             "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
@@ -318,3 +323,59 @@ async def test_flagdle_history_endpoint(async_client):
         assert data[0]["id"] == 55
         assert data[0]["date"] == "2026-09-21"
         assert data[0]["country"]["name"] == "France"
+
+
+@pytest.fixture
+async def flag_day(accounting_db):
+    from db.models import Country, FlagdleDay
+    async with accounting_db() as session:
+        country = Country(id=143, name="Romania", official_name="Romania", md_file="romania.md")
+        day = FlagdleDay(id=1, country=country, date=date.today())
+        session.add_all([country, day])
+        await session.commit()
+    return day
+
+
+@pytest.fixture
+async def daily_api_client(accounting_db, flag_day):
+    from fastapi import FastAPI
+    from httpx import ASGITransport, AsyncClient
+    from db import get_db
+    from flagdle import router
+    from users.utils import get_current_or_guest_user
+
+    app = FastAPI()
+    app.include_router(router)
+
+    async def session_dependency():
+        async with accounting_db() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = session_dependency
+    app.dependency_overrides[get_current_or_guest_user] = lambda: None
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+
+
+@pytest.mark.real_database
+@pytest.mark.anyio
+async def test_flagdle_named_facts_are_private_until_win_and_available_to_later_questions(daily_api_client, flag_day):
+    active = await daily_api_client.post("/flagdle/question", json={"question": "Is it in Europe?"})
+    assert active.status_code == 200, active.text
+    assert active.json()["valid"] is True and active.json()["answer"] is True
+    assert not active.json()["explanation"]
+
+    win = await daily_api_client.post("/flagdle/guess", json={"country_id": 143, "guess": "Romania"})
+    assert win.status_code == 200, win.text
+    assert win.json()["answer"] is True
+
+    later = await daily_api_client.post("/flagdle/question", json={"question": "Is it in Europe?"})
+    assert later.status_code == 200, later.text
+    assert later.json()["valid"] is True and later.json()["answer"] is True
+    assert "Romania" in later.json()["explanation"]
+    assert "Europe" in later.json()["explanation"]
+
+    state = await daily_api_client.get("/flagdle/state")
+    assert state.status_code == 200, state.text
+    assert state.json()["state"]["is_game_over"] is True
+    assert all("Romania" in question["explanation"] for question in state.json()["questions"])

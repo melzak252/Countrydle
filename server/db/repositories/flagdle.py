@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models.country import Country
-from db.models.flagdle import FlagdleDay, FlagdleState, FlagdleGuess
+from db.models.flagdle import FlagdleDay, FlagdleState, FlagdleGuess, FlagdleQuestion
 from db.models.user import User
 from game_logic import calculate_flagdle_points, count_consecutive_daily_wins
 from schemas.flagdle import FlagdleGuessCreate
@@ -214,3 +214,26 @@ class FlagdleGuessRepository:
             await self.session.flush()
         await self.session.refresh(guess)
         return guess
+
+
+class FlagdleQuestionRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create_question(self, question_create):
+        data = question_create.model_dump()
+        for field in ("intent", "required_info", "server_version"):
+            data.pop(field, None)
+        question = FlagdleQuestion(**data)
+        self.session.add(question)
+        await self.session.flush()
+        return question
+
+    async def get_user_day_questions(self, user_id: int, day_id: int):
+        result = await self.session.execute(
+            select(FlagdleQuestion).where(
+                FlagdleQuestion.user_id == user_id, FlagdleQuestion.day_id == day_id,
+                FlagdleQuestion.valid.is_(True), FlagdleQuestion.answer.is_not(None),
+            ).order_by(FlagdleQuestion.id)
+        )
+        return list(result.scalars().all())

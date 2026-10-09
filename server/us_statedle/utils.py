@@ -1,15 +1,12 @@
 import asyncio
 import time
-import os
-import json
+import qdrant
 from typing import List, Tuple
-from utils.ai_clients import gemini_json, FALLBACK_ANSWER_SCHEMA
+from utils.ai_clients import gemini_json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import USState, USStatedleDay, User
-from qdrant.utils import get_fragments_matching_question
-import qdrant
 from schemas.us_statedle import USStateQuestionCreate, USStateQuestionEnhanced
 from db.repositories.us_state import USStateRepository
 from local_kb_question import LocalModeConfig, QuestionPlan, analyze_question, execute_plan, ROOT_DIR
@@ -60,13 +57,30 @@ LOCAL_CONFIG = LocalModeConfig(
         "This applies equally to NEGATED questions: negate the is_coastal predicate. "
         "Never compare water_access with generic 'Ocean' or 'Sea'; that list holds specific named water bodies "
         "and also inland lakes. An inland lake alone does not imply ocean/sea access.\n"
-        "- For questions asking about a specific named water body like Gulf of Mexico, Atlantic Ocean, Pacific Ocean, Lake Michigan, etc., use contains_exact on relation water_access "
-        "(e.g. {\"operator\": \"contains_exact\", \"left\": {\"entity\": \"target_state\", \"relation\": \"water_access\"}, \"right\": {\"value\": \"Gulf of Mexico\"}}).\n"
+        "- Broad access to the named Atlantic Ocean includes Gulf of Mexico coastline: "
+        "use OR of contains_exact(water_access, 'Atlantic Ocean') and "
+        "contains_exact(water_access, 'Gulf of Mexico'). Example plan: "
+        "[{\"operator\":\"contains_exact\",\"left\":{\"entity\":\"target_state\",\"relation\":\"water_access\"},\"right\":{\"value\":\"Atlantic Ocean\"}},"
+        "{\"operator\":\"contains_exact\",\"left\":{\"entity\":\"target_state\",\"relation\":\"water_access\"},\"right\":{\"value\":\"Gulf of Mexico\"}},"
+        "{\"operator\":\"or\",\"args\":[0,1]}]. "
+        "Negated broad access must negate the whole OR, not just the Atlantic membership node. "
+        "Preserve every condition and conjunction in compound queries; do not replace the whole query with its ocean-access clause.\n"
+        "- Direct coastline, bordering/touching a named water body, and explicitly direct access "
+        "use contains_exact on water_access for that body only. Mississippi has Gulf of Mexico "
+        "coastline and broad Atlantic access, but does NOT border the Atlantic Ocean and is NOT "
+        "East Coast; Florida has both direct Atlantic and Gulf coastline. "
+        "Never infer East Coast from broad Atlantic access. "
+        "Access to other named waters (Pacific Ocean, Gulf of Mexico, Lake Michigan, etc.) "
+        "uses contains_exact on water_access for the named body.\n"
         "- For broad labels such as East Coast, West Coast, Gulf Coast, Great Lakes, "
         "Pacific Northwest, Southwest, Great Plains, Appalachia, Deep South, Rust Belt, "
         "Mid-Atlantic or Upper Midwest, prefer relation regional_labels.\n"
-        "- Census region and division are scalar official categories; informal/coastal/"
-        "cultural regions should use regional_labels.\n"
+        "- Census region and division are scalar official categories. A clear question about "
+        "the Northeast ('north east', 'north-east', 'Northeast') means region equals 'Northeast'; "
+        "do not confuse it with the narrower Mid-Atlantic or New England divisions/labels. "
+        "Use canonical spelling 'Northeast' in regional_labels comparisons too. "
+        "Negation applies to that same region predicate. Informal/coastal/cultural regions "
+        "should use regional_labels and retain their distinct meanings.\n"
         "- For the original 13 colonies, use: admission_order <= 13.\n"
         "- For major_highways, use short designations like 'I-95', 'I-80', 'I-10', 'I-5'.\n"
         "- For major_rivers, use the simple river name without the suffix 'River' (e.g. 'Mississippi', 'Colorado', 'Missouri', 'Ohio').\n"
@@ -279,28 +293,15 @@ Simplified Question: {question.question}"""
 def answer_question_for_entity(
     question: USStateQuestionEnhanced, entity_name: str, context: str, *,
     evidence: dict | None = None, request_timeout: float | None = None,
+    model: str | None = None, deadline: float | None = None,
 ) -> dict:
     """Run the normal answer model for an explicit target, without daily state."""
     system_prompt, question_prompt = answer_prompts(question, entity_name, context)
-    answer_dict = gemini_json(
-        system_prompt, question_prompt, max_output_tokens=2048, evidence=evidence,
-        request_timeout=60 if request_timeout is None else request_timeout,
-        max_attempts=3 if request_timeout is None else 1,
-        response_schema=FALLBACK_ANSWER_SCHEMA, thinking_budget=1024,
+    from utils.fallback_answers import get_answer
+    return get_answer(
+        system_prompt, question_prompt, evidence=evidence,
+        request_timeout=request_timeout, deadline=deadline, model=model,
     )
-    if not isinstance(answer_dict, dict):
-        raise ValueError("Gemini answer must be a JSON object")
-    if "answer" not in answer_dict:
-        raise ValueError("Gemini answer is missing the answer field")
-    answer = answer_dict["answer"]
-    if answer is not None and type(answer) is not bool:
-        raise ValueError("Gemini answer must be true, false, or null")
-    if answer_dict.keys() - {"answer", "explanation"}:
-        raise ValueError("Gemini answer contains unexpected fields")
-    explanation = answer_dict.get("explanation")
-    if not isinstance(explanation, str) or not explanation.strip():
-        raise ValueError("Gemini answer must include a non-empty explanation")
-    return answer_dict
 
 
 async def ask_question(
@@ -310,42 +311,23 @@ async def ask_question(
     session: AsyncSession,
     *,
     evidence: dict | None = None,
+    use_cache: bool = True,
 ) -> Tuple[USStateQuestionCreate, List[float]]:
-
-
-    fragments = []
-    question_vector = []
-    if evidence is not None:
-        retrieval_started = time.perf_counter()
-    try:
-        fragments, question_vector = await get_fragments_matching_question(
-            question.question, "us_state_id", day_state.us_state_id, "us_states", session, limit=qdrant.US_STATEDLE_CONTEXT_LIMIT
-        )
-    except Exception as exc:
-        print(f"Warning: Vector retrieval failed ({exc}); proceeding without Qdrant context.")
-    finally:
-        if evidence is not None:
-            evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
-    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     state: USState = await USStateRepository(session).get(day_state.us_state_id)
     if hasattr(session, "commit") and callable(session.commit):
         commit_res = session.commit()
         if asyncio.iscoroutine(commit_res):
             await commit_res
-    answer_kwargs = {}
-    if evidence is not None:
-        fallback_evidence = evidence.setdefault("fallback", {})
-        answer_kwargs["evidence"] = fallback_evidence
-        fallback_started = time.perf_counter()
-    try:
-        answer_dict = await asyncio.to_thread(
-            answer_question_for_entity, question, state.name, context, **answer_kwargs
-        )
-    finally:
-        if evidence is not None:
-            fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
-
-
+    from utils.fallback import retrieve_and_answer
+    answer_dict, context, question_vector = await retrieve_and_answer(
+        question, state.name,
+        cache_scope=("us_statedle", day_state.us_state_id) if use_cache else None,
+        filter_key="us_state_id", filter_value=day_state.us_state_id,
+        collection_name="us_states", context_limit=qdrant.US_STATEDLE_CONTEXT_LIMIT,
+        session=session, answerer=answer_question_for_entity,
+        prompt_builder=answer_prompts, evidence=evidence,
+        game_date=getattr(day_state, "date", None),
+    )
     question_create = USStateQuestionCreate(
         user_id=user.id if user else None,
         day_id=day_state.id,
@@ -356,5 +338,4 @@ async def ask_question(
         explanation=answer_dict.get("explanation") or "No explanation provided.",
         context=context,
     )
-
     return question_create, question_vector

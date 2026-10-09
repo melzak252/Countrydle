@@ -354,6 +354,13 @@ def is_self_reference(value: Any, row: sqlite3.Row, config: LocalModeConfig) -> 
     }
 
 
+def _canonical_us_region(value: Any) -> Any:
+    """Canonicalize a spelling alias, not a different regional category."""
+    if isinstance(value, str) and re.fullmatch(r"north[\s\-\u2010-\u2015]*east", value.strip(), re.I):
+        return "Northeast"
+    return value
+
+
 def evaluate(
     conn: sqlite3.Connection,
     config: LocalModeConfig,
@@ -393,6 +400,10 @@ def evaluate(
             resolved_v = resolve_voivodeship_name(right_val)
             if resolved_v is not None:
                 right_val = resolved_v
+        if config.mode_name == "USStatedle" and rel_name in {"region", "division", "regional_labels"}:
+            right_val = _canonical_us_region(right_val)
+            if isinstance(rel_items, list):
+                rel_items = [_canonical_us_region(value) for value in rel_items]
         if right_val is None:
             return None
         if is_self_reference(right_val, row, config):
@@ -481,6 +492,16 @@ def evaluate(
 
     left = resolve_ref(conn, config, row, left_node, item_value)
     right = resolve_ref(conn, config, row, right_node, item_value)
+    if (
+        config.mode_name == "USStatedle"
+        and isinstance(left_node, dict)
+        and left_node.get("relation") in {"region", "division", "regional_labels"}
+        and op in {"contains", "contains_exact", "equals", "exists"}
+    ):
+        # Apply at each predicate so existing nested/negated cached ASTs agree
+        # with new deterministic plans without weakening exact membership.
+        left = [_canonical_us_region(value) for value in left] if isinstance(left, list) else _canonical_us_region(left)
+        right = _canonical_us_region(right)
     if config.mode_name in {"Wojewodztwodle", "Powiatdle"} and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
         if config.mode_name == "Wojewodztwodle":
             is_coast = bool(row["is_coastal"])
@@ -647,24 +668,174 @@ def generate_mode_explanation(
     config: LocalModeConfig,
     row: sqlite3.Row,
     plan: QuestionPlan,
-    answer: bool,
+    answer: bool | None,
     conn: sqlite3.Connection,
+    *,
+    item_value: Any = None,
 ) -> str:
-    name = row[config.name_column]
+    target_row = row
+    polish = config.language == "Polish"
+    verdict = ("Tak" if answer else "Nie") if polish else ("Yes" if answer else "No")
+    if answer is None:
+        verdict = "Brak danych" if polish else "Unknown"
     node = plan.plan or {}
     op = node.get("operator") if isinstance(node, dict) else None
     left = node.get("left", {}) if isinstance(node, dict) else {}
     rel = left.get("relation") if isinstance(left, dict) else None
     if not rel and isinstance(op, str) and (op in config.list_relations or op.startswith("borders_")):
-        rel = op
+        rel = op if op in config.list_relations else (
+            "borders_state" if "state" in op else "borders_country" if "country" in op
+            else "borders_voivodeship" if "voivodeship" in op else "borders_powiat"
+        )
+        left = {"entity": config.target_entity, "relation": rel}
     right_node = node.get("right", node.get("value")) if isinstance(node, dict) else None
-    val = resolve_ref(conn, config, row, right_node)
+    val = resolve_ref(conn, config, target_row, right_node, item_value)
+    subject_row = _reference_row(conn, config, target_row, left, item_value)
+    row = subject_row if subject_row is not None else target_row
+    name = row[config.name_column]
+
+    def value_text(value: Any) -> str:
+        if value is None or isinstance(value, dict):
+            return "brak danych" if polish else "unknown"
+        if isinstance(value, list):
+            return ", ".join(value_text(item) for item in value) if value else ("brak" if polish else "none")
+        if isinstance(value, bool):
+            return ("tak" if value else "nie") if polish else ("yes" if value else "no")
+        if isinstance(value, (int, float)):
+            return f"{value:,}".removesuffix(".0").replace(",", " " if polish else ",")
+        return str(value)
+
+    def reference_fact(reference: Any) -> str:
+        value = resolve_ref(conn, config, target_row, reference, item_value)
+        relation = reference.get("relation") if isinstance(reference, dict) else None
+        referenced_row = _reference_row(conn, config, target_row, reference, item_value)
+        subject = referenced_row[config.name_column] if referenced_row is not None else None
+        if isinstance(reference, dict) and reference.get("entity") == "item" and subject is None:
+            subject = item_value if not isinstance(item_value, (dict, sqlite3.Row)) else None
+        labels = {
+            "name": "nazwa", "population": "populacja", "area": "powierzchnia",
+            "population_density": "gęstość zaludnienia", "urbanization": "urbanizacja",
+            "latitude": "szerokość geograficzna", "longitude": "długość geograficzna",
+            "seat": "siedziba", "macroregion": "makroregion", "voivodeship": "województwo",
+            "is_coastal": "dostęp do morza", "is_city_county": "miasto na prawach powiatu",
+            "borders_state": "sąsiednie stany", "borders_country": "sąsiednie państwa",
+            "borders_voivodeship": "sąsiednie województwa", "borders_powiat": "sąsiednie powiaty",
+            "water_access": "dostęp do wód", "major_rivers": "główne rzeki",
+            "major_roads": "główne drogi", "major_highways": "główne autostrady",
+            "mountain_ranges": "pasma górskie", "national_parks": "parki narodowe",
+            "major_lakes": "duże jeziora", "lakes": "jeziora", "unesco_sites": "obiekty UNESCO",
+            "health_resorts": "uzdrowiska", "registration_plates": "wyróżniki tablic",
+            "historical_region": "regiony historyczne", "historical_regions": "regiony historyczne",
+            "historical_partitions": "zabory", "landform_regions": "regiony geograficzne",
+            "regional_labels": "określenia regionalne", "region": "region", "division": "podregion",
+            "nickname": "przydomek", "civil_war_side": "strona wojny secesyjnej",
+            "admission_year": "rok przyjęcia do Unii", "admission_order": "kolejność przyjęcia do Unii",
+            "gmina_count": "liczba gmin", "urban_gmina_count": "liczba gmin miejskich",
+            "rural_gmina_count": "liczba gmin wiejskich", "urban_rural_gmina_count": "liczba gmin miejsko-wiejskich",
+            "powiat_count": "liczba powiatów", "city_count": "liczba miast",
+            "city_count_with_powiat_rights": "liczba miast na prawach powiatu",
+        }
+        label = labels.get(relation, str(relation or "").replace("_", " ")) if polish else str(relation or "").replace("_", " ")
+        text = value_text(value)
+        if relation in {"latitude", "longitude"} and isinstance(value, (int, float)):
+            positive, negative = ("E", "W") if relation == "longitude" else ("N", "S")
+            text = f"{value_text(abs(value))}° {negative if value < 0 else positive}"
+        elif relation == "area" and isinstance(value, (int, float)):
+            text += " mi²" if "sq_mi" in config.scalar_relations.get("area", "") else " km²"
+        elif relation == "population_density" and isinstance(value, (int, float)):
+            text += " / km²"
+        elif relation == "urbanization" and isinstance(value, (int, float)):
+            text += "%"
+        if isinstance(value, list):
+            label += f" ({len(value)})"
+        prefix = f"{subject} — " if subject is not None else ""
+        return f"{prefix}{label}: {text}" if label else text
+
+    def factual_fallback() -> str:
+        facts = [reference_fact(left)]
+        if isinstance(right_node, dict) and "entity" in right_node:
+            right_fact = reference_fact(right_node)
+            if right_fact not in facts:
+                facts.append(right_fact)
+        left_value = resolve_ref(conn, config, target_row, left, item_value)
+        if isinstance(op, str) and op.startswith("word_count_") and isinstance(left_value, str):
+            label = "liczba słów" if polish else "word count"
+            facts.append(f"{label}: {len(left_value.split())}")
+        if isinstance(op, str) and op.startswith("char_count_"):
+            label = "liczba znaków" if polish else "character count"
+            if isinstance(left_value, list):
+                facts.append(f"{label}: " + ", ".join(f"{value_text(item)} ({len(str(item).strip())})" for item in left_value))
+            elif isinstance(left_value, str):
+                characters = len(re.sub(r"\s+", "", left_value))
+                facts.append(f"{label}: {characters}")
+        return f"{verdict} - {'; '.join(facts)}."
+
+    def child_facts(
+        child: dict[str, Any], child_answer: bool | None, bound_item: Any = item_value,
+    ) -> str:
+        explanation = generate_mode_explanation(
+            config, target_row, replace(plan, plan=child), child_answer, conn, item_value=bound_item,
+        )
+        for prefix in ("Tak - ", "Nie - ", "Yes - ", "No - ", "Brak danych - ", "Unknown - "):
+            if explanation.startswith(prefix):
+                explanation = explanation[len(prefix):]
+                break
+        return explanation.rstrip(".")
+
+    if op == "not":
+        child = node.get("condition") or node.get("operand") or {}
+        child_answer = None if answer is None else not answer
+        return f"{verdict} - {child_facts(child, child_answer)}."
+    if op in {"and", "or"}:
+        facts = []
+        decisive = op == "or"
+        for child in node.get("conditions", []):
+            child_answer = evaluate(conn, config, target_row, child, item_value)
+            facts.append(child_facts(child, child_answer))
+            if child_answer is decisive:
+                break
+        return f"{verdict} - {'; '.join(facts)}."
+    if op in {"any", "all"}:
+        items_node = node.get("items", {})
+        items = resolve_ref(conn, config, target_row, items_node, item_value)
+        facts = [reference_fact(items_node)]
+        if isinstance(items, list):
+            item_rows = {}
+            if items and isinstance(items_node, dict) and items_node.get("relation") in config.entity_list_relations:
+                placeholders = ",".join("?" for _ in items)
+                neighbors = conn.execute(
+                    f"SELECT * FROM {config.table} WHERE {config.name_column} IN ({placeholders})", items,
+                )
+                item_rows = {neighbor[config.name_column]: neighbor for neighbor in neighbors}
+            condition = node.get("condition") or {}
+            decisive = op == "any"
+            for item in items:
+                bound_item = item_rows.get(item, item) if item_rows else item
+                child_answer = evaluate(conn, config, target_row, condition, bound_item)
+                facts.append(child_facts(condition, child_answer, bound_item))
+                if child_answer is decisive:
+                    break
+        return f"{verdict} - {'; '.join(facts)}."
+
+    membership_ops = {"contains", "contains_exact", "contains_partial", "equals", "exists", rel}
+    numeric_value = type(val) is not bool and (isinstance(val, (int, float)) or (isinstance(val, str) and val.isdigit()))
+    if answer is None or (
+        rel in config.list_relations and (
+            op not in membership_ops or (op == "exists" and val is not None) or type(val) is bool
+            or (numeric_value and rel not in {"borders_state", "borders_voivodeship", "borders_powiat"})
+            or (val is not None and (val == "" or isinstance(val, (list, dict))))
+        )
+    ) or (
+        isinstance(right_node, dict) and "entity" in right_node
+        and right_node.get("relation") != "name" and rel not in {"longitude", "latitude"}
+    ) or (isinstance(left, dict) and left.get("entity") == "item" and subject_row is None):
+        return factual_fallback()
 
     if rel in {"longitude", "latitude"} and op in {
         "greater_than", "less_than", "west_of", "east_of", "north_of", "south_of", "equals",
         "greater_than_or_equal", "less_than_or_equal",
     }:
-        left_value = resolve_ref(conn, config, row, left)
+        left_value = resolve_ref(conn, config, target_row, left, item_value)
         try:
             coord, threshold = float(left_value), float(val)
         except (TypeError, ValueError):
@@ -689,19 +860,24 @@ def generate_mode_explanation(
                     position = "na północ od" if coord > threshold else "na południe od"
                 verdict = "Tak" if answer else "Nie"
                 condition = "prawdziwy" if answer else "fałszywy"
-                return f"{verdict} - {name} leży na {axis} {coord_text} ({position} {threshold_text}; warunek {left_value!r} {comparison} {val!r} jest {condition})."
+                reference_name = _reference_row(conn, config, target_row, right_node, item_value)
+                reference_text = f" ({reference_name[config.name_column]})" if reference_name is not None else ""
+                return f"{verdict} - {name} leży na {axis} {coord_text} ({position} {threshold_text}{reference_text}; warunek {coord} {comparison} {threshold} jest {condition})."
             if coord == threshold:
                 position = f"at the same {rel} as"
             elif rel == "longitude":
                 position = "east of" if coord > threshold else "west of"
             else:
                 position = "north of" if coord > threshold else "south of"
-            return f"{'Yes' if answer else 'No'} - {name} is located at {rel} {coord_text} ({position} {threshold_text}; the condition {left_value!r} {comparison} {val!r} is {'true' if answer else 'false'})."
+            reference_name = _reference_row(conn, config, target_row, right_node, item_value)
+            reference_text = f" ({reference_name[config.name_column]})" if reference_name is not None else ""
+            return f"{verdict} - {name} is located at {rel} {coord_text} ({position} {threshold_text}{reference_text}; the condition {coord} {comparison} {threshold} is {'true' if answer else 'false'})."
 
     if config.language == "Polish":
         if rel in {"is_coastal", "water_access"}:
             label = "Powiat" if config.mode_name == "Powiatdle" else "Województwo"
-            return f"{label} {name} ma bezpośredni dostęp do Morza Bałtyckiego." if answer else f"{label} {name} nie ma dostępu do morza (jest jednostką śródlądową)."
+            coastal = bool(row["is_coastal"]) if config.mode_name == "Wojewodztwodle" else bool(get_relation_value(conn, config, row, "water_access"))
+            return f"{label} {name} ma bezpośredni dostęp do Morza Bałtyckiego." if coastal else f"{label} {name} nie ma dostępu do morza (jest jednostką śródlądową)."
         if rel == "national_parks" and (op == "exists" or not val):
             parks = [r[0] for r in conn.execute("SELECT park_name FROM powiat_national_parks WHERE powiat_id=?", (row["id"],))]
             return f"Na terenie {name} znajduje się park narodowy: {', '.join(parks)}." if answer else f"Na terenie {name} nie ma parku narodowego."
@@ -719,7 +895,7 @@ def generate_mode_explanation(
             return f"Na terenie {name} znajduje się obiekt UNESCO: {val}." if answer else f"Na terenie {name} nie leży obiekt UNESCO: {val}."
         if rel == "health_resorts":
             spas = [r[0] for r in conn.execute("SELECT resort_name FROM powiat_health_resorts WHERE powiat_id=?", (row["id"],))]
-            return f"Na terenie {name} znajduje się uzdrowisko: {', '.join(spas)}." if answer else f"Na terenie {name} nie ma statutowego uzdrowiska."
+            return f"Na terenie {name} znajduje się uzdrowisko: {', '.join(spas)}." if spas else f"Na terenie {name} nie ma statutowego uzdrowiska."
         if rel == "borders_voivodeship" and val:
             borders = get_relation_value(conn, config, row, rel) or []
             entity_name = f"Województwo {name}" if config.target_entity == "target_voivodeship" else name
@@ -781,7 +957,7 @@ def generate_mode_explanation(
                     return f"{name} leży w paśmie: {val}. Pasma w województwie: {r_str}." if answer else f"{name} nie leży w paśmie: {val}. Pasma w województwie: {r_str}."
                 return f"{name} leży w pasmach górskich: {r_str}."
             return f"{name} nie leży w górach (brak pasm górskich)."
-        return f"{'Tak' if answer else 'Nie'} - {plan.explanation.rstrip('.')} dla {name}." if plan.explanation else f"{'Tak' if answer else 'Nie'} dla: {name}."
+        return factual_fallback()
     else:
         if rel == "is_coastal":
             return f"{name} is a coastal state with ocean/gulf coastline." if row[config.scalar_relations[rel]] else f"{name} is an inland state with no ocean coastline."
@@ -795,7 +971,7 @@ def generate_mode_explanation(
             return f"{name} is located in the {row['region']} region ({row['division']} division)."
         if rel == "admission_year":
             return f"{name} was admitted to the Union in {row['admission_year']} (state #{row['admission_order']})."
-        return f"{'Yes' if answer else 'No'} - {plan.explanation.rstrip('.')} for {name}." if plan.explanation else f"{'Yes' if answer else 'No'} for {name}."
+        return factual_fallback()
 
 
 def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) -> LocalAnswer | None:

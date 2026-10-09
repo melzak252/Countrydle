@@ -487,33 +487,67 @@ def _build_powiat_border_count_comp(slots: dict[str, Any], mode: str):
 # 3.2 Specific Water Bodies & Ocean Access
 # ------------------------------------------------------------------------------
 
+def build_us_state_water_plan(body: str, *, direct: bool) -> tuple[dict[str, Any], str]:
+    """Keep parent-ocean access distinct from direct named-water coastline."""
+    predicate = {
+        "operator": "contains_exact",
+        "left": {"entity": "target_state", "relation": "water_access"},
+        "right": {"value": body},
+    }
+    if not direct and body == "Atlantic Ocean":
+        predicate = {
+            "operator": "or",
+            "conditions": [
+                predicate,
+                {
+                    "operator": "contains_exact",
+                    "left": {"entity": "target_state", "relation": "water_access"},
+                    "right": {"value": "Gulf of Mexico"},
+                },
+            ],
+        }
+    wording = "border" if direct else "have access to"
+    return predicate, f"Does the state {wording} the {body}?"
+
+
 @register_skeleton(
     ["usstatedle", "us_statedle", "us_state"],
     [
         "does it have access to [WATER_BODY]",
         "does it have access to the [WATER_BODY]",
+        "does the state have access to [WATER_BODY]",
+        "does the state have access to the [WATER_BODY]",
+        "czy ma dostep do [WATER_BODY]",
+        "czy ma dostep do oceanu [WATER_BODY]",
+    ],
+)
+def _build_us_state_water_access(slots: dict[str, Any], mode: str):
+    return build_us_state_water_plan(slots["WATER_BODY"], direct=False)
+
+
+@register_skeleton(
+    ["usstatedle", "us_statedle", "us_state"],
+    [
         "does it border [WATER_BODY]",
         "does it border the [WATER_BODY]",
         "does it touch [WATER_BODY]",
         "does it touch the [WATER_BODY]",
+        "does the state border [WATER_BODY]",
+        "does the state border the [WATER_BODY]",
+        "does it have a direct coastline on [WATER_BODY]",
+        "does it have a direct coastline on the [WATER_BODY]",
+        "does the state have a direct coastline on [WATER_BODY]",
+        "does the state have a direct coastline on the [WATER_BODY]",
         "is it on [WATER_BODY]",
         "is it on the [WATER_BODY]",
         "is it located on [WATER_BODY]",
         "is it located on the [WATER_BODY]",
-        "czy ma dostep do [WATER_BODY]",
-        "czy ma dostep do oceanu [WATER_BODY]",
         "czy lezy nad [WATER_BODY]",
         "czy graniczy z [WATER_BODY]",
     ]
 )
 def _build_us_state_water_body(slots: dict[str, Any], mode: str):
-    body = slots.get("WATER_BODY", "Atlantic Ocean")
-    ast = {
-        "operator": "contains_exact",
-        "left": {"entity": "target_state", "relation": "water_access"},
-        "right": {"value": body},
-    }
-    return ast, f"Does the state have access to the {body}?"
+    return build_us_state_water_plan(slots["WATER_BODY"], direct=True)
 
 
 @register_skeleton(

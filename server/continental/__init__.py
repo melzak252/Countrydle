@@ -54,6 +54,7 @@ from users.utils import get_admin_user, get_current_or_guest_user, get_current_u
 from utils.geo import enhance_guess_with_hint
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    get_guest_identity, get_guest_question_history,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -210,22 +211,23 @@ async def get_state(
         if request is not None and response is not None:
             from utils.guest_session import get_guest_identity
             get_guest_identity(request, response)
+        participation, questions = await get_guest_question_history(
+            session, request, f"continental:{continent.value}", day.id, ContinentalQuestion,
+        )
+        guesses_made = participation.guesses_made if participation else 0
+        questions_asked = participation.questions_asked if participation else 0
+        won = bool(participation and participation.won)
+        terminal = won or guesses_made >= CONTINENTAL_CONFIG.max_guesses
         guest_state = ContinentalStateSchema(
-            remaining_questions=CONTINENTAL_CONFIG.max_questions,
-            remaining_guesses=CONTINENTAL_CONFIG.max_guesses,
-            questions_asked=0,
-            guesses_made=0,
-            is_game_over=False,
-            won=False,
-            points=0,
+            remaining_questions=max(0, CONTINENTAL_CONFIG.max_questions - questions_asked),
+            remaining_guesses=max(0, CONTINENTAL_CONFIG.max_guesses - guesses_made),
+            questions_asked=questions_asked, guesses_made=guesses_made,
+            is_game_over=terminal, won=won, points=0,
         )
         return ContinentalStateResponse(
-            user=None,
-            date=str(day.date),
-            state=guest_state,
-            questions=[],
-            guesses=[],
-            country=None,
+            user=None, date=str(day.date), state=guest_state,
+            questions=[ContinentalQuestionDisplay.model_validate(q, context={"terminal": terminal}) for q in questions],
+            guesses=[], country=CountryDisplay.model_validate(target_country) if terminal and target_country else None,
         )
 
     state_repo = ContinentalStateRepository(session)
@@ -258,7 +260,7 @@ async def get_state(
         user=UserDisplay.model_validate(user),
         date=str(day.date),
         state=ContinentalStateSchema.model_validate(state),
-        questions=[ContinentalQuestionDisplay.model_validate(q) for q in questions_db],
+        questions=[ContinentalQuestionDisplay.model_validate(q, context={"terminal": state.is_game_over}) for q in questions_db],
         guesses=formatted_guesses,
         country=country_display,
     )
@@ -359,6 +361,7 @@ async def _do_ask_question(
         return unresolved_question(question_create, InvalidContinentalQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day.id
+    question_create.guest_id = get_guest_identity(request, response) if user is None else None
     if user is None:
         await record_guest_action(
             session, request, response, f"continental:{continent.value}", day.id,

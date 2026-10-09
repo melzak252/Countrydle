@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,16 +13,6 @@ interface QuestionInputProps {
   mode?: string;
 }
 
-function SlowQuestionNotice({ message }: { message: string }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setVisible(true), 1500);
-    return () => window.clearTimeout(timer);
-  }, []);
-  return visible ? <div role="status" className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
-    <Loader2 size={13} className="animate-spin" /><span>{message}</span>
-  </div> : null;
-}
 
 export function getQuickQuestions(currentMode: string, t: (key: string) => string) {
     const norm = currentMode.toLowerCase();
@@ -106,17 +96,62 @@ export function getQuickQuestions(currentMode: string, t: (key: string) => strin
     ];
   };
 export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder, disabled = false, minLength = 1, maxLength = 100, mode = 'country' }: QuestionInputProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isPl = i18n.language.startsWith('pl');
   const inputId = useId();
   
   const [question, setQuestion] = useState('');
   const unavailable = disabled || isLoading || (remainingQuestions !== undefined && remainingQuestions <= 0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const focusFrameRef = useRef<number | null>(null);
+  const pointerTypeRef = useRef('mouse');
+
+  const restoreFocus = useCallback(() => {
+    // Keep the phone/touch keyboard closed while the player works with the map.
+    if (!window.matchMedia('(min-width: 768px)').matches || pointerTypeRef.current !== 'mouse') return;
+    if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+    focusFrameRef.current = requestAnimationFrame(() => {
+      focusFrameRef.current = null;
+      const input = inputRef.current;
+      if (!input || input.disabled || !input.getClientRects().length) return;
+      const active = document.activeElement;
+      const mapFocused = active?.closest('.game-map-layer')
+        && !active.closest('.leaflet-control, button, a, input, select, textarea, [role="button"]');
+      if (active !== document.body && active !== input
+        && active !== input.form?.querySelector('button[type="submit"]') && !mapFocused) return;
+      input.focus({ preventScroll: true });
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleMapInteraction = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest('.game-map-layer')
+        || target.closest('.leaflet-control, button, a, input, select, textarea, [role="button"]')) return;
+      if (event.type === 'click' ? event.detail === 0 : event.button !== 2) return;
+      if (event instanceof PointerEvent && event.pointerType !== 'mouse') return;
+      pointerTypeRef.current = 'mouse';
+      restoreFocus();
+    };
+    // Capture before Leaflet stops propagation; restore after its click handlers.
+    document.addEventListener('click', handleMapInteraction, true);
+    document.addEventListener('contextmenu', handleMapInteraction, true);
+    return () => {
+      document.removeEventListener('click', handleMapInteraction, true);
+      document.removeEventListener('contextmenu', handleMapInteraction, true);
+      if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+    };
+  }, [restoreFocus]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (question.trim().length < minLength || unavailable) return;
-    if (await onAsk(question) !== false) setQuestion('');
+    try {
+      if (await onAsk(question) !== false) setQuestion('');
+    } finally {
+      restoreFocus();
+    }
   };
 
   const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
@@ -125,9 +160,12 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
   const quickQuestions = getQuickQuestions(mode, t);
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="mb-2">
-        <p className="mb-1.5 text-[11px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
+    <form onSubmit={handleSubmit} onPointerDownCapture={event => { pointerTypeRef.current = event.pointerType; }} className="flex min-h-0 w-full flex-col">
+      <div className="mb-2 max-md:[@media(max-height:560px)]:hidden">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
+          <span className="shrink-0 text-[10px] text-zinc-500" aria-hidden="true">{isPl ? 'Przewiń →' : 'Scroll →'}</span>
+        </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label={t('inputs.quickQuestions')}>
           {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
             <button
@@ -135,17 +173,18 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
               type="button"
               disabled={unavailable}
               onClick={() => setQuestion(suggestedQuestion)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
             >
               <span aria-hidden="true">{icon}</span>{label}
             </button>
           ))}
         </div>
       </div>
-      <label htmlFor={inputId} className="sr-only">{'Yes-or-no question'}</label>
+      <label htmlFor={inputId} className="sr-only">{isPl ? 'Pytanie tak lub nie' : 'Yes-or-no question'}</label>
       <div className="relative rounded-2xl border border-white/10 bg-zinc-900/90 p-1 shadow-lg shadow-black/20 transition-colors focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
         <input
           id={inputId}
+          ref={inputRef}
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -160,7 +199,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
         />
         <button
           type="submit"
-          aria-label={'Ask question'}
+          aria-label={isPl ? 'Zadaj pytanie' : 'Ask question'}
           disabled={question.trim().length < minLength || unavailable}
           className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-transparent text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40 enabled:bg-emerald-500 enabled:text-white enabled:hover:bg-emerald-400"
         >
@@ -173,7 +212,6 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
         </button>
       </div>
-      {isLoading && <SlowQuestionNotice message={t('inputs.slowQuestionMessage')} />}
     </form>
   );
 }

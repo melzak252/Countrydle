@@ -1,27 +1,20 @@
 import asyncio
-import os
 import time
 from typing import List, Tuple
-import httpx
-from utils.ai_clients import generate_gemini_json
+import qdrant
+from utils.ai_clients import gemini_json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Country, CountrydleDay, User
-from qdrant.utils import get_fragments_matching_question
-import qdrant
 from schemas.country import DayCountryDisplay
 from schemas.countrydle import QuestionCreate, QuestionEnhanced
 from db.repositories.country import CountryRepository
 from countrydle.local_answering import execute_local_plan
 from countrydle.local_planner import QuestionPlan, analyze_question_for_local_plan
+from countrydle.template_compiler import _bind_named_country_subject
 
 
-from utils.ai_clients import (
-    GEMINI_DEFAULT_MODEL,
-    FALLBACK_ANSWER_SCHEMA,
-    gemini_json,
-)
 from utils.explanation_sanitizer import sanitize_explanation_for_player
 
 
@@ -118,7 +111,7 @@ async def analyze_and_answer_locally(
     strict_errors: bool = False,
     evidence: dict | None = None,
 ) -> tuple[QuestionCreate | None, QuestionPlan]:
-    """Run one Gemini validator/planner call and answer locally when possible."""
+    """Plan the complete question and answer locally when its predicate is supported."""
     country: Country = await CountryRepository(session).get(day_country.country_id)
     if hasattr(session, "commit") and callable(session.commit):
         commit_res = session.commit()
@@ -176,10 +169,13 @@ async def analyze_and_answer_locally(
         valid=True,
         question=local_answer.question,
         answer=local_answer.answer,
-        explanation=local_answer.explanation,
+        # Factual details are stored for post-game review; public serializers
+        # suppress them during play and never expose them as warning guidance.
+        explanation=sanitize_explanation_for_player(local_answer.explanation),
         intent=f"Local KB relation: {local_answer.relation}",
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",
+        fact_provenance=local_answer.fact_provenance,
     ), planned_question
 
 
@@ -188,9 +184,16 @@ def answer_prompts(
 ) -> tuple[str, str]:
     """Build the shared daily and explicit-target answer instructions."""
     system_prompt = f"""
-You are the 'Game Master' for Countrydle. Your task is to answer a True/False question about a specific country based on provided context and your general knowledge.
+You are the 'Game Master' for Countrydle. Evaluate the exact True/False proposition using the entity-binding rules first, then the provided context and reliable general knowledge.
 
-### Target Country: {entity_name}
+### Hidden Target Country: {entity_name}
+
+### Entity Binding (resolve before looking up or comparing facts)
+- Pronouns and user references to themselves as the country denote the hidden target.
+- Exact leading country-name subjects have already been replaced with "the country" in the question data. Evaluate that subject using {entity_name}'s facts, not another country's facts mentioned in the context.
+- Country names in explicit property phrases and comparison/object references are LITERAL, not placeholders. A named country's population, area, capital or other property belongs to that named country; never substitute {entity_name}'s property merely because a hidden target is supplied.
+- A country-name SUBJECT elsewhere in a compound question still denotes the hidden target. Do not confuse a named property/reference with a country-name subject. Apply these role distinctions before computing the answer.
+- Quoted text remains literal. Preserve the requested relationship, qualifiers, negation and date after resolving entities.
 
 ### Context Fragments:
 {context}
@@ -203,7 +206,7 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
 6. **Temporal Questions**: Answer the period the question asks about. Do not impose an arbitrary date cutoff. If asked about a current fact and you cannot establish it reliably, abstain with `null`.
 7. **Focused Explanations**: Give only a concise fact directly relevant to the question that supports the answer. Do not add unrelated facts or claims about current officeholders unless they are needed to answer the question; avoid asserting that a potentially stale fact is current.
 8. **Handle Logical 'OR' and Lists**: Treat 'or' as inclusive, so an unnegated question is true if any branch is true. Apply negation and the exact qualifiers in each branch; do not let this rule override them.
-9. **User Perspective**: If the user refers to themselves as the country (e.g., "Am I in Europe?"), answer about the country in the third person.
+9. **User Perspective**: Answer about the country in the third person, applying the entity bindings above rather than substituting the hidden target for every named reference.
 10. **STRICT SECRECY (NO SPOILERS)**:
     - The player is trying to guess the hidden country. You must NEVER state, name, or reveal the target country's name ({entity_name}) in the explanation, whether the answer is true, false, or null!
     - Always refer to the target as "the country" or "this country" (e.g. "The country is located on the mainland...", NOT "{entity_name} is located on the mainland...").
@@ -226,38 +229,28 @@ You are the 'Game Master' for Countrydle. Your task is to answer a True/False qu
 For a well-defined historical question, use available historical knowledge rather than abstaining solely because of its date.
 """
 
-    question_prompt = f"""User's Original Question: {question.original_question}
-Simplified Question: {question.question}"""
+    original = _bind_named_country_subject(question.original_question)
+    simplified = _bind_named_country_subject(question.question)
+    question_prompt = f"""User's Question (country subjects bound to the hidden target): {original}
+Suggested Rewrite (do not drop the original proposition's modifiers): {simplified}"""
     return system_prompt, question_prompt
 
 
 def answer_question_for_entity(
     question: QuestionEnhanced, entity_name: str, context: str, *,
     evidence: dict | None = None, request_timeout: float | None = None,
+    model: str | None = None, deadline: float | None = None,
 ) -> dict:
     """Run the normal answer model for an explicit target, without daily state."""
     system_prompt, question_prompt = answer_prompts(question, entity_name, context)
-
-    answer_dict = gemini_json(
-        system_prompt, question_prompt, max_output_tokens=2048, evidence=evidence,
-        request_timeout=60 if request_timeout is None else request_timeout,
-        max_attempts=3 if request_timeout is None else 1,
-        response_schema=FALLBACK_ANSWER_SCHEMA, thinking_budget=1024,
+    from utils.fallback_answers import get_answer
+    answer_dict = get_answer(
+        system_prompt, question_prompt, evidence=evidence,
+        request_timeout=request_timeout, deadline=deadline, model=model,
     )
-    if not isinstance(answer_dict, dict):
-        raise ValueError("Gemini answer must be a JSON object")
-    if "answer" not in answer_dict:
-        raise ValueError("Gemini answer is missing the answer field")
-    answer = answer_dict["answer"]
-    if answer is not None and type(answer) is not bool:
-        raise ValueError("Gemini answer must be true, false, or null")
-    if answer_dict.keys() - {"answer", "explanation"}:
-        raise ValueError("Gemini answer contains unexpected fields")
-    explanation = answer_dict.get("explanation")
-    if not isinstance(explanation, str) or not explanation.strip():
-        raise ValueError("Gemini answer must include a non-empty explanation")
-    from utils.explanation_sanitizer import sanitize_explanation_for_player
-    answer_dict["explanation"] = sanitize_explanation_for_player(explanation, {entity_name}, "the country")
+    answer_dict["explanation"] = sanitize_explanation_for_player(
+        answer_dict["explanation"], {entity_name}, "the country"
+    )
     return answer_dict
 
 
@@ -268,46 +261,23 @@ async def ask_question(
     session: AsyncSession,
     *,
     evidence: dict | None = None,
+    use_cache: bool = True,
 ) -> Tuple[QuestionCreate, List[float]]:
-
-    fragments = []
-    question_vector = []
-    if evidence is not None:
-        retrieval_started = time.perf_counter()
-    try:
-        fragments, question_vector = await get_fragments_matching_question(
-            question.question,
-            "country_id",
-            day_country.country_id,
-            "countries",
-            session,
-            limit=qdrant.COUNTRYDLE_CONTEXT_LIMIT,
-        )
-    except Exception as exc:
-        print(f"Warning: Vector retrieval failed ({exc}); answering directly with Gemini general knowledge.")
-    finally:
-        if evidence is not None:
-            evidence["retrieval_duration_ms"] = (time.perf_counter() - retrieval_started) * 1000
-
-    context = "\n[ ... ]\n".join(fragment.text for fragment in fragments) if fragments else ""
     country: Country = await CountryRepository(session).get(day_country.country_id)
     if hasattr(session, "commit") and callable(session.commit):
         commit_res = session.commit()
         if asyncio.iscoroutine(commit_res):
             await commit_res
-    answer_kwargs = {}
-    if evidence is not None:
-        fallback_evidence = evidence.setdefault("fallback", {})
-        answer_kwargs["evidence"] = fallback_evidence
-        fallback_started = time.perf_counter()
-    try:
-        answer_dict = await asyncio.to_thread(
-            answer_question_for_entity, question, country.name, context, **answer_kwargs
-        )
-    finally:
-        if evidence is not None:
-            fallback_evidence["duration_ms"] = (time.perf_counter() - fallback_started) * 1000
-
+    from utils.fallback import retrieve_and_answer
+    answer_dict, context, question_vector = await retrieve_and_answer(
+        question, country.name,
+        cache_scope=("countrydle", day_country.country_id) if use_cache else None,
+        filter_key="country_id", filter_value=day_country.country_id,
+        collection_name="countries", context_limit=qdrant.COUNTRYDLE_CONTEXT_LIMIT,
+        session=session, answerer=answer_question_for_entity,
+        prompt_builder=answer_prompts, evidence=evidence,
+        game_date=getattr(day_country, "date", None),
+    )
     question_create = QuestionCreate(
         user_id=user.id if user else None,
         day_id=day_country.id,
@@ -315,14 +285,13 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict["answer"],
-            explanation=sanitize_explanation_for_player(
-                answer_dict["explanation"],
-                {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
-                "the country",
-            ),
+        explanation=sanitize_explanation_for_player(
+            answer_dict["explanation"],
+            {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
+            "the country",
+        ),
         context=context,
     )
-
     return question_create, question_vector
 
 

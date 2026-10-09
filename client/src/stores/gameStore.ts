@@ -288,6 +288,13 @@ const createGameStore = (gameType: MapGameType) => {
                 questions = parsed.questions || [];
                 guesses = parsed.guesses || [];
                 gameState = normalizeGameState(gameType, parsed.state, questions, guesses) as any;
+                if (gameState.is_game_over && data.user === null && data.state.is_game_over) {
+                    // Fetch completed explanations without replacing browser-owned guest progress.
+                    const completedQuestions = new Map<number, Question>(
+                        data.questions.filter(isAnsweredQuestion).map((question: Question) => [question.id, question] as const)
+                    );
+                    questions = questions.map((question: Question) => completedQuestions.get(question.id) || question);
+                }
                 if (parsed.correctEntity) {
                     correctEntity = parsed.correctEntity;
                 }
@@ -349,11 +356,12 @@ const createGameStore = (gameType: MapGameType) => {
       try {
         const question = await service.askQuestion(trimmed);
 
-        // Ensure minimal thinking animation display (450ms) so user perceives the response
+        // Keep fast answers readable without adding a delay to slower requests.
         const elapsed = Date.now() - startTime;
-        if (elapsed < 450) {
+        const minDisplayTime = 1000;
+        if (elapsed < minDisplayTime) {
           const { promise, resolve } = promiseWithResolvers<void>();
-          setTimeout(resolve, 450 - elapsed);
+          setTimeout(resolve, minDisplayTime - elapsed);
           await promise;
         }
         
@@ -480,7 +488,7 @@ const createGameStore = (gameType: MapGameType) => {
             isLoading: false
           });
 
-          // We don't need to fetchGameState here anymore because we already revealed the entity
+          if (newGameState.is_game_over) await get().fetchGameState();
         } else {
           await get().fetchGameState();
         }
@@ -712,6 +720,11 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
       }
 
       const combinedGuesses = isGuest && localGuesses.length > 0 ? localGuesses : data.guesses;
+      const questions = isGuest
+        ? localQuestions.map(question => effectiveState.is_game_over && data.state.is_game_over
+          ? data.questions?.find(completed => completed.id === question.id) || question
+          : question)
+        : (data.questions || []).filter(isAnsweredQuestion);
       const calculatedStage = effectiveState.is_game_over
         ? 12
         : Math.min(12, Math.max(effectiveState.revealed_stage, combinedGuesses.length + 1));
@@ -729,7 +742,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
       set({
         gameState: effectiveState,
         guesses: combinedGuesses,
-        questions: localQuestions,
+        questions,
         stage: calculatedStage,
         flagAssetUrl: data.flag_asset_url || null,
         correctCountry: revealedCountry,
@@ -812,7 +825,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
       if (dailyDate) {
         localStorage.setItem(
           `guess_game_flagdle_${dailyDate}`,
-          JSON.stringify({ state: nextState, guesses: nextGuesses })
+          JSON.stringify({ state: nextState, guesses: nextGuesses, questions: get().questions })
         );
       }
 
@@ -848,6 +861,7 @@ export const useFlagdleGameStore = create<FlagdleStateData>((set, get) => ({
         correctCountry: revealedCountry,
         isLoading: false,
       });
+      if (isGameOver && isGuest) await get().fetchGameState();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error submitting guess.';
       toast.error(msg);

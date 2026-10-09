@@ -6,6 +6,7 @@ from schemas.country import CountryDisplay
 from schemas.countrydle import LeaderboardEntry
 from schemas.user import UserDisplay
 from schemas.answer_report import ReportableQuestion
+from schemas.fact_provenance import PublicFactEvidence
 
 
 class ContinentalStateSchema(BaseModel):
@@ -57,7 +58,7 @@ class ContinentalQuestionBase(BaseModel):
     question: str = Field(max_length=200)
 
 
-class ContinentalQuestionDisplay(ReportableQuestion):
+class ContinentalQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     report_mode = "continental"
     id: int
     original_question: str
@@ -65,12 +66,13 @@ class ContinentalQuestionDisplay(ReportableQuestion):
     valid: bool
     answer: Optional[bool] = None
     explanation: Optional[str] = None
+    context: Optional[str] = Field(default=None, exclude=True)
     asked_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class InvalidContinentalQuestionDisplay(ReportableQuestion):
+class InvalidContinentalQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     report_mode = "continental"
     id: int
     original_question: str

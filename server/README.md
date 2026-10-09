@@ -1,6 +1,16 @@
-# Guess Your Country - Server
+# Countrydle - Server
 
-This is the backend server for the "Guess Your Country" (and related games) application. It is built using **FastAPI**, **PostgreSQL** (via SQLAlchemy + AsyncPG), and **Qdrant** (Vector Database).
+This is the backend server for Countrydle and its related geography games. It is built using **FastAPI**, **PostgreSQL** (via SQLAlchemy + AsyncPG), and **Qdrant** (Vector Database).
+
+The public site is `https://countrydle.online`. Verification emails use
+`https://countrydle.online/api/verify-email`; verification success links to
+`/login`. Friend-duel defaults accept HTTPS origins for `countrydle.online` and
+`www.countrydle.online`, alongside the existing local development origins.
+
+The root `nginx.conf` expects `countrydle.online.crt`, `countrydle.online.key`,
+and `countrydle.online.ca-bundle` under `/etc/ssl/certs/`. Provision valid
+certificates covering both public hostnames before deploying that configuration;
+production certificates are not managed by this repository.
 
 ## 🏗 Project Structure
 
@@ -69,6 +79,87 @@ guidance are documented in [`tests/README.md`](tests/README.md). From `server/`,
 run a focused group with `python scripts/test_module.py powiatdle` or one test
 module with `python -m pytest -q tests/test_powiat_names.py`. Use
 `python scripts/test_module.py --list` to inspect groups.
+
+## Economical fallback answers
+
+Templates, the interpretation cache and local fact evaluation retain precedence.
+After a valid local miss, Countrydle/continental, US Statedle, Powiatdle and
+Województwodle share this path:
+
+```text
+fresh target-filtered retrieval
+    -> exact target/question/evidence answer-cache hit
+    -> otherwise one configured Gemini answer stage
+```
+
+`utils/fallback.py` budgets retrieval and answer generation together for 15
+seconds (configurable via `FALLBACK_DEADLINE_SECONDS`). Embedding, filtered search,
+neighboring-fragment fetch, model requests and eligible HTTP-status retry backoffs
+spend the same remaining budget.
+There is still at most three answer-model HTTP attempts, not a chain of different
+models. The upstream planner and database target lookup are outside this budget.
+Blocking SDK calls run in worker threads: cancellation stops the waiting gameplay
+operation, but cannot forcibly kill an in-flight SDK call; expired work cannot
+start another paid attempt or publish a resolved answer afterward.
+
+`utils/fallback.py` and `db/repositories/fallback_answers.py` reuse only strictly
+validated `true`/`false` results from the shared PostgreSQL `fallback_answers`
+table. Identity includes mode, canonical target ID/name, exact original/rewritten
+question, configured model, rendered prompts, strict-answer schema version,
+UTC game date and freshly retrieved context. There is no accent folding,
+translation or vector-similarity matching. Player question history is not used
+as a cache. Rows contain hashed identities and answer/explanation, not raw prompts,
+questions, context or player ownership.
+
+There is no worker-local LRU or five-minute expiry. Reuse survives worker restarts
+and lasts within the UTC daily scope while evidence and answer policy match.
+Retrieval remains fresh before lookup: changed or unavailable context cannot
+reuse an older context's answer. This saves answer-model calls, not embedding or
+retrieval calls. Nonempty context is an identity/freshness condition, not proof
+that the passage supports every clause. Startup and a 00:10 UTC maintenance job
+delete prior-day entries and report blocks.
+
+Null, malformed and failed generations, empty-context general-knowledge answers,
+scope-less explicit-target calls and explicit-timeout diagnostics are not cached.
+Admin question tests explicitly bypass answer reuse as well as planner caching.
+A committed answer report invalidates matching server-owned inputs in the shared
+database. Report creation, cache eviction and insertion into `fallback_answer_blocks`
+are one transaction: rollback leaves a valid answer reusable; commit prevents
+all workers from reusing the disputed signature for that daily scope. Every
+lookup excludes blocked signatures, including a late insert racing an uncommitted
+report. A different context or a new game date has a different signature.
+No database transaction is held across model generation. Every player still gets
+a fresh question record/report token and independent normal accounting.
+
+Model selection, predicate policies and EN/PL support are unchanged; Gemini 2.5
+fallbacks retain the 1,024-token thinking and 2,048-token total output ceilings.
+Reliable general knowledge remains available when retrieval fails or is
+irrelevant, while genuinely undetermined answers remain null. No extra LLM judge
+or weaker model was introduced. Schema/provider failures and abstention preserve
+each mode's no-turn behavior.
+
+Player-facing full-question responses no longer serialize raw `context`.
+Question storage, trusted admin diagnostics and report snapshots retain it.
+Answer-cache diagnostics identify `provider="answer_cache"`, zero current
+provider attempts and no copied token usage. Paid calls retain actual provider
+usage; report list-price estimates separately from invoices and do not infer
+site-wide savings from a duplicate-request smoke.
+
+From `server/`, regression coverage:
+
+```bash
+python -m pytest -q tests/test_fallback_answers.py tests/test_fallback_answer_repository.py \
+  tests/test_ai_clients.py tests/test_request_budget.py \
+  tests/test_question_context_privacy.py tests/test_countrydle_fallback.py \
+  tests/test_question_nonblocking.py tests/test_admin_question_tests.py \
+  tests/test_answer_reports.py tests/test_question_accounting.py
+```
+
+Set `QUESTION_TEST_DATABASE_URL` to an explicitly disposable PostgreSQL database
+to exercise PostgreSQL MVCC/report races and daily accounting. Tests isolate
+their schemas; never point this variable at the production database. The cache
+tables are installed by Alembic revision `f6a8c2d4e901` during normal startup
+migration; no production database migration is performed by the test suite.
 
 ## Player suggestions
 
@@ -191,15 +282,24 @@ fragments.
 - The configured Gemini/OpenAI model names are unchanged. `planner_protocol.py` supplies a nonrecursive JSON Schema: the provider emits an array of predicate/logical nodes with zero-based child indices. Prompts request children before parents and the root last; the compiler still accepts any valid node order. It validates routing, operator arity, allowed relations/entities, a single connected tree, and quantifier item scope before creating the existing executor AST or caching it. Malformed JSON, cycles, reused/unused nodes, and unexpected fields are errors, not repaired interpretations.
 - The planner wire format has one decision: `route="local"` requires a plan, `route="fallback"` handles a clear predicate whose facts or required operations are unavailable locally, and `route="clarify"` rejects an underspecified question. Non-local routes require `plan=null`. The existing application/API fields `valid` and `supported` are derived from this decision; callers and HTTP responses retain their contract.
 - Plan cache entries are isolated by game mode, normalized question, configured model, and planner contract version. Provider failures and malformed responses are not cached. A cached interpretation is still evaluated against the current target's facts.
+- Planner plans are stored only in `data/plan_cache.sqlite` on the persistent backend data volume. Lookups read one indexed row; workers do not preload a model version or retain a second Python copy. Existing cache rows and model/version boundaries are preserved.
+- Flagdle stores successfully downloaded SVGs in `data/flag_svg_cache/` on that same volume. Cache files are published atomically and read on demand off the event loop. Upstream-error placeholders are never persisted; a disk-write failure does not hide a successfully downloaded flag.
+- Countrydle's strict English templates run before the cache or Gemini. Exact leading target subjects `this country`, `the hidden country`, and `hidden country` reuse the existing `it` skeletons, including coastline questions. Whole-question population/area thresholds accept strict, inclusive, and equality comparisons with grouped or decimal numbers and thousand/million/billion scales. Area uses the stored square-kilometre unit; explicit incompatible units, extra clauses, negation, and temporal qualifiers decline rather than being discarded.
+- English capital-name letter-count templates use the existing game convention: spaces and hyphens do not count as letters. They support longer/shorter, equality, and inclusive bounds without adding executor operators. Named-country possessives and unsupported wording retain the model-planner route. Polish templates and other game modes are unchanged.
 - Planners allow 2,048 total output tokens. Gemini 2.5 Flash Lite planners use a bounded 1,024-token thinking budget to preserve compound predicates. Countrydle's daily/explicit-target fallback also allows 2,048 total output tokens and a 1,024-token thinking budget for Gemini 2.5 models. This adds latency and billed thought tokens without changing the configured model or adding retries. Other models retain their provider-default thinking settings. Existing usage diagnostics include actual `thought_tokens` when reported by Gemini.
 - Generic-mode `any`/`all` binds neighboring entity rows only for configured same-type lists: `borders_powiat`, `borders_voivodeship` in Wojewodztwodle, and `borders_state`. `item.is_city_county`, for example, reads the neighboring county's classification, not its name or the hidden target's classification. Other lists and literal arrays remain primitive values accessible through `item.name`. Nested quantifiers retain the original target and restore the enclosing item scope. Missing facts remain unknown; decisive `and`/`or`/`any`/`all` results short-circuit without turning unknown into false.
 - Question validity is independent of local fact and operator coverage: a precise historical, biographical, landmark, or character-position question can be valid but require fallback. Underspecified criteria require clarification; the planner must not invent a numeric threshold. Present membership and past membership remain distinct even when the organization is dissolved.
 - Numeric predicates distinguish strict comparisons from `greater_than_or_equal` / `less_than_or_equal`. `has_space` and `has_hyphen` are unary text predicates; a hyphen is not an en/em dash. Country text predicates preserve punctuation and whitespace instead of normalizing punctuation into an empty search string. SQLite numeric boolean values compare numerically with JSON booleans; factual explanations use the stored property rather than the truth of a possibly inverted comparison.
+- Country-name hyphen checks also recognize accepted aliases of the resolved name operand, and explanations cite that alias. Capital and literal-text checks use only their actual text, never the target country's aliases. Explanations distinguish named references from the hidden target. Counts that preserve punctuation are labelled characters, excluding spaces and hyphens, rather than letters. Generic-mode explanations stop at the same decisive logical or quantifier boundary as the evaluator; skipped predicates do not become new failures during rendering.
 - A valid question outside the local relations can continue through Qdrant retrieval and the existing answer model. Retrieval uses the planner's rewritten question when provided, otherwise the original player text; an omitted optional rewrite must not bypass fragment lookup.
 - Countrydle does not pass planner coverage notes to the answer model as factual evidence. Missing SQLite coverage is not proof that a historical association or geographic concept does not exist. Fallback preserves the original predicate and may use reliable general knowledge when retrieved fragments are irrelevant; genuinely undetermined answers remain `null`.
 - Country list relations require membership/nonemptiness operators, not scalar `equals`. Unknown historical-union names remain unknown; active organizations such as Benelux use `membership`, not the closed set of dissolved `historical_union` associations. Logical `and` is never rewritten to `or`. Explanations describe the evaluated entity and bound neighbor facts, including under negation.
 - Cardinal region aliases retain their regional scope (`East Africa` → `Eastern Africa`), without conflating Southern Africa with the country South Africa. Generic ocean access covers recorded ocean coastlines; a coastline on a sea does not automatically imply a direct coastline on its parent ocean. Area/population comparisons explain the facts of both countries.
 - Geographic plan literals match a whole supported category, not a substring: an unknown qualifier is never dropped to obtain a broader region. North/South America use complete continent coverage, and Middle East/Scandinavia retain their own stored classifications. Unrepresented directional quadrants use fallback rather than a guessed union of broad regions.
+- Country physical-continent predicates expand unqualified `America`/`Americas` to North America OR South America, and `Eurasia` to Europe OR Asia. Normalization applies inside compound, negated, and neighbor predicates before validation and evaluation; qualified North/South America and stored geographic-area categories remain distinct.
+- US Statedle broad Atlantic access includes Gulf of Mexico coastline. Direct bordering/coastline and explicitly direct access still require the named water body itself; Gulf-only states are not classified as East Coast. Templates and provider notes preserve this distinction under negation and conjunction.
+- US Census-region questions normalize `north east`, `north-east`, and `Northeast` to the official Northeast region. Exact regional comparisons accept these spelling aliases without conflating Northeast with Mid-Atlantic or New England.
+- Planner contract version `27` excludes older interpretations for these semantics without deleting cached rows, rewriting question history, changing fact databases, or marking reports reviewed.
 - Current `membership` and dissolved `historical_union` facts are separate. Historical associations are not copied into current memberships by the population script. Language prevalence is not inferred from legal official-language status; underspecified proximity, fame, and importance require clarification rather than an invented criterion.
 - Country island status comes from the builder's sourced classification, not absence of land borders: shared-island countries can have borders, while Australia is a continent. The builder also restores active Benelux membership on rebuild.
 - Synchronous model, embedding, Qdrant, and local SQLite work runs off the event loop. HTTP/SDK clients reuse connections and close during application shutdown; SQLAlchemy async sessions remain on the event-loop thread.
@@ -220,6 +320,121 @@ python -m pytest -q tests/test_question_accounting.py tests/test_question_nonblo
 These regressions use controlled provider responses; they do not measure live
 model accuracy or latency. SQLite regressions require the normal local fact data
 and country-additions provisioning.
+
+### Countrydle planner compaction
+
+Countrydle uses one compact, complete relation catalogue; no extra classifier or
+question-specific schema pruning. Its effective cache version includes the
+Countrydle-only prompt revision (`compact-v5-t1024`) and configured model in
+addition to the shared planner contract. Old interpretations cannot mask the
+cutover; other modes retain their cache versions and normalization.
+
+
+The 1,024-token thinking budget and 2,048-token output ceiling are retained.
+Live lower-budget experiments exposed semantic and tree-reference errors.
+On the final 20-question prospective EN/PL stress set, both arms used
+`gemini-2.5-flash-lite`, temperature zero, application-cache bypass, and the same
+read-only fact snapshot:
+
+| Planner-only measure | Original | Compact |
+|---|---:|---:|
+| Input tokens, mean / p95 | 7,143 / 7,151 | 4,344 / 4,352 |
+| Correct meaning/routing | 15/20 | 20/20 |
+| Planning latency, mean / p95 | 2.37s / 3.74s | 2.86s / 3.62s |
+| Full-input-uncached cost counterfactual per 1,000 calls | $0.992 | $0.784 |
+| Observed charge per 1,000 matched provider-warm calls (19 pairs) | $0.427 | $0.429 |
+
+Input decreased 39.2%, but increased thinking erased the saving on the matched
+provider-warm cohort. Neither sub-second planning nor a 30% paid-cost saving is
+established. Missing cache metadata is unknown, not zero; no provider-cold cohort
+was forced. These are curated stress cases, not a production traffic estimate.
+A post-tuning 30-case regression also retains a pre-existing membership-alias
+failure when the model emits `African Union` instead of `AU`.
+
+The actual ASGI/API smoke used live providers and isolated PostgreSQL: stale
+interpretations missed, exact/normalized repeats hit, compound answers and
+fallback were correct, and only verified booleans consumed turns. Qdrant was
+unavailable; retrieval/indexing failure was observed, not mocked away.
+Affected backend regressions: 292 passed.
+
+The opt-in reproducible harness never writes gameplay records or the source fact
+database. Report output must not alias the input database, its SQLite WAL/shared-
+memory/journal sidecars, corpus, planner source, or credentials file. The CLI
+rejects such paths before provider setup, including symlink and hardlink aliases.
+
+Run from `server/`; provider-free gold validation needs no API key:
+
+```bash
+python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --validate-only --output /tmp/planner-gold.json
+python scripts/benchmark_country_planner.py --corpus tests/country_planner_final.json --variant both --baseline-planner /path/to/unchanged/local_planner.py --env-file /path/to/local/.env --output /tmp/planner-comparison.json
+```
+
+The complete [research and measurement report](../docs/planner_compaction_research.md)
+records corpus hashes, adjudication, budget rejection, cost missingness, projected
+gameplay costs, and a measured design-only cultural-relation delta. No new cultural
+facts, relation, template, schema, or executor behavior is implemented here.
+
+### Countrydle daily cost measurement
+
+Countrydle question handling stores only UTC-day aggregates for route outcomes
+and observed Gemini planner/fallback usage. No question text, prompt, user or
+guest identity, retrieval context, or provider response is written. The SQLite
+file defaults to `data/countrydle_cost_metrics.sqlite3`. Keep it on the backend's
+persistent `/usr/src/app/data` mount, alongside `plan_cache.sqlite`; the repository
+production Compose file uses the `backend_data` named volume. Verify the mount
+in any separately maintained production deployment. Set `COUNTRYDLE_COST_METRICS_DB`
+to override the metrics path when running outside the container.
+
+Administrators can open **Explore → Admin Dashboard → System & Cache → AI Costs**.
+The dashboard shows the last 7, 14, or 30 completed UTC days, with manual refresh,
+daily requests, completed games, template answers, planner-cache hits, paid
+planner calls, USD cost bounds, and cost per 1,000 completed games. Expand a
+day's usage disclosure for stage/model token counts, retries, failed attempts,
+fallback calls, and unknown-usage counters. Missing measurements appear as
+dashes, not zeroes; partial startup days and incomplete known-cost subsets are
+labelled explicitly. No aggregate combines days with incompatible coverage.
+
+The dashboard calls `GET /admin/countrydle-costs?days=7` (API range: 1–366).
+It requires the existing administrator session cookie: guests receive 401 and
+authenticated non-admin users receive 403. It uses the same report assembly as
+the CLI below, reads existing aggregates, and never triggers provider requests.
+Collection happens automatically when Countrydle questions reach the backend;
+there is no report job to schedule. Today is excluded until the next UTC day,
+and no historical costs are backfilled when collection first starts.
+
+From `server/`, run:
+
+```bash
+python scripts/report_country_costs.py
+```
+
+The report defaults to the last seven completed UTC days (`--days N` selects a
+different window) and reads completed Countrydle games from the configured
+PostgreSQL `DATABASE_URL`. A completed game is a won/lost Countrydle state or an
+unlinked guest participation that won or used all three guesses; linked guests
+are represented only by their account state. Per-1,000-game values use those
+completed games, not question requests.
+
+Request counts begin at the route handler: FastAPI dependency failures, request
+body validation failures, and the attempt-rate limiter run before it and are
+excluded. Coverage before the metrics database's `started_at` is absent, and
+its first date is marked partial; per-1,000 rates are null for that startup day.
+No-data days have null cost rather than an inferred zero.
+Database read failures, hosting, embeddings, retrieval, and other game modes
+are outside this measurement.
+
+Only Gemini 2.5 Flash-Lite is priced (input $0.10, cached input $0.01, output
+$0.40 per million tokens). Planner and fallback output cost uses
+`total_tokens - input_tokens`, so hidden reasoning is included once. Missing
+cached-input counts are shown as cost bounds, never treated as free; absent
+usage or an unrecognized model makes overall cost explicitly incomplete/unpriced.
+“New planner rate” is uncached planner calls per 1,000 completed games; the report
+also gives the fraction of handler-received requests that triggered new planner
+calls, alongside the share of observed planner requests.
+
+Countrydle checks an existing guest's daily question quota before local planning
+or provider work. This read-only preflight does not consume a question; the final
+atomic participation update remains authoritative for concurrent requests.
 
 ## County border facts
 
@@ -278,6 +493,15 @@ After a game ends (win or loss), players can report a saved question result from
 
 The `answer_reports` table is created by Alembic revision `4c9f2a1b8d60`, applied through the existing startup migration process. Report tokens use `SECRET_KEY`; keep it stable across replicas. Rotating it invalidates previously issued guest report tokens.
 
+### Admin live feed
+
+`GET /admin/live-feed` requires administrator authentication (anonymous requests
+return `401`; signed-in non-administrators return `403`). Optional `mode` selects
+a game mode. Questions and guesses remain separate recent-event lists, each
+including the target name and optional subtitle. Question records retain source,
+validity, nullable answer, and explanation; guesses retain their correctness.
+The UI's source label describes the answering path, not verified truth.
+
 ### Admin question tests
 
 The admin **Test pytań** tab evaluates a question against an explicitly selected entity in any of the nine game modes. **Testuj pytanie** on a report prefills its original question and selects the target only when its name matches exactly one entity. Historical and current results are shown separately; automatic comparison requires the same mode, uniquely matched target, and original question.
@@ -290,11 +514,11 @@ The admin **Test pytań** tab evaluates a question against an explicitly selecte
 
 ### Admin cache monitoring
 
-The admin **Cache** tab displays planner-cache hits, misses, hit rate, stored plans, and capacity from the existing aggregate `GET /cache-stats` endpoint. It is read-only: no entries, question text, or cache-clearing controls are exposed.
+The admin **Cache** tab displays planner-cache hits, misses, hit rate, persistent stored-plan count, and SQLite storage from the aggregate `GET /cache-stats` endpoint. It is read-only: no entries, question text, or cache-clearing controls are exposed. The old RAM-capacity and occupancy display is removed.
 
 - Automatic refresh runs 15 seconds after each completed request while the tab is open. It can be paused; manual refresh remains available. Requests time out after 10 seconds and are cancelled when leaving the tab.
 - Empty counters show no hit rate rather than an artificial success/failure score. Failed refreshes retain the last successful values with a stale-data warning and the last-read timestamp.
-- Statistics are process-local, not aggregated across workers. Counts and entries reset on process restart or cache clearing, not at midnight; entries have no TTL. At capacity, LRU eviction replaces the least recently used plans.
+- Lookup counters are process-local, not aggregated across workers, and reset on process restart or cache clearing. Stored-plan count covers all modes and versions in the shared SQLite database; plans survive restarts and have no TTL or automatic eviction. SQLite pages can still enter Linux's reclaimable filesystem cache; disk-backed storage is not a guarantee of zero RAM use.
 - A hit avoids planner generation, but a cached plan may still require AI fallback. A miss does not guarantee a paid model call. Admin question tests and friend-duel questions bypass this cache, and these counters do not measure Google's token caching or billing.
 
 ---
@@ -492,3 +716,66 @@ The game uses RAG to answer "True/False" questions about entities.
 ### Game State
 *   **Day Table**: Determines the "Answer" for the current 24h period.
 *   **State Table**: Tracks a specific user's progress (guesses made, questions asked, won/lost) for that specific Day.
+
+## Selective application-hardening rollback
+
+The replacement retains the English template planner and factual-explanation
+features, including later operand/reference and strict Boolean alias corrections.
+Ordinary application hardening and its CI-only repairs are removed. Signing,
+proxy headers, worker startup, CORS and daily scheduling use the pre-hardening
+policy; no runtime-configuration/topology module or CI bootstrap is required.
+
+### Retained factual-explanation dependencies
+
+`schemas/fact_provenance.py` and `country_fact_provenance.py` define selected
+membership/hemisphere evidence. The additive SQLite table, existing fact builder,
+source file and fact editors preserve unchanged evidence and invalidate evidence
+when the underlying value/set changes. Unknown dates remain null rather than
+being inferred from a build timestamp. Read-only legacy SQLite files yield
+explicit unknown evidence; readers do not create tables or change facts.
+
+Accepted Countrydle/continental questions persist only answer-used evidence.
+Flagdle retains its natural-question table/model/repository/API history so
+post-game explanations are available again and can inform subsequent questions.
+Admin fact controls, question evaluation and answer-report snapshots retain
+canonical explanations and evidence. No historical answers are reconstructed.
+
+Public active Countrydle, continental and Flagdle question/state responses hide
+factual explanations, evidence and provider rewrites. Terminal serialization
+reveals the stored explanation and only evidence used by that answer. Private
+retrieval context remains excluded. Invalid/unverified feedback uses target-free
+fixed guidance and the player's original input, even in terminal history.
+Country/continental guest question history uses the existing production guest
+identity/participation mechanism; Flagdle keeps its existing per-game cookie.
+Only a win or exhausted guesses unlocks guest facts, not exhausted questions.
+No new durable guess identity, locked guest claims or signing policy is retained.
+
+### Migration and verification boundary
+
+The never-deployed guest-identity (`a7b8c9d0e1f2`) and UTC-default
+(`b8c9d0e1f2a3`) migrations remain removed. The retained explanation migration
+`c9d0e1f2a3b4` now follows deployed `f6a8c2d4e901` directly: it adds evidence
+columns, the forward-only Flagdle question table and only the continental
+question guest identity/index needed for private guest post-game history.
+All already-applied revisions remain in the chain. Do not downgrade or stamp
+production. Upgrade and exercise this chain only on a disposable copy first.
+
+From `server/`, with the normal backend environment configured:
+
+```bash
+python -m pytest -q tests/test_countrydle_factual_explanations.py tests/test_countrydle_semantic_preservation.py tests/test_countrydle_english_corpus.py tests/test_local_mode_explanation_facts.py tests/test_question_context_privacy.py tests/test_fact_provenance.py tests/test_flagdle.py tests/test_guest_system.py
+alembic history
+alembic upgrade head
+```
+
+For a runtime smoke test on a disposable database, start the unchanged Uvicorn
+entry point behind the existing production proxy policy. In a fresh guest
+browser, ask a verified English question in Countrydle, a continental mode and
+Flagdle: active JSON/history must contain no target facts, source links, private
+context or provider rewrite. Exhaust questions without exhausting guesses and
+confirm facts remain hidden. Win or exhaust guesses, then fetch state again:
+the matching stored question IDs must expose factual explanations/evidence.
+Reload the completed browser and, in Flagdle, ask another verified question:
+its factual explanation must remain available. Repeat with an account and with
+unverified questions. The replacement is not approved by these instructions;
+record actual test, migration and browser results before replacing production.

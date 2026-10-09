@@ -4,12 +4,12 @@ import { getContinentalStore } from '../stores/gameStore';
 import QuestionInput from '../components/QuestionInput';
 import GuessInput from '../components/GuessInput';
 import GameActionComposer from '../components/GameActionComposer';
+import BackToMapButton from '../components/BackToMapButton';
 import { ControlledMapBox } from '../components/MapBox';
 import GameInstructions from '../components/GameInstructions';
 import QuestionChat from '../components/QuestionChat';
 import {
   Loader2,
-  ChevronDown,
   ChevronUp,
   X,
   Check,
@@ -137,7 +137,6 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     askQuestion,
     makeGuess,
     syncGuestData,
-    isGuest,
     dailyDate,
     entityMarkings,
     activeMarkerColor,
@@ -146,13 +145,13 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     clearMapMarkings,
   } = useStore();
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 // today removed
 
   // HUD & Chat state
   const isMobile = useIsMobile();
   const [userSelectedTab, setUserSelectedTab] = useState<'question' | 'guess' | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const activeInputTab: 'question' | 'guess' = userSelectedTab ?? (
     gameState && gameState.remaining_questions <= 0 && gameState.remaining_guesses > 0
       ? 'guess'
@@ -176,33 +175,16 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
   const questionsContainerRef = useRef<HTMLDivElement>(null);
   const guessesContainerRef = useRef<HTMLDivElement>(null);
-  const prevQuestionsCount = useRef(questions.length);
-  const prevNoticesCount = useRef(notices.length);
-  const prevGuessesCount = useRef(guesses.length);
 
-  // Auto-scroll the question stream when a question or warning arrives
   useEffect(() => {
-    const hasNewQuestion = questions.length > prevQuestionsCount.current;
-    const hasNewNotice = notices.length > prevNoticesCount.current;
-    if (!questionsContainerRef.current) return;
-    prevQuestionsCount.current = questions.length;
-    prevNoticesCount.current = notices.length;
-    if (hasNewQuestion || hasNewNotice || pendingQuestion) {
-      questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
-    }
+    if (!isChatOpen || activeChatTab !== 'questions' || !questionsContainerRef.current) return;
+    questionsContainerRef.current.scrollTop = questionsContainerRef.current.scrollHeight;
   }, [questions.length, notices.length, activeChatTab, isChatOpen, pendingQuestion]);
 
-  // Auto-scroll ONLY when a new guess actually arrives
   useEffect(() => {
-    if (guesses.length > prevGuessesCount.current) {
-      prevGuessesCount.current = guesses.length;
-      if (guessesContainerRef.current) {
-        guessesContainerRef.current.scrollTop = guessesContainerRef.current.scrollHeight;
-      }
-    } else {
-      prevGuessesCount.current = guesses.length;
-    }
-  }, [guesses.length]);
+    if (!isChatOpen || activeChatTab !== 'guesses' || !guessesContainerRef.current) return;
+    guessesContainerRef.current.scrollTop = guessesContainerRef.current.scrollHeight;
+  }, [guesses.length, activeChatTab, isChatOpen]);
 
   const title = t(`${activeContinent}Title`, { defaultValue: meta.title });
 
@@ -258,9 +240,9 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   };
 
   return (
-    <div className="relative h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-5rem)] w-full overflow-hidden bg-obsidian-950 font-sans select-none">
+    <div className="relative flex-1 min-h-0 h-full w-full overflow-hidden bg-obsidian-950 font-sans select-none">
       {/* 1. Full-Canvas Map */}
-      <div className="absolute inset-0 z-0 h-full w-full">
+      <div className="game-map-layer absolute inset-0 z-0 w-full">
         <ControlledMapBox
           key={activeContinent}
           eligibleCountries={countries}
@@ -284,15 +266,15 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
       </div>
 
       {/* 2. Top Status HUD Bar */}
-      <div className="pointer-events-none absolute left-14 sm:left-1/2 top-2 sm:top-3 z-[1000] -translate-x-0 sm:-translate-x-1/2 px-1 sm:px-2 max-w-[calc(100vw-4.5rem)] sm:max-w-none">
-        <div className="pointer-events-auto flex h-7 sm:h-8 items-stretch divide-x divide-white/10 rounded-sm border border-white/15 bg-obsidian-900/85 shadow-lg backdrop-blur-md overflow-hidden text-xs font-mono">
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+      <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
+        <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono md:h-8 md:w-auto md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:shadow-lg md:backdrop-blur-md">
+          <div className="hidden md:flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span>{title}</span>
             <span className="font-semibold text-sand-100 hidden sm:inline">{dailyDate}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3">
+          <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">Q:</span>
             <span className="font-semibold text-sand-100">
               {gameState.remaining_questions}
@@ -300,7 +282,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3">
+          <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">
             <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">G:</span>
             <span className="font-semibold text-emerald-400">
               {gameState.remaining_guesses}
@@ -326,84 +308,65 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               ],
             }}
             compact={true}
-            triggerClassName="flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+            triggerClassName="max-md:min-h-11 max-md:min-w-11 flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
           />
 
           {isGameOver && (
             <button
               type="button"
               onClick={() => setIsResultDismissed(false)}
-              className="flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+              className="max-md:min-h-11 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
             >
               <Trophy size={13} />
-              <span>Result</span>
+              <span>{i18n.language.startsWith('pl') ? 'Wynik' : 'Result'}</span>
             </button>
           )}
         </div>
       </div>
 
       {/* 3. Unified Deduction Notebook & Chat */}
-      {/* Mobile Drawer Backdrop */}
-      {isChatOpen && (
-        <div
-          onClick={() => setIsChatOpen(false)}
-          className="fixed inset-0 z-[1090] bg-black/60 backdrop-blur-xs md:hidden"
-          aria-hidden="true"
-        />
-      )}
 
       <div className={`pointer-events-none ${
         isChatOpen
-          ? 'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-[1100] max-md:w-full md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
-          : 'max-md:fixed max-md:bottom-20 max-md:left-3 max-md:z-[995] md:absolute md:left-4 md:bottom-4 md:z-[1000] md:w-[28rem] md:max-w-[calc(100vw-2rem)]'
+          ? 'game-notebook-layer absolute inset-0 z-[1100] md:absolute md:inset-0 md:z-[1000]'
+          : 'absolute inset-x-0 bottom-0 z-[995] w-full pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)]'
       }`}>
         {!isChatOpen ? (
-          /* Collapsed Pill Button */
-          <button
-            type="button"
-            onClick={() => setIsChatOpen(true)}
-            className="pointer-events-auto flex items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/85 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 shadow-xl backdrop-blur-md hover:bg-obsidian-850 transition-colors cursor-pointer"
-            aria-label="Expand Deduction Chat"
-          >
-            <MessageSquare size={13} className="text-emerald-400" />
-            <span>Chat</span>
-            <span className="text-sand-100 font-semibold">Q: {questions.length}/8</span>
-            <span className="text-zinc-500">·</span>
-            <span className="text-emerald-400 font-semibold">G: {guesses.length}/3</span>
-            <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
-          </button>
-        ) : (
-          /* Expanded Chat: Mobile Bottom Sheet Drawer / Desktop Bottom-Left Window */
-          <div
-            onWheel={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-xl transition-all max-md:h-[82dvh] max-md:max-h-[88dvh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/85"
-          >
-            {/* Mobile Drag Handle (Tap to collapse) */}
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(false)}
-              className="w-full flex items-center justify-center pt-2.5 pb-1 md:hidden cursor-pointer touch-manipulation focus:outline-none"
-              aria-label="Collapse chat drawer"
-            >
-              <div className="h-1.5 w-12 rounded-full bg-white/30 hover:bg-white/50 active:bg-white/60 transition-colors" />
+          <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
+            <button type="button" onClick={() => { setUserSelectedTab('question'); setIsChatOpen(true); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 md:hidden">
+              {i18n.language.startsWith('pl') ? 'Pytaj' : 'Ask'} <span className="text-zinc-400">{gameState.remaining_questions}/8</span>
             </button>
+            <button type="button" onClick={() => { setUserSelectedTab('guess'); setIsChatOpen(true); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 md:hidden">
+              {i18n.language.startsWith('pl') ? 'Zgadnij' : 'Guess'} <span className="text-emerald-400">{gameState.remaining_guesses}/3</span>
+            </button>
+            <button type="button" onClick={() => setIsChatOpen(true)} className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 md:flex" aria-label={i18n.language.startsWith('pl') ? 'Otwórz notatnik' : 'Open notebook'}>
+              <MessageSquare size={13} className="text-emerald-400" />
+              <span>{i18n.language.startsWith('pl') ? 'Notatnik' : 'Notebook'}</span>
+              <span className="text-sand-100 font-semibold">Q: {questions.length}/8</span>
+              <span className="text-zinc-500">·</span>
+              <span className="text-emerald-400 font-semibold">G: {guesses.length}/3</span>
+              <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
+            </button>
+          </div>
+        ) : (
+          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950 pb-[env(safe-area-inset-bottom)] shadow-2xl transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:bg-obsidian-900/85 md:pb-0">
 
             {/* Notebook Tabbed Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-4 py-3 shrink-0">
-              <div role="group" aria-label="Choose question or guess" className="flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950 px-2 py-1 shrink-0 md:px-4 md:py-3">
+              <div role="group" aria-label={i18n.language.startsWith('pl') ? 'Wybierz pytanie lub zgadnięcie' : 'Choose question or guess'} className="flex items-center gap-1">
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'questions'}
                   onClick={() => setUserSelectedTab('question')}
-                  className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`flex min-h-11 items-center gap-1 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'questions'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
                       : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
                   }`}
                 >
-                  <MessageSquare size={12} className={activeChatTab === 'questions' ? 'text-emerald-400' : ''} />
-                  <span>Questions</span>
+                  <MessageSquare size={12} className={`hidden md:block ${activeChatTab === 'questions' ? 'text-emerald-400' : ''}`} />
+                  <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Pytaj' : 'Ask'}</span>
+                  <span className="hidden md:inline">{i18n.language.startsWith('pl') ? 'Pytania' : 'Questions'}</span>
                   <span className="font-mono text-[10px] text-zinc-500">({questions.length}/8)</span>
                 </button>
 
@@ -411,27 +374,20 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   type="button"
                   aria-pressed={activeChatTab === 'guesses'}
                   onClick={() => setUserSelectedTab('guess')}
-                  className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`flex min-h-11 items-center gap-1 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'guesses'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
                       : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
                   }`}
                 >
-                  <Target size={12} className={activeChatTab === 'guesses' ? 'text-emerald-400' : ''} />
-                  <span>Guesses</span>
+                  <Target size={12} className={`hidden md:block ${activeChatTab === 'guesses' ? 'text-emerald-400' : ''}`} />
+                  <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zgadnij' : 'Guess'}</span>
+                  <span className="hidden md:inline">{i18n.language.startsWith('pl') ? 'Zgadnięcia' : 'Guesses'}</span>
                   <span className="font-mono text-[10px] text-zinc-500">({guesses.length}/3)</span>
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(false)}
-                className="rounded-sm p-1 text-zinc-400 hover:bg-white/10 hover:text-sand-100 transition-colors cursor-pointer"
-                title="Minimize chat"
-                aria-label="Minimize chat"
-              >
-                <ChevronDown size={14} />
-              </button>
+              <BackToMapButton onClick={() => setIsChatOpen(false)} />
             </div>
 
             {/* Tab 1: Questions Stream */}
@@ -570,10 +526,10 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
           aria-modal="true"
           aria-label="Daily Results"
           onClick={() => setIsResultDismissed(true)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer overflow-y-auto"
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
         >
           <div
-            className="relative z-10 w-full max-w-2xl sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-sm shadow-2xl my-auto cursor-default"
+            className="relative z-10 w-full max-w-2xl sm:max-w-3xl rounded-sm shadow-2xl cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <ShareResultCard
@@ -587,7 +543,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               guessesMade={gameState.guesses_made}
               maxGuesses={3}
               targetName={correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess}
-              isGuest={isGuest}
+              targetCountryCode={correctCountry?.iso2}
               onClose={() => setIsResultDismissed(true)}
               questions={sortedQuestions}
               notices={notices}

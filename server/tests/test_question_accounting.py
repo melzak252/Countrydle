@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException, Request, Response
+from utils.guest_session import check_guest_question_available
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -21,6 +22,7 @@ from db.models.powiatdle import PowiatdleDay, PowiatdleQuestion, PowiatdleState
 from db.models.us_statedle import USStatedleDay, USStatedleQuestion, USStatedleState
 from db.models.wojewodztwodle import WojewodztwodleDay, WojewodztwodleQuestion, WojewodztwodleState
 from schemas.countrydle import QuestionBase, QuestionCreate
+from countrydle.local_answering import LocalAnswer
 
 pytestmark = [pytest.mark.real_database, pytest.mark.anyio]
 MODES = [
@@ -49,7 +51,7 @@ async def accounting_db():
             models_needed = (
                 "User", "Country", "GuestParticipation", "USState", "Powiat", "Wojewodztwo",
                 "CountrydleGuess", "ContinentalGuess", "USStatedleGuess", "PowiatdleGuess",
-                "WojewodztwodleGuess", "FlagdleDay", "FlagdleState",
+                "WojewodztwodleGuess", "FlagdleDay", "FlagdleState", "FlagdleGuess", "FlagdleQuestion",
             )
             tables = [getattr(models, name) for name in models_needed]
             for _, day, state, question, *_ in MODES:
@@ -279,7 +281,8 @@ async def test_rejected_persistence_rolls_back_question_and_quota(daily_mode, mo
         assert all(state.questions_asked == 0 for state in (await session.scalars(select(mode.state_model))).all())
 
 
-async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_existing_progress(daily_mode):
+@pytest.mark.parametrize("question_ids", [[1, 1, 2, 3, 4], [1, 2, 3, 4, 999999]])
+async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_existing_progress(daily_mode, question_ids):
     mode = daily_mode
     async with mode.factory() as session:
         session.add_all([
@@ -300,8 +303,8 @@ async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_exis
     }[mode.name]
     schema = getattr(mode.module, schema_name)
     body = schema.model_validate({
-        "date": str(date.today()), "questions": [1, 1, 2, 3, 4, 999999], "guesses": [],
-        "state": {"questions_asked": mode.maximum, "remaining_questions": 0, "guesses_made": 0,
+        "date": str(date.today()), "questions": question_ids, "guesses": [],
+        "state": {"questions_asked": len(question_ids), "remaining_questions": mode.maximum - len(question_ids), "guesses_made": 0,
                   "remaining_guesses": 2 if mode.name == "wojewodztwodle" else 3,
                   "won": False, "is_game_over": False},
     })
@@ -319,6 +322,78 @@ async def test_guest_sync_counts_only_claimed_boolean_history_and_preserves_exis
         unresolved = await session.get(mode.question_model, 3)
         invalid = await session.get(mode.question_model, 4)
         assert unresolved.user_id is None and invalid.user_id is None
+
+async def test_country_guest_question_preflight_is_read_only_and_scoped(accounting_db):
+    request = Request({"type": "http", "headers": []})
+    request.state.guest_identity = "00000000-0000-0000-0000-000000000001"
+    response = Response()
+    async with accounting_db() as session:
+        session.add_all([
+            GuestParticipation(
+                guest_id=request.state.guest_identity, mode="countrydle", day_id=1,
+                questions_asked=10, guesses_made=0, won=False,
+            ),
+            GuestParticipation(
+                guest_id="00000000-0000-0000-0000-000000000002", mode="countrydle", day_id=1,
+                questions_asked=10, guesses_made=0, won=False,
+            ),
+            GuestParticipation(
+                guest_id=request.state.guest_identity, mode="countrydle", day_id=2,
+                questions_asked=10, guesses_made=0, won=False,
+            ),
+            GuestParticipation(
+                guest_id=request.state.guest_identity, mode="powiatdle", day_id=1,
+                questions_asked=10, guesses_made=0, won=False,
+            ),
+        ])
+        await session.commit()
+        with pytest.raises(HTTPException) as rejected:
+            await check_guest_question_available(session, request, response, "countrydle", 1, 10)
+        assert rejected.value.status_code == 400
+        await check_guest_question_available(session, request, response, "countrydle", 2, 11)
+        await check_guest_question_available(session, request, response, "powiatdle", 1, 11)
+        await check_guest_question_available(session, request, response, "countrydle", 3, 11)
+        rows = (await session.scalars(select(GuestParticipation))).all()
+        assert len(rows) == 4
+        assert all(row.questions_asked == 10 for row in rows)
+
+
+async def test_country_guest_question_preflight_allows_under_limit_without_creating_row(accounting_db):
+    request = Request({"type": "http", "headers": []})
+    request.state.guest_identity = "00000000-0000-0000-0000-000000000003"
+    async with accounting_db() as session:
+        await check_guest_question_available(session, request, Response(), "countrydle", 1, 10)
+        assert await session.scalar(select(func.count()).select_from(GuestParticipation)) == 0
+
+
+async def test_country_guest_at_quota_is_rejected_before_local_analysis(accounting_db, monkeypatch):
+    import countrydle
+
+    identity = "00000000-0000-0000-0000-000000000004"
+    async with accounting_db() as session:
+        session.add(CountrydleDay(id=1, country_id=1, date=date.today()))
+        session.add(GuestParticipation(
+            guest_id=identity, mode="countrydle", day_id=1,
+            questions_asked=10, guesses_made=0, won=False,
+        ))
+        await session.commit()
+
+    async def get_day(*args, **kwargs):
+        return SimpleNamespace(id=1, country_id=1)
+
+    async def unexpected_analysis(*args, **kwargs):
+        pytest.fail("guest at quota must be rejected before local analysis")
+
+    monkeypatch.setattr(countrydle.CountrydleRepository, "get_today_country", get_day)
+    monkeypatch.setattr(countrydle.gutils, "analyze_and_answer_locally", unexpected_analysis)
+    request = Request({"type": "http", "method": "POST", "scheme": "http", "path": "/question", "headers": []})
+    request.state.guest_identity = identity
+    async with accounting_db() as session:
+        with pytest.raises(HTTPException) as rejected:
+            await countrydle.ask_question(
+                QuestionBase(question="Is it in Europe?"), request, Response(), None, session,
+            )
+        assert rejected.value.status_code == 400
 
 
 @pytest.mark.parametrize("guest", [False, True])
@@ -339,7 +414,7 @@ async def test_flag_null_is_unresolved_but_false_and_true_are_counted(accounting
     ))
     count = 0
     for answer in [None, False, True]:
-        monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: SimpleNamespace(
+        monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: None if answer is None else LocalAnswer(
             answer=answer, question="Is it red?", explanation="Verified flag fact", relation="flag_colors",
         ))
         async with accounting_db() as session:
@@ -456,9 +531,11 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
         session.add_all([
             Country(id=2, name="Germany", official_name="Germany", md_file="germany.md"),
             models.USState(id=1, name="California"),
+            models.USState(id=2, name="Nevada"),
             models.Powiat(id=1, nazwa="Kraków"), models.Wojewodztwo(id=1, nazwa="Dolnośląskie"),
+            models.Powiat(id=2, nazwa="Warszawa"), models.Wojewodztwo(id=2, nazwa="Małopolskie"),
             mode.state_model(user_id=1, day_id=1, questions_asked=0, remaining_questions=mode.maximum,
-                             guesses_made=0, remaining_guesses=3, is_game_over=False, won=False),
+                             guesses_made=0, remaining_guesses=2 if mode.name == "wojewodztwodle" else 3, is_game_over=False, won=False),
         ])
         await session.commit()
     add_guess = repository.add_guess
@@ -470,11 +547,13 @@ async def test_concurrent_guess_only_sync_imports_once(daily_mode, monkeypatch):
         return result
 
     monkeypatch.setattr(repository, "add_guess", yield_after_insert)
+    guess_name = {"us_statedle": "Nevada", "powiatdle": "Warszawa", "wojewodztwodle": "Małopolskie"}.get(mode.name, "Germany")
     body = SimpleNamespace(
         date=str(date.today()), questions=[],
-        guesses=[SimpleNamespace(guess="Germany", country_id=2, us_state_id=1, powiat_id=1,
-                                 wojewodztwo_id=1, elapsed_seconds=None)],
-        state=SimpleNamespace(guesses_made=1, remaining_guesses=1 if mode.name == "wojewodztwodle" else 2, is_game_over=False, won=False),
+        guesses=[SimpleNamespace(guess=guess_name, country_id=2, us_state_id=2, powiat_id=2,
+                                 wojewodztwo_id=2, elapsed_seconds=None)],
+        state=SimpleNamespace(guesses_made=1, remaining_guesses=1 if mode.name == "wojewodztwodle" else 2,
+                              questions_asked=0, remaining_questions=mode.maximum, is_game_over=False, won=False),
     )
 
     async def sync():
@@ -503,7 +582,7 @@ async def test_flag_post_game_questions_remain_unlimited(accounting_db, monkeypa
     monkeypatch.setattr(flagdle, "analyze_question_for_local_plan", lambda _: SimpleNamespace(
         valid=True, plan={"operator": "exists"}, improved_question="Is it blue?", explanation=None,
     ))
-    monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: SimpleNamespace(
+    monkeypatch.setattr(flagdle, "execute_local_plan", lambda *args, **kwargs: LocalAnswer(
         answer=False, question="Is it blue?", explanation="No blue on the flag.", relation="flag_color",
     ))
     async with accounting_db() as session:

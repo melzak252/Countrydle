@@ -1,4 +1,4 @@
-"""Thread-safe bounded LRU with persistent SQLite storage for question plans."""
+"""Thread-safe disk-only SQLite storage for reusable question plans."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import sqlite3
 import threading
 import unicodedata
 from collections.abc import Iterator
-from collections import OrderedDict
 from contextlib import contextmanager
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone
@@ -37,14 +36,11 @@ def normalize_question_key(mode: str, question: str) -> tuple[str, str]:
 
 
 class PlanCache:
-    """Thread-safe LRU backed by a SQLite table for durable plan reuse."""
+    """Thread-safe per-key SQLite cache for durable plan reuse."""
 
-    def __init__(self, max_size: int = 10000, db_path: str | Path | None = None):
-        self.max_size = max_size
+    def __init__(self, db_path: str | Path | None = None):
         self.db_path = Path(db_path) if db_path is not None else ROOT_DIR / "data" / "plan_cache.sqlite"
-        self._cache: OrderedDict[tuple[str, str, str], Any] = OrderedDict()
         self._lock = threading.RLock()
-        self._loaded_versions: set[str] = set()
         self._hits = 0
         self._misses = 0
         self._initialize_database()
@@ -119,28 +115,9 @@ class PlanCache:
             target = getattr(target, component)
         return target(**data)
 
-    def _load_version(self, version: str) -> None:
-        if version in self._loaded_versions:
-            return
-        with self._connect() as connection:
-            rows = connection.execute(
-                "SELECT mode, question_key, plan_json FROM plan_cache WHERE version = ? ORDER BY created_at ASC",
-                (version,),
-            ).fetchall()
-        for mode, question_key, plan_json in rows:
-            self._cache[(version, mode, question_key)] = self._deserialize(plan_json)
-        while len(self._cache) > self.max_size:
-            self._cache.popitem(last=False)
-        self._loaded_versions.add(version)
-
     def get(self, mode: str, question: str, *, version: str) -> Any | None:
         key = (version, *normalize_question_key(mode, question))
         with self._lock:
-            self._load_version(version)
-            if key in self._cache:
-                self._cache.move_to_end(key)
-                self._hits += 1
-                return self._cache[key]
             with self._connect() as connection:
                 row = connection.execute(
                     "SELECT plan_json FROM plan_cache WHERE version = ? AND mode = ? AND question_key = ?",
@@ -148,10 +125,6 @@ class PlanCache:
                 ).fetchone()
             if row is not None:
                 plan = self._deserialize(row[0])
-                self._cache[key] = plan
-                self._cache.move_to_end(key)
-                if len(self._cache) > self.max_size:
-                    self._cache.popitem(last=False)
                 self._hits += 1
                 return plan
             self._misses += 1
@@ -162,11 +135,6 @@ class PlanCache:
         key = (version, *normalize_question_key(mode, question))
         plan_json, improved, explanation, valid, supported, fallback_reason = self._serialize(plan)
         with self._lock:
-            self._load_version(version)
-            self._cache[key] = plan
-            self._cache.move_to_end(key)
-            if len(self._cache) > self.max_size:
-                self._cache.popitem(last=False)
             with self._connect() as connection:
                 connection.execute(
                     """INSERT INTO plan_cache (
@@ -184,25 +152,24 @@ class PlanCache:
                     (*key, plan_json, improved, explanation, valid, supported, fallback_reason,
                      datetime.now(timezone.utc).isoformat()),
                 )
-            self._loaded_versions.add(version)
 
-    def stats(self) -> dict[str, int]:
+    def stats(self) -> dict[str, int | float | str]:
         with self._lock:
+            with self._connect() as connection:
+                size = connection.execute("SELECT COUNT(*) FROM plan_cache").fetchone()[0]
             total = self._hits + self._misses
             hit_ratio = (self._hits / total * 100) if total > 0 else 0.0
             return {
                 "hits": self._hits,
                 "misses": self._misses,
-                "size": len(self._cache),
-                "max_size": self.max_size,
+                "size": size,
+                "storage": "sqlite",
                 "hit_ratio_percent": round(hit_ratio, 1),
             }
 
     def clear(self) -> None:
-        """Clear cached plans from both memory and persistent storage."""
+        """Clear persistent plans and reset this instance's lookup counters."""
         with self._lock:
-            self._cache.clear()
-            self._loaded_versions.clear()
             with self._connect() as connection:
                 connection.execute("DELETE FROM plan_cache")
             self._hits = 0
@@ -210,4 +177,4 @@ class PlanCache:
 
 
 # Global shared singleton cache instance
-plan_cache = PlanCache(max_size=10000)
+plan_cache = PlanCache()

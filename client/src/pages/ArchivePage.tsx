@@ -139,7 +139,26 @@ export default function ArchivePage() {
         </p>
       </header>
 
-      <div className="space-y-4">
+      <label className="block md:hidden">
+        <span className="mb-2 block text-xs font-medium uppercase tracking-widest text-zinc-500">
+          {t('archive.selectMode', 'Choose a game')}
+        </span>
+        <select
+          value={gameType}
+          onChange={(event) => setGameType(event.target.value as GameType)}
+          className="min-h-11 w-full appearance-none rounded-sm border border-white/15 bg-obsidian-900 px-3 py-2 text-base text-sand-100 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+        >
+          {groups.map((group) => (
+            <optgroup key={group.name} label={group.name}>
+              {group.items.map((tab) => (
+                <option key={tab.id} value={tab.id}>{tab.label}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+
+      <div className="hidden space-y-4 md:block">
         {groups.map((group) => (
           <div key={group.name} className="space-y-1.5">
             <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
@@ -153,7 +172,7 @@ export default function ArchivePage() {
                   aria-pressed={gameType === tab.id}
                   onClick={() => setGameType(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
+                    "flex min-h-11 items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
                     gameType === tab.id
                       ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
                       : "border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/20 hover:text-sand-100"
@@ -179,17 +198,17 @@ export default function ArchivePage() {
               <caption className="sr-only">Past answers — {allTabs.find((tab) => tab.id === gameType)?.label}</caption>
               <thead className="border-b border-white/10 text-xs uppercase tracking-[0.12em] text-zinc-400">
                 <tr>
-                  <th scope="col" className="w-32 px-4 py-4 font-medium sm:w-44 sm:px-6">{t('archive.date')}</th>
-                  <th scope="col" className="px-4 py-4 text-right font-medium sm:px-6">{t('archive.answer')}</th>
+                  <th scope="col" className="w-24 px-2 py-4 font-medium sm:w-44 sm:px-6 md:w-32">{t('archive.date')}</th>
+                  <th scope="col" className="px-2 py-4 text-left font-medium sm:px-6 md:text-right">{t('archive.answer')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
                 {history.map((entry, index) => (
                   <tr key={index} className="transition-colors hover:bg-white/[0.02]">
-                    <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs text-zinc-400 sm:px-6">
+                    <td className="whitespace-nowrap px-2 py-3.5 font-mono text-xs text-zinc-400 sm:px-6">
                       {entry.date}
                     </td>
-                    <td className="break-words px-4 py-3.5 text-right font-medium text-sand-100 sm:px-6">
+                    <td className="break-words px-2 py-3.5 text-left font-medium text-sand-100 sm:px-6 md:text-right">
                       {gameType === 'country' ? (
                         <Link
                           to={`/blog/${entry.date}`}

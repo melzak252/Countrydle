@@ -34,6 +34,7 @@ except ImportError:
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT_DIR / "server"))
 DEFAULT_COUNTRIES_CSV = ROOT_DIR / "data" / "countries.csv"
 DEFAULT_OUTPUT = ROOT_DIR / "data" / "country_facts.sqlite"
 SCHEMA_PATH = ROOT_DIR / "server" / "countrydle" / "local_kb" / "schema.sql"
@@ -488,12 +489,13 @@ def parse_factbook_dominant_religion(profile: dict | None) -> str | None:
 
 def init_db(output: Path) -> sqlite3.Connection:
     output.parent.mkdir(parents=True, exist_ok=True)
-    if output.exists():
-        output.unlink()
 
     connection = sqlite3.connect(output)
     connection.execute("PRAGMA foreign_keys = ON")
     connection.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+    from country_fact_provenance import ensure_schema
+    ensure_schema(connection)
+    connection.commit()
     return connection
 
 
@@ -516,6 +518,9 @@ def insert_country(
         app_name,
         parse_factbook_dominant_religion(factbook_profile),
     )
+    from country_fact_provenance import reconcile, values
+    existing = connection.execute("SELECT id FROM countries WHERE app_country_name=?", (app_name,)).fetchone()
+    previous_memberships = values(connection, existing[0], "membership") if existing else set()
 
     cursor = connection.execute(
         """
@@ -524,6 +529,13 @@ def insert_country(
             population, area_km2, latitude, longitude, is_island, driving_side,
             government_type, dominant_religion
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(app_country_name) DO UPDATE SET
+            official_name=excluded.official_name, cca2=excluded.cca2, cca3=excluded.cca3,
+            region=excluded.region, subregion=excluded.subregion, capital=excluded.capital,
+            population=excluded.population, area_km2=excluded.area_km2,
+            latitude=excluded.latitude, longitude=excluded.longitude, is_island=excluded.is_island,
+            driving_side=excluded.driving_side, government_type=excluded.government_type,
+            dominant_religion=excluded.dominant_religion
         """,
         (
             app_name,
@@ -543,7 +555,7 @@ def insert_country(
             dominant_religion,
         ),
     )
-    country_id = cursor.lastrowid
+    country_id = existing[0] if existing else cursor.lastrowid
 
     region = country.get("region")
     if region:
@@ -628,11 +640,14 @@ def insert_country(
     if cca3 in BENELUX_MEMBERS:
         memberships.append("Benelux")
 
+    connection.execute("DELETE FROM country_memberships WHERE country_id=?", (country_id,))
     for organization in memberships:
         connection.execute(
             "INSERT OR IGNORE INTO country_memberships(country_id, organization) VALUES (?, ?)",
             (country_id, organization),
         )
+    reconcile(connection, country_id, "membership", previous_memberships)
+    reconcile(connection, country_id, "hemisphere", values(connection, country_id, "hemisphere"))
 
 
 def main() -> int:
@@ -640,6 +655,7 @@ def main() -> int:
     parser.add_argument("--countries-csv", type=Path, default=DEFAULT_COUNTRIES_CSV)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--sample", action="store_true", help="Populate only a small test set of countries")
+    parser.add_argument("--provenance-source", type=Path, help="Explicit source refresh JSON, e.g. server/scripts/country_sources/fact_provenance.json; omitted facts remain unknown")
     args = parser.parse_args()
 
     app_countries = read_app_countries(args.countries_csv, args.sample)
@@ -672,6 +688,10 @@ def main() -> int:
             inserted += 1
         if "Kosovo" in app_countries:
             inserted += int(add_kosovo_facts(connection))
+        from country_fact_provenance import ensure_schema, import_source
+        ensure_schema(connection)
+        if args.provenance_source:
+            import_source(connection, json.loads(args.provenance_source.read_text(encoding="utf-8")))
         connection.commit()
     finally:
         connection.close()

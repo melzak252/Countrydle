@@ -168,19 +168,19 @@ export default function BlogPostPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 sm:px-6 md:py-12">
       {/* Navigation & Header */}
-      <nav aria-label="Debrief navigation" className="flex items-center justify-between border-b border-white/10 pb-4 text-xs font-mono">
-        <Link to="/blog" className="inline-flex items-center gap-1.5 text-zinc-400 hover:text-sand-100 transition-colors">
+      <nav aria-label="Debrief navigation" className="flex flex-col items-start gap-3 border-b border-white/10 pb-4 text-xs font-mono sm:flex-row sm:items-center sm:justify-between">
+        <Link to="/blog" className="inline-flex min-h-11 max-w-full items-center gap-1.5 text-zinc-400 hover:text-sand-100 transition-colors">
           <ArrowLeft size={14} />
           <span>{isPl ? 'Wszystkie podsumowania' : 'All Solutions'}</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-zinc-500 font-mono">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:gap-3">
+          <span className="min-w-0 break-words text-zinc-500 font-mono">
             {post.date}
           </span>
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex items-center gap-1.5 rounded border border-white/15 px-2.5 py-1 text-zinc-300 hover:border-emerald-400/40 hover:text-emerald-300 transition-colors"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded border border-white/15 px-3 py-1 text-zinc-300 hover:border-emerald-400/40 hover:text-emerald-300 transition-colors"
           >
             {copied ? <Check size={12} className="text-emerald-400" /> : <Share2 size={12} />}
             <span>{copied ? 'Copied' : 'Share'}</span>

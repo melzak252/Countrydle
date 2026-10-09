@@ -1,4 +1,7 @@
-from db.models import CountrydleState
+from db.models import CountrydleState, CountrydleQuestion
+from datetime import UTC, datetime
+import logging
+from utils.country_cost_metrics import append_metrics
 from db.repositories.question_accounting import (
     consume_question, is_answered, unresolved_question, check_question_available,
     lock_question_state, claim_guest_questions,
@@ -30,7 +33,8 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action,
-    link_guest_participation, get_guest_identity,
+    link_guest_participation, get_guest_identity, check_guest_question_available,
+    get_guest_question_history,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -52,6 +56,7 @@ from schemas.country_facts import (
     ListFactCreate,
     ListFactDelete,
     ScalarFactUpdate,
+    FactProvenanceUpdate,
 )
 from countrydle.fact_editor import (
     add_list_fact,
@@ -65,6 +70,7 @@ from countrydle.fact_editor import (
     get_relation_storage,
     update_local_scalar_fact,
     update_scalar_fact,
+    update_fact_provenance,
 )
 from version import SERVER_VERSION
 
@@ -119,6 +125,17 @@ def format_countrydle_guesses(guesses: list, target_country_id: int, target_name
         )
         formatted.append(gd)
     return formatted
+
+
+def _player_question_display(question, *, terminal=False) -> FullQuestionDisplay:
+    # Serialize scalar history only, never lazy target/user relationships.
+    return FullQuestionDisplay.model_validate(
+        {field: getattr(question, field) for field in (
+            "id", "original_question", "question", "valid", "answer", "user_id",
+            "day_id", "asked_at", "explanation", "fact_provenance",
+        )},
+        context={"terminal": terminal},
+    )
 
 
 @router.post("/sync", response_model=CountrydleStateResponse)
@@ -223,11 +240,18 @@ async def sync_guest_data(
     return await get_state(user, session)
 
 
-@router.get("/end/state", response_model=CountrydleEndStateResponse)
+@router.get("/end/state", response_model=Union[CountrydleEndStateResponse, CountrydleStateResponse])
 async def get_end_state(
-    user: User = Depends(get_current_or_guest_user),
+    user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    request: Request = None,
+    response: Response = None,
 ):
+    if user is None:
+        result = await get_state(user=None, session=session, request=request, response=response)
+        if not result.state.is_game_over:
+            raise HTTPException(status_code=400, detail="The target country is only available after the game is over.")
+        return result
     day_country = await CountrydleRepository(session).get_today_country()
     state = await CountrydleStateRepository(session).get_state(
         user,
@@ -255,7 +279,7 @@ async def get_end_state(
         country=country,
         state=CountrydleEndStateSchema.model_validate(state),
         guesses=format_countrydle_guesses(guesses, day_country.country_id, country.name if country else None),
-        questions=questions,
+        questions=[_player_question_display(q, terminal=True) for q in questions],
     )
 
 
@@ -276,20 +300,29 @@ async def get_state(
         if request is not None and response is not None:
             from utils.guest_session import get_guest_identity
             get_guest_identity(request, response)
+        participation, questions = await get_guest_question_history(
+            session, request, "countrydle", day_country.id, CountrydleQuestion,
+        )
+        cookie_state = read_guest_game_token(
+            request.cookies.get("guest_countrydle") if request is not None else None,
+            "countrydle", day_country.id,
+        )
+        guesses_made = participation.guesses_made if participation else cookie_state["guesses_count"]
+        questions_asked = participation.questions_asked if participation else 0
+        won = bool(participation and participation.won) or cookie_state["won"]
+        terminal = bool(participation and (participation.won or participation.guesses_made >= COUNTRYDLE_CONFIG.max_guesses))
+        country = await CountryRepository(session).get(day_country.country_id) if terminal else None
         return CountrydleStateResponse(
-            user=None,
-            date=str(day_country.date),
+            user=None, date=str(day_country.date),
             state=CountrydleStateSchema(
-                remaining_questions=COUNTRYDLE_CONFIG.max_questions,
-                remaining_guesses=COUNTRYDLE_CONFIG.max_guesses,
-                questions_asked=0,
-                guesses_made=0,
-                is_game_over=False,
-                won=False,
+                remaining_questions=max(0, COUNTRYDLE_CONFIG.max_questions - questions_asked),
+                remaining_guesses=max(0, COUNTRYDLE_CONFIG.max_guesses - guesses_made),
+                questions_asked=questions_asked, guesses_made=guesses_made,
+                is_game_over=terminal, won=won,
             ),
             guesses=[],
-            questions=[],
-            country=None,
+            questions=[_player_question_display(q, terminal=terminal) for q in questions],
+            country=country,
         )
 
     state = await CountrydleStateRepository(session).get_state(
@@ -327,7 +360,7 @@ async def get_state(
 
     questions_display = [
         (
-            FullQuestionDisplay.model_validate(question)
+            _player_question_display(question)
             if question.valid
             else InvalidQuestionDisplay.model_validate(question)
         )
@@ -405,6 +438,29 @@ async def _log_country_fact_change(
         note=note,
         server_version=SERVER_VERSION,
     )
+
+
+@router.patch("/admin/country-facts/provenance", response_model=CountryFactsResponse)
+async def update_admin_fact_provenance(
+    payload: FactProvenanceUpdate,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        old, new, operation = update_fact_provenance(
+            payload.country_id, payload.relation, payload.value,
+            payload.provenance.model_dump(mode="json"),
+        )
+        await _log_country_fact_change(
+            session=session, admin=admin, country_id=payload.country_id,
+            relation=payload.relation, operation=operation, old_value=old, new_value=new,
+            sqlite_table="country_fact_provenance", sqlite_column="provenance_json", note=payload.note,
+        )
+        return get_country_facts(payload.country_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 async def _log_local_fact_change(
@@ -685,19 +741,95 @@ async def ask_question(
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
+    evidence: dict = {}
+    handler_started = datetime.now(UTC)
+    measurement = {
+        "day": handler_started.date().isoformat(),
+        "started_at": handler_started.isoformat(),
+        "stage": "route",
+        "requests": 1,
+    }
+    accepted_result = None
+    failure_status = None
     try:
-        return await _do_ask_question(question, user, session, request, response)
-    except HTTPException:
+        accepted_result = await _do_ask_question(
+            question, user, session, request, response, evidence
+        )
+        return accepted_result
+    except HTTPException as exc:
+        failure_status = exc.status_code
         await session.rollback()
         raise
     except Exception as exc:
+        failure_status = status.HTTP_503_SERVICE_UNAVAILABLE
         await session.rollback()
-        import logging, traceback
-        logging.getLogger("countrydle").error("Handled error in ask_question: %s\n%s", exc, traceback.format_exc())
+        logging.getLogger("countrydle").error("Handled error in ask_question (%s)", type(exc).__name__)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not verify this question right now. Your turn was not deducted.",
         ) from exc
+    finally:
+        if accepted_result is not None:
+            if getattr(accepted_result, "valid", False) and getattr(accepted_result, "answer", None) in (True, False):
+                measurement["answered"] = 1
+                if evidence.get("template_answered"):
+                    measurement["template_answers"] = 1
+            else:
+                measurement["invalid"] = 1
+        if failure_status == status.HTTP_400_BAD_REQUEST:
+            measurement["quota_failures"] = 1
+        elif failure_status == status.HTTP_503_SERVICE_UNAVAILABLE:
+            measurement["provider_failures"] = 1
+        _record_countrydle_cost_measurements(measurement, evidence)
+
+
+def _record_countrydle_cost_measurements(measurement: dict, evidence: dict) -> None:
+    """Write only bounded event labels and observed numeric provider usage."""
+    try:
+        append_metrics({**measurement, "template_answers": 0})
+        if measurement.get("template_answers"):
+            append_metrics({
+                "day": measurement["day"], "stage": "template",
+                "template_answers": measurement["template_answers"],
+            })
+        for stage in ("planner", "fallback"):
+            stage_data = evidence.get(stage) or {}
+            attempts = stage_data.get("attempts") or []
+            if not attempts:
+                if stage_data.get("cache_hit"):
+                    append_metrics({
+                        "day": measurement["day"], "model": stage_data.get("model"), "stage": stage,
+                        "plan_cache_hits": int(stage == "planner"),
+                        "fallback_cache_hits": int(stage == "fallback"),
+                    })
+                continue
+            for index, attempt in enumerate(attempts):
+                event = {
+                    "day": measurement["day"],
+                    "model": attempt.get("model") or stage_data.get("model"),
+                    "stage": stage,
+                    "new_planner_calls": int(stage == "planner" and index == 0),
+                    "fallback_model_calls": int(stage == "fallback"),
+                    "retries": int(index > 0),
+                    "failed_attempts": int(bool(attempt.get("failed"))),
+                }
+                usage = attempt.get("usage")
+                if not isinstance(usage, dict):
+                    event["unknown_usage_calls"] = 1
+                else:
+                    if usage.get("input_tokens") is None or usage.get("total_tokens") is None:
+                        event["unknown_usage_calls"] = 1
+                    if usage.get("cached_input_tokens") is None and isinstance(usage.get("input_tokens"), int):
+                        event["cached_input_unknown_tokens"] = usage["input_tokens"]
+                    for key in ("input_tokens", "cached_input_tokens", "output_tokens", "thought_tokens", "total_tokens"):
+                        value = usage.get(key)
+                        if isinstance(value, int) and value >= 0:
+                            event[key] = value
+                append_metrics(event)
+    except Exception as exc:
+        logging.getLogger("countrydle.cost_metrics").warning(
+            "Could not persist Countrydle cost measurement (%s)", type(exc).__name__
+        )
 
 
 async def _do_ask_question(
@@ -706,6 +838,7 @@ async def _do_ask_question(
     session: AsyncSession,
     request: Request,
     response: Response,
+    evidence: dict | None = None,
 ):
     daily_country = await CountrydleRepository(session).get_today_country()
     if not daily_country:
@@ -715,13 +848,26 @@ async def _do_ask_question(
         await check_question_available(
             session, CountrydleState, user.id, daily_country.id, COUNTRYDLE_CONFIG.max_questions,
         )
+    else:
+        await check_guest_question_available(
+            session, request, response, "countrydle", daily_country.id,
+            COUNTRYDLE_CONFIG.max_questions,
+        )
 
     # End the quota/day read transaction before planner or provider work.
     await session.commit()
 
     question_create, planned_question = await gutils.analyze_and_answer_locally(
         original_question=question.question, day_country=daily_country, user=user, session=session,
+        evidence=evidence,
     )
+    if (
+        question_create is not None
+        and question_create.valid
+        and question_create.answer in (True, False)
+        and (evidence or {}).get("planner", {}).get("provider") == "template"
+    ):
+        evidence["template_answered"] = True
     question_vector = None
     if question_create is None:
         enhanced = gutils.question_enhanced_from_plan(question.question, planned_question)
@@ -739,6 +885,7 @@ async def _do_ask_question(
         else:
             question_create, question_vector = await gutils.ask_question(
                 question=enhanced, day_country=daily_country, user=user, session=session,
+                evidence=evidence,
             )
     if question_create.valid and question_create.answer is None:
         raise HTTPException(
@@ -764,7 +911,7 @@ async def _do_ask_question(
             COUNTRYDLE_CONFIG.max_questions, COUNTRYDLE_CONFIG.max_guesses,
         )
     new_question = await CountrydleQuestionsRepository(session).create_question(question_create)
-    result = FullQuestionDisplay.model_validate(new_question)
+    result = _player_question_display(new_question)
     await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.
@@ -774,7 +921,6 @@ async def _do_ask_question(
                 filter_value=daily_country.country_id, collection_name="countries_questions",
             )
         except Exception:
-            import logging
             logging.getLogger("countrydle").exception("Could not index accepted countrydle question")
     return result
 

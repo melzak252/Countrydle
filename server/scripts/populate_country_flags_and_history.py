@@ -5,9 +5,11 @@ Populate flag colors, symbols, and historical unions in country_facts.sqlite.
 from __future__ import annotations
 
 import sqlite3
+import sys
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT_DIR / "server"))
 DB_PATH = ROOT_DIR / "data" / "country_facts.sqlite"
 
 # Canonical color names: red, white, blue, green, yellow, black, orange
@@ -293,12 +295,17 @@ def main():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_flag_colors ON country_flag_colors(color);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_flag_symbols ON country_flag_symbols(symbol);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_historical_unions ON country_historical_unions(union_name);")
+    from country_fact_provenance import ensure_schema, reconcile, values
+    ensure_schema(conn)
+    previous_memberships = {cid: values(conn, cid, "membership") for (cid,) in conn.execute("SELECT id FROM countries").fetchall()}
 
     # Clear previous entries to allow idempotent re-runs
     cursor.execute(
         "DELETE FROM country_memberships WHERE organization IN "
         "(SELECT union_name FROM country_historical_unions)"
     )
+    for cid, previous in previous_memberships.items():
+        reconcile(conn, cid, "membership", previous)
     cursor.execute("DELETE FROM country_flag_colors;")
     cursor.execute("DELETE FROM country_flag_symbols;")
     cursor.execute("DELETE FROM country_historical_unions;")

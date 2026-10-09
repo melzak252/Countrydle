@@ -105,7 +105,7 @@ export default function ModeGuidePage() {
   const mode = STATIC_MODES[normalizedId] || STATIC_MODES.countrydle;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-12 px-4 py-8 sm:px-6 md:py-12">
+    <div className="mx-auto max-w-4xl space-y-8 px-4 py-5 sm:px-6 md:space-y-12 md:py-12">
       {/* Back button */}
       <div>
         <Link
@@ -254,7 +254,7 @@ export default function ModeGuidePage() {
       <AdSenseUnit slot="mode-guide-footer" className="max-w-xl mx-auto" />
 
       {/* CTA Section */}
-      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-8 text-center space-y-4">
+      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-5 text-center space-y-4 sm:p-8">
         <h3 className="font-serif text-2xl font-bold text-sand-100">
           {isPl ? 'Gotowy do podjęcia dzisiejszego wyzwania?' : 'Ready to Test Your Geography Skills?'}
         </h3>
@@ -266,7 +266,7 @@ export default function ModeGuidePage() {
         <div className="pt-2">
           <Link
             to={mode.path}
-            className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-6 py-3 text-sm font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-lg"
+            className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-6 py-3 text-sm font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-lg"
           >
             <Play size={16} />
             <span>{isPl ? `Zagraj w ${mode.name}` : `Play ${mode.name}`}</span>

@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
         async with AsyncSessionLocal() as session:
             await ucrud.add_base_permissions(session)
             await init_qdrant(session)
+        await utils.purge_old_fallback_answers()
 
         utils.scheduler.start()
         asyncio.create_task(utils.generate_yesterday_blog_post())

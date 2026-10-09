@@ -58,98 +58,6 @@ async def test_guest_make_guess(async_client: AsyncClient):
         assert "guessed_at" in data
 
 @pytest.mark.anyio
-async def test_guest_ask_question(async_client: AsyncClient):
-    async_client.cookies.clear()
-    with (
-        patch(
-            "db.repositories.countrydle.CountrydleRepository.get_today_country",
-            new_callable=AsyncMock,
-        ) as mock_get_today,
-        patch(
-            "countrydle.utils.enhance_question", new_callable=AsyncMock
-        ) as mock_enhance,
-        patch(
-            "countrydle.utils.analyze_and_answer_locally", new_callable=AsyncMock
-        ) as mock_local_analyze,
-        patch("countrydle.utils.ask_question", new_callable=AsyncMock) as mock_ask,
-        patch(
-            "countrydle.add_question_to_qdrant", new_callable=AsyncMock
-        ) as mock_add_qdrant,
-        patch(
-            "db.repositories.question.CountrydleQuestionsRepository.create_question",
-            new_callable=AsyncMock,
-        ) as mock_create_question,
-    ):
-        # Mock Day
-        mock_day = MagicMock()
-        mock_day.id = 1
-        mock_day.country_id = 100
-        mock_day.date = date(2023, 1, 1)
-        mock_get_today.return_value = mock_day
-
-        # Mock Enhance
-        mock_enhance.return_value.valid = True
-        mock_enhance.return_value.original_question = "Is it in Europe?"
-        mock_enhance.return_value.question = "Is the country located in Europe?"
-        mock_enhance.return_value.explanation = "Explanation"
-        from countrydle.local_planner import QuestionPlan
-        mock_local_analyze.return_value = (
-            None,
-            QuestionPlan(
-                original_question="Is it in Europe?",
-                valid=True,
-                supported=False,
-                improved_question="Is the country located in Europe?",
-                explanation="Explanation",
-                plan=None,
-                fallback_reason="Test fallback.",
-            ),
-        )
-
-        # Mock Ask
-        from schemas.countrydle import QuestionCreate
-        mock_q_create = QuestionCreate(
-            original_question="Is it in Europe?",
-            question="Is the country located in Europe?",
-            valid=True,
-            explanation="Yes",
-            answer=True,
-            user_id=None,
-            day_id=1,
-            context="Context",
-        )
-        mock_ask.return_value = (mock_q_create, [0.1] * 1536)
-
-        # Mock DB Question
-        from datetime import datetime
-        mock_question_db_obj = MagicMock()
-        mock_question_db_obj.id = 123
-        mock_question_db_obj.original_question = "Is it in Europe?"
-        mock_question_db_obj.question = "Is the country located in Europe?"
-        mock_question_db_obj.valid = True
-        mock_question_db_obj.answer = True
-        mock_question_db_obj.user_id = None
-        mock_question_db_obj.day_id = 1
-        mock_question_db_obj.asked_at = datetime.now()
-        mock_question_db_obj.explanation = "Explanation"
-        mock_question_db_obj.context = "Context"
-        mock_question_db_obj.user = None
-        mock_question_db_obj.country = MagicMock()
-        mock_question_db_obj.country.id = 100
-        mock_question_db_obj.country.name = "Poland"
-        mock_question_db_obj.country.official_name = "Republic of Poland"
-        mock_create_question.return_value = mock_question_db_obj
-
-        question_data = {"question": "Is it in Europe?"}
-        response = await async_client.post("/countrydle/question", json=question_data)
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["valid"] is True
-        assert data["user_id"] is None
-        assert data["answer"] is True
-
-@pytest.mark.anyio
 async def test_guest_reveal_rejected_before_game_over(async_client: AsyncClient):
     async_client.cookies.clear()
     with patch(
@@ -204,3 +112,69 @@ async def test_guest_reveal_allowed_after_game_over(async_client: AsyncClient):
         data = reveal_res.json()
         assert data["id"] == 100
         assert data["name"] == "Poland"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("mode,path", [
+    ("countrydle", "/countrydle/state"),
+    ("continental", "/continental/europe/state"),
+    ("flagdle", "/flagdle/state"),
+])
+@pytest.mark.parametrize("completion", ["question_quota", "win", "guesses_exhausted", "cookie_only"])
+async def test_guest_factual_history_requires_recorded_completion(mode, path, completion, monkeypatch):
+    from datetime import datetime
+    from importlib import import_module
+    from types import SimpleNamespace
+    from fastapi import FastAPI
+    from httpx import ASGITransport
+    from db import get_db
+    from users.utils import get_current_or_guest_user
+    from utils.guest_session import create_guest_game_token
+
+    module = import_module(mode)
+    maximum = 12 if mode == "flagdle" else 3
+    terminal = completion in {"win", "guesses_exhausted"}
+    participation = None if completion == "cookie_only" else SimpleNamespace(
+        guesses_made=maximum if completion == "guesses_exhausted" else 0,
+        questions_asked=10, won=completion == "win",
+    )
+    question = SimpleNamespace(
+        id=7, original_question="Is it in Europe?",
+        question="Is Poland, whose capital is Warsaw, in Europe?",
+        valid=True, answer=True, user_id=None, day_id=1, asked_at=datetime.now(),
+        explanation="Poland is in Europe; its capital is Warsaw.",
+        fact_provenance=[], context="Private retrieved facts about Poland",
+    )
+    day = SimpleNamespace(
+        id=1, country_id=100, date=date.today(),
+        country=SimpleNamespace(id=100, name="Poland", official_name="Republic of Poland"),
+    )
+    repository_name, method = {
+        "countrydle": ("CountrydleRepository", "get_today_country"),
+        "continental": ("ContinentalDayRepository", "get_today_day"),
+        "flagdle": ("FlagdleDayRepository", "get_today_flag"),
+    }[mode]
+    monkeypatch.setattr(getattr(module, repository_name), method, AsyncMock(return_value=day))
+    monkeypatch.setattr(module.CountryRepository, "get", AsyncMock(return_value=day.country))
+    monkeypatch.setattr(module, "get_guest_question_history", AsyncMock(return_value=(participation, [question])))
+    app = FastAPI()
+    app.include_router(module.router)
+    app.dependency_overrides[get_db] = lambda: AsyncMock()
+    app.dependency_overrides[get_current_or_guest_user] = lambda: None
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # A stale/signed game cookie cannot replace recorded completion proof.
+        client.cookies.set(f"guest_{mode}", create_guest_game_token(mode, 1, maximum, True, True))
+        response = await client.get(path)
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["state"]["is_game_over"] is terminal
+    assert payload["questions"][0]["id"] == 7
+    assert "context" not in payload["questions"][0]
+    if terminal:
+        assert "Poland" in payload["questions"][0]["explanation"]
+        assert "Warsaw" in payload["questions"][0]["explanation"]
+    else:
+        assert payload["questions"][0]["question"] == question.original_question
+        assert not payload["questions"][0]["explanation"]
+        assert payload["questions"][0]["fact_provenance"] == []
+        assert "Poland" not in response.text and "Warsaw" not in response.text

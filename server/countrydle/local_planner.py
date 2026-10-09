@@ -10,9 +10,13 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import os
 from pathlib import Path
+import re
 import sqlite3
 from countrydle import local_answering
 from countrydle.local_answering import LIST_RELATION_QUERIES
+from countrydle.template_compiler import (
+    _ENGLISH_COUNTRY_ALIASES, _norm, compile_entity_question, compile_template_plan,
+)
 from planner_protocol import (
     PLANNER_MAX_OUTPUT_TOKENS, PLANNER_OPERATORS, PLANNER_RULES, PLANNER_THINKING_BUDGET, PLANNER_VERSION,
     compile_planner_response, planner_response_schema,
@@ -24,6 +28,9 @@ APP_DIR = Path(__file__).resolve().parent
 # Docker: /usr/src/app/countrydle with data in /usr/src/app/data.
 ROOT_DIR = APP_DIR.parent if (APP_DIR.parent / "data").exists() else APP_DIR.parents[1]
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
+# Countrydle-only prompt/generation revision; shared contracts/modes keep PLANNER_VERSION.
+COUNTRYDLE_PROMPT_REVISION = "compact-v8-continent-borders-t1024"
+
 
 SUPPORTED_RELATIONS = [
     "name",
@@ -31,6 +38,7 @@ SUPPORTED_RELATIONS = [
     "geographic_area",
     "borders_country",
     "water_access",
+    "marine_access",
     "is_island",
     "capital",
     "currency",
@@ -74,374 +82,242 @@ def load_dotenv_if_present() -> None:
 
 
 def build_planner_prompt(question: str) -> str:
+    meanings = {
+        "name": "common/display country name; identity aliases resolve; official-name text/count is unsupported",
+        "continent": "list of physical continental membership; membership tests use contains, never equals",
+        "geographic_area": "stored broad regions/subregions, not unrepresented directional quadrants such as Northwestern Africa",
+        "borders_country": "land-bordering countries",
+        "water_access": "named coastal water bodies, including inland seas; contains(name) tests a known body, Ocean means ocean access only",
+        "marine_access": "open-sea-connected coastline waters only; excludes inland/endorheic waters such as the Caspian Sea; landlocked is NOT exists(target_country.marine_access), not any/all",
+        "is_island": "island-country boolean",
+        "capital": "capital city in common English spelling (Warszawa→Warsaw); this is not a country-identity literal",
+        "currency": "currency names/codes; prefer ISO 4217 codes for recognized currencies (e.g. yen→JPY), not shortened names",
+        "official_language": "list of legally official/co-official languages, not spoken-prevalence data",
+        "membership": "current organization memberships using their short codes (European Union→EU, North Atlantic Treaty Organization→NATO)",
+        "population": "population in people",
+        "area": "stored area in km²",
+        "coordinates.latitude": "latitude in signed degrees",
+        "coordinates.longitude": "longitude in signed degrees",
+        "major_rivers": "recorded major rivers",
+        "driving_side": "left/right driving side",
+        "dominant_religion": "grouped dominant-religion category",
+        "government_type": "broad stored government-form category",
+        "flag_color": "colors present on flag",
+        "flag_symbol": "symbols/designs present on flag",
+        "historical_union": "past membership in named historical polities",
+        "hemisphere": "hemispheres containing country territory",
+    }
     relations = "\n".join(
-        f"- {relation} ({'list' if relation in LIST_RELATION_QUERIES else 'scalar'})"
+        f"- {relation} ({'list' if relation in LIST_RELATION_QUERIES else 'scalar'}): "
+        f"{meanings[relation]}"
         for relation in SUPPORTED_RELATIONS
     )
     return f"""
-Build an execution plan for a geography guessing game. Do NOT answer the question.
-The hidden country is the subject. In game questions, "I", "we", "my country",
-and "it" refer to that country, not the player's physical location.
+Plan a yes/no question for the hidden country; do not answer it. Recover the intended
+proposition (translate Polish/other input to English); repair grammar/ordinary typos,
+not missing meaning. Pronouns, "I/we/my country", and an explicitly named country
+subject refer to the hidden target. Descriptive fragments and conventional region
+adjectives can be yes/no questions. The game supplies the target.
+A clear false or impossible proposition is still a valid yes/no question; never
+classify it as nonsense merely because its answer would be false.
 
-Make ONE routing decision in this order:
-1. Recover the intended yes/no proposition, translating to English if needed.
-   Repair grammar, not an absent relationship or unspecified polarity.
-   Missing auxiliaries, question marks and ordinary typos do not change validity.
-   Descriptive fragments and conventional region adjectives ask whether the
-   target has that property; they do not need to be complete sentences.
-2. If the proposition still lacks a relation, polarity or objective criterion,
-   choose route="clarify", plan=null, and explain what the player must specify.
-   Also clarify genuinely open-ended, unrelated or nonsensical requests.
-3. Otherwise the question is valid. If the listed facts AND available operators
-   express its EXACT proposition, choose route="local" with a plan. If either
-   facts or operations are missing, choose route="fallback", plan=null, and
-   identify the missing capability in fallback_reason.
-   Missing local coverage can NEVER turn this valid question into clarification.
-   Territory, history, culture, people and landmarks are all legitimate subjects.
-Unqualified size ("big", "small", "large"), proximity ("near", "close"), fame,
-beauty, popularity, importance, being "good", and vague frequency/amount
-("often", "a lot") require an objective criterion.
-Neither a known area/ranking nor an example attraction supplies the missing criterion.
-Do not replace proximity with bordering, fame with existence, or a major role
-with participation or sovereign-state status.
-Traditional or typical food is not a substitute for an unspecified eating frequency.
-An ending "or not?" after a single predicate asks for that predicate's yes/no
-answer; it does NOT negate it. A genuine "or" joining two different predicates
-retains both branches, and an explicit negation inside either branch is preserved.
+Decide in this order:
+1. clarify + plan=null for unresolved relation/polarity/reference or criterion,
+   open-ended, unrelated or nonsensical requests; explain what is missing.
+2. Otherwise local + plan iff supported facts AND operators express every clause.
+3. Otherwise fallback + plan=null for a clear objective question needing absent facts/
+   operations; name the missing capability. Missing local coverage is never invalidity.
+Official-name text/count predicates require fallback: official_name is absent.
+Do not substitute common name for legal name. Official aliases remain valid for
+country identity only ("Is it the Republic of Poland?", not its spelling properties).
+Do not invent thresholds, comparisons, events, time periods, definitions or criteria.
+Large/small/big, near, famous, beautiful, popular, important, good, often/a lot need
+an objective criterion; known area, rank or participation does not supply one. Do not
+substitute bordering for proximity, existence for fame, or participation/statehood for
+an important role; typical food does not define eating frequency.
+Preserve all clauses, qualifiers and polarity: a trailing "or not?" is not negation;
+real A-or-B keeps both branches and internal negation. "Neither A nor B" is
+not(or(A,B)). Resolve each positive predicate using the rules below, then negate it.
+Territory, history, culture, people and landmarks are valid subjects; when clear but
+not locally supported, use fallback.
+Never weaken, drop, or add conditions.
 
-Correct a typo only when the predicate and polarity are recoverable. Do not add
-a missing spatial relation: "not on the prime meridian" specifies a relation,
-but "not the prime meridian" does not establish on/near/east/west/crosses.
-Mixed-language fragments do not license inventing such a relation.
-Standalone compass directions need a reference point or region. A north/south
-part of Earth, the world, or the planet supplies a global frame and means the
-Northern/Southern Hemisphere; a bare direction does not supply that frame.
+Output JSON and all fields/literals in English; use common English names, not official
+long names. Normalize translated names (Bałtyk→Baltic Sea, Niemcy→Germany, UE→EU).
+Quoted text patterns for starts_with/ends_with/contains_text preserve exact original
+characters, not translated meaning ("stan" stays "stan", never "state").
+Exception: identity literals preserve the candidate's exact original abbreviation or
+misspelling for deterministic resolution. Do not autocorrect an identity candidate;
+even an unfamiliar proper name gets a local identity plan. Correctly spelled foreign
+country names translate when unambiguous.
+For example, "Are you Nigeri?" must preserve literal "Nigeri", never guess "Nigeria"
+or "Niger"; deterministic identity resolution decides ambiguity.
+Identity ("Is it Poland?", including multiple candidates) is valid; compare
+target_country.name equals country name, OR
+multiple candidates. A sea/city/line is not a country: require an explicit relation
+and never invent one. "What country is it?" is open-ended.
+An explicitly named country subject still asks about the hidden target's property,
+not whether that named country itself has it.
+Named comparison references remain named: the same country facts are available for
+Poland, Germany, etc. Use both operand references, not fetched/invented literals:
+{{"operator":"greater_than","left":{{"entity":"target_country","relation":"population"}},"right":{{"entity":"Poland","relation":"population"}}}}.
+For "Does France have a population greater than Germany?", the subject still means
+target_country: compare target_country.population > Germany.population. Never return
+a constant France-vs-Germany comparison that ignores the hidden target.
+Only country rows have these facts; a capital city's population is not country population.
 
-Supported local relations:
+Supported relations (list/scalar):
 {relations}
 
-Important rules:
-- Treat the user's input as language-agnostic. If it is not English, translate
-  the meaning to English before producing any output fields.
-- The JSON output must be English-only: improved_question, explanation,
-  fallback_reason, plan literal values, country names, regions, organizations,
-  water bodies, currencies, and languages must use common English names.
-  Exception: preserve country-identity abbreviations and misspellings verbatim
-  in plan literals so the deterministic country resolver can check ambiguity.
-- The hidden country must be represented as entity "target_country".
-- Use common English names for countries and objects, NOT official long names.
-  Good: "China", "United States", "Czech Republic", "Baltic Sea", "EU".
-  Bad: "People's Republic of China", "United States of America".
-- For informal or non-English input, normalize values to common English names.
-  Examples: "Bałtyk" -> "Baltic Sea", "Niemcy" -> "Germany", "UE" -> "EU".
-- Comparing two entities uses a predicate with both entity references in the flat node array.
-  Example: "west of China" means compare target_country.coordinates.longitude
-  with China.coordinates.longitude.
-- Coordinates use signed degrees: latitude is positive north and negative south;
-  longitude is positive east and negative west. The Western Hemisphere has
-  negative longitude, not positive longitude. Point coordinates do not establish
-  the full territorial extent of a country.
-- In questions about the equator, prime meridian, and hemispheres (in English or Polish):
-  * Countries are geographic areas with spatial extent. A country crossing the equator spans both Northern and Southern hemispheres; a country crossing the prime meridian spans both Eastern and Western hemispheres.
-  * "above the equator", "north of the equator", "nad równikiem", "powyżej równika", "na północ od równika" means the country has territory north of the equator: use `hemisphere contains "Northern"`. NEVER use scalar coordinates.latitude for equator questions! NEVER translate "nad równikiem" as "on the equator"!
-  * "below the equator", "south of the equator", "pod równikiem", "poniżej równika", "na południe od równika" means the country has territory south of the equator: use `hemisphere contains "Southern"`. NEVER use scalar coordinates.latitude for equator questions!
-  * "on the equator", "crosses the equator", "straddles the equator", "na równiku", "przecina równik" means territory in both hemispheres: combine `hemisphere contains "Northern"` AND `hemisphere contains "Southern"` with "and".
-  * "east of the prime meridian", "east of Greenwich", "na wschód od południka Greenwich/zerowego" means the country has territory east of the line: use `hemisphere contains "Eastern"`. NEVER use scalar coordinates.longitude for prime meridian questions!
-  * "west of the prime meridian", "west of Greenwich", "na zachód od południka Greenwich/zerowego" means the country has territory west of the line: use `hemisphere contains "Western"`. NEVER use scalar coordinates.longitude for prime meridian questions!
-  * "crosses the prime meridian", "on the prime meridian", "crosses Greenwich", "przecina południk Greenwich/zerowy", "leży na południku Greenwich/zerowym" means territory in both hemispheres: combine `hemisphere contains "Eastern"` AND `hemisphere contains "Western"` with "and".
-  * "entirely above the equator" / "entirely in the Northern Hemisphere" means `hemisphere contains "Northern"` AND NOT `hemisphere contains "Southern"`.
-  * "entirely below the equator" / "entirely in the Southern Hemisphere" means `hemisphere contains "Southern"` AND NOT `hemisphere contains "Northern"`.
-  * "entirely east of the prime meridian" / "entirely in the Eastern Hemisphere" means `hemisphere contains "Eastern"` AND NOT `hemisphere contains "Western"`.
-  * "entirely west of the prime meridian" / "entirely in the Western Hemisphere" means `hemisphere contains "Western"` AND NOT `hemisphere contains "Eastern"`.
-- If a clear question can be answered only with external facts, return route="fallback"
-  and plan=null. Local coverage does not determine whether the question is meaningful.
-- Direct identity questions are valid and supported, including "Is it Poland?",
-  "Czy to Polska?", and questions naming several candidate countries. Players
-  may use their question allowance to check identity; do not reject these as
-  guesses, cheating, or requests to reveal the answer, and do not redirect them
-  to the guess field. The application, not the planner, enforces game limits.
-  Identity must compare countries with countries. A sea, city, or geographic line
-  is not a country candidate. Such a feature needs an explicit relationship
-  (contains the city, borders the sea, lies on the line); do not invent that
-  relationship or answer a nonsensical country-versus-feature identity comparison.
-- For identity checks, compare target_country.name with the common English
-  country name using "equals". For multiple candidates, combine those checks
-  with "or"; preserve negation with "not" and other logical conditions.
-  Example: "Is it Poland?" -> {{"operator": "equals",
-  "left": {{"entity": "target_country", "relation": "name"}},
-  "right": {{"value": "Poland"}}}}.
-  For an abbreviated or misspelled country candidate, copy its original spelling
-  into the identity literal; do NOT expand it or autocorrect it in the plan.
-  The deterministic resolver handles aliases and unique spelling corrections.
-  Translate correctly spelled foreign country names when unambiguous.
-  Never replace an already valid country name with a similar country's name.
-  For an identity question containing a candidate proper name, emit a local
-  identity plan even if you do not recognize the spelling. Name recognition,
-  uniqueness and rejection belong to the deterministic resolver, not the model.
-  Do not reject a candidate merely because its spelling is unfamiliar.
-  Open-ended requests such as "What country is it?" remain invalid.
-- When a question explicitly names a country as subject (e.g. "Does Czechia use the euro?", "Is the US dollar an official currency in El Salvador?", "Was Poland a constituent republic of the Soviet Union?"), do NOT reject it as invalid or clarify. Treat it as asking whether the hidden target country has that property.
-- Questions asking whether a country was a constituent republic, part of, or in the Soviet Union / USSR must check historical_union contains "USSR", NOT government_type equals "Republic". A country being a republic today does not imply Soviet membership.
-- Use official_language for official, co-official, and otherwise legally
-  recognized official country languages.
-  Legal status does not establish how often a language is spoken. Questions about
-  what people usually, predominantly, or widely speak require usage/prevalence
-  evidence and must use fallback rather than substituting official_language.
-  A main/dominant national language has an ordinary demographic meaning and is
-  a valid general-knowledge predicate; do not demand an exact percentage merely
-  because that prevalence is absent from SQLite. Language origins/families
-  likewise require fallback, not rejection or an invented list of official languages.
-  When regional origin modifies a country's main language, preserve both:
-  a principal national language originating in that region. Do not rewrite it
-  as a ranking of languages inside the region or demand an unspecified ranking.
-- Use dominant_religion for the country's grouped dominant religion category.
-  Allowed values are: Catholic, Orthodox, Protestant, Christianity, Islam,
-  Judaism, Buddhism, Hinduism, Folk/Traditional religions, No religion, Mixed,
-  Other. Use Mixed when the question asks whether the country is religiously mixed.
-- Use government_type only for the stored broad government-form categories:
-  Republic, Monarchy, Communist state, Theocracy, Military junta, Transitional
-  The database does NOT distinguish constitutional monarchy from absolute monarchy. If a question specifically asks whether a country is an ABSOLUTE monarchy or CONSTITUTIONAL monarchy, return route="fallback" rather than mapping to generic Monarchy.
-  government, Other. Democracy is NOT a synonym for Republic; constitutional
-  monarchies can be democracies. Detailed political classifications absent from
-  these broad categories must use fallback, not a substitute category.
-- Do not invent unsupported relation names.
-- Self-bordering rule: if the user asks whether the hidden country borders or
-  neighbors itself / the same country, create a borders_country contains plan
-  comparing against target_country.name; the executor treats this as true.
+Semantic mapping:
+  longitude: west_of means target < reference; east_of means target > reference.
+  latitude: north_of means target > reference; south_of means target < reference.
+  Use north_of/south_of/west_of/east_of for geographic-direction predicates, including
+  named-country references; plain numeric coordinate thresholds use numeric operators.
+  Directional operands must use the relevant coordinates, never country-name text.
+  Meridian/longitude references permit east/west, NOT north/south; latitude parallels
+  permit north/south, NOT east/west. An incompatible axis ("south of Prime Meridian")
+  requires clarify, never changing south to west or inventing a point on the line.
+  Coordinates are signed degrees (west/south negative); point coordinates do not describe territorial extent.
+- `hemisphere` describes territory, not a point. North/above the equator means contains
+  Northern; south/below means Southern; crossing/on means both, joined with AND.
+  East/west of Greenwich means contains Eastern/Western; crossing/on means both.
+  "Entirely" in one hemisphere means contains that hemisphere AND NOT its opposite.
+  Never use scalar coordinates for equator/prime-meridian sides or crossings. A bare
+  compass direction needs a reference; "north/south part of Earth/world/planet" gives
+  the global hemisphere frame. "Not the prime meridian" lacks a relation; "not on it"
+  has one. Never turn nad równikiem ("above") into "on the equator".
+- Use contains for list membership and equals for scalar equality; exists means only
+  some known value / true. List equals string/boolean is not membership/nonemptiness.
+  `is_island` is scalar boolean. For self-bordering, test
+  contains(target_country.borders_country, target_country.name); executor treats it true.
+- `official_language` is legal official/co-official status, not prevalence. Specific
+  named-language checks ("Do they speak French?" or official status) use contains;
+  this does not establish how widely it is spoken. Usual/dominant-language prevalence,
+  origins/families, and distinct "own language" identity need general knowledge (fallback),
+  not exists(official_language) or a legal-status substitute. Preserve origin predicates.
+  `dominant_religion` is grouped. Ordinary Christian/Christianity predicates ALWAYS
+  mean Catholic OR Orthodox OR Protestant OR Christianity; a standalone equals
+  Christianity loses the denominational categories and is wrong for this umbrella.
+  Other categories: Islam, Judaism, Buddhism, Hinduism, Folk/Traditional religions,
+  No religion, Mixed, Other; use Mixed for religiously mixed.
+  Unlisted denominations/sects, state religion and population percentages are absent:
+  fallback rather than using a related dominant-religion category.
+- `government_type` supports Republic, Monarchy, Communist state, Theocracy, Military
+  junta, Transitional government, Other. Democracy is not Republic; do not infer
+  democracy from category. Constitutional vs absolute monarchy and finer classifications
+  require fallback.
+- `continent` exact values distinguish North America from South America. Eurasia =
+  Europe OR Asia; unqualified America/Americas = North America OR South America, never
+  silently USA. `geographic_area` is a list for user-facing broad and subregions
+  (Africa, Americas, Asia, Europe, Oceania; e.g. Caribbean, Central Europe, Balkans,
+  Middle East). Latin America / "Latin country" is cultural, not Americas: fallback.
+  Preserve north/south/east/west qualifiers. "In Europe" is not "entirely in Europe";
+  precise full territorial extent not in regional tags requires fallback.
+  Cultural/ethnic/language-family labels (Slavic, Germanic, Romance, Celtic, Turkic,
+  Arab, Francophone, Anglophone, Lusophone) are not geographic_area/official_language;
+  fallback. Established shorthand remains valid; Nordic/Scandinavian is geographic.
+  "Touch/border a continent or region" means any land-border country is in that
+  continent/region: any(target_country.borders_country, contains(item.continent,
+  continent)) or item.geographic_area for a region. Never replace this with the
+  target's own continental/regional membership. Preserve negation and additional
+  clauses. "In/part of a continent" still tests target_country.continent; proximity,
+  maritime borders and territorial extent are different predicates.
+  Spelling/grammar repairs and translation must preserve the relation verb:
+  touch/border must never become in/belong/part of, even if the place is misspelled.
+  A recognized cultural-country label such as Germanic is valid but unsupported:
+  missing local cultural definitions/coverage alone means fallback, not clarify.
+- Use `historical_union` only for past membership in USSR, Yugoslavia, Czechoslovakia,
+  Gran Colombia, Austro-Hungarian Empire, Warsaw Pact, British Empire, Spanish Empire,
+  French Empire, Portuguese Empire, Ottoman Empire. It covers only these; Eastern Bloc is not Warsaw
+  Pact. PAST Soviet constituent republic/part-of questions use historical_union contains
+  USSR, never government_type=Republic. `membership` is PRESENT membership even for
+  dissolved organizations: "currently part of USSR" uses membership contains USSR,
+  not historical_union and not missing coverage solely because it is dissolved.
+  Past membership in active organizations, founding/creator/signatory status, accession
+  dates/years, and unlisted historical groups require fallback. Never swap current and past.
+- `flag_color` values red, white, blue, green, yellow, black, orange; `flag_symbol` values
+  star, stars, cross, crescent, sun, stripes, circle, eagle, coat_of_arms. Use contains
+  for asked color/design presence only; majority/proportion/layout/exclusive colors
+  require fallback.
+- Numeric operators preserve exact strict/inclusive thresholds: >/< are strict;
+  at least/co najmniej is >=; at most/does not exceed/nie przekracza is <=.
+  Name character counts ignore spaces and hyphens; use word_count_* or char_count_*.
+  starts_with/ends_with test text edges; contains_text tests a substring.
+  For starts-with letter ranges, OR one starts_with test per inclusive letter (never AND).
+  Use has_space/has_hyphen for those characters (hyphen includes Unicode hyphens,
+  not en/em dash; Polish łącznik); other text substrings use contains_text. Preserve
+  quoted characters exactly ("-" differs from "–").
+- any/all quantify a list and test the bound item predicate; any already requires a
+  matching item, so do not add exists for that same list. For "borders an EU member",
+  test item.membership contains EU, then any over target_country.borders_country.
+  A target predicate and item predicate are distinct.
+  Item country facts need country-valued items (border countries or literal country
+  names). Water bodies, languages and flag values are not country rows: do not query
+  item.water_access/item.membership on them; use direct contains/exists instead.
+  For shared continent membership, OR one AND pair per physical continent:
+  contains(target_country.continent, C) AND contains(reference_country.continent, C).
+  Never bind continent-name strings as country rows or use contains(list, another list).
+- Largest/smallest in a group, rankings, continent-wide counts, arbitrary historical
+  periods, flag percentages and exact territory extent are unsupported; fallback.
+Do not invent relation names or substitute a related fact for a missing one.
 
 {PLANNER_RULES.replace("TARGET", "target_country")}
 
-Allowed plan operators:
-- "contains": left list relation contains right literal value
-- "exists": left list/scalar relation has at least one known value / is true
-- "equals": left scalar relation equals right literal value
-  A list compared with equals to a string or boolean is NOT a membership/emptiness
-  test and cannot be executed. Even a single official language or continent is a list.
-  For a list use contains to test membership, or exists to test nonemptiness.
-- Language questions:
-  - For questions asking whether a specific language is spoken or official (e.g. "Do they speak French?", "Czy językiem urzędowym jest hiszpański?"): use contains(official_language, "Language").
-  - For questions asking whether the country speaks or has "their own language" (e.g. "Do they speak their own language?", "Czy mówią we własnym języku?", "Czy mają swój własny język?", "Czy mają własny język?"):
-    Do NOT map to exists(official_language) and do NOT reject as clarify!
-    Route to fallback: {{"route": "fallback", "improved_question": "Does the country have its own distinct national or official language primarily identified with its nation, rather than a shared language originating elsewhere?", "plan": null, "fallback_reason": "linguistic demonym identity requires external knowledge"}}.
-- A landlocked country has NO sea/ocean access: emit exists(water_access) followed
-  by not referencing that node. Do not compare water_access with true/false.
-- For an island country use equals(is_island, true). Sharing a land border on an
-  island does not make a country continental.
-- "greater_than": strict numeric comparison >
-- "less_than": strict numeric comparison <
-- "greater_than_or_equal": inclusive numeric comparison >=
-- "less_than_or_equal": inclusive numeric comparison <=
-- "west_of": left longitude < right longitude
-- "east_of": left longitude > right longitude
-- "north_of": left latitude > right latitude
-- "south_of": left latitude < right latitude
-- "any": any item from a list relation satisfies a nested condition
-- "all": all items from a list relation satisfy a nested condition
-- "or": at least one referenced predicate is true
-- "and": every referenced predicate is true
-- "not": negates its one referenced predicate
-- "starts_with": left text starts with right literal text
-- "ends_with": left text ends with right literal text
-- "contains_text": left text contains right literal text
-- "has_space": left text contains a space
-- "has_hyphen": left text contains a hyphen (łącznik), not an en/em dash; no right operand
-- "word_count_equals", "word_count_greater_than", "word_count_less_than"
- - "char_count_equals", "char_count_greater_than", "char_count_less_than": compares the number of letters/characters in the text (ignoring spaces and hyphens). Use for questions asking if the country name has X letters.
+Return strict compact JSON only, required fields route and plan. Local omits explanation
+and fallback_reason. Add improved_question only for translation/clarification. Clarify
+with a short explanation of the missing predicate/reference/criterion; fallback with
+a short missing-facts reason. Examples:
 
-Super-region rules:
-- Eurasia is not a stored continent value. Represent it as Europe OR Asia.
-- The Americas is not a stored continent value. Represent it as North America OR South America.
-- Do not use literal values "Eurasia" or "Americas" with the continent relation.
-- For a geographic location question, unqualified "America" denotes the Americas
-  (North America OR South America). Do not reject this conventional regional name
-  as ambiguous or silently narrow it to the United States.
-- The "geographic_area" relation combines broad regions and specific subregions.
-  Use it for user-facing area questions such as "in Europe", "in the Americas",
-  "in the Caribbean", "in Central Europe", "in the Balkans", or "in the Middle East".
-  It is list-valued; use contains/exists, not equals. Broad stored values include
-  "Africa", "Americas", "Asia", "Europe", and "Oceania". Specific stored values
-  include examples such as "Caribbean", "Southern Africa", "Western Asia",
-  "Central Europe", "South-Eastern Asia", "Baltic states", "Balkans", "Iberia",
-  "Iberian Peninsula", and "Mediterranean".
-- Preserve geographic qualifiers exactly. North America and South America are
-  different continents; use continent contains the EXACT one asked about, not
-  the broader geographic_area "Americas". Likewise do not drop north/south/east/west.
-- Latin America is not equivalent to the Americas. Its cultural classification
-  is not stored locally; use route="fallback", never replace it with "Americas".
-- Distinguish "in Europe" (any European territory) from "entirely/fully/only in
-  Europe". The latter is NOT a contains test. Precise territorial extent and
-  hemisphere-crossing boundaries are not represented by a country point or a
-  broad regional tag: use route="fallback" when that detail is required.
-- The largest/smallest country in a group, ordinal rankings, continent-wide counts,
-  and arbitrary historical periods require fallback. There is no global-country
-  collection, ranking operator, or historical timeline in the plan language.
-  Do not invent independent nodes or guess a comparison country as a shortcut.
-
-Ethnic, linguistic group, and cultural family rules:
-- Do NOT substitute geographic_area or official_language for ethnic/cultural or
-  language-family categories such as Slavic, Germanic, Romance, Celtic, Turkic,
-  Arab, Francophone, Anglophone, or Lusophone.
-- Established regional/cultural labels remain valid in shorthand. In this
-  geography game, "Latin country" denotes Latin America, not literal use of Latin.
-  A regional label such as Nordic or Scandinavian is geographic, not automatically ethnic.
-- When the exact requested category is not represented locally, return route="fallback",
-  plan=null, with a fallback_reason naming the missing category.
-  Do not reject a familiar category merely because its classification needs general knowledge.
-Alphabet and Letter Range rules:
-- When the user asks if the country name starts with a letter within an alphabet range (e.g. "from A to M", "between N and Z", "first half of the alphabet"):
-  Use operator "or" with "starts_with" for EACH letter in the range (inclusive).
-  NEVER combine single-letter starts_with conditions with "and".
-
-Flag and historical union rules:
-- Use "flag_color" for questions about colors on the national flag. Allowed values:
-  "red", "white", "blue", "green", "yellow", "black", "orange".
-  Use contains (e.g. {{"operator": "contains", "left": {{"entity": "target_country", "relation": "flag_color"}}, "right": {{"value": "red"}}}}).
-- Use "flag_symbol" for questions about symbols or designs on the flag. Allowed values:
-  "star", "stars", "cross", "crescent", "sun", "stripes", "circle", "eagle", "coat_of_arms".
-  Use contains (e.g. {{"operator": "contains", "left": {{"entity": "target_country", "relation": "flag_symbol"}}, "right": {{"value": "star"}}}}).
-- Use "historical_union" for PAST membership in the listed historical states,
-  empires or unions. A dissolved organization's name does not by itself make
-  a present-tense question historical.
-  Allowed values: "USSR", "Yugoslavia", "Czechoslovakia", "Gran Colombia", "Austro-Hungarian Empire",
-  "Warsaw Pact", "British Empire", "Spanish Empire", "French Empire", "Portuguese Empire", "Ottoman Empire".
-  Use contains (e.g. {{"operator": "contains", "left": {{"entity": "target_country", "relation": "historical_union"}}, "right": {{"value": "USSR"}}}}).
-- historical_union covers ONLY the named dissolved polities above. Absence of an
-  unlisted union is missing coverage, not evidence of non-membership.
-  Broader historical classifications such as the Eastern Bloc are not synonyms
-  for one named treaty organization such as the Warsaw Pact; use fallback.
-- Use membership for PRESENT membership, including a question about a dissolved
-  organization. Never use past membership as evidence of current membership.
-  "Currently belongs to" and "was part of" are different predicates, regardless
-  of whether the organization still exists.
-  A past-tense question about an active organization needs historical membership
-  knowledge: use fallback unless the actual historical predicate is represented.
-- Founding members, creators, original signatories, accession dates:
-  Do NOT confuse being a founding member, creator, or original signatory of an organization
-  (such as founding member of the European Union / Inner Six, NATO founding member, UN founding member)
-  with general present membership. The local database tracks ONLY whether a country is currently
-  a member, NOT its accession date or founder status. Questions asking whether a country was a founding
-  member, creator, or when/in what year it joined MUST use route="fallback", plan=null.
-- Flag colors/symbols are presence lists, not surface-area percentages. Questions
-  about a majority color, proportions, layout or exclusive colors require fallback.
-Reference format:
-{{"entity":"target_country", "relation":"name"}}
-{{"entity":"target_country", "relation":"population"}}
-{{"entity":"Germany", "relation":"area"}}
-{{"entity":"target_country", "relation":"coordinates.longitude"}}
-{{"entity":"item", "relation":"membership"}}
-{{"value":"Baltic Sea"}}
-
-Return compact STRICT JSON only. Required fields: route, plan.
-Add improved_question only when translation or clarification is necessary.
-For route="local", omit explanation and fallback_reason: the executor explains the facts.
-For questions needing clarification, return route="clarify", plan=null and a short explanation.
-The explanation must identify the missing predicate, reference, or criterion;
-do not claim that an entire subject (such as landmarks) is an invalid question type.
-For clear questions needing external facts, return route="fallback", plan=null and a short fallback_reason.
-{{"route": "local", "plan": [{{...}}]}}
-
-Examples:
-User: Czy jest na zachód od Chin?
-{{"route":"local","improved_question":"Is the country west of China?","plan":[
-  {{"operator":"west_of","left":{{"entity":"target_country","relation":"coordinates.longitude"}},"right":{{"entity":"China","relation":"coordinates.longitude"}}}}
-]}}
-
-User: Czy graniczy z krajem należącym do UE?
+Polish: "Czy graniczy z krajem należącym do UE?" (not merely has an EU border fact):
 {{"route":"local","improved_question":"Does the country border an EU member?","plan":[
   {{"operator":"contains","left":{{"entity":"item","relation":"membership"}},"right":{{"value":"EU"}}}},
   {{"operator":"any","items":{{"entity":"target_country","relation":"borders_country"}},"args":[0]}}
 ]}}
 
-User: Czy leży w Eurazji?
-{{"route":"local","improved_question":"Is the country in Eurasia?","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"continent"}},"right":{{"value":"Europe"}}}},
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"continent"}},"right":{{"value":"Asia"}}}},
-  {{"operator":"or","args":[0,1]}}
-]}}
-
-User: north america
-{{"route":"local","improved_question":"Is the country in North America?","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"continent"}},"right":{{"value":"North America"}}}}
-]}}
-
-User: Does it have an ocean coastline?
+"Does it touch Asia?" means a land neighbor is in Asia, NOT target membership:
 {{"route":"local","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"water_access"}},"right":{{"value":"Ocean"}}}}
+  {{"operator":"contains","left":{{"entity":"item","relation":"continent"}},"right":{{"value":"Asia"}}}},
+  {{"operator":"any","items":{{"entity":"target_country","relation":"borders_country"}},"args":[0]}}
 ]}}
 
-User: Does it have no coastline?
-{{"route":"local","plan":[
-  {{"operator":"exists","left":{{"entity":"target_country","relation":"water_access"}}}},
-  {{"operator":"not","args":[0]}}
-]}}
-
-User: Does the country have territory in all four hemispheres?
+"Does it cross the equator?" means both hemispheres, not a point latitude:
 {{"route":"local","plan":[
   {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Northern"}}}},
   {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}},
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}},
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Western"}}}},
-  {{"operator":"and","args":[0, 1, 2, 3]}}
+  {{"operator":"and","args":[0,1]}}
 ]}}
 
-User: Below equator?
+"Is Christianity the dominant religion?" uses ALL four Christian categories:
 {{"route":"local","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}}
+  {{"operator":"equals","left":{{"entity":"target_country","relation":"dominant_religion"}},"right":{{"value":"Catholic"}}}},
+  {{"operator":"equals","left":{{"entity":"target_country","relation":"dominant_religion"}},"right":{{"value":"Orthodox"}}}},
+  {{"operator":"equals","left":{{"entity":"target_country","relation":"dominant_religion"}},"right":{{"value":"Protestant"}}}},
+  {{"operator":"equals","left":{{"entity":"target_country","relation":"dominant_religion"}},"right":{{"value":"Christianity"}}}},
+  {{"operator":"or","args":[0,1,2,3]}}
 ]}}
 
-User: Does the country cross the equator?
+"Is it an island or does it border the Baltic Sea, but not both?" is XOR; duplicate
+the predicates rather than reusing nodes:
 {{"route":"local","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Northern"}}}},
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Southern"}}}},
-  {{"operator":"and","args":[0, 1]}}
+  {{"operator":"equals","left":{{"entity":"target_country","relation":"is_island"}},"right":{{"value":true}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"water_access"}},"right":{{"value":"Baltic Sea"}}}},
+  {{"operator":"or","args":[0,1]}},
+  {{"operator":"equals","left":{{"entity":"target_country","relation":"is_island"}},"right":{{"value":true}}}},
+  {{"operator":"contains","left":{{"entity":"target_country","relation":"water_access"}},"right":{{"value":"Baltic Sea"}}}},
+  {{"operator":"and","args":[3,4]}},
+  {{"operator":"not","args":[5]}},
+  {{"operator":"and","args":[2,6]}}
 ]}}
 
-User: East of the prime meridian?
-{{"route":"local","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}}
-]}}
+"Was it a founding EU member?" is valid but absent locally; "Is it important?" lacks
+a criterion. Route the first fallback, the second clarify.
 
-User: Does the country cross the prime meridian?
-{{"route":"local","plan":[
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Eastern"}}}},
-  {{"operator":"contains","left":{{"entity":"target_country","relation":"hemisphere"}},"right":{{"value":"Western"}}}},
-  {{"operator":"and","args":[0, 1]}}
-]}}
-
-User: Were the 2004 Summer Olympics held in this country?
-{{"route":"fallback","plan":null,"fallback_reason":"The local relations do not store event venues."}}
-The event and year are precise. Missing event data means unsupported, NOT invalid.
-User: Czy to państwo jest jednym z krajów-założycieli Unii Europejskiej?
-{{"route":"fallback","plan":null,"fallback_reason":"Founding member status and accession history are not stored in local relations."}}
-
-
-User: Did it have an important role in the Cold War?
-{{"route":"clarify","plan":null,"explanation":"Please define a measurable criterion for an important role, or ask about a specific event or alliance."}}
-Participation in a historical event does not establish its importance.
-
-User: Are its mountains beautiful?
-{{"route":"clarify","plan":null,"explanation":"Please specify an objective criterion for beauty."}}
-
-User: Is its area large?
-{{"route":"clarify","plan":null,"explanation":"Please specify an area threshold or comparison country."}}
-These are invalid because their criteria are undefined, not because local facts are missing.
-
-User: Is it near Finland?
-{{"route":"clarify","plan":null,"explanation":"Please specify a distance threshold or ask about a shared border."}}
-
-User: Does it speak an Asian main language?
-{{"fallback_reason":"Principal national language usage and language origin require general knowledge.","route":"fallback","plan":null}}
-This asks about the origin of a main language used by the country, not a ranking of languages.
-
-User: it it isn't the meridian
-{{"explanation":"Please specify the relationship to the meridian: on, near, east, west, or crossing it.","route":"clarify","plan":null}}
-Removing a repeated verb is harmless, but inserting a spatial relationship changes the predicate.
-
-Before returning JSON, verify that the rewrite and plan preserve the intended
-original proposition, including its polarity, qualifiers and logical conditions.
-The plan must answer that proposition, not its opposite or a weaker substitute.
-Do not reject a recovered yes/no proposition because of its original grammar,
-pronouns, or missing local facts; only unresolved meaning requires clarification.
+Final wire check: the plan is a TREE, not a DAG. Every non-root node is referenced
+exactly once. Duplicate repeated predicates in separate branches; never reuse indices,
+including for XOR. Identity typos AND quoted text patterns preserve original spelling.
+Use children-before-parent order: node i may reference only earlier child indices.
+In contains → not → any, nodes 0,1,2 use not.args=[0], any.args=[1], never [2].
 
 User question: {question}
 """.strip()
@@ -461,19 +337,114 @@ def _country_name_literals(node):
             yield from _country_name_literals(child)
 
 
+_COUNTRY_LIST_RELATIONS = frozenset(LIST_RELATION_QUERIES) | {"region", "subregion"}
+_DIRECTION_AXES = {
+    "north_of": "coordinates.latitude", "south_of": "coordinates.latitude",
+    "east_of": "coordinates.longitude", "west_of": "coordinates.longitude",
+}
+
+
+def _validate_country_plan(plan: dict, question: str) -> None:
+    """Reject semantically impossible references before advertising local coverage."""
+    def visit(node: dict, country_item: bool = False) -> bool:
+        target = False
+        for field in ("left", "right", "items"):
+            operand = node.get(field, {})
+            entity = operand.get("entity")
+            target |= entity == "target_country"
+            if entity == "item" and not country_item:
+                raise ValueError("Item country facts require country-valued items")
+        operator = node["operator"]
+        if operator in _DIRECTION_AXES:
+            axis = _DIRECTION_AXES[operator]
+            for field in ("left", "right"):
+                operand = node[field]
+                if "entity" in operand:
+                    if operand["relation"] != axis:
+                        raise ValueError(f"{operator} requires {axis} operands")
+                elif type(operand.get("value")) not in (int, float):
+                    raise ValueError("Direction thresholds must be numeric")
+        if operator == "contains":
+            left, right = node["left"], node["right"]
+            if left.get("relation") not in _COUNTRY_LIST_RELATIONS and not isinstance(left.get("value"), list):
+                raise ValueError("contains requires a list on the left")
+            if right.get("relation") in _COUNTRY_LIST_RELATIONS or isinstance(right.get("value"), list):
+                raise ValueError("contains tests one value, not list intersection")
+        if operator in {"any", "all"}:
+            items = node["items"]
+            literal = items.get("value")
+            bound_countries = items.get("relation") == "borders_country" or (
+                isinstance(literal, list) and all(
+                    isinstance(value, str) and _norm(value) in _ENGLISH_COUNTRY_ALIASES
+                    for value in literal
+                )
+            )
+            target |= visit(node["condition"], bound_countries)
+        elif operator == "not":
+            target |= visit(node["condition"], country_item)
+        elif operator in {"and", "or"}:
+            for child in node["conditions"]:
+                target |= visit(child, country_item)
+        return target
+
+    has_target = visit(plan)
+    normalized = " ".join(_norm(question).split())
+    hidden_subject = re.search(
+        r"\b(?:it|its|itself|(?:(?:the|this|hidden|my|our|your) )country)\b", normalized,
+    )
+    subject = re.match(r"(?:is|are|was|were|does|do|did|can|will|would) (.+)", normalized)
+    named_subject = subject is not None and any(
+        subject[1] == alias or subject[1].startswith(alias + " ")
+        for alias in _ENGLISH_COUNTRY_ALIASES
+    )
+    # Named objects/references remain literal; only subjects bind to the hidden target.
+    if not has_target and (hidden_subject or named_subject):
+        raise ValueError("A hidden-country subject must depend on the hidden target")
+
+
 def analyze_question_for_local_plan(
     question: str, *, use_cache: bool = True, strict_errors: bool = False,
     evidence: dict | None = None,
 ) -> QuestionPlan:
+    if evidence is not None:
+        evidence.setdefault("attempts", [])
+        evidence.setdefault("provider_attempts", len(evidence["attempts"]))
+    template = None
+    entity = compile_entity_question(question)
+    if entity is not None:
+        ast, improved_question = entity
+    else:
+        template = compile_template_plan(question, english_only=True)
+        if template is not None:
+            nodes, improved_question = template
+            ast = compile_planner_response(
+                {"route": "local", "plan": nodes},
+                relations=set(SUPPORTED_RELATIONS), operators=PLANNER_OPERATORS | {"any", "all"},
+                target_entity="target_country", allow_named_entities=True,
+            )
+    if entity is not None or template is not None:
+        ast = local_answering.normalize_continent_unions(ast)
+        if evidence is not None:
+            evidence.update(
+                provider="template", contract_version="countrydle-strict-v2", cache_hit=False,
+            )
+        return QuestionPlan(
+            original_question=question, valid=True, supported=True,
+            improved_question=improved_question, explanation=None, plan=ast,
+        )
+
     from utils.plan_cache import plan_cache
     from utils.ai_clients import generate_gemini_json
 
     load_dotenv_if_present()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or DEFAULT_MODEL
-    version = f"{PLANNER_VERSION}:{model}"
+    # Cache/evidence identity combines shared contract, this mode's prompt, and model.
+    version = f"{PLANNER_VERSION}:countrydle:{COUNTRYDLE_PROMPT_REVISION}:{model}"
     cached = plan_cache.get("countrydle", question, version=version) if use_cache else None
     if evidence is not None:
-        evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)
+        evidence.update(provider="gemini", model=model, contract_version=version, cache_hit=cached is not None)
+        evidence.setdefault("attempts", [])
+        evidence.setdefault("provider_attempts", 0)
     if cached is not None:
         return replace(cached, original_question=question)
     api_key = os.getenv("GEMINI_API_KEY")
@@ -509,6 +480,9 @@ def analyze_question_for_local_plan(
             parsed, relations=relations, operators=operators, target_entity="target_country",
         allow_named_entities=True,
     )
+        if ast is not None:
+            ast = local_answering.normalize_continent_unions(ast)
+            _validate_country_plan(ast, question)
     except Exception as exc:
         ast = None
         parsed = {
@@ -527,12 +501,16 @@ def analyze_question_for_local_plan(
                     }
                     ast = None
                     break
+    # A paraphrase cannot silently remove the user's explicit logical grouping.
+    improved_question = (
+        question if "(" in question or ")" in question else parsed.get("improved_question")
+    )
 
     plan = QuestionPlan(
         original_question=question,
         valid=parsed["route"] != "clarify",
         supported=parsed["route"] == "local",
-        improved_question=parsed.get("improved_question"),
+        improved_question=improved_question,
         explanation=parsed.get("explanation"),
         plan=ast,
         fallback_reason=parsed.get("fallback_reason"),

@@ -14,6 +14,7 @@ import sqlite3
 from typing import Any
 
 from countrydle.local_answering import DEFAULT_DB_PATH
+import country_fact_provenance as fact_provenance
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,7 @@ LIST_RELATIONS: dict[str, ListRelation] = {
     "currency": ListRelation("currency", "country_currencies", "currency_name", ("currency_code", "currency_symbol")),
     "official_language": ListRelation("official_language", "country_languages", "language_name", ("language_code",)),
     "membership": ListRelation("membership", "country_memberships", "organization"),
+    "hemisphere": ListRelation("hemisphere", "country_hemispheres", "hemisphere"),
     "major_rivers": ListRelation("major_rivers", "country_major_rivers", "river_name"),
 }
 
@@ -448,6 +450,7 @@ def get_country_facts(country_id: int, db_path: Path | str | None = None) -> dic
                 "official_name": country["official_name"],
             },
             "scalar_facts": scalars,
+            "fact_provenance": fact_provenance.read_all(conn, country_id),
             "list_facts": lists,
         }
 
@@ -465,6 +468,7 @@ def update_scalar_fact(country_id: int, relation_name: str, value: Any, db_path:
         row = conn.execute(f"SELECT {relation.column} FROM countries WHERE id=?", (country_id,)).fetchone()
         if row is None:
             raise KeyError(f"Country facts not found for id={country_id}")
+        fact_provenance.ensure_schema(conn)
         old_value = row[relation.column]
         conn.execute(
             f"UPDATE countries SET {relation.column}=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
@@ -495,11 +499,22 @@ def add_list_fact(
         conn.execute("SELECT 1 FROM countries WHERE id=?", (country_id,)).fetchone() or (_ for _ in ()).throw(
             KeyError(f"Country facts not found for id={country_id}")
         )
+        fact_provenance.ensure_schema(conn)
+        previous = fact_provenance.values(conn, country_id, relation_name) if relation_name in fact_provenance.RELATIONS else None
+        provenance = metadata.get("provenance")
+        if provenance is not None:
+            if previous is None:
+                raise ValueError("Provenance is supported only for membership and hemisphere")
+            provenance = fact_provenance.FactProvenance.model_validate(provenance).model_dump(mode="json")
         try:
             conn.execute(
                 f"INSERT INTO {relation.table} ({', '.join(columns)}) VALUES ({placeholders})",
                 values,
             )
+            if previous is not None:
+                fact_provenance.reconcile(conn, country_id, relation_name, previous)
+                if provenance is not None:
+                    fact_provenance.put(conn, country_id, relation_name, clean_value, provenance)
             conn.execute("UPDATE countries SET updated_at=CURRENT_TIMESTAMP WHERE id=?", (country_id,))
             conn.commit()
         except sqlite3.IntegrityError as exc:
@@ -513,12 +528,16 @@ def delete_list_fact(country_id: int, relation_name: str, value: str, db_path: P
         raise KeyError(f"Unsupported list relation: {relation_name}")
     clean_value = _normalize_text(value)
     with _connect(db_path) as conn:
+        fact_provenance.ensure_schema(conn)
+        previous = fact_provenance.values(conn, country_id, relation_name) if relation_name in fact_provenance.RELATIONS else None
         cursor = conn.execute(
             f"DELETE FROM {relation.table} WHERE country_id=? AND {relation.value_column}=?",
             (country_id, clean_value),
         )
         if cursor.rowcount == 0:
             raise KeyError(f"Value not found for this relation: {clean_value}")
+        if previous is not None:
+            fact_provenance.reconcile(conn, country_id, relation_name, previous)
         conn.execute("UPDATE countries SET updated_at=CURRENT_TIMESTAMP WHERE id=?", (country_id,))
         conn.commit()
     return clean_value, None, "delete"
@@ -530,3 +549,17 @@ def get_relation_storage(relation_name: str, *, list_relation: bool) -> tuple[st
         return relation.table, relation.value_column
     relation = SCALAR_RELATIONS[relation_name]
     return "countries", relation.column
+
+
+def update_fact_provenance(country_id: int, relation: str, value: str | None, provenance: dict, db_path: Path | str | None = None):
+    if relation not in fact_provenance.RELATIONS:
+        raise ValueError("Provenance is supported only for membership and hemisphere")
+    with _connect(db_path) as conn:
+        if not conn.execute("SELECT 1 FROM countries WHERE id=?", (country_id,)).fetchone():
+            raise KeyError(f"Country facts not found for id={country_id}")
+        if value is not None and value not in fact_provenance.values(conn, country_id, relation):
+            raise KeyError("Fact value not found")
+        fact_provenance.ensure_schema(conn)
+        old = fact_provenance.read_record(conn, country_id, relation, value)["provenance"]
+        fact_provenance.put(conn, country_id, relation, value, provenance)
+        return old, fact_provenance.read_record(conn, country_id, relation, value)["provenance"], "provenance"

@@ -99,6 +99,14 @@ CREATE TABLE IF NOT EXISTS country_hemispheres (
     FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS country_fact_provenance (
+    country_id INTEGER NOT NULL REFERENCES countries(id) ON DELETE CASCADE,
+    relation TEXT NOT NULL,
+    value_json TEXT NOT NULL,
+    provenance_json TEXT NOT NULL,
+    PRIMARY KEY (country_id, relation, value_json)
+);
+
 CREATE INDEX IF NOT EXISTS idx_countries_name ON countries(app_country_name);
 CREATE INDEX IF NOT EXISTS idx_countries_cca3 ON countries(cca3);
 CREATE INDEX IF NOT EXISTS idx_country_region ON country_regions(region_name);

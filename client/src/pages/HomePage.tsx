@@ -110,31 +110,31 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 md:pb-24 md:pt-14">
+    <div className="mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-6 md:pb-24 md:pt-14">
       {/* Hero Section */}
-      <section aria-labelledby="home-heading" className="grid items-center gap-10 border-b border-white/10 pb-12 md:grid-cols-[1.35fr_1fr] md:gap-12 md:pb-16">
+      <section aria-labelledby="home-heading" className="grid items-center gap-5 border-b border-white/10 pb-6 md:grid-cols-[1.35fr_1fr] md:gap-12 md:pb-16">
         <div>
           {/* Eyebrow badge */}
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400 md:mb-5">
             <Sparkles size={13} className="text-emerald-400" aria-hidden="true" />
             <span>{copy.eyebrow}</span>
             <span className="text-emerald-500/60" aria-hidden="true">·</span>
             <span className="text-zinc-400">{copy.eyebrowTag}</span>
           </div>
 
-          <h1 id="home-heading" className="text-4xl font-extrabold tracking-tight text-sand-50 sm:text-5xl lg:text-6xl">
+          <h1 id="home-heading" className="text-3xl font-extrabold tracking-tight text-sand-50 sm:text-5xl lg:text-6xl">
             {copy.title}{' '}
             <span className="block mt-1 bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-300 bg-clip-text text-transparent">
               {copy.titleEnd}
             </span>
           </h1>
 
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-300 md:text-lg">
+          <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-300 md:mt-5 md:text-lg">
             {copy.intro}
           </p>
 
           {/* Action buttons in cohesive derivative emerald-obsidian palette */}
-          <div className="mt-8 flex flex-wrap items-center gap-3.5">
+          <div className="mt-5 flex flex-wrap items-center gap-2.5 md:mt-8 md:gap-3.5">
             <Link
               to="/game"
               className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-md bg-emerald-400 px-6 py-3 text-sm font-semibold text-obsidian-950 shadow-sm shadow-emerald-950/40 transition-all hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400"
@@ -177,19 +177,19 @@ export default function HomePage() {
         </div>
 
         {/* Dynamic 3D Green Transparent Spinning Globe */}
-        <div className="w-full">
+        <div className="hidden w-full md:block">
           <SpinningGlobe size={340} />
         </div>
       </section>
 
       {guest && (
-        <div className="pt-8">
+        <div className="pt-4 md:pt-8">
           <GuestProgress gameType="country" today={today} />
         </div>
       )}
 
       {/* Daily Maps & Challenges */}
-      <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 py-10 md:py-14">
+      <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 py-6 md:py-14">
         <div className="mb-6 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
             <h2 id="maps-heading" className="text-2xl font-bold tracking-tight text-sand-50 sm:text-3xl">
@@ -200,7 +200,7 @@ export default function HomePage() {
         </div>
 
         {/* Featured 1v1 Duel Banner in cohesive Obsidian-Emerald palette */}
-        <div className="mb-6 flex flex-col items-start justify-between gap-5 rounded-lg border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-obsidian-900 to-obsidian-900 p-6 md:flex-row md:items-center md:p-7 shadow-lg shadow-emerald-950/20">
+        <div className="mb-4 flex flex-col items-start justify-between gap-3 rounded-lg border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-obsidian-900 to-obsidian-900 p-4 shadow-lg shadow-emerald-950/20 md:mb-6 md:flex-row md:items-center md:gap-5 md:p-7">
           <div className="max-w-2xl space-y-2">
             <div className="flex items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
@@ -212,7 +212,7 @@ export default function HomePage() {
             <h3 className="text-xl font-bold tracking-tight text-sand-50 md:text-2xl">
               {copy.duelBannerTitle}
             </h3>
-            <p className="text-sm leading-relaxed text-slate-300">
+            <p className="text-sm leading-relaxed text-slate-300 md:max-w-2xl">
               {copy.duelBannerDesc}
             </p>
           </div>
@@ -227,26 +227,26 @@ export default function HomePage() {
         </div>
 
         {/* Game Cards Grid */}
-        <div className="grid gap-3.5 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:grid-cols-2 md:gap-3.5">
           {games.map((game, index) => (
             <Link
               key={game.id}
               to={game.path}
-              className="group flex flex-col rounded-lg border border-white/10 bg-obsidian-900/80 p-6 backdrop-blur-sm transition-all hover:border-emerald-500/40 hover:bg-obsidian-850 hover:shadow-lg hover:shadow-emerald-950/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 md:p-7"
+              className="group flex flex-col rounded-lg border border-white/10 bg-obsidian-900/80 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-850 hover:shadow-lg hover:shadow-emerald-950/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 md:p-7"
             >
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between md:mb-4">
                 <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
                   {String(index + 1).padStart(2, '0')} / {game.region}
                 </span>
                 <game.icon size={22} strokeWidth={1.5} className="shrink-0 text-emerald-400 transition-transform group-hover:scale-110" aria-hidden="true" />
               </div>
-              <h3 className="break-words text-2xl font-bold tracking-tight text-sand-50 group-hover:text-white">
+              <h3 className="break-words text-xl font-bold tracking-tight text-sand-50 group-hover:text-white md:text-2xl">
                 {game.title}
               </h3>
-              <p className="mb-6 mt-2.5 max-w-md flex-1 text-sm leading-relaxed text-slate-400">
+              <p className="mb-3 mt-1.5 max-w-md flex-1 text-sm leading-relaxed text-slate-400 md:mb-6 md:mt-2.5">
                 {game.description}
               </p>
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3 md:gap-4 md:pt-4">
                 <dl className="flex gap-5 text-xs">
                   <div className="flex items-baseline gap-2">
                     <dt className="text-slate-400">{copy.questions}</dt>
