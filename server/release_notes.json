@@ -1,5 +1,5 @@
 {
-  "version": "1.25.5",
-  "title": "Country guess validation",
-  "body": "- Countrydle and continental games reject unknown text and mismatched country names and IDs before recording a guess or consuming an attempt.\n- Canonical and official country names are matched exactly, ignoring case and surrounding whitespace; wildcard text and blank guesses are rejected.\n- Questions beginning with do are recognized in the Guess input and redirected to the Question tab with a notice rather than submitted as guesses.\n- Guest synchronization uses the same country validator.\n\nThis release retains the desktop map/question-focus fix and persistent disk-backed caches from the previously prepared releases. Saved player progress and game limits are unchanged."
+  "version": "1.26.0",
+  "title": "Mobile navigation and public-page redesign",
+  "body": "- Phones and tablets use a compact header with a scrollable modal navigation menu; desktop navigation remains available.\n- The homepage puts the daily puzzle first, with an interactive globe and expandable game, rule, and device-progress sections.\n- Blog search, filters, article facts, trivia, and sharing use simplified responsive layouts, including an Americas filter that covers both North and South America.\n- Map controls are more compact on phones, and the question inspector stacks its tabs with independently scrollable code panels.\n- Guest progress and public navigation include improved English and Polish labels.\n\nThe release also retains the previously prepared disk-backed caches, desktop question-focus restoration, and stricter country-guess validation. Saved progress, puzzle targets, and game limits are unchanged."
 }

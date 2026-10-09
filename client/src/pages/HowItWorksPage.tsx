@@ -89,54 +89,131 @@ const MODE_BUDGETS = [
 ];
 
 export default function HowItWorksPage() {
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [exampleId, setExampleId] = useState(EXAMPLES[0].id);
-  const example = EXAMPLES.find(item => item.id === exampleId) || EXAMPLES[0];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10 bg-obsidian-950 pb-8 text-zinc-300">
-      <header className="border-b border-white/10 pb-8">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">Templates, local facts and AI fallback</p>
-        <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">How Countrydle Answers Questions</h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-400">Countrydle uses a hybrid answer engine, not an infallible geography oracle. Some questions use deterministic templates and local facts; others need AI interpretation or fallback. Both paths can produce incorrect answers.</p>
+    <div className="mx-auto min-w-0 max-w-5xl space-y-8 break-words bg-obsidian-950 pb-8 text-zinc-300">
+      <header className="border-b border-white/10 pb-6">
+        <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">Templates, local facts and AI fallback</p>
+        <h1 className="font-serif text-3xl leading-tight tracking-tight text-sand-100 sm:text-4xl">How Countrydle Answers Questions</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-400">Countrydle uses a hybrid answer engine, not an infallible geography oracle. Some questions use deterministic templates and local facts; others need AI interpretation or fallback. Both paths can produce incorrect answers.</p>
       </header>
 
-      <section aria-labelledby="answer-pipeline" className="space-y-6">
-        <h2 id="answer-pipeline" className="font-serif text-2xl text-sand-100">From your question to an answer</h2>
-        <p className="text-base leading-7">These stages describe the question-based daily games. Flagdle has optional helper questions alongside its visual challenge. Friend duels are different: players answer each other’s questions rather than using this engine to judge their opponent’s secret location.</p>
-        <ol className="space-y-4">
-          {PIPELINE_STEPS.map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <li key={step.title} className="rounded-sm border border-white/10 bg-obsidian-900 p-5 sm:p-6">
-                <h3 className="flex items-center gap-3 text-lg font-semibold text-sand-100"><Icon size={20} aria-hidden="true" className="text-emerald-400" />{index + 1}. {step.title}</h3>
-                <p className="mt-3 text-base leading-7">{step.description}</p>
-                <p className="mt-3 text-sm leading-6 text-zinc-400"><strong className="text-sand-100">Limit:</strong> {step.limitation}</p>
-              </li>
-            );
-          })}
-        </ol>
+      <section aria-labelledby="answer-pipeline" className="min-w-0 space-y-4">
+        <h2 id="answer-pipeline" className="flex items-center gap-2.5 font-serif text-2xl text-sand-100">
+          <GitBranch className="shrink-0 text-emerald-400" size={24} aria-hidden="true" />
+          <span>From your question to an answer</span>
+        </h2>
+        <p className="text-sm leading-relaxed">These stages describe the question-based daily games. Flagdle has optional helper questions alongside its visual challenge. Friend duels are different: players answer each other’s questions rather than using this engine to judge their opponent’s secret location.</p>
+        <p className="text-sm leading-relaxed text-zinc-400">Select a stage to read its role and limits. This is an explanation of the engine, not a live trace or a guarantee of accuracy.</p>
+        <div className="min-w-0 rounded-md border border-white/10 bg-obsidian-900 p-4 sm:p-6">
+          <div role="group" aria-label="Question pipeline stages" className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {PIPELINE_STEPS.map((step, index) => {
+              const isCurrent = index === activeStepIndex;
+              const Icon = step.icon;
+              return (
+                <button
+                  key={step.title}
+                  type="button"
+                  aria-pressed={isCurrent}
+                  aria-controls={`pipeline-stage-${index}`}
+                  onClick={() => setActiveStepIndex(index)}
+                  className={cn(
+                    'group flex min-h-11 min-w-0 flex-col rounded-sm border p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400',
+                    isCurrent
+                      ? 'border-emerald-400/60 bg-emerald-400/10 ring-1 ring-emerald-400/30'
+                      : 'border-white/10 bg-obsidian-950/60 text-zinc-400 hover:border-white/20 hover:bg-obsidian-950/90'
+                  )}
+                >
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-wider">Stage {index + 1}</span>
+                    <Icon size={16} className="shrink-0 text-emerald-400" aria-hidden="true" />
+                  </span>
+                  <span className="mt-2.5 font-serif text-sm font-semibold leading-snug text-sand-100">{step.title}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-4 min-w-0 rounded-sm border border-emerald-500/30 bg-obsidian-950/80 p-4 sm:p-5">
+            <div className="flex min-w-0 flex-col gap-3 border-b border-white/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="font-mono text-xs text-emerald-400">Stage {activeStepIndex + 1} of {PIPELINE_STEPS.length}</span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={activeStepIndex === 0}
+                  onClick={() => setActiveStepIndex(index => Math.max(0, index - 1))}
+                  className="min-h-11 rounded border border-white/10 bg-obsidian-900 px-3 py-2 text-xs text-zinc-300 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-30"
+                >
+                  &larr; Previous stage
+                </button>
+                <button
+                  type="button"
+                  disabled={activeStepIndex === PIPELINE_STEPS.length - 1}
+                  onClick={() => setActiveStepIndex(index => Math.min(PIPELINE_STEPS.length - 1, index + 1))}
+                  className="min-h-11 rounded border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 hover:bg-emerald-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-30"
+                >
+                  Next stage &rarr;
+                </button>
+              </div>
+            </div>
+            {PIPELINE_STEPS.map((step, index) => (
+              <div key={step.title} id={`pipeline-stage-${index}`} hidden={index !== activeStepIndex} aria-labelledby={`pipeline-stage-title-${index}`} className="min-w-0 pt-4">
+                <h3 id={`pipeline-stage-title-${index}`} className="font-serif text-xl text-sand-100">{step.title}</h3>
+                <div className="mt-3 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="min-w-0">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">What happens at this stage?</p>
+                    <p className="mt-1.5 text-sm leading-relaxed">{step.description}</p>
+                  </div>
+                  <div className="min-w-0 rounded-sm border border-emerald-500/20 bg-emerald-500/[0.03] p-3.5">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-emerald-400">Limit</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{step.limitation}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      <section aria-labelledby="worked-examples" className="space-y-5">
+      <section aria-labelledby="worked-examples" className="min-w-0 space-y-4">
         <h2 id="worked-examples" className="font-serif text-2xl text-sand-100">Worked examples, not live game evidence</h2>
-        <p className="text-base leading-7">The named targets below are illustrative teaching examples, not today’s answer. Operation notation is schematic, not a request payload or SQL trace. We do not publish invented response timings, routing percentages or accuracy rates; response time depends on the route, services and network.</p>
-        <div role="group" aria-label="Choose an answer example" className="flex flex-wrap gap-2">
+        <p className="text-sm leading-relaxed">The named targets below are illustrative teaching examples, not today’s answer. Operation notation is schematic, not a request payload or SQL trace. We do not publish invented response timings, routing percentages or accuracy rates; response time depends on the route, services and network.</p>
+        <div role="group" aria-label="Choose an answer example" className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {EXAMPLES.map(item => (
-            <button key={item.id} type="button" aria-pressed={item.id === exampleId} onClick={() => setExampleId(item.id)} className={cn('rounded-sm border px-4 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400', item.id === exampleId ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' : 'border-white/10 text-zinc-400 hover:text-sand-100')}>
-              {item.question}
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={item.id === exampleId}
+              aria-controls={`worked-example-${item.id}`}
+              onClick={() => setExampleId(item.id)}
+              className={cn(
+                'flex min-h-11 min-w-0 flex-col justify-between rounded-sm border p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400',
+                item.id === exampleId ? 'border-emerald-400/60 bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-400/30' : 'border-white/10 bg-obsidian-900/90 text-zinc-400 hover:border-white/20 hover:bg-obsidian-900'
+              )}
+            >
+              <span className="text-sm font-semibold leading-snug">{item.question}</span>
+              <span className="mt-3 border-t border-white/5 pt-2 text-xs text-zinc-400">Example: {item.target}</span>
             </button>
           ))}
         </div>
-        <div className="rounded-sm border border-white/10 bg-obsidian-900 p-5 sm:p-6">
-          <h3 className="text-lg font-semibold text-sand-100">{example.question}</h3>
-          <dl className="mt-4 space-y-3 text-base leading-7">
-            <div><dt className="text-sm text-zinc-400">Example target</dt><dd>{example.target}</dd></div>
-            <div><dt className="text-sm text-zinc-400">Route</dt><dd>{example.route}</dd></div>
-            <div><dt className="text-sm text-zinc-400">Operation</dt><dd className="break-words font-mono text-sm text-emerald-300">{example.operation}</dd></div>
-            <div><dt className="text-sm text-zinc-400">Illustrative result</dt><dd>{example.result}</dd></div>
-          </dl>
-          <p className="mt-5 border-t border-white/10 pt-4 text-base leading-7">{example.lesson}</p>
-        </div>
+        {EXAMPLES.map(item => (
+          <div key={item.id} id={`worked-example-${item.id}`} hidden={item.id !== exampleId} aria-labelledby={`worked-example-title-${item.id}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-900">
+            <div className="min-w-0 border-b border-white/10 bg-obsidian-950/60 p-4 sm:p-5">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">Illustrative target: {item.target}</p>
+              <h3 id={`worked-example-title-${item.id}`} className="mt-2 font-serif text-xl text-sand-100">{item.question}</h3>
+            </div>
+            <div className="min-w-0 p-4 sm:p-5">
+              <dl className="grid min-w-0 grid-cols-1 gap-4 text-sm leading-relaxed sm:grid-cols-2">
+                <div className="min-w-0"><dt className="text-xs text-zinc-400">Example target</dt><dd className="mt-1">{item.target}</dd></div>
+                <div className="min-w-0"><dt className="text-xs text-zinc-400">Route</dt><dd className="mt-1">{item.route}</dd></div>
+                <div className="min-w-0"><dt className="text-xs text-zinc-400">Operation</dt><dd className="mt-1 font-mono text-xs text-emerald-300 [overflow-wrap:anywhere]">{item.operation}</dd></div>
+                <div className="min-w-0"><dt className="text-xs text-zinc-400">Illustrative result</dt><dd className="mt-1">{item.result}</dd></div>
+              </dl>
+              <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-relaxed">{item.lesson}</p>
+            </div>
+          </div>
+        ))}
       </section>
 
       <section aria-labelledby="data-limits" className="space-y-4 border-t border-white/10 pt-8">

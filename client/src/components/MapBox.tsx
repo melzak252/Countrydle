@@ -164,16 +164,16 @@ function MapControls({
         activeColor={activeMarkerColor}
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
-        className={isGameOver && correctCountryName ? 'max-md:!top-[17rem]' : 'max-md:!top-[14rem]'}
+        className={isGameOver && correctCountryName ? 'max-md:!top-[13.5rem]' : 'max-md:!top-[11rem]'}
       />
-      <div className="absolute top-[7rem] left-[12px] md:top-[5.25rem] md:left-[12px] z-[1050] flex flex-col gap-1 md:gap-2">
+      <div className="absolute top-[5.75rem] left-[12px] md:top-[5.25rem] md:left-[12px] z-[1050] flex flex-col gap-1 md:gap-2">
         {defaultCenter && (
           <button
             onClick={(e) => {
               e.preventDefault();
               handleResetView();
             }}
-            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
             title={isPl ? 'Resetuj widok' : 'Reset view'}
             aria-label={isPl ? 'Resetuj widok' : 'Reset view'}
           >
@@ -186,7 +186,7 @@ function MapControls({
               e.preventDefault();
               onToggleReferenceLines();
             }}
-            className={`p-2 rounded shadow-md transition-colors border h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer ${
+            className={`p-2 rounded shadow-md transition-colors border h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer ${
               showReferenceLines
                 ? 'bg-zinc-700 text-zinc-100 border-zinc-500 hover:bg-zinc-600'
                 : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-white'
@@ -206,7 +206,7 @@ function MapControls({
               e.preventDefault();
               handleZoomToCorrect();
             }}
-            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
             title={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
             aria-label={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
           >

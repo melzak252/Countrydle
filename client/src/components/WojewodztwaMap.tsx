@@ -309,13 +309,13 @@ export function ControlledWojewodztwaMap({
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
         onReset={() => { if (map) resetMapView(map, [52.065, 19.48], 6); }}
-        className={revealedName ? 'max-md:!top-[10rem]' : 'max-md:!top-[7rem]'}
+        className={revealedName ? 'max-md:!top-[8.25rem]' : 'max-md:!top-[5.75rem]'}
       />
       {revealedName && (
-        <div className="absolute top-[7rem] left-[12px] md:top-[5.25rem] z-[1050]">
+        <div className="absolute top-[5.75rem] left-[12px] md:top-[5.25rem] z-[1050]">
           <button
             onClick={handleZoomToCorrect}
-            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-11 w-11 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
             title={isPl ? 'Przybliż poprawne województwo' : 'Zoom to correct voivodeship'}
             aria-label={isPl ? 'Przybliż poprawne województwo' : 'Zoom to correct voivodeship'}
           >

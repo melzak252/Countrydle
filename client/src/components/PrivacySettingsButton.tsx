@@ -4,21 +4,25 @@ import toast from 'react-hot-toast';
 import { openPrivacySettings } from '../advertising';
 
 export function PrivacySettingsButton({ className }: { className?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isPl = i18n?.language?.startsWith('pl');
   const [opening, setOpening] = useState(false);
+  const unavailableMessage = isPl
+    ? 'Nie udało się otworzyć ustawień prywatności Google. Mogą być niedostępne lub blokowane przez przeglądarkę. Żadne ustawienia nie zostały zmienione. Spróbuj ponownie później.'
+    : t('privacySettings.unavailable');
 
   useEffect(() => {
-    const unavailable = () => toast.error(t('privacySettings.unavailable'), { id: 'privacy-settings-unavailable' });
+    const unavailable = () => toast.error(unavailableMessage, { id: 'privacy-settings-unavailable' });
     window.addEventListener('countrydle:privacy-unavailable', unavailable);
     return () => window.removeEventListener('countrydle:privacy-unavailable', unavailable);
-  }, [t]);
+  }, [unavailableMessage]);
 
   const open = async () => {
     setOpening(true);
     try {
       await openPrivacySettings();
     } catch {
-      toast.error(t('privacySettings.unavailable'), { id: 'privacy-settings-unavailable' });
+      toast.error(unavailableMessage, { id: 'privacy-settings-unavailable' });
     } finally {
       setOpening(false);
     }
@@ -26,7 +30,7 @@ export function PrivacySettingsButton({ className }: { className?: string }) {
 
   return (
     <button type="button" onClick={open} disabled={opening} aria-busy={opening} className={className}>
-      {t('privacySettings.label')}
+      {isPl ? 'Ustawienia prywatności' : t('privacySettings.label')}
     </button>
   );
 }

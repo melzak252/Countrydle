@@ -29,7 +29,7 @@ export default function MapToolbar({
 
   return (
     <div
-      className={`absolute left-[12px] top-[13.25rem] md:top-2 md:left-14 z-[1050] flex flex-col items-center gap-1 rounded-sm border border-white/10 bg-obsidian-950/90 px-0 py-0 max-md:border-0 max-md:bg-transparent md:flex-row md:px-1.5 md:py-1 shadow-md backdrop-blur-sm ${className}`}
+      className={`absolute left-[12px] top-[5.75rem] md:top-2 md:left-14 z-[1050] flex flex-col items-center gap-1 rounded-sm border border-white/10 bg-obsidian-950/90 px-0 py-0 max-md:border-0 max-md:bg-transparent md:flex-row md:px-1.5 md:py-1 shadow-md backdrop-blur-sm ${className}`}
       role="toolbar"
       aria-label={isPl ? 'Oznaczenia mapy' : 'Map markings'}
     >
@@ -68,7 +68,7 @@ export default function MapToolbar({
         <button
           type="button"
           onClick={onReset}
-          className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center rounded-sm max-md:border max-md:border-zinc-700 max-md:bg-zinc-800 text-zinc-200 hover:bg-white/10 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+          className="flex h-9 w-9 md:h-8 md:w-8 items-center justify-center rounded-sm max-md:border max-md:border-zinc-700 max-md:bg-zinc-800 text-zinc-200 hover:bg-white/10 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
           title={isPl ? 'Resetuj widok' : 'Reset view'}
           aria-label={isPl ? 'Resetuj widok' : 'Reset view'}
         >
@@ -78,7 +78,7 @@ export default function MapToolbar({
       <button
         type="button"
         onClick={onClear}
-        className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center rounded-sm max-md:border max-md:border-zinc-700 max-md:bg-zinc-800 text-zinc-400 transition-colors hover:bg-white/10 hover:text-sand-100 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+        className="flex h-9 w-9 md:h-8 md:w-8 items-center justify-center rounded-sm max-md:border max-md:border-zinc-700 max-md:bg-zinc-800 text-zinc-400 transition-colors hover:bg-white/10 hover:text-sand-100 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
         title={isPl ? 'Wyczyść wszystkie oznaczenia mapy' : 'Clear all map markings'}
         aria-label={isPl ? 'Wyczyść wszystkie oznaczenia mapy' : 'Clear all map markings'}
       >

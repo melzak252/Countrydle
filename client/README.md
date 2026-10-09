@@ -6,6 +6,45 @@ requests. The application-hardening managed Playwright/CI harness is not part of
 this rollback. Existing Bun unit tests cover question accounting, the one-second
 response animation and active-versus-completed explanation rendering.
 
+## Public mobile layout
+
+Below 1280px, navigation uses a compact header and a native modal dialog instead
+of expanding the page header. Play, Blog, Leaderboard and account actions remain
+direct links; game categories, guides, help and privacy use disclosures. The
+dialog scrolls independently, restores focus on dismissal, and closes on route
+changes, Escape, backdrop clicks and desktop resize. The technical version badge
+is desktop-only. The footer has only Privacy, Cookies, Terms of Use and Contact
+links; games, blog, guides, help and privacy settings remain in the header.
+
+Phone map controls use 36px buttons and a compact vertical stack for zoom, reset,
+clear, reference lines and the revealed-target action. Desktop sizing is unchanged.
+
+The homepage puts one daily-puzzle action first, followed by the spinning globe
+on phones as well as desktop. Guest progress controls the play/continue/result
+label only when its date and loading state are current. Other games, rules and
+device progress are available through disclosures. The globe supports horizontal
+drag, tap and keyboard-operable pause/resume; vertical touch gestures can scroll
+the page, and reduced-motion mode starts paused.
+The other-games link stays on a separate line with 1rem of top spacing.
+
+The country journal keeps search visible and groups continent, difficulty and
+sorting controls in one disclosure. Article facts and curiosities precede
+optional statistics/deduction; trivia, sharing and related articles remain
+available. Blog response types live in `src/types/blog.ts`; the trivia distractor
+helper lives in `src/lib/blogTrivia.ts`. The question inspector stacks its tabs
+on phones and confines JSON/SQL scrolling to labelled, focusable code panels.
+The Americas filter includes articles tagged North America, South America or
+Americas, while still combining with the search and difficulty filters.
+
+Verification used real Chromium rendering and interactions at 320, 390, 430,
+768, 1024 and 1440px in English and Polish for home, journal, article and world
+game, plus narrow public-route and landscape/short-viewport checks. Expanded
+navigation, long usernames, filters/search/reset, trivia, clipboard sharing,
+guest-state transitions, globe gestures/reduced motion and all eight inspector
+examples across three panels were exercised. API responses were controlled
+fixtures because no Countrydle backend was running; live backend content, native
+device sharing and physical-device keyboard/notch behavior were not verified.
+
 ## Admin workspace
 
 `/admin` provides thirteen direct destinations: Overview, Sessions, Live feed,
