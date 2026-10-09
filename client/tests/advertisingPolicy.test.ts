@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { expect, spyOn, test } from 'bun:test';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { act, createElement } from 'react';
@@ -32,14 +32,16 @@ interface PolicyFixture {
   navigation: Navigation[];
   historyCalls: HistoryCall[];
   readonly requests: number;
+  readonly subscriptions: number;
   readonly settingsOpened: number;
   readyCMP(): void;
-  mount(privacy?: boolean): Promise<void>;
+  mount(privacy?: boolean, advertising?: boolean): Promise<void>;
   emitConsent(data: ConsentData, success?: boolean): Promise<void>;
   loadSDK(): Promise<void>;
   startAds(): Promise<void>;
   clickPrivacy(): Promise<void>;
   failCMP(): Promise<void>;
+  advanceTime(milliseconds: number): void;
   traverse(url: string): Promise<void>;
   dispose(): Promise<void>;
 }
@@ -49,8 +51,8 @@ const unavailable = 'Privacy settings could not open. No settings were changed.'
 
 // Load a fresh real policy for each scenario without mock.module, shared module-cache
 // resets, process.env changes, or replacing any of its React hooks.
-async function withPolicy(path: string, run: (fixture: PolicyFixture) => Promise<void>) {
-  const fixture = await createFixture(path);
+async function withPolicy(path: string, run: (fixture: PolicyFixture) => Promise<void>, options: { controlledTimers?: boolean } = {}) {
+  const fixture = await createFixture(path, options.controlledTimers);
   try {
     await run(fixture);
   } finally {
@@ -58,7 +60,7 @@ async function withPolicy(path: string, run: (fixture: PolicyFixture) => Promise
   }
 }
 
-async function createFixture(path: string): Promise<PolicyFixture> {
+async function createFixture(path: string, controlledTimers = false): Promise<PolicyFixture> {
   const dom = new TestWindow({
     url: `https://countrydle.test${path}`,
     settings: {
@@ -79,6 +81,20 @@ async function createFixture(path: string): Promise<PolicyFixture> {
     previous.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
     Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
   }
+  let clock = 0;
+  let nextTimer = 0;
+  const timeouts = new Map<number, { at: number; run: () => void }>();
+  // Only the policy's window timers are controlled. Bun's supported spies leave
+  // React act, toast scheduling and Happy DOM's host task manager on real timers.
+  const clockSetTimeout = controlledTimers ? spyOn(browser, 'setTimeout').mockImplementation((handler, delay = 0, ...args) => {
+    if (typeof handler !== 'function') throw new Error('The fixture clock requires a function callback.');
+    const id = ++nextTimer;
+    timeouts.set(id, { at: clock + Math.max(0, delay), run: () => { handler(...args); } });
+    return id;
+  }) : undefined;
+  const clockClearTimeout = controlledTimers ? spyOn(browser, 'clearTimeout').mockImplementation(id => {
+    if (id !== undefined) timeouts.delete(id);
+  }) : undefined;
   dom.document.head.innerHTML = `<meta name="google-adsense-account" content="${publisher}">`;
   // Keep external provider scripts inert; tests deliver only disposable load/error
   // callbacks themselves, never a network request or provider implementation.
@@ -112,6 +128,10 @@ async function createFixture(path: string): Promise<PolicyFixture> {
   let root: Root | undefined;
   toast.remove();
   async function dispose() {
+    // Restore before any asynchronous unmount/close work, including failed tests.
+    clockSetTimeout?.mockRestore();
+    clockClearTimeout?.mockRestore();
+    timeouts.clear();
     try {
       await act(async () => { root?.unmount(); toast.remove(); });
     } finally {
@@ -173,23 +193,25 @@ async function createFixture(path: string): Promise<PolicyFixture> {
     let consentCallback: ConsentCallback | undefined;
     let requests = 0;
     let settingsOpened = 0;
+    let subscriptions = 0;
 
     function readyCMP() {
-      browser.googlefc = { callbackQueue: [], showRevocationMessage: () => { settingsOpened += 1; } };
-      browser.__tcfapi = (_command, _version, callback) => { consentCallback = callback; };
+      browser.googlefc = { callbackQueue: browser.googlefc?.callbackQueue || [], showRevocationMessage: () => { settingsOpened += 1; } };
+      browser.__tcfapi = (_command, _version, callback) => { subscriptions += 1; consentCallback = callback; };
     }
     function ToastMessages() {
       const { toasts } = useToasterStore();
       return createElement('output', { 'data-visible-toasts': true },
         toasts.filter(message => message.visible).map(message => String(message.message)).join('\n'));
     }
-    async function mount(privacy = false) {
+    async function mount(privacy = false, advertising = !privacy) {
       await act(async () => {
         root = createRoot(container as unknown as HTMLElement);
         root.render(createElement(BrowserRouter, { window: browser },
-          createElement(I18nextProvider, { i18n }, privacy
-            ? createElement('div', null, createElement(PrivacySettingsButton), createElement(ToastMessages))
-            : createElement(AdSenseUnit, { slot: 'journal' }))));
+          createElement(I18nextProvider, { i18n }, createElement('div', null,
+            advertising ? createElement(AdSenseUnit, { slot: 'journal' }) : null,
+            privacy ? createElement(PrivacySettingsButton) : null,
+            privacy ? createElement(ToastMessages) : null))));
       });
     }
     async function emitConsent(data: ConsentData, success = true) {
@@ -227,8 +249,29 @@ async function createFixture(path: string): Promise<PolicyFixture> {
     return {
       dom, browser, policy, container, navigation, historyCalls,
       readyCMP, mount, emitConsent, loadSDK, startAds, clickPrivacy, failCMP,
+      advanceTime(milliseconds: number) {
+        if (!controlledTimers) throw new Error('Window timer control is not enabled for this fixture.');
+        const target = clock + milliseconds;
+        while (true) {
+          let next: number | undefined;
+          let earliest = Infinity;
+          for (const [id, timer] of timeouts) {
+            if (timer.at <= target && timer.at < earliest) {
+              next = id;
+              earliest = timer.at;
+            }
+          }
+          if (next === undefined) break;
+          const timer = timeouts.get(next)!;
+          timeouts.delete(next);
+          clock = timer.at;
+          timer.run();
+        }
+        clock = target;
+      },
       get requests() { return requests; },
       get settingsOpened() { return settingsOpened; },
+      get subscriptions() { return subscriptions; },
       // A native traversal changes the address before popstate and never calls the
       // intercepted application methods. Keep that browser ordering deterministic.
       async traverse(url: string) {
@@ -400,4 +443,121 @@ test('an immediate startup privacy failure survives mounting and retries clear, 
     expect(fixture.container.querySelector('button')?.disabled).toBe(false);
     expect(fixture.settingsOpened).toBe(1);
   });
+});
+
+test('CMP readiness at eleven seconds recovers privacy state and subscribes automatically without reopening the timed-out request', async () => {
+  await withPolicy('/blog', async fixture => {
+    fixture.policy.initializeAdvertisingPolicy();
+    fixture.policy.setPageEditorialEligibility(true);
+    await fixture.mount(true, true);
+    await fixture.clickPrivacy();
+    const ready = fixture.browser.googlefc!.callbackQueue[0].CONSENT_API_READY;
+    fixture.browser.setTimeout(() => { fixture.readyCMP(); ready(); }, 11000);
+
+    await act(async () => { fixture.advanceTime(10000); });
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).toContain(unavailable);
+    expect(fixture.container.querySelector('button')?.disabled).toBe(false);
+    expect(fixture.subscriptions).toBe(0);
+    expect(fixture.dom.document.getElementById('countrydle-adsense')).toBeNull();
+    expect(fixture.requests).toBe(0);
+
+    await act(async () => { fixture.advanceTime(1000); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).not.toContain(unavailable);
+    expect(fixture.container.querySelector('button')?.disabled).toBe(false);
+    expect(fixture.settingsOpened).toBe(0);
+    // Readiness alone, and even a failed non-GDPR response, cannot authorize ads.
+    await fixture.emitConsent({ gdprApplies: false }, false);
+    expect(fixture.dom.document.getElementById('countrydle-adsense')).toBeNull();
+    await fixture.emitConsent({ gdprApplies: false });
+    await fixture.loadSDK();
+    expect(fixture.container.querySelector('ins.adsbygoogle')).not.toBeNull();
+    expect(fixture.requests).toBe(1);
+    await act(async () => { ready(); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.settingsOpened).toBe(0);
+    expect(fixture.requests).toBe(1);
+  }, { controlledTimers: true });
+});
+
+test('an expired readiness callback after retry subscribes once without settling or reopening either privacy request', async () => {
+  await withPolicy('/cookie-policy#privacy-settings', async fixture => {
+    fixture.policy.initializeAdvertisingPolicy();
+    await fixture.mount(true);
+    const expiredReady = fixture.browser.googlefc!.callbackQueue[0].CONSENT_API_READY;
+    await act(async () => { fixture.advanceTime(10000); });
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).toContain(unavailable);
+
+    await fixture.clickPrivacy();
+    expect(fixture.browser.googlefc!.callbackQueue).toHaveLength(2);
+    const retryReady = fixture.browser.googlefc!.callbackQueue[1].CONSENT_API_READY;
+    fixture.readyCMP();
+    await act(async () => { expiredReady(); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.settingsOpened).toBe(0);
+    expect(fixture.container.querySelector('button')?.disabled).toBe(true);
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).not.toContain(unavailable);
+
+    await act(async () => { retryReady(); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.settingsOpened).toBe(1);
+    expect(fixture.container.querySelector('button')?.disabled).toBe(false);
+    await act(async () => { expiredReady(); retryReady(); fixture.advanceTime(10000); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.settingsOpened).toBe(1);
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).not.toContain(unavailable);
+  }, { controlledTimers: true });
+});
+
+for (const failure of ['missing revocation API', 'missing consent API', 'throwing consent API'] as const) {
+  test(`late readiness with a ${failure} remains unavailable and ad-free until working APIs arrive`, async () => {
+    await withPolicy('/blog', async fixture => {
+      fixture.policy.initializeAdvertisingPolicy();
+      fixture.policy.setPageEditorialEligibility(true);
+      await fixture.mount(true, true);
+      await fixture.clickPrivacy();
+      const ready = fixture.browser.googlefc!.callbackQueue[0].CONSENT_API_READY;
+      await act(async () => { fixture.advanceTime(10000); });
+      fixture.readyCMP();
+      if (failure === 'missing revocation API') delete fixture.browser.googlefc!.showRevocationMessage;
+      else if (failure === 'missing consent API') delete fixture.browser.__tcfapi;
+      else fixture.browser.__tcfapi = () => { throw new Error('Fixture CMP registration failed.'); };
+
+      await act(async () => { ready(); });
+      expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).toContain(unavailable);
+      expect(fixture.subscriptions).toBe(0);
+      expect(fixture.settingsOpened).toBe(0);
+      expect(fixture.container.querySelector('ins.adsbygoogle')).toBeNull();
+      expect(fixture.dom.document.getElementById('countrydle-adsense')).toBeNull();
+      expect(fixture.requests).toBe(0);
+
+      fixture.readyCMP();
+      await act(async () => { ready(); });
+      expect(fixture.subscriptions).toBe(1);
+      expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).not.toContain(unavailable);
+      await fixture.emitConsent({ gdprApplies: false });
+      await fixture.loadSDK();
+      expect(fixture.requests).toBe(1);
+    }, { controlledTimers: true });
+  });
+}
+
+test('a later readiness callback does not hide a failed revocation dialog or reopen the settled request', async () => {
+  await withPolicy('/blog', async fixture => {
+    fixture.policy.initializeAdvertisingPolicy();
+    await fixture.mount(true);
+    await fixture.clickPrivacy();
+    const ready = fixture.browser.googlefc!.callbackQueue[0].CONSENT_API_READY;
+    fixture.readyCMP();
+    fixture.browser.googlefc!.showRevocationMessage = () => { throw new Error('Fixture privacy dialog failed.'); };
+    await act(async () => { ready(); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).toContain(unavailable);
+
+    fixture.readyCMP();
+    await act(async () => { ready(); });
+    expect(fixture.subscriptions).toBe(1);
+    expect(fixture.settingsOpened).toBe(0);
+    expect(fixture.container.querySelector('[data-visible-toasts]')?.textContent).toContain(unavailable);
+  }, { controlledTimers: true });
 });

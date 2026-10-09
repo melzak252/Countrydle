@@ -73,7 +73,7 @@ class BlogTriviaQuiz(BaseModel):
     @field_validator("question", "correct_answer", "incorrect_distractor", "explanation")
     @classmethod
     def require_meaningful_quiz_text(cls, value: str) -> str:
-        if not value:
+        if not _clean_quiz_display_text(value):
             raise ValueError("Quiz fields must contain nonblank text")
         return value
 

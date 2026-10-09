@@ -125,3 +125,14 @@ async def test_ai_article_with_omitted_quiz_remains_valid_and_ai_assisted(
     assert article["ai_assisted"] is True
     assert article["title"] == provider_article["title"]
     assert "quiz" not in article["deduction_masterclass"]
+
+
+@pytest.mark.parametrize("field", ["question", "correct_answer", "incorrect_distractor", "explanation"])
+def test_display_whitespace_only_quiz_field_is_rejected_before_persistence(field):
+    quiz = {
+        "question": "What is the capital of Poland?", "correct_answer": "Warsaw",
+        "incorrect_distractor": "Berlin", "explanation": "Warsaw is the capital of Poland.",
+    }
+    quiz[field] = "\ufeff\u2000\u2028\u3000"
+    with pytest.raises(ValidationError, match="nonblank"):
+        BlogPostUpdate.model_validate({"deduction_masterclass": {"quiz": quiz}})

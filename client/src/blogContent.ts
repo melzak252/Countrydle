@@ -100,6 +100,8 @@ export function additionalArticleSections(post: BlogPost): string[] {
   return post.content_markdown.split(/(?=^#{1,6}\s)/m).flatMap((section) => {
     const lines = section.trim().split('\n');
     const heading = /^#{1,6}\s/.test(lines[0] || '') ? lines.shift() : undefined;
+    // Heading annotations qualify the section, including its repeated claims.
+    if (heading && /\[[^\]]+\]/.test(heading)) return [section.trim()];
     const remaining = lines.filter((line) => line.trim() && !displayed.has(comparableClaim(line)));
     if (!remaining.length) return [];
     return [[heading, ...remaining].filter(Boolean).join('\n')];

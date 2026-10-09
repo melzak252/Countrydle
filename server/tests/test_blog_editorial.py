@@ -1023,3 +1023,36 @@ async def test_every_mutation_advances_version_despite_tied_or_backward_utc_cloc
     })
     assert rejected.status_code == 409, rejected.text
     assert (await client.get("/blog/admin/posts/1")).json() == changed.json()
+
+
+@pytest.mark.parametrize("field", ["question", "correct_answer", "incorrect_distractor", "explanation"])
+async def test_display_blank_quiz_cannot_be_saved_or_approved_from_legacy_storage(editorial_store, field):
+    client = editorial_store.client
+    login(client, "editor-one@example.com")
+    quiz = {
+        "question": "What is the capital of Poland?", "correct_answer": "Warsaw",
+        "incorrect_distractor": "Berlin", "explanation": "Warsaw is the capital of Poland.",
+    }
+    quiz[field] = "\ufeff"
+    initial = (await client.get("/blog/admin/posts/1")).json()
+    rejected = await patch_loaded_post(client, {"deduction_masterclass": {"quiz": quiz}})
+    assert rejected.status_code == 422, rejected.text
+    unchanged = (await client.get("/blog/admin/posts/1")).json()
+    assert unchanged["updated_at"] == initial["updated_at"]
+    assert unchanged["deduction_masterclass"] == initial["deduction_masterclass"]
+
+    async with editorial_store.sessions() as session:
+        post = await session.get(DailyBlogPost, 1)
+        post.deduction_masterclass = {"quiz": quiz}
+        post.updated_at += timedelta(seconds=1)
+        await session.commit()
+
+    rejected_review = await review_loaded_post(client)
+    assert rejected_review.status_code == 400, rejected_review.text
+    public = await client.get("/blog/2026-10-08-poland")
+    assert public.status_code == 200, public.text
+    assert public.json()["deduction_masterclass"]["quiz"] == quiz
+    assert public.json()["editorial_status"] == "unreviewed"
+    async with editorial_store.sessions() as session:
+        post = await session.get(DailyBlogPost, 1)
+        assert post.reviewed_at is None and post.reviewed_by_id is None

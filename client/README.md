@@ -455,6 +455,28 @@ no ads. Unknown/deleted posts return 404 when authoritative metadata is availabl
 unavailable metadata cannot establish a deletion. Today/future recaps remain
 private. Published date aliases return 308 to the canonical slug.
 
+#### Development Compose bootstrap
+
+`docker-compose-dev.yml` uses the same separate serving/capture targets and shared
+snapshot directory: reader read-only, opt-in worker writable. From the repository
+root, with the backend environment configured:
+
+```bash
+docker compose -f docker-compose-dev.yml --profile publisher-capture build backend frontend publisher-capture
+docker compose -f docker-compose-dev.yml up -d backend
+# Wait for the backend's public blog and Explore endpoints to be ready.
+docker compose -f docker-compose-dev.yml --profile publisher-capture run --rm publisher-capture
+docker compose -f docker-compose-dev.yml up -d frontend
+curl --fail http://localhost:5173/healthz
+curl --fail http://localhost:5173/faq
+```
+
+Both targets must share build arguments; recapture after asset/content changes.
+Default startup never launches Chromium. Before a first compatible artifact,
+publisher routes and health return 503. Keep the default canonical
+`PUBLISHER_ORIGIN=https://countrydle.online` even when browsing locally; captured
+HTML rejects loopback origins.
+
 #### Operator setup and scheduled refresh
 
 1. Build/publish the paired immutable GHCR images from the same commit:
@@ -552,6 +574,10 @@ notice while preserving factual article text and raw editable JSON for admin
 repair; no answers or distractors are fabricated. Unknown historical `created_at`
 stays null, displays publication time as unavailable and omits `datePublished`
 from metadata rather than inventing a date. Real `updated_at` remains available.
+Quiz nonblank validation uses the client's display-whitespace set: U+FEFF-only
+fields cannot be saved or approved from historical storage. Heading annotations
+retain their whole qualified section, including repeated facts; ordinary
+unannotated duplicate claims are still removed.
 Public recaps distinguish AI assistance, review and real source evidence;
 citation-needed markers remain visible. Update timestamps are not measurement
 years: check reference dates in sources rather than treating undated facts as
@@ -586,9 +612,13 @@ Check account-level Auto ads formats and placement exclusions before enabling.
 Unknown, rejected or unavailable consent does not authorize ad requests.
 EEA permission requires a loaded supported TCF state and affirmative Google
 vendor/purpose consent; a determinate non-GDPR state is handled separately.
-Late CMP readiness can recover, failed loading can be retried, and revocation
-removes serving permission. Privacy settings are in the footer, navigation and
-Cookie Policy; unavailable provider state reports that no choices were changed.
+CMP readiness registers the single consent listener independently of a request's
+ten-second timeout. Legitimate late readiness recovers automatically without
+manual retry or reopening the expired privacy dialog. Readiness failures clear
+on recovery; an actual dialog failure remains visible. Failed loading can be
+retried, and revocation removes serving permission. Privacy settings are in the
+footer, navigation and Cookie Policy; unavailable provider state reports that
+no choices were changed.
 Old `cookie-consent` localStorage values are not consent. Rybbit remains an
 independently configured analytics integration, suppressed only during capture;
 verify its deployment-specific collection, retention and legal basis separately.
@@ -605,7 +635,7 @@ real inventory and account settings must be checked by the operator.
 
 ### Verification evidence and remaining limits
 
-The current integration's offline backend run passed **11,363 tests**, with
+The initial integration's offline backend run passed **11,363 tests**, with
 165 skipped and eight credential-dependent live Gemini cases deselected
 (195.95 seconds). Focused PostgreSQL generation/editorial suites passed 108
 tests, including single-slot pools, simultaneous generation, review-clearing
@@ -616,6 +646,21 @@ contract. Node 20 paired serving/capture image builds and Node 22 host productio
 compilation passed. These are local checks, not evidence of GitHub Action runs.
 Full-repository lint still reports 80 errors and 14 warnings in inherited code;
 it is not a fully green repository-wide lint gate.
+
+The four follow-up review corrections passed 116 focused backend tests, 152
+frontend tests, changed-file lint and paired Node 20 production image builds.
+Actual native HTTP rejected display-blank fields with PATCH 422 and historical
+review 400 for all four quiz fields; a meaningful repair and deliberate review
+returned 200. Native Chromium observed the ten-second privacy failure with zero
+subscriptions/ad requests, then eleven-second readiness established one
+subscription and one authorized fixture ad request without retry or reopening
+the expired dialog. The visible error cleared. A 390-pixel article retained its
+warning-bearing population heading beside the repeated claim without overflow.
+The exact migrated development frontend/worker configuration, against an
+isolated native API, captured 20 routes with no unavailable routes; checked
+home/help/policy/Explore/journal/health responses were 200. An unchanged capture
+reused its release, and the serving snapshot mount was read-only with no Chromium.
+These disposable CMP/SDK fixtures make no real Google requests or impressions.
 
 Actual owned FastAPI/PostgreSQL/HTTP checks exercised source CAS and null
 creation reads. Independent Chromium editor tabs exercised save 200/409 with

@@ -65,6 +65,7 @@ let initialized = false;
 let cmpPromise: Promise<void> | null = null;
 let listenerRegistered = false;
 let privacySettingsState: PrivacySettingsState = 'idle';
+let privacySettingsAwaitingReadiness = false;
 const originalHistory = {
   pushState: window.history.pushState.bind(window.history),
   replaceState: window.history.replaceState.bind(window.history),
@@ -124,7 +125,8 @@ function consentFromTCData(data: TCData, success: boolean): ConsentState {
   return personalized && supporting && vendorBasis ? 'granted' : 'denied';
 }
 function registerConsentListener() {
-  if (listenerRegistered || !window.__tcfapi || isPublisherCapture()) return;
+  if (isPublisherCapture() || typeof window.__tcfapi !== 'function') return false;
+  if (listenerRegistered) return true;
   listenerRegistered = true;
   try {
     window.__tcfapi('addEventListener', 2, (data, success) => {
@@ -134,17 +136,18 @@ function registerConsentListener() {
         leaveAdDocument(data?.eventStatus === 'cmpuishown' ? '/cookie-policy#privacy-settings' : window.location.href, true);
       }
     });
+    return true;
   } catch {
     listenerRegistered = false;
     consent = 'unknown';
     publish();
+    return false;
   }
 }
 function loadPrivacyMessaging(): Promise<void> {
   if (isPublisherCapture() || !publisher) return Promise.reject(new Error('Google privacy messaging is unavailable.'));
-  if (window.googlefc?.showRevocationMessage && window.__tcfapi) {
-    registerConsentListener();
-    return Promise.resolve();
+  if (typeof window.googlefc?.showRevocationMessage === 'function' && typeof window.__tcfapi === 'function') {
+    return registerConsentListener() ? Promise.resolve() : Promise.reject(new Error('Google privacy settings are unavailable.'));
   }
   if (cmpPromise) return cmpPromise;
   cmpPromise = new Promise<void>((resolve, reject) => {
@@ -155,13 +158,26 @@ function loadPrivacyMessaging(): Promise<void> {
       settled = true;
       window.clearTimeout(timeout);
       if (error) reject(error);
-      else { registerConsentListener(); resolve(); }
+      else resolve();
     };
     window.googlefc = window.googlefc || { callbackQueue: [] };
     window.googlefc.callbackQueue = window.googlefc.callbackQueue || [];
     window.googlefc.callbackQueue.push({
-      CONSENT_API_READY: () => finish(window.googlefc?.showRevocationMessage && window.__tcfapi
-        ? undefined : new Error('Google privacy settings are unavailable.')),
+      CONSENT_API_READY: () => {
+        // Provider readiness outlives an individual settings request's timeout.
+        // Even an expired callback must establish the single consent subscription.
+        if (typeof window.googlefc?.showRevocationMessage !== 'function' || typeof window.__tcfapi !== 'function'
+          || !registerConsentListener()) {
+          finish(new Error('Google privacy settings are unavailable.'));
+          return;
+        }
+        if (privacySettingsAwaitingReadiness) {
+          privacySettingsAwaitingReadiness = false;
+          privacySettingsState = 'idle';
+          publish();
+        }
+        finish();
+      },
     });
     if (!document.getElementById('countrydle-funding-choices')) {
       const script = document.createElement('script');
@@ -181,6 +197,8 @@ function loadPrivacyMessaging(): Promise<void> {
 
 export async function openPrivacySettings(): Promise<void> {
   privacySettingsState = 'opening';
+  privacySettingsAwaitingReadiness = false;
+  let messagingReady = false;
   publish();
   try {
     if (isPublisherCapture()) throw new Error('Privacy messaging is disabled during publisher capture.');
@@ -188,12 +206,14 @@ export async function openPrivacySettings(): Promise<void> {
       leaveAdDocument('/cookie-policy#privacy-settings');
     } else {
       await loadPrivacyMessaging();
-      if (!window.googlefc?.showRevocationMessage) throw new Error('Google privacy settings are unavailable.');
+      messagingReady = true;
+      if (typeof window.googlefc?.showRevocationMessage !== 'function') throw new Error('Google privacy settings are unavailable.');
       window.googlefc.showRevocationMessage();
     }
     privacySettingsState = 'idle';
     publish();
   } catch (error) {
+    privacySettingsAwaitingReadiness = !messagingReady;
     privacySettingsState = 'unavailable';
     publish();
     throw error;
