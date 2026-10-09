@@ -1,10 +1,12 @@
 ## Client runtime and verification
 
-The client uses the standard Vite development server and TypeScript/Vite production
-build, with the existing Nginx container serving the built assets and forwarding API
-requests. The application-hardening managed Playwright/CI harness is not part of
-this rollback. Existing Bun unit tests cover question accounting, the one-second
-response animation and active-versus-completed explanation rendering.
+The Vite development server and `npm run build` use the existing TypeScript/Vite
+pipeline. The production frontend image also includes Python, websocket-client
+and Chromium: a read-only publisher process renders public content behind Nginx,
+while gameplay and private routes retain the SPA shell. No backend credentials or
+content service are required during image build. Existing Bun tests cover
+question accounting, the one-second response animation, explanation visibility,
+publisher metadata, content parsing and advertising decisions.
 
 ## Public mobile layout
 
@@ -13,8 +15,8 @@ of expanding the page header. Play, Blog, Leaderboard and account actions remain
 direct links; game categories, guides, help and privacy use disclosures. The
 dialog scrolls independently, restores focus on dismissal, and closes on route
 changes, Escape, backdrop clicks and desktop resize. The technical version badge
-is desktop-only. The footer has only Privacy, Cookies, Terms of Use and Contact
-links; games, blog, guides, help and privacy settings remain in the header.
+is desktop-only. The compact footer contains Privacy, Cookies, Terms of Use,
+Contact and Privacy settings; games, blog, guides and help remain in the header.
 
 Phone map controls use 36px buttons and a compact vertical stack for zoom, reset,
 clear, reference lines and the revealed-target action. Desktop sizing is unchanged.
@@ -29,10 +31,13 @@ The other-games link stays on a separate line with 1rem of top spacing.
 
 The country journal keeps search visible and groups continent, difficulty and
 sorting controls in one disclosure. Article facts and curiosities precede
-optional statistics/deduction; trivia, sharing and related articles remain
-available. Blog response types live in `src/types/blog.ts`; the trivia distractor
-helper lives in `src/lib/blogTrivia.ts`. The question inspector stacks its tabs
-on phones and confines JSON/SQL scrolling to labelled, focusable code panels.
+optional statistics/deduction; sharing and related articles remain available.
+Trivia appears only when a real quiz was recorded; no distractors are invented.
+Public and editor response contracts share `src/blogContent.ts` Zod schemas. Distinct
+recorded community answers, explanations, counts and citation warnings remain
+visible without repeating the same deduction question. The question inspector
+stacks its tabs on phones and confines JSON/SQL scrolling to labelled, focusable
+code panels.
 The Americas filter includes articles tagged North America, South America or
 Americas, while still combining with the search and difficulty filters.
 
@@ -47,9 +52,9 @@ device sharing and physical-device keyboard/notch behavior were not verified.
 
 ## Admin workspace
 
-`/admin` provides thirteen direct destinations: Overview, Sessions, Live feed,
-Users, Suggestions, Friend duels, Question audit, Player reports, Question testing,
-Template audit, Facts editor, Cache, and AI Costs. Desktop uses one sidebar grouped into
+`/admin` provides fourteen direct destinations: Overview, Sessions, Live feed,
+Users, Suggestions, Friend duels, Blogs, Question audit, Player reports, Question
+testing, Template audit, Facts editor, Cache, and AI Costs. Desktop uses one sidebar grouped into
 Players, Knowledge & QA, and System; narrow layouts use a labelled native page
 selector. Each destination has one page heading. Styles are scoped to
 `.admin-workspace`, with visible keyboard focus and 44px primary controls; public
@@ -411,45 +416,146 @@ transfer arrangements, operational retention/deletion procedures (including
 logs and backups), and actual audience/children's-data handling. Do not add
 AdinPlay recipients or cookie entries until an integration actually exists.
 
-## Advertising consent and public discovery
+## Publisher delivery, editorial review and advertising
 
-`index.html` currently contains an unconditional AdSense script and publisher
-meta tag. `main.tsx` also has a build-configured loader, but its existing-meta
-check normally skips that branch. Setting `VITE_GOOGLE_ADSENSE_ID` blank does
-not disable the static tag. Keep `public/ads.txt` aligned with the deployed
-publisher account. Neither the AdSense loader nor the optional Rybbit loader
-has an application-side consent gate.
+### Readable initial HTML and operational readiness
 
-The privacy control delegates to Google's Privacy & messaging service, not the
-former `cookie-consent` localStorage banner. Existing values of that old key
-are not treated as consent. `PrivacySettingsButton.tsx` invokes Google's
-callback queue and `showRevocationMessage()` API. It is available in the footer,
-navigation menus and Cookie Policy. If Google's API is unavailable, the button
-reports that no choices were changed. This hook alone does not prove that a
-certified CMP is published, a particular TCF version is active, or that consent
-is enforced. Policy copy intentionally makes no such unverified promises.
+The production frontend captures the homepage, help and policy pages, Explore,
+all nine mode guides, the journal index and every published past-day recap.
+Initial HTTP responses contain readable content, route-specific titles,
+descriptions, production canonical URLs and relevant structured data. Capture
+does not run authentication, guest synchronization, advertising, the CMP or
+analytics; decorative globe interaction is omitted and the reset time states
+00:00 UTC rather than freezing a live countdown. Normal browser gameplay and
+homepage globe interaction remain unchanged.
+
+The publisher process polls the public backend, reuses unchanged snapshots, and
+refreshes changed articles, related links and the Explore catalog. Releases are
+validated before atomic publication. Loading/error pages, false-empty
+pagination, malformed or unavailable mandatory data, captured ads, localhost
+references and forbidden-day drafts fail closed. Publisher routes and
+`/healthz` return 503/noindex until ready and when mandatory refresh data is
+unavailable; they never fall back to an empty SPA as successful publisher HTML.
+An authoritative zero-post journal keeps its useful introduction, has no ads and
+is noindex. The first published post restores the populated journal.
+
+Runtime settings in both Compose configurations:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PUBLISHER_BACKEND_URL` | `http://backend:8080` | Read-only public API origin reachable from the frontend container |
+| `PUBLISHER_ORIGIN` | `https://countrydle.online` | Production HTTPS origin, matching page canonical URLs |
+| `PUBLISHER_POLL_SECONDS` | `60` | Refresh interval; allowed range 5–3600 seconds |
+| `PUBLISHER_CAPTURE_TIMEOUT` | `45` | Per-route capture timeout; allowed range 5–300 seconds |
+
+The entrypoint supervises Nginx and the publisher together; loss of either exits
+the container instead of serving stale successful HTML. The healthcheck has a
+startup grace period for the initial capture. `npm run publisher:build` is the
+explicit standalone capture command, not an implicit network dependency of
+`npm run build`. `/sitemap.xml` is generated by FastAPI and forwarded by both
+Nginx configurations and the Vite proxy. Only strictly past UTC blog dates are
+public; today and future dates are excluded from articles, related links and
+sitemap. Published date aliases redirect to the canonical slug; unknown/deleted
+aliases return 404. `robots.txt` advertises the public production sitemap.
+
+### Editorial workflow
+
+Apply the normal startup migrations before serving the new API. Existing recaps
+start unreviewed; source links are not fabricated and historical articles are not
+automatically approved. An authenticated administrator opens Blogs, edits the
+text/facts/deduction/real source links, and saves. Every edit, regeneration and
+explicit revocation clears reviewer attribution and advertising eligibility.
+Review requires a substantive sourced past-day article and deliberate
+confirmation after personally checking the claims. These are internal safety
+checks, not a claimed Google word-count threshold or approval.
+
+The server records the signed-in reviewer's public username and UTC review time.
+The editor sends the exact raw `updated_at` string, including microseconds;
+concurrent changes return 409 and require reloading and inspecting the latest
+saved article before review. Malformed nested facts/quizzes, non-finite browser
+numbers, unsafe source URLs and URLs exceeding the limit after normalization are
+rejected before mutation. Legacy editable JSON remains available for repair.
+Public recaps distinguish AI assistance, editorial review and source evidence.
+Citation-needed markers remain visible. Article update timestamps are not the
+measurement year of population or other changing facts; verify reference dates
+in the cited source rather than treating undated figures as current.
+
+### Explicit inventory and consent
+
+`index.html` retains the publisher ownership meta tag, not an unconditional
+AdSense SDK. `public/ads.txt` must match the deployed account. Advertising is
+disabled by default and requires all of:
+
+- `VITE_ADSENSE_ENABLED=true` at image/build time.
+- `VITE_GOOGLE_ADSENSE_ID` matching the verified publisher
+  `ca-pub-3937273134876300`.
+- `VITE_ADSENSE_SLOTS`: a JSON object mapping placement names to actual
+  account-generated, nonzero ten-digit slot IDs supplied as strings. Available
+  names: `about-page-footer`, `how-it-works-footer`, `mode-guide-footer`,
+  `explore-hub-footer`, `blog-list-footer`, `countrydle-blog-post-footer`.
+  Missing, malformed or unconfigured inventory does not authorize serving.
+- A substantive eligible public page and determinate permission from Google's
+  Funding Choices / Privacy & messaging service.
+
+Eligible screens are curated public help/guides and loaded substantive Explore
+or reviewed journal content. Games, game results/share controls, authentication,
+admin/private pages, legal/contact pages, unknown routes, loading/error/empty
+screens and unreviewed articles do not load the ad SDK. The journal list cannot
+authorize advertising until its loaded content satisfies editorial eligibility.
+When an advertising runtime has loaded, route changes and revocation cross a
+fresh-document boundary so Google Auto ads cannot linger on an excluded screen.
+Check account-level Auto ads formats and placement exclusions before enabling.
+
+Unknown, rejected or unavailable consent does not authorize ad requests.
+EEA permission requires a loaded supported TCF state and affirmative Google
+vendor/purpose consent; a determinate non-GDPR state is handled separately.
+Late CMP readiness can recover, failed loading can be retried, and revocation
+removes serving permission. Privacy settings are in the footer, navigation and
+Cookie Policy; unavailable provider state reports that no choices were changed.
+Old `cookie-consent` localStorage values are not consent. Rybbit remains an
+independently configured analytics integration, suppressed only during capture;
+verify its deployment-specific collection, retention and legal basis separately.
 
 **Account prerequisite:** In AdSense → Privacy & messaging → European
-regulations, configure and publish the message for `countrydle.online`. Set the
-privacy policy URL to `https://countrydle.online/privacy-policy`, provide the
-required consent/refusal choices and languages, then verify a fresh EEA visit,
-acceptance, refusal, and reopening through Privacy settings. The existing
-AdSense tag loads published Google messages; repository changes do not publish
-messages or approve the website. Google's documented preview URL is
-`https://countrydle.online/?fc=alwaysshow&fctype=gdpr`; it also requires a
-published message. Rybbit configuration is separate from advertising consent.
+regulations, configure and publish the message for `countrydle.online`, with
+`https://countrydle.online/privacy-policy`, required consent/refusal choices and
+languages. Verify a fresh EEA visit, acceptance, refusal, reopening and
+revocation with the real account. Google's documented preview URL
+`https://countrydle.online/?fc=alwaysshow&fctype=gdpr` requires a published
+message. Repository code does not publish a CMP message, validate account
+eligibility, submit review or guarantee approval. The private rejection details,
+real inventory and account settings must be checked by the operator.
 
-The router updates one production-origin canonical URL from the normalized
-pathname, excluding query parameters and fragments. `/sitemap.xml` is served
-by FastAPI from current public routes and database blog records dated no later
-than the current UTC date. Both Nginx configurations and the Vite proxy forward
-that public URL to the backend; there is no checked-in static article sitemap.
-`robots.txt` continues to advertise the same public sitemap URL.
+### Verification evidence and remaining limits
 
-Verify with the frontend production build, browser navigation between public
-pages, the privacy settings unavailable/provider paths, and
-`pytest tests/test_sitemap.py -q` in the backend environment. Check
-`/sitemap.xml` through the frontend proxy as well as the backend.
+The merged 1.26.0 design passed TypeScript/Vite production builds (host Node 22
+and actual Node 20 frontend image), 99 Bun tests and focused modified-file lint.
+Actual Chromium exercised the homepage at 390 and 1440px, the mobile navigation
+dialog, public guide/article/quiz, and authenticated editorial save/review/revoke.
+Actual FastAPI + isolated PostgreSQL checks exercised review invalidation,
+stale-version 409, malformed-patch atomicity and UTC visibility. Actual initial
+HTTP HTML covered 22 populated public routes, aliases, sitemap and forbidden
+draft exclusion. Disposable locally intercepted SDK/CMP fixtures exercised
+grant/refusal/unknown/failure/late readiness/revocation, excluded routes and mobile
+control separation without Google requests or real ad impressions.
+The final offline backend run passed 11,309 tests, with 165 skipped and eight
+credential-dependent live Gemini cases deselected. The editorial/blog/sitemap
+subset passed 54 tests with isolated PostgreSQL. The final image also proved
+unique metadata across three same-country dates, distinct conflicting community
+answers/counts with citation warnings, exact refreshed article versions, deletion
+to 404, removed related links, and zero-to-first-post journal transitions.
+Normalized overlong Unicode source URLs and overflowing integer facts returned
+422 over actual HTTP without changing the saved article.
+
+Both Compose configurations, edge/frontend Nginx syntax and HTTPS routing,
+readiness/outage recovery, process supervision and migration
+upgrade/downgrade/re-upgrade were exercised in isolated infrastructure.
+Historical main-branch mobile evidence above remains separate from these
+publisher checks. Existing project-wide lint debt, live provider tests requiring
+credentials, physical-device behavior, production account consent and Google's
+review decision are not claimed verified. Deploy the completed branch only with
+remote/deployment authorization, then curate historical recaps and check the real
+production surface before requesting review.
 
 # React + TypeScript + Vite
 

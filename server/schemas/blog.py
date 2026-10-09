@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 import json
+from sys import float_info
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl, StrictBool, StrictFloat, StrictInt, StrictStr, TypeAdapter, field_validator, model_validator
 from schemas.country import CountryDisplay
@@ -16,11 +17,15 @@ class BlogSourceLink(BaseModel):
         parsed = TypeAdapter(HttpUrl).validate_python(value)
         if parsed.username is not None or parsed.password is not None:
             raise ValueError("Source URLs must not include credentials")
-        return str(parsed)
+        normalized = str(parsed)
+        if len(normalized) > 2048:
+            raise ValueError("Normalized source URLs must not exceed 2048 characters")
+        return normalized
 
 
 BlogFactValue = Union[
-    StrictStr, StrictInt, Annotated[StrictFloat, Field(allow_inf_nan=False)], StrictBool, None,
+    StrictStr, Annotated[StrictInt, Field(ge=-int(float_info.max), le=int(float_info.max))],
+    Annotated[StrictFloat, Field(allow_inf_nan=False)], StrictBool, None,
 ]
 
 

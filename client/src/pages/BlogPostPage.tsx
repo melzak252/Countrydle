@@ -102,7 +102,7 @@ export default function BlogPostPage() {
   }, [reviewed, slug]);
   usePageMetadata(loadedPost ? {
     title: `${loadedPost.title} — ${loadedPost.country_name}, ${loadedPost.date} | Countrydle`,
-    description: loadedPost.summary || loadedPost.subtitle || `Past-day geography recap for ${loadedPost.country_name}.`,
+    description: `Past-day recap for ${loadedPost.country_name} (${loadedPost.date}). ${loadedPost.summary || loadedPost.subtitle || 'Country-specific geography and deduction analysis.'}`,
     canonicalPath: `/blog/${encodeURIComponent(loadedPost.slug || loadedPost.date)}`,
     article: {
       countryName: loadedPost.country_name,
@@ -263,6 +263,7 @@ export default function BlogPostPage() {
         <p className="font-semibold text-sand-100">{post.ai_assisted ? 'AI-assisted recap' : 'Countrydle recap'} · {reviewed ? 'Editorially reviewed' : 'Not yet editorially reviewed'}</p>
         {reviewed ? <p>Reviewed by {post.reviewer_name} on <time dateTime={post.reviewed_at || undefined}>{post.reviewed_at}</time>.</p> : <p>Geographical claims and deduction advice may need verification. This page does not carry advertising until an editor reviews it.</p>}
         <p>Published <time dateTime={post.created_at}>{post.created_at}</time> · Updated <time dateTime={post.updated_at || post.created_at}>{post.updated_at || post.created_at}</time></p>
+        <p>These timestamps record article changes, not the measurement year of population or other changing statistics. Check the cited source for its reference date; a figure without one is undated.</p>
         {post.editorial_note && <p className="whitespace-pre-wrap">{post.editorial_note}</p>}
         {sourceLinks.length ? (
           <div><h2 className="font-semibold text-sand-100">Sources</h2><ul className="mt-2 space-y-1">
@@ -393,7 +394,7 @@ export default function BlogPostPage() {
               </p>
               <ol className="space-y-3">
                 {steps.map((step, index) => {
-                  const evidence = post.game_debrief?.has_telemetry ? post.game_debrief.top_questions.find((question) => question.question.trim().toLowerCase() === step.question.trim().toLowerCase()) : undefined;
+                  const evidence = post.game_debrief?.has_telemetry ? post.game_debrief.top_questions.filter((question) => question.question.trim().toLowerCase() === step.question.trim().toLowerCase()) : [];
                   return (
                     <li key={index} className="flex min-w-0 items-start gap-2 rounded-md border border-white/5 bg-white/[0.02] p-3 sm:gap-4 sm:p-4">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-xs font-bold text-sand-100">{index + 1}</span>
@@ -402,7 +403,12 @@ export default function BlogPostPage() {
                           {step.question} <span className="text-emerald-300">— {step.answer || (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')}</span>
                         </h3>
                         {step.explanation && <p className="break-words text-sm leading-6 text-zinc-400">{cleanDisplayText(step.explanation)}</p>}
-                        {evidence && <p className="text-xs text-zinc-400">{isPl ? 'Dane społeczności: zadano' : 'Community evidence: asked'} {evidence.count}×{evidence.pct != null ? ` (${evidence.pct}%)` : ''}.</p>}
+                        {evidence.map((record, evidenceIndex) => (
+                          <div key={evidenceIndex} className="space-y-1 text-xs text-zinc-400">
+                            <p>{isPl ? 'Dane społeczności' : 'Community evidence'}: {record.answer || (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')} — {isPl ? 'zadano' : 'asked'} {record.count}×{record.pct != null ? ` (${record.pct}%)` : ''}.</p>
+                            {record.explanation && record.explanation !== step.explanation && <p className="whitespace-pre-wrap leading-6">{cleanDisplayText(record.explanation)}</p>}
+                          </div>
+                        ))}
                       </div>
                     </li>
                   );

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-export interface FAQItem {
+interface FAQItem {
   id: string;
   category: 'gameplay' | 'modes' | 'data' | 'account';
   question: string;
@@ -10,7 +10,7 @@ export interface FAQItem {
 }
 
 // Used by the visible FAQ and its page-specific structured data.
-export const faqItems: FAQItem[] = [
+const faqItems: FAQItem[] = [
   {
     id: 'how-it-works',
     category: 'gameplay',

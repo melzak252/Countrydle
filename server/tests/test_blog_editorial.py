@@ -238,6 +238,7 @@ async def test_review_edit_and_revoke_are_persisted_and_publicly_visible(editori
     {"label": "", "url": "https://en.wikipedia.org/wiki/Poland"},
     {"label": "x" * 201, "url": "https://en.wikipedia.org/wiki/Poland"},
     {"label": "Too long", "url": "https://example.com/" + "x" * 2048},
+    {"label": "Normalized URL too long", "url": "https://example.com/" + "é" * 339},
 ])
 async def test_invalid_source_patch_is_rejected_without_revoking_existing_review(editorial_store, source):
     client = editorial_store.client
@@ -440,6 +441,8 @@ async def test_review_requires_a_timezone_aware_version_without_client_attributi
 @pytest.mark.parametrize("patch", [
     {"fast_facts": {"population": {"estimate": 100}}},
     {"fast_facts": {"borders": ["Germany"]}},
+    {"fast_facts": {"population": 10 ** 310}},
+    {"fast_facts": {"population": -(10 ** 310)}},
     {"fun_facts": [{}]},
     {"fun_facts": [{"title": "Capital", "description": None}]},
     {"fun_facts": [{"title": 42, "description": "Warsaw is the capital."}]},
