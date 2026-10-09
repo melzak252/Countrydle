@@ -369,8 +369,8 @@ export const blogService = {
     const response = await api.get(`/blog/admin/posts/${id}`);
     return response.data;
   },
-  updatePost: async (id: number, payload: BlogPostUpdate) => {
-    const response = await api.patch(`/blog/admin/posts/${id}`, payload);
+  updatePost: async (id: number, payload: BlogPostUpdate, expectedUpdatedAt: string) => {
+    const response = await api.patch(`/blog/admin/posts/${id}`, { ...payload, expected_updated_at: expectedUpdatedAt });
     return response.data;
   },
   reviewPost: async (id: number, expected_updated_at: string) => {

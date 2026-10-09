@@ -1,15 +1,14 @@
-"""Capture real public React pages; never substitute a failed API with empty data.
+"""Real Chromium capture shared by the one-shot publisher worker.
 
-Local use: build the SPA, install Chromium and Python websocket-client, then run
-PUBLISHER_BACKEND_URL=http://127.0.0.1:8080 python3 scripts/prerender.py.
-The container uses the same capture implementation from publisher-runtime.py.
+Local use after a SPA build: PUBLISHER_BACKEND_URL=http://127.0.0.1:8080
+python3 scripts/prerender.py. Output defaults to dist/publisher-snapshots/current;
+the source SPA bundle is never replaced by captured HTML.
 """
 
-import argparse
 import contextlib
 from datetime import date, datetime, timezone
-import hashlib
 import http.server
+import importlib
 import json
 import os
 from pathlib import Path
@@ -21,101 +20,20 @@ import tempfile
 import threading
 import time
 import urllib.parse
-import urllib.request
 
+runtime = importlib.import_module("publisher-runtime")
 CLIENT_DIR = Path(__file__).resolve().parent.parent
-ROUTES = (
-    "/", "/about", "/how-it-works", "/faq", "/explore",
-    "/explore/modes/countrydle", "/explore/modes/us-states",
-    "/explore/modes/wojewodztwa", "/explore/modes/powiaty",
-    "/explore/modes/flagdle", "/explore/modes/europe",
-    "/explore/modes/asia", "/explore/modes/africa", "/explore/modes/americas",
-    "/privacy-policy", "/terms", "/cookie-policy", "/contact",
-)
-GUIDE_ALIASES = {"/explore/modes/us_statedle": "/explore/modes/us-states"}
-SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
-API_TIMEOUT = 10
-
-
-class PublisherError(RuntimeError):
-    pass
-
-
-def origin(value):
-    parsed = urllib.parse.urlsplit(value)
-    if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
-        raise PublisherError("Publisher origins must be absolute HTTP(S) URLs without credentials, query or fragment")
-    return value.rstrip("/")
 
 
 def configuration():
-    backend = origin(os.environ.get("PUBLISHER_BACKEND_URL", "http://backend:8080"))
-    public = origin(os.environ.get("PUBLISHER_ORIGIN", "https://countrydle.online"))
+    backend = runtime.backend_origin()
+    public = runtime.origin(os.environ.get("PUBLISHER_ORIGIN", "https://countrydle.online"))
     if urllib.parse.urlsplit(public).path:
-        raise PublisherError("PUBLISHER_ORIGIN must not include a path")
+        raise runtime.PublisherError("PUBLISHER_ORIGIN must not include a path")
     timeout = float(os.environ.get("PUBLISHER_CAPTURE_TIMEOUT", "45"))
     if not 5 <= timeout <= 300:
-        raise PublisherError("PUBLISHER_CAPTURE_TIMEOUT must be between 5 and 300 seconds")
+        raise runtime.PublisherError("PUBLISHER_CAPTURE_TIMEOUT must be between 5 and 300 seconds")
     return backend, public, timeout
-
-
-class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *_args, **_kwargs):
-        return None
-
-
-def fetch_bytes(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "Countrydle-Publisher/1", "Accept": "application/json"})
-    # Do not inherit proxy credentials, cookies, or authorization from the host.
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
-    with opener.open(request, timeout=API_TIMEOUT) as response:
-        if response.status != 200 or response.headers.get_content_type() != "application/json":
-            raise PublisherError("Mandatory public API did not return JSON with HTTP 200")
-        return response.read()
-
-
-def published_posts(backend):
-    posts = {}
-    total = None
-    page = 1
-    today = datetime.now(timezone.utc).date()
-    while total is None or len(posts) < total:
-        payload = json.loads(fetch_bytes(f"{backend}/blog?page={page}&limit=50"))
-        rows = payload.get("posts")
-        count = payload.get("total")
-        if not isinstance(rows, list) or type(count) is not int or count < 0:
-            raise PublisherError("Mandatory blog index returned an invalid response")
-        if count == 0 and rows == [] and total is None:
-            return {}
-        if total is not None and count != total:
-            raise PublisherError("Published blog list changed during pagination")
-        total = count
-        if not rows:
-            raise PublisherError("Published blog pagination ended before its reported total")
-        for post in rows:
-            slug = post.get("slug", "")
-            if not isinstance(slug, str) or not SLUG.fullmatch(slug) or slug in posts:
-                raise PublisherError("Published blog contains an unsafe or duplicate slug")
-            if date.fromisoformat(post["date"]) >= today:
-                raise PublisherError("Public API exposed today's or a future puzzle")
-            if not post.get("title") or not post.get("summary") or not (post.get("updated_at") or post.get("created_at")):
-                raise PublisherError("Published blog metadata is incomplete")
-            posts[slug] = post
-        if len(posts) > total:
-            raise PublisherError("Published blog total disagrees with its results")
-        page += 1
-    return posts
-
-
-def exploration_modes(backend):
-    modes = json.loads(fetch_bytes(f"{backend}/explore/modes"))
-    if not isinstance(modes, list) or not modes or any(not isinstance(mode, dict) for mode in modes):
-        raise PublisherError("Mandatory exploration modes returned empty or malformed data")
-    return modes
-
-
-def fingerprint(posts):
-    return hashlib.sha256(json.dumps(posts, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
 
 def atomic_write(path, content):
@@ -142,10 +60,10 @@ def shell_path(assets):
     if not shell.exists():
         source = assets / "index.html"
         if not source.is_file():
-            raise PublisherError("Missing Vite index.html; build the SPA first")
+            raise runtime.PublisherError("Missing Vite index.html; build the SPA first")
         text = source.read_text(encoding="utf-8")
         if re.search(r'<(?:main|article)\b', text, re.IGNORECASE):
-            raise PublisherError("Cannot use a previously rendered homepage as the immutable SPA shell")
+            raise runtime.PublisherError("Cannot use a previously rendered homepage as the immutable SPA shell")
         atomic_write(shell, text)
     return shell
 
@@ -153,11 +71,12 @@ def shell_path(assets):
 class CaptureServer(http.server.ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, assets, backend, posts):
+    def __init__(self, assets, backend, posts, modes=None):
         self.assets = assets.resolve()
         self.shell = shell_path(assets)
         self.backend = backend
         self.posts = posts
+        self.modes = modes
         self.failures = []
         super().__init__(("127.0.0.1", 0), CaptureHandler)
 
@@ -178,24 +97,37 @@ class CaptureHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(403)
                 return
             try:
-                payload = fetch_bytes(self.server.backend + endpoint + ("?" + parsed.query if parsed.query else ""))
+                payload = runtime.fetch_bytes(self.server.backend + endpoint + ("?" + parsed.query if parsed.query else ""))
                 data = json.loads(payload)
                 if endpoint == "/explore/modes":
-                    if not isinstance(data, list) or not data:
-                        raise PublisherError("Mandatory exploration modes were empty or malformed")
+                    if not isinstance(data, list) or not data or data != self.server.modes:
+                        raise runtime.PublisherError("Exploration modes changed or were malformed during capture")
+                elif endpoint == "/blog":
+                    if not isinstance(data, dict):
+                        raise runtime.PublisherError("Captured blog response was malformed")
+                    rows, total = data.get("posts"), data.get("total")
+                    if not isinstance(rows, list) or type(total) is not int or total != len(self.server.posts):
+                        raise runtime.PublisherError("Published blog changed during capture")
+                    query = urllib.parse.parse_qs(parsed.query)
+                    page = int(query.get("page", ["1"])[0])
+                    limit = int(query.get("limit", ["10"])[0])
+                    if page < 1 or not 1 <= limit <= 100:
+                        raise runtime.PublisherError("Invalid capture blog pagination")
+                    expected = list(self.server.posts.values())[(page - 1) * limit:page * limit]
+                    if rows != expected:
+                        raise runtime.PublisherError("Public blog versions changed during capture")
                 else:
-                    if endpoint == "/blog":
-                        rows = data.get("posts")
-                        total = data.get("total")
-                        if not isinstance(rows, list) or type(total) is not int or total < 0 or (not rows and total > 0) or (total == 0 and rows):
-                            raise PublisherError("Captured blog response was malformed or falsely empty")
-                        if (total == 0) != (not self.server.posts):
-                            raise PublisherError("Published blog changed during capture")
-                    else:
-                        rows = [data]
-                    today = datetime.now(timezone.utc).date()
-                    if any(date.fromisoformat(post["date"]) >= today for post in rows):
-                        raise PublisherError("Capture API exposed today's or a future puzzle")
+                    slug = endpoint.removeprefix("/blog/")
+                    expected = self.server.posts[slug]
+                    if not isinstance(data, dict) or any(data.get(key) != value for key, value in expected.items()):
+                        raise runtime.PublisherError("Article version changed during capture")
+                    related = runtime.related_dependencies(self.server.posts)[slug]
+                    if data.get("related_posts") != related:
+                        raise runtime.PublisherError("Related article metadata changed during capture")
+                rows = data if isinstance(data, list) else data.get("posts", [data])
+                today = datetime.now(timezone.utc).date()
+                if any(date.fromisoformat(post["date"]) >= today for post in rows if "date" in post):
+                    raise runtime.PublisherError("Capture API exposed today's or a future puzzle")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(payload)))
@@ -205,7 +137,7 @@ class CaptureHandler(http.server.SimpleHTTPRequestHandler):
                 self.server.failures.append(str(error))
                 self.send_error(502, "Mandatory publisher API unavailable")
             return
-        if path in ROUTES or path == "/blog" or path.removeprefix("/blog/") in self.server.posts:
+        if path in runtime.ROUTES or path == "/blog" or path.removeprefix("/blog/") in self.server.posts:
             data = self.server.shell.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -224,7 +156,7 @@ class DevTools:
         try:
             import websocket
         except ImportError as error:
-            raise PublisherError("Install Python websocket-client for Chromium publisher capture") from error
+            raise runtime.PublisherError("Install Python websocket-client for Chromium publisher capture") from error
         self.connection = websocket.create_connection(url, timeout=timeout, suppress_origin=True, http_no_proxy=["127.0.0.1", "localhost"])
         self.sequence = 0
         self.allow_request = None
@@ -241,7 +173,7 @@ class DevTools:
             if self.deadline is not None:
                 remaining = self.deadline - time.monotonic()
                 if remaining <= 0:
-                    raise PublisherError("Chromium publisher capture exceeded its readiness deadline")
+                    raise runtime.PublisherError("Chromium publisher capture exceeded its readiness deadline")
                 self.connection.settimeout(remaining)
             message = json.loads(self.connection.recv())
             if message.get("method") == "Fetch.requestPaused":
@@ -250,7 +182,7 @@ class DevTools:
                 self.send("Fetch.continueRequest" if allowed else "Fetch.failRequest", {"requestId": paused["requestId"], **({} if allowed else {"errorReason": "BlockedByClient"})})
             elif message.get("id") == request_id:
                 if "error" in message:
-                    raise PublisherError(f"Chromium {method} failed: {message['error']['message']}")
+                    raise runtime.PublisherError(f"Chromium {method} failed: {message['error']['message']}")
                 return message.get("result", {})
 
     def close(self):
@@ -262,28 +194,58 @@ class Browser:
         executable = os.environ.get("CHROME_BIN")
         self.executable = shutil.which(executable) if executable else next((path for command in ("chromium-browser", "chromium", "google-chrome") if (path := shutil.which(command))), None)
         if not self.executable:
-            raise PublisherError("Chromium is required; publisher capture cannot be skipped")
+            raise runtime.PublisherError("Chromium is required; publisher capture cannot be skipped")
         self.timeout = timeout
         self.profile = tempfile.TemporaryDirectory(prefix="countrydle-chrome-")
         self.process = None
         self.connection = None
+        self.stderr = None
+
+    def private_environment(self):
+        # Container --user UID:GID may have no passwd entry and inherit /root HOME.
+        # Chromium/crashpad need writable per-user directories independently of
+        # --user-data-dir; never rely on the image account or relax permissions.
+        environment = os.environ.copy()
+        root = Path(self.profile.name)
+        for variable, directory in (
+            ("HOME", "home"), ("XDG_CONFIG_HOME", "config"),
+            ("XDG_CACHE_HOME", "cache"), ("XDG_DATA_HOME", "data"),
+            ("XDG_RUNTIME_DIR", "runtime"),
+        ):
+            path = root / directory
+            path.mkdir(mode=0o700)
+            environment[variable] = str(path)
+        return environment
+
+    def launch_error(self, returncode):
+        self.stderr.flush()
+        self.stderr.seek(0, os.SEEK_END)
+        self.stderr.seek(max(0, self.stderr.tell() - 4096))
+        diagnostic = self.stderr.read(4096).decode("utf-8", errors="replace").strip()
+        reason = f"exit {returncode}" if returncode is not None else "readiness deadline exceeded"
+        return runtime.PublisherError(f"Chromium failed to become ready ({reason})" + (f": {diagnostic}" if diagnostic else ""))
 
     def __enter__(self):
-        self.process = subprocess.Popen([
-            self.executable, "--headless=new", "--no-sandbox", "--disable-gpu",
-            "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
-            "--disable-extensions", "--disable-sync", "--no-first-run", "--no-default-browser-check",
-            "--metrics-recording-only", "--disable-domain-reliability", "--disable-quic",
-            "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1",
-            "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
-            f"--user-data-dir={self.profile.name}", "about:blank",
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         try:
+            environment = self.private_environment()
+            user_data = Path(self.profile.name) / "user-data"
+            user_data.mkdir(mode=0o700)
+            self.stderr = tempfile.TemporaryFile(dir=self.profile.name)
+            self.process = subprocess.Popen([
+                self.executable, "--headless=new", "--no-sandbox", "--disable-gpu",
+                "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+                "--disable-extensions", "--disable-sync", "--no-first-run", "--no-default-browser-check",
+                "--metrics-recording-only", "--disable-domain-reliability", "--disable-quic",
+                "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1",
+                "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+                f"--user-data-dir={user_data}", "about:blank",
+            ], env=environment, stdout=subprocess.DEVNULL, stderr=self.stderr, start_new_session=True)
             deadline = time.monotonic() + self.timeout
-            active_port = Path(self.profile.name) / "DevToolsActivePort"
+            active_port = user_data / "DevToolsActivePort"
             while not active_port.exists():
-                if self.process.poll() is not None or time.monotonic() >= deadline:
-                    raise PublisherError("Chromium failed to become ready")
+                returncode = self.process.poll()
+                if returncode is not None or time.monotonic() >= deadline:
+                    raise self.launch_error(returncode)
                 time.sleep(0.05)
             port, endpoint = active_port.read_text().splitlines()[:2]
             self.debug_url = f"http://127.0.0.1:{port}"
@@ -304,14 +266,17 @@ class Browser:
             except subprocess.TimeoutExpired:
                 os.killpg(self.process.pid, signal.SIGKILL)
                 self.process.wait()
+        if self.stderr:
+            self.stderr.close()
         self.profile.cleanup()
 
     def capture(self, server, route, public_origin):
+        server.failures.clear()
         context_id = self.connection.call("Target.createBrowserContext")["browserContextId"]
         page = None
         try:
             target_id = self.connection.call("Target.createTarget", {"url": "about:blank", "browserContextId": context_id})["targetId"]
-            targets = json.loads(fetch_bytes(self.debug_url + "/json/list"))
+            targets = json.loads(runtime.fetch_bytes(self.debug_url + "/json/list"))
             target = next(target for target in targets if target["id"] == target_id)
             page = DevTools(target["webSocketDebuggerUrl"], self.timeout)
             capture_origin = f"http://127.0.0.1:{server.server_port}"
@@ -351,7 +316,7 @@ class Browser:
                 })()""", "returnByValue": True})
                 state = result.get("result", {}).get("value", {})
                 if state.get("error") or server.failures:
-                    raise PublisherError(f"Mandatory content failed while capturing {route}")
+                    raise runtime.PublisherError(f"Mandatory content failed while capturing {route}")
                 valid = state.get("path") == route and state.get("heading") and len(state.get("text", "")) >= 160 and state.get("content", 0) >= 2 and state.get("title") and state.get("description") and state.get("canonical")
                 canonical_path = urllib.parse.urlsplit(state.get("canonical", "")).path or "/"
                 metadata = canonical_path == route and state.get("canonical") == state.get("ogUrl")
@@ -373,7 +338,7 @@ class Browser:
                 previous = signature
                 time.sleep(0.1)
             else:
-                raise PublisherError(f"Mandatory heading, metadata or loaded content never became ready: {route}")
+                raise runtime.PublisherError(f"Mandatory heading, metadata or loaded content never became ready: {route}")
             html = page.call("Runtime.evaluate", {"expression": """(() => {
                 const clone = document.documentElement.cloneNode(true);
                 clone.querySelectorAll('noscript, [data-prerender-remove]').forEach(node => node.remove());
@@ -383,7 +348,7 @@ class Browser:
             # Local capture origin may appear only in browser-resolved metadata.
             html = html.replace(capture_origin, public_origin).replace("https://countrydle.online", public_origin)
             if re.search(r"(?:localhost|127\.0\.0\.1|__COUNTRYDLE_PRERENDER__|<iframe\b|<ins\b[^>]*adsbygoogle|<script\b[^>]*src=[\"']https?://)", html, re.IGNORECASE):
-                raise PublisherError(f"Unsafe publisher runtime or loopback artifacts in {route}")
+                raise runtime.PublisherError(f"Unsafe publisher runtime or loopback artifacts in {route}")
             return html
         finally:
             if page:
@@ -392,8 +357,8 @@ class Browser:
 
 
 @contextlib.contextmanager
-def capture_session(assets, backend, posts, timeout):
-    server = CaptureServer(assets, backend, posts)
+def capture_session(assets, backend, posts, timeout, modes=None):
+    server = CaptureServer(assets, backend, posts, modes)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -405,41 +370,9 @@ def capture_session(assets, backend, posts, timeout):
         thread.join()
 
 
-def output_file(directory, route):
-    return directory / route.lstrip("/") / "index.html"
-
-
 def prerender():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--assets-dir", type=Path, default=CLIENT_DIR / "dist")
-    parser.add_argument("--output-dir", type=Path, help="Defaults to the built dist directory")
-    args = parser.parse_args()
-    backend, public_origin, timeout = configuration()
-    posts = published_posts(backend)
-    modes = exploration_modes(backend)
-    output = args.output_dir or args.assets_dir
-    with tempfile.TemporaryDirectory(prefix="countrydle-publisher-") as temporary:
-        staging = Path(temporary)
-        with capture_session(args.assets_dir, backend, posts, timeout) as (server, browser):
-            for route in (*ROUTES, "/blog", *("/blog/" + slug for slug in posts)):
-                atomic_write(output_file(staging, route), browser.capture(server, route, public_origin))
-        if fingerprint(published_posts(backend)) != fingerprint(posts):
-            raise PublisherError("Public posts changed during capture; no output was published")
-        if fingerprint(exploration_modes(backend)) != fingerprint(modes):
-            raise PublisherError("Public exploration modes changed during capture; no output was published")
-        for route in (*ROUTES, "/blog", *("/blog/" + slug for slug in posts)):
-            atomic_write(output_file(output, route), output_file(staging, route).read_text(encoding="utf-8"))
-        # Remove only obsolete snapshots owned by this publisher, never SPA assets.
-        manifest_path = output / ".publisher-posts.json"
-        if manifest_path.exists():
-            previous = json.loads(manifest_path.read_text())
-            for slug in previous.keys() - posts.keys():
-                if SLUG.fullmatch(slug):
-                    obsolete = output_file(output, "/blog/" + slug)
-                    if obsolete.exists():
-                        obsolete.unlink()
-        atomic_write(manifest_path, json.dumps(posts, sort_keys=True))
-    print(f"[publisher] Published {len(ROUTES) + 1 + len(posts)} validated public snapshots")
+    # Preserve publisher:build as the same real one-shot capture entrypoint.
+    importlib.import_module("publisher-capture").main(default_assets=CLIENT_DIR / "dist")
 
 
 if __name__ == "__main__":

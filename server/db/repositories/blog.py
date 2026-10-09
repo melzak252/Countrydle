@@ -1,6 +1,6 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import desc, func, or_, select
+from sqlalchemy import desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from db.models.blog import DailyBlogPost
@@ -77,15 +77,57 @@ class BlogRepository:
             setattr(post, name, value)
         post.reviewed_by_id = None
         post.reviewed_at = None
-        post.updated_at = datetime.now(timezone.utc)
+        post.updated_at = max(
+            datetime.now(timezone.utc), post.updated_at + timedelta(microseconds=1),
+        )
         await self.session.commit()
         return await self.get_by_id(post.id)
+
+    async def replace_generated(
+        self, post_id: int, payload: Dict[str, Any], expected_updated_at: datetime,
+    ) -> bool:
+        """Replace only the captured version, never confer a human review."""
+        generated_fields = {
+            "title", "subtitle", "summary", "fast_facts", "fun_facts",
+            "deduction_masterclass", "content_markdown", "source_links",
+            "editorial_note", "ai_assisted",
+        }
+        if payload.keys() - generated_fields:
+            raise ValueError("Generated replacements may only change editable content and AI attribution")
+        statement = (
+            update(DailyBlogPost)
+            .where(
+                DailyBlogPost.id == post_id,
+                DailyBlogPost.updated_at == expected_updated_at,
+            )
+            .values(
+                **payload,
+                reviewed_by_id=None,
+                reviewed_at=None,
+                updated_at=func.greatest(
+                    datetime.now(timezone.utc),
+                    DailyBlogPost.updated_at + timedelta(microseconds=1),
+                ),
+            )
+            .execution_options(synchronize_session=False)
+        )
+        try:
+            result = await self.session.execute(statement)
+            replaced = result.rowcount == 1
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            raise
+        # Bulk SQL bypasses ORM history, including stale already-NULL reviews.
+        # Both successful and failed CAS operations must forget loaded versions.
+        self.session.expire_all()
+        return replaced
 
     async def set_review(self, post: DailyBlogPost, reviewer_id: Optional[int]) -> DailyBlogPost:
         timestamp = datetime.now(timezone.utc)
         post.reviewed_by_id = reviewer_id
         post.reviewed_at = timestamp if reviewer_id is not None else None
-        post.updated_at = timestamp
+        post.updated_at = max(timestamp, post.updated_at + timedelta(microseconds=1))
         await self.session.commit()
         return await self.get_by_id(post.id)
 

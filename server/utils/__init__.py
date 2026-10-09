@@ -73,7 +73,7 @@ async def generate_yesterday_blog_post():
     yesterday = datetime.now(timezone.utc).date() - timedelta(days=1)
     async with AsyncSessionLocal() as session:
         repo = BlogRepository(session)
-        existing = await repo.get_by_date(yesterday)
+        existing = await repo.get_by_date(yesterday, public_only=False)
         if existing:
             logging.info(f"Blog post for {yesterday} already exists.")
             return
@@ -89,12 +89,16 @@ async def generate_yesterday_blog_post():
             logging.warning(f"No Country found for ID {day_country.country_id} to generate blog post.")
             return
 
-        try:
-            post = await create_daily_blog_post(session, country, yesterday)
-            await repo.create(post)
-            logging.info(f"Successfully generated daily blog post for {yesterday} ({country.name}).")
-        except Exception as e:
-            logging.error(f"Error generating daily blog post for {yesterday}: {e}", exc_info=True)
+        country_id, country_name, engine = country.id, country.name, session.bind
+
+    # Close the discovery session before either provider I/O or another checkout.
+    try:
+        post = await create_daily_blog_post(engine, country_id, country_name, yesterday)
+        async with AsyncSessionLocal() as session:
+            await BlogRepository(session).create(post)
+        logging.info(f"Successfully generated daily blog post for {yesterday} ({country_name}).")
+    except Exception as e:
+        logging.error(f"Error generating daily blog post for {yesterday}: {e}", exc_info=True)
 
 async def run_generate_continental_days():
     try:

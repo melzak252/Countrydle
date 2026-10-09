@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { useLocation } from 'react-router-dom';
 
 type ConsentState = 'unknown' | 'granted' | 'denied';
+export type PrivacySettingsState = 'idle' | 'opening' | 'unavailable';
 interface TCData {
   cmpStatus?: string;
   eventStatus?: string;
@@ -63,6 +64,11 @@ let navigationPending = false;
 let initialized = false;
 let cmpPromise: Promise<void> | null = null;
 let listenerRegistered = false;
+let privacySettingsState: PrivacySettingsState = 'idle';
+const originalHistory = {
+  pushState: window.history.pushState.bind(window.history),
+  replaceState: window.history.replaceState.bind(window.history),
+};
 let revision = 0;
 const subscribers = new Set<() => void>();
 const publish = () => { revision += 1; subscribers.forEach(notify => notify()); };
@@ -82,12 +88,18 @@ function removeAdArtifacts() {
   scriptReady = false;
 }
 function leaveAdDocument(url: string, replace = false) {
+  const target = new URL(url, window.location.href);
   navigationPending = true;
   editorialEligible = false;
   removeAdArtifacts();
   publish();
-  if (replace) window.location.replace(url);
-  else window.location.assign(url);
+  if (target.origin === window.location.origin && target.pathname + target.search === pageKey()) {
+    // assign/replace can be fragment-only navigation. Bypass our interception,
+    // preserve the requested history entry/hash, then actually unload the SDK.
+    originalHistory[replace ? 'replaceState' : 'pushState'](window.history.state, '', target.href);
+    window.location.reload();
+  } else if (replace) window.location.replace(target.href);
+  else window.location.assign(target.href);
 }
 
 export function setPageEditorialEligibility(value: boolean) {
@@ -98,9 +110,11 @@ export function setPageEditorialEligibility(value: boolean) {
 }
 
 function consentFromTCData(data: TCData, success: boolean): ConsentState {
-  if (!success || data.cmpStatus !== 'loaded' || !['tcloaded', 'useractioncomplete'].includes(data.eventStatus || '')) return 'unknown';
+  if (success !== true) return 'unknown';
+  // A successful non-GDPR TCData response need not contain GDPR-only fields.
   if (data.gdprApplies === false) return 'granted';
-  if (data.gdprApplies !== true || !data.tcString) return 'unknown';
+  if (data.cmpStatus !== 'loaded' || !['tcloaded', 'useractioncomplete'].includes(data.eventStatus || '')
+    || data.gdprApplies !== true || !data.tcString) return 'unknown';
   const purposes = data.purpose;
   const vendors = data.vendor;
   // Google vendor 755: storage and personalized advertising require affirmative consent.
@@ -145,7 +159,10 @@ function loadPrivacyMessaging(): Promise<void> {
     };
     window.googlefc = window.googlefc || { callbackQueue: [] };
     window.googlefc.callbackQueue = window.googlefc.callbackQueue || [];
-    window.googlefc.callbackQueue.push({ CONSENT_API_READY: () => { registerConsentListener(); finish(); } });
+    window.googlefc.callbackQueue.push({
+      CONSENT_API_READY: () => finish(window.googlefc?.showRevocationMessage && window.__tcfapi
+        ? undefined : new Error('Google privacy settings are unavailable.')),
+    });
     if (!document.getElementById('countrydle-funding-choices')) {
       const script = document.createElement('script');
       script.id = 'countrydle-funding-choices';
@@ -154,19 +171,37 @@ function loadPrivacyMessaging(): Promise<void> {
       script.onerror = () => { script.remove(); finish(new Error('Google privacy messaging could not load.')); };
       document.head.appendChild(script);
     }
-  }).catch(error => { cmpPromise = null; throw error; });
+  }).catch(error => {
+    document.getElementById('countrydle-funding-choices')?.remove();
+    cmpPromise = null;
+    throw error;
+  });
   return cmpPromise;
 }
 
 export async function openPrivacySettings(): Promise<void> {
-  if (isPublisherCapture()) throw new Error('Privacy messaging is disabled during publisher capture.');
-  if (adsStarted) {
-    leaveAdDocument('/cookie-policy#privacy-settings');
-    return;
+  privacySettingsState = 'opening';
+  publish();
+  try {
+    if (isPublisherCapture()) throw new Error('Privacy messaging is disabled during publisher capture.');
+    if (adsStarted) {
+      leaveAdDocument('/cookie-policy#privacy-settings');
+    } else {
+      await loadPrivacyMessaging();
+      if (!window.googlefc?.showRevocationMessage) throw new Error('Google privacy settings are unavailable.');
+      window.googlefc.showRevocationMessage();
+    }
+    privacySettingsState = 'idle';
+    publish();
+  } catch (error) {
+    privacySettingsState = 'unavailable';
+    publish();
+    throw error;
   }
-  await loadPrivacyMessaging();
-  if (!window.googlefc?.showRevocationMessage) throw new Error('Google privacy settings are unavailable.');
-  window.googlefc.showRevocationMessage();
+}
+
+export function usePrivacySettingsState(): PrivacySettingsState {
+  return useSyncExternalStore<PrivacySettingsState>(subscribe, () => privacySettingsState, () => 'idle');
 }
 
 export function initializeAdvertisingPolicy() {
@@ -175,7 +210,7 @@ export function initializeAdvertisingPolicy() {
   // History interception runs before React Router. Once ads are active, every page change
   // uses a fresh document, including reviewed -> loading/unreviewed blog transitions.
   for (const method of ['pushState', 'replaceState'] as const) {
-    const original = window.history[method].bind(window.history);
+    const original = originalHistory[method];
     window.history[method] = (state: unknown, unused: string, url?: string | URL | null) => {
       const target = url == null ? new URL(window.location.href) : new URL(url, window.location.href);
       if (adsStarted && (target.pathname + target.search !== adsDocument)) {
@@ -189,14 +224,17 @@ export function initializeAdvertisingPolicy() {
   }
   window.addEventListener('popstate', () => {
     if (adsStarted && pageKey() !== adsDocument) leaveAdDocument(window.location.href, true);
-    else { editorialEligible = false; publish(); }
+    else {
+      if (editorialPage !== pageKey()) editorialEligible = false;
+      publish();
+    }
   });
   window.addEventListener('pageshow', event => {
     if (event.persisted && adsStarted) leaveAdDocument(window.location.href, true);
   });
   if (routePath(window.location.pathname) === '/cookie-policy' && window.location.hash === '#privacy-settings') {
-    // The button surfaces this event rather than pretending the message opened.
-    void openPrivacySettings().catch(() => window.dispatchEvent(new Event('countrydle:privacy-unavailable')));
+    // Failure is retained in subscribed state even if no privacy button has mounted yet.
+    void openPrivacySettings().catch(() => { /* The privacy controls consume the stored failure. */ });
   }
 }
 

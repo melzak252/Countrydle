@@ -9,11 +9,10 @@ from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from pydantic import ValidationError
-from schemas.blog import BlogSourceLink
+from schemas.blog import BlogPostUpdate, BlogSourceLink
 from db.models.blog import DailyBlogPost
-from db.models.country import Country
 from db.models.fragment import CountryFragment
 from db.models.countrydle import CountrydleDay, CountrydleQuestion
 
@@ -204,6 +203,13 @@ def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -
         return json.loads(raw_text)
 
 
+def _validate_generated_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply the same editable-content contract as an editor before accepting output."""
+    editable = {field: payload[field] for field in BlogPostUpdate.model_fields if field in payload}
+    validated = BlogPostUpdate.model_validate(editable)
+    return {**payload, **validated.model_dump(mode="json", exclude_unset=True)}
+
+
 async def generate_blog_content_ai(
     country_name: str,
     wiki_fragments: List[str],
@@ -275,11 +281,13 @@ Return ONLY the raw JSON object.
         try:
             logger.info(f"Calling Gemini model {model_name} for blog post ({country_name})...")
             res = await loop.run_in_executor(None, _call_gemini_api, model_name, prompt, api_key, 35)
-            if res and isinstance(res, dict) and "fun_facts" in res and res.get("fun_facts"):
-                logger.info(f"Successfully generated blog content using {model_name} for {country_name}")
-                payload = _assemble_blog_post_payload(country_name, country_facts, res, post_date, actual_questions)
-                payload.update(_generation_provenance(wiki_fragments, ai_assisted=True))
-                return payload
+            if not isinstance(res, dict) or not res.get("fun_facts"):
+                raise ValueError("Provider output must include substantive fun facts")
+            payload = _assemble_blog_post_payload(country_name, country_facts, res, post_date, actual_questions)
+            payload.update(_generation_provenance(wiki_fragments, ai_assisted=True))
+            payload = _validate_generated_payload(payload)
+            logger.info(f"Successfully generated blog content using {model_name} for {country_name}")
+            return payload
         except Exception as e:
             logger.warning(f"Model {model_name} failed for {country_name}: {e}")
 
@@ -331,7 +339,8 @@ def _assemble_blog_post_payload(
         "steps": steps,
         "pro_tip": pro_tip,
     }
-    if "trivia_quiz" in ai_data and isinstance(ai_data["trivia_quiz"], dict):
+    # An omitted quiz is legitimate; a present invalid quiz must never be dropped.
+    if "trivia_quiz" in ai_data:
         deduction_masterclass["quiz"] = ai_data["trivia_quiz"]
 
     title = ai_data.get("title") or f"Countrydle Solution: {country_name}"
@@ -449,7 +458,7 @@ def _generate_fallback_template(
 ### Curator's Pro Tip
 > {pro_tip}"""
 
-    return {
+    return _validate_generated_payload({
         "title": f"Countrydle Solution: {country_name}",
         "subtitle": f"Game recap and deduction breakdown for {post_date.strftime('%B %d, %Y')}.",
         "reading_time_minutes": 2,
@@ -471,49 +480,52 @@ def _generate_fallback_template(
         },
         "content_markdown": markdown,
         **_generation_provenance(wiki_fragments, ai_assisted=False),
-    }
+    })
 
 
 async def create_daily_blog_post(
-    session: AsyncSession,
-    country: Country,
+    engine: AsyncEngine,
+    country_id: int,
+    country_name: str,
     post_date: date,
 ) -> DailyBlogPost:
-    # Retrieve stored article excerpts; their external origin URLs are not retained.
-    res = await session.execute(
-        select(CountryFragment.text)
-        .where(CountryFragment.country_id == country.id)
-        .limit(25)
-    )
-    fragments = list(res.scalars().all())
+    """Build an unsaved recap from scalar inputs using an owned read session.
 
-    # 2. Fetch actual player questions asked for yesterday's puzzle
-    day_res = await session.execute(
-        select(CountrydleDay).where(CountrydleDay.date == post_date)
-    )
-    day = day_res.scalars().first()
-
-    actual_questions: List[Dict[str, Any]] = []
-    if day:
-        q_res = await session.execute(
-            select(
-                CountrydleQuestion.question, CountrydleQuestion.answer,
-                CountrydleQuestion.explanation, CountrydleQuestion.fact_provenance,
-            )
-            .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
-            .order_by(CountrydleQuestion.id.asc())
-            .limit(15)
+    Callers must finish their discovery transaction before invoking generation;
+    no caller session or ORM instance is retained across provider I/O.
+    """
+    async with AsyncSession(bind=engine) as input_session:
+        res = await input_session.execute(
+            select(CountryFragment.text)
+            .where(CountryFragment.country_id == country_id)
+            .limit(25)
         )
-        for q in q_res.all():
-            actual_questions.append({
-                "question": q.question or "",
-                "answer": "YES" if q.answer is True else "NO" if q.answer is False else "UNKNOWN",
-                "explanation": q.explanation or "",
-                "fact_provenance": q.fact_provenance or [],
-            })
+        fragments = list(res.scalars().all())
+        day_id = await input_session.scalar(
+            select(CountrydleDay.id).where(CountrydleDay.date == post_date)
+        )
+
+        actual_questions: List[Dict[str, Any]] = []
+        if day_id is not None:
+            q_res = await input_session.execute(
+                select(
+                    CountrydleQuestion.question, CountrydleQuestion.answer,
+                    CountrydleQuestion.explanation, CountrydleQuestion.fact_provenance,
+                )
+                .where(CountrydleQuestion.day_id == day_id, CountrydleQuestion.valid.is_(True))
+                .order_by(CountrydleQuestion.id.asc())
+                .limit(15)
+            )
+            for q in q_res.all():
+                actual_questions.append({
+                    "question": q.question or "",
+                    "answer": "YES" if q.answer is True else "NO" if q.answer is False else "UNKNOWN",
+                    "explanation": q.explanation or "",
+                    "fact_provenance": q.fact_provenance or [],
+                })
 
     # 3. Generate content via Gemini (with questions log and anti-slop rules)
-    payload = await generate_blog_content_ai(country.name, fragments, post_date, actual_questions)
+    payload = await generate_blog_content_ai(country_name, fragments, post_date, actual_questions)
     steps = (payload.get("deduction_masterclass") or {}).get("steps") or []
     payload["source_links"] = _used_question_sources(actual_questions, steps)
     if payload["source_links"]:
@@ -522,14 +534,16 @@ async def create_daily_blog_post(
             "in this recap, not source pages fetched again during generation."
         )
 
-    slug = generate_slug(post_date, country.name)
+    # Sources and provenance are assembled after provider validation; validate them too.
+    payload = _validate_generated_payload(payload)
+    slug = generate_slug(post_date, country_name)
 
     post = DailyBlogPost(
         date=post_date,
-        country_id=country.id,
+        country_id=country_id,
         slug=slug,
-        title=payload.get("title", f"Countrydle Recap: {country.name}"),
-        subtitle=payload.get("subtitle", f"Exploring the geography of {country.name}"),
+        title=payload["title"],
+        subtitle=payload["subtitle"],
         reading_time_minutes=payload.get("reading_time_minutes", 2),
         summary=payload.get("summary", ""),
         fast_facts=payload.get("fast_facts"),

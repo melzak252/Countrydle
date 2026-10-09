@@ -255,7 +255,7 @@ export default function BlogListPage() {
                     </Link>
                   </h2>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
-                  <p className="mt-3 text-xs text-zinc-400">{featuredPost.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · Updated <time dateTime={featuredPost.updated_at || featuredPost.created_at}>{featuredPost.updated_at || featuredPost.created_at}</time></p>
+                  <p className="mt-3 text-xs text-zinc-400">{featuredPost.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · {featuredPost.created_at ? <>Published <time dateTime={featuredPost.created_at}>{featuredPost.created_at}</time></> : 'Publication timestamp unavailable'} · Updated <time dateTime={featuredPost.updated_at}>{featuredPost.updated_at}</time></p>
                   <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.date}</span></span>
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Clock size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.reading_time_minutes} {isPl ? 'min czytania' : 'min read'}</span></span>
@@ -315,7 +315,7 @@ export default function BlogListPage() {
                           <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
                         </h3>
                         <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
-                        <p className="mt-3 text-xs text-zinc-400">{post.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · Updated <time dateTime={post.updated_at || post.created_at}>{post.updated_at || post.created_at}</time></p>
+                        <p className="mt-3 text-xs text-zinc-400">{post.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · {post.created_at ? <>Published <time dateTime={post.created_at}>{post.created_at}</time></> : 'Publication timestamp unavailable'} · Updated <time dateTime={post.updated_at}>{post.updated_at}</time></p>
                         <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
                           <span>{post.date}</span>
                           <span>{post.reading_time_minutes} min</span>

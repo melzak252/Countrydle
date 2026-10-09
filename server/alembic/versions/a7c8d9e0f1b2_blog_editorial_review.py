@@ -28,8 +28,9 @@ def upgrade() -> None:
     op.add_column("daily_blog_posts", sa.Column(
         "updated_at", sa.DateTime(timezone=True), nullable=True,
     ))
-    # Legacy created_at is a naive UTC timestamp. Do not invent source links or
-    # human reviews; unchanged articles retain their actual creation timestamp.
+    # Legacy created_at is naive UTC and may genuinely be unknown (NULL).
+    # Preserve it verbatim: only updated_at needs a guaranteed initial version.
+    # Never invent a creation date, source links, or a human review.
     op.execute(sa.text("""
         UPDATE daily_blog_posts
         SET updated_at = COALESCE(created_at AT TIME ZONE 'UTC', CURRENT_TIMESTAMP)

@@ -1,31 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { openPrivacySettings } from '../advertising';
+import { openPrivacySettings, usePrivacySettingsState } from '../advertising';
 
 export function PrivacySettingsButton({ className }: { className?: string }) {
   const { t, i18n } = useTranslation();
   const isPl = i18n?.language?.startsWith('pl');
-  const [opening, setOpening] = useState(false);
+  const state = usePrivacySettingsState();
+  const opening = state === 'opening';
   const unavailableMessage = isPl
     ? 'Nie udało się otworzyć ustawień prywatności Google. Mogą być niedostępne lub blokowane przez przeglądarkę. Żadne ustawienia nie zostały zmienione. Spróbuj ponownie później.'
     : t('privacySettings.unavailable');
 
   useEffect(() => {
-    const unavailable = () => toast.error(unavailableMessage, { id: 'privacy-settings-unavailable' });
-    window.addEventListener('countrydle:privacy-unavailable', unavailable);
-    return () => window.removeEventListener('countrydle:privacy-unavailable', unavailable);
-  }, [unavailableMessage]);
+    if (state === 'unavailable') toast.error(unavailableMessage, { id: 'privacy-settings-unavailable' });
+    else toast.dismiss('privacy-settings-unavailable');
+  }, [state, unavailableMessage]);
 
-  const open = async () => {
-    setOpening(true);
-    try {
-      await openPrivacySettings();
-    } catch {
-      toast.error(unavailableMessage, { id: 'privacy-settings-unavailable' });
-    } finally {
-      setOpening(false);
-    }
+  const open = () => {
+    void openPrivacySettings().catch(() => { /* The subscribed error state surfaces the failure. */ });
   };
 
   return (

@@ -103,17 +103,35 @@ services:
       PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
       PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}
       PUBLISHER_POLL_SECONDS: ${PUBLISHER_POLL_SECONDS:-60}
-      PUBLISHER_CAPTURE_TIMEOUT: ${PUBLISHER_CAPTURE_TIMEOUT:-45}
+    volumes:
+      - ${PUBLISHER_SNAPSHOT_DIR:-./publisher-snapshots}:/var/run/countrydle-publisher:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 300s
+      start_period: 30s
     networks:
       - countrydle
     ports:
       - "127.0.0.1:8083:80"
+    depends_on:
+      - backend
+
+  # Operational opt-in only. Scheduled capture normally runs off-host instead.
+  # PUBLISHER_CAPTURE_IMAGE should be pinned to the frontend's SHA tag/digest.
+  publisher-capture:
+    profiles: ["publisher-capture"]
+    image: ${PUBLISHER_CAPTURE_IMAGE:-ghcr.io/melzak252/countrydle-publisher:latest}
+    restart: "no"
+    environment:
+      PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
+      PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}
+      PUBLISHER_CAPTURE_TIMEOUT: ${PUBLISHER_CAPTURE_TIMEOUT:-45}
+    volumes:
+      - ${PUBLISHER_SNAPSHOT_DIR:-./publisher-snapshots}:/var/run/countrydle-publisher
+    networks:
+      - countrydle
     depends_on:
       - backend
 networks:

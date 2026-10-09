@@ -1,0 +1,168 @@
+name: Refresh public publisher snapshots
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# Never interrupt an upload/promotion with another refresh.
+concurrency:
+  group: publisher-refresh-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Configure the same immutable sha-<commit> pair as the deployed frontend.
+      # A digest is also supported. Deliberately no floating/latest fallback.
+      PUBLISHER_CAPTURE_IMAGE: ${{ vars.PUBLISHER_CAPTURE_IMAGE }}
+      PUBLISHER_BACKEND_URL: ${{ vars.PUBLISHER_BACKEND_URL }}
+      PUBLISHER_ORIGIN: ${{ vars.PUBLISHER_ORIGIN }}
+      # Absolute host directory bound to /var/run/countrydle-publisher in frontend.
+      PUBLISHER_REMOTE_DIR: ${{ vars.PUBLISHER_REMOTE_DIR }}
+      # Required remote engine/account access and actual serving container.
+      # Production Podman must be configured explicitly, never inferred as Docker.
+      PUBLISHER_CONTAINER_ENGINE: ${{ vars.PUBLISHER_CONTAINER_ENGINE }}
+      PUBLISHER_FRONTEND_CONTAINER: ${{ vars.PUBLISHER_FRONTEND_CONTAINER }}
+    steps:
+      - name: Checkout transport script
+        uses: actions/checkout@v4
+
+      - name: Require configured deployment and SSH account
+        id: configuration
+        env:
+          PUBLISHER_SSH_HOST: ${{ secrets.PUBLISHER_SSH_HOST }}
+          PUBLISHER_SSH_USER: ${{ secrets.PUBLISHER_SSH_USER }}
+          PUBLISHER_SSH_KEY: ${{ secrets.PUBLISHER_SSH_KEY }}
+          PUBLISHER_SSH_KNOWN_HOSTS: ${{ secrets.PUBLISHER_SSH_KNOWN_HOSTS }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import ipaddress
+          import os
+          import re
+          import urllib.parse
+          required = (
+              'PUBLISHER_CAPTURE_IMAGE', 'PUBLISHER_BACKEND_URL', 'PUBLISHER_ORIGIN',
+              'PUBLISHER_REMOTE_DIR', 'PUBLISHER_SSH_HOST', 'PUBLISHER_SSH_USER',
+              'PUBLISHER_SSH_KEY', 'PUBLISHER_SSH_KNOWN_HOSTS',
+              'PUBLISHER_CONTAINER_ENGINE', 'PUBLISHER_FRONTEND_CONTAINER',
+          )
+          missing = [key for key in required if not os.environ.get(key, '').strip()]
+          if missing:
+              raise SystemExit('Publisher deployment is not configured; set: ' + ', '.join(missing))
+          image = os.environ['PUBLISHER_CAPTURE_IMAGE']
+          if not re.fullmatch(r'ghcr\.io/[a-z0-9_.-]+/[a-z0-9_.-]+-publisher(?::sha-[0-9a-f]{40}|@sha256:[0-9a-f]{64})', image):
+              raise SystemExit('PUBLISHER_CAPTURE_IMAGE must be the deployed frontend matching GHCR -publisher:sha-<40-character commit> or -publisher@sha256:<digest>')
+          if os.environ['PUBLISHER_CONTAINER_ENGINE'] not in ('docker', 'podman'):
+              raise SystemExit('PUBLISHER_CONTAINER_ENGINE must explicitly select docker or podman on the SSH host')
+          if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', os.environ['PUBLISHER_FRONTEND_CONTAINER']):
+              raise SystemExit('PUBLISHER_FRONTEND_CONTAINER must be the actual deployed serving container name or ID')
+          for key in ('PUBLISHER_BACKEND_URL', 'PUBLISHER_ORIGIN'):
+              url = urllib.parse.urlsplit(os.environ[key])
+              if url.scheme != 'https' or not url.hostname or url.username or url.password or url.query or url.fragment:
+                  raise SystemExit(key + ' must be a public HTTPS URL without credentials, query or fragment')
+              try:
+                  address = ipaddress.ip_address(url.hostname)
+              except ValueError:
+                  address = None
+              if address is None and (url.hostname in ('localhost', 'backend') or '.' not in url.hostname):
+                  raise SystemExit(key + ' must point to the real public deployment, not a container/local API')
+              if address is not None and not address.is_global:
+                  raise SystemExit(key + ' must use a public address')
+              if key == 'PUBLISHER_ORIGIN' and url.path:
+                  raise SystemExit('PUBLISHER_ORIGIN must be an origin without a path')
+          # Isolate reuse by immutable bundle AND configured public source.
+          identity = '\n'.join(os.environ[key] for key in ('PUBLISHER_CAPTURE_IMAGE', 'PUBLISHER_BACKEND_URL', 'PUBLISHER_ORIGIN'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('cache_key=' + hashlib.sha256(identity.encode()).hexdigest() + '\n')
+          PY
+
+      - name: Log in to GHCR for the configured capture image
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore previously validated off-host snapshots
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/publisher-snapshots
+          key: publisher-snapshots-${{ steps.configuration.outputs.cache_key }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            publisher-snapshots-${{ steps.configuration.outputs.cache_key }}-
+
+      - name: Capture real public content off host
+        run: |
+          set -euo pipefail
+          docker pull "$PUBLISHER_CAPTURE_IMAGE"
+          mkdir -p "$RUNNER_TEMP/publisher-snapshots"
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --env PUBLISHER_BACKEND_URL --env PUBLISHER_ORIGIN \
+            --mount "type=bind,src=$RUNNER_TEMP/publisher-snapshots,dst=/snapshots" \
+            "$PUBLISHER_CAPTURE_IMAGE" \
+            --assets-dir /usr/share/nginx/html --output-dir /snapshots
+          # Use the validator from the exact same image/manifest version.
+          container=$(docker create "$PUBLISHER_CAPTURE_IMAGE")
+          trap 'docker rm "$container" >/dev/null' EXIT
+          docker cp "$container:/usr/local/lib/countrydle/publisher-runtime.py" "$RUNNER_TEMP/publisher-runtime.py"
+          python3 "$RUNNER_TEMP/publisher-runtime.py" \
+            --validate-release "$RUNNER_TEMP/publisher-snapshots/current"
+
+      - name: Bound off-host snapshot archives
+        run: |
+          python3 - "$RUNNER_TEMP/publisher-snapshots" "$RUNNER_TEMP/publisher-runtime.py" <<'PY'
+          import pathlib
+          import re
+          import shutil
+          import subprocess
+          import sys
+          root = pathlib.Path(sys.argv[1]).resolve(strict=True)
+          current = (root / 'current').resolve(strict=True)
+          if current.parent != root or not re.fullmatch(r'release-[0-9a-f]{32}', current.name):
+              raise SystemExit('Captured current is not a worker-owned immutable release')
+          archives = sorted(
+              (path for path in root.iterdir() if re.fullmatch(r'release-[0-9a-f]{32}', path.name) and path != current),
+              key=lambda path: path.lstat().st_mtime,
+              reverse=True,
+          )
+          retained = 0
+          for path in archives:
+              valid = not path.is_symlink() and path.is_dir() and subprocess.run(
+                  [sys.executable, sys.argv[2], '--validate-release', str(path)],
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+              ).returncode == 0
+              if valid and retained < 2:
+                  retained += 1
+              elif path.is_symlink() or not path.is_dir():
+                  path.unlink()
+              else:
+                  shutil.rmtree(path)
+          PY
+
+      - name: Save bounded validated snapshots for incremental capture
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/publisher-snapshots
+          key: publisher-snapshots-${{ steps.configuration.outputs.cache_key }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Remote validation uses the live serving container's bundled validator and
+      # assets, including retries. Retirement keeps current + two compatible
+      # archives, with readonly manifest leases preserving any live reader.
+      - name: Validate deployed bundle, promote and safely bound host archives
+        env:
+          PUBLISHER_SSH_HOST: ${{ secrets.PUBLISHER_SSH_HOST }}
+          PUBLISHER_SSH_USER: ${{ secrets.PUBLISHER_SSH_USER }}
+          PUBLISHER_SSH_KEY: ${{ secrets.PUBLISHER_SSH_KEY }}
+          PUBLISHER_SSH_KNOWN_HOSTS: ${{ secrets.PUBLISHER_SSH_KNOWN_HOSTS }}
+          PUBLISHER_SSH_PORT: ${{ vars.PUBLISHER_SSH_PORT || '22' }}
+        run: |
+          bash client/scripts/publish-snapshots.sh \
+            "$RUNNER_TEMP/publisher-snapshots" "$RUNNER_TEMP/publisher-runtime.py"

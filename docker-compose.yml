@@ -79,6 +79,7 @@ services:
     container_name: client
     build:
       context: ./client
+      target: serving
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_RYBBIT_SCRIPT_URL: ${VITE_RYBBIT_SCRIPT_URL}
@@ -91,17 +92,43 @@ services:
       PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
       PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}
       PUBLISHER_POLL_SECONDS: ${PUBLISHER_POLL_SECONDS:-60}
-      PUBLISHER_CAPTURE_TIMEOUT: ${PUBLISHER_CAPTURE_TIMEOUT:-45}
+    volumes:
+      - ${PUBLISHER_SNAPSHOT_DIR:-./publisher-snapshots}:/var/run/countrydle-publisher:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 300s
+      start_period: 30s
     networks:
       - countrydle
     ports:
       - "5173:80"
+    depends_on:
+      - backend
+
+  # Opt-in local worker; ordinary frontend startup never launches Chromium.
+  # Run once with: docker compose --profile publisher-capture run --rm publisher-capture
+  publisher-capture:
+    profiles: ["publisher-capture"]
+    build:
+      context: ./client
+      target: publisher-capture
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_RYBBIT_SCRIPT_URL: ${VITE_RYBBIT_SCRIPT_URL}
+        VITE_RYBBIT_SITE_ID: ${VITE_RYBBIT_SITE_ID}
+        VITE_GOOGLE_ADSENSE_ID: ${VITE_GOOGLE_ADSENSE_ID}
+        VITE_ADSENSE_ENABLED: ${VITE_ADSENSE_ENABLED:-false}
+        VITE_ADSENSE_SLOTS: ${VITE_ADSENSE_SLOTS:-}
+    environment:
+      PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
+      PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}
+      PUBLISHER_CAPTURE_TIMEOUT: ${PUBLISHER_CAPTURE_TIMEOUT:-45}
+    volumes:
+      - ${PUBLISHER_SNAPSHOT_DIR:-./publisher-snapshots}:/var/run/countrydle-publisher
+    networks:
+      - countrydle
     depends_on:
       - backend
 

@@ -1,12 +1,12 @@
 ## Client runtime and verification
 
 The Vite development server and `npm run build` use the existing TypeScript/Vite
-pipeline. The production frontend image also includes Python, websocket-client
-and Chromium: a read-only publisher process renders public content behind Nginx,
-while gameplay and private routes retain the SPA shell. No backend credentials or
-content service are required during image build. Existing Bun tests cover
-question accounting, the one-second response animation, explanation visibility,
-publisher metadata, content parsing and advertising decisions.
+pipeline. The production serving image contains Nginx and a Python standard-library
+read-only artifact reader, not Chromium or websocket-client. An explicit off-host
+one-shot capture image produces matching immutable publisher HTML; gameplay and
+private routes retain the SPA shell. Image builds need no backend credentials or
+content service. Existing Bun tests cover gameplay, publisher metadata, content
+parsing, editorial conflicts and advertising/consent decisions.
 
 ## Public mobile layout
 
@@ -420,43 +420,108 @@ AdinPlay recipients or cookie entries until an integration actually exists.
 
 ### Readable initial HTML and operational readiness
 
-The production frontend captures the homepage, help and policy pages, Explore,
-all nine mode guides, the journal index and every published past-day recap.
-Initial HTTP responses contain readable content, route-specific titles,
-descriptions, production canonical URLs and relevant structured data. Capture
-does not run authentication, guest synchronization, advertising, the CMP or
-analytics; decorative globe interaction is omitted and the reset time states
-00:00 UTC rather than freezing a live countdown. Normal browser gameplay and
-homepage globe interaction remain unchanged.
+Readable initial HTML covers the homepage, help and policy pages, Explore, all
+nine mode guides, the journal index and published past-day recaps. Responses
+contain route-specific titles, descriptions, production canonical URLs and
+structured data. Capture suppresses authentication, guest synchronization,
+advertising, CMP and analytics; it omits decorative globe interaction and states
+the reset time as 00:00 UTC. Browser gameplay and globe interaction are unchanged.
 
-The publisher process polls the public backend, reuses unchanged snapshots, and
-refreshes changed articles, related links and the Explore catalog. Releases are
-validated before atomic publication. Loading/error pages, false-empty
-pagination, malformed or unavailable mandatory data, captured ads, localhost
-references and forbidden-day drafts fail closed. Publisher routes and
-`/healthz` return 503/noindex until ready and when mandatory refresh data is
-unavailable; they never fall back to an empty SPA as successful publisher HTML.
-An authoritative zero-post journal keeps its useful introduction, has no ads and
-is noindex. The first published post restores the populated journal.
+Serving and capture are separate. The serving container runs Nginx plus the
+stdlib-only reader on `127.0.0.1:8765`, with the snapshot host directory mounted
+read-only. It never launches Chrome or captures on production startup. The
+`publisher-capture` image explicitly runs a one-shot worker, publishing a
+validated immutable `release-<uuid>` and atomically switching `current`.
+Artifacts must match the deployed SPA assets/build fingerprint. Unchanged route
+versions reuse validated HTML; changed articles, related links and Explore
+metadata are captured incrementally. An entirely unchanged capture reuses its
+release UUID without launching Chrome. Failed routes have explicit manifest 503
+status, not stale successful HTML or captured error pages.
 
-Runtime settings in both Compose configurations:
+The reader polls public blog and mode metadata independently. A changed version
+returns 503/noindex until matching HTML arrives; a bad article affects its route
+and dependent versions, not unrelated static pages. Blog metadata failure makes
+blog routes unavailable; mode failure makes Explore unavailable. A failed poll
+invalidates that group immediately. Even without a reported failure, successful
+metadata expires after `max(2 × poll interval, poll interval + 20 seconds)`
+(120 seconds with the default 60-second poll). This is not a 10-minute stale-HTML
+allowance: affected routes may remain 503 until the next capture succeeds.
+Previously validated homepage/help/guides remain usable during backend or worker
+failure. `/healthz` reports matching artifact/mandatory static HTML and SPA-shell
+readiness, not global blog/Explore freshness or capture-job success. Missing
+initial mandatory static HTML returns 503, never an empty successful SPA.
+An authoritative zero-post journal retains its introduction, is noindex and has
+no ads. Unknown/deleted posts return 404 when authoritative metadata is available;
+unavailable metadata cannot establish a deletion. Today/future recaps remain
+private. Published date aliases return 308 to the canonical slug.
 
-| Variable | Default | Purpose |
+#### Operator setup and scheduled refresh
+
+1. Build/publish the paired immutable GHCR images from the same commit:
+   `ghcr.io/<owner>/<repo>-frontend:sha-<40-character commit>` and
+   `ghcr.io/<owner>/<repo>-publisher:sha-<same commit>` (or pinned corresponding
+   digests). `.github/workflows/docker-publish.yml` shares both targets' build
+   arguments: `VITE_API_URL=/api`, `VITE_RYBBIT_SCRIPT_URL`,
+   `VITE_RYBBIT_SITE_ID`, `VITE_GOOGLE_ADSENSE_ID`, `VITE_ADSENSE_ENABLED`
+   (default `false`) and `VITE_ADSENSE_SLOTS` (default `{}`). Changing public
+   build arguments requires a newly matching pair/artifact, not floating `latest`.
+2. Prepare an absolute host snapshot directory and set `PUBLISHER_SNAPSHOT_DIR`
+   in Compose to it (default `./publisher-snapshots`). The frontend mounts it at
+   `/var/run/countrydle-publisher:ro`. Before directing traffic to a new bundle,
+   prepare its first compatible artifact and a running candidate serving
+   container with that directory mounted. The transport validates inside the
+   running container; it cannot bootstrap against an absent container or one
+   still using incompatible assets. Coordinate candidate validation, artifact
+   promotion and traffic cutover explicitly. This is not an automatic frontend
+   deployment or a promise of zero downtime.
+3. Configure the existing `.github/workflows/publisher-refresh.yml`: it runs
+   every 10 minutes and supports `workflow_dispatch`, with non-interrupting
+   concurrency. Required repository variables are `PUBLISHER_CAPTURE_IMAGE`
+   (immutable matching `-publisher:sha-…` or digest), `PUBLISHER_BACKEND_URL`
+   (real public HTTPS API base), `PUBLISHER_ORIGIN` (public HTTPS origin without
+   a path), `PUBLISHER_REMOTE_DIR` (the absolute host directory from step 2),
+   `PUBLISHER_CONTAINER_ENGINE` (`docker` or explicitly `podman`) and
+   `PUBLISHER_FRONTEND_CONTAINER` (actual running serving container name/ID).
+   Optional `PUBLISHER_SSH_PORT` defaults to `22`. The workflow requires
+   `contents: read` and `packages: read`; its `GITHUB_TOKEN` must be able to pull
+   the chosen GHCR package. Configure build workflow variables separately.
+4. Supply secrets `PUBLISHER_SSH_HOST`, `PUBLISHER_SSH_USER`,
+   `PUBLISHER_SSH_KEY` and `PUBLISHER_SSH_KNOWN_HOSTS`. Verify the host key
+   independently and provide the matching known-hosts entry, including the port
+   form if nonstandard; strict host verification is never disabled. The SSH
+   account needs host Python 3/rsync, write/traverse access to the snapshot
+   directory, and permission to inspect/exec the selected Docker/Podman
+   container. Directories must be traversable and HTML/manifests readable by
+   the serving user (transport uses directories 0755/files 0644).
+
+The runner pulls the capture image, restores a cache isolated by immutable
+image/API/origin, captures and validates, then uses
+`client/scripts/publish-snapshots.sh` for SSH/rsync staging. The serving image's
+validator is executed in the running container with `--assets-dir
+/usr/share/nginx/html` before atomic promotion, including same-artifact retries.
+Interrupted uploads or incompatible bundles must not replace `current`.
+The runner cache retains current plus two validated archives. Remote retirement
+retains current plus two compatible archives, prioritizing the previous release,
+and additionally preserves any release held by a live reader's shared manifest
+lease. This grace is lease-based, not a fixed time: exit or switching releases
+releases the lease, and a subsequent promotion can retire the archive.
+
+| Runtime setting | Default | Purpose |
 |---|---|---|
-| `PUBLISHER_BACKEND_URL` | `http://backend:8080` | Read-only public API origin reachable from the frontend container |
-| `PUBLISHER_ORIGIN` | `https://countrydle.online` | Production HTTPS origin, matching page canonical URLs |
-| `PUBLISHER_POLL_SECONDS` | `60` | Refresh interval; allowed range 5–3600 seconds |
-| `PUBLISHER_CAPTURE_TIMEOUT` | `45` | Per-route capture timeout; allowed range 5–300 seconds |
+| `PUBLISHER_BACKEND_URL` | `http://backend:8080` | Public API base reachable from the serving container; workflow uses the external HTTPS base |
+| `PUBLISHER_ORIGIN` | `https://countrydle.online` | Canonical production origin |
+| `PUBLISHER_POLL_SECONDS` | `60` | Reader metadata poll interval, allowed 5–3600 seconds |
+| `PUBLISHER_CAPTURE_TIMEOUT` | `45` | Capture-only per-route timeout, allowed 5–300 seconds |
 
-The entrypoint supervises Nginx and the publisher together; loss of either exits
-the container instead of serving stale successful HTML. The healthcheck has a
-startup grace period for the initial capture. `npm run publisher:build` is the
-explicit standalone capture command, not an implicit network dependency of
-`npm run build`. `/sitemap.xml` is generated by FastAPI and forwarded by both
-Nginx configurations and the Vite proxy. Only strictly past UTC blog dates are
-public; today and future dates are excluded from articles, related links and
-sitemap. Published date aliases redirect to the canonical slug; unknown/deleted
-aliases return 404. `robots.txt` advertises the public production sitemap.
+Both Compose configurations keep local capture behind the explicit
+`publisher-capture` profile; normal production startup does not enable it.
+`npm run publisher:build` is also an explicit standalone capture command, not
+an implicit dependency of `npm run build`. Scheduled off-host refresh is the
+normal operational path, not manual-only refresh. The entrypoint supervises
+Nginx and the reader: loss of either terminates the container. It derives Nginx
+resolver addresses from actual `/etc/resolv.conf`, validating IPv4/IPv6 entries
+rather than hardcoding Docker's `127.0.0.11` or Podman's address.
+`/sitemap.xml` comes from FastAPI through Nginx/Vite; `robots.txt` advertises it.
 
 ### Editorial workflow
 
@@ -470,15 +535,27 @@ confirmation after personally checking the claims. These are internal safety
 checks, not a claimed Google word-count threshold or approval.
 
 The server records the signed-in reviewer's public username and UTC review time.
-The editor sends the exact raw `updated_at` string, including microseconds;
-concurrent changes return 409 and require reloading and inspecting the latest
-saved article before review. Malformed nested facts/quizzes, non-finite browser
-numbers, unsafe source URLs and URLs exceeding the limit after normalization are
-rejected before mutation. Legacy editable JSON remains available for repair.
-Public recaps distinguish AI assistance, editorial review and source evidence.
-Citation-needed markers remain visible. Article update timestamps are not the
-measurement year of population or other changing facts; verify reference dates
-in the cited source rather than treating undated figures as current.
+Both PATCH saves and reviews require `expected_updated_at`: send the exact raw
+stored `updated_at` string, including microseconds, not a display-formatted date.
+Stale versions return 409 without mutation. Save conflicts retain all draft
+fields; explicitly reload (cancelling preserves the draft), inspect the latest
+article and deliberately reapply corrections before saving or reviewing.
+Regeneration uses compare-and-swap against the original version and atomically
+clears review fields even when originally null; a concurrent review/change
+cannot be silently overwritten. Slow provider generation holds no database
+connection. Every successful content change needs a fresh deliberate review.
+
+Malformed nested facts/quizzes, non-finite browser numbers, unsafe source URLs
+and URLs exceeding the normalized limit are rejected before mutation. Incomplete
+historical or display-identical quiz answers show an honest unavailable/repair
+notice while preserving factual article text and raw editable JSON for admin
+repair; no answers or distractors are fabricated. Unknown historical `created_at`
+stays null, displays publication time as unavailable and omits `datePublished`
+from metadata rather than inventing a date. Real `updated_at` remains available.
+Public recaps distinguish AI assistance, review and real source evidence;
+citation-needed markers remain visible. Update timestamps are not measurement
+years: check reference dates in sources rather than treating undated facts as
+current.
 
 ### Explicit inventory and consent
 
@@ -528,34 +605,67 @@ real inventory and account settings must be checked by the operator.
 
 ### Verification evidence and remaining limits
 
-The merged 1.26.0 design passed TypeScript/Vite production builds (host Node 22
-and actual Node 20 frontend image), 99 Bun tests and focused modified-file lint.
-Actual Chromium exercised the homepage at 390 and 1440px, the mobile navigation
-dialog, public guide/article/quiz, and authenticated editorial save/review/revoke.
-Actual FastAPI + isolated PostgreSQL checks exercised review invalidation,
-stale-version 409, malformed-patch atomicity and UTC visibility. Actual initial
-HTTP HTML covered 22 populated public routes, aliases, sitemap and forbidden
-draft exclusion. Disposable locally intercepted SDK/CMP fixtures exercised
-grant/refusal/unknown/failure/late readiness/revocation, excluded routes and mobile
-control separation without Google requests or real ad impressions.
-The final offline backend run passed 11,309 tests, with 165 skipped and eight
-credential-dependent live Gemini cases deselected. The editorial/blog/sitemap
-subset passed 54 tests with isolated PostgreSQL. The final image also proved
-unique metadata across three same-country dates, distinct conflicting community
-answers/counts with citation warnings, exact refreshed article versions, deletion
-to 404, removed related links, and zero-to-first-post journal transitions.
-Normalized overlong Unicode source URLs and overflowing integer facts returned
-422 over actual HTTP without changing the saved article.
+The current integration's offline backend run passed **11,363 tests**, with
+165 skipped and eight credential-dependent live Gemini cases deselected
+(195.95 seconds). Focused PostgreSQL generation/editorial suites passed 108
+tests, including single-slot pools, simultaneous generation, review-clearing
+CAS and 409 conflicts. Frontend tests passed 138 cases, including 19 real
+React/happyDOM consent cases; publisher tests passed 42. Focused changed-file
+lint passed apart from 36 existing `api.ts` `any` errors outside the blog
+contract. Node 20 paired serving/capture image builds and Node 22 host production
+compilation passed. These are local checks, not evidence of GitHub Action runs.
+Full-repository lint still reports 80 errors and 14 warnings in inherited code;
+it is not a fully green repository-wide lint gate.
 
-Both Compose configurations, edge/frontend Nginx syntax and HTTPS routing,
-readiness/outage recovery, process supervision and migration
-upgrade/downgrade/re-upgrade were exercised in isolated infrastructure.
-Historical main-branch mobile evidence above remains separate from these
-publisher checks. Existing project-wide lint debt, live provider tests requiring
-credentials, physical-device behavior, production account consent and Google's
-review decision are not claimed verified. Deploy the completed branch only with
-remote/deployment authorization, then curate historical recaps and check the real
-production surface before requesting review.
+Actual owned FastAPI/PostgreSQL/HTTP checks exercised source CAS and null
+creation reads. Independent Chromium editor tabs exercised save 200/409 with
+all ten draft fields retained, reload cancellation, explicit reload/fresh save,
+and stale/fresh review 409/200. Native Chromium with disposable intercepted
+SDK/CMP fixtures exercised a four-field successful `gdprApplies=false` response,
+same-document hash Back preserving the unit, fragment revocation crossing a
+document boundary with no SDK in the denied new document, and a visible
+pre-mount privacy failure with failed/successful retry. These fixtures make no
+Google requests or real impressions and do not verify real account consent.
+
+Actual UID-1000 capture produced 22 readable initial-HTML routes; standalone
+reader/Nginx served all 22 with 200. Checks covered partial-quiz notice/raw
+preservation, honest null-creation metadata, known-to-null SPA metadata removal,
+unknown/private 404, date-alias 308, API and sitemap 200. Real strict-key SSH/rsync
+promotion and identical-artifact retry succeeded, including execution of the
+validator inside the serving container. Actual Docker DNS `127.0.0.11` carried
+API traffic; an injected `10.89.3.1` plus IPv6 nameserver configuration generated
+valid Nginx resolver syntax. This does **not** verify an actual Podman engine.
+
+Real wrong-bundle publication was rejected by the deployed container's validator;
+an interrupted native rsync transfer left the prior current release unchanged.
+Restarting serving still delivered the complete valid artifact. Malformed mandatory
+article content returned 503 only for that article; home, help, the journal and
+other articles remained 200. Deletion returned 404 before recapture. An authoritative
+empty journal delivered useful initial HTML, noindex and no ads. During an actual
+API outage, dynamic pages returned 503 after the configured metadata freshness
+deadline while static pages and health remained 200; publishing retained 17 static
+routes, then recovery restored all 22. Real SSH retirement retained current plus
+two compatible archives. Killing either reader or Nginx exited the paired container
+with status 1, and both restart checks recovered HTTP 200. Native 390-pixel mobile
+and 1440-pixel desktop home checks preserved navigation/globe controls without
+horizontal overflow; the mobile quiz repair disclosure retained its raw evidence.
+
+The serving image measured 106,937,330 bytes, contained no Chrome/websocket
+dependency, used a read-only artifact mount and observed 46.62 MiB idle memory.
+The capture image measured 864,971,144 bytes; observed capture memory was
+325.2 MiB at a sample, **not a measured peak**. A 22-route first capture took
+35.26 seconds, four changed routes 10.14 seconds and unchanged metadata/UUID
+reuse 1.29 seconds without Chrome. These local observations are not production
+measurements or capacity guarantees.
+
+Earlier main-branch 1.26.0 mobile/design evidence elsewhere in this README is
+historical and separate from this integration. Actual Podman execution,
+production deployment, physical devices, live provider credentials, real Google
+account/CMP flow and Google's review decision are not verified.
+No push, merge or deployment authorization is implied. Operators must configure
+the workflow and host prerequisites, curate historical recaps and inspect the
+real production surface before requesting review; repository checks cannot
+guarantee approval.
 
 # React + TypeScript + Vite
 

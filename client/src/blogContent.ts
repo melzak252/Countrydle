@@ -15,20 +15,40 @@ export const blogSourceSchema = z.object({
 });
 export const blogFactsSchema = z.record(z.string(), z.union([z.string(), z.number().finite(), z.boolean(), z.null()])).nullable();
 export const blogFunFactsSchema = z.array(z.object({ title: z.string(), description: z.string() }).passthrough()).max(50);
+const blogQuizSchema = z.object({
+  question: z.string().trim().min(1),
+  correct_answer: z.string().trim().min(1),
+  incorrect_distractor: z.string().trim().min(1),
+  explanation: z.string().trim().min(1),
+}).passthrough().refine(
+  (quiz) => cleanDisplayText(quiz.correct_answer).toLowerCase() !== cleanDisplayText(quiz.incorrect_distractor).toLowerCase(),
+  'The correct answer and distractor must display different choices.',
+);
 export const blogDeductionSchema = z.object({
   steps: z.array(z.object({
     question: z.string(), answer: z.string().optional(), explanation: z.string().optional(),
   }).passthrough()).optional(),
   pro_tip: z.string().optional(),
-  quiz: z.object({ question: z.string(), correct_answer: z.string(), incorrect_distractor: z.string(), explanation: z.string() }).optional(),
+  quiz: blogQuizSchema.optional(),
 }).passthrough().nullable();
+// The public reader keeps a historical broken quiz honest and repairable without
+// rejecting the rest of the article. Editors still validate the strict schema.
+const publicQuizSchema = z.unknown().transform((stored) => {
+  const parsed = blogQuizSchema.safeParse(stored);
+  return parsed.success
+    ? { status: 'available' as const, content: parsed.data }
+    : { status: 'needs-editorial-repair' as const, stored };
+});
+const publicDeductionSchema = blogDeductionSchema.unwrap().extend({
+  quiz: publicQuizSchema.optional(),
+}).nullable();
 export const blogSummarySchema = z.object({
   id: z.number().int().positive(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   slug: z.string().min(1), title: z.string().min(1), subtitle: z.string(), summary: z.string(),
   country_name: z.string().min(1), country_code: z.string().nullable().optional(),
   continent: z.string().nullable().optional(), difficulty: z.string().nullable().optional(),
   reading_time_minutes: z.number().int().nonnegative(), total_players: z.number().nullable().optional(),
-  created_at: z.string().min(1), updated_at: z.string().min(1).optional(),
+  created_at: z.string().min(1).nullable(), updated_at: z.string().min(1),
   editorial_status: z.enum(['unreviewed', 'reviewed']),
 });
 export const blogListSchema = z.object({ total: z.number().int().nonnegative(), posts: z.array(blogSummarySchema) });
@@ -36,7 +56,7 @@ export const blogPostSchema = blogSummarySchema.extend({
   fast_facts: blogFactsSchema.transform((facts) => facts === null ? null : Object.fromEntries(
     Object.entries(facts).flatMap(([key, value]) => value === null ? [] : [[key, typeof value === 'boolean' ? String(value) : value]]),
   ) as Record<string, string | number>), fun_facts: blogFunFactsSchema,
-  deduction_masterclass: blogDeductionSchema, content_markdown: z.string(),
+  deduction_masterclass: publicDeductionSchema, content_markdown: z.string(),
   source_links: z.array(blogSourceSchema).max(20), editorial_note: z.string().nullable(),
   reviewed_at: z.string().nullable(), reviewer_name: z.string().nullable(), ai_assisted: z.boolean(),
   related_posts: z.array(blogSummarySchema).nullable().optional(),

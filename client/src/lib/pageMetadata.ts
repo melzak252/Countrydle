@@ -9,7 +9,7 @@ export interface PageMetadataInput {
   article?: {
     countryName: string;
     puzzleDate: string;
-    publishedAt: string;
+    publishedAt?: string;
     updatedAt?: string;
     authorName?: string;
     reviewedBy?: string;

@@ -95,11 +95,13 @@ export default function BlogPostPage() {
   }, [slug, retry]);
 
   const loadedPost = !loading && !error && loadedSlug === slug ? fetchedPost : null;
+  const quizNeedsRepair = loadedPost?.deduction_masterclass?.quiz?.status === 'needs-editorial-repair';
   const reviewed = loadedPost?.editorial_status === 'reviewed' && !!loadedPost?.reviewed_at && !!loadedPost?.reviewer_name;
+  const eligibleForAds = reviewed && !quizNeedsRepair;
   useEffect(() => {
-    setPageEditorialEligibility(reviewed);
+    setPageEditorialEligibility(eligibleForAds);
     return () => setPageEditorialEligibility(false);
-  }, [reviewed, slug]);
+  }, [eligibleForAds, slug]);
   usePageMetadata(loadedPost ? {
     title: `${loadedPost.title} — ${loadedPost.country_name}, ${loadedPost.date} | Countrydle`,
     description: `Past-day recap for ${loadedPost.country_name} (${loadedPost.date}). ${loadedPost.summary || loadedPost.subtitle || 'Country-specific geography and deduction analysis.'}`,
@@ -107,8 +109,8 @@ export default function BlogPostPage() {
     article: {
       countryName: loadedPost.country_name,
       puzzleDate: loadedPost.date,
-      publishedAt: loadedPost.created_at || `${loadedPost.date}T00:00:00Z`,
-      updatedAt: loadedPost.updated_at || loadedPost.created_at,
+      publishedAt: loadedPost.created_at || undefined,
+      updatedAt: loadedPost.updated_at,
       reviewedBy: reviewed ? loadedPost.reviewer_name || undefined : undefined,
     },
   } : null);
@@ -262,7 +264,7 @@ export default function BlogPostPage() {
       <section aria-label="Editorial provenance" className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 space-y-3 text-sm text-zinc-300 sm:p-5">
         <p className="font-semibold text-sand-100">{post.ai_assisted ? 'AI-assisted recap' : 'Countrydle recap'} · {reviewed ? 'Editorially reviewed' : 'Not yet editorially reviewed'}</p>
         {reviewed ? <p>Reviewed by {post.reviewer_name} on <time dateTime={post.reviewed_at || undefined}>{post.reviewed_at}</time>.</p> : <p>Geographical claims and deduction advice may need verification. This page does not carry advertising until an editor reviews it.</p>}
-        <p>Published <time dateTime={post.created_at}>{post.created_at}</time> · Updated <time dateTime={post.updated_at || post.created_at}>{post.updated_at || post.created_at}</time></p>
+        <p>{post.created_at ? <>Published <time dateTime={post.created_at}>{post.created_at}</time></> : 'Publication timestamp unavailable'} · Updated <time dateTime={post.updated_at}>{post.updated_at}</time></p>
         <p>These timestamps record article changes, not the measurement year of population or other changing statistics. Check the cited source for its reference date; a figure without one is undated.</p>
         {post.editorial_note && <p className="whitespace-pre-wrap">{post.editorial_note}</p>}
         {sourceLinks.length ? (
@@ -469,14 +471,24 @@ export default function BlogPostPage() {
         </section>
       )}
 
+      {post.deduction_masterclass?.quiz?.status === 'needs-editorial-repair' && (
+        <section aria-label={isPl ? 'Quiz wymaga korekty redakcyjnej' : 'Quiz needs editorial repair'} className="min-w-0 space-y-3 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-100">
+          <h2 className="font-semibold">{isPl ? 'Quiz niedostępny — wymaga korekty redakcyjnej' : 'Quiz unavailable — needs editorial repair'}</h2>
+          <p>{isPl ? 'Zapisany quiz jest niekompletny lub nieprawidłowy. Nie dodaliśmy wymyślonych odpowiedzi. Pozostała treść artykułu jest dostępna.' : 'The stored quiz is incomplete or invalid. We have not invented missing answers. The rest of this article remains available.'}</p>
+          <details>
+            <summary className="cursor-pointer">{isPl ? 'Zapisana treść quizu (bez zmian)' : 'Stored quiz content (unchanged)'}</summary>
+            <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-xs leading-6">{JSON.stringify(post.deduction_masterclass.quiz.stored, null, 2)}</pre>
+          </details>
+        </section>
+      )}
+
       {/* Interactive Trivia Knowledge Check */}
-      {post.deduction_masterclass?.quiz && (() => {
-        const quiz = post.deduction_masterclass.quiz;
+      {post.deduction_masterclass?.quiz?.status === 'available' && (() => {
+        const quiz = post.deduction_masterclass.quiz.content;
         const questionText = cleanDisplayText(quiz.question);
         const correctAnswer = cleanDisplayText(quiz.correct_answer);
         const incorrectDistractor = cleanDisplayText(quiz.incorrect_distractor);
         const explanationText = cleanDisplayText(quiz.explanation);
-        if (!questionText || !correctAnswer || !incorrectDistractor || !explanationText || correctAnswer.toLowerCase() === incorrectDistractor.toLowerCase()) return null;
 
         const triviaSeed = (post?.id || 0) + (post?.country_name ? post.country_name.length : 0);
         const correctOptionIndex = triviaSeed % 2;
@@ -544,7 +556,7 @@ export default function BlogPostPage() {
         })}
       </section>}
       {/* Compliant Ad Placement */}
-      {reviewed && <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />}
+      {eligibleForAds && <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />}
 
       {/* Related Country Recaps Carousel */}
       {post.related_posts && post.related_posts.length > 0 && (

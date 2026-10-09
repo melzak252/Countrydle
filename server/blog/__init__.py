@@ -10,7 +10,7 @@ from db.models.user import User
 from db.repositories.blog import BlogRepository
 from db.repositories.countrydle import CountrydleRepository
 from db.repositories.participation import ParticipationRepository
-from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary, BlogPostUpdate, BlogReviewInput, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
+from schemas.blog import BlogPostDisplay, BlogPostEditInput, BlogPostListResponse, BlogPostSummary, BlogPostUpdate, BlogReviewInput, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
 from pydantic import ValidationError
 from users.utils import get_admin_user
 from sqlalchemy import func, desc, select, or_
@@ -288,13 +288,20 @@ async def get_admin_blog_post(
 @router.patch("/admin/posts/{post_id}", response_model=BlogPostDisplay)
 async def update_blog_post(
     post_id: int,
-    body: BlogPostUpdate,
+    body: BlogPostEditInput,
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
     repo = BlogRepository(session)
     post = await _admin_post(repo, post_id, for_update=True)
-    post = await repo.update(post, body.model_dump(mode="json", exclude_unset=True))
+    if BlogPostSummary.utc_timestamps(post.updated_at) != body.expected_updated_at:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This article changed since you loaded it. Reload the latest version before saving your edits.",
+        )
+    post = await repo.update(post, body.model_dump(
+        mode="json", exclude_unset=True, exclude={"expected_updated_at"},
+    ))
     return await _post_display(post, session)
 
 
@@ -412,9 +419,14 @@ async def generate_yesterday_post_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Country not found for ID {day_country.country_id}.",
         )
-    new_post = await create_daily_blog_post(session, country, eval_date)
+    country_id, country_name, engine = country.id, country.name, session.bind
+    # Authentication and discovery share this request's read transaction. Finish
+    # it explicitly rather than letting generation roll back caller-owned work.
+    # Only scalar values are used after commit, including with expiring sessions.
+    await session.commit()
+    new_post = await create_daily_blog_post(engine, country_id, country_name, eval_date)
     saved_post = await repo.create(new_post)
-    logger.info("Generated daily blog post for %s (%s)", eval_date, country.name)
+    logger.info("Generated daily blog post for %s (%s)", eval_date, country_name)
     return await _post_display(saved_post, session)
 
 

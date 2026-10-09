@@ -55,7 +55,7 @@ export default function AdminBlogTab() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [detailRetry, setDetailRetry] = useState(0);
-  const [staleReview, setStaleReview] = useState(false);
+  const [staleVersion, setStaleVersion] = useState(false);
   const limit = 12;
   useEffect(() => {
     let active = true;
@@ -74,7 +74,7 @@ export default function AdminBlogTab() {
   useEffect(() => {
     let active = true;
     setPost(null); setDraft(null); setError(null); setMessage(null);
-    setStaleReview(false);
+    setStaleVersion(false);
     if (selectedId === null) return;
     setDetailLoading(true);
     void (async () => {
@@ -92,7 +92,11 @@ export default function AdminBlogTab() {
   const reviewed = post?.editorial_status === 'reviewed';
   const mutate = async (action: 'save' | 'review' | 'unreview') => {
     if (!post || !draft || busy) return;
-    if (action === 'review' && (staleReview || !post.updated_at)) {
+    if (action === 'save' && (staleVersion || !post.updated_at)) {
+      setError('Your draft has been kept. Reload the latest saved post before saving; loading it requires confirmation to discard your unsaved edits.'); return;
+    }
+    if (action === 'save' && !dirty) return;
+    if (action === 'review' && (staleVersion || !post.updated_at)) {
       setError('Reload the latest saved post, inspect its content and sources, then deliberately record a new review.'); return;
     }
     if (action === 'review' && (dirty || privateDate || !post.source_links.length)) {
@@ -108,18 +112,25 @@ export default function AdminBlogTab() {
           deduction_masterclass: JSON.parse(draft.deduction_masterclass), editorial_note: draft.editorial_note.trim() || null,
         });
         response = action === 'save'
-          ? await blogService.updatePost(post.id, payload)
+          ? await blogService.updatePost(post.id, payload, post.updated_at!)
           : await blogService.reviewPost(post.id, post.updated_at!);
       } else response = await blogService.unreviewPost(post.id);
       const result = adminPostSchema.parse(response);
+      // Revoking a review must not silently rebase an old draft onto concurrent edits.
+      if (action === 'unreview' && dirty && JSON.stringify(postDraft(result)) !== JSON.stringify(postDraft(post))) {
+        setStaleVersion(true);
+        setError('Editorial review was revoked, but the saved content changed after you loaded it. Your entire unsaved draft has been kept. Reload the latest saved version before saving or reviewing.');
+      }
       setPost(result);
       if (action !== 'unreview' || !dirty) setDraft(postDraft(result));
       setRefresh((value) => value + 1);
       setMessage(action === 'save' ? 'Saved. Any prior editorial review has been invalidated.' : action === 'review' ? 'Review recorded by the server for your signed-in admin account.' : 'Editorial review revoked. This post is no longer advertising-eligible.');
     } catch (failure) {
-      if (action === 'review' && isAxiosError(failure) && failure.response?.status === 409) {
-        setStaleReview(true);
-        setError('This post changed after you loaded it. No review was recorded. Reload the latest saved version and check its content and sources before reviewing again.');
+      if ((action === 'save' || action === 'review') && isAxiosError(failure) && failure.response?.status === 409) {
+        setStaleVersion(true);
+        setError(action === 'save'
+          ? 'This post changed after you loaded it. No edits were saved. Your entire unsaved draft has been kept. Reload the latest saved version before deliberately editing and saving again.'
+          : 'This post changed after you loaded it. No review was recorded. Reload the latest saved version and check its content and sources before reviewing again.');
       } else setError(editorialError(failure));
     }
     finally { setBusy(false); }
@@ -142,10 +153,10 @@ export default function AdminBlogTab() {
     </>}
     {detailLoading && <p role="status">Loading editable post…</p>}
     {error && <div role="alert" className="rounded border border-rose-500/40 p-4"><p>{error}</p>{!post && selectedId !== null && <button type="button" onClick={() => setDetailRetry((value) => value + 1)} className="mt-2 underline">Retry selected post</button>}</div>}
-    {post && staleReview && <p className="rounded border border-amber-500/40 p-4 text-amber-300">Review is blocked until you reload and inspect the latest saved version. <button type="button" disabled={busy} onClick={reloadLatest} className="underline">Reload latest saved post</button></p>}
+    {post && (staleVersion || !post.updated_at) && <p className="rounded border border-amber-500/40 p-4 text-amber-300">Saving and review are blocked until you reload and inspect the latest saved version. Unsaved edits will not be discarded without your confirmation. <button type="button" disabled={busy} onClick={reloadLatest} className="underline">Reload latest saved post</button></p>}
     {message && <p role="status" className="text-emerald-300">{message}</p>}
     {post && draft && <form onSubmit={(event) => { event.preventDefault(); void mutate('save'); }} className="space-y-5 rounded border border-white/20 p-5">
-      <header><h3 className="font-serif text-xl text-sand-100">Editing {post.country_name} · {post.date}</h3><p className="text-sm">{post.ai_assisted ? 'AI-assisted' : 'Countrydle recap'} · {reviewed ? `Reviewed by ${post.reviewer_name} at ${post.reviewed_at}` : 'Unreviewed'} · Updated {post.updated_at || post.created_at}</p>{privateDate && <p className="mt-2 text-amber-300">Today/future post: private admin preview only. It cannot be reviewed for public publication.</p>}</header>
+      <header><h3 className="font-serif text-xl text-sand-100">Editing {post.country_name} · {post.date}</h3><p className="text-sm">{post.ai_assisted ? 'AI-assisted' : 'Countrydle recap'} · {reviewed ? `Reviewed by ${post.reviewer_name} at ${post.reviewed_at}` : 'Unreviewed'} · Updated {post.updated_at || 'timestamp unavailable'}</p>{privateDate && <p className="mt-2 text-amber-300">Today/future post: private admin preview only. It cannot be reviewed for public publication.</p>}</header>
       <fieldset disabled={busy} className="space-y-5">
         {(['title', 'subtitle', 'summary', 'content_markdown', 'editorial_note', 'fast_facts', 'fun_facts', 'deduction_masterclass'] as const).map((field) => <label key={field} className="block text-sm"><span className="mb-2 block">{field.replaceAll('_', ' ')}{['fast_facts', 'fun_facts', 'deduction_masterclass'].includes(field) ? ' (JSON; use null for absent facts/deduction)' : ''}</span><textarea value={draft[field]} onChange={(event) => setDraft({ ...draft, [field]: event.target.value })} rows={field === 'content_markdown' ? 12 : ['title', 'subtitle'].includes(field) ? 2 : 5} required={['title', 'subtitle', 'summary', 'content_markdown'].includes(field)} className="block w-full rounded border border-white/20 bg-obsidian-950 p-3 font-mono text-sm" /></label>)}
         <p className="text-xs text-zinc-400">Fast facts accept text, numbers, booleans and null for unknown values; unknown facts are omitted from the public display. Curiosities require title and description strings. Deduction steps require a question, with optional answer and explanation strings; a quiz requires question, correct_answer, incorrect_distractor and explanation strings. Stored JSON that needs repair remains editable, but must be corrected before saving or reviewing.</p>
@@ -158,7 +169,7 @@ export default function AdminBlogTab() {
           </div>)}
           <button type="button" disabled={draft.source_links.length >= 20} onClick={() => setDraft({ ...draft, source_links: [...draft.source_links, { label: '', url: '' }] })} className="rounded border border-white/20 px-3 py-2">Add source</button>
         </section>
-        <div className="flex flex-wrap gap-3"><button type="submit" disabled={!dirty} className="rounded bg-emerald-400 px-4 py-2 font-semibold text-obsidian-950">{busy ? 'Saving…' : 'Save edits and invalidate review'}</button><button type="button" disabled={dirty || reviewed || privateDate || !post.source_links.length || staleReview || !post.updated_at} onClick={() => { void mutate('review'); }} className="rounded border border-emerald-400 px-4 py-2">Record editorial review…</button><button type="button" disabled={!reviewed} onClick={() => { void mutate('unreview'); }} className="rounded border border-rose-400 px-4 py-2">Revoke review</button></div>
+        <div className="flex flex-wrap gap-3"><button type="submit" disabled={!dirty || staleVersion || !post.updated_at} className="rounded bg-emerald-400 px-4 py-2 font-semibold text-obsidian-950">{busy ? 'Saving…' : 'Save edits and invalidate review'}</button><button type="button" disabled={dirty || reviewed || privateDate || !post.source_links.length || staleVersion || !post.updated_at} onClick={() => { void mutate('review'); }} className="rounded border border-emerald-400 px-4 py-2">Record editorial review…</button><button type="button" disabled={!reviewed} onClick={() => { void mutate('unreview'); }} className="rounded border border-rose-400 px-4 py-2">Revoke review</button></div>
         {dirty && <p className="text-xs text-amber-300">Unsaved changes. Save before recording a review. Revoking review preserves these unsaved edits.</p>}
       </fieldset>
     </form>}

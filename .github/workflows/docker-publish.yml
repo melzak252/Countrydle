@@ -75,6 +75,18 @@ jobs:
             type=ref,event=tag
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=latest-${{ github.event.pull_request.number }},enable=${{ github.event_name == 'pull_request' }}
+            type=sha,format=long
+
+      - name: Extract publisher image metadata
+        id: publisher-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-publisher
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest-${{ github.event.pull_request.number }},enable=${{ github.event_name == 'pull_request' }}
+            type=sha,format=long
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -83,10 +95,22 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
+          build-args: &frontend-build-args |
             VITE_API_URL=/api
             VITE_RYBBIT_SCRIPT_URL=${{ vars.VITE_RYBBIT_SCRIPT_URL }}
             VITE_RYBBIT_SITE_ID=${{ vars.VITE_RYBBIT_SITE_ID }}
             VITE_GOOGLE_ADSENSE_ID=${{ vars.VITE_GOOGLE_ADSENSE_ID }}
             VITE_ADSENSE_ENABLED=${{ vars.VITE_ADSENSE_ENABLED || 'false' }}
             VITE_ADSENSE_SLOTS=${{ vars.VITE_ADSENSE_SLOTS || '{}' }}
+
+      # Both targets use the identical checkout, build stage and public build
+      # configuration. Deploy the matching sha-<commit> pair, not floating latest.
+      - name: Build and push off-host publisher capture image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          target: publisher-capture
+          push: true
+          tags: ${{ steps.publisher-meta.outputs.tags }}
+          labels: ${{ steps.publisher-meta.outputs.labels }}
+          build-args: *frontend-build-args

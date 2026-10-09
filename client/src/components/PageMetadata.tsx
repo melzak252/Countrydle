@@ -157,7 +157,7 @@ function structuredData(metadata: RouteMetadata, path: string, url: string) {
       '@type': 'Article',
       headline: metadata.title,
       mainEntityOfPage: url,
-      datePublished: article.publishedAt,
+      ...(article.publishedAt ? { datePublished: article.publishedAt } : {}),
       dateModified: article.updatedAt ?? article.publishedAt,
       temporalCoverage: article.puzzleDate,
       about: { '@type': 'Place', name: article.countryName },
@@ -216,7 +216,7 @@ export default function PageMetadata() {
     setMeta('property', 'og:type', metadata.article ? 'article' : 'website');
     setMeta('property', 'og:site_name', 'Countrydle');
     setMeta('property', 'og:image', IMAGE);
-    setMeta('property', 'article:published_time', metadata.article?.publishedAt ?? null);
+    setMeta('property', 'article:published_time', metadata.article?.publishedAt || null);
     setMeta('property', 'article:modified_time', metadata.article?.updatedAt ?? metadata.article?.publishedAt ?? null);
     setMeta('name', 'twitter:card', 'summary');
     setMeta('name', 'twitter:title', metadata.title);

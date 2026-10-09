@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 import json
+import re
 from sys import float_info
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl, StrictBool, StrictFloat, StrictInt, StrictStr, TypeAdapter, field_validator, model_validator
@@ -51,13 +52,39 @@ class BlogDeductionStep(BaseModel):
         return value
 
 
+# Match client cleanDisplayText exactly: unescape only these punctuation marks,
+# then trim ECMAScript whitespace. Citation warnings and reference numbers stay.
+_DISPLAY_ESCAPES = re.compile(r"\\([_()[\]*])")
+_DISPLAY_WHITESPACE = "\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+
+
+def _clean_quiz_display_text(value: str) -> str:
+    return _DISPLAY_ESCAPES.sub(r"\1", value).strip(_DISPLAY_WHITESPACE)
+
+
 class BlogTriviaQuiz(BaseModel):
     question: StrictStr
     correct_answer: StrictStr
     incorrect_distractor: StrictStr
     explanation: StrictStr
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", str_strip_whitespace=True)
+
+    @field_validator("question", "correct_answer", "incorrect_distractor", "explanation")
+    @classmethod
+    def require_meaningful_quiz_text(cls, value: str) -> str:
+        if not value:
+            raise ValueError("Quiz fields must contain nonblank text")
+        return value
+
+    @model_validator(mode="after")
+    def require_distinct_answers(self):
+        if (
+            _clean_quiz_display_text(self.correct_answer).casefold()
+            == _clean_quiz_display_text(self.incorrect_distractor).casefold()
+        ):
+            raise ValueError("Quiz answer and distractor must display distinct choices")
+        return self
 
 
 class BlogDeductionMasterclass(BaseModel):
@@ -116,13 +143,18 @@ class BlogPostUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_patch(self):
-        if not self.model_fields_set:
+        editable_fields = self.model_fields_set & BlogPostUpdate.model_fields.keys()
+        if not editable_fields:
             raise ValueError("Supply at least one editable field")
         nullable = {"fast_facts", "deduction_masterclass", "editorial_note"}
-        for field in self.model_fields_set - nullable:
+        for field in editable_fields - nullable:
             if getattr(self, field) is None:
                 raise ValueError(f"{field} cannot be null")
         return self
+
+
+class BlogPostEditInput(BlogPostUpdate, BlogReviewInput):
+    """Editable content plus the exact article version inspected by the editor."""
 
 
 
@@ -140,7 +172,7 @@ class BlogPostSummary(BaseModel):
     difficulty: Optional[str] = None
     win_rate_pct: Optional[float] = None
     total_players: Optional[int] = None
-    created_at: datetime
+    created_at: Optional[datetime]
     updated_at: datetime
     editorial_status: Literal["unreviewed", "reviewed"] = "unreviewed"
 
@@ -148,7 +180,9 @@ class BlogPostSummary(BaseModel):
 
     @field_validator("created_at", "updated_at")
     @classmethod
-    def utc_timestamps(cls, value: datetime) -> datetime:
+    def utc_timestamps(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
         # Legacy database columns store naive UTC timestamps.
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
