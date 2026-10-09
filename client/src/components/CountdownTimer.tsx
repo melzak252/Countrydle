@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDailyClock } from '../hooks/useDailyClock';
+import { isPrerenderCapture } from '../lib/pageMetadata'
 
 export interface CountdownTimerProps {
   label?: string;
@@ -8,7 +9,19 @@ export interface CountdownTimerProps {
   className?: string;
 }
 
-export default function CountdownTimer({
+export default function CountdownTimer(props: CountdownTimerProps) {
+  const { i18n } = useTranslation();
+  if (isPrerenderCapture()) {
+    return (
+      <span className={`text-xs text-zinc-400 ${props.className ?? ''}`}>
+        {i18n.language.startsWith('pl') ? 'Nowe zagadki codziennie o 00:00 UTC' : 'New daily puzzles at 00:00 UTC'}
+      </span>
+    );
+  }
+  return <LiveCountdownTimer {...props} />;
+}
+
+function LiveCountdownTimer({
   label,
   variant = 'navbar',
   className = '',

@@ -1,7 +1,7 @@
 import LegalDocument from '../components/LegalDocument';
 
 export default function TermsOfServicePage() {
-  const lastUpdated = "October 6, 2026";
+  const lastUpdated = "October 9, 2026";
 
   return (
     <LegalDocument title="Terms of Service" lastUpdated={lastUpdated}>
@@ -61,11 +61,19 @@ export default function TermsOfServicePage() {
       <section>
         <h2>5. Advertisements</h2>
         <p>
-          The website uses Google AdSense for advertising. Ad availability and personalization depend on applicable consent
-          choices, region and provider settings. Advertising choices are separate from accepting these terms and from
-          storage needed for login or requested gameplay. See the <a href="/cookie-policy">Cookie Policy</a> for browser
-          storage and Privacy settings. Do not click advertisements to support the website or artificially increase ad
-          views or clicks.
+          Countrydle supports optional Google AdSense advertising, disabled by default and dependent on explicit
+          deployment configuration, valid publisher and ad-unit settings, an eligible content page and a determinate
+          permission state from Google Funding Choices / Privacy &amp; Messaging. Missing configuration, unavailable
+          consent services, or unknown or rejected consent does not authorize ad requests. Advertising is excluded
+          from gameplay and results, account and administrative screens, contact and legal pages, and loading,
+          error or unknown screens. Blog advertising requires actual editorial review.
+        </p>
+        <p className="mt-4">
+          Advertising choices are separate from accepting these terms and from storage needed for login or requested
+          gameplay. You may reject or withdraw optional advertising consent through Privacy settings when available;
+          doing so does not delete necessary game or login cookies. See the <a href="/cookie-policy">Cookie Policy</a>
+          for browser storage, privacy controls and what to do if settings are unavailable.
+          Do not click advertisements to support the website or artificially increase ad views or clicks.
         </p>
       </section>
 

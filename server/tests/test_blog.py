@@ -1,116 +1,160 @@
+from datetime import date
+
 import pytest
-from datetime import date, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
 
-from db.models.blog import DailyBlogPost
-from db.models.country import Country
-from utils.blog_generator import generate_slug, _generate_fallback_template
-
-
-def test_generate_slug():
-    d = date(2026, 9, 20)
-    assert generate_slug(d, "Madagascar") == "2026-09-20-madagascar"
-    assert generate_slug(d, "United States of America") == "2026-09-20-united-states-of-america"
-    assert generate_slug(d, "Côte d'Ivoire") == "2026-09-20-c-te-d-ivoire"
+from utils.blog_generator import (
+    _generate_fallback_template,
+    _used_question_sources,
+    generate_blog_content_ai,
+    generate_slug,
+    get_deduction_steps,
+)
 
 
-def test_generate_fallback_template():
-    d = date(2026, 9, 19)
-    fragments = [
-        "Poland is a country in Central Europe with Warsaw as its capital.",
-        "Malbork Castle is the largest castle in the world by land area.",
-        "Over 70% of Poland's terrain is lowlands."
+def test_generate_slug_normalizes_country_names():
+    post_date = date(2026, 9, 20)
+    assert generate_slug(post_date, "Madagascar") == "2026-09-20-madagascar"
+    assert generate_slug(post_date, "United States of America") == "2026-09-20-united-states-of-america"
+    assert generate_slug(post_date, "Côte d'Ivoire") == "2026-09-20-c-te-d-ivoire"
+
+
+def test_short_actual_deduction_path_is_not_replaced_with_invented_questions():
+    questions = [
+        {"question": "Is the country in Africa?", "answer": "YES", "explanation": "South Sudan is in Africa."},
+        {"question": "Does it have a coastline?", "answer": "NO", "explanation": "South Sudan is landlocked."},
     ]
-    article = _generate_fallback_template("Poland", fragments, d)
-
-    assert "Poland" in article["title"]
-    assert len(article["fun_facts"]) >= 2
-    assert "Malbork Castle" in article["content_markdown"]
-    assert "The Deduction Path" in article["content_markdown"]
-    assert "Quick Facts" in article["content_markdown"]
-    assert "Two Things Worth Knowing" in article["content_markdown"]
-    assert "Curator's Pro Tip" in article["content_markdown"]
-    assert "deduction_masterclass" in article
-    assert article["reading_time_minutes"] == 2
+    steps = get_deduction_steps("South Sudan", questions)
+    assert len(steps) == 2
+    assert [step["question"] for step in steps] == [question["question"] for question in questions]
+    assert [step["answer"] for step in steps] == ["YES", "NO"]
+    assert [step["explanation"] for step in steps] == [question["explanation"] for question in questions]
 
 
-@pytest.mark.anyio
-async def test_get_blog_posts_empty(async_client: AsyncClient):
-    with patch("db.repositories.blog.BlogRepository.list_posts", new_callable=AsyncMock) as mock_list:
-        mock_list.return_value = ([], 0)
-        resp = await async_client.get("/blog")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["total"] == 0
-        assert data["posts"] == []
+def test_deduction_path_without_player_history_does_not_invent_telemetry():
+    assert get_deduction_steps("Poland", []) == []
+    article = _generate_fallback_template("Poland", [], date(2026, 9, 19))
+    assert article["deduction_masterclass"]["steps"] == []
 
 
-@pytest.mark.anyio
-async def test_get_blog_post_by_slug_success(async_client: AsyncClient):
-    mock_post = MagicMock(spec=DailyBlogPost)
-    mock_post.id = 1
-    mock_post.date = date(2026, 9, 19)
-    mock_post.country_id = 10
-    mock_post.slug = "2026-09-19-poland"
-    mock_post.title = "Countrydle Recap: Poland"
-    mock_post.subtitle = "Exploring Polish history and geography."
-    mock_post.reading_time_minutes = 2
-    mock_post.summary = "A great deduction game yesterday."
-    mock_post.fast_facts = {"capital": "Warsaw"}
-    mock_post.fun_facts = [{"title": "Fact 1", "description": "Desc 1"}]
-    mock_post.deduction_masterclass = {"step_1": "Hemisphere check"}
-    mock_post.content_markdown = "## Poland\nFull article."
-    mock_post.created_at = datetime.now()
-
-    mock_country = MagicMock(spec=Country)
-    mock_country.id = 10
-    mock_country.name = "Poland"
-    mock_country.official_name = "Republic of Poland"
-    mock_country.wiki = ""
-    mock_country.md_file = ""
-    mock_post.country = mock_country
-
-    with patch("db.repositories.blog.BlogRepository.get_by_slug", new_callable=AsyncMock) as mock_get_slug, \
-         patch("db.repositories.blog.BlogRepository.get_day_player_stats", new_callable=AsyncMock, return_value={"win_rate_pct": 72.5, "total_players": 150}), \
-         patch("db.repositories.blog.BlogRepository.list_posts", new_callable=AsyncMock, return_value=([], 0)):
-        mock_get_slug.return_value = mock_post
-
-        resp = await async_client.get("/blog/2026-09-19-poland")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["title"] == "Countrydle Recap: Poland"
-        assert data["slug"] == "2026-09-19-poland"
-        assert data["country_name"] == "Poland"
-        assert data["continent"] == "Europe"
-        assert data["difficulty"] == "Easy"
-        assert data["win_rate_pct"] == 72.5
-        assert data["total_players"] == 150
-
-@pytest.mark.anyio
-async def test_get_blog_post_not_found(async_client: AsyncClient):
-    with patch("db.repositories.blog.BlogRepository.get_by_slug", new_callable=AsyncMock) as mock_get_slug, \
-         patch("db.repositories.blog.BlogRepository.get_by_date", new_callable=AsyncMock) as mock_get_date:
-        mock_get_slug.return_value = None
-        mock_get_date.return_value = None
-
-        resp = await async_client.get("/blog/non-existent-slug")
-        assert resp.status_code == 404
-
-
-@pytest.mark.anyio
-async def test_create_daily_blog_post_incorporates_player_questions():
-    from utils.blog_generator import _generate_fallback_template
-    d = date(2026, 9, 29)
-    fragments = ["South Sudan is a landlocked country in East-Central Africa."]
-    sample_questions = [
-        {"question": "Is the country in Africa?", "answer": "YES", "explanation": "South Sudan is located in Africa."},
-        {"question": "Does the country have access to the sea?", "answer": "NO", "explanation": "South Sudan is completely landlocked."},
+def test_deduction_path_deduplicates_and_excludes_answer_revealing_questions():
+    valid_question = {"question": "Does it border Germany?", "answer": "YES", "explanation": "They share a border."}
+    questions = [
+        {"question": "Is the country Poland?", "answer": "YES", "explanation": "Correct guess."},
+        valid_question,
+        dict(valid_question),
     ]
-    template = _generate_fallback_template("South Sudan", fragments, d, actual_questions=sample_questions)
-    assert "Is the country in Africa?" in template["content_markdown"]
-    assert "Does the country have access to the sea?" in template["content_markdown"]
-    assert "The Deduction Path" in template["content_markdown"]
-    assert "Quick Facts" in template["content_markdown"]
-    assert "Two Things Worth Knowing" in template["content_markdown"]
-    assert "Curator's Pro Tip" in template["content_markdown"]
+    steps = get_deduction_steps("Poland", questions)
+    assert len(steps) == 1
+    assert steps[0]["step"] == 1
+    assert steps[0]["question"] == valid_question["question"]
+
+
+@pytest.fixture(params=[
+    " [citation needed].",
+    " [citationneeded].",
+    ". [citation needed]",
+    ".[citationneeded]",
+    ".\n[Citation Needed]",
+    r". \[citation needed\]",
+])
+def hostile_wiki_excerpt(request):
+    unsupported = "Poland contains the oldest continuously inhabited castle on Earth"
+    supported = "Poland's capital city is Warsaw, situated along the Vistula River."
+    return f"{unsupported}{request.param} {supported}", supported
+
+
+def test_fallback_omits_marked_claim_but_keeps_other_content_and_source_warning(
+    monkeypatch, hostile_wiki_excerpt,
+):
+    import utils.blog_generator as generator
+
+    monkeypatch.setattr(generator, "get_country_sqlite_facts", lambda _: {
+        "capital": "Warsaw", "continent": "Europe", "water_access": "Baltic Sea",
+        "borders": "Germany", "area_km2": "312,696 km²",
+    })
+    fragment, supported = hostile_wiki_excerpt
+    article = _generate_fallback_template("Poland", [fragment], date(2026, 9, 19))
+    assert "oldest continuously inhabited castle" not in article["content_markdown"]
+    descriptions = [fact["description"] for fact in article["fun_facts"]]
+    assert all("oldest continuously inhabited castle" not in text for text in descriptions)
+    assert supported in descriptions
+    assert supported in article["content_markdown"]
+    assert article["fast_facts"]["capital"] == "Warsaw"
+    assert "citation needed" in article["editorial_note"].lower()
+    assert article["source_links"] == []
+    assert article["ai_assisted"] is False
+    assert "reviewed_by_id" not in article
+    assert "reviewed_at" not in article
+
+
+@pytest.mark.anyio
+async def test_missing_provider_key_uses_automated_template_without_human_review(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    article = await generate_blog_content_ai("Poland", [], date(2026, 9, 19))
+    assert article["ai_assisted"] is False
+    assert article["source_links"] == []
+    assert article["editorial_note"]
+    assert "reviewed_by_id" not in article
+    assert "reviewed_at" not in article
+
+
+def test_sources_include_only_valid_cited_evidence_from_displayed_questions():
+    cited = {
+        "provenance": {
+            "status": "cited",
+            "citation": "Poland borders Germany, according to the stored source excerpt.",
+            "source_url": "https://en.wikipedia.org/wiki/Poland",
+        }
+    }
+    questions = [
+        {
+            "question": "Does it border Germany?", "answer": "YES",
+            "explanation": "Poland and Germany share a border.",
+            "fact_provenance": [
+                cited, dict(cited),
+                {"provenance": {"status": "unknown", "citation": "Unverified", "source_url": "https://example.com/unknown"}},
+                {"provenance": {"status": "cited", "citation": "Unsafe URL", "source_url": "javascript:alert(1)"}},
+                {"provenance": {"status": "cited", "citation": "", "source_url": "https://example.com/no-evidence"}},
+            ],
+        },
+        {
+            "question": "Is the country Poland?", "answer": "YES", "explanation": "Correct guess.",
+            "fact_provenance": [{
+                "provenance": {"status": "cited", "citation": "Other evidence", "source_url": "https://example.com/not-used"}
+            }],
+        },
+    ]
+    sources = _used_question_sources(questions, get_deduction_steps("Poland", questions))
+    assert len(sources) == 1
+    assert sources[0]["url"] == "https://en.wikipedia.org/wiki/Poland"
+    assert sources[0]["label"]
+
+
+@pytest.mark.anyio
+async def test_ai_output_cannot_invent_sources_or_human_review(monkeypatch):
+    import utils.blog_generator as generator
+
+    monkeypatch.setenv("GEMINI_API_KEY", "offline-test-only")
+
+    def offline_provider(*args, **kwargs):
+        return {
+            "title": "Countrydle recap: Poland",
+            "summary": "Poland is in Europe and its capital is Warsaw.",
+            "fun_facts": [{"title": "Capital", "description": "Warsaw is the capital of Poland."}],
+            "source_links": [{"label": "Invented citation", "url": "https://example.com/not-retrieved"}],
+            "reviewed_by_id": 1,
+            "reviewed_at": "2026-09-19T12:00:00Z",
+            "ai_assisted": False,
+        }
+
+    monkeypatch.setattr(generator, "_call_gemini_api", offline_provider)
+    article = await generate_blog_content_ai(
+        "Poland",
+        ["Poland contains an unsupported historical superlative [citation needed]."],
+        date(2026, 9, 19),
+    )
+    assert article["ai_assisted"] is True
+    assert article["source_links"] == []
+    assert "citation needed" in article["editorial_note"].lower()
+    assert "reviewed_by_id" not in article
+    assert "reviewed_at" not in article

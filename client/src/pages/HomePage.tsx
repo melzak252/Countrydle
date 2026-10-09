@@ -7,6 +7,7 @@ import SpinningGlobe from '../components/SpinningGlobe';
 import { useDailyDate } from '../hooks/useDailyClock';
 import { useAuthStore } from '../stores/authStore';
 import { useCountryGameStore } from '../stores/gameStore';
+import { isPrerenderCapture } from '../lib/pageMetadata'
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
@@ -15,12 +16,13 @@ export default function HomePage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
   const { gameState, dailyDate, isGuest, isLoading, error, fetchGameState } = useCountryGameStore();
+  const capture = isPrerenderCapture();
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) void fetchGameState();
-  }, [authLoading, isAuthenticated, today, fetchGameState]);
+    if (!capture && !authLoading && !isAuthenticated) void fetchGameState();
+  }, [capture, authLoading, isAuthenticated, today, fetchGameState]);
 
-  const guest = !authLoading && !isAuthenticated;
+  const guest = !capture && !authLoading && !isAuthenticated;
   const currentGuestState = guest && isGuest && dailyDate === today && !isLoading && !error
     ? gameState
     : null;
@@ -178,7 +180,7 @@ export default function HomePage() {
 
         {/* Dynamic 3D Green Transparent Spinning Globe */}
         <div className="hidden w-full md:block">
-          <SpinningGlobe size={340} />
+          {!capture && <SpinningGlobe size={340} />}
         </div>
       </section>
 

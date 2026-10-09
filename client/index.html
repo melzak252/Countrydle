@@ -14,9 +14,8 @@
     <meta name="author" content="Jakub Melzacki" />
     <meta name="robots" content="index, follow" />
 
-    <!-- Google AdSense Official Verification & Ad Delivery -->
+    <!-- Public ownership verification; serving is gated by the client advertising policy. -->
     <meta name="google-adsense-account" content="ca-pub-3937273134876300" />
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3937273134876300" crossorigin="anonymous"></script>
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -31,135 +30,6 @@
     <meta name="twitter:title" content="Countrydle - Daily Geography Deduction Game" />
     <meta name="twitter:description" content="Test your geography skills with Countrydle! Ask yes/no questions and use deductive reasoning to find the daily secret location." />
 
-    <!-- Structured Data: WebApplication -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Countrydle",
-      "url": "https://countrydle.online",
-      "description": "Daily geography deduction puzzle game where players identify secret countries, US states, or Polish regions by asking questions.",
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "All",
-      "inLanguage": "en",
-      "author": {
-        "@type": "Person",
-        "name": "Jakub Melzacki",
-        "url": "https://countrydle.online/about"
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    }
-    </script>
-
-    <!-- Structured Data: FAQPage (AdSense & Search Rich Snippets) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "How does Countrydle work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Countrydle is a daily geography deduction game. Every day at midnight UTC, a secret target location is chosen. You have a budget of questions (e.g. 10 for countries, 5 for voivodeships) and guesses (usually 2 to 3) to deduce the mystery location. You ask natural-language yes/no questions to eliminate regions, borders, and characteristics before submitting your final guess."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What kind of questions can I ask?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You can ask any factual yes/no question regarding geography, borders, physical features, or demographics! Great examples include: 'Is it in the Northern Hemisphere?', 'Does it have access to the sea?', 'Does it border Germany?', 'Is the population greater than 20 million?', 'Does the flag contain red?', and 'Is the capital city Paris?'."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Do typos or open-ended questions consume my question limit?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No! If you ask an open-ended question, make a typo, or enter an unparseable sentence, the system flags it as invalid and provides an explanatory warning. Your question count is NOT deducted, allowing you to rephrase your thought without penalty."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does scoring work and what happens when I run out of guesses?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Points are awarded dynamically across five performance factors: 1) Base win bonus (+500 pts), 2) Question efficiency (up to +1,500 pts rewarding bold deductions with fewer questions asked), 3) Guess efficiency (up to +500 pts for 1st-try accuracy), 4) Speed bonus (up to +300 pts for fast solves under 5 minutes), and 5) Daily streak bonus (+50 pts/day up to +500 pts). Total scores range up to ~3,300+ points. If you exhaust your guesses or questions, the game ends and reveals the secret entity."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What are the four different game modes?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Countrydle offers four distinct geographic scopes: 1) World Countries (195 playable countries across all continents), 2) US Statedle (all 50 American states), 3) Województwodle (Poland's 16 administrative voivodeships), and 4) Powiatdle (380 Polish counties tested via registration plates, rivers, and roads)."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I play previous daily puzzles?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You can view the full history and solutions of past daily puzzles by visiting the Archive page in the header menu. It lists previous dates and answers across all four game modes so you can check what you missed."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Where does Countrydle get its geography facts and maps?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Our knowledge base is strictly verified from authoritative public sources: Natural Earth and OpenStreetMap for boundary geometries and coastlines; Główny Urząd Statystyczny (GUS) for official Polish county demographics and registration codes; and the US Census Bureau for American state statistics."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do you guarantee answers are factually accurate without AI hallucinations?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Countrydle does not let generative AI invent answers. Instead, AI is used strictly as a semantic compiler that translates your natural language question into a structured query plan. That plan executes directly against curated, local SQLite relational tables, delivering 100% verified factual truth."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I ask about historical blocs or former unions?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes! Our database includes major historical unions and former alliances such as the USSR, Warsaw Pact, Yugoslavia, Gran Colombia, and former colonial spheres (e.g., British Empire, Spanish Empire)."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Do I need to create an account to play?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Not at all! Countrydle is 100% free and open for guest play. Your daily progress, guesses, and question history are saved automatically in your browser's local storage."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What happens to my guest progress if I sign up or log in later?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Our platform features seamless guest synchronization. When you register or log in, your ongoing daily game state, questions, and guesses are automatically synced to your new profile without losing your current game."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do daily streaks and leaderboards work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Registered players earn points and daily streaks for every solved puzzle. Your profile tracks your total points, total wins, games played, and active win streak, ranking you on monthly and average-performance global leaderboards."
-          }
-        }
-      ]
-    }
-    </script>
   </head>
   <body>
     <div id="root"></div>

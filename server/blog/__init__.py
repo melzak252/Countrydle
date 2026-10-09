@@ -1,15 +1,18 @@
 import logging
 from datetime import date, datetime, timedelta, timezone
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
 from db.models.countrydle import CountrydleDay, CountrydleQuestion, CountrydleGuess, CountrydleState
+from db.models.blog import DailyBlogPost
+from db.models.user import User
 from db.repositories.blog import BlogRepository
 from db.repositories.countrydle import CountrydleRepository
 from db.repositories.participation import ParticipationRepository
-from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
+from schemas.blog import BlogPostDisplay, BlogPostListResponse, BlogPostSummary, BlogPostUpdate, BlogReviewInput, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
+from pydantic import ValidationError
+from users.utils import get_admin_user
 from sqlalchemy import func, desc, select, or_
 from utils.blog_generator import create_daily_blog_post
 from utils.country_codes import get_country_code
@@ -177,6 +180,72 @@ async def get_day_community_telemetry(session: AsyncSession, post_date: date) ->
         return CommunityGameDebrief(has_telemetry=False)
 
 
+def _post_summary(post: DailyBlogPost, stats: dict) -> BlogPostSummary:
+    country_name = post.country.name if post.country else "Unknown"
+    win_rate = stats.get("win_rate_pct")
+    return BlogPostSummary(
+        id=post.id,
+        date=post.date,
+        slug=post.slug,
+        title=post.title,
+        subtitle=post.subtitle,
+        reading_time_minutes=post.reading_time_minutes,
+        summary=post.summary,
+        country_name=country_name,
+        country_code=get_country_code(country_name),
+        continent=resolve_country_continent(country_name),
+        difficulty=compute_difficulty(win_rate),
+        win_rate_pct=win_rate,
+        total_players=stats.get("total_players"),
+        created_at=post.created_at,
+        updated_at=post.updated_at,
+        editorial_status=post.editorial_status,
+    )
+
+
+async def _post_display(
+    post: DailyBlogPost, session: AsyncSession,
+    related_posts: Optional[List[BlogPostSummary]] = None,
+) -> BlogPostDisplay:
+    stats = await BlogRepository(session).get_day_player_stats(post.date)
+    reviewed = post.editorial_status == "reviewed"
+    past_day = post.date < datetime.now(timezone.utc).date()
+    return BlogPostDisplay(
+        **_post_summary(post, stats).model_dump(),
+        country_id=post.country_id,
+        fast_facts=post.fast_facts,
+        fun_facts=post.fun_facts,
+        deduction_masterclass=post.deduction_masterclass,
+        content_markdown=post.content_markdown,
+        country=post.country,
+        player_stats=stats,
+        game_debrief=(
+            await get_day_community_telemetry(session, post.date)
+            if past_day else CommunityGameDebrief(has_telemetry=False)
+        ),
+        related_posts=related_posts,
+        source_links=post.source_links,
+        editorial_note=post.editorial_note,
+        reviewed_at=post.reviewed_at if reviewed else None,
+        reviewer_name=post.reviewer.username if reviewed else None,
+        ai_assisted=post.ai_assisted,
+    )
+
+
+async def _list_posts(
+    session: AsyncSession, page: int, limit: int, search: Optional[str],
+    *, public_only: bool,
+) -> BlogPostListResponse:
+    repo = BlogRepository(session)
+    posts, total = await repo.list_posts(
+        limit=limit, offset=(page - 1) * limit, search=search, public_only=public_only
+    )
+    stats = await repo.get_player_stats_for_dates([post.date for post in posts])
+    return BlogPostListResponse(
+        total=total, posts=[_post_summary(post, stats[post.date]) for post in posts]
+    )
+
+
 @router.get("", response_model=BlogPostListResponse)
 async def list_blog_posts(
     page: int = Query(1, ge=1),
@@ -184,164 +253,131 @@ async def list_blog_posts(
     search: Optional[str] = None,
     session: AsyncSession = Depends(get_db),
 ):
+    return await _list_posts(session, page, limit, search, public_only=True)
+
+
+@router.get("/admin/posts", response_model=BlogPostListResponse)
+async def list_admin_blog_posts(
+    page: int = Query(1, ge=1),
+    limit: int = Query(12, ge=1, le=50),
+    search: Optional[str] = None,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    return await _list_posts(session, page, limit, search, public_only=False)
+
+
+async def _admin_post(
+    repo: BlogRepository, post_id: int, *, for_update: bool = False,
+) -> DailyBlogPost:
+    post = await repo.get_by_id(post_id, for_update=for_update)
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Blog post not found.")
+    return post
+
+
+@router.get("/admin/posts/{post_id}", response_model=BlogPostDisplay)
+async def get_admin_blog_post(
+    post_id: int,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    return await _post_display(await _admin_post(BlogRepository(session), post_id), session)
+
+
+@router.patch("/admin/posts/{post_id}", response_model=BlogPostDisplay)
+async def update_blog_post(
+    post_id: int,
+    body: BlogPostUpdate,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
     repo = BlogRepository(session)
-    offset = (page - 1) * limit
-    posts, total = await repo.list_posts(limit=limit, offset=offset, search=search)
+    post = await _admin_post(repo, post_id, for_update=True)
+    post = await repo.update(post, body.model_dump(mode="json", exclude_unset=True))
+    return await _post_display(post, session)
 
-    summaries = []
-    for p in posts:
-        c_name = p.country.name if p.country else "Unknown"
-        p_stats = await repo.get_day_player_stats(p.date)
-        win_rate = p_stats.get("win_rate_pct")
-        tot_players = p_stats.get("total_players")
-        summaries.append(
-            BlogPostSummary(
-                id=p.id,
-                date=p.date,
-                slug=p.slug,
-                title=p.title,
-                subtitle=p.subtitle,
-                reading_time_minutes=p.reading_time_minutes,
-                summary=p.summary,
-                country_name=c_name,
-                country_code=get_country_code(c_name),
-                continent=resolve_country_continent(c_name),
-                difficulty=compute_difficulty(win_rate),
-                win_rate_pct=win_rate,
-                total_players=tot_players,
-                created_at=p.created_at or datetime.now(),
-            )
+
+@router.post("/admin/posts/{post_id}/review", response_model=BlogPostDisplay)
+async def review_blog_post(
+    post_id: int,
+    body: BlogReviewInput,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    repo = BlogRepository(session)
+    post = await _admin_post(repo, post_id, for_update=True)
+    if BlogPostSummary.utc_timestamps(post.updated_at) != body.expected_updated_at:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This article changed since you loaded it. Reload the latest version and review it before confirming.",
         )
+    if post.date >= datetime.now(timezone.utc).date():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only past UTC puzzle dates can be reviewed for publication.",
+        )
+    try:
+        sources = BlogPostUpdate(
+            source_links=post.source_links,
+            fast_facts=post.fast_facts,
+            fun_facts=post.fun_facts,
+            deduction_masterclass=post.deduction_masterclass,
+        ).source_links
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Review requires readable editorial JSON and valid HTTP(S) source links with labels.",
+        )
+    if not sources:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Review requires at least one source actually consulted by the editor.",
+        )
+    if (
+        not post.title.strip()
+        or len(post.summary.strip()) < 40
+        or len(post.content_markdown.strip()) < 200
+        or len(post.content_markdown.split()) < 30
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Review requires a title, substantive summary and article body.",
+        )
+    post = await repo.set_review(post, admin.id)
+    return await _post_display(post, session)
 
-    return BlogPostListResponse(total=total, posts=summaries)
+
+@router.post("/admin/posts/{post_id}/unreview", response_model=BlogPostDisplay)
+async def unreview_blog_post(
+    post_id: int,
+    admin: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db),
+):
+    repo = BlogRepository(session)
+    post = await _admin_post(repo, post_id, for_update=True)
+    post = await repo.set_review(post, None)
+    return await _post_display(post, session)
 
 
 @router.get("/latest", response_model=BlogPostDisplay)
 async def get_latest_blog_post(session: AsyncSession = Depends(get_db)):
-    repo = BlogRepository(session)
-    post = await repo.get_latest()
-    if not post:
+    post = await BlogRepository(session).get_latest()
+    if post is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No blog posts available yet.",
+            status_code=status.HTTP_404_NOT_FOUND, detail="No blog posts available yet.",
         )
-
-    stats = await repo.get_day_player_stats(post.date)
-    c_name = post.country.name if post.country else "Unknown"
-    win_rate = stats.get("win_rate_pct")
-
-    return BlogPostDisplay(
-        id=post.id,
-        date=post.date,
-        country_id=post.country_id,
-        slug=post.slug,
-        title=post.title,
-        subtitle=post.subtitle,
-        reading_time_minutes=post.reading_time_minutes,
-        summary=post.summary,
-        fast_facts=post.fast_facts,
-        fun_facts=post.fun_facts,
-        deduction_masterclass=post.deduction_masterclass,
-        content_markdown=post.content_markdown,
-        country_name=c_name,
-        country_code=get_country_code(c_name),
-        continent=resolve_country_continent(c_name),
-        difficulty=compute_difficulty(win_rate),
-        win_rate_pct=win_rate,
-        total_players=stats.get("total_players"),
-        country=post.country,
-        player_stats=stats,
-        game_debrief=await get_day_community_telemetry(session, post.date),
-        created_at=post.created_at or datetime.now(),
-    )
-
-
-@router.get("/{slug_or_date}", response_model=BlogPostDisplay)
-async def get_blog_post(slug_or_date: str, session: AsyncSession = Depends(get_db)):
-    repo = BlogRepository(session)
-
-    # 1. Try slug
-    post = await repo.get_by_slug(slug_or_date)
-
-    # 2. If not found, try parsing as ISO date
-    if not post:
-        try:
-            parsed_date = date.fromisoformat(slug_or_date)
-            post = await repo.get_by_date(parsed_date)
-        except ValueError:
-            pass
-
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Blog post '{slug_or_date}' not found.",
-        )
-
-    stats = await repo.get_day_player_stats(post.date)
-    c_name = post.country.name if post.country else "Unknown"
-    win_rate = stats.get("win_rate_pct")
-
-    # 3. Dynamic related posts (up to 3 recent other posts)
-    all_recent, _ = await repo.list_posts(limit=6, offset=0)
-    related: List[BlogPostSummary] = []
-    for rp in all_recent:
-        if rp.id != post.id and len(related) < 3:
-            rp_c_name = rp.country.name if rp.country else "Unknown"
-            rp_stats = await repo.get_day_player_stats(rp.date)
-            related.append(
-                BlogPostSummary(
-                    id=rp.id,
-                    date=rp.date,
-                    slug=rp.slug,
-                    title=rp.title,
-                    subtitle=rp.subtitle,
-                    reading_time_minutes=rp.reading_time_minutes,
-                    summary=rp.summary,
-                    country_name=rp_c_name,
-                    country_code=get_country_code(rp_c_name),
-                    continent=resolve_country_continent(rp_c_name),
-                    difficulty=compute_difficulty(rp_stats.get("win_rate_pct")),
-                    win_rate_pct=rp_stats.get("win_rate_pct"),
-                    total_players=rp_stats.get("total_players"),
-                    created_at=rp.created_at or datetime.now(),
-                )
-            )
-
-    return BlogPostDisplay(
-        id=post.id,
-        date=post.date,
-        country_id=post.country_id,
-        slug=post.slug,
-        title=post.title,
-        subtitle=post.subtitle,
-        reading_time_minutes=post.reading_time_minutes,
-        summary=post.summary,
-        fast_facts=post.fast_facts,
-        fun_facts=post.fun_facts,
-        deduction_masterclass=post.deduction_masterclass,
-        content_markdown=post.content_markdown,
-        country_name=c_name,
-        country_code=get_country_code(c_name),
-        continent=resolve_country_continent(c_name),
-        difficulty=compute_difficulty(win_rate),
-        win_rate_pct=win_rate,
-        total_players=stats.get("total_players"),
-        country=post.country,
-        player_stats=stats,
-        game_debrief=await get_day_community_telemetry(session, post.date),
-        related_posts=related,
-        created_at=post.created_at or datetime.now(),
-    )
+    return await _post_display(post, session)
 
 
 @router.post("/generate-daily", response_model=BlogPostDisplay)
 async def generate_yesterday_post_endpoint(
     target_date: Optional[str] = None,
+    admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Generate yesterday's (or a specified date's) daily blog post if not yet generated.
-    """
+    """Generate a past puzzle's recap; generation never confers human review."""
+    today = datetime.now(timezone.utc).date()
     if target_date:
         try:
             eval_date = date.fromisoformat(target_date)
@@ -351,21 +387,24 @@ async def generate_yesterday_post_endpoint(
                 detail="Invalid date format, use YYYY-MM-DD",
             )
     else:
-        eval_date = date.today() - timedelta(days=1)
+        eval_date = today - timedelta(days=1)
+    if eval_date >= today:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only past UTC puzzle dates can be generated.",
+        )
 
     repo = BlogRepository(session)
-    existing = await repo.get_by_date(eval_date)
+    existing = await repo.get_by_date(eval_date, public_only=False)
     if existing:
-        return await get_blog_post(existing.slug, session)
+        return await _post_display(existing, session)
 
-    # Find the CountrydleDay for that date
     day_country = await CountrydleRepository(session).get_day_country_by_date(eval_date)
     if not day_country:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No mystery country found for {eval_date.isoformat()}.",
         )
-
     from db.repositories.country import CountryRepository
     country = await CountryRepository(session).get(day_country.country_id)
     if not country:
@@ -373,9 +412,28 @@ async def generate_yesterday_post_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Country not found for ID {day_country.country_id}.",
         )
-
     new_post = await create_daily_blog_post(session, country, eval_date)
     saved_post = await repo.create(new_post)
-    logger.info(f"Generated daily blog post for {eval_date} ({country.name})")
+    logger.info("Generated daily blog post for %s (%s)", eval_date, country.name)
+    return await _post_display(saved_post, session)
 
-    return await get_blog_post(saved_post.slug, session)
+
+@router.get("/{slug_or_date}", response_model=BlogPostDisplay)
+async def get_blog_post(slug_or_date: str, session: AsyncSession = Depends(get_db)):
+    repo = BlogRepository(session)
+    post = await repo.get_by_slug(slug_or_date)
+    if post is None:
+        try:
+            post = await repo.get_by_date(date.fromisoformat(slug_or_date))
+        except ValueError:
+            pass
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Blog post '{slug_or_date}' not found.",
+        )
+    recent, _ = await repo.list_posts(limit=4, offset=0)
+    related = [candidate for candidate in recent if candidate.id != post.id][:3]
+    stats = await repo.get_player_stats_for_dates([candidate.date for candidate in related])
+    summaries = [_post_summary(candidate, stats[candidate.date]) for candidate in related]
+    return await _post_display(post, session, related_posts=summaries)

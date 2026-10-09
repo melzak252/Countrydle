@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useAdvertisingPolicy } from '../advertising';
 import Header from './Header';
 import Footer from './Footer';
 import VersionDisplay from './VersionDisplay';
 
 export default function Layout() {
+  useAdvertisingPolicy();
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();

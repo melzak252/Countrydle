@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import sys
-from datetime import date
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from sqlalchemy import desc, select
 from sqlalchemy.orm import joinedload
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 async def backfill_blog_posts(days_count: int = 5):
     logger.info(f"Starting blog post backfill for up to {days_count} past days...")
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
 
     async with AsyncSessionLocal() as session:
         repo = BlogRepository(session)
 
-        # Query past CountrydleDays before today
+        # Never include the current or future UTC puzzle in a historical recap.
         stmt = (
             select(CountrydleDay)
             .options(joinedload(CountrydleDay.country))
@@ -45,7 +45,7 @@ async def backfill_blog_posts(days_count: int = 5):
             if not day.country:
                 continue
 
-            existing = await repo.get_by_date(day.date)
+            existing = await repo.get_by_date(day.date, public_only=False)
             if existing:
                 logger.info(f"Post for {day.date} ({day.country.name}) already exists. Skipping.")
                 continue

@@ -1,10 +1,5 @@
 import { useEffect, useRef } from 'react';
-
-declare global {
-  interface Window {
-    adsbygoogle: any[];
-  }
-}
+import { getAdvertisingUnit, requestAdvertisingUnit, useAdvertisingPolicy } from '../advertising';
 
 interface AdSenseUnitProps {
   slot: string;
@@ -15,32 +10,27 @@ interface AdSenseUnitProps {
   label?: boolean;
 }
 
-const AdSenseUnit = ({ 
-  slot, 
-  format = 'auto', 
+const AdSenseUnit = ({
+  slot,
+  format = 'auto',
   responsive = true,
   style = { display: 'block' },
   className = '',
   label = true,
 }: AdSenseUnitProps) => {
-  const client = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-3937273134876300';
+  const { eligible, scriptReady } = useAdvertisingPolicy();
+  const unit = getAdvertisingUnit(slot);
   const insRef = useRef<HTMLModElement>(null);
-
+  const requestedSlot = useRef<string | null>(null);
   useEffect(() => {
-    try {
-      if (insRef.current && !insRef.current.getAttribute('data-adsbygoogle-status')) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }
-    } catch (err) {
-      // AdSense initialization error (e.g. adblock or double push in dev)
-      console.debug('AdSense notice:', err);
+    if (eligible && scriptReady && insRef.current && requestedSlot.current !== unit?.slot) {
+      if (requestAdvertisingUnit(insRef.current, slot)) requestedSlot.current = unit?.slot || null;
     }
-  }, []);
-
-  if (!client) return null;
+  }, [eligible, scriptReady, slot, unit?.slot]);
+  if (!eligible || !unit) return null;
 
   return (
-    <div className={`my-6 text-center ${className}`}>
+    <div data-countrydle-ad="unit" className={`my-6 text-center ${className}`}>
       {label && (
         <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-600 font-mono">
           Advertisement
@@ -48,13 +38,14 @@ const AdSenseUnit = ({
       )}
       <div className="overflow-hidden rounded-md bg-white/[0.01] border border-white/5 p-1">
         <ins
+          key={unit.slot}
           ref={insRef}
           className="adsbygoogle"
           style={style}
-          data-ad-client={client}
-          data-ad-slot={slot}
+          data-ad-client={unit.client}
+          data-ad-slot={unit.slot}
           data-ad-format={format}
-          data-full-width-responsive={responsive ? "true" : "false"}
+          data-full-width-responsive={responsive ? 'true' : 'false'}
         />
       </div>
     </div>

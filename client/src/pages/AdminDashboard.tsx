@@ -14,6 +14,7 @@ import AdminUsersTab, { type AdminUserRecord } from '../components/admin/AdminUs
 import AdminQuestionsTab from '../components/admin/AdminQuestionsTab';
 import AdminFactsTab, { type EntityOption } from '../components/admin/AdminFactsTab';
 import AdminSuggestionsTab from '../components/admin/AdminSuggestionsTab';
+import AdminBlogTab from '../components/admin/AdminBlogTab';
 import type { QuestionTestBridgeTarget } from '../components/QuestionTestsPanel';
 import type { AnswerReport, AnswerReportMode, LiveFeedData } from '../types';
 import { 
@@ -40,7 +41,7 @@ import {
 } from 'lucide-react';
 
 type AdminSection = 'gameplay' | 'qa' | 'system';
-type AdminTab = 'overview' | 'sessions' | 'liveFeed' | 'users' | 'suggestions' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache' | 'aiCosts';
+type AdminTab = 'overview' | 'sessions' | 'liveFeed' | 'users' | 'suggestions' | 'blogs' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache' | 'aiCosts';
 
 interface TabDefinition {
   id: AdminTab;
@@ -57,6 +58,7 @@ const TABS: TabDefinition[] = [
   { id: 'users', labelKey: 'adminNavigation.pages.users.label', descriptionKey: 'adminNavigation.pages.users.description', icon: Users, section: 'gameplay' },
   { id: 'suggestions', labelKey: 'adminNavigation.pages.suggestions.label', descriptionKey: 'adminNavigation.pages.suggestions.description', icon: MessageSquare, section: 'gameplay' },
   { id: 'friendAnswers', labelKey: 'adminNavigation.pages.friendAnswers.label', descriptionKey: 'adminNavigation.pages.friendAnswers.description', icon: HelpCircle, section: 'gameplay' },
+  { id: 'blogs', labelKey: 'Blogs', descriptionKey: 'Edit daily recaps, record source evidence, and explicitly review or revoke publication review.', icon: FileText, section: 'qa' },
   { id: 'questions', labelKey: 'adminNavigation.pages.questions.label', descriptionKey: 'adminNavigation.pages.questions.description', icon: HelpCircle, section: 'qa' },
   { id: 'reports', labelKey: 'adminNavigation.pages.reports.label', descriptionKey: 'adminNavigation.pages.reports.description', icon: FileText, section: 'qa' },
   { id: 'questionTests', labelKey: 'adminNavigation.pages.questionTests.label', descriptionKey: 'adminNavigation.pages.questionTests.description', icon: Sparkles, section: 'qa' },
@@ -433,6 +435,7 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'suggestions' && <AdminSuggestionsTab />}
+      {activeTab === 'blogs' && <AdminBlogTab />}
       {activeTab === 'questions' && (
         <AdminQuestionsTab onTestInQA={handleTestInQA} />
       )}

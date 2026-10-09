@@ -51,7 +51,7 @@ export default function AboutPage() {
           </div>
           <div className="py-5">
             <h3 className="mb-2 font-semibold text-sand-100">Flagdle</h3>
-            <p className="text-base leading-7">Identify a country from its partially revealed flag. You have 12 guesses, with more of the flag revealed as you play and feedback to help narrow the candidates. Flagdle uses its own scoring formula.</p>
+            <p className="text-base leading-7">Identify a country from its partially revealed flag. You have 12 guesses, with more of the flag revealed after each guess and feedback to help narrow the candidates. Optional yes/no helper questions have no total question budget and do not spend guesses; request-rate limits still apply. Flagdle uses its own scoring formula.</p>
           </div>
           <div className="py-5">
             <h3 className="mb-2 font-semibold text-sand-100">United States (US Statedle)</h3>
@@ -117,13 +117,15 @@ export default function AboutPage() {
           <p className="mt-3 text-sm leading-6 text-zinc-400">{t('about.dataSubtitle', 'Local facts, AI interpretation, and transparent limitations')}</p>
         </div>
         <div className="space-y-5 text-base leading-7">
-          <p>AI interprets natural-language questions. When a question maps to supported facts, the game evaluates it against local fact tables. Other questions may use an AI fallback with retrieved article text or general knowledge. Interpretations and answers can be wrong, incomplete, or outdated; neither local data nor AI guarantees factual accuracy.</p>
+          <p>Supported question templates can create evaluation plans without an AI planner. Other wording uses cached interpretations or AI planning. When a question maps to supported facts, the game evaluates the plan against local fact tables. Other questions may use an AI fallback with retrieved article text or general knowledge. Interpretations and answers can be wrong, incomplete, or outdated; neither local data nor AI guarantees factual accuracy. Friend duels are distinct: players answer each other&apos;s questions.</p>
           <ul className="list-disc space-y-3 pl-5 marker:text-emerald-400">
             <li><strong className="font-semibold text-sand-100">Country facts</strong>: REST Countries data, CIA World Factbook profiles distributed through the factbook.json project, and curated additions.</li>
             <li><strong className="font-semibold text-sand-100">US and Polish regional facts</strong>: Local article text and infoboxes, geographic classification tables, static lists, and manual corrections. These are not exclusively direct official-statistics feeds.</li>
             <li><strong className="font-semibold text-sand-100">AI-assisted extraction</strong>: Some facts, including selected rivers and water-access relationships, are extracted from Wikipedia article text using AI.</li>
             <li><strong className="font-semibold text-sand-100">Maps and globe</strong>: Bundled boundary files and Natural Earth-derived globe data are separate from the tables used to answer questions.</li>
           </ul>
+          <p>The playable-country catalog is a game convention, not a list of only UN member states or a judgment about diplomatic recognition. Kosovo is included; Israel is currently excluded from playable targets and guesses while its geography facts remain available. Continental pools use stored physical-continent associations and additional eligibility rules. Map boundaries, factual relationships and playable candidates are separate.</p>
+          <p>See the <Link to="/explore/modes/countrydle" className="text-emerald-300 underline underline-offset-4">mode guides and worked examples</Link> for country, water-access and continental conventions, or read <Link to="/how-it-works" className="text-emerald-300 underline underline-offset-4">how the hybrid answer engine works</Link>. To request a correction, <Link to="/contact" className="text-emerald-300 underline underline-offset-4">contact us</Link> with the mode, date, exact question, answer, explanation and supporting source. Avoid posting today&apos;s hidden target publicly.</p>
         </div>
       </section>
 
@@ -131,7 +133,7 @@ export default function AboutPage() {
         <h2 id="about-privacy" className="text-xl font-semibold text-sand-100">{t('about.privacyTitle', 'Player Privacy & Open Access')}</h2>
         <div>
           <p className="text-base leading-7">No account is required to play. For daily games, guest progress is stored in your browser; clearing site data or changing devices can make that progress unavailable. Accepted guest gameplay activity is also recorded server-side using a short-lived pseudonymous browser identifier.</p>
-          <p className="mt-4 text-base leading-7">The site loads Google AdSense, and analytics such as Rybbit may be enabled by deployment settings. See the <Link to="/privacy-policy" className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Privacy Policy</Link> and <Link to="/cookie-policy" className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Cookie Policy</Link> for details about data and cookies.</p>
+          <p className="mt-4 text-base leading-7">Advertising is limited to eligible publisher pages when enabled and when the configured consent service permits it; gameplay, results, account and contact screens are excluded. Analytics such as Rybbit may be enabled by deployment settings. See the <Link to="/privacy-policy" className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Privacy Policy</Link> and <Link to="/cookie-policy" className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Cookie Policy</Link> for details about data, cookies and privacy controls.</p>
           <p className="mt-5 text-sm text-zinc-400">Built for the global geography community</p>
         </div>
       </section>

@@ -10,93 +10,160 @@ import {
 import { useTranslation } from 'react-i18next';
 import AdSenseUnit from '../components/AdSenseUnit';
 import { exploreService } from '../services/api';
+import { setPageEditorialEligibility } from '../advertising';
 
 type TabType = 'modes' | 'countries' | 'us_states' | 'voivodeships';
+
+type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
+const GUIDE_IDS: Record<string, string> = { countrydle: 'countrydle', us_statedle: 'us-states', wojewodztwodle: 'wojewodztwa', powiatdle: 'powiaty', flagdle: 'flagdle', europe: 'europe', asia: 'asia', africa: 'africa', americas: 'americas' };
+
+function initialView() {
+  return new URLSearchParams(window.__COUNTRYDLE_PRERENDER__ ? '' : window.location.hash.slice(1));
+}
+
+// Keep the requested view across the clean-document boundary used to unload ads.
+function rememberView(key: string, value: string) {
+  const view = new URLSearchParams(window.location.hash.slice(1));
+  if (value) view.set(key, value);
+  else view.delete(key);
+  const hash = view.toString();
+  window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + (hash ? `#${hash}` : ''));
+}
 
 export default function ExplorePage() {
   const { i18n } = useTranslation();
   const isPl = i18n.language.startsWith('pl');
 
-  const [activeTab, setActiveTab] = useState<TabType>('modes');
-  const [search, setSearch] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [activeTab, updateActiveTab] = useState<TabType>(() => {
+    const tab = initialView().get('tab');
+    return tab === 'countries' || tab === 'us_states' || tab === 'voivodeships' ? tab : 'modes';
+  });
+  const [search, updateSearch] = useState(() => initialView().get('q') || '');
+  const [selectedRegion, updateSelectedRegion] = useState(() => initialView().get('region') || 'all');
+  const setActiveTab = (tab: TabType) => { rememberView('tab', tab === 'modes' ? '' : tab); updateActiveTab(tab); };
+  const setSearch = (value: string) => { rememberView('q', value); updateSearch(value); };
+  const setSelectedRegion = (value: string) => { rememberView('region', value === 'all' ? '' : value); updateSelectedRegion(value); };
 
   const [modes, setModes] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
   const [usStates, setUsStates] = useState<any[]>([]);
   const [voivodeships, setVoivodeships] = useState<any[]>([]);
-  const [, setLoading] = useState(false);
+  const [loadStatus, setLoadStatus] = useState<Record<TabType, LoadStatus>>({ modes: 'idle', countries: 'idle', us_states: 'idle', voivodeships: 'idle' });
 
   // Selected Entity Modal
-  const [selectedCountry, setSelectedCountry] = useState<any | null>(null);
-  const [selectedState, setSelectedState] = useState<any | null>(null);
-  const [selectedVoivodeship, setSelectedVoivodeship] = useState<any | null>(null);
-  const [, setModalLoading] = useState(false);
+  const [selectedCountry, updateSelectedCountry] = useState<any | null>(null);
+  const [selectedState, updateSelectedState] = useState<any | null>(null);
+  const [selectedVoivodeship, updateSelectedVoivodeship] = useState<any | null>(null);
+  const setSelectedCountry = (value: typeof selectedCountry) => { if (!value) rememberView('detail', ''); updateSelectedCountry(value); };
+  const setSelectedState = (value: typeof selectedState) => { if (!value) rememberView('detail', ''); updateSelectedState(value); };
+  const setSelectedVoivodeship = (value: typeof selectedVoivodeship) => { if (!value) rememberView('detail', ''); updateSelectedVoivodeship(value); };
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState('');
 
-  // Fetch Modes on mount
   useEffect(() => {
-    exploreService.getModes().then(setModes).catch(console.error);
+    let cancelled = false;
+    setLoadStatus(prev => ({ ...prev, modes: 'loading' }));
+    exploreService.getModes().then(data => {
+      if (!Array.isArray(data) || data.some(mode => !mode || !GUIDE_IDS[mode.id] || typeof mode.name !== 'string' || !mode.name.trim() || typeof mode.description !== 'string' || !mode.description.trim() || typeof mode.path !== 'string' || !mode.path.startsWith('/') || mode.path.startsWith('//') || !Number.isFinite(mode.entity_count) || !Number.isFinite(mode.question_limit) || !Number.isFinite(mode.guess_limit))) throw new Error('Invalid guide response');
+      if (cancelled) return;
+      setModes(data);
+      setLoadStatus(prev => ({ ...prev, modes: 'success' }));
+    }).catch(() => {
+      if (!cancelled) setLoadStatus(prev => ({ ...prev, modes: 'error' }));
+    });
+    return () => { cancelled = true; };
   }, []);
 
-  // Fetch tab data when activeTab changes
   useEffect(() => {
-    if (activeTab === 'countries' && countries.length === 0) {
-      setLoading(true);
-      exploreService.getCountries({ limit: 250 })
-        .then(setCountries)
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    } else if (activeTab === 'us_states' && usStates.length === 0) {
-      setLoading(true);
-      exploreService.getUSStates()
-        .then(setUsStates)
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    } else if (activeTab === 'voivodeships' && voivodeships.length === 0) {
-      setLoading(true);
-      exploreService.getVoivodeships()
-        .then(setVoivodeships)
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    if (activeTab === 'modes') return;
+    const existingCount = activeTab === 'countries' ? countries.length : activeTab === 'us_states' ? usStates.length : voivodeships.length;
+    if (existingCount > 0) return;
+    let cancelled = false;
+    const tab = activeTab;
+    setLoadStatus(prev => ({ ...prev, [tab]: 'loading' }));
+    const request = tab === 'countries' ? exploreService.getCountries({ limit: 250 }) : tab === 'us_states' ? exploreService.getUSStates() : exploreService.getVoivodeships();
+    request.then(data => {
+      if (!Array.isArray(data) || data.some(item => !item || typeof (tab === 'countries' ? item.app_country_name : item.name) !== 'string')) throw new Error('Invalid fact response');
+      if (cancelled) return;
+      if (tab === 'countries') setCountries(data);
+      else if (tab === 'us_states') setUsStates(data);
+      else setVoivodeships(data);
+      setLoadStatus(prev => ({ ...prev, [tab]: 'success' }));
+    }).catch(() => {
+      if (!cancelled) setLoadStatus(prev => ({ ...prev, [tab]: 'error' }));
+    });
+    return () => { cancelled = true; };
   }, [activeTab, countries.length, usStates.length, voivodeships.length]);
 
   // Load detailed entity for modal
   const openCountryModal = async (cca3: string) => {
+    rememberView('detail', `country:${cca3}`);
+    setModalError('');
     setModalLoading(true);
     try {
       const data = await exploreService.getCountryDetail(cca3);
       setSelectedCountry(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setModalError('The country fact sheet could not be loaded. Close it and try again.');
     } finally {
       setModalLoading(false);
     }
   };
 
   const openStateModal = async (name: string) => {
+    rememberView('detail', `state:${name}`);
+    setModalError('');
     setModalLoading(true);
     try {
       const data = await exploreService.getUSStateDetail(name);
       setSelectedState(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setModalError('The state fact sheet could not be loaded. Close it and try again.');
     } finally {
       setModalLoading(false);
     }
   };
 
   const openVoivodeshipModal = async (name: string) => {
+    rememberView('detail', `voivodeship:${name}`);
+    setModalError('');
     setModalLoading(true);
     try {
       const data = await exploreService.getVoivodeshipDetail(name);
       setSelectedVoivodeship(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setModalError('The voivodeship fact sheet could not be loaded. Close it and try again.');
     } finally {
       setModalLoading(false);
     }
   };
+
+  useEffect(() => {
+    const detail = initialView().get('detail');
+    if (!detail) return;
+    const separator = detail.indexOf(':');
+    const kind = detail.slice(0, separator);
+    const identifier = detail.slice(separator + 1);
+    if (!identifier || !['country', 'state', 'voivodeship'].includes(kind)) {
+      setModalError('This fact sheet address is not recognized. Close it to return to the explorer.');
+      return;
+    }
+    let cancelled = false;
+    setModalLoading(true);
+    const request = kind === 'country' ? exploreService.getCountryDetail(identifier) : kind === 'state' ? exploreService.getUSStateDetail(identifier) : exploreService.getVoivodeshipDetail(identifier);
+    request.then(data => {
+      if (!data || typeof data !== 'object') throw new Error('Invalid fact sheet');
+      if (cancelled) return;
+      if (kind === 'country') updateSelectedCountry(data);
+      else if (kind === 'state') updateSelectedState(data);
+      else updateSelectedVoivodeship(data);
+    }).catch(() => {
+      if (!cancelled) setModalError('The requested fact sheet could not be loaded. Close it and try again.');
+    }).finally(() => {
+      if (!cancelled) setModalLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Filtered lists
   const filteredCountries = useMemo(() => {
@@ -138,8 +205,21 @@ export default function ExplorePage() {
     return ['all'];
   }, [activeTab]);
 
+  const status = loadStatus[activeTab];
+  const loading = status === 'idle' || status === 'loading';
+  const visibleCount = activeTab === 'modes' ? modes.length : activeTab === 'countries' ? filteredCountries.length : activeTab === 'us_states' ? filteredUSStates.length : filteredVoivodeships.length;
+  const detailOpen = modalLoading || Boolean(modalError || selectedCountry || selectedState || selectedVoivodeship || initialView().get('detail'));
+  const publisherReady = status === 'success' && visibleCount > 0 && !detailOpen;
+  const publisherError = status === 'error' || Boolean(modalError) || (status === 'success' && visibleCount === 0);
+
+  useEffect(() => {
+    setPageEditorialEligibility(publisherReady);
+  }, [publisherReady]);
+
+  useEffect(() => () => setPageEditorialEligibility(false), []);
+
   return (
-    <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6 md:py-12">
+    <div data-publisher-ready={publisherReady ? 'true' : undefined} data-publisher-error={publisherError ? 'true' : undefined} className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6 md:py-12">
       {/* Header */}
       <header className="border-b border-white/10 pb-8 text-center sm:text-left">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-emerald-400">
@@ -151,8 +231,8 @@ export default function ExplorePage() {
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-300">
           {isPl
-            ? 'Przeglądaj zweryfikowane fakty o 195 państwach świata, 50 stanach USA i 16 województwach Polski. Poznaj strategie dedukcji, granice, rzeki i flagi wykorzystywane w grze.'
-            : 'Explore verified geographic facts across 195 sovereign nations, 50 US states, and 16 Polish voivodeships. Master deduction strategies, borders, rivers, and symbols used across all daily challenges.'}
+            ? 'Przeglądaj aktualną bazę faktów o krajach, stanach USA i województwach Polski. Poznaj zasady i przykłady dedukcji; dane i interpretacje mogą być niepełne lub nieaktualne.'
+            : 'Explore the current knowledge base for countries, US states and Polish voivodeships. Read game-specific conventions and worked deduction examples; stored facts and interpretations may be incomplete or outdated.'}
         </p>
 
         {/* Tab Switcher */}
@@ -166,7 +246,7 @@ export default function ExplorePage() {
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
             }`}
           >
-            {isPl ? 'Przewodniki po trybach (4)' : 'Mode Guides (4)'}
+            {isPl ? 'Przewodniki po trybach' : 'Mode Guides'}
           </button>
           <button
             type="button"
@@ -204,16 +284,17 @@ export default function ExplorePage() {
         </div>
       </header>
 
+      {loading && <p role="status" className="text-base leading-7 text-zinc-400">Loading {activeTab === 'modes' ? 'mode guides' : 'geography facts'}…</p>}
+      {status === 'error' && <p role="alert" className="text-base leading-7 text-amber-300">This content could not be loaded. Reload the page to try again; no substitute data is shown.</p>}
+      {status === 'success' && visibleCount === 0 && <p role="status" className="text-base leading-7 text-zinc-400">No entries match this view. Clear the search or choose another region; an empty response is not evidence that a place is absent from the game.</p>}
+      {modalLoading && <p role="status" className="text-base leading-7 text-zinc-400">Loading fact sheet…</p>}
+      {modalError && <div role="alert" className="space-y-3 text-amber-300"><p>{modalError}</p><button type="button" onClick={() => { rememberView('detail', ''); setModalError(''); }} className="underline underline-offset-4">Close fact sheet error</button></div>}
+
       {/* TAB 1: Mode Guides */}
       {activeTab === 'modes' && (
         <section className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {(modes.length > 0 ? modes : [
-              { id: 'countrydle', name: 'Countrydle (World Countries)', path: '/game', entity_count: 195, question_limit: 10, guess_limit: 3, description: 'Deduce one of 195 sovereign nations across all seven continents using natural-language questions.' },
-              { id: 'us_statedle', name: 'US Statedle (50 States)', path: '/us-states', entity_count: 50, question_limit: 8, guess_limit: 3, description: 'Identify the mystery American state using geographic regions, coastline access, and admission order.' },
-              { id: 'wojewodztwodle', name: 'Województwodle (16 Voivodeships)', path: '/wojewodztwa', entity_count: 16, question_limit: 5, guess_limit: 2, description: 'Master Poland\'s 16 administrative regions through spatial bounds, Baltic access, and borders.' },
-              { id: 'powiatdle', name: 'Powiatdle (380 Counties)', path: '/powiaty', entity_count: 380, question_limit: 15, guess_limit: 3, description: 'The ultimate test of Polish local geography tested via vehicle registration plates, rivers, and roads.' },
-            ]).map((mode) => (
+            {modes.map((mode) => (
               <div
                 key={mode.id}
                 className="flex flex-col justify-between rounded-md border border-white/10 bg-obsidian-900/60 p-6 transition-colors hover:border-emerald-500/30"
@@ -231,13 +312,13 @@ export default function ExplorePage() {
                     {mode.name}
                   </h3>
                   <p className="text-sm leading-6 text-zinc-400">
-                    {mode.description}
+                    {mode.id === 'countrydle' ? 'Deduce a playable country using factual yes/no questions. The game catalog is distinct from a UN membership list and from map-boundary data.' : mode.description}
                   </p>
                 </div>
 
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
                   <Link
-                    to={`/explore/modes/${mode.id === 'us_statedle' ? 'us-states' : mode.id}`}
+                    to={`/explore/modes/${GUIDE_IDS[mode.id]}`}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
                   >
                     <span>{isPl ? 'Czytaj przewodnik i strategię' : 'Read Strategy Guide'}</span>
@@ -490,7 +571,7 @@ export default function ExplorePage() {
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Driving Side</span>
-                <span className="font-bold text-sand-100 capitalize">{selectedCountry.driving_side || 'Right'}</span>
+                <span className="font-bold text-sand-100 capitalize">{selectedCountry.driving_side || 'N/A'}</span>
               </div>
             </div>
 
@@ -523,7 +604,7 @@ export default function ExplorePage() {
 
               {selectedCountry.languages && selectedCountry.languages.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Languages Spoken:</span>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Recorded Languages:</span>
                   <span className="text-zinc-400">{selectedCountry.languages.join(', ')}</span>
                 </div>
               )}
@@ -763,7 +844,7 @@ export default function ExplorePage() {
       )}
 
       {/* AdSense Unit */}
-      <AdSenseUnit slot="explore-hub-footer" className="max-w-2xl mx-auto pt-6" />
+      {publisherReady && <AdSenseUnit slot="explore-hub-footer" className="max-w-2xl mx-auto pt-6" />}
     </div>
   );
 }

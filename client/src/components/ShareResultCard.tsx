@@ -16,7 +16,6 @@ import { useDailyClock } from '../hooks/useDailyClock';
 import type { AnswerReportMode, Question } from '../types';
 import type { GameplayNotice } from '../lib/gameplayNotices';
 import ResultsQuestionHistory from './ResultsQuestionHistory';
-import AdSenseUnit from './AdSenseUnit';
 import LocationFieldNotes from './LocationFieldNotes';
 interface ShareResultCardProps {
   gameName: string;
@@ -406,8 +405,6 @@ export default function ShareResultCard({
           </div>
         )}
       </div>
-
-      <AdSenseUnit slot="game-over-modal-footer" className="max-w-md mx-auto" />
 
       <footer className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4 pb-[env(safe-area-inset-bottom)] text-xs">
         <Link

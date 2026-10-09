@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
+import PageMetadata from './components/PageMetadata';
+import { isPrerenderCapture } from './lib/pageMetadata';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -43,30 +45,14 @@ import {
 } from './stores/gameStore';
 import { useEffect } from 'react';
 
-function CanonicalUrl() {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    const normalizedPath = `/${pathname.split('/').filter(Boolean).join('/')}`;
-    const canonicalUrl = `https://countrydle.online${normalizedPath}`;
-    const canonicals = document.head.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]');
-    const canonical = canonicals[0] ?? document.createElement('link');
-
-    canonical.rel = 'canonical';
-    canonical.href = canonicalUrl;
-    if (!canonical.parentElement) document.head.appendChild(canonical);
-    canonicals.forEach((element) => {
-      if (element !== canonical) element.remove();
-    });
-  }, [pathname]);
-
-  return null;
-}
-
 function App() {
   const { user, setUser, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
+    if (isPrerenderCapture()) {
+      setUser(null);
+      return;
+    }
     try {
       const storedUser = localStorage.getItem('user');
       setUser(storedUser ? JSON.parse(storedUser) : null);
@@ -77,7 +63,7 @@ function App() {
 
   // Global sync trigger when user logs in
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isPrerenderCapture()) {
       const timer = setTimeout(() => {
         useCountryGameStore.getState().syncGuestData();
         usePowiatyGameStore.getState().syncGuestData();
@@ -130,7 +116,7 @@ function App() {
           color: '#fff',
         },
       }} />
-      <CanonicalUrl />
+      <PageMetadata />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
@@ -167,7 +153,13 @@ function App() {
           <Route path="admin" element={user?.is_admin ? <AdminDashboard /> : <Navigate to="/" replace />} />
           
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={
+            <section className="mx-auto max-w-3xl px-4 py-12">
+              <h1 className="text-3xl font-bold text-sand-100">Page not found</h1>
+              <p className="mt-4 text-zinc-300">This page does not exist. Explore the daily geography games or return to the homepage.</p>
+              <Link to="/" className="mt-6 inline-block text-emerald-300 underline">Return to Countrydle</Link>
+            </section>
+          } />
         </Route>
       </Routes>
     </BrowserRouter>

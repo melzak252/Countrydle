@@ -3,7 +3,7 @@ import asyncio
 import logging
 import os
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from dotenv import load_dotenv
 from sqlalchemy import desc, select
 
@@ -44,6 +44,12 @@ async def regenerate_recent(days_count: int = 14):
                 post.fun_facts = new_post.fun_facts
                 post.deduction_masterclass = new_post.deduction_masterclass
                 post.content_markdown = new_post.content_markdown
+                post.source_links = new_post.source_links
+                post.editorial_note = new_post.editorial_note
+                post.ai_assisted = new_post.ai_assisted
+                post.reviewed_by_id = None
+                post.reviewed_at = None
+                post.updated_at = datetime.now(timezone.utc)
                 await session.commit()
                 
                 quiz = (post.deduction_masterclass or {}).get("quiz")

@@ -1,92 +1,113 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from db.models.blog import DailyBlogPost
 from db.models.country import Country
-from db.repositories.participation import ParticipationRepository
+from db.repositories.participation import _aggregate, _participants, _stats
 
 class BlogRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, post_id: int) -> Optional[DailyBlogPost]:
-        stmt = (
-            select(DailyBlogPost)
-            .options(joinedload(DailyBlogPost.country))
-            .where(DailyBlogPost.id == post_id)
+    def _post_query(self, public_only: bool = True):
+        query = select(DailyBlogPost).options(
+            joinedload(DailyBlogPost.country), joinedload(DailyBlogPost.reviewer)
         )
-        res = await self.session.execute(stmt)
-        return res.scalars().first()
+        if public_only:
+            query = query.where(DailyBlogPost.date < datetime.now(timezone.utc).date())
+        return query
 
-    async def get_by_slug(self, slug: str) -> Optional[DailyBlogPost]:
-        stmt = (
-            select(DailyBlogPost)
-            .options(joinedload(DailyBlogPost.country))
-            .where(DailyBlogPost.slug == slug)
-        )
-        res = await self.session.execute(stmt)
-        return res.scalars().first()
+    async def get_by_id(self, post_id: int, *, for_update: bool = False) -> Optional[DailyBlogPost]:
+        query = self._post_query(public_only=False).where(DailyBlogPost.id == post_id)
+        if for_update:
+            query = query.with_for_update(of=DailyBlogPost)
+        result = await self.session.execute(query.execution_options(populate_existing=True))
+        return result.scalars().first()
 
-    async def get_by_date(self, post_date: date) -> Optional[DailyBlogPost]:
-        stmt = (
-            select(DailyBlogPost)
-            .options(joinedload(DailyBlogPost.country))
-            .where(DailyBlogPost.date == post_date)
+    async def get_by_slug(self, slug: str, *, public_only: bool = True) -> Optional[DailyBlogPost]:
+        result = await self.session.execute(
+            self._post_query(public_only).where(DailyBlogPost.slug == slug)
         )
-        res = await self.session.execute(stmt)
-        return res.scalars().first()
+        return result.scalars().first()
+
+    async def get_by_date(self, post_date: date, *, public_only: bool = True) -> Optional[DailyBlogPost]:
+        result = await self.session.execute(
+            self._post_query(public_only).where(DailyBlogPost.date == post_date)
+        )
+        return result.scalars().first()
 
     async def get_latest(self) -> Optional[DailyBlogPost]:
-        stmt = (
-            select(DailyBlogPost)
-            .options(joinedload(DailyBlogPost.country))
-            .order_by(desc(DailyBlogPost.date))
-            .limit(1)
+        result = await self.session.execute(
+            self._post_query().order_by(desc(DailyBlogPost.date)).limit(1)
         )
-        res = await self.session.execute(stmt)
-        return res.scalars().first()
+        return result.scalars().first()
 
     async def list_posts(
-        self, limit: int = 20, offset: int = 0, search: Optional[str] = None
+        self, limit: int = 20, offset: int = 0, search: Optional[str] = None,
+        *, public_only: bool = True,
     ) -> Tuple[List[DailyBlogPost], int]:
         base_query = select(DailyBlogPost).join(DailyBlogPost.country)
-
+        if public_only:
+            base_query = base_query.where(DailyBlogPost.date < datetime.now(timezone.utc).date())
         if search and search.strip():
             term = f"%{search.strip()}%"
-            base_query = base_query.where(
-                or_(
-                    DailyBlogPost.title.ilike(term),
-                    DailyBlogPost.subtitle.ilike(term),
-                    DailyBlogPost.summary.ilike(term),
-                    Country.name.ilike(term),
-                )
-            )
-
-        count_stmt = select(func.count()).select_from(base_query.subquery())
-        total_res = await self.session.execute(count_stmt)
-        total = total_res.scalar() or 0
-
-        query = (
-            base_query.options(joinedload(DailyBlogPost.country))
-            .order_by(desc(DailyBlogPost.date))
-            .offset(offset)
-            .limit(limit)
+            base_query = base_query.where(or_(
+                DailyBlogPost.title.ilike(term), DailyBlogPost.subtitle.ilike(term),
+                DailyBlogPost.summary.ilike(term), Country.name.ilike(term),
+            ))
+        count_result = await self.session.execute(
+            select(func.count()).select_from(base_query.subquery())
         )
-        res = await self.session.execute(query)
-        posts = list(res.scalars().all())
-
-        return posts, total
+        result = await self.session.execute(
+            base_query.options(
+                joinedload(DailyBlogPost.country), joinedload(DailyBlogPost.reviewer)
+            ).order_by(desc(DailyBlogPost.date)).offset(offset).limit(limit)
+        )
+        return list(result.scalars().all()), count_result.scalar() or 0
 
     async def create(self, post: DailyBlogPost) -> DailyBlogPost:
         self.session.add(post)
         await self.session.commit()
-        await self.session.refresh(post)
-        return post
+        return await self.get_by_id(post.id)
+
+    async def update(self, post: DailyBlogPost, fields: Dict[str, Any]) -> DailyBlogPost:
+        for name, value in fields.items():
+            setattr(post, name, value)
+        post.reviewed_by_id = None
+        post.reviewed_at = None
+        post.updated_at = datetime.now(timezone.utc)
+        await self.session.commit()
+        return await self.get_by_id(post.id)
+
+    async def set_review(self, post: DailyBlogPost, reviewer_id: Optional[int]) -> DailyBlogPost:
+        timestamp = datetime.now(timezone.utc)
+        post.reviewed_by_id = reviewer_id
+        post.reviewed_at = timestamp if reviewer_id is not None else None
+        post.updated_at = timestamp
+        await self.session.commit()
+        return await self.get_by_id(post.id)
+
+    async def get_player_stats_for_dates(self, dates: List[date]) -> Dict[date, Dict[str, Any]]:
+        if not dates:
+            return {}
+        participants = _participants(min(dates), max(dates), "countrydle")
+        result = await self.session.execute(
+            _aggregate(participants).add_columns(participants.c.date)
+            .where(participants.c.date.in_(dates)).group_by(participants.c.date)
+        )
+        stats_by_date = {}
+        for row in result:
+            stats = _stats(row)
+            stats.pop("total_games")
+            stats_by_date[row.date] = stats
+        empty_stats = {
+            "total_players": 0, "winners_count": 0, "win_rate_pct": 0.0,
+            "total_questions": 0, "total_guesses": 0,
+            "avg_questions_won": 0.0, "avg_guesses_won": 0.0,
+        }
+        return {post_date: stats_by_date.get(post_date, empty_stats.copy()) for post_date in dates}
 
     async def get_day_player_stats(self, post_date: date) -> Dict[str, Any]:
-        stats = await ParticipationRepository(self.session).get_stats(post_date, "countrydle")
-        # Preserve the public blog statistics shape.
-        stats.pop("total_games")
-        return stats
+        return (await self.get_player_stats_for_dates([post_date]))[post_date]

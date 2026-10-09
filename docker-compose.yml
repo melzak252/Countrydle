@@ -80,10 +80,24 @@ services:
     build:
       context: ./client
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_RYBBIT_SCRIPT_URL: ${VITE_RYBBIT_SCRIPT_URL}
         VITE_RYBBIT_SITE_ID: ${VITE_RYBBIT_SITE_ID}
         VITE_GOOGLE_ADSENSE_ID: ${VITE_GOOGLE_ADSENSE_ID}
+        VITE_ADSENSE_ENABLED: ${VITE_ADSENSE_ENABLED:-false}
+        # JSON mapping of placement keys to real account slot IDs; empty is failclosed.
+        VITE_ADSENSE_SLOTS: ${VITE_ADSENSE_SLOTS:-}
+    environment:
+      PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
+      PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}
+      PUBLISHER_POLL_SECONDS: ${PUBLISHER_POLL_SECONDS:-60}
+      PUBLISHER_CAPTURE_TIMEOUT: ${PUBLISHER_CAPTURE_TIMEOUT:-45}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
     networks:
       - countrydle
     ports:

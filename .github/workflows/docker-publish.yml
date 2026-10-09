@@ -88,3 +88,5 @@ jobs:
             VITE_RYBBIT_SCRIPT_URL=${{ vars.VITE_RYBBIT_SCRIPT_URL }}
             VITE_RYBBIT_SITE_ID=${{ vars.VITE_RYBBIT_SITE_ID }}
             VITE_GOOGLE_ADSENSE_ID=${{ vars.VITE_GOOGLE_ADSENSE_ID }}
+            VITE_ADSENSE_ENABLED=${{ vars.VITE_ADSENSE_ENABLED || 'false' }}
+            VITE_ADSENSE_SLOTS=${{ vars.VITE_ADSENSE_SLOTS || '{}' }}

@@ -1,7 +1,7 @@
 import LegalDocument from '../components/LegalDocument';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "October 6, 2026";
+  const lastUpdated = "October 9, 2026";
 
   return (
     <LegalDocument title="Privacy Policy" lastUpdated={lastUpdated}>
@@ -84,14 +84,22 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="mb-4">3. Google AdSense, Cookies, and Advertising</h2>
             <p className="mb-4">
-              Countrydle uses <strong>Google AdSense</strong>. Google and its advertising partners may process device
-              information, identifiers and ad interactions to deliver and measure advertisements. Personalization and
-              available choices depend on the applicable region, consent choices and provider settings.
+              Countrydle supports optional <strong>Google AdSense</strong> advertising, disabled by default. Advertising
+              requires the deployment's explicit <code>VITE_ADSENSE_ENABLED=true</code> flag, a matching configured publisher and valid ad-unit
+              inventory, an eligible content page, and a determinate permission state from Google's consent service.
+              Missing configuration, an unavailable consent service, or unknown or rejected consent does not authorize
+              ad requests. When advertising is enabled, Google and its partners may process device information,
+              identifiers and ad interactions to deliver and measure advertisements. Personalization and available
+              choices depend on the applicable region, consent choices and provider settings.
+              Regional non-applicability must be explicitly reported by the consent service; we do not assume it
+              from a missing message or a failed request.
             </p>
             <ul className="mb-4">
               <li>
                 <strong>Advertising technologies:</strong> Google and its partners may use cookies or similar technologies
                 to serve ads based on visits to this or other websites, subject to applicable choices and settings.
+                Advertising is excluded from gameplay and results, account and administrative screens, contact and
+                legal pages, and loading, error or unknown screens. Blog advertising also requires actual editorial review.
               </li>
               <li>
                 <strong>Provider information:</strong> See <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">how Google uses information from partner sites</a> for its advertising and measurement practices.
@@ -100,16 +108,22 @@ export default function PrivacyPolicyPage() {
                 <strong>Opting out of personalized advertising:</strong> Users may opt out of personalized advertising at any time by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>. Alternatively, users can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer">www.aboutads.info</a>.
               </li>
               <li>
-                <strong>Privacy settings:</strong> We provide a button in the footer and Cookie Policy to reopen Google's
-                consent message when available. Messages and choices depend on Google's published configuration and
-                regional rules. If the service is unavailable, the button reports a failure without changing choices;
-                that failure is not consent. Contact us if you cannot access your choices.
+                <strong>Privacy settings:</strong> The footer and Cookie Policy provide a button to reopen the existing
+                <strong> Google Funding Choices / Privacy &amp; Messaging</strong> consent service when available.
+                You can review, reject or withdraw optional advertising consent through that service. Opening
+                settings while ads are active first takes you to an ad-free Cookie Policy document. Countrydle
+                stops advertising requests and clears active ads by reloading the page when permission is withdrawn.
+                If settings cannot be opened, the button reports that failure and the settings document remains
+                ad-free; it does not save a new choice or treat the failure as consent.
+                Contact us if you cannot access your choices.
               </li>
             </ul>
             <p>
-              Storage needed for login or requested gameplay is distinct from optional advertising technologies. Where
-              consent is required for optional storage or personalized advertising, it must be obtained separately
-              from agreement to the Terms of Service.
+              Storage needed for login or requested gameplay is distinct from optional advertising technologies.
+              Rejecting or withdrawing advertising consent does not remove necessary game or login cookies.
+              Where consent is required for optional storage or personalized advertising, it must be obtained
+              separately from agreement to the Terms of Service. Withdrawal does not erase existing server records;
+              browser-storage controls and data-rights requests are described below and in the Cookie Policy.
             </p>
           </section>
 
@@ -129,9 +143,11 @@ export default function PrivacyPolicyPage() {
                 to valid legal requests.</li>
             </ul>
             <p className="mt-3">
-              Rybbit analytics may be enabled to measure visits and navigation and understand site usage. It is separate
-              from gameplay records; its deployed configuration determines collection and storage behavior. Aggregate
-              AI-cost measurements record request counts and token usage rather than player identities or question text.
+              Optional Rybbit analytics may be enabled separately to measure visits and navigation. It is separate
+              from gameplay records and advertising inventory; its deployed configuration determines collection
+              and storage behavior.
+              Optional analytics and advertising are not loaded during static page capture. Aggregate AI-cost
+              measurements record request counts and token usage rather than player identities or question text.
               Do not include sensitive or unnecessary personal information in questions or feedback.
             </p>
           </section>

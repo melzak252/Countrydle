@@ -12,25 +12,83 @@ import {
 import { useTranslation } from 'react-i18next';
 import AdSenseUnit from '../components/AdSenseUnit';
 import { blogService } from '../services/api';
+import { setPageEditorialEligibility } from '../advertising';
+import { usePageMetadata } from '../lib/pageMetadata'
+import { blogListSchema, type BlogSummary } from '../blogContent';
+const continents = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
+const difficulties = ['all', 'Easy', 'Medium', 'Challenging'];
+type JournalView = { page: number; search: string; continent: string; difficulty: string; sort: 'newest' | 'solvers' | 'fastest' };
+function requestedView(): JournalView {
+  const params = new URLSearchParams(window.__COUNTRYDLE_PRERENDER__ ? '' : window.location.hash.slice(1));
+  const page = Number(params.get('page') || 1);
+  const continent = params.get('continent') || 'all';
+  const difficulty = params.get('difficulty') || 'all';
+  const sort = params.get('sort');
+  return {
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1, search: params.get('q') || '',
+    continent: continents.includes(continent) ? continent : 'all',
+    difficulty: difficulties.includes(difficulty) ? difficulty : 'all',
+    sort: sort === 'solvers' || sort === 'fastest' ? sort : 'newest',
+  };
+}
+function rememberView(view: JournalView) {
+  const params = new URLSearchParams();
+  if (view.page > 1) params.set('page', String(view.page));
+  if (view.search) params.set('q', view.search);
+  if (view.continent !== 'all') params.set('continent', view.continent);
+  if (view.difficulty !== 'all') params.set('difficulty', view.difficulty);
+  if (view.sort !== 'newest') params.set('sort', view.sort);
+  const hash = params.toString();
+  const url = window.location.pathname + window.location.search + (hash ? `#${hash}` : '');
+  // Persist before any eligibility effect can unload the advertising document.
+  if (url !== window.location.pathname + window.location.search + window.location.hash) window.history.pushState(window.history.state, '', url);
+}
 export default function BlogListPage() {
   const { t } = useTranslation();
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<BlogSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [selectedContinent, setSelectedContinent] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'solvers' | 'fastest'>('newest');
+  const [view, updateView] = useState<JournalView>(requestedView);
+  const { page, search, continent: selectedContinent, difficulty: selectedDifficulty, sort: sortBy } = view;
+  const setView = (change: Partial<JournalView>) => {
+    const next = { ...view, ...change };
+    rememberView(next);
+    updateView(next);
+  };
+  const [error, setError] = useState<string | null>(null);
+  const [loadedRequest, setLoadedRequest] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const limit = 24;
+  const requestKey = JSON.stringify([page, search]);
+  useEffect(() => {
+    const restoreView = () => updateView(requestedView());
+    window.addEventListener('popstate', restoreView);
+    window.addEventListener('hashchange', restoreView);
+    return () => {
+      window.removeEventListener('popstate', restoreView);
+      window.removeEventListener('hashchange', restoreView);
+    };
+  }, []);
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     let isMounted = true;
+    setPageEditorialEligibility(false);
+    setLoading(true);
+    setError(null);
     const fetchPosts = async () => {
       setLoading(true);
       try {
-        const data = await blogService.getPosts(1, 24, search);
+        const data = blogListSchema.parse(await blogService.getPosts(page, limit, search));
+        if (data.posts.some((post) => post.date >= new Date().toISOString().slice(0, 10))) throw new Error('Invalid public recap dates.');
         if (isMounted) {
-          setPosts(data.posts || []);
+          setPosts(data.posts);
+          setTotal(data.total);
+          setLoadedRequest(requestKey);
         }
-      } catch (err) {
-        console.error('Failed to fetch blog posts', err);
+      } catch {
+        if (isMounted) {
+          setPosts([]);
+          setError('The journal could not be loaded. Please try again.');
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -40,11 +98,9 @@ export default function BlogListPage() {
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
+      setPageEditorialEligibility(false);
     };
-  }, [search]);
-
-  const continents = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
-  const difficulties = ['all', 'Easy', 'Medium', 'Challenging'];
+  }, [page, search, retry, requestKey]);
 
   const filteredPosts = posts.filter((post) => {
     const matchesSearch = !search ||
@@ -60,12 +116,25 @@ export default function BlogListPage() {
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
-  const featuredPost = filteredPosts.length > 0 && !search && selectedContinent === 'all' && selectedDifficulty === 'all'
+  const featuredPost = page === 1 && filteredPosts.length > 0 && !search && selectedContinent === 'all' && selectedDifficulty === 'all'
     ? filteredPosts[0]
     : null;
   const regularPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
+  const pending = loading || loadedRequest !== requestKey;
+  const eligible = !pending && !error && filteredPosts.some((post) =>
+    post.editorial_status === 'reviewed' && post.title.trim().length > 0 && post.summary.trim().length > 0);
+  useEffect(() => {
+    setPageEditorialEligibility(eligible);
+    return () => setPageEditorialEligibility(false);
+  }, [eligible, search]);
+  usePageMetadata({
+    title: error ? 'Journal unavailable | Countrydle' : 'Past-day country recaps and deduction journal | Countrydle',
+    description: error ? 'The Countrydle journal is temporarily unavailable.' : 'Explore past Countrydle solutions, country-specific deduction paths, community question evidence and recorded sources.',
+    canonicalPath: '/blog',
+    noindex: !!error || pending || posts.length === 0,
+  });
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-16">
+    <div data-publisher-ready={!pending && !error ? 'true' : 'false'} data-publisher-error={error ? 'true' : undefined} className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-16">
       <div className="space-y-10 md:space-y-14">
         <header className="border-b border-white/10 pb-8 md:pb-10">
           <div className="mb-5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">
@@ -78,7 +147,7 @@ export default function BlogListPage() {
                 {t('blog.title', 'Countrydle Daily Blog')}
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-400">
-                {t('blog.subtitle', 'Explore yesterday\'s mystery country, fascinating Wikipedia curiosities, and optimal deduction breakdowns.')}
+                Explore past-day mystery countries, country-specific reasoning and recorded community questions. Each recap labels its editorial status and available sources.
               </p>
             </div>
             <div>
@@ -91,7 +160,7 @@ export default function BlogListPage() {
                   id="journal-search"
                   type="search"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => setView({ search: e.target.value, page: 1 })}
                   placeholder={t('blog.searchPlaceholder', 'Search countries, facts, or keywords...')}
                   className="w-full rounded-md border border-white/15 bg-obsidian-900 py-3.5 pl-11 pr-4 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
                 />
@@ -110,7 +179,7 @@ export default function BlogListPage() {
               <button
                 key={cont}
                 type="button"
-                onClick={() => setSelectedContinent(cont)}
+                onClick={() => setView({ continent: cont, page: 1 })}
                 className={`min-h-11 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors md:min-h-0 ${
                   selectedContinent === cont
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
@@ -131,7 +200,7 @@ export default function BlogListPage() {
                 <button
                   key={diff}
                   type="button"
-                  onClick={() => setSelectedDifficulty(diff)}
+                  onClick={() => setView({ difficulty: diff, page: 1 })}
                   className={`min-h-11 rounded-sm px-2 py-0.5 text-xs transition-colors md:min-h-0 ${
                     selectedDifficulty === diff
                       ? 'bg-sand-100 text-obsidian-950 font-semibold'
@@ -151,7 +220,7 @@ export default function BlogListPage() {
                 <button
                   key={s}
                   type="button"
-                  onClick={() => setSortBy(s)}
+                  onClick={() => setView({ sort: s })}
                   className={`min-h-11 rounded-sm px-2 py-0.5 text-xs capitalize transition-colors md:min-h-0 ${
                     sortBy === s
                       ? 'bg-emerald-400 text-obsidian-950 font-semibold'
@@ -165,7 +234,12 @@ export default function BlogListPage() {
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div role="alert" className="rounded-lg border border-amber-500/30 bg-obsidian-900 p-8 text-center text-zinc-300">
+            <p>{error}</p>
+            <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 rounded border border-white/20 px-4 py-2">Try again</button>
+          </div>
+        ) : pending ? (
           <div role="status" aria-label={'Loading articles'} className="flex justify-center py-24">
             <Loader2 className="animate-spin text-emerald-400" size={32} />
           </div>
@@ -191,7 +265,7 @@ export default function BlogListPage() {
                 <div className="flex flex-col justify-center p-6 sm:p-8 md:p-10">
                   <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
                     <span className="font-medium uppercase tracking-[0.14em] text-emerald-400">
-                      {t('blog.latestBadge', "Yesterday's Solution")}
+                      Most recent past-day recap
                     </span>
                     <span className="text-zinc-500">/</span>
                     <span className="text-zinc-400">{featuredPost.country_name}</span>
@@ -202,6 +276,7 @@ export default function BlogListPage() {
                     </Link>
                   </h2>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
+                  <p className="mt-3 text-xs text-zinc-400">{featuredPost.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · Updated <time dateTime={featuredPost.updated_at || featuredPost.created_at}>{featuredPost.updated_at || featuredPost.created_at}</time></p>
                   <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
                     <span className="inline-flex items-center gap-1.5"><Calendar size={13} />{featuredPost.date}</span>
                     <span className="inline-flex items-center gap-1.5"><Clock size={13} />{featuredPost.reading_time_minutes} {t('blog.minRead', 'min read')}</span>
@@ -261,6 +336,7 @@ export default function BlogListPage() {
                           <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
                         </h3>
                         <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
+                        <p className="mt-3 text-xs text-zinc-400">{post.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · Updated <time dateTime={post.updated_at || post.created_at}>{post.updated_at || post.created_at}</time></p>
                         <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
                           <span>{post.date}</span>
                           <span>{post.reading_time_minutes} min</span>
@@ -291,10 +367,15 @@ export default function BlogListPage() {
                 </div>
               )
             )}
+            {total > limit && <nav aria-label="Journal pagination" className="flex items-center justify-center gap-5 text-sm text-zinc-300">
+              <button type="button" disabled={page <= 1} onClick={() => setView({ page: page - 1 })} className="rounded border border-white/20 px-4 py-2 disabled:opacity-40">Previous</button>
+              <span>Page {page} of {Math.max(1, Math.ceil(total / limit))}</span>
+              <button type="button" disabled={page * limit >= total} onClick={() => setView({ page: page + 1 })} className="rounded border border-white/20 px-4 py-2 disabled:opacity-40">Next</button>
+            </nav>}
           </>
         )}
 
-        <AdSenseUnit slot="blog-list-footer" className="max-w-xl mx-auto pt-6" />
+        {eligible && <AdSenseUnit slot="blog-list-footer" className="max-w-xl mx-auto pt-6" />}
       </div>
     </div>
   );

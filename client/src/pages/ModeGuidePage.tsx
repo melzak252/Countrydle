@@ -1,278 +1,190 @@
 import { useParams, Link } from 'react-router-dom';
-import { 
-  Compass, 
-  ArrowLeft, 
-  Play, 
-  ShieldCheck, 
-  Award,
-  BookOpen
-} from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { ArrowLeft, BookOpen, Compass, Play } from 'lucide-react';
 import AdSenseUnit from '../components/AdSenseUnit';
 
 interface ModeData {
-  id: string;
   name: string;
   path: string;
-  entity_type: string;
-  entity_count: number;
-  question_limit: number;
-  guess_limit: number;
+  pool: string;
+  questions: string;
+  guesses: number;
   description: string;
-  strategy_tips: string[];
-  data_sources: string[];
+  tips: string[];
+  example: { title: string; steps: string[]; lesson: string };
 }
 
-const STATIC_MODES: Record<string, ModeData> = {
-  countrydle: {
-    id: 'countrydle',
-    name: 'Countrydle — World Countries',
-    path: '/game',
-    entity_type: 'Sovereign Nations & UN States',
-    entity_count: 195,
-    question_limit: 10,
-    guess_limit: 3,
-    description: 'Deduce one of 195 sovereign nations across all seven continents using natural-language questions and deductive elimination.',
-    strategy_tips: [
-      'Hemisphere Triangulation: Always begin by verifying if the mystery nation lies in the Northern or Southern Hemisphere, and Eastern or Western of the Prime Meridian. This immediately reduces the world into quadrants.',
-      'Maritime & Coastline Filter: Inquire whether the nation has access to the open ocean or sea. Over 44 nations worldwide are completely landlocked.',
-      'Demographic & Population Thresholds: Use questions like "Is the population greater than 20 million?" to isolate populous powerhouses from microstates.',
-      'Shared Border Anchors: Ask whether it borders a regional anchor nation (e.g. "Does it border Brazil?" in South America, or "Does it border Germany?" in Europe).',
-      'Flag Visual Attributes: National flags provide definitive confirmation clues: star emblems, cross patterns, stripes, and primary background colors.'
-    ],
-    data_sources: ['Natural Earth (Boundary Vectors)', 'CIA World Factbook (Maritime Coastlines)', 'REST Countries API', 'OpenStreetMap']
+const CONTINENTAL_MODES: Record<string, ModeData> = {
+  europe: {
+    name: 'Europedle — Europe', path: '/europe', pool: 'Eligible Europe-associated countries', questions: '8', guesses: 3,
+    description: 'Identify a country from the European game pool. Stored physical-continent associations and game eligibility, not every possible cultural definition of Europe, determine the candidates.',
+    tips: ['Start with a distinction inside Europe rather than asking whether the target is in Europe again.', 'Use a named neighbor, island status or marine access to separate nearby candidates.', 'Europedle excludes Azerbaijan, Kazakhstan and Georgia, as well as the global exclusion of Israel. These exclusions do not remove the countries from factual geography tables.'],
+    example: {
+      title: 'Kosovo: eligibility is not UN membership',
+      steps: ['Kosovo is included in the Europe pool, despite its partial international recognition.', 'For this illustrative target, "Is it landlocked?" is yes; rivers draining toward a sea do not create coastal access.', '"Does it border Albania?" is yes. Combine this with other clues rather than treating one shared neighbor as a unique identification.'],
+      lesson: 'Do not eliminate Kosovo just because it is not a UN member. Submit an eligible country from the suggestions when you are ready to guess.',
+    },
   },
+  asia: {
+    name: 'Asiadle — Asia', path: '/asia', pool: 'Eligible Asia-associated countries', questions: '8', guesses: 3,
+    description: 'Use borders, regional classifications and water access within the Asian game pool. A country may have more than one stored physical-continent association.',
+    tips: ['Asiadle excludes Egypt and the globally excluded Israel; do not assume every country with territory in Asia is a valid guess.', 'Name the sea or ocean you mean. An inland-sea coastline is not the same as access to the open sea.', 'Use a precise population or area threshold rather than an undefined category such as a large country. Stored values may be dated.'],
+    example: {
+      title: 'Azerbaijan: pool membership and marine access',
+      steps: ['Azerbaijan is excluded by the Europe eligibility rule, but is not excluded by the Asia rule.', 'A recorded Caspian Sea water-access relationship does not make it non-landlocked: the country engine excludes the Caspian Sea from marine access.', 'Ask "Does it have access to the Caspian Sea?" separately from "Is it landlocked?"; these predicates need not be opposites.'],
+      lesson: 'A continent answer describes stored geography; an eligible guess additionally has to satisfy this mode’s game policy.',
+    },
+  },
+  africa: {
+    name: 'Africadle — Africa', path: '/africa', pool: 'Eligible Africa-associated countries', questions: '8', guesses: 3,
+    description: 'Deduce a country in the African game pool using regional categories, borders and coastlines without spending questions on facts already implied by the mode.',
+    tips: ['Distinguish Northern, Eastern, Western, Middle or Southern Africa using the stored regional classifications; "South Africa" names a country, not the whole Southern Africa region.', 'Named land borders are more precise than asking whether a target is close to another country.', 'A country crossing the equator can have both Northern and Southern Hemisphere associations. Hemisphere questions do not guarantee equal splits.'],
+    example: {
+      title: 'Egypt: different continental pools',
+      steps: ['The Asia rule explicitly excludes Egypt; the Africa rule does not.', 'For an Egypt example, a Mediterranean coastline clue and a Red Sea coastline clue describe different named waters, not a single generic ocean boolean.', 'The country engine does not automatically infer a direct ocean coastline from a coast on a connected sea. Ask for the named water body you intend.'],
+      lesson: 'Keep eligibility, physical geography and the wording of a water question separate; they answer different things.',
+    },
+  },
+  americas: {
+    name: 'Americadle — The Americas', path: '/americas', pool: 'Eligible North- or South-America-associated countries', questions: '8', guesses: 3,
+    description: 'Play one combined pool covering North America and South America, including eligible Central American and Caribbean countries through their stored continent associations.',
+    tips: ['An unqualified country question about America or the Americas covers North America OR South America. Specify North or South when that is your intended distinction.', 'Do not confuse a country’s broad region field, such as Americas, with its physical-continent associations.', 'Use island status and named neighbors together: sharing an island does not prevent a country from having a land border.'],
+    example: {
+      title: 'A border through French Guiana',
+      steps: ['The country fact builder maps the French Guiana border code to France rather than treating the territory as an independent country neighbor.', 'A Brazil–France border clue therefore need not refer to metropolitan France.', 'That border convention does not itself add France to Americadle: the pool is selected from stored continent associations and eligibility rules.'],
+      lesson: 'A territory’s presence on a map, a normalized country-border relation and a playable candidate are three separate concepts.',
+    },
+  },
+};
+
+const MODES: Record<string, ModeData> = {
+  countrydle: {
+    name: 'Countrydle — World Countries', path: '/game', pool: '195 playable countries', questions: '10', guesses: 3,
+    description: 'Deduce a country from the game’s worldwide catalog. The catalog is not a list of only UN member states and does not make a claim about every disputed territory’s sovereignty.',
+    tips: ['Choose questions that distinguish your remaining candidates. Northern/Southern and Eastern/Western Hemisphere categories can overlap and are not balanced halves.', 'Separate a named coastline from landlocked status. Inland-sea access is not open-sea-connected marine access.', 'Use named neighbors and explicit numeric thresholds. For area, the stored unit is square kilometres.', 'A yes to "Is it Poland?" uses a question and does not finish the puzzle. Submit Poland in the guess field to win.'],
+    example: {
+      title: 'Poland: combine two concrete relations',
+      steps: ['For the illustrative target Poland, "Does it border Germany?" is yes. That clue alone does not identify a unique country.', '"Is it landlocked?" is no because Poland has Baltic Sea coastline.', 'A Baltic Sea clue describes that sea, not direct Atlantic Ocean coastline. Once your other clues isolate Poland, submit a guess instead of another identity question.'],
+      lesson: 'Each resolved yes or no uses one question. Invalid or undetermined requests do not use a question, and remaining guesses can still be used after the question budget is exhausted.',
+    },
+  },
+  flagdle: {
+    name: 'Flagdle — Daily Flag Reveal', path: '/flagdle', pool: 'Flags from the playable country catalog', questions: 'No total helper-question budget', guesses: 12,
+    description: 'Identify a country from a progressively revealed flag. Each guess advances the reveal; optional yes/no helper questions do not spend guesses, although request-rate limits still apply.',
+    tips: ['A hidden part of the flag is not evidence that a color or symbol is absent.', 'Read feedback about colors and symbols together with the revealed image. Shared attributes do not imply the same flag.', 'Use specific helper questions about stars, stripes or colors instead of treating a single color as a unique identifier.'],
+    example: {
+      title: 'Kosovo: a partially visible symbol',
+      steps: ['The Kosovo seed records a blue field, a gold country silhouette and six white stars.', 'A reveal showing only blue does not yet distinguish Kosovo from other blue-containing flags.', 'A precise question about stars or a country silhouette can help; the result is still generated by the answer system and can be mistaken. Submit the country name as a guess when ready.'],
+      lesson: 'Flagdle has its own scoring formula and no question-efficiency component. Helper questions are not extra country guesses.',
+    },
+  },
+  ...CONTINENTAL_MODES,
   'us-states': {
-    id: 'us-states',
-    name: 'US Statedle — 50 American States',
-    path: '/us-states',
-    entity_type: 'US States',
-    entity_count: 50,
-    question_limit: 8,
-    guess_limit: 3,
-    description: 'Identify the mystery American state using geographic regions, coastline access, historical admission order, and demographics.',
-    strategy_tips: [
-      'US Census Region Division: Query whether the state is located in the West, Midwest, South, or Northeast.',
-      'Ocean & Gulf Coastlines: Confirm whether the state borders the Atlantic Ocean, Pacific Ocean, Gulf of Mexico, or Great Lakes.',
-      'The Mississippi River Divide: Asking if the state is located west or east of the Mississippi River cleanly bisects the country.',
-      'Statehood & Colonial History: Inquire if the state was one of the original 13 colonies, admitted before 1800, or joined during 19th-century westward expansion.',
-      'Mountain Ranges & Interstate Highways: Major ranges (Rocky Mountains, Appalachian Mountains, Sierra Nevada) provide high-confidence signals.'
-    ],
-    data_sources: ['US Census Bureau (Demographics & Divisions)', 'US Geological Survey (USGS)', 'Natural Earth']
+    name: 'US Statedle — 50 States', path: '/us-states', pool: '50 US states', questions: '8', guesses: 3,
+    description: 'Find one of the 50 states using stored Census-region classifications, neighbors, water access and statehood facts. Washington, DC and US territories are not additional states in this pool.',
+    tips: ['Use the stored Northeast, Midwest, South or West classification; Northeast is not identical to New England or Mid-Atlantic.', 'Broad Atlantic access includes Gulf of Mexico coastline. Direct Atlantic coastline, Gulf coastline and the East Coast label are distinct predicates.', 'Great Lakes water access is recorded by named lake; it does not establish an ocean coastline.', 'Avoid assuming that an east/west or river question bisects the state pool equally.'],
+    example: {
+      title: 'A Gulf-only state: broad access versus direct coastline',
+      steps: ['Consider an illustrative state whose recorded water access includes Gulf of Mexico but not Atlantic Ocean.', '"Does it have access to the Atlantic Ocean?" can be yes under the broad-access rule via the Gulf.', '"Does it directly border the Atlantic Ocean?" is no for those records. The Gulf entry does not automatically assign the East Coast label.'],
+      lesson: 'This example describes the evaluator’s recorded-data rule, not a live response. Add "directly" when you mean literal coastline rather than broad connected access.',
+    },
   },
   wojewodztwa: {
-    id: 'wojewodztwa',
-    name: 'Województwodle — 16 Polish Voivodeships',
-    path: '/wojewodztwa',
-    entity_type: 'Polish Voivodeships (Województwa)',
-    entity_count: 16,
-    question_limit: 5,
-    guess_limit: 2,
-    description: 'Master Poland\'s 16 administrative regions through spatial bounds, Baltic access, macroregions, and international borders.',
-    strategy_tips: [
-      'Baltic Sea Access: Testing for maritime access immediately identifies or eliminates the 3 northern coastal voivodeships (Pomorskie, Zachodniopomorskie, Warmińsko-Mazurskie).',
-      'International Border Neighbors: Ask whether the voivodeship borders Germany (west), the Czech Republic/Slovakia (south), or Ukraine/Belarus/Lithuania/Russia (east/northeast).',
-      'Macroregion Quadrants: Inquire whether it belongs to the southern macroregion (Małopolska, Śląsk), central belt (Mazowsze, Łódzkie), or western Poland.',
-      'Major River Basins: The Vistula (Wisła) and Oder (Odra) river basins divide the administrative landscape of Poland.'
-    ],
-    data_sources: ['Główny Urząd Statystyczny (GUS)', 'Państwowy Rejestr Granic (PRG)']
+    name: 'Województwodle — 16 Voivodeships', path: '/wojewodztwa', pool: '16 Polish voivodeships', questions: '5', guesses: 2,
+    description: 'Identify a Polish administrative region with a small question budget. Internal neighbors, international borders, regional labels and named rivers are different stored relationships.',
+    tips: ['The base builder records Baltic Sea access for Pomorskie and Zachodniopomorskie. It does not record Warmińsko-Mazurskie as a third Baltic-access region; lagoon access is not a reason to assume the same answer.', 'Distinguish a border with another voivodeship from a border with a foreign country.', 'A regional label is a stored classification, not necessarily an official statistical macroregion.', 'A river crossing a region is different from the region having maritime access.'],
+    example: {
+      title: 'Separating the two base Baltic-access entries',
+      steps: ['A yes to a Baltic Sea access question leaves Pomorskie and Zachodniopomorskie in the base water-access list.', 'The international-border list records Germany for Zachodniopomorskie but not Pomorskie.', 'For the illustrative target Zachodniopomorskie, a Germany-border clue separates those two candidates. Do not infer that every northern voivodeship has Baltic access.'],
+      lesson: 'These examples reflect the repository’s base classification tables. Data corrections can change records; report a mismatch with a source rather than assuming an unsupported third entry.',
+    },
   },
   powiaty: {
-    id: 'powiaty',
-    name: 'Powiatdle — 380 Polish Counties',
-    path: '/powiaty',
-    entity_type: 'Polish Counties (Powiaty)',
-    entity_count: 380,
-    question_limit: 15,
-    guess_limit: 3,
-    description: 'The ultimate test of Polish local geography across 380 counties, tested via vehicle registration plates, rivers, and expressways.',
-    strategy_tips: [
-      'Parent Voivodeship First: Always identify the containing voivodeship early to shrink candidate space from 380 down to 12–36.',
-      'County Status: Differentiate between a city with county rights (miasto na prawach powiatu) and a land county (powiat ziemski).',
-      'Territorial Vehicle Registration Codes: Letters (e.g. KR, WZ, PO, DW, GD) directly isolate individual administrative units.',
-      'Expressway & Motorway Networks: Proximity to major corridors (A1, A2, A4 motorways; S7, S8 expressways) helps pinpoint spatial coordinates.'
-    ],
-    data_sources: ['GUS TERYT Registry', 'Generalna Dyrekcja Dróg Krajowych i Autostrad (GDDKiA)']
-  }
+    name: 'Powiatdle — 380 Counties', path: '/powiaty', pool: '380 Polish counties', questions: '15', guesses: 3,
+    description: 'Find a Polish county using its parent voivodeship, city-county status, registration identifiers and recorded geographic relationships.',
+    tips: ['Identify a likely parent voivodeship before relying on a town name that may also name a neighboring county.', 'A city with county rights and the surrounding land county are separate administrative entities, even when their names or seats are similar.', 'Registration-code, road and river questions depend on the stored entries. A road near a county is not necessarily a road recorded as crossing it.', 'County-border lists and international-border lists are different relations. Name the kind of neighbor you mean.'],
+    example: {
+      title: 'Kraków and powiat krakowski are not the same candidate',
+      steps: ['The county-border snapshot contains separate Kraków (1261) and powiat krakowski (1206) entries, and records a border between them.', 'The fact builder reads city-county status from the article text into is_city_county. A city-county question tests that stored flag, not whether a county has Kraków as a seat or contains a large city.', 'A border with powiat krakowski can therefore help identify the city county of Kraków rather than the land county itself. Use the full candidate from the suggestions; the shared place name alone is not a unique administrative identifier.'],
+      lesson: 'Administrative status is a direct recorded classification, not a conclusion based on population size or whether the county contains a city.',
+    },
+  },
 };
 
 export default function ModeGuidePage() {
   const { modeId } = useParams<{ modeId: string }>();
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  const normalizedId = modeId === 'us_statedle' ? 'us-states' : modeId;
+  const mode = normalizedId ? MODES[normalizedId] : undefined;
 
-  const normalizedId = modeId === 'us_statedle' ? 'us-states' : (modeId || 'countrydle');
-  const mode = STATIC_MODES[normalizedId] || STATIC_MODES.countrydle;
+  if (!mode) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-5 py-8">
+        <h1 className="font-serif text-4xl text-sand-100">Mode guide not found</h1>
+        <p className="text-base leading-7 text-zinc-400">This address does not match an available daily-mode guide.</p>
+        <Link to="/explore" className="text-emerald-300 underline underline-offset-4">Return to Geography Explorer</Link>
+      </div>
+    );
+  }
+
+  const isCountryMode = normalizedId === 'countrydle' || normalizedId === 'flagdle' || (normalizedId !== undefined && normalizedId in CONTINENTAL_MODES);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 py-5 sm:px-6 md:space-y-12 md:py-12">
-      {/* Back button */}
-      <div>
-        <Link
-          to="/explore"
-          className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-zinc-400 hover:text-sand-100 transition-colors"
-        >
-          <ArrowLeft size={14} />
-          <span>{isPl ? 'Powrót do przewodnika' : 'Back to Geography Explorer'}</span>
-        </Link>
-      </div>
-
-      {/* Header */}
+    <div className="mx-auto max-w-4xl space-y-8 py-5 text-zinc-300 md:space-y-10 md:py-10">
+      <Link to="/explore" className="inline-flex items-center gap-2 text-sm text-emerald-300 underline underline-offset-4"><ArrowLeft size={16} aria-hidden="true" />Back to Geography Explorer</Link>
       <header className="border-b border-white/10 pb-8">
-        <div className="mb-3 flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">
-          <BookOpen size={14} />
-          <span>{isPl ? 'Oficjalny przewodnik dedukcyjny' : 'Official Mode Deduction Guide'}</span>
-        </div>
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-sand-100 sm:text-5xl">
-          {mode.name}
-        </h1>
-        <p className="mt-4 text-base leading-7 text-zinc-300 max-w-2xl">
-          {mode.description}
-        </p>
-
-        {/* Quick Stats Grid */}
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-md border border-white/10 bg-obsidian-900/60 p-4">
-            <span className="block text-[11px] uppercase tracking-wider text-zinc-500 font-mono">
-              {isPl ? 'Podmiotów w puli' : 'Total Entities'}
-            </span>
-            <span className="mt-1 block font-mono text-2xl font-bold text-sand-100">
-              {mode.entity_count}
-            </span>
-            <span className="text-[11px] text-zinc-400">{mode.entity_type}</span>
-          </div>
-
-          <div className="rounded-md border border-white/10 bg-obsidian-900/60 p-4">
-            <span className="block text-[11px] uppercase tracking-wider text-zinc-500 font-mono">
-              {isPl ? 'Budżet pytań' : 'Question Limit'}
-            </span>
-            <span className="mt-1 block font-mono text-2xl font-bold text-emerald-400">
-              {mode.question_limit}
-            </span>
-            <span className="text-[11px] text-zinc-400">{isPl ? 'Pytań tak/nie' : 'Yes/no queries'}</span>
-          </div>
-
-          <div className="rounded-md border border-white/10 bg-obsidian-900/60 p-4">
-            <span className="block text-[11px] uppercase tracking-wider text-zinc-500 font-mono">
-              {isPl ? 'Próby odgadnięcia' : 'Guess Limit'}
-            </span>
-            <span className="mt-1 block font-mono text-2xl font-bold text-amber-400">
-              {mode.guess_limit}
-            </span>
-            <span className="text-[11px] text-zinc-400">{isPl ? 'Próby zgadnięcia' : 'Final guesses'}</span>
-          </div>
-
-          <div className="rounded-md border border-white/10 bg-obsidian-900/60 p-4">
-            <span className="block text-[11px] uppercase tracking-wider text-zinc-500 font-mono">
-              {isPl ? 'Rotacja zagadki' : 'Daily Rotation'}
-            </span>
-            <span className="mt-1 block font-mono text-2xl font-bold text-sand-100">
-              00:00
-            </span>
-            <span className="text-[11px] text-zinc-400">UTC Daily Midnight</span>
-          </div>
-        </div>
+        <p className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400"><BookOpen size={14} aria-hidden="true" />Mode deduction guide</p>
+        <h1 className="font-serif text-4xl leading-tight text-sand-100 sm:text-5xl">{mode.name}</h1>
+        <p className="mt-4 text-base leading-7">{mode.description}</p>
+        <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4"><dt className="text-zinc-400">Candidate pool</dt><dd className="mt-2 text-sand-100">{mode.pool}</dd></div>
+          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4"><dt className="text-zinc-400">Questions</dt><dd className="mt-2 text-emerald-300">{mode.questions}</dd></div>
+          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4"><dt className="text-zinc-400">Guesses</dt><dd className="mt-2 text-sand-100">{mode.guesses}</dd></div>
+          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4"><dt className="text-zinc-400">Daily reset</dt><dd className="mt-2 text-sand-100">00:00 UTC</dd></div>
+        </dl>
       </header>
 
-      {/* Strategic Gameplay Walkthrough */}
-      <section className="space-y-6">
-        <h2 className="flex items-center gap-2.5 font-serif text-2xl font-semibold text-sand-100">
-          <Compass size={22} className="text-emerald-400" />
-          <span>{isPl ? 'Optymalna strategia dedukcyjna' : 'Optimal Deduction Strategy & Methodology'}</span>
-        </h2>
-        <p className="text-sm leading-7 text-zinc-300">
-          {isPl
-            ? 'Aby osiągnąć maksymalną liczbę punktów (do 3300+ pkt), gracze powinni minimalizować liczbę zadanych pytań poprzez binarne dzielenie przestrzeni poszukiwań. Poniższe kroki prezentują sprawdzoną metodologię:'
-            : 'To achieve peak scoring efficiency (up to 3,300+ points), deduce the target using binary space partitioning. Each question should ideally eliminate 50% or more of remaining candidates:'}
-        </p>
+      <nav aria-label="Daily mode guides" className="flex flex-wrap gap-x-5 gap-y-3 text-sm">
+        {Object.entries(MODES).map(([id, item]) => <Link key={id} to={`/explore/modes/${id}`} aria-current={id === normalizedId ? 'page' : undefined} className="text-emerald-300 underline underline-offset-4">{item.name.split(' — ')[0]}</Link>)}
+      </nav>
 
-        <div className="space-y-4">
-          {mode.strategy_tips.map((tip, idx) => (
-            <div key={idx} className="flex items-start gap-4 rounded-md border border-white/10 bg-obsidian-900 p-4">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-mono text-xs font-bold text-emerald-400 border border-emerald-500/20">
-                {idx + 1}
-              </span>
-              <p className="text-sm leading-6 text-zinc-300 pt-0.5">
-                {tip}
-              </p>
-            </div>
-          ))}
-        </div>
+      <section aria-labelledby="mode-strategy" className="space-y-4">
+        <h2 id="mode-strategy" className="flex items-center gap-2 font-serif text-2xl text-sand-100"><Compass size={22} aria-hidden="true" />Questions that make useful distinctions</h2>
+        <p className="text-base leading-7">Choose a question for the candidates you actually have left. A balanced yes/no split can be useful, but neither answer is guaranteed to eliminate half the pool; overlapping categories and missing facts matter. Prefer explicit predicates to vague terms such as nearby or large.</p>
+        <ol className="list-decimal space-y-4 pl-6 marker:text-emerald-400">{mode.tips.map(tip => <li key={tip} className="pl-2 text-base leading-7">{tip}</li>)}</ol>
       </section>
 
-      {/* Scoring Architecture */}
-      <section className="rounded-md border border-white/10 bg-obsidian-900/70 p-6 sm:p-8 space-y-5">
-        <h2 className="flex items-center gap-2 font-serif text-xl font-semibold text-sand-100">
-          <Award size={20} className="text-amber-400" />
-          <span>{isPl ? 'Model punktacji Countrydle' : 'Countrydle 5-Factor Scoring System'}</span>
-        </h2>
-        <p className="text-xs leading-6 text-zinc-300">
-          {isPl
-            ? 'Punkty są przyznawane w oparciu o precyzję, szybkość i odwagę dedukcji:'
-            : 'Scores are computed transparently across five performance metrics upon solving the puzzle:'}
-        </p>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-300">
-          <li className="flex items-center gap-2 border-l-2 border-emerald-500 pl-3 py-1">
-            <strong>Base Win:</strong> +500 pts guaranteed for a correct deduction.
-          </li>
-          <li className="flex items-center gap-2 border-l-2 border-emerald-500 pl-3 py-1">
-            <strong>Question Efficiency:</strong> Up to +1,500 pts for using fewer questions.
-          </li>
-          <li className="flex items-center gap-2 border-l-2 border-amber-500 pl-3 py-1">
-            <strong>Guess Precision:</strong> +500 pts for 1st-try guess accuracy.
-          </li>
-          <li className="flex items-center gap-2 border-l-2 border-blue-500 pl-3 py-1">
-            <strong>Speed Bonus:</strong> Up to +300 pts decaying over 5 minutes.
-          </li>
-        </ul>
+      <section aria-labelledby="mode-example" className="space-y-4 rounded-sm border border-white/10 bg-obsidian-900 p-5 sm:p-6">
+        <h2 id="mode-example" className="font-serif text-2xl text-sand-100">Worked example: {mode.example.title}</h2>
+        <p className="text-sm leading-6 text-zinc-400">Illustrative examples explain current fact and eligibility logic. They are not today’s hidden target, measured player results or recorded provider responses.</p>
+        <ol className="list-decimal space-y-3 pl-6 marker:text-emerald-400">{mode.example.steps.map(step => <li key={step} className="pl-2 text-base leading-7">{step}</li>)}</ol>
+        <p className="border-t border-white/10 pt-4 text-base leading-7">{mode.example.lesson}</p>
       </section>
 
-      {/* Data Provenance & Authoritative Sources */}
-      <section className="border-t border-white/10 pt-8 space-y-4">
-        <h2 className="flex items-center gap-2 font-serif text-xl font-semibold text-sand-100">
-          <ShieldCheck size={20} className="text-emerald-400" />
-          <span>{isPl ? 'Źródła danych i weryfikacja faktów' : 'Verified Data Provenance & Ground Truth'}</span>
-        </h2>
-        <p className="text-sm leading-6 text-zinc-400">
-          {isPl
-            ? 'Wszystkie odpowiedzi w Countrydle są ewaluowane deterministycznie na lokalnych relacyjnych bazach SQLite bez generatywnych halucynacji AI. Dane geograficzne pochodzą z publicznych instytucji:'
-            : 'All question evaluations execute deterministically against curated relational SQLite tables with zero LLM hallucination. Geographic facts are compiled from official institutions:'}
-        </p>
-        <div className="flex flex-wrap gap-2 pt-2">
-          {mode.data_sources.map((source, i) => (
-            <span
-              key={i}
-              className="rounded-sm border border-white/15 bg-white/5 px-3 py-1 text-xs text-zinc-300 font-mono"
-            >
-              {source}
-            </span>
-          ))}
-        </div>
+      {isCountryMode && (
+        <section aria-labelledby="country-conventions" className="space-y-5">
+          <h2 id="country-conventions" className="font-serif text-2xl text-sand-100">Catalog, continent and disputed-region conventions</h2>
+          <p className="text-base leading-7">The current worldwide pool has 195 playable countries. Kosovo is included; Israel is excluded from playable targets and guesses without removing its canonical geography or historical facts. This is a game eligibility policy, not a diplomatic recognition rule. Use the current game suggestions as the candidate list; dependencies and disputed regions shown on a map are not automatically separate guesses.</p>
+          <p className="text-base leading-7">Continental candidates come from stored physical-continent associations and per-mode exclusions. Europedle additionally excludes Azerbaijan, Kazakhstan and Georgia; Asiadle additionally excludes Egypt. Americadle combines North America and South America. A country can have multiple associations, so membership in a continental pool is not proof that all of its territory lies there.</p>
+          <p className="text-base leading-7">The country-border builder normalizes Western Sahara to Morocco, Gibraltar to the United Kingdom, and French Guiana to France. These simplified database conventions can differ from a map’s boundary labels or a geopolitical source. They do not settle sovereignty disputes or automatically change continental eligibility.</p>
+          <p className="text-base leading-7">Hemisphere associations describe stored territorial bounds, with some mainland overrides. France, for example, has both Eastern and Western associations. Island status is a sourced classification rather than simply an absence of land borders: countries sharing an island can border each other, while Australia is treated as a continent.</p>
+          <p className="text-base leading-7">Country water access can include inland seas, but landlocked status uses marine access and excludes the Caspian, Aral and Dead Seas. Named direct coastlines are distinct from access through connected seas; only configured parent-water relationships are expanded, not every connection in the world’s oceans. River drainage is not coastal access.</p>
+        </section>
+      )}
+
+      <section aria-labelledby="mode-scoring" className="space-y-4 border-t border-white/10 pt-8">
+        <h2 id="mode-scoring" className="font-serif text-2xl text-sand-100">Budgets and scoring</h2>
+        <p className="text-base leading-7">{normalizedId === 'flagdle' ? 'Flagdle uses 12 guesses with unlimited optional helper questions. Its win score combines +500 base points, a guess bonus from +1,500 on the first guess to +50 on the twelfth, up to +300 speed points over 3 minutes, and up to +500 streak points. It has no question-efficiency bonus.' : 'Question-based daily wins use +500 base points, up to +1,500 for question efficiency, up to +500 for guess efficiency, up to +300 for speed over 5 minutes, and +50 per consecutive day solved in that mode up to +500. US Statedle adds +200 and Powiatdle adds +500. Guest scores are previews; saved account results determine streak bonuses. Running out of questions does not end the game while guesses remain.'}</p>
+        <p className="text-base leading-7">Friend duels are separate from these nine daily modes. Players answer each other’s questions; there is no total question or guess cap, but each action takes a turn, timers apply, and the final reply after a starting-player solve permits a guess or pass, not another question.</p>
       </section>
 
-      {/* Compliant Ad Placement */}
-      <AdSenseUnit slot="mode-guide-footer" className="max-w-xl mx-auto" />
+      <section aria-labelledby="mode-sources" className="space-y-4 border-t border-white/10 pt-8">
+        <h2 id="mode-sources" className="font-serif text-2xl text-sand-100">Sources, limits and corrections</h2>
+        <p className="text-base leading-7">{isCountryMode ? 'Country facts combine REST Countries, CIA World Factbook profiles distributed through factbook.json, and curated additions. Some facts are extracted from Wikipedia text using AI.' : 'Regional facts use local article text and infoboxes, geographic classification tables, static lists and manual corrections. They are not exclusively direct official-statistics feeds.'} Map boundary assets and Natural Earth-derived globe data are separate from the answer tables.</p>
+        <p className="text-base leading-7">Supported templates and local facts reduce dependence on AI-generated answers, but data and interpretation can be wrong or outdated. Questions outside local coverage may use retrieved article text or general knowledge through AI fallback. An explanation is not proof of human verification.</p>
+        <p className="text-base leading-7">Read the <Link to="/about" className="text-emerald-300 underline underline-offset-4">source inventory</Link>, <Link to="/how-it-works" className="text-emerald-300 underline underline-offset-4">answer-engine explanation</Link> and <Link to="/faq" className="text-emerald-300 underline underline-offset-4">FAQ</Link>. To request a correction, <Link to="/contact" className="text-emerald-300 underline underline-offset-4">contact us</Link> with the mode, date, exact question, answer, explanation and supporting source. Avoid posting today’s target publicly.</p>
+      </section>
 
-      {/* CTA Section */}
-      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-5 text-center space-y-4 sm:p-8">
-        <h3 className="font-serif text-2xl font-bold text-sand-100">
-          {isPl ? 'Gotowy do podjęcia dzisiejszego wyzwania?' : 'Ready to Test Your Geography Skills?'}
-        </h3>
-        <p className="text-sm text-zinc-400 max-w-md mx-auto">
-          {isPl
-            ? 'Dzisiejsza zagadka czeka. Sprawdź, czy potrafisz odgadnąć lokalizację przed upływem limitu pytań.'
-            : 'Today’s secret puzzle is live. Apply these deduction strategies to solve the mystery location.'}
-        </p>
-        <div className="pt-2">
-          <Link
-            to={mode.path}
-            className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-6 py-3 text-sm font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-lg"
-          >
-            <Play size={16} />
-            <span>{isPl ? `Zagraj w ${mode.name}` : `Play ${mode.name}`}</span>
-          </Link>
-        </div>
-      </div>
+      <Link to={mode.path} className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-5 py-3 font-semibold text-obsidian-950 hover:bg-emerald-300"><Play size={16} aria-hidden="true" />Play {mode.name.split(' — ')[0]}</Link>
+      <AdSenseUnit slot="mode-guide-footer" className="mx-auto max-w-2xl pt-6" />
     </div>
   );
 }

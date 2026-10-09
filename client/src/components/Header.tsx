@@ -20,12 +20,14 @@ import { useState, useEffect, useRef } from 'react';
 import CountdownTimer from './CountdownTimer';
 import CountrydleLogo from './CountrydleLogo';
 import { PrivacySettingsButton } from './PrivacySettingsButton';
+import { isPrerenderCapture } from '../lib/pageMetadata'
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const isPl = i18n?.language?.startsWith('pl');
+  const showAccount = isAuthenticated && !isPrerenderCapture();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -68,7 +70,7 @@ export default function Header() {
     ['/contact', t('header.suggestions', 'Suggestions')],
     ['/privacy-policy', t('footer.privacyPolicy', 'Privacy Policy')],
     ['/terms', t('footer.termsOfService', 'Terms of Service')],
-    ...(user?.is_admin ? [['/admin', 'Admin']] : []),
+    ...(showAccount && user?.is_admin ? [['/admin', 'Admin']] : []),
   ];
 
   const exploreItems = [
@@ -76,7 +78,7 @@ export default function Header() {
     { path: '/how-it-works', name: t('header.howItWorks', 'How Questions Work'), icon: Cpu },
     { path: '/explore', name: isPl ? 'Przewodnik geograficzny' : 'Geography Guides', icon: BookOpen },
     { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
-    ...(user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
+    ...(showAccount && user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];
 
   const aboutItems = [
@@ -325,7 +327,7 @@ export default function Header() {
           <CountdownTimer />
 
           {/* User Profile or Login/Register CTAs */}
-          {isAuthenticated ? (
+          {showAccount ? (
             <div className="flex items-center gap-2 border-l border-white/15 pl-4">
               <Link
                 to={`/profile/${user?.username}`}
@@ -434,7 +436,7 @@ export default function Header() {
 
           {/* User Auth Section (Mobile) */}
           <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-4 mt-2">
-            {isAuthenticated ? (
+            {showAccount ? (
               <>
                 <Link
                   onClick={() => closeMenu()}

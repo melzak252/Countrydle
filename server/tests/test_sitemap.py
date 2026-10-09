@@ -18,13 +18,13 @@ class SitemapSession:
 
 
 @pytest.mark.anyio
-async def test_sitemap_includes_current_posts_and_excludes_future_posts(monkeypatch):
+async def test_sitemap_excludes_private_routes_and_unfinished_daily_targets(monkeypatch):
     class FixedDatetime(datetime):
         @classmethod
         def now(cls, tz=None):
             return datetime(2026, 9, 26, 0, 0, tzinfo=timezone.utc)
 
-    monkeypatch.setattr("datetime.datetime", FixedDatetime)
+    monkeypatch.setattr("app._publisher_datetime", FixedDatetime)
     engine = create_engine("sqlite:///:memory:")
     Country.__table__.create(engine)
     DailyBlogPost.__table__.create(engine)
@@ -39,6 +39,8 @@ async def test_sitemap_includes_current_posts_and_excludes_future_posts(monkeypa
                     "title": "Daily recap", "subtitle": "Geography",
                     "summary": "Country recap", "fun_facts": [],
                     "content_markdown": "Daily geography recap.",
+                    "created_at": datetime(2026, 9, 25, 18, 0),
+                    "updated_at": datetime(2026, 9, 25, 19, 0),
                 }
                 for post_date, slug in [
                     (date(2026, 9, 25), "daily-recap-rock&roll"),
@@ -52,20 +54,12 @@ async def test_sitemap_includes_current_posts_and_excludes_future_posts(monkeypa
         namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
         urls = root.findall("sm:url", namespace)
         locations = {node.find("sm:loc", namespace).text for node in urls}
-        expected_modes = {
-            "/game", "/flagdle", "/europe", "/asia", "/africa", "/americas",
-            "/us-states", "/wojewodztwa", "/powiaty",
-        }
-
-        assert expected_modes <= {
-            url.removeprefix("https://countrydle.online") for url in locations
-        }
         assert "https://countrydle.online/blog/daily-recap-rock&roll" in locations
-        assert "https://countrydle.online/blog/current-recap" in locations
+        assert "https://countrydle.online/blog/current-recap" not in locations
         assert "https://countrydle.online/blog/future-recap" not in locations
-        assert "https://countrydle.online/friends" in locations
+        assert "https://countrydle.online/friends" not in locations
         assert not any(
-            "/admin" in url or "/duel/" in url or "/login" in url
+            any(private_path in url for private_path in ("/admin", "/duel/", "/login", "/register", "/profile", "/setup-profile"))
             for url in locations
         )
         article_dates = {
@@ -73,8 +67,7 @@ async def test_sitemap_includes_current_posts_and_excludes_future_posts(monkeypa
             for node in urls if node.find("sm:lastmod", namespace) is not None
         }
         assert article_dates == {
-            "https://countrydle.online/blog/current-recap": "2026-09-26",
-            "https://countrydle.online/blog/daily-recap-rock&roll": "2026-09-25",
+            "https://countrydle.online/blog/daily-recap-rock&roll": "2026-09-25T19:00:00+00:00",
         }
     finally:
         engine.dispose()

@@ -13,6 +13,7 @@ from fastapi_mail import MessageSchema
 from utils.google import verify_google_token
 
 import datetime
+from datetime import datetime as _publisher_datetime, timezone
 from utils.app import lifespan
 from countrydle import router as countrydle_router
 from powiatdle import router as powiatdle_router
@@ -214,7 +215,6 @@ async def get_version():
 @app.get("/sitemap.xml", response_class=Response)
 async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
     """Generate the public sitemap from public routes and published blog records."""
-    from datetime import datetime, timezone
     from xml.sax.saxutils import escape
 
     from db.models.blog import DailyBlogPost
@@ -223,8 +223,8 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
     posts = []
     try:
         res = await session.execute(
-            select(DailyBlogPost.slug, DailyBlogPost.date)
-            .where(DailyBlogPost.date <= datetime.now(timezone.utc).date())
+            select(DailyBlogPost.slug, DailyBlogPost.updated_at, DailyBlogPost.created_at)
+            .where(DailyBlogPost.date < _publisher_datetime.now(timezone.utc).date())
             .order_by(desc(DailyBlogPost.date))
         )
         posts = res.all()
@@ -243,27 +243,41 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
         "<url><loc>https://countrydle.online/us-states</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/wojewodztwa</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/powiaty</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
-        "<url><loc>https://countrydle.online/friends</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>",
         "<url><loc>https://countrydle.online/blog</loc><changefreq>daily</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/leaderboard</loc><changefreq>daily</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/archive</loc><changefreq>daily</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/patch-notes</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>",
         "<url><loc>https://countrydle.online/faq</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/about</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/how-it-works</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>",
         "<url><loc>https://countrydle.online/privacy-policy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
         "<url><loc>https://countrydle.online/terms</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
         "<url><loc>https://countrydle.online/cookie-policy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>",
         "<url><loc>https://countrydle.online/explore</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>",
         "<url><loc>https://countrydle.online/explore/modes/countrydle</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/flagdle</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/europe</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/asia</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/africa</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
+        "<url><loc>https://countrydle.online/explore/modes/americas</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/explore/modes/us-states</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/explore/modes/wojewodztwa</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
         "<url><loc>https://countrydle.online/explore/modes/powiaty</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>",
     ]
     for post in posts:
+        last_modified = post.updated_at or post.created_at
+        if last_modified is not None:
+            if last_modified.tzinfo is None:
+                last_modified = last_modified.replace(tzinfo=timezone.utc)
+            last_modified = last_modified.astimezone(timezone.utc)
+        lastmod_xml = (
+            f"<lastmod>{escape(last_modified.isoformat())}</lastmod>"
+            if last_modified is not None else ""
+        )
         urls_xml.append(
             f"<url><loc>https://countrydle.online/blog/{escape(post.slug)}</loc>"
-            f"<lastmod>{escape(post.date.isoformat())}</lastmod>"
+            f"{lastmod_xml}"
             "<changefreq>monthly</changefreq><priority>0.8</priority></url>"
         )
 

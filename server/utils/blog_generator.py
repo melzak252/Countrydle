@@ -10,6 +10,8 @@ import sqlite3
 from typing import Any, Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import ValidationError
+from schemas.blog import BlogSourceLink
 from db.models.blog import DailyBlogPost
 from db.models.country import Country
 from db.models.fragment import CountryFragment
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 PRIMARY_MODEL = os.getenv("BLOG_GENERATOR_MODEL", "gemini-3.8-flash")
 FALLBACK_MODEL = os.getenv("BLOG_FALLBACK_MODEL", "gemini-3.1-pro-preview")
+_CITATION_NEEDED = re.compile(r"\[\s*citation\s*needed\s*\]", re.IGNORECASE)
 
 
 def generate_slug(post_date: date, country_name: str) -> str:
@@ -82,14 +85,8 @@ def get_country_sqlite_facts(country_name: str) -> Dict[str, Any]:
     except Exception:
         return {}
 
-def get_deduction_steps(country_name: str, actual_questions: Optional[List[Dict[str, str]]] = None) -> List[Dict[str, Any]]:
-    facts = get_country_sqlite_facts(country_name)
-    continent = facts.get('continent', 'Unknown')
-    water = facts.get('water_access', 'Unknown')
-    is_landlocked = 'landlocked' in water.lower()
-    borders = facts.get('borders', '')
-    border_list = [b.strip() for b in borders.split(',') if b.strip() and b.strip() != 'None']
-
+def get_deduction_steps(country_name: str, actual_questions: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    # This is a recap of logged play, not a hypothetical solution walkthrough.
     steps = []
     if actual_questions:
         seen = set()
@@ -106,33 +103,6 @@ def get_deduction_steps(country_name: str, actual_questions: Optional[List[Dict[
                     "explanation": q["explanation"],
                 })
 
-    if len(steps) < 3:
-        steps = [
-            {
-                "step": 1,
-                "question": f"Is the country in {continent}?",
-                "answer": "YES",
-                "explanation": f"Confirmed location in {continent}.",
-            },
-            {
-                "step": 2,
-                "question": "Does the country have access to the sea?",
-                "answer": "NO" if is_landlocked else "YES",
-                "explanation": "Completely landlocked with zero coastline." if is_landlocked else f"Maritime access via {water}.",
-            },
-            {
-                "step": 3,
-                "question": f"Does it border {border_list[0]}?" if border_list else "Is it an island nation?",
-                "answer": "YES",
-                "explanation": f"Adjacent land border with {border_list[0]}." if border_list else "Zero land borders (Island nation).",
-            },
-            {
-                "step": 4,
-                "question": f"Is the capital city {facts.get('capital')}?",
-                "answer": "YES",
-                "explanation": f"Capital is {facts.get('capital')}. Target solved!",
-            }
-        ]
     return steps
 
 
@@ -169,16 +139,23 @@ def extract_clean_curiosities(country_name: str, wiki_fragments: List[str], fact
             continue
 
         cleaned = frag.replace(r'\[', '[').replace(r'\]', ']').replace(r'\(', '(').replace(r'\)', ')').replace(r'\_', '_').replace(r'\*', '*').replace(r'\-', '-')
-        cleaned = re.sub(r'\[\*?\s*citation needed\s*\*?\]', '', cleaned, flags=re.I)
         cleaned = re.sub(r'\[\d+\]', '', cleaned)
         cleaned = cleaned.replace('\\', '')
+        # A warning after sentence punctuation still belongs to the preceding claim.
+        # Move it inside that sentence before splitting, preserving unrelated sentences.
+        cleaned = re.sub(
+            rf"([.!?])\s*({_CITATION_NEEDED.pattern})",
+            r" \2\1",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
 
         raw_sentences = re.split(r'(?<=[.!?])\s+', cleaned)
         for s in raw_sentences:
             s = re.sub(r'\s+', ' ', s).strip()
             if len(s) >= 50 and len(s) <= 280 and s[0].isupper() and s[-1] in ('.', '!'):
                 if not s.startswith(('#', '|', '-', '*', '•', '>', 'State in', 'Country in')):
-                    if not any(bw in s.lower() for bw in banned_words):
+                    if not _CITATION_NEEDED.search(s) and not any(bw in s.lower() for bw in banned_words):
                         if s not in sentences:
                             sentences.append(s)
 
@@ -231,7 +208,7 @@ async def generate_blog_content_ai(
     country_name: str,
     wiki_fragments: List[str],
     post_date: date,
-    actual_questions: Optional[List[Dict[str, str]]] = None,
+    actual_questions: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     api_key = os.getenv("GEMINI_API_KEY")
     country_facts = get_country_sqlite_facts(country_name)
@@ -251,7 +228,6 @@ async def generate_blog_content_ai(
     clean_frags = []
     for frag in wiki_fragments:
         cleaned = frag.replace(r'\[', '[').replace(r'\]', ']').replace(r'\(', '(').replace(r'\)', ')').replace(r'\_', '_').replace(r'\*', '*').replace(r'\-', '-')
-        cleaned = re.sub(r'\[\*?\s*citation needed\s*\*?\]', '', cleaned, flags=re.I)
         cleaned = re.sub(r'\[\d+\]', '', cleaned)
         cleaned = cleaned.replace('\\', '').strip()
         if cleaned.startswith('|') and '---' in cleaned and len(cleaned) < 300:
@@ -269,6 +245,10 @@ Verified Ground Truth Facts:
 
 Wikipedia Context Excerpts:
 {wiki_context}
+
+Source excerpts can contain unresolved [citation needed] warnings. Do not use claims
+marked with that warning as facts, and do not imply they have been independently verified.
+No human editorial review has taken place.
 
 TASK:
 Generate a JSON object with:
@@ -297,7 +277,9 @@ Return ONLY the raw JSON object.
             res = await loop.run_in_executor(None, _call_gemini_api, model_name, prompt, api_key, 35)
             if res and isinstance(res, dict) and "fun_facts" in res and res.get("fun_facts"):
                 logger.info(f"Successfully generated blog content using {model_name} for {country_name}")
-                return _assemble_blog_post_payload(country_name, country_facts, res, post_date, actual_questions)
+                payload = _assemble_blog_post_payload(country_name, country_facts, res, post_date, actual_questions)
+                payload.update(_generation_provenance(wiki_fragments, ai_assisted=True))
+                return payload
         except Exception as e:
             logger.warning(f"Model {model_name} failed for {country_name}: {e}")
 
@@ -310,7 +292,7 @@ def _assemble_blog_post_payload(
     country_facts: Dict[str, Any],
     ai_data: Dict[str, Any],
     post_date: date,
-    actual_questions: Optional[List[Dict[str, str]]] = None,
+    actual_questions: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     steps = get_deduction_steps(country_name, actual_questions)
     pro_tip = get_curator_pro_tip(country_name, country_facts)
@@ -377,11 +359,61 @@ def _assemble_blog_post_payload(
     }
 
 
+def _generation_provenance(wiki_fragments: List[str], *, ai_assisted: bool) -> Dict[str, Any]:
+    origin = "AI-assisted recap" if ai_assisted else "Automatically assembled template recap"
+    note = (
+        f"{origin} using stored country facts and retrieved local article excerpts. "
+        "The article excerpts do not retain original source URLs; no external source "
+        "pages were fetched for this recap. No human editorial review was recorded during generation."
+    )
+    if any(
+        _CITATION_NEEDED.search(fragment.replace("\\", ""))
+        or "citation needed" in fragment.lower()
+        for fragment in wiki_fragments
+    ):
+        note += " Retrieved excerpts include unresolved [citation needed] warnings."
+        if not ai_assisted:
+            note += " Claims carrying those warnings were excluded from the template."
+        note += " Warning-bearing claims must not be treated as verified without checking their evidence."
+    return {"source_links": [], "editorial_note": note, "ai_assisted": ai_assisted}
+
+
+def _used_question_sources(
+    questions: List[Dict[str, Any]], steps: List[Dict[str, Any]]
+) -> List[Dict[str, str]]:
+    """Retain cited stored evidence only for questions included in this recap."""
+    used = {(step["question"], step["answer"], step["explanation"]) for step in steps}
+    sources = []
+    seen = set()
+    for question in questions:
+        if (question["question"], question["answer"], question["explanation"]) not in used:
+            continue
+        for evidence in question.get("fact_provenance") or []:
+            if not isinstance(evidence, dict):
+                continue
+            provenance = evidence.get("provenance")
+            if not isinstance(provenance, dict) or provenance.get("status") != "cited":
+                continue
+            citation, url = provenance.get("citation"), provenance.get("source_url")
+            if not isinstance(citation, str) or not citation.strip() or not isinstance(url, str):
+                continue
+            try:
+                source = BlogSourceLink(label=citation.strip()[:200], url=url)
+            except ValidationError:
+                continue
+            if source.url not in seen:
+                seen.add(source.url)
+                sources.append(source.model_dump())
+                if len(sources) == 20:
+                    return sources
+    return sources
+
+
 def _generate_fallback_template(
     country_name: str, 
     wiki_fragments: List[str], 
     post_date: date,
-    actual_questions: Optional[List[Dict[str, str]]] = None,
+    actual_questions: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     country_facts = get_country_sqlite_facts(country_name)
     steps = get_deduction_steps(country_name, actual_questions)
@@ -421,7 +453,7 @@ def _generate_fallback_template(
         "title": f"Countrydle Solution: {country_name}",
         "subtitle": f"Game recap and deduction breakdown for {post_date.strftime('%B %d, %Y')}.",
         "reading_time_minutes": 2,
-        "summary": f"Yesterday's Countrydle mystery country was {country_name}. Here is how the community eliminated regions to find the answer.",
+        "summary": f"The Countrydle mystery country for {post_date.isoformat()} was {country_name}. This recap combines stored geographic facts with available question history.",
         "fast_facts": {
             "capital": country_facts.get("capital", "N/A"),
             "continent": country_facts.get("continent", "N/A"),
@@ -438,6 +470,7 @@ def _generate_fallback_template(
             "pro_tip": pro_tip,
         },
         "content_markdown": markdown,
+        **_generation_provenance(wiki_fragments, ai_assisted=False),
     }
 
 
@@ -446,7 +479,7 @@ async def create_daily_blog_post(
     country: Country,
     post_date: date,
 ) -> DailyBlogPost:
-    # 1. Fetch authentic Wikipedia fragments from PostgreSQL
+    # Retrieve stored article excerpts; their external origin URLs are not retained.
     res = await session.execute(
         select(CountryFragment.text)
         .where(CountryFragment.country_id == country.id)
@@ -460,10 +493,13 @@ async def create_daily_blog_post(
     )
     day = day_res.scalars().first()
 
-    actual_questions: List[Dict[str, str]] = []
+    actual_questions: List[Dict[str, Any]] = []
     if day:
         q_res = await session.execute(
-            select(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation)
+            select(
+                CountrydleQuestion.question, CountrydleQuestion.answer,
+                CountrydleQuestion.explanation, CountrydleQuestion.fact_provenance,
+            )
             .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
             .order_by(CountrydleQuestion.id.asc())
             .limit(15)
@@ -471,12 +507,20 @@ async def create_daily_blog_post(
         for q in q_res.all():
             actual_questions.append({
                 "question": q.question or "",
-                "answer": "YES" if q.answer else "NO",
-                "explanation": q.explanation or ""
+                "answer": "YES" if q.answer is True else "NO" if q.answer is False else "UNKNOWN",
+                "explanation": q.explanation or "",
+                "fact_provenance": q.fact_provenance or [],
             })
 
     # 3. Generate content via Gemini (with questions log and anti-slop rules)
     payload = await generate_blog_content_ai(country.name, fragments, post_date, actual_questions)
+    steps = (payload.get("deduction_masterclass") or {}).get("steps") or []
+    payload["source_links"] = _used_question_sources(actual_questions, steps)
+    if payload["source_links"]:
+        payload["editorial_note"] += (
+            " Listed links are citations attached to the stored question evidence used "
+            "in this recap, not source pages fetched again during generation."
+        )
 
     slug = generate_slug(post_date, country.name)
 
@@ -492,6 +536,11 @@ async def create_daily_blog_post(
         fun_facts=payload.get("fun_facts", []),
         deduction_masterclass=payload.get("deduction_masterclass"),
         content_markdown=payload.get("content_markdown", ""),
+        source_links=payload["source_links"],
+        editorial_note=payload["editorial_note"],
+        ai_assisted=payload["ai_assisted"],
+        reviewed_by_id=None,
+        reviewed_at=None,
     )
 
     return post

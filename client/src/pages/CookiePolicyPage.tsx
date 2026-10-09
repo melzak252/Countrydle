@@ -2,7 +2,7 @@ import LegalDocument from '../components/LegalDocument';
 import { PrivacySettingsButton } from '../components/PrivacySettingsButton';
 
 export default function CookiePolicyPage() {
-  const lastUpdated = "October 6, 2026";
+  const lastUpdated = "October 9, 2026";
 
   return (
     <LegalDocument title="Cookie Policy" lastUpdated={lastUpdated}>
@@ -66,16 +66,28 @@ export default function CookiePolicyPage() {
       <section>
         <h2>3. Analytics, Advertising and External Services</h2>
         <p className="mb-4">
-          Countrydle can load Rybbit analytics when enabled in the deployment to measure visits and navigation.
-          The external script and its configuration determine its collection and storage behavior; this policy
-          does not assume that analytics necessarily uses cookies. Analytics is distinct from storage needed to
-          keep your game or login working.
+          Countrydle can load optional Rybbit analytics to measure visits and navigation when its deployment
+          settings are enabled independently of advertising inventory. It is a separate analytics service,
+          not an AdSense unit.
+          The external script and its configuration determine collection and storage behavior; this policy
+          does not assume that analytics necessarily uses cookies. Optional analytics and advertising are not
+          loaded during static page capture. Analytics is distinct from storage needed for your game or login.
         </p>
         <p className="mb-4">
-          Google AdSense and its advertising partners may use cookies or similar technologies to deliver and
-          measure ads, including personalized ads according to applicable choices and settings. The site loads
-          Google's advertising script; Google's consent message and serving configuration govern available
-          advertising choices. We do not set a single first-party lifetime for Google's or its partners' storage.
+          Google AdSense advertising is optional and disabled by default. The deployment must explicitly set
+          <code> VITE_ADSENSE_ENABLED=true</code> with a matching publisher and valid ad-unit inventory before advertising can run. Even then,
+          ads require an eligible content page and a determinate permission state from the configured Google
+          Funding Choices / Privacy &amp; Messaging consent service. Missing configuration, unknown or rejected
+          consent, or consent-service failure does not authorize ad requests. Ads do not run on gameplay or result
+          screens, account or administrative screens, contact or legal pages, or loading, error or unknown screens;
+          blog ads require actual editorial review.
+          Regional non-applicability must be explicitly reported by the consent service, not inferred from the
+          absence of a message.
+        </p>
+        <p className="mb-4">
+          When these conditions are met, Google and its advertising partners may use cookies or similar
+          technologies to deliver and measure ads, including personalized ads according to applicable choices
+          and settings. We do not set a single first-party lifetime for Google's or its partners' storage.
         </p>
         <p>
           Google's messages, where available, provide information about advertising purposes and partners.
@@ -87,16 +99,24 @@ export default function CookiePolicyPage() {
       <section>
         <h2>4. Managing Cookies and Advertising Choices</h2>
         <p className="mb-4">
-          You can use Privacy settings to reopen Google’s consent message and review or change your advertising choices when those settings are available:
+          Privacy settings reopen the existing Google Funding Choices / Privacy &amp; Messaging consent service
+          so you can review, reject or withdraw your optional advertising choices when those settings are available:
         </p>
         <div className="mb-4">
           <PrivacySettingsButton className="min-h-11 rounded-sm border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400" />
         </div>
         <p className="mb-4">
+          Rejecting or withdrawing optional advertising consent stops advertising requests; active advertising is
+          cleared by reloading the page when permission is withdrawn. This does not delete necessary game or login
+          cookies, your saved progress, or server records. Playing, creating an account or accepting the Terms of
+          Service is not consent to optional advertising storage or tracking.
+        </p>
+        <p className="mb-4">
+          Opening settings while ads are active first takes you to an ad-free Cookie Policy document.
           If no consent message applies, there may be no message to display. If Google's consent services are
-          unavailable, the button reports that settings cannot be opened; it does not save or change an
-          advertising choice. A failed request to open settings is not consent. Contact us if you cannot access
-          your choices. Browser controls can block or remove cookies and localStorage, but may also remove
+          unavailable, the button reports that settings cannot be opened and the settings document remains ad-free.
+          It does not save or change an advertising choice. A failed request to open settings is not consent.
+          Contact us if you cannot access your choices. Browser controls can block or remove cookies and localStorage, but may also remove
           progress or prevent login and other features from working. Those controls are separate from Google's
           advertising choices; deleting browser data is not a request to erase server records.
         </p>

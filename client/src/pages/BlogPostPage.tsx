@@ -15,20 +15,15 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { blogService } from '../services/api';
 import AdSenseUnit from '../components/AdSenseUnit';
+import { isAxiosError } from 'axios';
+import { setPageEditorialEligibility } from '../advertising';
+import { usePageMetadata } from '../lib/pageMetadata';
+import { blogPostSchema, cleanDisplayText, safeSourceUrl, additionalArticleSections, type BlogPost } from '../blogContent';
 
-function cleanDisplayText(text?: string): string {
-  if (!text) return '';
-  return text
-    .replace(/\\?\[\*?\s*citation needed\s*\*?\\?\]/gi, '')
-    .replace(/\[\d+\]/g, '')
-    .replace(/\\([_()\[\]*])/g, '$1')
-    .replace(/\\/g, '')
-    .trim();
-}
 
-function cleanBorderList(bordersStr?: string): string {
+function cleanBorderList(bordersStr?: string | number): string {
   if (!bordersStr) return '';
-  const parts = bordersStr.split(',').map((b) => b.trim()).filter(Boolean);
+  const parts = String(bordersStr).split(',').map((b) => b.trim()).filter(Boolean);
   const aliasMap: Record<string, string> = {
     'dr congo': 'Democratic Republic of the Congo',
     'democratic republic of the congo': 'Democratic Republic of the Congo',
@@ -51,66 +46,41 @@ function cleanBorderList(bordersStr?: string): string {
   return result.join(', ');
 }
 
-export function getFalseDistractor(_countryName?: string, continent?: string, facts?: any, isPl: boolean = false): string {
-  const normCont = (continent || facts?.continent || '').toLowerCase();
-
-  if (normCont.includes('africa')) {
-    return isPl
-      ? 'Jest państwem śródlądowym położonym całkowicie w Ameryce Południowej.'
-      : 'It is a landlocked country located entirely within South America.';
-  }
-  if (normCont.includes('europe')) {
-    return isPl
-      ? 'Jest państwem wyspiarskim położonym całkowicie na półkuli południowej.'
-      : 'It is an island nation situated entirely in the Southern Hemisphere.';
-  }
-  if (normCont.includes('asia')) {
-    return isPl
-      ? 'Jest suwerennym państwem położonym w Ameryce Środkowej.'
-      : 'It is a sovereign country located entirely within Central America.';
-  }
-  if (normCont.includes('south america')) {
-    return isPl
-      ? 'Jest państwem członkowskim Unii Europejskiej w Europie.'
-      : 'It is a member state of the European Union situated in Europe.';
-  }
-  if (normCont.includes('north america') || normCont.includes('americas')) {
-    return isPl
-      ? 'Leży na kontynencie afrykańskim i graniczy z Jeziorem Wiktorii.'
-      : 'It is located on the African continent and borders Lake Victoria.';
-  }
-  if (normCont.includes('oceania')) {
-    return isPl
-      ? 'Jest alpejskim państwem śródlądowym w Europie Środkowej.'
-      : 'It is a landlocked alpine country located in Central Europe.';
-  }
-  return isPl
-    ? 'Posiada bezpośrednią granicę lądową z Antarktydą.'
-    : 'It shares an extensive direct land border with Antarctica.';
-}
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const { i18n } = useTranslation();
   const isPl = i18n.language.startsWith('pl');
-  const [post, setPost] = useState<any | null>(null);
+  const [fetchedPost, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [selectedTriviaOption, setSelectedTriviaOption] = useState<number | null>(null);
   const [triviaRevealed, setTriviaRevealed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     const fetchPost = async () => {
-      if (!slug) return;
       setLoading(true);
+      setPost(null);
+      setError(null);
+      setSelectedTriviaOption(null);
+      setTriviaRevealed(false);
+      setPageEditorialEligibility(false);
       try {
-        const data = await blogService.getPostBySlug(slug);
+        if (!slug) throw new Error('Missing recap address.');
+        const data = blogPostSchema.parse(await blogService.getPostBySlug(slug));
+        if (data.date >= new Date().toISOString().slice(0, 10)) throw new Error('This solution is not public yet.');
         if (isMounted) {
           setPost(data);
+          setLoadedSlug(slug);
         }
       } catch (err) {
-        console.error('Failed to fetch blog post', err);
+        if (isMounted) setError(isAxiosError(err) && err.response?.status === 404
+          ? 'This past-day recap was not found. Today’s solution is not published here.'
+          : 'The recap could not be loaded. Please try again.');
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -119,12 +89,32 @@ export default function BlogPostPage() {
     fetchPost();
     return () => {
       isMounted = false;
+      setPageEditorialEligibility(false);
     };
-  }, [slug]);
+  }, [slug, retry]);
+
+  const loadedPost = !loading && !error && loadedSlug === slug ? fetchedPost : null;
+  const reviewed = loadedPost?.editorial_status === 'reviewed' && !!loadedPost?.reviewed_at && !!loadedPost?.reviewer_name;
+  useEffect(() => {
+    setPageEditorialEligibility(reviewed);
+    return () => setPageEditorialEligibility(false);
+  }, [reviewed, slug]);
+  usePageMetadata(loadedPost ? {
+    title: `${loadedPost.title} — ${loadedPost.country_name}, ${loadedPost.date} | Countrydle`,
+    description: loadedPost.summary || loadedPost.subtitle || `Past-day geography recap for ${loadedPost.country_name}.`,
+    canonicalPath: `/blog/${encodeURIComponent(loadedPost.slug || loadedPost.date)}`,
+    article: {
+      countryName: loadedPost.country_name,
+      puzzleDate: loadedPost.date,
+      publishedAt: loadedPost.created_at || `${loadedPost.date}T00:00:00Z`,
+      updatedAt: loadedPost.updated_at || loadedPost.created_at,
+      reviewedBy: reviewed ? loadedPost.reviewer_name || undefined : undefined,
+    },
+  } : null);
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = post?.title || 'Countrydle Solution';
+    const title = loadedPost?.title || 'Countrydle Solution';
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
@@ -139,20 +129,21 @@ export default function BlogPostPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) {
+  if (loading || (!error && loadedSlug !== slug)) {
     return (
-      <div role="status" aria-label="Loading debrief" className="flex justify-center py-32">
+      <div data-publisher-ready="false" role="status" aria-label="Loading debrief" className="flex justify-center py-32">
         <Loader2 className="animate-spin text-emerald-400" size={36} />
       </div>
     );
   }
 
-  if (!post) {
+  if (error || !loadedPost) {
     return (
-      <div className="mx-auto max-w-3xl py-20 text-center">
+      <div data-publisher-ready="false" data-publisher-error="true" className="mx-auto max-w-3xl py-20 text-center">
         <Globe size={40} className="mx-auto mb-4 text-zinc-600" />
-        <h1 className="font-serif text-2xl text-sand-100">Solution Not Found</h1>
-        <p className="mt-2 text-sm text-zinc-400">The daily puzzle recap you are looking for does not exist.</p>
+        <h1 className="font-serif text-2xl text-sand-100">Recap unavailable</h1>
+        <p role="alert" className="mt-2 text-sm text-zinc-400">{error || 'The recap could not be loaded.'}</p>
+        <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 rounded border border-white/20 px-4 py-2 text-sand-100">Try again</button>
         <Link to="/blog" className="mt-6 inline-flex items-center gap-2 rounded bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950">
           <ArrowLeft size={14} /> Back to Daily Journal
         </Link>
@@ -160,13 +151,30 @@ export default function BlogPostPage() {
     );
   }
 
-  const steps = post.deduction_masterclass?.steps || [];
+  const post = loadedPost;
+  const stepsByQuestion = new Map<string, { question: string; answer?: string; explanation?: string }>();
+  for (const step of post.deduction_masterclass?.steps || []) {
+    const key = step.question.trim().toLowerCase();
+    if (!key) continue;
+    const existing = stepsByQuestion.get(key);
+    if (!existing) stepsByQuestion.set(key, { question: step.question, answer: step.answer, explanation: step.explanation });
+    else {
+      if (step.explanation && !existing.explanation?.includes(step.explanation)) existing.explanation = [existing.explanation, step.explanation].filter(Boolean).join('\n');
+      if (step.answer && !existing.answer?.split(' / ').includes(step.answer)) existing.answer = [existing.answer, step.answer].filter(Boolean).join(' / ');
+    }
+  }
+  const steps = [...stepsByQuestion.values()];
   const proTip = post.deduction_masterclass?.pro_tip || '';
   const curiosities = post.fun_facts || [];
+  const extraSections = additionalArticleSections(post);
+  const sourceLinks = post.source_links.map((source) => ({ ...source, safeUrl: safeSourceUrl(source.url) }));
   const facts = post.fast_facts || {};
+  const otherCommunityQuestions = post.game_debrief?.has_telemetry
+    ? post.game_debrief.top_questions.filter((question) => !steps.some((step) => step.question.trim().toLowerCase() === question.question.trim().toLowerCase()))
+    : [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 sm:px-6 md:py-12">
+    <article data-publisher-ready="true" className="mx-auto max-w-4xl space-y-10 px-4 py-8 sm:px-6 md:py-12">
       {/* Navigation & Header */}
       <nav aria-label="Debrief navigation" className="flex flex-col items-start gap-3 border-b border-white/10 pb-4 text-xs font-mono sm:flex-row sm:items-center sm:justify-between">
         <Link to="/blog" className="inline-flex min-h-11 max-w-full items-center gap-1.5 text-zinc-400 hover:text-sand-100 transition-colors">
@@ -208,7 +216,7 @@ export default function BlogPostPage() {
           <div className="space-y-3 text-center md:text-left">
             <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
               <span className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
-                Yesterday's Solution
+                Past-day Solution · {post.date}
               </span>
               <span className="text-zinc-600">&bull;</span>
               {post.continent && (
@@ -228,7 +236,7 @@ export default function BlogPostPage() {
             </div>
 
             <h1 className="font-serif text-3xl font-bold tracking-tight text-sand-100 sm:text-4xl md:text-5xl uppercase">
-              {post.country_name}
+              {post.title}
             </h1>
 
             {post.subtitle && (
@@ -276,70 +284,61 @@ export default function BlogPostPage() {
           </div>
         </div>
       </header>
-
-      {/* Community Question Telemetry / Deduction Ladder */}
-      <section className="rounded-lg border border-white/10 bg-obsidian-900/60 p-6 sm:p-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-2">
-          <div className="flex items-center gap-2">
-            <Compass size={18} className="text-emerald-400" />
-            <h2 className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
-              {post.game_debrief?.top_questions?.length ? 'What Questions Players Asked Yesterday' : 'The Deduction Ladder'}
-            </h2>
-          </div>
-          <span className="text-xs text-zinc-500 font-mono">
-            {post.game_debrief?.top_questions?.length ? 'Real Community Question Telemetry' : 'Optimal Elimination Sequence'}
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          {(post.game_debrief?.top_questions?.length ? post.game_debrief.top_questions : steps).map((st: any, idx: number) => {
-            const isYes = String(st.answer).toUpperCase() === 'YES';
-            return (
-              <div key={idx} className="flex items-start gap-4 rounded-md border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/15">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 font-mono text-xs font-bold text-sand-100 border border-white/10">
-                  {idx + 1}
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-sand-100">
-                      "{st.question}"
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {st.count !== undefined && (
-                        <span className="text-[11px] font-mono text-zinc-400">
-                          Asked {st.count}x {st.pct ? `(${st.pct}%)` : ''}
-                        </span>
-                      )}
-                      <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-wider ${
-                        isYes 
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
-                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      }`}>
-                        {isYes ? 'YES' : 'NO'}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs leading-relaxed text-zinc-400">
-                    {cleanDisplayText(st.explanation)}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <section aria-label="Editorial provenance" className="rounded-lg border border-white/10 bg-obsidian-900/60 p-5 space-y-3 text-sm text-zinc-300">
+        <p className="font-semibold text-sand-100">{post.ai_assisted ? 'AI-assisted recap' : 'Countrydle recap'} · {reviewed ? 'Editorially reviewed' : 'Not yet editorially reviewed'}</p>
+        {reviewed ? <p>Reviewed by {post.reviewer_name} on <time dateTime={post.reviewed_at || undefined}>{post.reviewed_at}</time>.</p> : <p>Geographical claims and deduction advice may need verification. This page does not carry advertising until an editor reviews it.</p>}
+        <p>Published <time dateTime={post.created_at}>{post.created_at}</time> · Updated <time dateTime={post.updated_at || post.created_at}>{post.updated_at || post.created_at}</time></p>
+        {post.editorial_note && <p className="whitespace-pre-wrap">{post.editorial_note}</p>}
+        {sourceLinks.length ? (
+          <div><h2 className="font-semibold text-sand-100">Sources</h2><ul className="mt-2 space-y-1">
+            {sourceLinks.map((source, index) => <li key={index}>{source.safeUrl ? <a href={source.safeUrl} target="_blank" rel="noopener noreferrer" className="break-words text-emerald-300 underline">{source.label}</a> : <span>{source.label} — source URL unavailable</span>}</li>)}
+          </ul></div>
+        ) : <p className="text-amber-300">No source links have been recorded for this recap. Treat factual claims as unverified.</p>}
       </section>
+      {post.summary && <p className="text-base leading-7 text-zinc-300">{post.summary}</p>}
+
+      {/* Analysis is not replaced by aggregate question telemetry. */}
+      {steps.length > 0 && (
+        <section className="rounded-lg border border-white/10 bg-obsidian-900/60 p-6 sm:p-8 space-y-6">
+          <h2 className="font-serif text-xl text-sand-100">Deduction path for {post.country_name}</h2>
+          <p className="text-xs text-zinc-400">A suggested reasoning sequence, not a measured optimal strategy.</p>
+          <ol className="space-y-3">
+            {steps.map((step, index) => {
+              const evidence = post.game_debrief?.has_telemetry ? post.game_debrief.top_questions?.find((question) => question.question.trim().toLowerCase() === step.question.trim().toLowerCase()) : undefined;
+              return <li key={index} className="rounded-md border border-white/10 p-4 space-y-2">
+                <h3 className="text-sm font-semibold text-sand-100">{index + 1}. {step.question} <span className="text-emerald-300">— {step.answer || 'Answer not recorded'}</span></h3>
+                {step.explanation && <p className="text-sm leading-relaxed text-zinc-300">{cleanDisplayText(step.explanation)}</p>}
+                {evidence && <p className="text-xs text-zinc-400">Community evidence: asked {evidence.count} times{evidence.pct != null ? ` (${evidence.pct}%)` : ''}.</p>}
+              </li>;
+            })}
+          </ol>
+        </section>
+      )}
+      {otherCommunityQuestions.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="font-serif text-xl text-sand-100">Community question evidence</h2>
+          <p className="text-xs text-zinc-400">Recorded questions for the {post.date} puzzle. Frequency is not proof of an optimal strategy.</p>
+          <ul className="space-y-2 text-sm text-zinc-300">
+            {otherCommunityQuestions.map((question, index) => (
+              <li key={index}>{question.question} — {question.answer || 'Answer not recorded'}; asked {question.count} times{question.pct != null ? ` (${question.pct}%)` : ''}
+                {question.explanation && <p className="mt-1 text-xs">{cleanDisplayText(question.explanation)}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Common Traps & Wrong Guesses */}
-      {post.game_debrief?.common_pitfalls && post.game_debrief.common_pitfalls.length > 0 && (
+      {post.game_debrief?.has_telemetry && post.game_debrief.common_pitfalls && post.game_debrief.common_pitfalls.length > 0 && (
         <section className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-5 space-y-3">
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-rose-400 font-bold">
             <span>⚠️ Common Traps & Wrong Guesses</span>
           </div>
           <p className="text-xs text-zinc-300">
-            Solvers who stumbled yesterday frequently submitted these incorrect countries before zeroing in on {post.country_name}:
+            Recorded incorrect guesses for the {post.date} puzzle before players found {post.country_name}:
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
-            {post.game_debrief.common_pitfalls.map((pf: any, idx: number) => (
+            {post.game_debrief.common_pitfalls.map((pf, idx) => (
               <span key={idx} className="rounded border border-rose-500/30 bg-rose-500/10 px-3 py-1 font-mono text-xs text-rose-300">
                 ❌ {pf.guess} <span className="text-rose-400/70 text-[10px]">({pf.count} guesses)</span>
               </span>
@@ -379,9 +378,15 @@ export default function BlogPostPage() {
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.coastline}</span>
               </div>
             )}
+            {Object.entries(facts).filter(([key]) => !['capital', 'population', 'area', 'coastline', 'borders'].includes(key)).map(([key, value]) => (
+              <div key={key} className="rounded border border-white/10 bg-obsidian-900/60 p-3">
+                <span className="block text-[10px] uppercase text-zinc-500">{key.replaceAll('_', ' ')}</span>
+                <span className="mt-0.5 block break-words text-sm font-bold text-sand-100">{value}</span>
+              </div>
+            ))}
           </div>
 
-          {facts.borders && facts.borders !== 'None' && (
+          {facts.borders && (
             <div className="rounded border border-white/10 bg-obsidian-900/40 p-4 text-xs font-mono">
               <span className="text-zinc-500 block text-[10px] uppercase mb-1.5">Bordering Neighbors:</span>
               <span className="text-zinc-300 leading-relaxed">{cleanBorderList(facts.borders)}</span>
@@ -395,10 +400,10 @@ export default function BlogPostPage() {
         <section className="space-y-4">
           <h2 className="font-mono text-xs uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5">
             <Sparkles size={14} />
-            <span>Two Things Worth Knowing</span>
+            <span>Country Curiosities</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {curiosities.slice(0, 2).map((c: any, i: number) => (
+            {curiosities.map((c, i) => (
               <div key={i} className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-5 space-y-2">
                 <span className="font-mono text-[10px] uppercase tracking-wider text-amber-400/80 font-bold block">
                   #{i + 1} &bull; {c.title}
@@ -417,7 +422,7 @@ export default function BlogPostPage() {
         <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-5 space-y-2">
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">
             <Compass size={14} />
-            <span>Curator's Deduction Pro Tip</span>
+            <span>Deduction Tip</span>
           </div>
           <p className="text-xs sm:text-sm leading-relaxed text-zinc-200">
             {cleanDisplayText(proTip)}
@@ -426,18 +431,12 @@ export default function BlogPostPage() {
       )}
 
       {/* Interactive Trivia Knowledge Check */}
-      {((curiosities && curiosities.length > 0) || post.deduction_masterclass?.quiz) && (() => {
-        const quiz = post.deduction_masterclass?.quiz;
-        const questionText = quiz?.question
-          ? cleanDisplayText(quiz.question)
-          : (isPl
-            ? `Które zdanie o ${post.country_name} jest prawdziwe?`
-            : `Which statement about ${post.country_name} is true?`);
-        const correctAnswer = cleanDisplayText(quiz?.correct_answer || curiosities[0]?.description || '');
-        const incorrectDistractor = cleanDisplayText(
-          quiz?.incorrect_distractor || getFalseDistractor(post.country_name, post.continent, facts, isPl)
-        );
-        const explanationText = cleanDisplayText(quiz?.explanation || curiosities[0]?.description || '');
+      {post.deduction_masterclass?.quiz && (() => {
+        const quiz = post.deduction_masterclass.quiz;
+        const questionText = cleanDisplayText(quiz.question);
+        const correctAnswer = cleanDisplayText(quiz.correct_answer);
+        const incorrectDistractor = cleanDisplayText(quiz.incorrect_distractor);
+        const explanationText = cleanDisplayText(quiz.explanation);
 
         const triviaSeed = (post?.id || 0) + (post?.country_name ? post.country_name.length : 0);
         const correctOptionIndex = triviaSeed % 2;
@@ -494,8 +493,18 @@ export default function BlogPostPage() {
         );
       })()}
 
+      {extraSections.length > 0 && <section aria-label="Additional article content" className="space-y-5 text-sm leading-7 text-zinc-300">
+        {extraSections.map((section, index) => {
+          const lines = section.split('\n');
+          const heading = /^#{1,6}\s/.test(lines[0] || '') ? lines.shift()?.replace(/^#{1,6}\s+/, '') : undefined;
+          return <div key={index} className="space-y-3 break-words">
+            {heading && <h2 className="font-serif text-xl text-sand-100">{cleanDisplayText(heading)}</h2>}
+            <p className="whitespace-pre-wrap">{cleanDisplayText(lines.join('\n'))}</p>
+          </div>;
+        })}
+      </section>}
       {/* Compliant Ad Placement */}
-      <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />
+      {reviewed && <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />}
 
       {/* Related Country Recaps Carousel */}
       {post.related_posts && post.related_posts.length > 0 && (
@@ -505,7 +514,7 @@ export default function BlogPostPage() {
             <span>More Recent Country Solutions</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {post.related_posts.map((rp: any) => (
+            {post.related_posts.map((rp) => (
               <Link
                 key={rp.id}
                 to={`/blog/${rp.slug}`}
@@ -547,6 +556,6 @@ export default function BlogPostPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

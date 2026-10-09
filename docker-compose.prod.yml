@@ -98,6 +98,18 @@ services:
     container_name: client
     image: ghcr.io/melzak252/countrydle-frontend:latest
     restart: always
+    # VITE_* advertising flags/inventory are baked into this image by docker-publish.yml.
+    environment:
+      PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
+      PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}
+      PUBLISHER_POLL_SECONDS: ${PUBLISHER_POLL_SECONDS:-60}
+      PUBLISHER_CAPTURE_TIMEOUT: ${PUBLISHER_CAPTURE_TIMEOUT:-45}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
     networks:
       - countrydle
     ports:

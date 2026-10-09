@@ -31,7 +31,9 @@ import type {
 import type { CountryCostReport } from '../types/countryCostReport';
 import { isCountryAvailable } from '../lib/countryEligibility';
 
-export const API_URL = import.meta.env.VITE_API_URL || '/api';
+export const API_URL = typeof window !== 'undefined' && window.__COUNTRYDLE_PRERENDER__ === true
+  ? '/api'
+  : import.meta.env.VITE_API_URL || '/api';
 
 
 const api = axios.create({
@@ -325,6 +327,23 @@ export const flagdleService = {
   },
 };
 
+export interface BlogSourceLink {
+  label: string;
+  url: string;
+}
+
+export interface BlogPostUpdate {
+  title?: string;
+  subtitle?: string;
+  summary?: string;
+  fast_facts?: Record<string, unknown> | null;
+  fun_facts?: Record<string, unknown>[];
+  deduction_masterclass?: Record<string, unknown> | null;
+  content_markdown?: string;
+  source_links?: BlogSourceLink[];
+  editorial_note?: string | null;
+}
+
 export const blogService = {
   getPosts: async (page = 1, limit = 12, search?: string) => {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
@@ -338,6 +357,28 @@ export const blogService = {
   },
   getLatestPost: async () => {
     const response = await api.get('/blog/latest');
+    return response.data;
+  },
+  listAdminPosts: async (page = 1, limit = 12, search?: string) => {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    if (search && search.trim()) params.append('search', search.trim());
+    const response = await api.get(`/blog/admin/posts?${params.toString()}`);
+    return response.data;
+  },
+  getAdminPost: async (id: number) => {
+    const response = await api.get(`/blog/admin/posts/${id}`);
+    return response.data;
+  },
+  updatePost: async (id: number, payload: BlogPostUpdate) => {
+    const response = await api.patch(`/blog/admin/posts/${id}`, payload);
+    return response.data;
+  },
+  reviewPost: async (id: number, expected_updated_at: string) => {
+    const response = await api.post(`/blog/admin/posts/${id}/review`, { expected_updated_at });
+    return response.data;
+  },
+  unreviewPost: async (id: number) => {
+    const response = await api.post(`/blog/admin/posts/${id}/unreview`);
     return response.data;
   },
 };

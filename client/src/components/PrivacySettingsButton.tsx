@@ -1,38 +1,31 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-
-interface GooglePrivacyMessaging {
-  callbackQueue?: {
-    push: (callback: { CONSENT_API_READY: () => void }) => number;
-  };
-  showRevocationMessage?: () => void;
-}
-
-declare global {
-  interface Window {
-    googlefc?: GooglePrivacyMessaging;
-  }
-}
+import { openPrivacySettings } from '../advertising';
 
 export function PrivacySettingsButton({ className }: { className?: string }) {
   const { t } = useTranslation();
+  const [opening, setOpening] = useState(false);
 
-  const openPrivacySettings = () => {
-    const messaging = window.googlefc;
-    const showMessage = messaging?.showRevocationMessage;
+  useEffect(() => {
+    const unavailable = () => toast.error(t('privacySettings.unavailable'), { id: 'privacy-settings-unavailable' });
+    window.addEventListener('countrydle:privacy-unavailable', unavailable);
+    return () => window.removeEventListener('countrydle:privacy-unavailable', unavailable);
+  }, [t]);
 
-    if (!messaging?.callbackQueue || !showMessage) {
-      toast.error(t('privacySettings.unavailable'));
-      return;
+  const open = async () => {
+    setOpening(true);
+    try {
+      await openPrivacySettings();
+    } catch {
+      toast.error(t('privacySettings.unavailable'), { id: 'privacy-settings-unavailable' });
+    } finally {
+      setOpening(false);
     }
-
-    messaging.callbackQueue.push({
-      CONSENT_API_READY: () => showMessage.call(messaging),
-    });
   };
 
   return (
-    <button type="button" onClick={openPrivacySettings} className={className}>
+    <button type="button" onClick={open} disabled={opening} aria-busy={opening} className={className}>
       {t('privacySettings.label')}
     </button>
   );
