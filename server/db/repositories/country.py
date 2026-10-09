@@ -43,7 +43,7 @@ class CountryRepository:
                 ))
             )
             country = result.scalars().first()
-        if country is None or trimmed.lower() not in {
+        if not trimmed or country is None or trimmed.lower() not in {
             country.name.strip().lower(),
             (country.official_name or "").strip().lower(),
         }:

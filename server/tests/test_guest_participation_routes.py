@@ -339,6 +339,7 @@ async def test_countrydle_guest_events_are_reconstructible_by_browser_identity(
     {"guess": "%"},
     {"guess": "Germany", "country_id": 1},
     {"guess": "Germany", "country_id": 999},
+    {"guess": "  ", "country_id": 3},
 ])
 async def test_invalid_country_guess_preserves_last_attempt(
     solo_client, participation_db, mode, authenticated, invalid_guess,
@@ -352,7 +353,7 @@ async def test_invalid_country_guess_preserves_last_attempt(
             id=1, username="first", email="first@example.com", verified=True,
         )
     async with participation_db() as session:
-        session.add(Country(id=3, name="France", official_name="French Republic", md_file="france.md"))
+        session.add(Country(id=3, name="France", official_name=None, md_file="france.md"))
         await session.commit()
 
     for name, country_id in (("Germany", 2), ("France", 3)):
