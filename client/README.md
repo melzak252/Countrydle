@@ -110,6 +110,13 @@ rewrites. Post-game answer reports retain their mode and question identifiers.
 `QuestionInput.tsx` and `GuessInput.tsx` supply the shared forms;
 `GameActionComposer.tsx` hosts the active form in the chat footer.
 
+On desktop, the question form restores typing focus after a submission and after
+mouse clicks or right-clicks on the map. Map interaction during a pending request
+restores focus when the response arrives and the input is available again.
+The draft and caret survive map clicks; rejected submissions retain the draft.
+Map controls, keyboard navigation, guess forms, and touch interactions do not
+trigger this focus restoration. Nothing is focused automatically on page load.
+
 `FactProvenance.tsx` retains the read-only evidence renderer for completed Countrydle
 and continental questions; source links accept only HTTP(S) URLs. It does not restore
 the hardening facts-editor controls. Completed guest history refreshes explanations
@@ -144,6 +151,12 @@ their reason and next step as accessible alerts without making the entire
 conversation a live region. Conversation ordering
 treats timezone-naive API question timestamps as UTC, keeping warnings between
 the questions that precede and follow them rather than grouping warnings last.
+
+The Guess input recognizes question prefixes, including `do …`, and switches back
+to Question with a chat notice rather than submitting a guess. Countrydle and
+continental APIs also reject text that is not a known country, so bypassing the
+client guard cannot consume an attempt. Selecting a valid country can still use
+the preserved final guess.
 
 ## Daily results explorer
 

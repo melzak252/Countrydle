@@ -76,6 +76,7 @@ async def test_guest_reveal_rejected_before_game_over(async_client: AsyncClient)
 
 @pytest.mark.anyio
 async def test_guest_reveal_allowed_after_game_over(async_client: AsyncClient):
+    from db.models import Country
     async_client.cookies.clear()
     with (
         patch(
@@ -96,7 +97,9 @@ async def test_guest_reveal_allowed_after_game_over(async_client: AsyncClient):
         mock_country.id = 100
         mock_country.name = "Poland"
         mock_country.official_name = "Republic of Poland"
-        mock_get_country.return_value = mock_country
+        mock_get_country.side_effect = lambda country_id: mock_country if country_id == 100 else Country(
+            id=99, name="Germany", official_name="Federal Republic of Germany",
+        )
 
         # Make 3 incorrect guesses to reach game over
         for _ in range(3):

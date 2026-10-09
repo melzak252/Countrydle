@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from country_eligibility import excluded_country_names, is_country_eligible
@@ -33,17 +33,28 @@ class CountryRepository:
 
     async def validate_guess(self, country_id: int | None, name: str, mode: str | None = None) -> None:
         trimmed = (name or "").strip()
-        if trimmed.endswith("?") or any(trimmed.lower().startswith(w) for w in ("is ", "czy ", "does ", "what ", "which ", "are ", "can ", "has ")):
+        if country_id is not None and country_id > 0:
+            country = await self.get(country_id)
+        else:
+            result = await self.session.execute(
+                select(Country).where(or_(
+                    func.lower(Country.name) == trimmed.lower(),
+                    func.lower(Country.official_name) == trimmed.lower(),
+                ))
+            )
+            country = result.scalars().first()
+        if not trimmed or country is None or trimmed.lower() not in {
+            country.name.strip().lower(),
+            (country.official_name or "").strip().lower(),
+        }:
             raise HTTPException(
                 status_code=400,
-                detail=f"'{name}' looks like a question. Please use the Question input to ask questions, or select a country to make a guess.",
+                detail="Choose a country from the suggestions. To ask a question, use the Question input. No guess was used.",
             )
         if not is_country_eligible(name, mode):
             raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
-        if country_id is not None and country_id > 0:
-            country = await self.get(country_id)
-            if country and not is_country_eligible(country.name, mode):
-                raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
+        if not is_country_eligible(country.name, mode):
+            raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
 
     async def create_country(self, country: CountryBase) -> Country:
         new_entry = Country(**country.model_dump())

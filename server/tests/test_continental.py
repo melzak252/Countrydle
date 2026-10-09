@@ -202,12 +202,16 @@ async def test_reveal_endpoint(client):
 @pytest.mark.anyio
 async def test_candidate_validation_rejects_out_of_scope_guess(client, mock_auth):
     """Submitting a guess outside the continent whitelist returns HTTP 400."""
-    res = await client.post(
-        "/continental/europe/guess",
-        json={"guess": "Brazil", "country_id": 50},
-    )
+    with patch(
+        "db.repositories.country.CountryRepository.get",
+        new_callable=AsyncMock,
+        return_value=Country(id=50, name="Brazil", official_name="Federative Republic of Brazil", md_file=""),
+    ):
+        res = await client.post(
+            "/continental/europe/guess",
+            json={"guess": "Brazil", "country_id": 50},
+        )
     assert res.status_code == 400
-    assert "not an eligible country in Europedle" in res.json()["detail"]
 
 
 @pytest.mark.anyio

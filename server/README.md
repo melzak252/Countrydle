@@ -246,6 +246,13 @@ Israel is excluded from all country-game targets and guesses. Azerbaijan is
 excluded only from Europedle; it remains available worldwide and in Asia.
 Kosovo is available worldwide, in Europe, in Flagdle, and in country friend duels.
 
+Countrydle and continental guesses must resolve to a stored canonical or official
+country name (trimmed and case-insensitive). A supplied positive country ID must
+identify that same country. Unknown text, blank guesses, questions, unknown IDs, and mismatched
+names/IDs return HTTP `400` before recording an attempt or changing the guest
+cookie, participation totals, or authenticated budget. The same validator also
+checks country guesses imported through guest synchronization.
+
 Startup applies the PostgreSQL migration and provisions Kosovo's sourced SQLite
 facts, CSV entry, and article into the existing mounted data directory. Repeated
 startup preserves subsequent fact edits. Unplayed current/future disabled targets

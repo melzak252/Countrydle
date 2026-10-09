@@ -159,17 +159,22 @@ def test_enhance_guess_with_hint():
 @pytest.mark.anyio
 async def test_countrydle_guess_endpoint_returns_hints(async_client):
     from unittest.mock import AsyncMock, patch, MagicMock
+    from db.models import Country
 
     day_mock = MagicMock(id=1, country_id=100)
-    country_mock = MagicMock(id=100, name="Poland", official_name="Republic of Poland")
+    country_mock = Country(id=100, name="Poland", official_name="Republic of Poland")
 
     with (
         patch("db.repositories.countrydle.CountrydleRepository.get_today_country", AsyncMock(return_value=day_mock)),
-        patch("db.repositories.country.CountryRepository.get", AsyncMock(return_value=country_mock)),
+        patch("db.repositories.country.CountryRepository.get", AsyncMock(side_effect=lambda country_id: country_mock if country_id == 100 else Country(
+            id=country_id,
+            name="Spain" if country_id == 101 else "Germany",
+            official_name="Kingdom of Spain" if country_id == 101 else "Federal Republic of Germany",
+        ))),
         patch("utils.geo.get_entity_coordinates", side_effect=lambda mode, entity_id=None, name=None, **kw: (52.0, 20.0) if (entity_id == 100 or name == "Poland") else (40.4, -3.7)),
     ):
         # Guess 1: Spain (Incorrect) -> guest cookie path
-        resp1 = await async_client.post("/countrydle/guess", json={"guess": "Spain"})
+        resp1 = await async_client.post("/countrydle/guess", json={"guess": "Spain", "country_id": 101})
         assert resp1.status_code == 200
         data1 = resp1.json()
         assert data1["answer"] is False
@@ -180,7 +185,7 @@ async def test_countrydle_guess_endpoint_returns_hints(async_client):
         # Guess 2: with cookie -> should return distance AND direction
         cookie = resp1.headers.get("set-cookie", "")
         headers = {"cookie": cookie} if cookie else {}
-        resp2 = await async_client.post("/countrydle/guess", json={"guess": "Germany"}, headers=headers)
+        resp2 = await async_client.post("/countrydle/guess", json={"guess": "Germany", "country_id": 102}, headers=headers)
         assert resp2.status_code == 200
         data2 = resp2.json()
         assert data2["answer"] is False

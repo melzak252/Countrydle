@@ -217,7 +217,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
   };
 
   const handleGuessWarning = (input: string) => {
-    const isQuestion = input.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(input.trim());
+    const isQuestion = input.trim().endsWith('?') || /^(?:is\s|czy\s|does\s|do\s|what\s|which\s|are\s|can\s|has\s|have\s)/i.test(input.trim());
     if (isQuestion) {
       addNotice({
         action: 'guess',
