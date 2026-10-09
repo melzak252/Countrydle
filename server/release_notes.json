@@ -1,5 +1,5 @@
 {
-  "version": "1.25.4",
-  "title": "Map interaction and question focus",
-  "body": "- On desktop, the question field restores typing focus after submissions and mouse clicks or right-clicks on the map.\n- Map interactions during a pending question restore focus when the response arrives and the input is available again.\n- Map clicks preserve the draft and caret, and rejected submissions retain the draft.\n- Map controls, keyboard navigation, other forms, and touch interactions do not trigger map-click focus restoration; page load does not autofocus the question field.\n\nThis release also includes the previously prepared persistent disk-backed question-plan and flag-SVG caches. Saved player progress, game rules, and question and guess limits are unchanged."
+  "version": "1.25.5",
+  "title": "Country guess validation",
+  "body": "- Countrydle and continental games reject unknown text and mismatched country names and IDs before recording a guess or consuming an attempt.\n- Canonical and official country names are matched exactly, ignoring case and surrounding whitespace; wildcard text and blank guesses are rejected.\n- Questions beginning with do are recognized in the Guess input and redirected to the Question tab with a notice rather than submitted as guesses.\n- Guest synchronization uses the same country validator.\n\nThis release retains the desktop map/question-focus fix and persistent disk-backed caches from the previously prepared releases. Saved player progress and game limits are unchanged."
 }
