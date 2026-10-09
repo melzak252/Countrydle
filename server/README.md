@@ -248,7 +248,7 @@ Kosovo is available worldwide, in Europe, in Flagdle, and in country friend duel
 
 Countrydle and continental guesses must resolve to a stored canonical or official
 country name (trimmed and case-insensitive). A supplied positive country ID must
-identify that same country. Unknown text, questions, unknown IDs, and mismatched
+identify that same country. Unknown text, blank guesses, questions, unknown IDs, and mismatched
 names/IDs return HTTP `400` before recording an attempt or changing the guest
 cookie, participation totals, or authenticated budget. The same validator also
 checks country guesses imported through guest synchronization.
