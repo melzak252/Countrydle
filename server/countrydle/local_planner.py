@@ -447,6 +447,16 @@ def analyze_question_for_local_plan(
         evidence.setdefault("provider_attempts", 0)
     if cached is not None:
         return replace(cached, original_question=question)
+    from utils.water_hierarchy import is_multi_ocean_question, build_multi_ocean_plan
+    if is_multi_ocean_question(question):
+        return QuestionPlan(
+            original_question=question,
+            valid=True,
+            supported=True,
+            improved_question="Does the country have access to two or more oceans?",
+            explanation=None,
+            plan=build_multi_ocean_plan("target_country"),
+        )
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         if strict_errors:

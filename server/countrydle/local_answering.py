@@ -407,6 +407,8 @@ from utils.water_hierarchy import (
     is_marine_water_body,
     get_water_body_parents,
     expand_water_bodies,
+    is_multi_ocean_question,
+    get_distinct_oceans,
 )
 VALUE_ALIASES = {
     "baltyk": "Baltic Sea",
@@ -910,6 +912,25 @@ class LocalCountryFacts:
         if not any(word in q for word in ("sea", "ocean", "morze", "ocean", "dostep", "coast", "coastline", "wybrzez", "nad ")):
             return None
         direct_waters = {r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))}
+        if is_multi_ocean_question(q) or is_multi_ocean_question(original):
+            oceans = sorted(get_distinct_oceans(direct_waters))
+            count = len(oceans)
+            answer = count >= 2
+            if count >= 2:
+                explanation = f"{country['app_country_name']} has access to {count} oceans: {', '.join(oceans)}."
+            elif count == 1:
+                explanation = f"{country['app_country_name']} has access to only 1 ocean: {oceans[0]}."
+            else:
+                if direct_waters:
+                    explanation = f"{country['app_country_name']} has no direct open ocean access. Its recorded coastline: {', '.join(sorted(direct_waters))}."
+                else:
+                    explanation = f"{country['app_country_name']} is completely landlocked with no ocean access."
+            return LocalAnswer(
+                question="Does the country have access to two or more oceans?",
+                answer=answer,
+                explanation=explanation,
+                relation="water_access",
+            )
         waters = expand_water_bodies(direct_waters)
         all_waters = [r[0] for r in conn.execute("SELECT DISTINCT water_body FROM country_water_access")]
         for w in list(all_waters):

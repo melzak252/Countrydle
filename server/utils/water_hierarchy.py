@@ -329,3 +329,49 @@ def canonicalize_water_body(query_str: str) -> str | None:
         if _norm(canonical) in norm_q:
             return canonical
     return None
+WORLD_OCEANS: frozenset[str] = frozenset({
+    "Atlantic Ocean", "Pacific Ocean", "Indian Ocean", "Arctic Ocean", "Southern Ocean",
+})
+
+MULTI_OCEAN_PATTERNS: tuple[str, ...] = (
+    r"\b(?:two|2|multiple|more than one)\s+oceans?\b",
+    r"\b(?:dw(?:a|och|óch|oma|e))\s+ocean(?:y|ow|ów|ami)?\b",
+    r"\bwi[eę]cej\s+ni[zż]\s+jedn(?:ego|ym)\s+ocean(?:u|em)?\b",
+    r"\b(?:oba|obu|obydwa|obydwu|obydwoma)\s+ocean(?:y|ow|ów|ami)?\b",
+    r"\bboth\s+oceans?\b",
+)
+
+
+def is_multi_ocean_question(question: str) -> bool:
+    """Check whether a question asks whether an entity has access to two or multiple oceans."""
+    return any(re.search(pattern, question, re.I) for pattern in MULTI_OCEAN_PATTERNS)
+
+
+def get_distinct_oceans(water_bodies: set[str] | list[str]) -> set[str]:
+    """Get the set of distinct open world oceans a location has direct or indirect access to."""
+    oceans: set[str] = set()
+    for w in water_bodies:
+        if not is_marine_water_body(w):
+            continue
+        if w in WORLD_OCEANS:
+            oceans.add(w)
+        for p in get_water_body_parents(w):
+            if p in WORLD_OCEANS:
+                oceans.add(p)
+    return oceans
+
+
+def build_multi_ocean_plan(target_entity: str = "target_country") -> dict:
+    """Build a tree-form AST checking whether target_entity has access to 2 or more oceans."""
+    oceans = ["Atlantic Ocean", "Pacific Ocean", "Indian Ocean", "Arctic Ocean"]
+    pairs = []
+    for i in range(len(oceans)):
+        for j in range(i + 1, len(oceans)):
+            pairs.append({
+                "operator": "and",
+                "conditions": [
+                    {"operator": "contains", "left": {"entity": target_entity, "relation": "water_access"}, "right": {"value": oceans[i]}},
+                    {"operator": "contains", "left": {"entity": target_entity, "relation": "water_access"}, "right": {"value": oceans[j]}},
+                ]
+            })
+    return {"operator": "or", "conditions": pairs}

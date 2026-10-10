@@ -273,3 +273,104 @@ def test_powiat_water_access_baltic():
 
     ans_krk = execute_mode_plan(POWIAT_CONFIG, "Powiat krakowski", plan_baltic)
     assert ans_krk.answer is False
+
+# ---------------------------------------------------------------------------
+# Multi-ocean / Two oceans query tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("question", [
+    "Does it have access to two oceans?",
+    "Does the country border two oceans?",
+    "Does it touch two oceans?",
+    "Does the country border 2 oceans?",
+    "Does it have access to more than one ocean?",
+    "Does it border multiple oceans?",
+    "Does it touch both oceans?",
+    "Czy ma dostęp do dwóch oceanów?",
+    "Czy graniczy z dwoma oceanami?",
+    "Czy leży nad dwoma oceanami?",
+    "Czy ma dostęp do więcej niż jednego oceanu?",
+])
+def test_two_oceans_pattern_matching_english_and_polish(question):
+    from utils.water_hierarchy import is_multi_ocean_question
+    assert is_multi_ocean_question(question) is True
+
+
+@pytest.mark.parametrize("question", [
+    "Does it have access to an ocean?",
+    "Does it border the Atlantic Ocean?",
+    "Does it have access to the Pacific Ocean?",
+    "Does it have access to the ocean?",
+    "Does it have access to the sea?",
+    "Czy ma dostęp do oceanu?",
+    "Czy graniczy z oceanem?",
+    "Czy ma dostęp do morza?",
+])
+def test_single_ocean_queries_are_not_multi_ocean(question):
+    from utils.water_hierarchy import is_multi_ocean_question
+    assert is_multi_ocean_question(question) is False
+
+
+@pytest.mark.parametrize("country, expected", [
+    ("Nicaragua", True),
+    ("Australia", True),
+    ("Canada", True),
+    ("Colombia", True),
+    ("Costa Rica", True),
+    ("Egypt", True),
+    ("Honduras", True),
+    ("Indonesia", True),
+    ("Mexico", True),
+    ("Norway", True),
+    ("Panama", True),
+    ("Russia", True),
+    ("South Africa", True),
+    ("Thailand", True),
+    ("United States", True),
+    ("Poland", False),
+    ("France", False),
+    ("Germany", False),
+    ("Japan", False),
+    ("Brazil", False),
+    ("Chile", False),
+    ("India", False),
+    ("Italy", False),
+    ("Spain", False),
+    ("Czech Republic", False),
+    ("Kazakhstan", False),
+    ("Mali", False),
+])
+def test_multi_ocean_countrydle_evaluation(country, expected):
+    for q in ("Does it have access to two oceans?", "Does the country border two oceans?", "Czy ma dostęp do dwóch oceanów?"):
+        ans = try_answer_locally(q, country)
+        assert ans is not None, f"Expected local answer for {country} with {q}"
+        assert ans.answer is expected, f"Failed on {country} for {q}: got {ans.answer}, expected {expected}"
+        if expected:
+            assert "oceans:" in ans.explanation
+        elif "landlocked" in ans.explanation or "no direct open ocean access" in ans.explanation:
+            pass
+        else:
+            assert "only 1 ocean:" in ans.explanation
+
+def test_multi_ocean_us_states_evaluation():
+    from local_kb_question import analyze_question, execute_plan
+    from us_statedle.utils import LOCAL_CONFIG as US_CONFIG
+
+    plan = analyze_question("Does the state border two oceans?", US_CONFIG, use_cache=False)
+    assert plan.supported is True
+
+    ans_ak = execute_plan(US_CONFIG, "Alaska", plan)
+    assert ans_ak.answer is True
+    assert "2 oceans" in ans_ak.explanation
+
+    ans_ca = execute_plan(US_CONFIG, "California", plan)
+    assert ans_ca.answer is False
+    assert "only 1 ocean" in ans_ca.explanation
+
+    ans_tx = execute_plan(US_CONFIG, "Texas", plan)
+    assert ans_tx.answer is False
+    assert "only 1 ocean" in ans_tx.explanation
+
+    ans_ks = execute_plan(US_CONFIG, "Kansas", plan)
+    assert ans_ks.answer is False
+    assert "inland" in ans_ks.explanation

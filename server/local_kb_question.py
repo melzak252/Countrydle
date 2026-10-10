@@ -102,6 +102,21 @@ def analyze_question(
         evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)
     if cached is not None:
         return replace(cached, original_question=question)
+    from utils.water_hierarchy import is_multi_ocean_question, build_multi_ocean_plan
+    if is_multi_ocean_question(question):
+        improved = (
+            "Does the state have access to two or more oceans?"
+            if config.mode_name == "USStatedle"
+            else "Czy jednostka ma dostęp do dwóch lub więcej oceanów?"
+        )
+        return QuestionPlan(
+            original_question=question,
+            valid=True,
+            supported=True,
+            improved_question=improved,
+            explanation="Deterministic multi-ocean query resolution.",
+            plan=build_multi_ocean_plan(config.target_entity),
+        )
 
     try:
         from generic_template_compiler import compile_generic_template_plan
@@ -696,6 +711,17 @@ def generate_mode_explanation(
     subject_row = _reference_row(conn, config, target_row, left, item_value)
     row = subject_row if subject_row is not None else target_row
     name = row[config.name_column]
+    from utils.water_hierarchy import is_multi_ocean_question, get_distinct_oceans
+    if is_multi_ocean_question(plan.original_question):
+        direct_waters = [r[0] for r in conn.execute(f"SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))] if config.mode_name == "USStatedle" else []
+        oceans = sorted(get_distinct_oceans(direct_waters))
+        count = len(oceans)
+        if count >= 2:
+            return f"{verdict} - {name} has coastline access to {count} oceans: {', '.join(oceans)}."
+        elif count == 1:
+            return f"{verdict} - {name} has coastline access to only 1 ocean: {oceans[0]}."
+        else:
+            return f"{verdict} - {name} is an inland state with no ocean coastline."
 
     def value_text(value: Any) -> str:
         if value is None or isinstance(value, dict):
@@ -965,8 +991,17 @@ def generate_mode_explanation(
         if rel == "is_coastal":
             return f"{name} is a coastal state with ocean/gulf coastline." if row[config.scalar_relations[rel]] else f"{name} is an inland state with no ocean coastline."
         if rel == "water_access":
-            from utils.water_hierarchy import WATER_BODY_PARENT_MAP
+            from utils.water_hierarchy import WATER_BODY_PARENT_MAP, is_multi_ocean_question, get_distinct_oceans
             direct_waters = [r[0] for r in conn.execute(f"SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
+            if is_multi_ocean_question(plan.original_question):
+                oceans = sorted(get_distinct_oceans(direct_waters))
+                count = len(oceans)
+                if count >= 2:
+                    return f"{name} has coastline access to {count} oceans: {', '.join(oceans)}."
+                elif count == 1:
+                    return f"{name} has coastline access to only 1 ocean: {oceans[0]}."
+                else:
+                    return f"{name} is an inland state with no ocean coastline."
             if val:
                 via_sub = [w for w in direct_waters if w in WATER_BODY_PARENT_MAP and val in WATER_BODY_PARENT_MAP[w]]
                 via_str = f" (via the {', '.join(via_sub)})" if via_sub and val not in direct_waters else ""
