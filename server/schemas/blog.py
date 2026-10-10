@@ -210,6 +210,7 @@ class CommunityGameDebrief(BaseModel):
     avg_guesses: float = 0.0
     high_score: Optional[int] = None
     top_questions: List[TopQuestionStat] = []
+    top_winner_questions: List[TopQuestionStat] = Field(default_factory=list)
     common_pitfalls: List[WrongGuessStat] = []
     decisive_clue: Optional[str] = None
 

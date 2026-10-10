@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { additionalArticleSections, blogDeductionSchema, blogListSchema, blogPostSchema, cleanDisplayText } from '../src/blogContent';
+import { blogDeductionSchema, blogListSchema, blogPostSchema, cleanDisplayText } from '../src/blogContent';
 
 function storedArticle(quiz: unknown) {
   return {
@@ -20,6 +20,7 @@ function storedArticle(quiz: unknown) {
     game_debrief: {
       has_telemetry: true, total_challengers: 20, total_solvers: 15, win_rate_pct: 75,
       avg_questions_to_win: 4, top_questions: [{ question: 'Is it in Europe?', answer: 'YES', count: 8, pct: 40, explanation: 'The stored answer is YES.' }],
+      top_winner_questions: [{ question: 'Is it in Europe?', answer: 'YES', count: 6 }],
       common_pitfalls: [{ guess: 'Germany', count: 2 }],
     },
   };
@@ -48,8 +49,6 @@ test('question-only historical quiz keeps useful article content and unchanged r
   expect(post.source_links).toEqual(stored.source_links);
   expect(post.editorial_note).toContain('[citation needed]');
   expect(post.game_debrief?.top_questions[0]).toEqual(stored.game_debrief.top_questions[0]);
-  expect(additionalArticleSections(post).join('\n')).toContain('An unresolved claim remains [citation needed].');
-  expect(additionalArticleSections(post).join('\n')).toContain('A substantive paragraph not repeated');
   // Admin/editor validation remains strict rather than saving the public repair view.
   expect(blogDeductionSchema.safeParse(stored.deduction_masterclass).success).toBe(false);
 });
@@ -145,30 +144,7 @@ test('an omitted quiz is legitimate and does not claim editorial repair is neede
   expect(blogDeductionSchema.safeParse(deduction).success).toBe(true);
 });
 
-for (const heading of [
-  '## Population [citation needed]',
-  '## Population \\[citation needed\\]',
-  '## Population [1]',
-]) {
-  test(`heading annotation ${JSON.stringify(heading)} stays attached to its repeated claim`, () => {
-    const stored = {
-      ...storedArticle(completeQuiz),
-      fast_facts: { capital: 'Warsaw', population: '1 million' },
-      content_markdown: `${heading}\nPopulation: 1 million`,
-    };
-    const sections = additionalArticleSections(blogPostSchema.parse(stored));
-    expect(sections).toEqual([stored.content_markdown]);
-  });
-}
 
-test('unannotated claims already displayed in the facts panel remain deduplicated', () => {
-  const stored = {
-    ...storedArticle(completeQuiz),
-    fast_facts: { capital: 'Warsaw', population: '1 million' },
-    content_markdown: '## Population\nPopulation: 1 million',
-  };
-  expect(additionalArticleSections(blogPostSchema.parse(stored))).toEqual([]);
-});
 
 for (const field of ['question', 'correct_answer', 'incorrect_distractor', 'explanation'] as const) {
   test(`display-blank ${field} cannot be saved and historical raw content remains repairable`, () => {

@@ -158,7 +158,7 @@ export default function BlogListPage() {
               {isPl ? 'Dziennik krajów' : 'Country journal'}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400 md:text-base">
-              {isPl ? 'Poznaj rozwiązania z poprzednich dni, dedukcję i pytania społeczności. Każdy artykuł wskazuje stan weryfikacji redakcyjnej i dostępne źródła.' : 'Explore past-day solutions, country-specific reasoning and community questions. Each recap labels its editorial status and available sources.'}
+              {isPl ? 'Poznaj rozwiązania z poprzednich dni, dedukcję i pytania społeczności oraz źródła zapisane w artykułach.' : 'Explore past-day solutions, country-specific reasoning, community questions and sources recorded in the articles.'}
             </p>
           </div>
           <div className="min-w-0">

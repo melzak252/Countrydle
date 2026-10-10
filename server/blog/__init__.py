@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db import get_db
 from db.models.countrydle import CountrydleDay, CountrydleQuestion, CountrydleGuess, CountrydleState
 from db.models.blog import DailyBlogPost
+from db.models.guest_participation import GuestParticipation
 from db.models.user import User
 from db.repositories.blog import BlogRepository
 from db.repositories.countrydle import CountrydleRepository
@@ -13,7 +14,7 @@ from db.repositories.participation import ParticipationRepository
 from schemas.blog import BlogPostDisplay, BlogPostEditInput, BlogPostListResponse, BlogPostSummary, BlogPostUpdate, BlogReviewInput, CommunityGameDebrief, TopQuestionStat, WrongGuessStat
 from pydantic import ValidationError
 from users.utils import get_admin_user
-from sqlalchemy import func, desc, select, or_
+from sqlalchemy import func, desc, select, and_, or_
 from utils.blog_generator import create_daily_blog_post
 from utils.country_codes import get_country_code
 from functools import lru_cache
@@ -116,34 +117,62 @@ async def get_day_community_telemetry(session: AsyncSession, post_date: date) ->
             )
         )
         high_score = high_score_res.scalar_one_or_none()
-        # 2. Top community questions
-        top_questions = []
-        try:
-            q_res = await session.execute(
-                select(
-                    CountrydleQuestion.question,
-                    CountrydleQuestion.answer,
-                    CountrydleQuestion.explanation,
-                    func.count(CountrydleQuestion.id).label('cnt')
-                )
-                .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
-                .group_by(CountrydleQuestion.question, CountrydleQuestion.answer, CountrydleQuestion.explanation)
-                .order_by(desc('cnt'))
-                .limit(6)
+        # 2. Rank valid recorded questions independently for all players and winners.
+        # EXISTS keeps linked guest participation from multiplying question rows.
+        authenticated_winner = (
+            select(CountrydleState.id)
+            .where(
+                CountrydleState.user_id == CountrydleQuestion.user_id,
+                CountrydleState.day_id == day.id,
+                CountrydleState.won.is_(True),
             )
-            for q in q_res.all():
-                pct = min(100, round(q.cnt / tot_players * 100)) if tot_players > 0 else None
-                top_questions.append(
-                    TopQuestionStat(
-                        question=q.question or "",
-                        answer="YES" if q.answer else "NO",
-                        count=q.cnt,
-                        pct=pct,
-                        explanation=q.explanation
+            .exists()
+        )
+        guest_winner = (
+            select(GuestParticipation.id)
+            .where(
+                GuestParticipation.guest_id == CountrydleQuestion.guest_id,
+                GuestParticipation.mode == "countrydle",
+                GuestParticipation.day_id == day.id,
+                GuestParticipation.won.is_(True),
+            )
+            .exists()
+        )
+        ranked_questions = (
+            select(
+                CountrydleQuestion.question,
+                CountrydleQuestion.answer,
+                func.count(CountrydleQuestion.id).label('cnt'),
+            )
+            .where(CountrydleQuestion.day_id == day.id, CountrydleQuestion.valid.is_(True))
+            .group_by(CountrydleQuestion.question, CountrydleQuestion.answer)
+            .order_by(desc('cnt'), CountrydleQuestion.question.asc(), CountrydleQuestion.answer.asc())
+            .limit(6)
+        )
+        winner_questions = ranked_questions.where(
+            or_(
+                authenticated_winner,
+                and_(CountrydleQuestion.user_id.is_(None), guest_winner),
+            )
+        )
+        top_questions = []
+        top_winner_questions = []
+        for query, questions, audience in (
+            (ranked_questions, top_questions, "community"),
+            (winner_questions, top_winner_questions, "winner"),
+        ):
+            try:
+                q_res = await session.execute(query)
+                for q in q_res.all():
+                    questions.append(
+                        TopQuestionStat(
+                            question=q.question or "",
+                            answer="UNKNOWN" if q.answer is None else ("YES" if q.answer else "NO"),
+                            count=q.cnt,
+                        )
                     )
-                )
-        except Exception as q_exc:
-            logger.debug("Could not query top questions for %s: %s", post_date, q_exc)
+            except Exception as q_exc:
+                logger.debug("Could not query top %s questions for %s: %s", audience, post_date, q_exc)
 
         # 3. Common wrong guesses
         pitfalls = []
@@ -172,6 +201,7 @@ async def get_day_community_telemetry(session: AsyncSession, post_date: date) ->
             avg_guesses=avg_g,
             high_score=high_score,
             top_questions=top_questions,
+            top_winner_questions=top_winner_questions,
             common_pitfalls=pitfalls,
             decisive_clue=top_questions[-1].question if top_questions else None
         )

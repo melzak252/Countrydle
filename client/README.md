@@ -30,14 +30,23 @@ the page, and reduced-motion mode starts paused.
 The other-games link stays on a separate line with 1rem of top spacing.
 
 The country journal keeps search visible and groups continent, difficulty and
-sorting controls in one disclosure. Article facts and curiosities precede
-optional statistics/deduction; sharing and related articles remain available.
+sorting controls in one disclosure. Articles use the country-name hero, compact
+dark facts cards and the earlier two-curiosity treatment. Facts and curiosities
+precede optional daily statistics and two independently ranked question lists:
+most common overall and most common among recorded winners. Sharing, source
+links and related articles remain available. Rankings display real recorded
+questions, submission counts and YES/NO answer badges; unknown recorded answers
+use a neutral badge. Counts are submissions, not unique players, and percentages
+are not displayed. Empty lists say that recorded data is unavailable; generated
+deduction steps, explanations, pro tips and long summary/analysis panels are not
+used as fallbacks. Stored article content is not rewritten by this presentation.
 Trivia appears only when a real quiz was recorded; no distractors are invented.
-Public and editor response contracts share `src/blogContent.ts` Zod schemas. Distinct
-recorded community answers, explanations, counts and citation warnings remain
-visible without repeating the same deduction question. The question inspector
-stacks its tabs on phones and confines JSON/SQL scrolling to labelled, focusable
-code panels.
+Public and editor response contracts share `src/blogContent.ts` Zod schemas.
+When `game_debrief` is present, the native API payload must contain both
+`top_questions` and `top_winner_questions`; there is no old-payload rollout shim.
+Past-day, retry, editorial-review and advertising gates remain unchanged.
+The question inspector stacks its tabs on phones and confines JSON/SQL scrolling
+to labelled, focusable code panels.
 The Americas filter includes articles tagged North America, South America or
 Americas, while still combining with the search and difficulty filters.
 
@@ -577,16 +586,16 @@ and URLs exceeding the normalized limit are rejected before mutation. Incomplete
 historical or display-identical quiz answers show an honest unavailable/repair
 notice while preserving factual article text and raw editable JSON for admin
 repair; no answers or distractors are fabricated. Unknown historical `created_at`
-stays null, displays publication time as unavailable and omits `datePublished`
-from metadata rather than inventing a date. Real `updated_at` remains available.
+stays null and omits `datePublished` from metadata rather than inventing a date.
+Real `updated_at` remains available in metadata and the admin workflow.
 Quiz nonblank validation uses the client's display-whitespace set: U+FEFF-only
 fields cannot be saved or approved from historical storage. Heading annotations
 retain their whole qualified section, including repeated facts; ordinary
 unannotated duplicate claims are still removed.
-Public recaps distinguish AI assistance, review and real source evidence;
-citation-needed markers remain visible. Update timestamps are not measurement
-years: check reference dates in sources rather than treating undated facts as
-current.
+Public recaps retain real source links when recorded and citation-needed markers
+in article content. The article view does not display the editorial disclosure
+block, editorial notes, or publication/update timestamps. Review controls and
+advertising eligibility remain independent of that presentation.
 
 ### Explicit inventory and consent
 

@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Sparkles, 
-  Compass, 
   Globe, 
   Play, 
   Share2, 
@@ -18,7 +17,7 @@ import AdSenseUnit from '../components/AdSenseUnit';
 import { isAxiosError } from 'axios';
 import { setPageEditorialEligibility } from '../advertising';
 import { usePageMetadata } from '../lib/pageMetadata';
-import { blogPostSchema, cleanDisplayText, safeSourceUrl, additionalArticleSections, type BlogPost } from '../blogContent';
+import { blogPostSchema, cleanDisplayText, safeSourceUrl, type BlogPost } from '../blogContent';
 
 
 function cleanBorderList(bordersStr?: string | number): string {
@@ -155,26 +154,21 @@ export default function BlogPostPage() {
   }
 
   const post = loadedPost;
-  const stepsByQuestion = new Map<string, { question: string; answer?: string; explanation?: string }>();
-  for (const step of post.deduction_masterclass?.steps || []) {
-    const key = step.question.trim().toLowerCase();
-    if (!key) continue;
-    const existing = stepsByQuestion.get(key);
-    if (!existing) stepsByQuestion.set(key, { question: step.question, answer: step.answer, explanation: step.explanation });
-    else {
-      if (step.explanation && !existing.explanation?.includes(step.explanation)) existing.explanation = [existing.explanation, step.explanation].filter(Boolean).join('\n');
-      if (step.answer && !existing.answer?.split(' / ').includes(step.answer)) existing.answer = [existing.answer, step.answer].filter(Boolean).join(' / ');
-    }
-  }
-  const steps = [...stepsByQuestion.values()];
-  const proTip = post.deduction_masterclass?.pro_tip || '';
   const curiosities = post.fun_facts || [];
-  const extraSections = additionalArticleSections(post);
   const sourceLinks = post.source_links.map((source) => ({ ...source, safeUrl: safeSourceUrl(source.url) }));
   const facts = post.fast_facts || {};
-  const otherCommunityQuestions = post.game_debrief?.has_telemetry
-    ? post.game_debrief.top_questions.filter((question) => !steps.some((step) => step.question.trim().toLowerCase() === question.question.trim().toLowerCase()))
-    : [];
+  const questionLists = [
+    {
+      title: isPl ? 'Najczęstsze pytania wszystkich graczy' : 'Most common questions overall',
+      questions: post.game_debrief?.top_questions ?? [],
+      empty: isPl ? 'Brak zapisanych pytań dla tej dziennej zagadki.' : 'No recorded questions are available for this daily puzzle.',
+    },
+    {
+      title: isPl ? 'Najczęstsze pytania zwycięzców' : 'Most common questions asked by winners',
+      questions: post.game_debrief?.top_winner_questions ?? [],
+      empty: isPl ? 'Brak zapisanych pytań powiązanych ze zwycięzcami tej dziennej zagadki.' : 'No recorded questions linked to winners are available for this daily puzzle.',
+    },
+  ];
 
   const localizedMeta = (value: string): string => {
     if (!isPl) return value;
@@ -249,7 +243,7 @@ export default function BlogPostPage() {
             </div>
 
             <h1 className="min-w-0 break-words font-serif text-2xl font-bold leading-tight tracking-tight text-sand-100 sm:text-4xl md:text-5xl">
-              {post.title}
+              {post.country_name}
             </h1>
 
             {post.subtitle && (
@@ -261,19 +255,14 @@ export default function BlogPostPage() {
           </div>
         </div>
       </header>
-      <section aria-label="Editorial provenance" className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 space-y-3 text-sm text-zinc-300 sm:p-5">
-        <p className="font-semibold text-sand-100">{post.ai_assisted ? 'AI-assisted recap' : 'Countrydle recap'} · {reviewed ? 'Editorially reviewed' : 'Not yet editorially reviewed'}</p>
-        {reviewed ? <p>Reviewed by {post.reviewer_name} on <time dateTime={post.reviewed_at || undefined}>{post.reviewed_at}</time>.</p> : <p>Geographical claims and deduction advice may need verification. This page does not carry advertising until an editor reviews it.</p>}
-        <p>{post.created_at ? <>Published <time dateTime={post.created_at}>{post.created_at}</time></> : 'Publication timestamp unavailable'} · Updated <time dateTime={post.updated_at}>{post.updated_at}</time></p>
-        <p>These timestamps record article changes, not the measurement year of population or other changing statistics. Check the cited source for its reference date; a figure without one is undated.</p>
-        {post.editorial_note && <p className="whitespace-pre-wrap">{post.editorial_note}</p>}
-        {sourceLinks.length ? (
-          <div><h2 className="font-semibold text-sand-100">Sources</h2><ul className="mt-2 space-y-1">
+      {sourceLinks.length > 0 && (
+        <section aria-label="Sources" className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 text-sm text-zinc-300 sm:p-5">
+          <h2 className="font-semibold text-sand-100">Sources</h2>
+          <ul className="mt-2 space-y-1">
             {sourceLinks.map((source, index) => <li key={index}>{source.safeUrl ? <a href={source.safeUrl} target="_blank" rel="noopener noreferrer" className="break-words text-emerald-300 underline">{source.label}</a> : <span>{source.label} — source URL unavailable</span>}</li>)}
-          </ul></div>
-        ) : <p className="text-amber-300">No source links have been recorded for this recap. Treat factual claims as unverified.</p>}
-      </section>
-      {post.summary && <p className="text-base leading-7 text-zinc-300">{post.summary}</p>}
+          </ul>
+        </section>
+      )}
 
 
       {/* Quick Facts Grid */}
@@ -307,15 +296,9 @@ export default function BlogPostPage() {
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.coastline}</span>
               </div>
             )}
-            {Object.entries(facts).filter(([key]) => !['capital', 'population', 'area', 'coastline', 'borders'].includes(key)).map(([key, value]) => (
-              <div key={key} className="rounded border border-white/10 bg-obsidian-900/60 p-3">
-                <span className="block text-[10px] uppercase text-zinc-500">{key.replaceAll('_', ' ')}</span>
-                <span className="mt-0.5 block break-words text-sm font-bold text-sand-100">{value}</span>
-              </div>
-            ))}
           </div>
 
-          {facts.borders && (
+          {facts.borders && facts.borders !== 'None' && (
             <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/40 p-4 text-sm">
               <span className="text-zinc-400 block text-xs mb-1.5">{isPl ? 'Sąsiednie kraje' : 'Bordering neighbors'}</span>
               <span className="break-words text-zinc-300 leading-6">{cleanBorderList(facts.borders)}</span>
@@ -329,10 +312,10 @@ export default function BlogPostPage() {
         <section className="space-y-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-amber-300">
             <Sparkles size={18} className="shrink-0" />
-            <span>{isPl ? 'Ciekawostki o kraju' : 'Country curiosities'}</span>
+            <span>{isPl ? 'Dwie rzeczy warte poznania' : 'Two things worth knowing'}</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {curiosities.map((c, i) => (
+            {curiosities.slice(0, 2).map((c, i) => (
               <div key={i} className="min-w-0 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-2 sm:p-5">
                 <span className="block break-words text-base font-semibold leading-6 text-amber-300">
                   #{i + 1} &bull; {c.title}
@@ -345,10 +328,10 @@ export default function BlogPostPage() {
           </div>
         </section>
       )}
-      {/* Community Question Telemetry / Deduction Ladder */}
+      {/* Recorded daily question rankings */}
       <details className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60">
         <summary className="min-h-11 cursor-pointer px-4 py-4 text-base font-semibold text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 sm:px-6">
-          {isPl ? 'Jak grali inni? Statystyki i dedukcja' : 'How did others play? Stats and deduction'}
+          {isPl ? 'Jak grali inni? Statystyki i pytania' : 'How did others play? Stats and questions'}
         </summary>
         <div className="min-w-0 space-y-5 border-t border-white/10 p-4 sm:p-6">
           <div className="flex min-w-0 flex-wrap gap-x-5 gap-y-3 rounded-md border border-white/10 bg-obsidian-950 p-4 text-sm leading-6 text-zinc-400">
@@ -385,56 +368,40 @@ export default function BlogPostPage() {
               <span className="min-w-0 break-words">{isPl ? 'Podsumowanie dziennej zagadki' : 'Daily puzzle recap'} #{post.id}</span>
             )}
           </div>
-          {/* Analysis is not replaced by aggregate question telemetry. */}
-          {steps.length > 0 && (
-            <section className="min-w-0 space-y-4">
-              <h2 className="text-lg font-semibold leading-snug text-sand-100">
-                {isPl ? `Ścieżka dedukcji: ${post.country_name}` : `Deduction path for ${post.country_name}`}
-              </h2>
-              <p className="text-sm text-zinc-400">
-                {isPl ? 'Proponowana sekwencja rozumowania, nie zmierzona strategia optymalna.' : 'A suggested reasoning sequence, not a measured optimal strategy.'}
-              </p>
-              <ol className="space-y-3">
-                {steps.map((step, index) => {
-                  const evidence = post.game_debrief?.has_telemetry ? post.game_debrief.top_questions.filter((question) => question.question.trim().toLowerCase() === step.question.trim().toLowerCase()) : [];
-                  return (
-                    <li key={index} className="flex min-w-0 items-start gap-2 rounded-md border border-white/5 bg-white/[0.02] p-3 sm:gap-4 sm:p-4">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-xs font-bold text-sand-100">{index + 1}</span>
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <h3 className="break-words text-sm font-semibold leading-6 text-sand-100">
-                          {step.question} <span className="text-emerald-300">— {step.answer || (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')}</span>
-                        </h3>
-                        {step.explanation && <p className="break-words text-sm leading-6 text-zinc-400">{cleanDisplayText(step.explanation)}</p>}
-                        {evidence.map((record, evidenceIndex) => (
-                          <div key={evidenceIndex} className="space-y-1 text-xs text-zinc-400">
-                            <p>{isPl ? 'Dane społeczności' : 'Community evidence'}: {record.answer || (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')} — {isPl ? 'zadano' : 'asked'} {record.count}×{record.pct != null ? ` (${record.pct}%)` : ''}.</p>
-                            {record.explanation && record.explanation !== step.explanation && <p className="whitespace-pre-wrap leading-6">{cleanDisplayText(record.explanation)}</p>}
+          {questionLists.map((list) => (
+            <section key={list.title} className="min-w-0 space-y-3">
+              <h2 className="text-lg font-semibold leading-snug text-sand-100">{list.title}</h2>
+              {list.questions.length > 0 ? (
+                <ol className="space-y-3">
+                  {list.questions.map((record, index) => {
+                    const answer = record.answer.trim().toUpperCase();
+                    const isYes = answer === 'YES';
+                    const isNo = answer === 'NO';
+                    return (
+                      <li key={`${record.question}-${record.answer}-${index}`} className="flex min-w-0 items-start gap-2 rounded-md border border-white/5 bg-white/[0.02] p-3 sm:gap-4 sm:p-4">
+                        <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-xs font-bold text-sand-100">{index + 1}</span>
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+                          <span className="min-w-0 break-words text-sm font-semibold leading-6 text-sand-100">{record.question}</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-zinc-400">{isPl ? 'Zadano' : 'Asked'} {record.count}×</span>
+                            <span className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${
+                              isYes ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300' :
+                              isNo ? 'border-rose-500/30 bg-rose-500/20 text-rose-300' :
+                              'border-white/15 bg-white/5 text-zinc-400'
+                            }`}>
+                              {isYes ? (isPl ? 'TAK' : 'YES') : isNo ? (isPl ? 'NIE' : 'NO') : (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <p className="rounded-md border border-white/5 bg-white/[0.02] p-3 text-sm leading-6 text-zinc-400">{list.empty}</p>
+              )}
             </section>
-          )}
-          {otherCommunityQuestions.length > 0 && (
-            <section className="min-w-0 space-y-4">
-              <h2 className="text-lg font-semibold text-sand-100">{isPl ? 'Pytania społeczności' : 'Community question evidence'}</h2>
-              <p className="text-sm text-zinc-400">
-                {isPl ? `Zapisane pytania dla zagadki z ${post.date}. Częstotliwość nie dowodzi optymalności strategii.` : `Recorded questions for the ${post.date} puzzle. Frequency is not proof of an optimal strategy.`}
-              </p>
-              <ul className="space-y-3 text-sm text-zinc-300">
-                {otherCommunityQuestions.map((question, index) => (
-                  <li key={index} className="min-w-0 rounded-md border border-white/5 bg-white/[0.02] p-3 space-y-2 sm:p-4">
-                    <p className="break-words font-semibold leading-6 text-sand-100">{question.question} — <span className="text-emerald-300">{question.answer || (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')}</span></p>
-                    <p className="text-xs text-zinc-400">{isPl ? 'Zadano' : 'Asked'} {question.count}×{question.pct != null ? ` (${question.pct}%)` : ''}.</p>
-                    {question.explanation && <p className="break-words leading-6 text-zinc-400">{cleanDisplayText(question.explanation)}</p>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          ))}
 
       {/* Common Traps & Wrong Guesses */}
       {post.game_debrief?.has_telemetry && post.game_debrief.common_pitfalls.length > 0 && (
@@ -458,18 +425,6 @@ export default function BlogPostPage() {
       </details>
 
 
-      {/* Curator Pro Tip */}
-      {proTip && (
-        <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-5 space-y-2">
-          <div className="flex items-center gap-2 text-base font-semibold text-emerald-300">
-            <Compass size={18} className="shrink-0" />
-            <span>{isPl ? 'Wskazówka do dedukcji' : 'Deduction pro tip'}</span>
-          </div>
-          <p className="break-words text-sm leading-7 text-zinc-200">
-            {cleanDisplayText(proTip)}
-          </p>
-        </section>
-      )}
 
       {post.deduction_masterclass?.quiz?.status === 'needs-editorial-repair' && (
         <section aria-label={isPl ? 'Quiz wymaga korekty redakcyjnej' : 'Quiz needs editorial repair'} className="min-w-0 space-y-3 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-100">
@@ -545,16 +500,6 @@ export default function BlogPostPage() {
         );
       })()}
 
-      {extraSections.length > 0 && <section aria-label="Additional article content" className="space-y-5 text-sm leading-7 text-zinc-300">
-        {extraSections.map((section, index) => {
-          const lines = section.split('\n');
-          const heading = /^#{1,6}\s/.test(lines[0] || '') ? lines.shift()?.replace(/^#{1,6}\s+/, '') : undefined;
-          return <div key={index} className="space-y-3 break-words">
-            {heading && <h2 className="font-serif text-xl text-sand-100">{cleanDisplayText(heading)}</h2>}
-            <p className="whitespace-pre-wrap">{cleanDisplayText(lines.join('\n'))}</p>
-          </div>;
-        })}
-      </section>}
       {/* Compliant Ad Placement */}
       {eligibleForAds && <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />}
 

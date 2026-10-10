@@ -52,6 +52,10 @@ export const blogSummarySchema = z.object({
   editorial_status: z.enum(['unreviewed', 'reviewed']),
 });
 export const blogListSchema = z.object({ total: z.number().int().nonnegative(), posts: z.array(blogSummarySchema) });
+const topQuestionStatSchema = z.object({
+  question: z.string(), answer: z.string(), count: z.number(),
+  pct: z.number().nullable().optional(), explanation: z.string().nullable().optional(),
+});
 export const blogPostSchema = blogSummarySchema.extend({
   fast_facts: blogFactsSchema.transform((facts) => facts === null ? null : Object.fromEntries(
     Object.entries(facts).flatMap(([key, value]) => value === null ? [] : [[key, typeof value === 'boolean' ? String(value) : value]]),
@@ -64,7 +68,8 @@ export const blogPostSchema = blogSummarySchema.extend({
   game_debrief: z.object({
     has_telemetry: z.boolean(), total_challengers: z.number(), total_solvers: z.number(),
     win_rate_pct: z.number(), avg_questions_to_win: z.number(), high_score: z.number().nullable().optional(),
-    top_questions: z.array(z.object({ question: z.string(), answer: z.string(), count: z.number(), pct: z.number().nullable().optional(), explanation: z.string().nullable().optional() })),
+    top_questions: z.array(topQuestionStatSchema),
+    top_winner_questions: z.array(topQuestionStatSchema),
     common_pitfalls: z.array(z.object({ guess: z.string(), count: z.number() })),
   }).nullable().optional(),
 });
@@ -77,33 +82,3 @@ export function cleanDisplayText(text?: string): string {
   return text.replace(/\\([_()[\]*])/g, '$1').trim();
 }
 
-export function additionalArticleSections(post: BlogPost): string[] {
-  // Compare whole claims, never remove a section just because its heading overlaps.
-  // Citation markers participate in comparison, so a warning cannot disappear.
-  const comparableClaim = (value: string) => cleanDisplayText(value).replace(/^\s*(?:\d+[.)]|[-*>])\s*/, '').replace(/[*_"“”]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-  const displayed = new Set<string>([
-    comparableClaim(post.summary),
-    comparableClaim(post.deduction_masterclass?.pro_tip || ''),
-    ...post.fun_facts.map((fact) => comparableClaim(`${fact.title}: ${fact.description}`)),
-    ...(post.deduction_masterclass?.steps || []).map((step) => comparableClaim(`[${step.answer || ''}] "${step.question}" — ${step.explanation || ''}`)),
-  ]);
-  const factLabels: Record<string, string> = {
-    capital: 'Capital', population: 'Population', area: 'Land Area', coastline: 'Maritime Access',
-    borders: 'Bordering Neighbors', languages: 'Official Languages', region: 'Region', continent: 'Continent',
-  };
-  for (const [key, value] of Object.entries(post.fast_facts || {})) {
-    displayed.add(comparableClaim(`${factLabels[key] || key}: ${value}`));
-  }
-  const facts = post.fast_facts || {};
-  if (facts.continent && facts.region) displayed.add(comparableClaim(`Region: ${facts.continent} (${facts.region})`));
-  if (facts.area && facts.coastline) displayed.add(comparableClaim(`Land Area: ${facts.area} (${facts.coastline})`));
-  return post.content_markdown.split(/(?=^#{1,6}\s)/m).flatMap((section) => {
-    const lines = section.trim().split('\n');
-    const heading = /^#{1,6}\s/.test(lines[0] || '') ? lines.shift() : undefined;
-    // Heading annotations qualify the section, including its repeated claims.
-    if (heading && /\[[^\]]+\]/.test(heading)) return [section.trim()];
-    const remaining = lines.filter((line) => line.trim() && !displayed.has(comparableClaim(line)));
-    if (!remaining.length) return [];
-    return [[heading, ...remaining].filter(Boolean).join('\n')];
-  });
-}

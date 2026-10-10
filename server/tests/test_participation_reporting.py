@@ -224,3 +224,80 @@ async def test_game_debrief_counts_unique_guests_and_users(reporting_db):
     assert debrief.total_solvers == 2
     assert debrief.win_rate_pct == 66.7
     assert debrief.high_score == 1000
+
+
+@pytest.mark.anyio
+async def test_blog_question_rankings_include_only_matching_winners_and_merge_explanations(reporting_db):
+    from blog import get_day_community_telemetry
+
+    db, session = reporting_db
+    db.add_all([
+        CountrydleState(user_id=101, day_id=1, questions_asked=2, guesses_made=1, won=True),
+        CountrydleState(user_id=102, day_id=1, questions_asked=3, guesses_made=3, won=False),
+        CountrydleState(user_id=103, day_id=2, questions_asked=1, guesses_made=1, won=True),
+        GuestParticipation(guest_id="winner", mode="countrydle", day_id=1,
+                           questions_asked=1, guesses_made=1, won=True),
+        GuestParticipation(guest_id="loser", mode="countrydle", day_id=1,
+                           questions_asked=1, guesses_made=3, won=False),
+        GuestParticipation(guest_id="linked", user_id=101, mode="countrydle", day_id=1,
+                           questions_asked=1, guesses_made=1, won=True),
+        GuestParticipation(guest_id="other-mode", mode="flagdle", day_id=1,
+                           questions_asked=1, guesses_made=1, won=True),
+    ])
+
+    def question(text, *, user=None, guest=None, day=1, valid=True, explanation="Recorded"):
+        return CountrydleQuestion(day_id=day, user_id=user, guest_id=guest,
+                                  original_question=text, question=text, valid=valid,
+                                  answer=True, explanation=explanation)
+
+    db.add_all([
+        question("Is it in Asia?", user=101, explanation="First explanation"),
+        question("Is it in Asia?", guest="winner", explanation="Different explanation"),
+        question("Is it in Asia?", user=102),
+        question("Is it in Asia?", guest="loser"),
+        question("Is it in Asia?"),
+        question("Does it have a coast?", user=102),
+        question("Does it have a coast?", user=102, explanation="Repeated"),
+        question("Does it have a coast?", user=101, guest="linked"),
+        question("Is it in Europe?", guest="other-mode"),
+        question("Invalid question", guest="winner", valid=False),
+        question("Wrong day", user=103, day=2),
+    ])
+    db.add(CountrydleQuestion(day_id=1, user_id=101, original_question="Unanswered question",
+                             question="Unanswered question", valid=True, answer=None,
+                             explanation="No recorded boolean answer"))
+    db.flush()
+
+    result = await get_day_community_telemetry(session, TODAY)
+    assert [(q.question, q.count) for q in result.top_questions] == [
+        ("Is it in Asia?", 5), ("Does it have a coast?", 3), ("Is it in Europe?", 1),
+        ("Unanswered question", 1),
+    ]
+    assert [(q.question, q.count) for q in result.top_winner_questions] == [
+        ("Is it in Asia?", 2), ("Does it have a coast?", 1), ("Unanswered question", 1),
+    ]
+    assert result.top_winner_questions[-1].answer == "UNKNOWN"
+
+
+@pytest.mark.anyio
+async def test_winner_question_ranking_is_independent_of_the_overall_top_six(reporting_db):
+    from blog import get_day_community_telemetry
+
+    db, session = reporting_db
+    db.add_all([
+        CountrydleState(user_id=101, day_id=1, questions_asked=1, guesses_made=1, won=True),
+        CountrydleState(user_id=102, day_id=1, questions_asked=14, guesses_made=3),
+    ])
+    for index in range(7):
+        for repeat in range(2):
+            db.add(CountrydleQuestion(day_id=1, user_id=102, original_question=f"Popular {index}",
+                                     question=f"Popular {index}", valid=True, answer=False,
+                                     explanation=f"Explanation {repeat}"))
+    db.add(CountrydleQuestion(day_id=1, user_id=101, original_question="Winner-only question",
+                             question="Winner-only question", valid=True, answer=True,
+                             explanation="Not an overall top-six question"))
+    db.flush()
+
+    result = await get_day_community_telemetry(session, TODAY)
+    assert all(q.question != "Winner-only question" for q in result.top_questions)
+    assert [(q.question, q.count) for q in result.top_winner_questions] == [("Winner-only question", 1)]
