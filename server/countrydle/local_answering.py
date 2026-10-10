@@ -1212,7 +1212,7 @@ class LocalCountryFacts:
         )
 
     def _answer_language(self, conn, country, original, q):
-        if not any(word in q for word in ("language", "jezyk", "speak", "mowi", "official", "co-official", "coofficial", "wspolurzedow", "urzedow")):
+        if not any(word in q for word in ("language", "jezyk", "speak", "spoken", "mowi", "official", "co-official", "coofficial", "wspolurzedow", "urzedow")):
             return None
         langs = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id=?", (country["id"],))]
         all_langs = [r[0] for r in conn.execute("SELECT DISTINCT language_name FROM country_languages")]
