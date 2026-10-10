@@ -478,6 +478,21 @@ VALUE_ALIASES = {
     "francuski": "French",
     "hiszpanski": "Spanish",
     "arabski": "Arabic",
+    "rosyjski": "Russian",
+    "po rosyjsku": "Russian",
+    "ukrainski": "Ukrainian",
+    "po ukrainsku": "Ukrainian",
+    "katalonski": "Catalan",
+    "po katalonsku": "Catalan",
+    "baskijski": "Basque",
+    "po baskijsku": "Basque",
+    "galicyjski": "Galician",
+    "irlandzki": "Irish",
+    "szwedzki": "Swedish",
+    "wloski": "Italian",
+    "portugalski": "Portuguese",
+    "chinski": "Chinese",
+    "mandarynski": "Mandarin",
     "czerwony": "red",
     "czerwona": "red",
     "czerwone": "red",
@@ -1197,7 +1212,7 @@ class LocalCountryFacts:
         )
 
     def _answer_language(self, conn, country, original, q):
-        if not any(word in q for word in ("language", "jezyk", "speak", "mowi", "official language", "co-official", "coofficial")):
+        if not any(word in q for word in ("language", "jezyk", "speak", "mowi", "official", "co-official", "coofficial", "wspolurzedow", "urzedow")):
             return None
         langs = [r[0] for r in conn.execute("SELECT language_name FROM country_languages WHERE country_id=?", (country["id"],))]
         all_langs = [r[0] for r in conn.execute("SELECT DISTINCT language_name FROM country_languages")]
@@ -1205,12 +1220,37 @@ class LocalCountryFacts:
         if not target:
             return None
         answer = normalize(target) in {normalize(x) for x in langs}
-        return LocalAnswer(
-            question=f"Is {target} an official language?",
-            answer=answer,
-            explanation=f"Official languages for {country['app_country_name']}: {', '.join(langs)}.",
-            relation="official_language",
-        )
+        is_spoken_inquiry = any(word in q for word in ("speak", "spoken", "mowi"))
+        is_strictly_official_inquiry = any(word in q for word in ("official", "urzedow", "wspolurzedow", "co-official", "coofficial", "state language", "national language"))
+        
+        # If the language IS in official/co-official records, answer True immediately for both official and spoken inquiries.
+        if answer:
+            has_multiple = len(langs) > 1
+            status_label = "official / co-official" if has_multiple else "official"
+            if is_spoken_inquiry and not is_strictly_official_inquiry:
+                explanation = f"Yes, {target} is an official/co-official language of {country['app_country_name']} ({', '.join(langs)})."
+            else:
+                explanation = f"Official/co-official languages for {country['app_country_name']}: {', '.join(langs)}."
+            return LocalAnswer(
+                question=f"Is {target} an official or spoken language?",
+                answer=True,
+                explanation=explanation,
+                relation="official_language",
+            )
+
+        # If the question was strictly about official/co-official status, return False from local DB.
+        if is_strictly_official_inquiry:
+            return LocalAnswer(
+                question=f"Is {target} an official language?",
+                answer=False,
+                explanation=f"{target} is not an official language of {country['app_country_name']}. Recorded official languages: {', '.join(langs)}.",
+                relation="official_language",
+            )
+        
+        # If the question asked broadly whether people speak the language ("do they speak Russian?"),
+        # and it's NOT an official language, do NOT return a false negative from the local DB.
+        # Return None to let the LLM / RAG examine whether it is widely spoken in practice.
+        return None
 
     def _answer_dominant_religion(self, conn, country, original, q):
         if not any(word in q for word in ("religion", "religious", "catholic", "orthodox", "protestant", "christian", "islam", "muslim", "jewish", "judaism", "buddhist", "buddhism", "hindu", "atheist")):
