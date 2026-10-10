@@ -110,6 +110,9 @@ COUNTRY_ADDITIONAL_SUBREGIONS = {
     "Lithuania": {"Eastern Europe", "Baltic states"},
     "Montenegro": {"Balkans", "Southern Europe"},
     "Portugal": {"Iberia", "Iberian Peninsula"},
+    "Kuwait": {"Middle East"},
+    "Iran": {"Middle East"},
+    "Turkey": {"Middle East"},
 }
 
 COUNTRY_ADDITIONAL_OFFICIAL_LANGUAGES = {

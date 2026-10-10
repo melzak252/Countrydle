@@ -628,7 +628,12 @@ CONTINENT_ALIASES = {
     "ameryka poludniowa": "South America",
     "ameryce poludniowej": "South America",
     "south america": "South America",
-    "oceania": "Oceania",
+    "ameryki": "Americas",
+    "amerykach": "Americas",
+    "ameryk": "Americas",
+    "ameryce": "Americas",
+    "ameryka": "Americas",
+    "americas": "Americas",
     "oceania": "Oceania",
     "antarktyda": "Antarctica",
     "antarctica": "Antarctica",
@@ -640,6 +645,11 @@ REGION_ALIASES = {
     "asia": "Asia",
     "africa": "Africa",
     "americas": "Americas",
+    "ameryki": "Americas",
+    "amerykach": "Americas",
+    "ameryk": "Americas",
+    "ameryce": "Americas",
+    "ameryka": "Americas",
     "north america": "Americas",
     "south america": "Americas",
     "oceania": "Oceania",
@@ -692,7 +702,146 @@ SUBREGION_ALIASES = {
     "micronesia": "Micronesia",
     "polynesia": "Polynesia",
     "australia and new zealand": "Australia and New Zealand",
+    # Polish regional aliases
+    "bliski wschod": "Middle East",
+    "bliskim wschodzie": "Middle East",
+    "bliskiego wschodu": "Middle East",
+    "bliskiemu wschodowi": "Middle East",
+    "balkany": "Balkans",
+    "balkanach": "Balkans",
+    "balkanow": "Balkans",
+    "balkanami": "Balkans",
+    "polwysep balkanski": "Balkans",
+    "polwyspie balkanskim": "Balkans",
+    "skandynawia": "Scandinavia",
+    "skandynawii": "Scandinavia",
+    "kraj nordycki": "Nordic countries",
+    "kraje nordyckie": "Nordic countries",
+    "krajow nordyckich": "Nordic countries",
+    "nordycki": "Nordic countries",
+    "nordyckie": "Nordic countries",
+    "kraj baltycki": "Baltic states",
+    "kraje baltyckie": "Baltic states",
+    "panstwa baltyckie": "Baltic states",
+    "krajach baltyckich": "Baltic states",
+    "baltycki": "Baltic states",
+    "karaiby": "Caribbean",
+    "karaibach": "Caribbean",
+    "karaibow": "Caribbean",
+    "karaibami": "Caribbean",
+    "polwysep iberyjski": "Iberian Peninsula",
+    "polwyspie iberyjskim": "Iberian Peninsula",
+    "polwyspu iberyjskiego": "Iberian Peninsula",
+    "iberii": "Iberian Peninsula",
+    "benelux": "Benelux",
+    "beneluks": "Benelux",
+    "beneluksu": "Benelux",
+    "rog afryki": "Horn of Africa",
+    "rogu afryki": "Horn of Africa",
+    "wyspy brytyjskie": "British Isles",
+    "wyspach brytyjskich": "British Isles",
+    "ameryka srodkowa": "Central America",
+    "ameryce srodkowej": "Central America",
+    "ameryki srodkowej": "Central America",
+    "ameryka polnocna": "North America",
+    "ameryce polnocnej": "North America",
+    "ameryki polnocnej": "North America",
+    "ameryka poludniowa": "South America",
+    "ameryce poludniowej": "South America",
+    "ameryki poludniowej": "South America",
+    "europa srodkowa": "Central Europe",
+    "europie srodkowej": "Central Europe",
+    "europy srodkowej": "Central Europe",
+    "europa wschodnia": "Eastern Europe",
+    "europie wschodniej": "Eastern Europe",
+    "europy wschodniej": "Eastern Europe",
+    "europa zachodnia": "Western Europe",
+    "europie zachodniej": "Western Europe",
+    "europy zachodniej": "Western Europe",
+    "europa poludniowa": "Southern Europe",
+    "europie poludniowej": "Southern Europe",
+    "europy poludniowej": "Southern Europe",
+    "europa polnocna": "Northern Europe",
+    "europie polnocnej": "Northern Europe",
+    "europy polnocnej": "Northern Europe",
+    "azja poludniowo wschodnia": "South-Eastern Asia",
+    "azji poludniowo wschodniej": "South-Eastern Asia",
+    "azja poludniowowschodnia": "South-Eastern Asia",
+    "azji poludniowowschodniej": "South-Eastern Asia",
+    "azja wschodnia": "Eastern Asia",
+    "azji wschodniej": "Eastern Asia",
+    "azja poludniowa": "Southern Asia",
+    "azji poludniowej": "Southern Asia",
+    "azja centralna": "Central Asia",
+    "azji centralnej": "Central Asia",
+    "azja srodkowa": "Central Asia",
+    "azji srodkowej": "Central Asia",
 }
+
+
+GEOGRAPHIC_SUBREGION_PARENT_MAP: dict[str, set[str]] = {
+    # Middle East
+    "Arabian Peninsula": {"Middle East", "Western Asia", "Asia"},
+    "Levant": {"Middle East", "Western Asia", "Asia"},
+    "Persian Gulf": {"Middle East"},
+
+    # Europe
+    "Scandinavia": {"Nordic countries", "Northern Europe", "Europe"},
+    "Nordic countries": {"Northern Europe", "Europe"},
+    "Baltic states": {"Northern Europe", "Europe"},
+    "Benelux": {"Western Europe", "Europe"},
+    "British Isles": {"Northern Europe", "Europe"},
+    "Iberia": {"Iberian Peninsula", "Southern Europe", "Europe"},
+    "Iberian Peninsula": {"Southern Europe", "Europe"},
+    "Balkans": {"Southeast Europe", "Southern Europe", "Europe"},
+    "Central Europe": {"Europe"},
+    "Eastern Europe": {"Europe"},
+    "Western Europe": {"Europe"},
+    "Northern Europe": {"Europe"},
+    "Southern Europe": {"Europe"},
+    "Southeast Europe": {"Balkans", "Southern Europe", "Europe"},
+
+    # Americas
+    "Central America": {"North America", "Americas"},
+    "Caribbean": {"North America", "Americas"},
+    "North America": {"Americas"},
+    "South America": {"Americas"},
+
+    # Asia
+    "South-Eastern Asia": {"Southeast Asia", "Asia"},
+    "Southeast Asia": {"Asia"},
+    "Eastern Asia": {"East Asia", "Asia"},
+    "East Asia": {"Asia"},
+    "Southern Asia": {"South Asia", "Asia"},
+    "South Asia": {"Asia"},
+    "Central Asia": {"Asia"},
+    "Western Asia": {"Asia"},
+    "Indian subcontinent": {"South Asia", "Asia"},
+
+    # Africa
+    "Maghreb": {"Northern Africa", "North Africa", "Africa"},
+    "Horn of Africa": {"Eastern Africa", "East Africa", "Africa"},
+    "Sahel": {"Africa"},
+    "Northern Africa": {"North Africa", "Africa"},
+    "Eastern Africa": {"East Africa", "Africa"},
+    "Western Africa": {"West Africa", "Africa"},
+    "Middle Africa": {"Central Africa", "Africa"},
+    "Southern Africa": {"Africa"},
+}
+
+
+def expand_geographic_areas(areas: Iterable[str]) -> set[str]:
+    """Compute transitive parent regions and continents for a collection of areas."""
+    expanded = set(areas)
+    queue = list(areas)
+    while queue:
+        item = queue.pop(0)
+        if item in GEOGRAPHIC_SUBREGION_PARENT_MAP:
+            for parent in GEOGRAPHIC_SUBREGION_PARENT_MAP[item]:
+                if parent not in expanded:
+                    expanded.add(parent)
+                    queue.append(parent)
+    return expanded
 
 
 GEOGRAPHIC_AREA_ALIASES = {
@@ -841,6 +990,15 @@ class LocalCountryFacts:
         if not target:
             return None
         continents = {r[0] for r in conn.execute("SELECT continent FROM country_continents WHERE country_id=?", (country["id"],))}
+        if target == "Americas":
+            answer = bool(continents & {"North America", "South America"})
+            explanation = f"{country['app_country_name']} is listed under these continents: {', '.join(sorted(continents))}."
+            return LocalAnswer(
+                question="Is the country in the Americas?",
+                answer=answer,
+                explanation=explanation,
+                relation="continent",
+            )
         answer = target in continents
         return LocalAnswer(
             question=f"Is the country in {target}?",
@@ -864,7 +1022,8 @@ class LocalCountryFacts:
             for r in conn.execute("SELECT subregion_name FROM country_subregions WHERE country_id=?", (country["id"],))
         }
         country_areas = country_regions | country_subregions
-        answer = any(normalize(area) == normalize(target) for area in country_areas)
+        all_areas = expand_geographic_areas(country_areas)
+        answer = any(normalize(area) == normalize(target) for area in all_areas)
         return LocalAnswer(
             question=f"Is the country in {target}?",
             answer=answer,
@@ -900,7 +1059,8 @@ class LocalCountryFacts:
             r[0]
             for r in conn.execute("SELECT subregion_name FROM country_subregions WHERE country_id=?", (country["id"],))
         }
-        answer = any(normalize(subregion) == normalize(target) for subregion in country_subregions)
+        all_subregions = expand_geographic_areas(country_subregions)
+        answer = any(normalize(subregion) == normalize(target) for subregion in all_subregions)
         return LocalAnswer(
             question=f"Is the country in {target}?",
             answer=answer,
@@ -968,13 +1128,13 @@ class LocalCountryFacts:
         )
 
     def _answer_island(self, conn, country, original, q):
-        if not any(word in q for word in ("island", "wyspa", "wyspiars")):
+        if not any(word in q for word in ("island", "wyspa", "wyspiars", "archipelag", "archipelago")):
             return None
         answer = bool(country["is_island"])
         return LocalAnswer(
             question="Is the country an island country?",
             answer=answer,
-            explanation=f"{country['app_country_name']} is {'marked' if answer else 'not marked'} as an island country.",
+            explanation=f"{country['app_country_name']} is {'an island' if answer else 'not an island'} country.",
             relation="is_island",
         )
 
@@ -1351,6 +1511,8 @@ def resolve_ref(
                 if "sea" in w_lower or "ocean" in w_lower or "gulf" in w_lower or "bay" in w_lower or "skagerrak" in w_lower:
                     expanded.add("Sea")
             return list(expanded)
+        if relation in {"geographic_area", "subregion"}:
+            return list(expand_geographic_areas(res))
         return res
     return None
 

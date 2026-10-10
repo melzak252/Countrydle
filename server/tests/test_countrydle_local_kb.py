@@ -1323,3 +1323,58 @@ def test_prime_meridian_questions_accurately_classify_crossing_and_pure_countrie
 
     ans_pl_cross = execute_local_plan(cross_plan, "Poland", "Does it cross the prime meridian?")
     assert ans_pl_cross.answer is False
+
+def test_regional_hierarchy_and_multilingual_queries():
+    from countrydle.local_answering import try_answer_locally
+    from countrydle.template_compiler import compile_template_plan
+
+    # 1. Middle East expansion (Kuwait, Iran, Turkey vs Poland)
+    for cname in ["Kuwait", "Iran", "Turkey", "Saudi Arabia"]:
+        ans_en = try_answer_locally("Is the country in the Middle East?", cname)
+        ans_pl = try_answer_locally("Czy ten kraj lezy na Bliskim Wschodzie?", cname)
+        assert ans_en is not None and ans_en.answer is True
+        assert ans_pl is not None and ans_pl.answer is True
+    ans_poland = try_answer_locally("Is the country in the Middle East?", "Poland")
+    assert ans_poland is not None and ans_poland.answer is False
+
+    # 2. Americas (North + South America query resolution)
+    for cname in ["Brazil", "United States", "Nicaragua", "Cuba"]:
+        ans_en = try_answer_locally("Is the country in the Americas?", cname)
+        ans_pl = try_answer_locally("Czy to kraj z Ameryk?", cname)
+        assert ans_en is not None and ans_en.answer is True
+        assert ans_pl is not None and ans_pl.answer is True
+    ans_germany = try_answer_locally("Is the country in the Americas?", "Germany")
+    assert ans_germany is not None and ans_germany.answer is False
+
+    # 3. Polish subregion questions
+    assert try_answer_locally("Czy lezy na Balkanach?", "Greece").answer is True
+    assert try_answer_locally("Czy lezy na Balkanach?", "Poland").answer is False
+    assert try_answer_locally("Czy lezy w Skandynawii?", "Norway").answer is True
+    assert try_answer_locally("Czy to kraj nordycki?", "Norway").answer is True
+    assert try_answer_locally("Czy to kraj nordycki?", "Germany").answer is False
+    assert try_answer_locally("Czy to kraj baltycki?", "Lithuania").answer is True
+    assert try_answer_locally("Czy to kraj baltycki?", "Poland").answer is False
+    assert try_answer_locally("Czy lezy na Karaibach?", "Jamaica").answer is True
+    assert try_answer_locally("Czy lezy na Polwyspie Iberyjskim?", "Spain").answer is True
+    assert try_answer_locally("Czy lezy na Polwyspie Iberyjskim?", "France").answer is False
+
+    # 4. Archipelago / Island matching
+    assert try_answer_locally("Czy to archipelag?", "Singapore").answer is True
+    assert try_answer_locally("Czy to archipelag?", "Japan").answer is True
+    assert try_answer_locally("Czy to archipelag?", "Poland").answer is False
+
+    # 5. Polish directional map phrases
+    plan_slovenia = compile_template_plan("czy na mapie jest po prawej stronie od slowenii")
+    assert plan_slovenia is not None
+    assert plan_slovenia[0][0]["operator"] == "east_of"
+    assert plan_slovenia[0][0]["right"]["entity"] == "Slovenia"
+
+    plan_italy = compile_template_plan("czy lezy na polnoc od wloch")
+    assert plan_italy is not None
+    assert plan_italy[0][0]["operator"] == "north_of"
+    assert plan_italy[0][0]["right"]["entity"] == "Italy"
+
+    plan_germany = compile_template_plan("czy lezy na lewo od niemiec")
+    assert plan_germany is not None
+    assert plan_germany[0][0]["operator"] == "west_of"
+    assert plan_germany[0][0]["right"]["entity"] == "Germany"

@@ -750,10 +750,10 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
         if any(phrase in q for phrase in phrases):
             return [_node("contains", "hemisphere", hemi)], f"Is the country {wording}?"
     direction_phrases = (
-        ("north_of", ("north of", "north to", "above")),
-        ("south_of", ("south of", "south to", "below")),
-        ("west_of", ("west of", "west to", "to the left of", "left of", "left to")),
-        ("east_of", ("east of", "east to", "to the right of", "right of", "right to")),
+        ("north_of", ("north of", "north to", "above", "na polnoc od", "na północ od", "wyzej niz", "wyżej niż", "powyzej", "powyżej")),
+        ("south_of", ("south of", "south to", "below", "na poludnie od", "na południe od", "nizej niz", "niżej niż", "ponizej", "poniżej")),
+        ("west_of", ("west of", "west to", "to the left of", "left of", "left to", "na zachod od", "na zachód od", "na lewo od", "po lewej stronie od", "po lewej od")),
+        ("east_of", ("east of", "east to", "to the right of", "right of", "right to", "na wschod od", "na wschód od", "na prawo od", "po prawej stronie od", "po prawej od")),
     )
     for operator, phrases in direction_phrases:
         if any(phrase in q for phrase in phrases):
@@ -762,7 +762,7 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
 
     if re.search(r"\b(landlocked|inland|srodladow\w*|no coastline|no access to (?:the )?(?:sea|ocean)|brak dostepu do morza|nie ma dostepu do morza)\b", q):
         return [_node("exists", "marine_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
-    if any(x in q for x in ("island", "wyspa", "wyspiarsk")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
+    if any(x in q for x in ("island", "wyspa", "wyspiarsk", "archipelag", "archipelago")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
         return [_node("equals", "is_island", True)], "Is the country an island?"
     is_directional_coast = bool(re.search(r"\b(west\w*|east\w*|north\w*|south\w*|zachod\w*|wschod\w*|polnoc\w*|poludn\w*)\b.*?\b(coast|coastline|wybrzez\w*)\b", q))
     water_body = _choices(WATERS, q) if not is_directional_coast else None
