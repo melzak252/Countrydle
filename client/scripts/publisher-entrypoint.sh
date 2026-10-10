@@ -46,17 +46,20 @@ nginx_pid=$!
 sleeper_pid=
 
 shutdown() {
-    trap '' TERM INT
+    trap '' TERM INT QUIT
     if [ -n "$sleeper_pid" ]; then
         kill -TERM "$sleeper_pid" 2>/dev/null || true
         wait "$sleeper_pid" 2>/dev/null || true
     fi
-    kill -TERM "$publisher_pid" "$nginx_pid" 2>/dev/null || true
-    wait "$publisher_pid" 2>/dev/null || true
+    # Keep the reader available until Nginx has drained its active requests.
+    kill -QUIT "$nginx_pid" 2>/dev/null || true
     wait "$nginx_pid" 2>/dev/null || true
+    kill -TERM "$publisher_pid" 2>/dev/null || true
+    wait "$publisher_pid" 2>/dev/null || true
 }
 trap 'shutdown; exit 143' TERM
 trap 'shutdown; exit 130' INT
+trap 'shutdown; exit 0' QUIT
 
 while kill -0 "$publisher_pid" 2>/dev/null && kill -0 "$nginx_pid" 2>/dev/null; do
     sleep 1 &

@@ -89,6 +89,7 @@ jobs:
             type=sha,format=long
 
       - name: Build and push Docker image
+        id: frontend-build
         uses: docker/build-push-action@v5
         with:
           context: ./client
@@ -102,6 +103,15 @@ jobs:
             VITE_GOOGLE_ADSENSE_ID=${{ vars.VITE_GOOGLE_ADSENSE_ID }}
             VITE_ADSENSE_ENABLED=${{ vars.VITE_ADSENSE_ENABLED || 'false' }}
             VITE_ADSENSE_SLOTS=${{ vars.VITE_ADSENSE_SLOTS || '{}' }}
+
+      - name: Verify native serving-image graceful shutdown
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${REGISTRY}/${IMAGE_NAME,,}-frontend@${{ steps.frontend-build.outputs.digest }}"
+          docker pull "$image"
+          PUBLISHER_TEST_IMAGE="$image" python3 -m unittest discover \
+            -s client/scripts/tests -p test_publisher_shutdown.py -v
 
       # Both targets use the identical checkout, build stage and public build
       # configuration. Deploy the matching sha-<commit> pair, not floating latest.

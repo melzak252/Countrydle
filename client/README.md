@@ -543,6 +543,11 @@ normal operational path, not manual-only refresh. The entrypoint supervises
 Nginx and the reader: loss of either terminates the container. It derives Nginx
 resolver addresses from actual `/etc/resolv.conf`, validating IPv4/IPv6 entries
 rather than hardcoding Docker's `127.0.0.11` or Podman's address.
+The supervisor handles the Nginx base image's default `SIGQUIT`, plus TERM/INT.
+It first gracefully stops Nginx, keeping the reader alive until active responses
+finish, then stops the reader. Allow sufficient container stop grace for those
+requests; exhausted grace can still force termination. Image-publishing CI runs
+a native held-response shutdown check against the exact serving image digest.
 `/sitemap.xml` comes from FastAPI through Nginx/Vite; `robots.txt` advertises it.
 
 ### Editorial workflow
