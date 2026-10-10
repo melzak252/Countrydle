@@ -303,8 +303,11 @@ def get_relation_value(conn: sqlite3.Connection, config: LocalModeConfig, row: s
                 (row["id"],),
             ).fetchall()
             return [value[0] for value in values if value[0] is not None] if values else None
-        return [r[0] for r in conn.execute(f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)).fetchall()]
-    return None
+        waters = [r[0] for r in conn.execute(f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)).fetchall()]
+        if relation == "water_access":
+            from utils.water_hierarchy import expand_water_bodies
+            return list(expand_water_bodies(waters))
+        return waters
 
 
 def _reference_row(conn: sqlite3.Connection, config: LocalModeConfig, row: sqlite3.Row, node: Any, item_value: Any) -> sqlite3.Row | None:
@@ -961,6 +964,16 @@ def generate_mode_explanation(
     else:
         if rel == "is_coastal":
             return f"{name} is a coastal state with ocean/gulf coastline." if row[config.scalar_relations[rel]] else f"{name} is an inland state with no ocean coastline."
+        if rel == "water_access":
+            from utils.water_hierarchy import WATER_BODY_PARENT_MAP
+            direct_waters = [r[0] for r in conn.execute(f"SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
+            if val:
+                via_sub = [w for w in direct_waters if w in WATER_BODY_PARENT_MAP and val in WATER_BODY_PARENT_MAP[w]]
+                via_str = f" (via the {', '.join(via_sub)})" if via_sub and val not in direct_waters else ""
+                if answer:
+                    return f"{name} has coastline access to: {val}{via_str}."
+                return f"{name} does not have access to {val}. Recorded water bodies: {', '.join(direct_waters) if direct_waters else 'none'}."
+            return f"{name} has coastline access to: {', '.join(direct_waters)}." if answer else f"{name} has no coastline access."
         if rel == "borders_state" and val:
             borders = [r[0] for r in conn.execute("SELECT border_state_name FROM us_state_borders_states WHERE state_id=?", (row["id"],))]
             if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):

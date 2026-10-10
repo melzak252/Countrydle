@@ -435,13 +435,14 @@ def test_reported_atlantic_access_includes_gulf_coast(state, expected):
     assert result.answer is expected
 
 
-@pytest.mark.parametrize("question", [
-    "Does the state border the Atlantic Ocean?",
-    "Does it have a direct coastline on the Atlantic Ocean?",
-    "Is the state located on the East Coast?",
-])
-@pytest.mark.parametrize("state, expected", [
-    ("Mississippi", False), ("Florida", True), ("California", False),
+@pytest.mark.parametrize("question, state, expected", [
+    ("Does the state border the Atlantic Ocean?", "Mississippi", True),
+    ("Does it have access to the Atlantic Ocean?", "Mississippi", True),
+    ("Is the state located on the East Coast?", "Mississippi", False),
+    ("Does the state border the Atlantic Ocean?", "Florida", True),
+    ("Is the state located on the East Coast?", "Florida", True),
+    ("Does the state border the Atlantic Ocean?", "California", False),
+    ("Is the state located on the East Coast?", "California", False),
 ])
 def test_direct_atlantic_coast_remains_distinct_from_ocean_access(question, state, expected):
     from local_kb_question import analyze_question
@@ -450,7 +451,6 @@ def test_direct_atlantic_coast_remains_distinct_from_ocean_access(question, stat
     result = execute_plan(US_STATE_CONFIG, state, plan)
     assert result is not None
     assert result.answer is expected
-
 
 @pytest.mark.parametrize("value", ["North East", "north-east", "Northeast"])
 @pytest.mark.parametrize("state, expected", [

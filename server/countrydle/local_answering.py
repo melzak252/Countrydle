@@ -401,26 +401,13 @@ def canonical_country_name(name: Any) -> str:
     return normalize(mapped)
 
 
-WATER_BODY_PARENT_MAP: dict[str, set[str]] = {
-    "Adriatic Sea": {"Mediterranean Sea"},
-    "Aegean Sea": {"Mediterranean Sea"},
-    "Ionian Sea": {"Mediterranean Sea"},
-    "Ligurian Sea": {"Mediterranean Sea"},
-    "Tyrrhenian Sea": {"Mediterranean Sea"},
-    "Sea of Crete": {"Mediterranean Sea"},
-    "Atlantic Ocean": {"Ocean"},
-    "Pacific Ocean": {"Ocean"},
-    "Indian Ocean": {"Ocean"},
-    "Arctic Ocean": {"Ocean"},
-    "Southern Ocean": {"Ocean"},
-}
-INLAND_WATER_BODIES = frozenset({"aral sea", "caspian sea", "dead sea"})
-
-
-def is_marine_water_body(water_body: str) -> bool:
-    """Whether a named water body gives a coastline connected to the open sea."""
-    return normalize(water_body) not in INLAND_WATER_BODIES
-
+from utils.water_hierarchy import (
+    WATER_BODY_PARENT_MAP,
+    INLAND_WATER_BODIES,
+    is_marine_water_body,
+    get_water_body_parents,
+    expand_water_bodies,
+)
 VALUE_ALIASES = {
     "baltyk": "Baltic Sea",
     "morze baltyckie": "Baltic Sea",
@@ -923,7 +910,7 @@ class LocalCountryFacts:
         if not any(word in q for word in ("sea", "ocean", "morze", "ocean", "dostep", "coast", "coastline", "wybrzez", "nad ")):
             return None
         direct_waters = {r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))}
-        waters = set(direct_waters)
+        waters = expand_water_bodies(direct_waters)
         all_waters = [r[0] for r in conn.execute("SELECT DISTINCT water_body FROM country_water_access")]
         for w in list(all_waters):
             if w in WATER_BODY_PARENT_MAP:
@@ -940,10 +927,16 @@ class LocalCountryFacts:
             )
         elif target:
             answer = target in waters
-            explanation = f"{country['app_country_name']} {'has' if answer else 'does not have'} direct access to {target}."
+            via_sub = [w for w in sorted(direct_waters) if w in WATER_BODY_PARENT_MAP and target in WATER_BODY_PARENT_MAP[w]]
+            via_str = f" (via the {', '.join(via_sub)})" if via_sub and target not in direct_waters else ""
+            explanation = (
+                f"{country['app_country_name']} has direct coastline access to: {target}{via_str}."
+                if answer
+                else f"{country['app_country_name']} does not have direct access to {target}."
+            )
         elif any(word in q for word in ("sea access", "dostep do morza", "dostep do wod", "coast", "coastline", "wybrzez")):
-            answer = bool(waters)
-            explanation = f"Main water bodies for {country['app_country_name']}: {', '.join(sorted(waters)) if waters else 'none'}."
+            answer = bool(direct_waters)
+            explanation = f"Main water bodies for {country['app_country_name']}: {', '.join(sorted(direct_waters)) if direct_waters else 'none'}."
         else:
             return None
         return LocalAnswer(
@@ -1331,10 +1324,8 @@ def resolve_ref(
         if relation == "marine_access":
             res = [water for water in res if is_marine_water_body(water)]
         if relation in {"water_access", "marine_access"}:
-            expanded = set(res)
-            for w in res:
-                if w in WATER_BODY_PARENT_MAP:
-                    expanded.update(WATER_BODY_PARENT_MAP[w])
+            expanded = expand_water_bodies(res)
+            for w in list(expanded):
                 w_lower = normalize_value(w)
                 if "sea" in w_lower or "ocean" in w_lower or "gulf" in w_lower or "bay" in w_lower or "skagerrak" in w_lower:
                     expanded.add("Sea")
@@ -1975,11 +1966,8 @@ def generate_factual_explanation(
 
     if rel == "water_access":
         db_waters = sorted(set(r[0] for r in conn.execute("SELECT water_body FROM country_water_access WHERE country_id=?", (country["id"],))))
-        all_waters = set(db_waters)
-        for w in db_waters:
-            if w in WATER_BODY_PARENT_MAP:
-                all_waters.update(WATER_BODY_PARENT_MAP[w])
-        all_waters_sorted = sorted(all_waters - {"Ocean"})
+        all_waters = expand_water_bodies(db_waters)
+        all_waters_sorted = sorted(all_waters - {"Ocean", "Sea"})
         w_str = ", ".join(all_waters_sorted) if all_waters_sorted else ""
         if normalize(str(target_val)) == "sea":
             if answer:
@@ -2008,7 +1996,6 @@ def generate_factual_explanation(
                 return f"{name} has direct coastline access to: {w_str}."
             else:
                 return f"{name} is completely landlocked with no direct coastline."
-
 
     if rel == "hemisphere":
         db_hemis = [r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))]
