@@ -89,6 +89,18 @@ const utilityPages: Record<string, [string, string]> = {
   '/flagdle': ['Play Today’s Flag', 'Play today’s Flagdle puzzle.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
+const modeGuidePaths: Record<string, string> = {
+  '/game': '/explore/modes/countrydle',
+  '/flagdle': '/explore/modes/flagdle',
+  '/europe': '/explore/modes/europe',
+  '/asia': '/explore/modes/asia',
+  '/africa': '/explore/modes/africa',
+  '/americas': '/explore/modes/americas',
+  '/us-states': '/explore/modes/us-states',
+  '/wojewodztwa': '/explore/modes/wojewodztwa',
+  '/powiaty': '/explore/modes/powiaty',
+  '/border-hop': '/explore/modes/countrydle',
+};
 
 function normalizePath(path: string): string {
   return `/${path.split('/').filter(Boolean).join('/')}`;
@@ -108,8 +120,10 @@ function routeMetadata(path: string): RouteMetadata {
   }
   const utility = utilityPages[path];
   if (utility) return {
-    title: `${utility[0]} | Countrydle`, description: utility[1],
-    noindex: path === '/login' || path === '/register' || path === '/setup-profile' || path === '/admin' || path === '/friends',
+    title: `${utility[0]} | Countrydle`,
+    description: utility[1],
+    canonicalPath: modeGuidePaths[path],
+    noindex: path === '/login' || path === '/register' || path === '/setup-profile' || path === '/admin' || path === '/friends' || path === '/archive' || path === '/leaderboard',
   };
   if (/^\/profile\/[^/]+$/.test(path)) return {
     title: 'Player Profile | Countrydle', description: 'View a Countrydle player profile.', noindex: true,
@@ -162,7 +176,7 @@ function structuredData(metadata: RouteMetadata, path: string, url: string) {
       temporalCoverage: article.puzzleDate,
       about: { '@type': 'Place', name: article.countryName },
       publisher: { '@type': 'Organization', name: 'Countrydle', url: `${ORIGIN}/about` },
-      ...(article.authorName ? { author: { '@type': 'Person', name: article.authorName } } : {}),
+      author: { '@type': 'Person', name: article.authorName || 'Jakub Melzacki', url: `${ORIGIN}/about` },
       ...(article.reviewedBy ? { reviewedBy: { '@type': 'Person', name: article.reviewedBy } } : {}),
     };
   }
@@ -223,7 +237,7 @@ export default function PageMetadata() {
     setMeta('name', 'twitter:description', metadata.description);
     setMeta('name', 'twitter:image', IMAGE);
     // The shell's author described its operator, not every article's author.
-    setMeta('name', 'author', metadata.article?.authorName ?? (path === '/' || path === '/about' ? 'Jakub Melzacki' : null));
+    setMeta('name', 'author', metadata.article?.authorName ?? 'Jakub Melzacki');
     const canonicals = document.head.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]');
     const canonical = canonicals[0] ?? document.createElement('link');
     canonical.rel = 'canonical';

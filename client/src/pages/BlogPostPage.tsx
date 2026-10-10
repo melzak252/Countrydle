@@ -110,6 +110,7 @@ export default function BlogPostPage() {
       puzzleDate: loadedPost.date,
       publishedAt: loadedPost.created_at || undefined,
       updatedAt: loadedPost.updated_at,
+      authorName: loadedPost.reviewer_name || 'Jakub Melzacki',
       reviewedBy: reviewed ? loadedPost.reviewer_name || undefined : undefined,
     },
   } : null);
@@ -534,6 +535,28 @@ export default function BlogPostPage() {
           </div>
         </section>
       )}
+      {/* Editorial Attribution & Author Byline */}
+      <footer className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 sm:p-6 text-sm text-zinc-300">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="font-semibold text-sand-100">
+              {isPl ? 'Autor i redakcja: Jakub Melzacki' : 'Author & Editorial: Jakub Melzacki'}
+            </p>
+            <p className="text-xs leading-5 text-zinc-400">
+              {isPl
+                ? 'Twórca Countrydle i entuzjasta geografii. Analiza geograficzna oparta na zweryfikowanych danych CIA World Factbook, Natural Earth i REST Countries.'
+                : 'Countrydle creator and geography enthusiast. Geographic analysis compiled from verified CIA World Factbook, Natural Earth, and REST Countries data.'}
+            </p>
+          </div>
+          <Link
+            to="/about"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded border border-white/15 px-3 py-1.5 text-xs text-sand-100 hover:border-emerald-400/40 hover:text-emerald-300 transition-colors"
+          >
+            {isPl ? 'O projekcie i źródłach' : 'About & Sources'}
+          </Link>
+        </div>
+      </footer>
+
 
       {/* Play Today's Game CTA */}
       <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 text-center space-y-3">
