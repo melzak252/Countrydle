@@ -243,7 +243,7 @@ export default function BlogPostPage() {
             </div>
 
             <h1 className="min-w-0 break-words font-serif text-2xl font-bold leading-tight tracking-tight text-sand-100 sm:text-4xl md:text-5xl">
-              {post.country_name}
+              {post.title}
             </h1>
 
             {post.subtitle && (

@@ -328,7 +328,8 @@ class Browser:
                     if route == "/blog":
                         valid = valid and (empty_blog or any(link == "/blog/" + slug for link in state.get("links", []) for slug in server.posts))
                     elif route.startswith("/blog/"):
-                        valid = valid and server.posts[route.removeprefix("/blog/")]["title"] in state.get("heading", "")
+                        post_meta = server.posts[route.removeprefix("/blog/")]
+                        valid = valid and (post_meta["title"] in state.get("heading", "") or post_meta.get("country_name", "") in state.get("heading", ""))
                 signature = json.dumps(state, sort_keys=True)
                 if valid and signature == previous:
                     if stable_since is not None and time.monotonic() - stable_since >= 0.5:
