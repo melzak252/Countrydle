@@ -348,7 +348,7 @@ class Browser:
             })()""", "returnByValue": True})["result"]["value"]
             # Local capture origin may appear only in browser-resolved metadata.
             html = html.replace(capture_origin, public_origin).replace("https://countrydle.online", public_origin)
-            if re.search(r"(?:localhost|127\.0\.0\.1|__COUNTRYDLE_PRERENDER__|<iframe\b|<ins\b[^>]*adsbygoogle|<script\b[^>]*src=[\"']https?://)", html, re.IGNORECASE):
+            if re.search(r"(?:localhost|127\.0\.0\.1|__COUNTRYDLE_PRERENDER__|<iframe\b|<ins\b[^>]*adsbygoogle|<script\b[^>]*src=[\"']https?://(?!www\.googletagmanager\.com/))", html, re.IGNORECASE):
                 raise runtime.PublisherError(f"Unsafe publisher runtime or loopback artifacts in {route}")
             return html
         finally:
