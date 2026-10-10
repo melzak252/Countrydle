@@ -60,6 +60,11 @@ from countrydle.template_compiler import _COUNTRY_NAMES, check_open_ended_questi
     ("Czy znajduje się na wschód od południka Greenwich?", "contains", "hemisphere", "Eastern"),
     ("Czy leży na zachód od południka zerowego?", "contains", "hemisphere", "Western"),
     ("Czy leży na wschód od południka zerowego?", "contains", "hemisphere", "Eastern"),
+    ("Czy jest na południe od Francji?", "south_of", "coordinates.latitude", "France"),
+    ("Czy leży na lewo od Polski?", "west_of", "coordinates.longitude", "Poland"),
+    ("czy leży na prawo od słowenii", "east_of", "coordinates.longitude", "Slovenia"),
+    ("does the country name end with stan?", "ends_with", "name", "stan"),
+    ("does the country have less than 10 million inhabitants?", "less_than", "population", 10_000_000),
 
 ])
 def test_compile_supported_templates(question, operator, relation, value):
@@ -126,12 +131,8 @@ def test_compile_supported_templates(question, operator, relation, value):
     "Czy leży na Bałkanach?",
     "Czy należało do ZSRR?",
     "Czy ma dostęp do Morza Czarnego?",
-    "Czy jest na południe od Francji?",
-    "Czy leży na lewo od Polski?",
     "Czy obowiązuje ruch lewostronny?",
     "Czy ruch jest prawostronny?",
-    "czy jest po prawej stronie od słoweni",
-    "czy leży na prawo od słowenii",
     "Czy ma ponad 10 milionów mieszkańców?",
     "Czy populacja jest poniżej 500 tysięcy?",
     "Czy ma więcej mieszkańców niż Niemcy?",

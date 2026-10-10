@@ -461,6 +461,12 @@ VALUE_ALIASES = {
     "nil": "Nile",
     "amazonka": "Amazon",
     "euro": "Euro",
+    "us dollar": "United States dollar",
+    "us dollars": "United States dollar",
+    "usd": "United States dollar",
+    "dollar": "United States dollar",
+    "dollars": "United States dollar",
+    "the dollar": "United States dollar",
     "dolar": "United States dollar",
     "dolar amerykanski": "United States dollar",
     "zloty": "Polish złoty",
@@ -532,22 +538,36 @@ VALUE_ALIASES = {
 
 
 ORG_ALIASES = {
+    "european union": "EU",
+    "the european union": "EU",
     "unia europejska": "EU",
     "ue": "EU",
     "eu": "EU",
     "nato": "NATO",
     "onz": "UN",
     "un": "UN",
+    "united nations": "UN",
+    "the united nations": "UN",
     "narody zjednoczone": "UN",
     "g7": "G7",
+    "the g7": "G7",
+    "group of seven": "G7",
     "g20": "G20",
+    "the g20": "G20",
+    "group of twenty": "G20",
     "oecd": "OECD",
+    "the oecd": "OECD",
     "ocde": "OECD",
     "wto": "WTO",
+    "the wto": "WTO",
     "schengen": "Schengen",
+    "schengen area": "Schengen",
+    "schengen zone": "Schengen",
     "strefa schengen": "Schengen",
     "commonwealth": "Commonwealth",
+    "commonwealth of nations": "Commonwealth",
     "african union": "AU",
+    "the african union": "AU",
     "unia afrykanska": "AU",
     "asean": "ASEAN",
     "opec": "OPEC",
@@ -886,7 +906,10 @@ def first_mentioned_value(
 
 
 def yes_no_question(normalized_question: str) -> bool:
-    return normalized_question.startswith(("czy ", "is ", "are ", "does ", "do ", "has ", "have ", "can ")) or "?" in normalized_question
+    return (
+        normalized_question.startswith(("czy ", "is ", "are ", "does ", "do ", "has ", "have ", "can ", "below ", "above ", "over ", "under "))
+        or "?" in normalized_question
+    )
 
 
 class LocalCountryFacts:
@@ -928,6 +951,7 @@ class LocalCountryFacts:
                 self._answer_coordinates,
                 self._answer_river,
                 self._answer_driving_side,
+                self._answer_name_pattern,
             )
             for handler in handlers:
                 answer = handler(conn, country, original_question, q)
@@ -1243,7 +1267,7 @@ class LocalCountryFacts:
         relation = None
         field = None
         unit = None
-        if any(word in q for word in ("population", "ludnosc", "mieszkanc")):
+        if any(word in q for word in ("population", "ludnosc", "mieszkanc", "inhabitants", "people", "citizens")):
             relation, field, unit = "population", "population", "people"
         elif any(word in q for word in ("area", "powierzch", "larger", "bigger", "wieksz")):
             relation, field, unit = "area", "area_km2", "km²"
@@ -1251,9 +1275,9 @@ class LocalCountryFacts:
             return None
 
         comparator = None
-        if any(word in q for word in ("more", "greater", "larger", "bigger", "wiecej", "wieksz", "ponad", "above")):
+        if any(word in q for word in ("more", "greater", "larger", "bigger", "higher", "over", "wiecej", "wieksz", "ponad", "above")):
             comparator = "gt"
-        elif any(word in q for word in ("less", "smaller", "mniej", "mniejsz", "ponizej", "below")):
+        elif any(word in q for word in ("less", "fewer", "smaller", "lower", "under", "mniej", "mniejsz", "ponizej", "below")):
             comparator = "lt"
         if not comparator:
             return None
@@ -1311,10 +1335,10 @@ class LocalCountryFacts:
                 explanation=f"{country['app_country_name']} territory spans: {', '.join(sorted(hemispheres))} hemispheres.",
                 relation="hemisphere",
             )
-        if any(word in q for word in ("northern", "polnocn", "north of equator", "na polnoc od rownika", "nad rownik", "powyzej rownik", "above equator", "above the equator")):
+        if any(word in q for word in ("northern", "polnocn", "north of equator", "north of the equator", "na polnoc od rownika", "nad rownik", "powyzej rownik", "above equator", "above the equator")):
             answer = "Northern" in hemispheres if hemispheres else lat > 0
             target = "Northern Hemisphere"
-        elif any(word in q for word in ("southern", "poludn", "south of equator", "na poludnie od rownika", "pod rownik", "ponizej rownik", "below equator", "below the equator")):
+        elif any(word in q for word in ("southern", "poludn", "south of equator", "south of the equator", "na poludnie od rownika", "pod rownik", "ponizej rownik", "below equator", "below the equator")):
             answer = "Southern" in hemispheres if hemispheres else lat < 0
             target = "Southern Hemisphere"
         elif any(word in q for word in ("eastern", "wschodn", "east of the prime meridian", "east of prime meridian", "east of greenwich", "na wschod od poludnika greenwich", "na wschod od poludnika zerowego")):
@@ -1364,6 +1388,43 @@ class LocalCountryFacts:
             explanation=f"Traffic in {country['app_country_name']} drives on the {country['driving_side']}.",
             relation="driving_side",
         )
+
+    def _answer_name_pattern(self, conn, country, original, q):
+        if not any(word in q for word in ("name", "nazw")):
+            return None
+        cname = country["app_country_name"]
+        cname_lower = cname.lower()
+        m_end = re.search(r"(?:name|nazwa)\s+(?:end(?:s)?\s+(?:with|in)|konczy sie na)\s+[\"'\u201c\u201d]?([a-zA-Z]+)[\"'\u201c\u201d]?", q)
+        if m_end:
+            val = m_end.group(1).lower()
+            answer = cname_lower.endswith(val)
+            return LocalAnswer(
+                question=f"Does the country name end with {val}?",
+                answer=answer,
+                explanation=f"The country name {cname} {'ends' if answer else 'does not end'} with “{val}”.",
+                relation="name",
+            )
+        m_start = re.search(r"(?:name|nazwa)\s+(?:start(?:s)?\s+(?:with|in)|zaczyna sie na)\s+[\"'\u201c\u201d]?([a-zA-Z]+)[\"'\u201c\u201d]?", q)
+        if m_start:
+            val = m_start.group(1).lower()
+            answer = cname_lower.startswith(val)
+            return LocalAnswer(
+                question=f"Does the country name start with {val}?",
+                answer=answer,
+                explanation=f"The country name {cname} {'starts' if answer else 'does not start'} with “{val}”.",
+                relation="name",
+            )
+        m_cont = re.search(r"(?:name|nazwa)\s+(?:contain(?:s)?|zawiera)\s+[\"'\u201c\u201d]?([a-zA-Z]+)[\"'\u201c\u201d]?", q)
+        if m_cont:
+            val = m_cont.group(1).lower()
+            answer = val in cname_lower
+            return LocalAnswer(
+                question=f"Does the country name contain {val}?",
+                answer=answer,
+                explanation=f"The country name {cname} {'contains' if answer else 'does not contain'} “{val}”.",
+                relation="name",
+            )
+        return None
 
 
 def try_answer_locally(question: str, country_name: str) -> LocalAnswer | None:

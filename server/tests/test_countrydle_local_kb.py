@@ -1378,3 +1378,65 @@ def test_regional_hierarchy_and_multilingual_queries():
     assert plan_germany is not None
     assert plan_germany[0][0]["operator"] == "west_of"
     assert plan_germany[0][0]["right"]["entity"] == "Germany"
+
+def test_english_idioms_organizations_currencies_and_name_patterns():
+    from countrydle.local_answering import try_answer_locally
+    from countrydle.template_compiler import compile_template_plan
+
+    # 1. Organization names & abbreviations in English
+    assert try_answer_locally("Is it a member of the European Union?", "Poland").answer is True
+    assert try_answer_locally("Is it in the European Union?", "Poland").answer is True
+    assert try_answer_locally("Is it a member of the EU?", "Poland").answer is True
+    assert try_answer_locally("Is it a member of the EU?", "United States").answer is False
+    assert try_answer_locally("Is it a member of the United Nations?", "Poland").answer is True
+    assert try_answer_locally("Is it a member of the UN?", "Poland").answer is True
+    assert try_answer_locally("Is it a member of the G7?", "Poland").answer is False
+    assert try_answer_locally("Is it a member of the G7?", "United States").answer is True
+    assert try_answer_locally("Is it in the OECD?", "Poland").answer is True
+    assert try_answer_locally("Is it in Schengen?", "Poland").answer is True
+    assert try_answer_locally("Is it in the Schengen zone?", "Poland").answer is True
+
+    # 2. Dollar and currency aliases in English
+    assert try_answer_locally("Does it use the US Dollar?", "United States").answer is True
+    assert try_answer_locally("Does it use the dollar?", "United States").answer is True
+    assert try_answer_locally("Does it use US dollars?", "United States").answer is True
+    assert try_answer_locally("Does it use the dollar?", "Poland").answer is False
+    assert try_answer_locally("Does it use the Euro?", "Germany").answer is True
+    assert try_answer_locally("Does it use the Euro?", "Poland").answer is False
+
+    # 3. Equator inquiries (informal and formal)
+    assert try_answer_locally("Below equator?", "Poland").answer is False
+    assert try_answer_locally("Above equator?", "Poland").answer is True
+    assert try_answer_locally("Below the equator?", "Poland").answer is False
+    assert try_answer_locally("Above the equator?", "Poland").answer is True
+    assert try_answer_locally("Is it below the equator?", "Poland").answer is False
+    assert try_answer_locally("Is it above the equator?", "Poland").answer is True
+    assert try_answer_locally("Is it north of the equator?", "Poland").answer is True
+    assert try_answer_locally("Is it south of the equator?", "Poland").answer is False
+    assert try_answer_locally("Is it south of the equator?", "Brazil").answer is True
+
+    # 4. Population inquiries with inhabitants/people
+    assert try_answer_locally("Does the country have less than 1 million inhabitants?", "Poland").answer is False
+    assert try_answer_locally("Does the country have less than 50 million inhabitants?", "Poland").answer is True
+    assert try_answer_locally("Does the country have more than 30 million people?", "Poland").answer is True
+    assert try_answer_locally("Does it have more than 100 million people?", "Poland").answer is False
+
+    # 5. Name string patterns (ends with, starts with, contains)
+    assert try_answer_locally("Does the country name end with stan?", "Kazakhstan").answer is True
+    assert try_answer_locally("Does the country name end with stan?", "Poland").answer is False
+    assert try_answer_locally("Does the country name end in stan?", "Kazakhstan").answer is True
+    assert try_answer_locally('Does the country name end with "stan"?', "Kazakhstan").answer is True
+    assert try_answer_locally("Does the country name contain stan?", "Kazakhstan").answer is True
+    assert try_answer_locally("Does the country name start with p?", "Poland").answer is True
+    assert try_answer_locally("Does the country name start with a?", "Poland").answer is False
+
+    # 6. Template compilation for name patterns and population
+    plan_stan = compile_template_plan("does the country name end with stan")
+    assert plan_stan is not None
+    assert plan_stan[0][0]["operator"] == "ends_with"
+    assert plan_stan[0][0]["right"]["value"] == "stan"
+
+    plan_pop = compile_template_plan("does the country have less than 10 million inhabitants")
+    assert plan_pop is not None
+    assert plan_pop[0][0]["operator"] == "less_than"
+    assert plan_pop[0][0]["right"]["value"] == 10_000_000

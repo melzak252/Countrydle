@@ -297,6 +297,18 @@ _NUMERIC_FACT_QUESTION = re.compile(
     r"(?: ?(?P<scale>thousand|million|billion|k|m|b))?"
     r"(?: ?(?P<unit>people|inhabitants|km2|sq km|square kilometres|square kilometers))?"
 )
+_POPULATION_PEOPLE_QUESTION = re.compile(
+    r"(?:does (?:it|the country) have )"
+    rf"(?P<comparison>{_LITERAL_COMPARISON_PATTERN}) "
+    r"(?P<number>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)"
+    r"(?: ?(?P<scale>thousand|million|billion|k|m|b))? "
+    r"(?P<unit>inhabitants|people|citizens)"
+)
+_NAME_PATTERN_QUESTION = re.compile(
+    r"(?:does (?:(?:it|the country)(?:['\u2019]s)?|its|the) name )"
+    r"(?P<op>end with|end in|contain|start with) "
+    r"[\"'\u201c\u201d]?(?P<val>[a-zA-Z]+)[\"'\u201c\u201d]?"
+)
 _CAPITAL_TEXT = r"(?:its|the|(?:the|this) country['\u2019]s) capital(?: name)?"
 _CAPITAL_LENGTH_QUESTION = re.compile(
     rf"is {_CAPITAL_TEXT} (?P<comparison>longer than|shorter than) "
@@ -339,6 +351,28 @@ def _compile_english_numeric_question(question: str) -> tuple[list[dict], str] |
         return [_node(operator, relation, value)], (
             f"Is the country's {relation} {match['comparison']} {value:,}{suffix}?"
         )
+    match_people = _POPULATION_PEOPLE_QUESTION.fullmatch(question)
+    if match_people is not None:
+        value = _english_number(match_people["number"], match_people["scale"])
+        if value is not None:
+            operator = _LITERAL_COMPARISONS[match_people["comparison"]]
+            return [_node(operator, "population", value)], (
+                f"Is the country's population {match_people['comparison']} {value:,}?"
+            )
+    match_name = _NAME_PATTERN_QUESTION.fullmatch(question)
+    if match_name is not None:
+        op_raw = match_name["op"]
+        val = match_name["val"]
+        if op_raw in {"end with", "end in"}:
+            op = "ends_with"
+            desc = f"Does the country name end with “{val}”?"
+        elif op_raw == "start with":
+            op = "starts_with"
+            desc = f"Does the country name start with “{val}”?"
+        else:
+            op = "contains_text"
+            desc = f"Does the country name contain “{val}”?"
+        return [_node(op, "name", val)], desc
     match = _CAPITAL_LENGTH_QUESTION.fullmatch(question) or _CAPITAL_LETTERS_QUESTION.fullmatch(question)
     if match is None:
         return None
