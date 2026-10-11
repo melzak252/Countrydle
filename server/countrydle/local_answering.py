@@ -2616,9 +2616,14 @@ def execute_local_plan(
         explanation = generate_factual_explanation(
             conn, country, plan, answer
         )
+        direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
+        clarification = direct_answer.clarification if direct_answer else (
+            f"Yes, {improved_question.rstrip('?').lower()}." if answer else f"No, {improved_question.rstrip('?').lower()}."
+        )
         return LocalAnswer(
             question=improved_question,
             answer=answer,
+            clarification=clarification,
             explanation=explanation,
             relation="+".join(relations),
             fact_provenance=fact_provenance,
