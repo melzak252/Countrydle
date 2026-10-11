@@ -1226,10 +1226,11 @@ class LocalCountryFacts:
         target_norm = normalize(target)
         answer = any(normalize(r["currency_name"]) == target_norm or normalize(r["currency_code"] or "") == target_norm for r in currencies)
         names = ", ".join(r["currency_name"] for r in currencies)
+        display_target = "US dollars / dollars" if target == "United States dollar" else target
         return LocalAnswer(
             question=f"Does the country use {target}?",
             answer=answer,
-            clarification=f"Yes, the country uses {target}." if answer else f"No, the country does not use {target}.",
+            clarification=f"Yes, the country uses {display_target}." if answer else f"No, the country does not use {display_target}.",
             explanation=f"The currency for {country['app_country_name']} is: {names}.",
             relation="currency",
         )
