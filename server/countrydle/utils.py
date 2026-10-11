@@ -172,6 +172,7 @@ async def analyze_and_answer_locally(
         # Factual details are stored for post-game review; public serializers
         # suppress them during play and never expose them as warning guidance.
         explanation=sanitize_explanation_for_player(local_answer.explanation),
+        clarification=local_answer.clarification,
         intent=f"Local KB relation: {local_answer.relation}",
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",
@@ -222,8 +223,10 @@ You are the 'Game Master' for Countrydle. Evaluate the exact True/False proposit
       - Answer TRUE if the country has an official or primary national language unique to or primarily named after its nation/people (e.g. Polish in Poland, French in France, Vietnamese in Vietnam, Japanese in Japan, German in Germany, Spanish in Spain, Italian in Italy).
       - Answer FALSE if the country primarily speaks a shared or borrowed language originating elsewhere (e.g. English in the United States, Australia, Canada, New Zealand; Spanish in Mexico, Argentina, Colombia; Portuguese in Brazil; German in Austria).
 ### Output Format (Strict JSON):
+Always evaluate and generate the explanation and clarification FIRST before determining the answer boolean. The answer must strictly follow from your reasoning.
 {{
-    "explanation": "One concise fact directly relevant to the question, or a brief reason the answer is uncertain.",
+    "explanation": "Step 1: One concise, specific fact directly relevant to the question from the context or general knowledge, for post-game review.",
+    "clarification": "Step 2: One short, spoiler-free sentence for the active player confirming how the question was interpreted (e.g. 'Yes, the country has direct coastline access to the sea/ocean.' or 'No, this country did not participate in the War of the Pacific.'). NEVER state the target country's name or reveal specific unasked geographic clues.",
     "answer": true | false | null
 }}
 For a well-defined historical question, use available historical knowledge rather than abstaining solely because of its date.
@@ -249,8 +252,11 @@ def answer_question_for_entity(
         request_timeout=request_timeout, deadline=deadline, model=model,
     )
     answer_dict["explanation"] = sanitize_explanation_for_player(
-        answer_dict["explanation"], {entity_name}, "the country"
+        answer_dict.get("explanation"), {entity_name}, "the country"
     )
+    answer_dict["clarification"] = sanitize_explanation_for_player(
+        answer_dict.get("clarification"), {entity_name}, "the country"
+    ) or None
     return answer_dict
 
 
@@ -290,6 +296,11 @@ async def ask_question(
             {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
             "the country",
         ),
+        clarification=sanitize_explanation_for_player(
+            answer_dict.get("clarification"),
+            {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
+            "the country",
+        ) or None,
         context=context,
     )
     return question_create, question_vector

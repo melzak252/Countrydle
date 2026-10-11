@@ -50,6 +50,7 @@ export interface Question {
   question?: string;
   valid: boolean;
   answer?: boolean;
+  clarification?: string | null;
   user_id: number;
   day_id: number;
   asked_at: string;

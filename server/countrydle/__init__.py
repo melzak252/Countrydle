@@ -130,8 +130,8 @@ def format_countrydle_guesses(guesses: list, target_country_id: int, target_name
 def _player_question_display(question, *, terminal=False) -> FullQuestionDisplay:
     # Serialize scalar history only, never lazy target/user relationships.
     return FullQuestionDisplay.model_validate(
-        {field: getattr(question, field) for field in (
-            "id", "original_question", "question", "valid", "answer", "user_id",
+        {field: getattr(question, field, None) for field in (
+            "id", "original_question", "question", "valid", "answer", "clarification", "user_id",
             "day_id", "asked_at", "explanation", "fact_provenance",
         )},
         context={"terminal": terminal},

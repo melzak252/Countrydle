@@ -30,6 +30,7 @@ class LocalAnswer:
     answer: bool | None
     explanation: str
     relation: str
+    clarification: str | None = None
     fact_provenance: list[dict] = field(default_factory=list)
 
 
@@ -1002,6 +1003,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Does the country border {target}?",
             answer=answer,
+            clarification=f"Yes, the country borders {target}." if answer else f"No, the country does not border {target}.",
             explanation=f"{country['app_country_name']} {'borders' if answer else 'does not border'} {target}.",
             relation="borders_country",
         )
@@ -1035,6 +1037,7 @@ class LocalCountryFacts:
             return LocalAnswer(
                 question="Is the country in the Americas?",
                 answer=answer,
+                clarification="Yes, the country is in the Americas." if answer else "No, the country is not in the Americas.",
                 explanation=explanation,
                 relation="continent",
             )
@@ -1042,6 +1045,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country in {target}?",
             answer=answer,
+            clarification=f"Yes, the country is located in {target}." if answer else f"No, the country is not located in {target}.",
             explanation=f"{country['app_country_name']} is listed under these continents: {', '.join(sorted(continents))}.",
             relation="continent",
         )
@@ -1066,6 +1070,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country in {target}?",
             answer=answer,
+            clarification=f"Yes, the country is located in {target}." if answer else f"No, the country is not located in {target}.",
             explanation=f"Geographic areas for {country['app_country_name']}: {', '.join(sorted(country_areas))}.",
             relation="geographic_area",
         )
@@ -1124,9 +1129,15 @@ class LocalCountryFacts:
                     explanation = f"{country['app_country_name']} has no direct open ocean access. Its recorded coastline: {', '.join(sorted(direct_waters))}."
                 else:
                     explanation = f"{country['app_country_name']} is completely landlocked with no ocean access."
+            clarification = (
+                f"Yes, the country has access to {count} oceans."
+                if answer
+                else ("No, the country has access to only 1 ocean." if count == 1 else "No, the country has no open ocean access.")
+            )
             return LocalAnswer(
                 question="Does the country have access to two or more oceans?",
                 answer=answer,
+                clarification=clarification,
                 explanation=explanation,
                 relation="water_access",
             )
@@ -1159,9 +1170,18 @@ class LocalCountryFacts:
             explanation = f"Main water bodies for {country['app_country_name']}: {', '.join(sorted(direct_waters)) if direct_waters else 'none'}."
         else:
             return None
+        if target == "Ocean":
+            clarification = "Yes, the country has direct coastline access to an ocean." if answer else "No, the country does not have direct coastline access to an ocean."
+        elif target == "Sea":
+            clarification = "Yes, the country has direct coastline access to the sea." if answer else "No, the country does not have direct access to the sea."
+        elif target:
+            clarification = f"Yes, the country has access to {target}." if answer else f"No, the country does not have access to {target}."
+        else:
+            clarification = "Yes, the country has a coastline / access to the sea." if answer else "No, the country is landlocked."
         return LocalAnswer(
             question=f"Does the country have direct access to {'an ocean' if target == 'Ocean' else target or 'a sea/ocean'}?",
             answer=answer,
+            clarification=clarification,
             explanation=explanation,
             relation="water_access",
         )
@@ -1173,6 +1193,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question="Is the country an island country?",
             answer=answer,
+            clarification="Yes, the country is an island / archipelago." if answer else "No, the country is not an island country.",
             explanation=f"{country['app_country_name']} is {'an island' if answer else 'not an island'} country.",
             relation="is_island",
         )
@@ -1189,6 +1210,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the capital {target}?",
             answer=answer,
+            clarification=f"Yes, the capital is {target}." if answer else f"No, the capital is not {target}.",
             explanation=f"The capital of {country['app_country_name']} is {country['capital']}.",
             relation="capital",
         )
@@ -1207,6 +1229,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Does the country use {target}?",
             answer=answer,
+            clarification=f"Yes, the country uses {target}." if answer else f"No, the country does not use {target}.",
             explanation=f"The currency for {country['app_country_name']} is: {names}.",
             relation="currency",
         )
@@ -1231,9 +1254,11 @@ class LocalCountryFacts:
                 explanation = f"Yes, {target} is an official/co-official language of {country['app_country_name']} ({', '.join(langs)})."
             else:
                 explanation = f"Official/co-official languages for {country['app_country_name']}: {', '.join(langs)}."
+            clarification = f"Yes, {target} is an official/co-official language of the country." if answer else f"No, {target} is not an official language of the country."
             return LocalAnswer(
                 question=f"Is {target} an official or spoken language?",
                 answer=True,
+                clarification=clarification,
                 explanation=explanation,
                 relation="official_language",
             )
@@ -1243,6 +1268,7 @@ class LocalCountryFacts:
             return LocalAnswer(
                 question=f"Is {target} an official language?",
                 answer=False,
+                clarification=f"No, {target} is not an official language of the country.",
                 explanation=f"{target} is not an official language of {country['app_country_name']}. Recorded official languages: {', '.join(langs)}.",
                 relation="official_language",
             )
@@ -1265,6 +1291,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country's dominant religion {target}?",
             answer=answer,
+            clarification=f"Yes, the dominant religion is {target}." if answer else f"No, the dominant religion is not {target}.",
             explanation=f"The dominant religion category for {country['app_country_name']} is {religion}.",
             relation="dominant_religion",
         )
@@ -1282,6 +1309,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country's government type {target}?",
             answer=answer,
+            clarification=f"Yes, the government type is {target}." if answer else f"No, the government type is not {target}.",
             explanation=f"The government type for {country['app_country_name']} is {government_type}.",
             relation="government_type",
         )
@@ -1298,6 +1326,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country a member of {target}?",
             answer=answer,
+            clarification=f"Yes, the country is a member of {target}." if answer else f"No, the country is not a member of {target}.",
             explanation=f"{country['app_country_name']} {'is' if answer else 'is not'} a member of {target}.",
             relation="membership",
             fact_provenance=[read_record(conn, country["id"], "membership", target if answer else None)],
@@ -1346,9 +1375,11 @@ class LocalCountryFacts:
         value = country[field]
         answer = value > target_value if comparator == "gt" else value < target_value
         sign = "more than" if comparator == "gt" else "less than"
+        clarification = f"Yes, the country has {sign} {target_label}." if answer else f"No, the country does not have {sign} {target_label}."
         return LocalAnswer(
             question=f"Does the country have {sign} {target_label}?",
             answer=answer,
+            clarification=clarification,
             explanation=f"{country['app_country_name']} has {value:g} {unit}; comparison: {sign} {target_label}.",
             relation=relation,
         )
@@ -1361,17 +1392,21 @@ class LocalCountryFacts:
         hemispheres = {r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))}
         if any(word in q for word in ("cross the equator", "crosses the equator", "crossing the equator", "on the equator", "straddle the equator", "przecina rownik", "lezy na rowniku", "na rowniku")):
             answer = "Northern" in hemispheres and "Southern" in hemispheres
+            clarification = "Yes, the country crosses the equator." if answer else "No, the country does not cross the equator."
             return LocalAnswer(
                 question="Does the country cross the equator?",
                 answer=answer,
+                clarification=clarification,
                 explanation=f"{country['app_country_name']} territory spans: {', '.join(sorted(hemispheres))} hemispheres.",
                 relation="hemisphere",
             )
         if any(word in q for word in ("cross the prime meridian", "crosses the prime meridian", "crossing the prime meridian", "on the prime meridian", "cross the greenwich", "crosses the greenwich", "przecina poludnik greenwich", "przecina poludnik zerowy", "lezy na poludniku greenwich", "lezy na poludniku zerowym", "na poludniku greenwich", "na poludniku zerowym")):
             answer = "Eastern" in hemispheres and "Western" in hemispheres
+            clarification = "Yes, the country crosses the prime meridian." if answer else "No, the country does not cross the prime meridian."
             return LocalAnswer(
                 question="Does the country cross the prime meridian?",
                 answer=answer,
+                clarification=clarification,
                 explanation=f"{country['app_country_name']} territory spans: {', '.join(sorted(hemispheres))} hemispheres.",
                 relation="hemisphere",
             )
@@ -1389,9 +1424,11 @@ class LocalCountryFacts:
             target = "Western Hemisphere"
         else:
             return None
+        clarification = f"Yes, the country is in the {target}." if answer else f"No, the country is not in the {target}."
         return LocalAnswer(
             question=f"Is the country in the {target}?",
             answer=answer,
+            clarification=clarification,
             explanation=f"{country['app_country_name']} is located in the {', '.join(sorted(hemispheres)) if hemispheres else f'coordinates {lat:g}, {lon:g}'}.",
             relation="hemisphere" if hemispheres else "coordinates",
         )
@@ -1408,6 +1445,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Does the country have the {target} river?",
             answer=answer,
+            clarification=f"Yes, the country has the {target} river." if answer else f"No, the country does not have the {target} river.",
             explanation=f"Major rivers for {country['app_country_name']}: {', '.join(sorted(rivers)) if rivers else 'none in the local database'}.",
             relation="major_rivers",
         )
@@ -1422,9 +1460,11 @@ class LocalCountryFacts:
         else:
             return None
         answer = normalize(country["driving_side"] or "") == target
+        clarification = f"Yes, traffic drives on the {target} side." if answer else f"No, traffic does not drive on the {target} side."
         return LocalAnswer(
             question=f"Does traffic drive on the {target}?",
             answer=answer,
+            clarification=clarification,
             explanation=f"Traffic in {country['app_country_name']} drives on the {country['driving_side']}.",
             relation="driving_side",
         )
@@ -1438,9 +1478,11 @@ class LocalCountryFacts:
         if m_end:
             val = m_end.group(1).lower()
             answer = cname_lower.endswith(val)
+            clarification = f"Yes, the country name ends with “{val}”." if answer else f"No, the country name does not end with “{val}”."
             return LocalAnswer(
                 question=f"Does the country name end with {val}?",
                 answer=answer,
+                clarification=clarification,
                 explanation=f"The country name {cname} {'ends' if answer else 'does not end'} with “{val}”.",
                 relation="name",
             )
@@ -1448,9 +1490,11 @@ class LocalCountryFacts:
         if m_start:
             val = m_start.group(1).lower()
             answer = cname_lower.startswith(val)
+            clarification = f"Yes, the country name starts with “{val}”." if answer else f"No, the country name does not start with “{val}”."
             return LocalAnswer(
                 question=f"Does the country name start with {val}?",
                 answer=answer,
+                clarification=clarification,
                 explanation=f"The country name {cname} {'starts' if answer else 'does not start'} with “{val}”.",
                 relation="name",
             )
@@ -1458,9 +1502,11 @@ class LocalCountryFacts:
         if m_cont:
             val = m_cont.group(1).lower()
             answer = val in cname_lower
+            clarification = f"Yes, the country name contains “{val}”." if answer else f"No, the country name does not contain “{val}”."
             return LocalAnswer(
                 question=f"Does the country name contain {val}?",
                 answer=answer,
+                clarification=clarification,
                 explanation=f"The country name {cname} {'contains' if answer else 'does not contain'} “{val}”.",
                 relation="name",
             )

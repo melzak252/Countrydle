@@ -67,9 +67,16 @@ export default function ResultsQuestionHistory({ questions, mode, isGameOver, no
                     <p className="whitespace-pre-wrap">{notice.reason}</p>
                     {notice.nextStep && <p className="text-amber-200/80">{notice.nextStep}</p>}
                   </div>
-                ) : question?.explanation && (!question.valid || isGameOver) ? (
-                  <p className="whitespace-pre-wrap">{question.explanation}</p>
-                ) : null}
+                ) : (
+                  <>
+                    {question?.clarification && (
+                      <p className="font-medium text-emerald-400/90 whitespace-pre-wrap">{question.clarification}</p>
+                    )}
+                    {question?.explanation && (!question.valid || isGameOver) && (
+                      <p className="whitespace-pre-wrap text-zinc-300">{question.explanation}</p>
+                    )}
+                  </>
+                )}
                 {isGameOver && (mode === 'countrydle' || mode === 'continental') && question && (
                   <FactProvenance records={question.fact_provenance} />
                 )}

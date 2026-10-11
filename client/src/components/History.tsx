@@ -33,16 +33,21 @@ export default function History({ questions, mode, isGameOver = false }: History
         const content = (
           <>
             <p className="break-words px-4 py-4 text-base font-medium leading-6 text-sand-100">{q.original_question}</p>
-            <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t px-4 py-3 ${answerColor}`}>
-              <span className={`inline-flex items-center gap-2.5 font-semibold ${q.valid && q.answer !== null ? 'text-lg uppercase tracking-wide' : 'text-sm'}`}>
-                {!q.valid ? <AlertTriangle size={20} aria-hidden="true" /> : q.answer === true ? <Check size={23} strokeWidth={2.5} aria-hidden="true" /> : q.answer === false ? <X size={23} strokeWidth={2.5} aria-hidden="true" /> : <HelpCircle size={20} aria-hidden="true" />}
-                {answerLabel}
-              </span>
-              {showExplanation && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
-                  {'Explanation'}
-                  <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+            <div className={`border-t px-4 py-3 ${answerColor}`}>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <span className={`inline-flex items-center gap-2.5 font-semibold ${q.valid && q.answer !== null ? 'text-lg uppercase tracking-wide' : 'text-sm'}`}>
+                  {!q.valid ? <AlertTriangle size={20} aria-hidden="true" /> : q.answer === true ? <Check size={23} strokeWidth={2.5} aria-hidden="true" /> : q.answer === false ? <X size={23} strokeWidth={2.5} aria-hidden="true" /> : <HelpCircle size={20} aria-hidden="true" />}
+                  {answerLabel}
                 </span>
+                {showExplanation && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
+                    {'Explanation'}
+                    <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+                  </span>
+                )}
+              </div>
+              {q.clarification && (
+                <p className="mt-1.5 text-xs font-normal leading-relaxed text-sand-200/90">{q.clarification}</p>
               )}
             </div>
           </>

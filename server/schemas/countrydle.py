@@ -19,9 +19,9 @@ class QuestionEnhanced(BaseModel):
     question: str | None
     valid: bool
     explanation: str | None
+    clarification: str | None = None
     intent: str | None = None
     required_info: str | None = None
-
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -50,19 +50,19 @@ class QuestionDisplay(ReportableQuestion, PublicFactEvidence):
     question: str | None
     valid: bool
     answer: bool | None
+    clarification: str | None = None
     user_id: int | None
     day_id: int
     asked_at: datetime
-
     model_config = ConfigDict(from_attributes=True)
 
 
 class FullQuestionDisplay(QuestionDisplay):
     explanation: str
+    clarification: str | None = None
     context: str | None = Field(default=None, exclude=True)
     user: UserDisplay | None = None
     country: CountryDisplay | None = None
-
     model_config = ConfigDict(from_attributes=True)
 
 

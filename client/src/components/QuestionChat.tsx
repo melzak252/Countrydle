@@ -139,6 +139,9 @@ export default function QuestionChat({
                     <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
                     {answer}
                   </span>
+                  {question.clarification && (
+                    <p className="mt-1.5 text-xs text-sand-200/90 font-normal leading-relaxed">{question.clarification}</p>
+                  )}
                 </div>
                 {showExplanation && (
                   <div className="text-sm md:text-xs leading-relaxed text-zinc-300 [overflow-wrap:anywhere] pt-0.5">
