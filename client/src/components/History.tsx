@@ -47,7 +47,9 @@ export default function History({ questions, mode, isGameOver = false }: History
                 )}
               </div>
               {q.clarification && (
-                <p className="mt-1.5 text-xs font-normal leading-relaxed text-sand-200/90">{q.clarification}</p>
+                <div className="mt-2 rounded bg-black/25 border border-white/5 px-2.5 py-1.5 text-xs font-normal leading-relaxed text-sand-100/90">
+                  {q.clarification}
+                </div>
               )}
             </div>
           </>
