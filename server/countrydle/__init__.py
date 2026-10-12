@@ -127,13 +127,19 @@ def format_countrydle_guesses(guesses: list, target_country_id: int, target_name
     return formatted
 
 
-def _player_question_display(question, *, terminal=False) -> FullQuestionDisplay:
+def _player_question_display(question, *, terminal=False, auto_guess=None) -> FullQuestionDisplay:
     # Serialize scalar history only, never lazy target/user relationships.
+    from datetime import datetime
+    payload = {field: getattr(question, field, None) for field in (
+        "id", "original_question", "question", "valid", "answer", "clarification", "user_id",
+        "day_id", "asked_at", "explanation", "fact_provenance",
+    )}
+    if payload.get("asked_at") is None:
+        payload["asked_at"] = datetime.now()
+    if auto_guess is not None:
+        payload["auto_guess"] = auto_guess
     return FullQuestionDisplay.model_validate(
-        {field: getattr(question, field, None) for field in (
-            "id", "original_question", "question", "valid", "answer", "clarification", "user_id",
-            "day_id", "asked_at", "explanation", "fact_provenance",
-        )},
+        payload,
         context={"terminal": terminal},
     )
 
@@ -763,7 +769,7 @@ async def ask_question(
     except Exception as exc:
         failure_status = status.HTTP_503_SERVICE_UNAVAILABLE
         await session.rollback()
-        logging.getLogger("countrydle").error("Handled error in ask_question (%s)", type(exc).__name__)
+        logging.getLogger("countrydle").exception("Handled error in ask_question (%s)", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not verify this question right now. Your turn was not deducted.",
@@ -898,21 +904,51 @@ async def _do_ask_question(
     question_create.guest_id = (
         get_guest_identity(request, response) if user is None else None
     )
-
     question_create.day_id = daily_country.id
-    if user is None:
-        await record_guest_action(
-            session, request, response, "countrydle", daily_country.id,
-            question=True, max_questions=COUNTRYDLE_CONFIG.max_questions,
+    
+    # DIRECT GUESS CHECK:
+    # If the player directly asked about the target country by name ("Is it Croatia?", "Croatia?")
+    # and the answer is True, register a winning guess instead of consuming a question turn!
+    is_direct_name_win = (
+        question_create.valid
+        and question_create.answer is True
+        and getattr(planned_question, "plan", None) is not None
+    )
+    if is_direct_name_win:
+        plan = planned_question.plan
+        if isinstance(plan, list) and len(plan) == 1:
+            plan = plan[0]
+        if not (isinstance(plan, dict) and plan.get("operator") == "equals" and plan.get("left", {}).get("relation") == "name"):
+            is_direct_name_win = False
+
+    auto_guess_display = None
+    if is_direct_name_win:
+        # Do NOT consume a question turn. Execute winning guess!
+        new_question = await CountrydleQuestionsRepository(session).create_question(question_create)
+        guess_payload = GuessBase(guess=daily_country.country.name if getattr(daily_country, "country", None) else None, country_id=daily_country.country_id)
+        auto_guess_display = await make_guess(
+            guess=guess_payload,
+            request=request,
+            response=response,
+            user=user,
+            session=session,
         )
+        result = _player_question_display(new_question, terminal=True, auto_guess=auto_guess_display)
+        await session.commit()
     else:
-        await consume_question(
-            session, CountrydleState, user.id, daily_country.id,
-            COUNTRYDLE_CONFIG.max_questions, COUNTRYDLE_CONFIG.max_guesses,
-        )
-    new_question = await CountrydleQuestionsRepository(session).create_question(question_create)
-    result = _player_question_display(new_question)
-    await session.commit()
+        if user is None:
+            await record_guest_action(
+                session, request, response, "countrydle", daily_country.id,
+                question=True, max_questions=COUNTRYDLE_CONFIG.max_questions,
+            )
+        else:
+            await consume_question(
+                session, CountrydleState, user.id, daily_country.id,
+                COUNTRYDLE_CONFIG.max_questions, COUNTRYDLE_CONFIG.max_guesses,
+            )
+        new_question = await CountrydleQuestionsRepository(session).create_question(question_create)
+        result = _player_question_display(new_question)
+        await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.
         try:

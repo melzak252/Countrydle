@@ -382,25 +382,55 @@ const createGameStore = (gameType: MapGameType) => {
         
         if (isGuest && dailyDate && gameState) {
           const newQuestions = [...questions, question];
-          const newGameState = {
+          const autoGuess = (question as any).auto_guess;
+          const isDirectWin = Boolean(autoGuess && autoGuess.answer);
+          
+          let newGuesses = guesses;
+          let newGameState = {
             ...gameState,
-            remaining_questions: gameState.remaining_questions - 1,
-            questions_asked: gameState.questions_asked + 1,
+            remaining_questions: isDirectWin ? gameState.remaining_questions : gameState.remaining_questions - 1,
+            questions_asked: isDirectWin ? gameState.questions_asked : gameState.questions_asked + 1,
           };
+
+          let resolvedCorrectEntity = correctEntity;
+          if (isDirectWin) {
+            newGuesses = [...guesses, autoGuess];
+            newGameState = {
+              ...newGameState,
+              remaining_guesses: Math.max(0, gameState.remaining_guesses - 1),
+              guesses_made: gameState.guesses_made + 1,
+              won: true,
+              is_game_over: true,
+            };
+            if (autoGuess.country_id) {
+              resolvedCorrectEntity = get().entities.find(e => e.id === autoGuess.country_id) || null;
+            }
+            if (!resolvedCorrectEntity && autoGuess.guess) {
+              resolvedCorrectEntity = get().entities.find(e => (e.name || (e as any).nazwa || '').toLowerCase() === autoGuess.guess.toLowerCase()) || null;
+            }
+          }
           
           saveGuestSnapshot(getLocalStateKey(gameType, dailyDate), {
             state: newGameState,
             questions: newQuestions,
-            guesses,
-            correctEntity
+            guesses: newGuesses,
+            correctEntity: resolvedCorrectEntity
           });
+          if (newGameState.is_game_over) {
+            recordGuestCompletion(gameType, dailyDate, newGameState, dailyDate);
+          }
           
           set({
             questions: newQuestions,
+            guesses: newGuesses,
             gameState: newGameState,
+            correctEntity: resolvedCorrectEntity,
             isLoading: false,
             pendingQuestion: null,
           });
+          if (newGameState.is_game_over) {
+            await get().fetchGameState();
+          }
         } else {
           await get().fetchGameState();
           set({ isLoading: false, pendingQuestion: null });

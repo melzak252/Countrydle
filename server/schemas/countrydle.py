@@ -1,6 +1,6 @@
+from __future__ import annotations
 from datetime import datetime
-from typing import List, Union
-
+from typing import List, Union, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from schemas.user import ProfileDisplay, UserDisplay
@@ -43,6 +43,31 @@ class QuestionCreate(QuestionEnhanced):
         return [FactProvenanceRecord.model_validate(item).model_dump(mode="json") for item in value]
 
 
+# Guess Schema
+class GuessBase(BaseModel):
+    guess: str
+    country_id: int | None = None
+    elapsed_seconds: int | None = None
+
+class GuessCreate(GuessBase):
+    day_id: int
+    user_id: int | None = None
+    answer: bool | None
+    guest_id: str | None = None
+
+
+class GuessDisplay(GuessBase):
+    id: int
+    answer: bool | None
+    guessed_at: datetime
+    distance_km: int | None = None
+    bearing_degrees: int | None = None
+    bearing_direction: str | None = None
+    bearing_arrow: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class QuestionDisplay(ReportableQuestion, PublicFactEvidence):
     report_mode = "countrydle"
     id: int
@@ -54,6 +79,7 @@ class QuestionDisplay(ReportableQuestion, PublicFactEvidence):
     user_id: int | None
     day_id: int
     asked_at: datetime
+    auto_guess: GuessDisplay | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -79,32 +105,6 @@ class InvalidQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     explanation: str
 
     model_config = ConfigDict(from_attributes=True)
-
-
-# Guess Schema
-class GuessBase(BaseModel):
-    guess: str
-    country_id: int | None = None
-    elapsed_seconds: int | None = None
-
-class GuessCreate(GuessBase):
-    day_id: int
-    user_id: int | None = None
-    answer: bool | None
-    guest_id: str | None = None
-
-
-class GuessDisplay(GuessBase):
-    id: int
-    answer: bool | None
-    guessed_at: datetime
-    distance_km: int | None = None
-    bearing_degrees: int | None = None
-    bearing_direction: str | None = None
-    bearing_arrow: str | None = None
-
-    model_config = ConfigDict(from_attributes=True)
-
 
 class UserHistory(BaseModel):
     user: UserDisplay

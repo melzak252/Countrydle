@@ -162,3 +162,185 @@ async def test_ask_question_too_long(auth_client):
     question_data = {"question": long_question}
     response = await auth_client.post("/countrydle/question", json=question_data)
     assert response.status_code == 422  # Unprocessable Entity for validation error
+
+
+@pytest.mark.anyio
+async def test_ask_direct_country_question_correct_converts_to_winning_guess(async_client):
+    from app import app
+    from db.models import Country, CountrydleDay, CountrydleState, User
+    from users.utils import get_current_or_guest_user
+    from unittest.mock import MagicMock, patch, AsyncMock
+
+    user = MagicMock(spec=User)
+    user.id = 42
+    user.is_authenticated = True
+
+    async def mock_user():
+        return user
+
+    app.dependency_overrides[get_current_or_guest_user] = mock_user
+
+    try:
+        mock_day = MagicMock()
+        mock_day.id = 100
+        mock_day.country_id = 1
+        mock_day.date = "2026-10-12"
+
+        target_country = MagicMock(spec=Country)
+        target_country.id = 1
+        target_country.name = "Poland"
+        target_country.official_name = "Republic of Poland"
+        mock_day.country = target_country
+
+        mock_state = MagicMock(spec=CountrydleState)
+        mock_state.id = 1
+        mock_state.user_id = 42
+        mock_state.day_id = 100
+        mock_state.remaining_questions = 10
+        mock_state.remaining_guesses = 3
+        mock_state.questions_asked = 0
+        mock_state.guesses_made = 0
+        mock_state.is_game_over = False
+        mock_state.won = False
+        mock_state.points = 0
+
+        with (
+            patch("countrydle.CountrydleRepository.get_today_country", new_callable=AsyncMock) as m_today,
+            patch("countrydle.check_question_available", new_callable=AsyncMock),
+            patch("countrydle.CountryRepository.get", new_callable=AsyncMock) as m_country,
+            patch("countrydle.CountryRepository.validate_guess", new_callable=AsyncMock),
+            patch("countrydle.CountrydleStateRepository.get_player_countrydle_state", new_callable=AsyncMock) as m_state,
+            patch("countrydle.CountrydleGuessRepository.add_guess", new_callable=AsyncMock) as m_add_guess,
+            patch("countrydle.CountrydleStateRepository.guess_made", new_callable=AsyncMock) as m_guess_made,
+            patch("countrydle.CountrydleQuestionsRepository.create_question", new_callable=AsyncMock) as m_add_q,
+            patch("countrydle.consume_question", new_callable=AsyncMock) as m_consume,
+        ):
+            m_today.return_value = mock_day
+            m_country.return_value = target_country
+            m_state.return_value = mock_state
+
+            saved_guess = MagicMock()
+            saved_guess.id = 1
+            saved_guess.guess = "Poland"
+            saved_guess.country_id = 1
+            saved_guess.answer = True
+            saved_guess.guessed_at = None
+            m_add_guess.return_value = saved_guess
+
+            saved_q = MagicMock()
+            saved_q.id = 99
+            saved_q.original_question = "Is it Poland?"
+            saved_q.question = "Is the country Poland?"
+            saved_q.valid = True
+            saved_q.answer = True
+            saved_q.clarification = "The country is Poland."
+            saved_q.user_id = 42
+            saved_q.day_id = 100
+            saved_q.asked_at = None
+            saved_q.explanation = "Poland is the target country."
+            saved_q.fact_provenance = []
+            m_add_q.return_value = saved_q
+
+            response = await async_client.post("/countrydle/question", json={"question": "Is it Poland?"})
+            assert response.status_code == 200
+            data = response.json()
+
+            # Must NOT consume question turn
+            m_consume.assert_not_called()
+
+            # Must execute guess
+            m_add_guess.assert_called_once()
+            m_guess_made.assert_called_once()
+
+            # auto_guess must be present and winning
+            assert "auto_guess" in data
+            assert data["auto_guess"] is not None
+            assert data["auto_guess"]["answer"] is True
+            assert data["auto_guess"]["country_id"] == 1
+    finally:
+        app.dependency_overrides = {}
+
+
+@pytest.mark.anyio
+async def test_ask_direct_country_question_incorrect_consumes_question_not_guess(async_client):
+    from app import app
+    from db.models import Country, CountrydleDay, CountrydleState, User
+    from users.utils import get_current_or_guest_user
+    from unittest.mock import MagicMock, patch, AsyncMock
+
+    user = MagicMock(spec=User)
+    user.id = 42
+    user.is_authenticated = True
+
+    async def mock_user():
+        return user
+
+    app.dependency_overrides[get_current_or_guest_user] = mock_user
+
+    try:
+        mock_day = MagicMock()
+        mock_day.id = 100
+        mock_day.country_id = 1
+        mock_day.date = "2026-10-12"
+
+        target_country = MagicMock(spec=Country)
+        target_country.id = 1
+        target_country.name = "Poland"
+        mock_day.country = target_country
+
+        mock_state = MagicMock(spec=CountrydleState)
+        mock_state.id = 1
+        mock_state.user_id = 42
+        mock_state.day_id = 100
+        mock_state.remaining_questions = 10
+        mock_state.remaining_guesses = 3
+        mock_state.questions_asked = 0
+        mock_state.guesses_made = 0
+        mock_state.is_game_over = False
+        mock_state.won = False
+
+        with (
+            patch("countrydle.CountrydleRepository.get_today_country", new_callable=AsyncMock) as m_today,
+            patch("countrydle.check_question_available", new_callable=AsyncMock),
+            patch("countrydle.CountryRepository.get", new_callable=AsyncMock) as m_country,
+            patch("countrydle.CountryRepository.validate_guess", new_callable=AsyncMock),
+            patch("countrydle.CountrydleStateRepository.get_player_countrydle_state", new_callable=AsyncMock) as m_state,
+            patch("countrydle.CountrydleGuessRepository.add_guess", new_callable=AsyncMock) as m_add_guess,
+            patch("countrydle.CountrydleStateRepository.guess_made", new_callable=AsyncMock) as m_guess_made,
+            patch("countrydle.CountrydleQuestionsRepository.create_question", new_callable=AsyncMock) as m_add_q,
+            patch("countrydle.consume_question", new_callable=AsyncMock) as m_consume,
+        ):
+            m_today.return_value = mock_day
+            m_country.return_value = target_country
+            m_state.return_value = mock_state
+
+            saved_q = MagicMock()
+            saved_q.id = 101
+            saved_q.original_question = "Is it France?"
+            saved_q.question = "Is the country France?"
+            saved_q.valid = True
+            saved_q.answer = False
+            saved_q.clarification = "The country is not France."
+            saved_q.user_id = 42
+            saved_q.day_id = 100
+            saved_q.asked_at = None
+            saved_q.explanation = "Poland is the target country."
+            saved_q.fact_provenance = []
+            m_add_q.return_value = saved_q
+
+            response = await async_client.post("/countrydle/question", json={"question": "Is it France?"})
+            assert response.status_code == 200
+            data = response.json()
+
+            # For incorrect question: MUST consume question turn!
+            m_consume.assert_called_once()
+
+            # Must NOT execute guess!
+            m_add_guess.assert_not_called()
+            m_guess_made.assert_not_called()
+
+            # auto_guess must NOT be present
+            assert data.get("auto_guess") is None
+            assert data["answer"] is False
+    finally:
+        app.dependency_overrides = {}
