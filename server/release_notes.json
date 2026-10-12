@@ -1,5 +1,5 @@
 {
-  "version": "1.30.1",
-  "title": "Streamlined natural sentence answers",
-  "body": "- Redesigned in-game question responses into unified, direct natural-language sentences (e.g. \"✓ Yes — The country has direct coastline access to the sea.\" or \"✗ No — The country does not border Germany.\") combining the visual answer indicator with clear interpretation.\n- Removed redundant separate status badges and eliminated duplicate \"Yes, \" / \"No, \" prefixes in answer descriptions.\n- Detailed geographic references and specific sea names remain securely kept for post-game deduction reviews.\n- Your saved game progress, daily streaks, and question and guess limits are unchanged."
+  "version": "1.30.2",
+  "title": "Clean full sentence answer styling",
+  "body": "- Enhanced in-game answer card layout: the response now renders inside the classic green or red badge as a single natural sentence (e.g. \"✓ Yes, the country has direct coastline access to the sea.\" or \"✗ No, the country does not border Germany.\").\n- Removed awkward secondary containers and text wrapping for a cleaner, unified presentation.\n- Your saved game progress, daily streaks, and question and guess limits are unchanged."
 }
