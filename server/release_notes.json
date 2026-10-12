@@ -1,5 +1,5 @@
 {
-  "version": "1.31.0",
-  "title": "Direct question-to-win detection and faster Flagdle geographic clues",
-  "body": "- Asking directly about the mystery country (e.g. \"Is it Croatia?\" or \"Croatia?\") now immediately scores as a winning guess when correct, finishing the game on the spot without deducting a question turn or requiring retyping.\n- Incorrect country questions still count as regular questions without penalizing your limited guess attempts.\n- Flagdle clues now unlock much faster: distance in kilometers appears starting on guess 3, and compass direction arrows unlock on guess 5.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.31.1",
+  "title": "Grammatical precision in answer sentences",
+  "body": "- Completely redesigned AST plan clarification generator (generate_plan_clarification) to construct grammatically clean English sentences directly from relation nodes (e.g. \"The country is west of Finland.\" or \"The country is not south of Norway.\").\n- Eliminated broken string concatenation artifacts like \"The country does not is the country...\" on directional and identity questions.\n- Preserved instant in-game spoiler-free clarity and full post-game detailed facts.\n- Your saved game progress, streaks, and normal game limits are unchanged."
 }

@@ -2571,6 +2571,122 @@ def generate_factual_explanation(
     return ""
 
 
+def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
+    """Generate a clean, grammatical English clarification directly from AST plan node."""
+    if not isinstance(plan, dict):
+        return None
+    
+    op = plan.get("operator")
+    left = plan.get("left") or {}
+    right = plan.get("right") or {}
+    rel = left.get("relation") if isinstance(left, dict) else None
+    val = right.get("value") if isinstance(right, dict) else None
+    entity = right.get("entity") if isinstance(right, dict) else None
+
+    # Handle negation wrapper
+    if op == "not":
+        child = plan.get("condition") or (plan.get("args") and isinstance(plan.get("args")[0], dict) and plan.get("args")[0])
+        if child:
+            return generate_plan_clarification(child, not answer)
+        if rel in ("marine_access", "water_access"):
+            return "The country is landlocked." if answer else "The country has access to the sea/ocean."
+
+    # Direct Country Name / Identity
+    if rel == "name":
+        if op == "equals" and val:
+            return f"The country is {val}." if answer else f"The country is not {val}."
+        if op == "ends_with" and val:
+            return f"The country name ends with “{val}”." if answer else f"The country name does not end with “{val}”."
+        if op == "starts_with" and val:
+            return f"The country name starts with “{val}”." if answer else f"The country name does not start with “{val}”."
+        if op == "contains_text" and val:
+            return f"The country name contains “{val}”." if answer else f"The country name does not contain “{val}”."
+
+    # Geography: Continents & Regions
+    if rel in ("continent", "geographic_area", "region", "subregion"):
+        target = val or "this region"
+        return f"The country is located in {target}." if answer else f"The country is not located in {target}."
+
+    # Borders
+    if rel == "borders_country":
+        target = val or entity or "that country"
+        return f"The country borders {target}." if answer else f"The country does not border {target}."
+
+    # Water & Sea Access
+    if rel in ("water_access", "marine_access"):
+        if op == "exists":
+            return "The country has direct coastline access to the sea." if answer else "The country is landlocked."
+        if val == "Ocean":
+            return "The country has direct coastline access to an ocean." if answer else "The country does not have direct coastline access to an ocean."
+        if val == "Sea":
+            return "The country has direct coastline access to the sea." if answer else "The country does not have direct access to the sea."
+        if val:
+            return f"The country has access to {val}." if answer else f"The country does not have access to {val}."
+        return "The country has direct coastline access to the sea." if answer else "The country is landlocked."
+
+    # Islands
+    if rel == "is_island":
+        return "The country is an island / archipelago." if answer else "The country is not an island country."
+
+    # Coordinates & Hemispheres & Directions
+    if rel == "hemisphere":
+        if val in ("Northern", "Southern", "Eastern", "Western"):
+            return f"The country is in the {val} Hemisphere." if answer else f"The country is not in the {val} Hemisphere."
+
+    if op in ("north_of", "south_of", "east_of", "west_of"):
+        target = entity or val or "that country"
+        direction = op.replace("_of", "")
+        return f"The country is {direction} of {target}." if answer else f"The country is not {direction} of {target}."
+
+    # Capital
+    if rel == "capital":
+        target = val or "that capital"
+        return f"The capital is {target}." if answer else f"The capital is not {target}."
+
+    # Currency
+    if rel == "currency":
+        display = "US dollars / dollars" if val == "United States dollar" else (val or "that currency")
+        return f"The country uses {display}." if answer else f"The country does not use {display}."
+
+    # Government
+    if rel == "government_type":
+        target = val or "that government type"
+        return f"The government type is {target}." if answer else f"The government type is not {target}."
+
+    # Memberships / Alliances
+    if rel == "membership":
+        target = val or "that organization"
+        return f"The country is a member of {target}." if answer else f"The country is not a member of {target}."
+
+    # Religion
+    if rel == "dominant_religion":
+        target = val or "that religion"
+        return f"The dominant religion is {target}." if answer else f"The dominant religion is not {target}."
+
+    # Driving Side
+    if rel == "driving_side":
+        side = val or "that side"
+        return f"Traffic drives on the {side} side." if answer else f"Traffic does not drive on the {side} side."
+
+    # Population & Area Numeric Comparisons
+    if rel in ("population", "area"):
+        comp = {
+            "greater_than": "more than",
+            "greater_than_or_equal": "at least",
+            "less_than": "less than",
+            "less_than_or_equal": "at most",
+            "equals": "exactly",
+        }.get(op, "compared to")
+        unit = " km²" if rel == "area" else ""
+        formatted_val = f"{val:,}{unit}" if isinstance(val, (int, float)) else str(val)
+        return (
+            f"The country has {comp} {formatted_val} {rel}."
+            if answer else
+            f"The country does not have {comp} {formatted_val} {rel}."
+        )
+
+    return None
+
 def execute_local_plan(
     plan: dict | list,
     country_name: str,
@@ -2616,10 +2732,17 @@ def execute_local_plan(
         explanation = generate_factual_explanation(
             conn, country, plan, answer
         )
-        direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
-        clarification = direct_answer.clarification if direct_answer else (
-            f"The country {improved_question.rstrip('?').lower()}." if answer else f"The country does not {improved_question.rstrip('?').lower()}."
-        )
+
+        clarification = generate_plan_clarification(plan, answer)
+        if not clarification:
+            direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
+            if direct_answer and direct_answer.clarification:
+                clarification = direct_answer.clarification
+            else:
+                # Clean fallback without repeating subject
+                cleaned_q = improved_question.strip().rstrip("?").strip()
+                cleaned_q = re.sub(r"^(?:is (?:the |this )?country|does (?:the |this )?country|is it|does it|have|has)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
+                clarification = f"The country {cleaned_q}." if answer else f"The country does not {cleaned_q}."
         return LocalAnswer(
             question=improved_question,
             answer=answer,
