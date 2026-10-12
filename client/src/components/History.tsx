@@ -34,23 +34,29 @@ export default function History({ questions, mode, isGameOver = false }: History
           <>
             <p className="break-words px-4 py-4 text-base font-medium leading-6 text-sand-100">{q.original_question}</p>
             <div className={`border-t px-4 py-3 ${answerColor}`}>
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                <span className={`inline-flex items-center gap-2.5 font-semibold ${q.valid && q.answer !== null ? 'text-lg uppercase tracking-wide' : 'text-sm'}`}>
-                  {!q.valid ? <AlertTriangle size={20} aria-hidden="true" /> : q.answer === true ? <Check size={23} strokeWidth={2.5} aria-hidden="true" /> : q.answer === false ? <X size={23} strokeWidth={2.5} aria-hidden="true" /> : <HelpCircle size={20} aria-hidden="true" />}
-                  {answerLabel}
-                </span>
+              <div className="flex items-start justify-between gap-x-4 gap-y-2">
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 shrink-0">
+                    {!q.valid ? <AlertTriangle size={20} aria-hidden="true" /> : q.answer === true ? <Check size={22} strokeWidth={2.5} aria-hidden="true" /> : q.answer === false ? <X size={22} strokeWidth={2.5} aria-hidden="true" /> : <HelpCircle size={20} aria-hidden="true" />}
+                  </span>
+                  <p className="text-sm font-medium leading-relaxed text-sand-100">
+                    <strong className={`font-semibold mr-1.5 uppercase tracking-wide ${q.answer === true ? 'text-emerald-300' : q.answer === false ? 'text-rose-300' : 'text-amber-200'}`}>
+                      {answerLabel}{q.clarification ? ' —' : ''}
+                    </strong>
+                    {q.clarification ? (
+                      <span className="font-normal text-sand-100/90">
+                        {q.clarification.replace(/^(?:Yes,?\s*|No,?\s*)/i, '')}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
                 {showExplanation && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-zinc-300 pt-0.5">
                     {'Explanation'}
                     <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden="true" />
                   </span>
                 )}
               </div>
-              {q.clarification && (
-                <div className="mt-2 rounded bg-black/25 border border-white/5 px-2.5 py-1.5 text-xs font-normal leading-relaxed text-sand-100/90">
-                  {q.clarification}
-                </div>
-              )}
             </div>
           </>
         );

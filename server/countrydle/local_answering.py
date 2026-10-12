@@ -1003,7 +1003,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Does the country border {target}?",
             answer=answer,
-            clarification=f"Yes, the country borders {target}." if answer else f"No, the country does not border {target}.",
+            clarification=f"The country borders {target}." if answer else f"The country does not border {target}.",
             explanation=f"{country['app_country_name']} {'borders' if answer else 'does not border'} {target}.",
             relation="borders_country",
         )
@@ -1037,7 +1037,7 @@ class LocalCountryFacts:
             return LocalAnswer(
                 question="Is the country in the Americas?",
                 answer=answer,
-                clarification="Yes, the country is in the Americas." if answer else "No, the country is not in the Americas.",
+                clarification="The country is in the Americas." if answer else "The country is not in the Americas.",
                 explanation=explanation,
                 relation="continent",
             )
@@ -1045,7 +1045,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country in {target}?",
             answer=answer,
-            clarification=f"Yes, the country is located in {target}." if answer else f"No, the country is not located in {target}.",
+            clarification=f"The country is located in {target}." if answer else f"The country is not located in {target}.",
             explanation=f"{country['app_country_name']} is listed under these continents: {', '.join(sorted(continents))}.",
             relation="continent",
         )
@@ -1070,7 +1070,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the country in {target}?",
             answer=answer,
-            clarification=f"Yes, the country is located in {target}." if answer else f"No, the country is not located in {target}.",
+            clarification=f"The country is located in {target}." if answer else f"The country is not located in {target}.",
             explanation=f"Geographic areas for {country['app_country_name']}: {', '.join(sorted(country_areas))}.",
             relation="geographic_area",
         )
@@ -1130,9 +1130,9 @@ class LocalCountryFacts:
                 else:
                     explanation = f"{country['app_country_name']} is completely landlocked with no ocean access."
             clarification = (
-                f"Yes, the country has access to {count} oceans."
+                f"The country has access to {count} oceans."
                 if answer
-                else ("No, the country has access to only 1 ocean." if count == 1 else "No, the country has no open ocean access.")
+                else ("The country has access to only 1 ocean." if count == 1 else "The country has no open ocean access.")
             )
             return LocalAnswer(
                 question="Does the country have access to two or more oceans?",
@@ -1171,13 +1171,13 @@ class LocalCountryFacts:
         else:
             return None
         if target == "Ocean":
-            clarification = "Yes, the country has direct coastline access to an ocean." if answer else "No, the country does not have direct coastline access to an ocean."
+            clarification = "The country has direct coastline access to an ocean." if answer else "The country does not have direct coastline access to an ocean."
         elif target == "Sea":
-            clarification = "Yes, the country has direct coastline access to the sea." if answer else "No, the country does not have direct access to the sea."
+            clarification = "The country has direct coastline access to the sea." if answer else "The country does not have direct access to the sea."
         elif target:
-            clarification = f"Yes, the country has access to {target}." if answer else f"No, the country does not have access to {target}."
+            clarification = f"The country has access to {target}." if answer else f"The country does not have access to {target}."
         else:
-            clarification = "Yes, the country has a coastline / access to the sea." if answer else "No, the country is landlocked."
+            clarification = "The country has a coastline / access to the sea." if answer else "The country is landlocked."
         return LocalAnswer(
             question=f"Does the country have direct access to {'an ocean' if target == 'Ocean' else target or 'a sea/ocean'}?",
             answer=answer,
@@ -1193,7 +1193,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question="Is the country an island country?",
             answer=answer,
-            clarification="Yes, the country is an island / archipelago." if answer else "No, the country is not an island country.",
+            clarification="The country is an island / archipelago." if answer else "The country is not an island country.",
             explanation=f"{country['app_country_name']} is {'an island' if answer else 'not an island'} country.",
             relation="is_island",
         )
@@ -1210,7 +1210,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Is the capital {target}?",
             answer=answer,
-            clarification=f"Yes, the capital is {target}." if answer else f"No, the capital is not {target}.",
+            clarification=f"The capital is {target}." if answer else f"The capital is not {target}.",
             explanation=f"The capital of {country['app_country_name']} is {country['capital']}.",
             relation="capital",
         )
@@ -1393,7 +1393,7 @@ class LocalCountryFacts:
         hemispheres = {r[0] for r in conn.execute("SELECT hemisphere FROM country_hemispheres WHERE country_id=?", (country["id"],))}
         if any(word in q for word in ("cross the equator", "crosses the equator", "crossing the equator", "on the equator", "straddle the equator", "przecina rownik", "lezy na rowniku", "na rowniku")):
             answer = "Northern" in hemispheres and "Southern" in hemispheres
-            clarification = "Yes, the country crosses the equator." if answer else "No, the country does not cross the equator."
+            clarification = "The country crosses the equator." if answer else "The country does not cross the equator."
             return LocalAnswer(
                 question="Does the country cross the equator?",
                 answer=answer,
@@ -1403,7 +1403,7 @@ class LocalCountryFacts:
             )
         if any(word in q for word in ("cross the prime meridian", "crosses the prime meridian", "crossing the prime meridian", "on the prime meridian", "cross the greenwich", "crosses the greenwich", "przecina poludnik greenwich", "przecina poludnik zerowy", "lezy na poludniku greenwich", "lezy na poludniku zerowym", "na poludniku greenwich", "na poludniku zerowym")):
             answer = "Eastern" in hemispheres and "Western" in hemispheres
-            clarification = "Yes, the country crosses the prime meridian." if answer else "No, the country does not cross the prime meridian."
+            clarification = "The country crosses the prime meridian." if answer else "The country does not cross the prime meridian."
             return LocalAnswer(
                 question="Does the country cross the prime meridian?",
                 answer=answer,
@@ -1425,7 +1425,7 @@ class LocalCountryFacts:
             target = "Western Hemisphere"
         else:
             return None
-        clarification = f"Yes, the country is in the {target}." if answer else f"No, the country is not in the {target}."
+        clarification = f"The country is in the {target}." if answer else f"The country is not in the {target}."
         return LocalAnswer(
             question=f"Is the country in the {target}?",
             answer=answer,
@@ -1446,7 +1446,7 @@ class LocalCountryFacts:
         return LocalAnswer(
             question=f"Does the country have the {target} river?",
             answer=answer,
-            clarification=f"Yes, the country has the {target} river." if answer else f"No, the country does not have the {target} river.",
+            clarification=f"The country has the {target} river." if answer else f"The country does not have the {target} river.",
             explanation=f"Major rivers for {country['app_country_name']}: {', '.join(sorted(rivers)) if rivers else 'none in the local database'}.",
             relation="major_rivers",
         )
@@ -1461,7 +1461,7 @@ class LocalCountryFacts:
         else:
             return None
         answer = normalize(country["driving_side"] or "") == target
-        clarification = f"Yes, traffic drives on the {target} side." if answer else f"No, traffic does not drive on the {target} side."
+        clarification = f"Traffic drives on the {target} side." if answer else f"Traffic does not drive on the {target} side."
         return LocalAnswer(
             question=f"Does traffic drive on the {target}?",
             answer=answer,
@@ -1479,7 +1479,7 @@ class LocalCountryFacts:
         if m_end:
             val = m_end.group(1).lower()
             answer = cname_lower.endswith(val)
-            clarification = f"Yes, the country name ends with “{val}”." if answer else f"No, the country name does not end with “{val}”."
+            clarification = f"The country name ends with “{val}”." if answer else f"The country name does not end with “{val}”."
             return LocalAnswer(
                 question=f"Does the country name end with {val}?",
                 answer=answer,
@@ -1491,7 +1491,7 @@ class LocalCountryFacts:
         if m_start:
             val = m_start.group(1).lower()
             answer = cname_lower.startswith(val)
-            clarification = f"Yes, the country name starts with “{val}”." if answer else f"No, the country name does not start with “{val}”."
+            clarification = f"The country name starts with “{val}”." if answer else f"The country name does not start with “{val}”."
             return LocalAnswer(
                 question=f"Does the country name start with {val}?",
                 answer=answer,
@@ -1503,7 +1503,7 @@ class LocalCountryFacts:
         if m_cont:
             val = m_cont.group(1).lower()
             answer = val in cname_lower
-            clarification = f"Yes, the country name contains “{val}”." if answer else f"No, the country name does not contain “{val}”."
+            clarification = f"The country name contains “{val}”." if answer else f"The country name does not contain “{val}”."
             return LocalAnswer(
                 question=f"Does the country name contain {val}?",
                 answer=answer,
@@ -2618,7 +2618,7 @@ def execute_local_plan(
         )
         direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
         clarification = direct_answer.clarification if direct_answer else (
-            f"Yes, {improved_question.rstrip('?').lower()}." if answer else f"No, {improved_question.rstrip('?').lower()}."
+            f"The country {improved_question.rstrip('?').lower()}." if answer else f"The country does not {improved_question.rstrip('?').lower()}."
         )
         return LocalAnswer(
             question=improved_question,

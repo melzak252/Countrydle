@@ -1,5 +1,5 @@
 {
-  "version": "1.30.0",
-  "title": "In-game answer clarifications and reason-first answering",
-  "body": "- Introduced clear in-game question clarifications: during active play, answers now confirm how your question was interpreted (e.g. \"Yes, the country has direct coastline access to the sea.\" or \"Yes, the country is in the Northern Hemisphere.\") without leaking spoilers or specific unasked geographic secrets.\n- Detailed geographic facts, specific sea names, and comprehensive references remain securely hidden during play and are revealed in your post-game summary and deduction timeline.\n- Reordered the fallback AI reasoning pipeline to evaluate and formulate factual explanations and clarifications first before deciding the boolean answer, eliminating logic contradictions.\n- Your saved game progress, daily streaks, and question and guess limits are unchanged."
+  "version": "1.30.1",
+  "title": "Streamlined natural sentence answers",
+  "body": "- Redesigned in-game question responses into unified, direct natural-language sentences (e.g. \"✓ Yes — The country has direct coastline access to the sea.\" or \"✗ No — The country does not border Germany.\") combining the visual answer indicator with clear interpretation.\n- Removed redundant separate status badges and eliminated duplicate \"Yes, \" / \"No, \" prefixes in answer descriptions.\n- Detailed geographic references and specific sea names remain securely kept for post-game deduction reviews.\n- Your saved game progress, daily streaks, and question and guess limits are unchanged."
 }

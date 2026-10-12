@@ -133,18 +133,22 @@ export default function QuestionChat({
                 <Compass size={13} className="text-emerald-400" aria-hidden="true" />
                 <span>Countrydle</span>
               </div>
-              <div className="w-fit max-w-[92%] overflow-hidden rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-3.5 py-2.5 space-y-2 shadow-sm">
-                <div>
-                  <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm md:text-xs font-semibold ${tone}`}>
+              <div className="w-fit max-w-[92%] overflow-hidden rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.045] px-3.5 py-2.5 space-y-1.5 shadow-sm">
+                <div className="flex items-start gap-2">
+                  <span className={`inline-flex shrink-0 items-center justify-center rounded-md p-1 mt-0.5 ${tone}`}>
                     <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
-                    {answer}
                   </span>
+                  <p className="text-sm md:text-xs leading-relaxed text-sand-100">
+                    <strong className={`font-semibold mr-1.5 ${question.answer === true ? 'text-emerald-300' : question.answer === false ? 'text-rose-300' : 'text-amber-200'}`}>
+                      {answer}{question.clarification ? ' —' : ''}
+                    </strong>
+                    {question.clarification ? (
+                      <span className="text-sand-100/90 font-normal">
+                        {question.clarification.replace(/^(?:Yes,?\s*|No,?\s*)/i, '')}
+                      </span>
+                    ) : null}
+                  </p>
                 </div>
-                {question.clarification && (
-                  <div className="rounded-lg bg-black/30 border border-white/5 px-2.5 py-1.5 text-xs text-sand-100/90 leading-relaxed font-normal">
-                    {question.clarification}
-                  </div>
-                )}
                 {showExplanation && (
                   <div className="text-sm md:text-xs leading-relaxed text-zinc-300 [overflow-wrap:anywhere] pt-0.5">
                     {!question.valid && <p className="mb-0.5 font-medium text-amber-200">Try rephrasing your question</p>}

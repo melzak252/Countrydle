@@ -1448,7 +1448,7 @@ def test_in_game_clarification_is_spoiler_free_and_differentiates_explanation():
     ans_croatia_sea = try_answer_locally("Does the country have access to the sea?", "Croatia")
     assert ans_croatia_sea is not None
     assert ans_croatia_sea.answer is True
-    assert ans_croatia_sea.clarification == "Yes, the country has direct coastline access to the sea."
+    assert ans_croatia_sea.clarification == "The country has direct coastline access to the sea."
     assert "Adriatic" not in ans_croatia_sea.clarification
     assert "Adriatic" in ans_croatia_sea.explanation
 
@@ -1456,23 +1456,23 @@ def test_in_game_clarification_is_spoiler_free_and_differentiates_explanation():
     ans_europe = try_answer_locally("Is the country in Europe?", "Poland")
     assert ans_europe is not None
     assert ans_europe.answer is True
-    assert ans_europe.clarification == "Yes, the country is located in Europe."
+    assert ans_europe.clarification == "The country is located in Europe."
 
     # 3. Equator / Hemisphere
     ans_hemi = try_answer_locally("Is it north of the equator?", "Poland")
     assert ans_hemi is not None
     assert ans_hemi.answer is True
-    assert ans_hemi.clarification == "Yes, the country is in the Northern Hemisphere."
+    assert ans_hemi.clarification == "The country is in the Northern Hemisphere."
 
     # 4. Landlocked country negative
     ans_landlocked = try_answer_locally("Does the country have access to the sea?", "Czech Republic")
     assert ans_landlocked is not None
     assert ans_landlocked.answer is False
-    assert ans_landlocked.clarification == "No, the country does not have direct access to the sea."
+    assert ans_landlocked.clarification == "The country does not have direct access to the sea."
 
     # 5. Borders
     ans_border = try_answer_locally("Does it border Germany?", "Poland")
     assert ans_border is not None
     assert ans_border.answer is True
-    assert ans_border.clarification == "Yes, the country borders Germany."
+    assert ans_border.clarification == "The country borders Germany."
     assert "Poland" not in ans_border.clarification
