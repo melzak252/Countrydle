@@ -579,8 +579,14 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                                 </div>
                               </div>
 
+                              {isQuestion && event.clarification && (
+                                <p className="mt-3 border-l-2 border-emerald-500 pl-3 text-xs font-medium text-emerald-200/90">
+                                  <span className="font-semibold text-emerald-300">{t('adminSessions.clarification')}: </span>
+                                  {event.clarification}
+                                </p>
+                              )}
                               {isQuestion && event.explanation && (
-                                <p className="admin-muted mt-3 border-l-2 border-slate-500 pl-3">
+                                <p className="admin-muted mt-2 border-l-2 border-slate-500 pl-3">
                                   <span className="font-semibold">{t('adminSessions.explanation')}: </span>
                                   {event.explanation}
                                 </p>

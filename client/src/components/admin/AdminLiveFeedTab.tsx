@@ -166,6 +166,13 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
           )}
         </div>
 
+        {question.clarification && (
+          <div className="border-t border-white/10 pt-2 text-xs">
+            <span className="font-semibold text-emerald-300">{t('adminLiveFeed.clarification')}: </span>
+            <span className="text-emerald-200/90 font-medium">{question.clarification}</span>
+          </div>
+        )}
+
         {question.explanation && (
           <details className="border-t border-white/10 pt-2">
             <summary className="text-sm font-medium text-sand-100">{t('adminLiveFeed.explanation')}</summary>

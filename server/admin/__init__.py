@@ -308,6 +308,7 @@ async def get_admin_live_feed(
                     valid=q_obj.valid,
                     answer=q_obj.answer,
                     explanation=q_obj.explanation,
+                    clarification=getattr(q_obj, "clarification", None),
                     asked_at=q_obj.asked_at,
                     target_name=t_name,
                     target_subtitle=str(t_sub) if t_sub else None,

@@ -168,6 +168,7 @@ async def admin_fixture(monkeypatch):
             valid=True,
             answer=True,
             explanation="Poland is located in Central Europe.",
+            clarification="The country is in Europe.",
             context="local_kb:continent",
             asked_at=datetime(2026, 9, 20, 10, 0, 0),
         )
@@ -358,6 +359,7 @@ async def test_admin_live_feed_target_and_source(admin_fixture):
             target, source, valid, answer
         )
     assert questions[("us_statedle", 1)]["target_subtitle"] == "TX"
+    assert questions[("countrydle", 1)]["clarification"] == "The country is in Europe."
     guesses = {(item["mode"], item["id"]): item for item in data["recent_guesses"]}
     for guess_id, guess, answer in [(1, "Germany", False), (2, "Poland", True), (3, "Czech Republic", False)]:
         item = guesses[("countrydle", guess_id)]
@@ -379,6 +381,7 @@ async def test_admin_questions_list_multi_mode(admin_fixture):
     assert c_q["target_name"] == "Poland"
     assert c_q["source"] == "local_kb"
     assert c_q["relation"] == "continent"
+    assert c_q["clarification"] == "The country is in Europe."
     assert c_q["has_report"] is False
     assert c_q["username"] == "player_bob"
     assert c_q["is_guest"] is False
@@ -499,6 +502,7 @@ async def test_admin_game_sessions_timeline(admin_fixture):
     assert tl[0]["event_type"] == "question"
     assert tl[0]["question"] == "Is the country in Europe?"
     assert tl[0]["answer"] is True
+    assert tl[0]["clarification"] == "The country is in Europe."
     assert tl[0]["source"] == "local_kb"
 
     assert tl[1]["event_type"] == "guess"

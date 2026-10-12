@@ -164,6 +164,7 @@ async def evaluate_question_test(
                 mode=request.mode, entity=_entity_display(entity),
                 original_question=request.question, question=answer.question,
                 valid=answer.valid, answer=answer.answer, explanation=answer.explanation,
+                clarification=getattr(answer, "clarification", None),
                 context=answer.context, source=source,
                 server_version=SERVER_VERSION,
                 duration_ms=round((perf_counter() - started) * 1000),

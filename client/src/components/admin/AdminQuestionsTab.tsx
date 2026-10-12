@@ -140,6 +140,7 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({ onTestInQA
   const renderDetails = (item: AdminQuestionItem, contextId: string) => <div className="mt-3 border-t border-white/10 pt-3 space-y-3 text-sm leading-6">
     <div><h4 className="font-semibold text-sand-200">{t('adminAudit.originalQuestion')}</h4><p className="whitespace-pre-wrap break-words">{item.original_question}</p></div>
     {item.question && item.question !== item.original_question && <div><h4 className="font-semibold text-sand-200">{t('adminAudit.rephrasedQuestion')}</h4><p className="whitespace-pre-wrap break-words">{item.question}</p></div>}
+    {item.clarification && <div><h4 className="font-semibold text-emerald-400">{t('adminAudit.playerClarification')}</h4><p className="whitespace-pre-wrap break-words font-medium text-emerald-200/90">{item.clarification}</p></div>}
     <div><h4 className="font-semibold text-sand-200">{t('adminAudit.explanation')}</h4><p className="whitespace-pre-wrap break-words">{item.explanation || t('adminAudit.noExplanation')}</p></div>
     <dl className="admin-meta grid gap-2 sm:grid-cols-2">
       <div><dt>{t('adminAudit.relation')}</dt><dd className="break-words text-sand-200">{item.relation || '—'}</dd></div>
@@ -169,8 +170,10 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({ onTestInQA
     {!item.valid ? t('adminAudit.invalid') : item.answer === true ? t('adminAudit.yes') : item.answer === false ? t('adminAudit.no') : t('adminCommon.noAnswer')}
   </span>;
   const renderSource = (item: AdminQuestionItem) => <div className="space-y-1"><span className="admin-badge">{item.source === 'local_kb' ? t('adminAudit.sourceLocalLong') : item.source === 'fallback' ? t('adminAudit.sourceFallbackLong') : t('adminAudit.sourceInvalidLong')}</span>{item.has_report && <span className="admin-badge admin-outcome-error inline-flex items-center gap-1"><ShieldAlert aria-hidden="true" size={14} />{t('adminAudit.reportId', { id: item.report_id ?? '—' })}</span>}</div>;
-  const renderQuestionSummary = (item: AdminQuestionItem) => <p className="admin-question line-clamp-3 break-words">{item.original_question}</p>;
-
+  const renderQuestionSummary = (item: AdminQuestionItem) => <div className="space-y-1">
+    <p className="admin-question line-clamp-3 break-words">{item.original_question}</p>
+    {item.clarification && <p className="line-clamp-2 break-words text-xs font-medium text-emerald-400/90">{item.clarification}</p>}
+  </div>;
   return <div className="space-y-4">
     {actionMessage && <div role={actionMessage.type === 'error' ? 'alert' : 'status'} className={`admin-panel flex items-start justify-between gap-3 ${actionMessage.type === 'success' ? 'border-emerald-700 text-emerald-200' : 'border-rose-700 text-rose-200'}`}>
       <div className="flex items-center gap-2">{actionMessage.type === 'success' ? <CheckCircle2 aria-hidden="true" size={18} /> : <AlertTriangle aria-hidden="true" size={18} />}{actionMessage.text}</div>

@@ -104,6 +104,7 @@ const resources = {
         "answersMatch": "Match: validity and Yes/No answer are the same as in the report.",
         "answersDiffer": "Difference: validity or Yes/No answer differs from the report.",
         "explanation": "Explanation",
+        "clarification": "Player clarification",
         "answerSource": "Answer source",
         "sources": {
           "local_kb": "Local KB",
@@ -210,6 +211,7 @@ const resources = {
         },
         "testInQa": "Test in QA",
         "explanation": "Explanation",
+        "clarification": "Player clarification",
         "outcomes": {
           "solved": "Solved",
           "missed": "Incorrect guess"
@@ -584,6 +586,7 @@ const resources = {
         "testQuestionInQA": "Test this question in QA: {{question}}",
         "testInQA": "Test in QA",
         "explanation": "Explanation",
+        "clarification": "Player clarification",
         "rawContext": "Raw context",
         "noSessions": "No player sessions match these filters.",
         "strategyInsights": "Strategy insights",
@@ -644,8 +647,8 @@ const resources = {
         "testInQA": "Test in QA",
         "originalQuestion": "Original question",
         "rephrasedQuestion": "Rephrased question",
+        "playerClarification": "Player clarification",
         "explanation": "Explanation",
-        "noExplanation": "No explanation recorded",
         "relation": "Relation",
         "reported": "Reported",
         "reportId": "Report #{{id}}",
@@ -1311,6 +1314,7 @@ const resources = {
         "answersMatch": "Zgodność: poprawność i odpowiedź Tak/Nie są takie same jak w zgłoszeniu.",
         "answersDiffer": "Różnica: poprawność lub odpowiedź Tak/Nie różni się od zgłoszenia.",
         "explanation": "Wyjaśnienie",
+        "clarification": "Klaryfikacja dla gracza",
         "answerSource": "Źródło odpowiedzi",
         "sources": {
           "local_kb": "Lokalna baza wiedzy",
@@ -1419,6 +1423,7 @@ const resources = {
         },
         "testInQa": "Testuj w QA",
         "explanation": "Wyjaśnienie",
+        "clarification": "Klaryfikacja dla gracza",
         "outcomes": {
           "solved": "Rozwiązano",
           "missed": "Błędny typ"
@@ -1703,6 +1708,7 @@ const resources = {
         "testQuestionInQA": "Przetestuj to pytanie w QA: {{question}}",
         "testInQA": "Testuj w QA",
         "explanation": "Wyjaśnienie",
+        "clarification": "Klaryfikacja dla gracza",
         "rawContext": "Surowy kontekst",
         "noSessions": "Brak sesji graczy pasujących do wybranych filtrów.",
         "strategyInsights": "Analiza strategii",
@@ -1763,8 +1769,8 @@ const resources = {
         "testInQA": "Testuj w QA",
         "originalQuestion": "Oryginalne pytanie",
         "rephrasedQuestion": "Przeformułowane pytanie",
+        "playerClarification": "Klaryfikacja dla gracza",
         "explanation": "Wyjaśnienie",
-        "noExplanation": "Brak zapisanego wyjaśnienia",
         "relation": "Relacja",
         "reported": "Zgłoszone",
         "reportId": "Zgłoszenie nr {{id}}",

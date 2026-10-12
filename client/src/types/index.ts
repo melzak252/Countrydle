@@ -146,6 +146,7 @@ export interface QuestionTestResult {
   valid: boolean;
   answer: boolean | null;
   explanation: string;
+  clarification?: string | null;
   context: string | null;
   source: 'local_kb' | 'local_planner' | 'fallback' | 'flag_kb';
   server_version: string;
@@ -312,6 +313,7 @@ export interface AdminQuestionItem {
   valid: boolean;
   answer?: boolean | null;
   explanation: string;
+  clarification?: string | null;
   context?: string | null;
   source: AdminQuestionSource;
   relation?: string | null;
@@ -336,6 +338,7 @@ export interface AdminGameSessionTimelineEvent {
   valid?: boolean | null;
   answer?: boolean | null;
   explanation?: string | null;
+  clarification?: string | null;
   source?: AdminQuestionSource | null;
   relation?: string | null;
   context?: string | null;
@@ -409,6 +412,7 @@ export interface LiveQuestionItem {
   valid: boolean;
   answer?: boolean | null;
   explanation?: string | null;
+  clarification?: string | null;
   asked_at?: string | null;
   target_name?: string | null;
   target_subtitle?: string | null;

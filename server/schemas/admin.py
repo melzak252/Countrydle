@@ -85,6 +85,7 @@ class AdminLiveQuestion(BaseModel):
     valid: bool
     answer: Optional[bool] = None
     explanation: Optional[str] = None
+    clarification: Optional[str] = None
     asked_at: Optional[datetime] = None
     target_name: Optional[str] = None
     target_subtitle: Optional[str] = None
@@ -168,6 +169,7 @@ class AdminQuestionTestResponse(BaseModel):
     valid: bool
     answer: bool | None
     explanation: str
+    clarification: str | None = None
     context: str | None
     source: Literal["local_kb", "local_planner", "fallback", "flag_kb"]
     server_version: str
@@ -196,6 +198,7 @@ class AdminQuestionItem(BaseModel):
     valid: bool
     answer: Optional[bool] = None
     explanation: str
+    clarification: Optional[str] = None
     context: Optional[str] = None
     source: AdminQuestionSource
     relation: Optional[str] = None
@@ -223,6 +226,7 @@ class AdminGameSessionTimelineEvent(BaseModel):
     valid: Optional[bool] = None
     answer: Optional[bool] = None
     explanation: Optional[str] = None
+    clarification: Optional[str] = None
     source: Optional[AdminQuestionSource] = None
     relation: Optional[str] = None
     context: Optional[str] = None

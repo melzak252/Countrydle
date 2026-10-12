@@ -208,6 +208,11 @@ def _build_mode_question_query(
     col_valid = cfg.question_model.valid.label("valid")
     col_answer = cfg.question_model.answer.label("answer")
     col_explanation = cfg.question_model.explanation.label("explanation")
+    col_clarification = (
+        cfg.question_model.clarification.label("clarification")
+        if hasattr(cfg.question_model, "clarification")
+        else literal(None, type_=String).label("clarification")
+    )
     col_context = cfg.question_model.context.label("context")
     col_asked_at = cfg.question_model.asked_at.label("asked_at")
     col_fact_provenance = (
@@ -234,6 +239,8 @@ def _build_mode_question_query(
         ]
         if hasattr(cfg.question_model, "question"):
             search_conds.append(cfg.question_model.question.ilike(pattern))
+        if hasattr(cfg.question_model, "clarification"):
+            search_conds.append(cfg.question_model.clarification.ilike(pattern))
         where_clauses.append(or_(*search_conds))
 
     if answer_filter:
@@ -299,6 +306,7 @@ def _build_mode_question_query(
             col_valid,
             col_answer,
             col_explanation,
+            col_clarification,
             col_context,
             col_asked_at,
             col_report_id,
@@ -409,6 +417,7 @@ async def query_admin_questions(
                 valid=r.valid,
                 answer=r.answer,
                 explanation=r.explanation or "",
+                clarification=getattr(r, "clarification", None),
                 context=r.context,
                 source=src,
                 relation=rel,
@@ -628,6 +637,7 @@ async def query_admin_game_sessions(
                     valid=q.valid,
                     answer=q.answer,
                     explanation=q.explanation,
+                    clarification=getattr(q, "clarification", None),
                     source=src,
                     relation=rel,
                     context=q.context,

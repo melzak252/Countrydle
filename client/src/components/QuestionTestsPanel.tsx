@@ -288,6 +288,12 @@ export default function QuestionTestsPanel({
                 : t('answersDiffer')}
           </p>}
           <dl className="grid min-w-0 gap-3 text-sm sm:grid-cols-2">
+            {completed.result.clarification && (
+              <div className="min-w-0 sm:col-span-2">
+                <dt className="text-sm font-semibold text-emerald-400">{t('clarification')}</dt>
+                <dd className="whitespace-pre-wrap break-words font-medium text-emerald-200/90">{completed.result.clarification}</dd>
+              </div>
+            )}
             <div className="min-w-0 sm:col-span-2"><dt className="text-sm text-slate-400">{t('explanation')}</dt><dd className="whitespace-pre-wrap break-words text-slate-300">{completed.result.explanation || t('noExplanation')}</dd></div>
             <div className="min-w-0"><dt className="text-sm text-slate-400">{t('answerSource')}</dt><dd className="text-slate-300">{t(`sources.${completed.result.source}`, { defaultValue: SOURCE_LABELS[completed.result.source] })} <span className="font-mono text-xs">({completed.result.source})</span></dd></div>
             <div><dt className="text-sm text-slate-400">{t('serverDuration')}</dt><dd className="text-slate-300">{completed.result.duration_ms.toLocaleString(i18n.language)} ms</dd></div>
