@@ -1,5 +1,5 @@
 {
-  "version": "1.30.2",
-  "title": "Clean full sentence answer styling",
-  "body": "- Enhanced in-game answer card layout: the response now renders inside the classic green or red badge as a single natural sentence (e.g. \"✓ Yes, the country has direct coastline access to the sea.\" or \"✗ No, the country does not border Germany.\").\n- Removed awkward secondary containers and text wrapping for a cleaner, unified presentation.\n- Your saved game progress, daily streaks, and question and guess limits are unchanged."
+  "version": "1.31.0",
+  "title": "Direct question-to-win detection and faster Flagdle geographic clues",
+  "body": "- Asking directly about the mystery country (e.g. \"Is it Croatia?\" or \"Croatia?\") now immediately scores as a winning guess when correct, finishing the game on the spot without deducting a question turn or requiring retyping.\n- Incorrect country questions still count as regular questions without penalizing your limited guess attempts.\n- Flagdle clues now unlock much faster: distance in kilometers appears starting on guess 3, and compass direction arrows unlock on guess 5.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
