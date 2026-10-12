@@ -373,9 +373,9 @@ async def make_guess(
     now = datetime.now()
 
     # Progressive distance & direction disclosure:
-    # Guesses 1-3: Visual cards only (no distance, no direction)
-    # Guesses 4-7: Distance (km) only
-    # Guesses 8-12: Distance (km) AND Direction
+    # Guesses 1-2: Visual cards only (no distance, no direction)
+    # Guesses 3-4: Distance (km) only
+    # Guesses 5-12: Distance (km) AND Direction
     effective_dist: Optional[int] = None
     effective_bearing_deg: Optional[int] = None
     effective_compass: Optional[str] = None
@@ -383,13 +383,12 @@ async def make_guess(
     if is_correct:
         effective_dist = 0
     else:
-        if new_guesses_made >= 4:
+        if new_guesses_made >= 3:
             effective_dist = clues["distance_km"]
-        if new_guesses_made >= 8:
+        if new_guesses_made >= 5:
             effective_bearing_deg = clues["bearing_degrees"]
             effective_compass = clues["bearing_direction"]
             effective_arrow = clues["bearing_arrow"]
-
     if user:
         guess_repo = FlagdleGuessRepository(session)
         guess_create = FlagdleGuessCreate(

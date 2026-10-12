@@ -194,10 +194,87 @@ async def test_flagdle_guess_endpoint(async_client):
         assert "blue" in data["matched_colors"]
         assert "red" in data["matched_colors"]
         assert "yellow" in data["matched_colors"]
-        # Guess 1: No distance (starts at guess 4) and no direction (starts at guess 8)
+        # Guess 1: No distance (starts at guess 3) and no direction (starts at guess 5)
         assert data["distance_km"] is None
         assert data["bearing_direction"] is None
         assert data["revealed_tile"] == UNMASK_ORDER[0]
+
+
+@pytest.mark.anyio
+async def test_flagdle_faster_hint_thresholds(async_client):
+    """Verify distance appears at guess 3, and bearing appears at guess 5."""
+    with (
+        patch("db.repositories.flagdle.FlagdleDayRepository.get_today_flag", new_callable=AsyncMock) as mock_get_today,
+        patch("db.repositories.country.CountryRepository.get", new_callable=AsyncMock) as mock_get_country,
+    ):
+        mock_target = MagicMock()
+        mock_target.id = 143
+        mock_target.name = "Romania"
+        mock_target.official_name = "Romania"
+
+        mock_chad = MagicMock()
+        mock_chad.id = 34
+        mock_chad.name = "Chad"
+        mock_chad.official_name = "Republic of Chad"
+
+        mock_day = MagicMock()
+        mock_day.id = 10
+        mock_day.country_id = 143
+        mock_day.country = mock_target
+        mock_day.date = date(2026, 9, 22)
+        mock_get_today.return_value = mock_day
+
+        async def mock_get(cid):
+            if cid == 143:
+                return mock_target
+            if cid == 34:
+                return mock_chad
+            return None
+        mock_get_country.side_effect = mock_get
+
+        from utils.guest_session import create_guest_game_token
+
+        # Guess 1: no distance, no direction
+        async_client.cookies.set("guest_flagdle", create_guest_game_token("flagdle", 10, 0, False, False))
+        res1 = await async_client.post("/flagdle/guess", json={"country_id": 34, "guess": "Chad"})
+        assert res1.status_code == 200
+        d1 = res1.json()
+        assert d1["distance_km"] is None
+        assert d1["bearing_direction"] is None
+
+        # Guess 2: no distance, no direction
+        async_client.cookies.set("guest_flagdle", create_guest_game_token("flagdle", 10, 1, False, False))
+        res2 = await async_client.post("/flagdle/guess", json={"country_id": 34, "guess": "Chad"})
+        assert res2.status_code == 200
+        d2 = res2.json()
+        assert d2["distance_km"] is None
+        assert d2["bearing_direction"] is None
+
+        # Guess 3: Distance appears! Direction still hidden.
+        async_client.cookies.set("guest_flagdle", create_guest_game_token("flagdle", 10, 2, False, False))
+        res3 = await async_client.post("/flagdle/guess", json={"country_id": 34, "guess": "Chad"})
+        assert res3.status_code == 200
+        d3 = res3.json()
+        assert d3["distance_km"] is not None
+        assert d3["distance_km"] > 0
+        assert d3["bearing_direction"] is None
+
+        # Guess 4: Distance present, direction still hidden.
+        async_client.cookies.set("guest_flagdle", create_guest_game_token("flagdle", 10, 3, False, False))
+        res4 = await async_client.post("/flagdle/guess", json={"country_id": 34, "guess": "Chad"})
+        assert res4.status_code == 200
+        d4 = res4.json()
+        assert d4["distance_km"] is not None
+        assert d4["bearing_direction"] is None
+
+        # Guess 5: Direction appears!
+        async_client.cookies.set("guest_flagdle", create_guest_game_token("flagdle", 10, 4, False, False))
+        res5 = await async_client.post("/flagdle/guess", json={"country_id": 34, "guess": "Chad"})
+        assert res5.status_code == 200
+        d5 = res5.json()
+        assert d5["distance_km"] is not None
+        assert d5["bearing_direction"] is not None
+        assert d5["bearing_arrow"] is not None
 
 
 @pytest.mark.anyio

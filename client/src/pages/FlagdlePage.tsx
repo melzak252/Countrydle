@@ -659,7 +659,7 @@ export default function FlagdlePage() {
                     <span>🧭 3. Distance & Direction</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    Every guess reveals the geographic distance in kilometers and a compass bearing arrow (e.g. ↗ 3,200 km) pointing directly towards the secret target country.
+                    Distance in kilometers unlocks on guess 3, and compass bearing arrows (e.g. ↗ 3,200 km) point towards the secret target country starting on guess 5.
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
