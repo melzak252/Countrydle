@@ -2668,23 +2668,31 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
         side = val or "that side"
         return f"Traffic drives on the {side} side." if answer else f"Traffic does not drive on the {side} side."
 
-    # Population & Area Numeric Comparisons
+    # Population & Area Comparisons (both numeric values and entity comparisons)
     if rel in ("population", "area"):
-        comp = {
-            "greater_than": "more than",
-            "greater_than_or_equal": "at least",
-            "less_than": "less than",
-            "less_than_or_equal": "at most",
-            "equals": "exactly",
-        }.get(op, "compared to")
-        unit = " km²" if rel == "area" else ""
-        formatted_val = f"{val:,}{unit}" if isinstance(val, (int, float)) else str(val)
-        return (
-            f"The country has {comp} {formatted_val} {rel}."
-            if answer else
-            f"The country does not have {comp} {formatted_val} {rel}."
-        )
-
+        is_more = op in ("greater_than", "greater_than_or_equal", "more_than", "larger_than")
+        if entity:
+            metric = "a larger area" if rel == "area" else "a larger population"
+            if is_more:
+                return f"The country has {metric} than {entity}." if answer else f"The country does not have {metric} than {entity}."
+            else:
+                metric_less = "a smaller area" if rel == "area" else "a smaller population"
+                return f"The country has {metric_less} than {entity}." if answer else f"The country does not have {metric_less} than {entity}."
+        if val is not None:
+            comp = {
+                "greater_than": "more than",
+                "greater_than_or_equal": "at least",
+                "less_than": "less than",
+                "less_than_or_equal": "at most",
+                "equals": "exactly",
+            }.get(op, "more than" if is_more else "less than")
+            unit = " km²" if rel == "area" else ""
+            formatted_val = f"{val:,}{unit}" if isinstance(val, (int, float)) else str(val)
+            return (
+                f"The country has {comp} {formatted_val} {rel}."
+                if answer else
+                f"The country does not have {comp} {formatted_val} {rel}."
+            )
     return None
 
 def execute_local_plan(

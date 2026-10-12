@@ -1,5 +1,5 @@
 {
-  "version": "1.31.1",
-  "title": "Grammatical precision in answer sentences",
-  "body": "- Completely redesigned AST plan clarification generator (generate_plan_clarification) to construct grammatically clean English sentences directly from relation nodes (e.g. \"The country is west of Finland.\" or \"The country is not south of Norway.\").\n- Eliminated broken string concatenation artifacts like \"The country does not is the country...\" on directional and identity questions.\n- Preserved instant in-game spoiler-free clarity and full post-game detailed facts.\n- Your saved game progress, streaks, and normal game limits are unchanged."
+  "version": "1.31.2",
+  "title": "Natural comparative sentence answers",
+  "body": "- Enhanced comparative area and population clarifications (e.g. \"The country does not have a larger area than Turkey.\" or \"The country has a smaller population than Poland.\").\n- Cleaned up string formatting artifacts in comparative deduction queries.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
