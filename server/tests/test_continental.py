@@ -501,8 +501,8 @@ async def test_continental_question_repository_get_all_and_count():
         c2 = Country(id=2, name="Japan", md_file="japan.md")
         day_eu = ContinentalDay(id=1, continent=ContinentCode.EUROPE, country_id=1, date=date(2026, 9, 20))
         day_asia = ContinentalDay(id=2, continent=ContinentCode.ASIA, country_id=2, date=date(2026, 9, 20))
-        q1 = ContinentalQuestion(id=1, user_id=1, day_id=1, original_question="Is it France?", valid=True, answer=True)
-        q2 = ContinentalQuestion(id=2, user_id=1, day_id=2, original_question="Is it Japan?", valid=True, answer=True)
+        q1 = ContinentalQuestion(id=1, user_id=1, day_id=1, original_question="Is it France?", valid=True, answer=True, clarification="The country is France.")
+        q2 = ContinentalQuestion(id=2, user_id=1, day_id=2, original_question="Is it Japan?", valid=True, answer=True, clarification="The country is Japan.")
         session.add_all([user, c1, c2, day_eu, day_asia, q1, q2])
         session.commit()
 
@@ -547,4 +547,74 @@ async def test_continental_live_feed(async_client):
         assert "recent_guesses" in data
     finally:
         app.dependency_overrides.pop(get_admin_user, None)
+        app.dependency_overrides.pop(get_admin_user, None)
+        app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.mark.anyio
+async def test_continental_ask_question_returns_clarification(client, mock_auth):
+    mock_day = MagicMock()
+    mock_day.id = 1
+    mock_day.continent = ContinentCode.EUROPE
+    mock_day.country_id = 100
+
+    from schemas.countrydle import QuestionCreate
+    mock_q = QuestionCreate(
+        user_id=42,
+        day_id=1,
+        original_question="Is it in Europe?",
+        question="Is the country in Europe?",
+        valid=True,
+        answer=True,
+        explanation="France is located in Europe.",
+        clarification="The country is in Europe.",
+        context="local_kb:continent",
+    )
+
+    mock_saved_q = ContinentalQuestion(
+        id=1,
+        user_id=42,
+        day_id=1,
+        original_question="Is it in Europe?",
+        question="Is the country in Europe?",
+        valid=True,
+        answer=True,
+        explanation="France is located in Europe.",
+        clarification="The country is in Europe.",
+        context="local_kb:continent",
+        asked_at=datetime.now(),
+    )
+
+    mock_session = AsyncMock()
+    app.dependency_overrides[get_db] = lambda: mock_session
+    try:
+        with patch(
+            "db.repositories.continental.ContinentalDayRepository.get_today_day",
+            new_callable=AsyncMock,
+            return_value=mock_day,
+        ), patch(
+            "continental.check_question_available",
+            new_callable=AsyncMock,
+        ), patch(
+            "countrydle.utils.analyze_and_answer_locally",
+            new_callable=AsyncMock,
+            return_value=(mock_q, None),
+        ), patch(
+            "db.repositories.continental.ContinentalQuestionRepository.create_question",
+            new_callable=AsyncMock,
+            return_value=mock_saved_q,
+        ), patch(
+            "continental.consume_question",
+            new_callable=AsyncMock,
+        ):
+            res = await client.post(
+                "/continental/europe/question",
+                json={"question": "Is it in Europe?"},
+            )
+            assert res.status_code == 200
+            data = res.json()
+            assert data["valid"] is True
+            assert data["answer"] is True
+            assert data["clarification"] == "The country is in Europe."
+    finally:
         app.dependency_overrides.pop(get_db, None)

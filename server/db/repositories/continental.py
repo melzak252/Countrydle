@@ -312,6 +312,7 @@ class ContinentalQuestionRepository:
             valid=question_create.valid,
             answer=getattr(question_create, "answer", None),
             explanation=getattr(question_create, "explanation", None),
+            clarification=getattr(question_create, "clarification", None),
             context=getattr(question_create, "context", None),
             fact_provenance=question_create.fact_provenance,
         )

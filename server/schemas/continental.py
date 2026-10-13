@@ -65,6 +65,7 @@ class ContinentalQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     question: Optional[str] = None
     valid: bool
     answer: Optional[bool] = None
+    clarification: Optional[str] = None
     explanation: Optional[str] = None
     context: Optional[str] = Field(default=None, exclude=True)
     asked_at: datetime
@@ -77,8 +78,8 @@ class InvalidContinentalQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     id: int
     original_question: str
     valid: bool = False
+    clarification: Optional[str] = None
     explanation: str
-
     model_config = ConfigDict(from_attributes=True)
 
 class ContinentalStateResponse(BaseModel):

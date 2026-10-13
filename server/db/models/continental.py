@@ -101,6 +101,7 @@ class ContinentalQuestion(Base):
     valid = Column(Boolean, nullable=False)
     answer = Column(Boolean, nullable=True)
     explanation = Column(String, nullable=True)
+    clarification = Column(String, nullable=True)
     context = Column(String, nullable=True)
     fact_provenance = Column(JSON, nullable=False, default=list, server_default="[]")
     asked_at = Column(DateTime, server_default=func.now(), nullable=False)
