@@ -2591,6 +2591,35 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
         if rel in ("marine_access", "water_access"):
             return "The country is landlocked." if answer else "The country has access to the sea/ocean."
 
+    # Handle compound boolean nodes (or/any/and/all)
+    if op in ("or", "any", "and", "all"):
+        args = [a for a in (plan.get("conditions") or plan.get("args") or []) if isinstance(a, dict)]
+        if args:
+            arg_rels = {a.get("left", {}).get("relation") for a in args if isinstance(a.get("left"), dict)}
+            arg_vals = [
+                str(a.get("right", {}).get("value") or a.get("right", {}).get("entity") or "")
+                for a in args
+                if isinstance(a.get("right"), dict) and (a.get("right", {}).get("value") or a.get("right", {}).get("entity"))
+            ]
+            conj = " and " if op in ("and", "all") else " or "
+            if arg_rels and arg_rels.issubset({"continent", "geographic_area", "region", "subregion"}) and arg_vals:
+                val_set = set(arg_vals)
+                if op in ("or", "any") and val_set == {"Europe", "Asia"}:
+                    target = "Eurasia"
+                elif op in ("or", "any") and val_set == {"North America", "South America"}:
+                    target = "the Americas"
+                else:
+                    target = conj.join(arg_vals)
+                return f"The country is located in {target}." if answer else f"The country is not located in {target}."
+            if arg_rels and arg_rels.issubset({"water_access", "marine_access"}) and arg_vals:
+                target = conj.join(arg_vals)
+                return f"The country has access to {target}." if answer else f"The country does not have access to {target}."
+            if arg_rels == {"borders_country"} and arg_vals:
+                target = conj.join(arg_vals)
+                return f"The country borders {target}." if answer else f"The country does not border {target}."
+            if arg_rels == {"membership"} and arg_vals:
+                target = conj.join(arg_vals)
+                return f"The country is a member of {target}." if answer else f"The country is not a member of {target}."
     # Direct Country Name / Identity
     if rel == "name":
         if op == "equals" and val:
@@ -2657,12 +2686,19 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
     if rel == "membership":
         target = val or "that organization"
         return f"The country is a member of {target}." if answer else f"The country is not a member of {target}."
+    # Historical Union / Empire / Colony
+    if rel in ("historical_union", "historical_empire"):
+        target = val or "that empire"
+        return f"The country was part of {target}." if answer else f"The country was not part of {target}."
+    # Languages
+    if rel == "languages":
+        target = val or "that language"
+        return f"{target} is an official/co-official language of the country." if answer else f"{target} is not an official language of the country."
 
     # Religion
     if rel == "dominant_religion":
         target = val or "that religion"
         return f"The dominant religion is {target}." if answer else f"The dominant religion is not {target}."
-
     # Driving Side
     if rel == "driving_side":
         side = val or "that side"
@@ -2749,8 +2785,15 @@ def execute_local_plan(
             else:
                 # Clean fallback without repeating subject
                 cleaned_q = improved_question.strip().rstrip("?").strip()
-                cleaned_q = re.sub(r"^(?:is (?:the |this )?country|does (?:the |this )?country|is it|does it|have|has)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
-                clarification = f"The country {cleaned_q}." if answer else f"The country does not {cleaned_q}."
+                if re.match(r"^(?:was (?:the |this )?country|was it)\s+", cleaned_q, flags=re.IGNORECASE):
+                    rest = re.sub(r"^(?:was (?:the |this )?country|was it)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
+                    clarification = f"The country was {rest}." if answer else f"The country was not {rest}."
+                elif re.match(r"^(?:is (?:the |this )?country|is it)\s+", cleaned_q, flags=re.IGNORECASE):
+                    rest = re.sub(r"^(?:is (?:the |this )?country|is it)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
+                    clarification = f"The country is {rest}." if answer else f"The country is not {rest}."
+                else:
+                    rest = re.sub(r"^(?:does (?:the |this )?country|does it|does|do|have|has)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
+                    clarification = f"The country {rest}." if answer else f"The country does not {rest}."
         return LocalAnswer(
             question=improved_question,
             answer=answer,

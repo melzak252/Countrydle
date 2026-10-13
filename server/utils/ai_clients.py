@@ -109,6 +109,7 @@ FALLBACK_ANSWER_SCHEMA = {
     "type": "object",
     "properties": {
         "explanation": {"type": "string", "minLength": 1},
+        "clarification": {"type": ["string", "null"]},
         "answer": {"type": ["boolean", "null"]},
     },
     "required": ["answer", "explanation"],

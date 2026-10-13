@@ -498,7 +498,7 @@ async def query_admin_game_sessions(
                     "is_guest": False,
                     "user_id": st.user_id,
                     "guest_id": None,
-                    "username": st.user.username if st.user else f"User #{st.user_id}",
+                    "username": (st.user.username if st.user else None) or f"User #{st.user_id}",
                     "initial_status": st_status,
                 })
 
@@ -585,45 +585,41 @@ async def query_admin_game_sessions(
                 "initial_status": "in_progress",
             })
 
-    if status_filter:
-        stat_filter_lower = status_filter.lower().strip()
-        candidates = [c for c in candidates if c["initial_status"] == stat_filter_lower]
+    # Batch-fetch all questions and guesses for this day to build and sort all sessions accurately
+    all_q_stmt = select(cfg.question_model).where(cfg.question_model.day_id == day.id).order_by(cfg.question_model.id.asc())
+    all_q_rows = (await session.execute(all_q_stmt)).scalars().all()
 
-    total_sessions = len(candidates)
-    page_candidates = candidates[(page - 1) * limit : page * limit]
+    all_g_stmt = select(cfg.guess_model).where(cfg.guess_model.day_id == day.id).order_by(cfg.guess_model.id.asc())
+    all_g_rows = (await session.execute(all_g_stmt)).scalars().all()
 
-    sessions: List[AdminGameSessionItem] = []
-    for c in page_candidates:
+    has_q_guest_id = hasattr(cfg.question_model, "guest_id")
+    questions_by_identity: Dict[Tuple[str, Any], List[Any]] = {}
+    for q in all_q_rows:
+        if q.user_id is not None:
+            ident = ("user", q.user_id)
+        elif has_q_guest_id and getattr(q, "guest_id", None):
+            ident = ("guest", q.guest_id)
+        else:
+            ident = ("guest", "anonymous")
+        questions_by_identity.setdefault(ident, []).append(q)
+
+    has_g_guest_id = hasattr(cfg.guess_model, "guest_id")
+    guesses_by_identity: Dict[Tuple[str, Any], List[Any]] = {}
+    for g in all_g_rows:
+        if g.user_id is not None:
+            ident = ("user", g.user_id)
+        elif has_g_guest_id and getattr(g, "guest_id", None):
+            ident = ("guest", g.guest_id)
+        else:
+            ident = ("guest", "anonymous")
+        guesses_by_identity.setdefault(ident, []).append(g)
+
+    all_sessions: List[AdminGameSessionItem] = []
+    for c in candidates:
         sess_id = f"user-{c['user_id']}-day-{day.id}" if c["user_id"] else f"guest-{c['guest_id']}-day-{day.id}"
-
-        # Fetch questions
-        q_where = [cfg.question_model.day_id == day.id]
-        if c["user_id"]:
-            q_where.append(cfg.question_model.user_id == c["user_id"])
-        elif c["guest_id"] and c["guest_id"] != "anonymous" and hasattr(cfg.question_model, "guest_id"):
-            q_where.append(cfg.question_model.guest_id == c["guest_id"])
-        else:
-            q_where.append(cfg.question_model.user_id.is_(None))
-            if hasattr(cfg.question_model, "guest_id"):
-                q_where.append(cfg.question_model.guest_id.is_(None))
-
-        q_stmt = select(cfg.question_model).where(and_(*q_where)).order_by(cfg.question_model.id.asc())
-        q_rows = (await session.execute(q_stmt)).scalars().all()
-
-        # Fetch guesses
-        g_where = [cfg.guess_model.day_id == day.id]
-        if c["user_id"]:
-            g_where.append(cfg.guess_model.user_id == c["user_id"])
-        elif c["guest_id"] and c["guest_id"] != "anonymous" and hasattr(cfg.guess_model, "guest_id"):
-            g_where.append(cfg.guess_model.guest_id == c["guest_id"])
-        else:
-            g_where.append(cfg.guess_model.user_id.is_(None))
-            if hasattr(cfg.guess_model, "guest_id"):
-                g_where.append(cfg.guess_model.guest_id.is_(None))
-
-        g_stmt = select(cfg.guess_model).where(and_(*g_where)).order_by(cfg.guess_model.id.asc())
-        g_rows = (await session.execute(g_stmt)).scalars().all()
-
+        ident = ("user", c["user_id"]) if c["user_id"] else ("guest", c["guest_id"] or "anonymous")
+        q_rows = questions_by_identity.get(ident, [])
+        g_rows = guesses_by_identity.get(ident, [])
         timeline: List[AdminGameSessionTimelineEvent] = []
         for q in q_rows:
             src, rel = classify_question_source(q.valid, q.context)
@@ -678,7 +674,7 @@ async def query_admin_game_sessions(
         elif started_at and len(timeline) > 1 and timeline[-1].timestamp:
             duration_seconds = max(0, int((timeline[-1].timestamp - started_at).total_seconds()))
 
-        sessions.append(
+        all_sessions.append(
             AdminGameSessionItem(
                 session_id=sess_id,
                 mode=cfg.mode_key,
@@ -698,6 +694,25 @@ async def query_admin_game_sessions(
                 timeline=timeline,
             )
         )
+
+    if status_filter:
+        stat_filter_lower = status_filter.lower().strip()
+        all_sessions = [s for s in all_sessions if s.status == stat_filter_lower]
+
+    def _session_sort_key(item: AdminGameSessionItem) -> Tuple[datetime, int]:
+        last_ts = (
+            item.completed_at
+            or (item.timeline[-1].timestamp if item.timeline else None)
+            or item.started_at
+            or datetime.min
+        )
+        last_id = item.timeline[-1].id if item.timeline else 0
+        return (last_ts, last_id)
+
+    all_sessions.sort(key=_session_sort_key, reverse=True)
+
+    total_sessions = len(all_sessions)
+    sessions = all_sessions[(page - 1) * limit : page * limit]
 
     return sessions, total_sessions
 

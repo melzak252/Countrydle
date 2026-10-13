@@ -486,6 +486,9 @@ async def test_admin_game_sessions_timeline(admin_fixture):
 
     assert data["total"] == 2  # 1 registered user session + 1 guest session
     sessions = data["items"]
+    # Sessions are ordered by completion / latest activity descending (guest at 10:04 before user at 10:03)
+    assert sessions[0]["is_guest"] is True
+    assert sessions[1]["is_guest"] is False
 
     # Find registered user session
     user_sess = next(s for s in sessions if not s["is_guest"])

@@ -32,7 +32,7 @@ def get_answer(system_prompt: str, question_prompt: str, *,
     answer = result["answer"]
     if answer is not None and type(answer) is not bool:
         raise ValueError("Gemini answer must be true, false, or null")
-    if result.keys() - {"answer", "explanation"}:
+    if result.keys() - {"answer", "explanation", "clarification"}:
         raise ValueError("Gemini answer contains unexpected fields")
     explanation = result.get("explanation")
     if not isinstance(explanation, str) or not explanation.strip():

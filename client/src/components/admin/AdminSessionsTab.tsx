@@ -428,6 +428,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
               const panelId = `${idPrefix}-session-panel-${encodedId}`;
               const statusLabel = t(`adminSessions.status.${session.status}`);
               const started = formatDateTime(session.started_at, locale);
+              const completed = formatDateTime(session.completed_at, locale);
               const duration = formatDuration(session.duration_seconds, locale, t);
               const accessibleName = t('adminSessions.sessionSummary', {
                 username: session.username,
@@ -475,6 +476,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                         </span>
                         <span className="admin-meta mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span>{t('adminSessions.startedAt', { time: started || t('adminSessions.unknownTime') })}</span>
+                          {completed && <span>{t('adminSessions.completedAt', { time: completed })}</span>}
                           <span>{t('adminSessions.questionCount', { count: session.questions_asked })}</span>
                           <span>{t('adminSessions.guessCount', { count: session.guesses_made })}</span>
                           {session.duration_seconds != null && (

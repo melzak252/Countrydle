@@ -1,4 +1,5 @@
 import asyncio
+import re
 import time
 from typing import List, Tuple
 import qdrant
@@ -238,6 +239,61 @@ For a well-defined historical question, use available historical knowledge rathe
 Suggested Rewrite (do not drop the original proposition's modifiers): {simplified}"""
     return system_prompt, question_prompt
 
+def _build_fallback_clarification(question: QuestionEnhanced, answer: bool | None) -> str | None:
+    if type(answer) is not bool:
+        return None
+    raw = (question.question or question.original_question or "").strip().rstrip("?.!").strip()
+    if not raw:
+        return None
+    subj = r"(?:the\s+country|this\s+country|my\s+country|it|they)"
+    m = re.match(rf"^(is|are)\s+{subj}\s+(.+)$", raw, flags=re.IGNORECASE)
+    if m:
+        rest = m.group(2).strip()
+        return f"The country is {rest}." if answer else f"The country is not {rest}."
+    m = re.match(rf"^(was|were)\s+{subj}\s+(.+)$", raw, flags=re.IGNORECASE)
+    if m:
+        rest = m.group(2).strip()
+        return f"The country was {rest}." if answer else f"The country was not {rest}."
+    m = re.match(rf"^(has|have)\s+{subj}\s+(.+)$", raw, flags=re.IGNORECASE)
+    if m:
+        rest = m.group(2).strip()
+        return f"The country has {rest}." if answer else f"The country has not {rest}."
+    m = re.match(rf"^(does|do)\s+{subj}\s+(.+)$", raw, flags=re.IGNORECASE)
+    if m:
+        rest = m.group(2).strip()
+        if not answer:
+            return f"The country does not {rest}."
+        if re.match(r"^have\b", rest, flags=re.IGNORECASE):
+            return f"The country has{rest[4:]}."
+        if re.match(r"^border\b", rest, flags=re.IGNORECASE):
+            return f"The country borders{rest[6:]}."
+        return f"The country {rest}."
+    m = re.match(rf"^did\s+{subj}\s+(.+)$", raw, flags=re.IGNORECASE)
+    if m:
+        rest = m.group(1).strip()
+        return f"The country did {rest}." if answer else f"The country did not {rest}."
+    m = re.match(rf"^can\s+{subj}\s+(.+)$", raw, flags=re.IGNORECASE)
+    if m:
+        rest = m.group(1).strip()
+        return f"The country can {rest}." if answer else f"The country cannot {rest}."
+    m = re.match(r"^(is|are|was|were)\s+(.+?)\s+(located\s+here|located\s+in\s+(?:this|the)\s+country|in\s+(?:this|the)\s+country|here)$", raw, flags=re.IGNORECASE)
+    if m:
+        verb = m.group(1).lower()
+        thing = m.group(2).strip()
+        neg = f"{verb} not"
+        return f"{thing[0].upper() + thing[1:]} {verb} located in the country." if answer else f"{thing[0].upper() + thing[1:]} {neg} located in the country."
+    if re.match(r"^(?:in|on|near|north of|south of|east of|west of|part of)\b", raw, flags=re.IGNORECASE):
+        return f"The country is {raw}." if answer else f"The country is not {raw}."
+    return None
+
+
+def _normalize_clarification_prefix(text: str | None) -> str | None:
+    if not text or not isinstance(text, str):
+        return None
+    cleaned = re.sub(r"^(?:yes|no),?\s*", "", text.strip(), flags=re.IGNORECASE).strip()
+    if not cleaned:
+        return None
+    return cleaned[0].upper() + cleaned[1:]
 
 def answer_question_for_entity(
     question: QuestionEnhanced, entity_name: str, context: str, *,
@@ -254,11 +310,11 @@ def answer_question_for_entity(
     answer_dict["explanation"] = sanitize_explanation_for_player(
         answer_dict.get("explanation"), {entity_name}, "the country"
     )
-    answer_dict["clarification"] = sanitize_explanation_for_player(
+    raw_clar = _normalize_clarification_prefix(sanitize_explanation_for_player(
         answer_dict.get("clarification"), {entity_name}, "the country"
-    ) or None
+    ))
+    answer_dict["clarification"] = raw_clar or _build_fallback_clarification(question, answer_dict.get("answer"))
     return answer_dict
-
 
 async def ask_question(
     question: QuestionEnhanced,
@@ -296,11 +352,14 @@ async def ask_question(
             {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
             "the country",
         ),
-        clarification=sanitize_explanation_for_player(
-            answer_dict.get("clarification"),
-            {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
-            "the country",
-        ) or None,
+        clarification=(
+            _normalize_clarification_prefix(sanitize_explanation_for_player(
+                answer_dict.get("clarification"),
+                {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
+                "the country",
+            ))
+            or _build_fallback_clarification(question, answer_dict.get("answer"))
+        ),
         context=context,
     )
     return question_create, question_vector
