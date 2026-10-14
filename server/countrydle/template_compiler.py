@@ -103,6 +103,7 @@ WATERS = {
     "Ocean": ("ocean",), "Sea": ("sea",), "Baltic Sea": ("Baltic Sea",),
     "Mediterranean Sea": ("Mediterranean Sea", "the Mediterranean"),
     "Black Sea": ("Black Sea",), "North Sea": ("North Sea",), "Red Sea": ("Red Sea",), "Caribbean Sea": ("Caribbean Sea",),
+    "Sea of Marmara": ("Sea of Marmara", "Marmara Sea", "the Sea of Marmara", "the Marmara Sea"),
     "Indian Ocean": ("Indian Ocean",), "Atlantic Ocean": ("Atlantic Ocean",),
     "Pacific Ocean": ("Pacific Ocean",), "Arctic Ocean": ("Arctic Ocean",), "Adriatic Sea": ("Adriatic Sea",),
 }

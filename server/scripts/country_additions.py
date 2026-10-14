@@ -96,6 +96,19 @@ def add_kosovo_facts(connection: sqlite3.Connection) -> bool:
     ensure_schema(connection)
     return True
 
+def add_turkey_sea_of_marmara(connection: sqlite3.Connection) -> bool:
+    """Ensure Turkey includes Sea of Marmara in country_water_access."""
+    row = connection.execute(
+        "SELECT id FROM countries WHERE app_country_name = 'Turkey'"
+    ).fetchone()
+    if not row:
+        return False
+    connection.execute(
+        "INSERT OR IGNORE INTO country_water_access (country_id, water_body) VALUES (?, 'Sea of Marmara')",
+        (row[0],),
+    )
+    return True
+
 
 def provision_country_additions(data_dir: Path) -> None:
     """Apply additions to an existing mounted corpus without rebuilding other facts."""
@@ -108,8 +121,7 @@ def provision_country_additions(data_dir: Path) -> None:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("BEGIN IMMEDIATE")
         add_kosovo_facts(connection)
-
-
+        add_turkey_sea_of_marmara(connection)
 async def provision_country_addition_fragments(session) -> None:
     """Embed Kosovo once and upsert its real fragments using existing Qdrant IDs.
 

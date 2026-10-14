@@ -436,7 +436,13 @@ VALUE_ALIASES = {
     "morza czarnego": "Black Sea",
     "morzem czarnym": "Black Sea",
     "morzu czarnym": "Black Sea",
-    "czerwone": "Red Sea",
+    "sea of marmara": "Sea of Marmara",
+    "marmara sea": "Sea of Marmara",
+    "marmara": "Sea of Marmara",
+    "morze marmara": "Sea of Marmara",
+    "morza marmara": "Sea of Marmara",
+    "morzem marmara": "Sea of Marmara",
+    "morzu marmara": "Sea of Marmara",
     "czerwonego": "Red Sea",
     "morze czerwone": "Red Sea",
     "morza czerwonego": "Red Sea",
@@ -2620,6 +2626,11 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
             if arg_rels == {"membership"} and arg_vals:
                 target = conj.join(arg_vals)
                 return f"The country is a member of {target}." if answer else f"The country is not a member of {target}."
+            if arg_rels == {"hemisphere"} and arg_vals:
+                if op in ("and", "all") and set(arg_vals) == {"Northern", "Southern"}:
+                    return "The country crosses the equator." if answer else "The country does not cross the equator."
+                target = conj.join(f"the {v} Hemisphere" for v in arg_vals)
+                return f"The country is in {target}." if answer else f"The country is not in {target}."
     # Direct Country Name / Identity
     if rel == "name":
         if op == "equals" and val:
@@ -2779,7 +2790,10 @@ def execute_local_plan(
 
         clarification = generate_plan_clarification(plan, answer)
         if not clarification:
-            direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
+            try:
+                direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
+            except Exception:
+                direct_answer = None
             if direct_answer and direct_answer.clarification:
                 clarification = direct_answer.clarification
             else:

@@ -372,9 +372,12 @@ def test_generic_ocean_access_uses_named_direct_coastline():
 
     baltic = local_answer(contains_plan("water_access", "Atlantic Ocean"), "Poland")
     assert baltic is not None
-    assert baltic.answer is True
-    assert "Atlantic Ocean" in baltic.explanation
-    assert "via the Baltic Sea" in baltic.explanation
+    assert baltic.answer is False
+    assert "Baltic Sea" in baltic.explanation
+
+    baltic_ocean = local_answer(ocean_plan, "Poland")
+    assert baltic_ocean is not None
+    assert baltic_ocean.answer is False
 
 
 def test_oceania_and_polynesia_current_game_country_coverage():

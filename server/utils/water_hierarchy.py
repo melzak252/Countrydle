@@ -13,23 +13,28 @@ from typing import Any
 
 # Direct parent relations (marginal sea/gulf/bay -> immediate parent sea or ocean)
 DIRECT_WATER_BODY_PARENTS: dict[str, set[str]] = {
-    # Mediterranean Basin
+    # Mediterranean Basin (enclosed sea: sub-seas map to Mediterranean Sea, separate from Atlantic Ocean)
     "Adriatic Sea": {"Mediterranean Sea"},
     "Aegean Sea": {"Mediterranean Sea"},
     "Ionian Sea": {"Mediterranean Sea"},
     "Ligurian Sea": {"Mediterranean Sea"},
     "Tyrrhenian Sea": {"Mediterranean Sea"},
     "Sea of Crete": {"Mediterranean Sea"},
-    "Black Sea": {"Mediterranean Sea"},
-    "Sea of Azov": {"Black Sea"},
-    "Mediterranean Sea": {"Atlantic Ocean"},
+    "Sea of Marmara": {"Mediterranean Sea"},
+    "Mediterranean Sea": set(),
 
-    # Atlantic Basin
+    # Black Sea Basin (enclosed sea: separate from Mediterranean Sea and Atlantic Ocean)
+    "Black Sea": set(),
+    "Sea of Azov": {"Black Sea"},
+
+    # Baltic Sea Basin (enclosed sea: separate from North Sea and Atlantic Ocean)
+    "Baltic Sea": set(),
+    "Morze Bałtyckie": {"Baltic Sea"},
+
+    # Atlantic Basin (open marginal seas and gulfs)
     "Caribbean Sea": {"Atlantic Ocean"},
     "Gulf of Mexico": {"Atlantic Ocean"},
     "Gulf of Guinea": {"Atlantic Ocean"},
-    "Baltic Sea": {"Atlantic Ocean"},
-    "Morze Bałtyckie": {"Baltic Sea", "Atlantic Ocean"},
     "North Sea": {"Atlantic Ocean"},
     "Skagerrak": {"North Sea"},
     "Celtic Sea": {"Atlantic Ocean"},
@@ -37,7 +42,6 @@ DIRECT_WATER_BODY_PARENTS: dict[str, set[str]] = {
     "Norwegian Sea": {"Atlantic Ocean", "Arctic Ocean"},
     "Barents Sea": {"Arctic Ocean", "Atlantic Ocean"},
 
-    # Pacific Basin
     "South China Sea": {"Pacific Ocean"},
     "Gulf of Thailand": {"South China Sea"},
     "East China Sea": {"Pacific Ocean"},
@@ -55,12 +59,12 @@ DIRECT_WATER_BODY_PARENTS: dict[str, set[str]] = {
     "Bering Sea": {"Pacific Ocean"},
     "Gulf of Alaska": {"Pacific Ocean"},
 
-    # Indian Ocean Basin
+    # Indian Ocean Basin & Enclosed Middle Eastern Seas
     "Arabian Sea": {"Indian Ocean"},
-    "Red Sea": {"Indian Ocean"},
+    "Red Sea": set(),
     "Gulf of Aqaba": {"Red Sea"},
     "Gulf of Aden": {"Arabian Sea"},
-    "Persian Gulf": {"Arabian Sea"},
+    "Persian Gulf": set(),
     "Gulf of Oman": {"Arabian Sea"},
     "Somali Sea": {"Indian Ocean"},
     "Bay of Bengal": {"Indian Ocean"},
@@ -158,7 +162,7 @@ WATER_BODY_ALIASES: dict[str, str] = {
     "morzem adriatyckim": "Adriatic Sea",
     "morzu adriatyckim": "Adriatic Sea",
 
-    # Black Sea
+    # Black Sea & Sea of Marmara
     "black sea": "Black Sea",
     "czarne": "Black Sea",
     "czarnego": "Black Sea",
@@ -166,8 +170,14 @@ WATER_BODY_ALIASES: dict[str, str] = {
     "morza czarnego": "Black Sea",
     "morzem czarnym": "Black Sea",
     "morzu czarnym": "Black Sea",
+    "sea of marmara": "Sea of Marmara",
+    "marmara sea": "Sea of Marmara",
+    "marmara": "Sea of Marmara",
+    "morze marmara": "Sea of Marmara",
+    "morza marmara": "Sea of Marmara",
+    "morzem marmara": "Sea of Marmara",
+    "morzu marmara": "Sea of Marmara",
 
-    # Red Sea
     "red sea": "Red Sea",
     "czerwone": "Red Sea",
     "czerwonego": "Red Sea",

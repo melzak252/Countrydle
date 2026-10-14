@@ -57,31 +57,42 @@ def make_us_plan(water: str) -> QuestionPlan:
 # Unit tests on water_hierarchy module
 # ---------------------------------------------------------------------------
 
-def test_water_hierarchy_transitive_atlantic_basin():
+def test_water_hierarchy_transitive_atlantic_and_enclosed_european_seas():
     # Direct ocean
     assert "Ocean" in get_water_body_parents("Atlantic Ocean")
 
-    # Marginal seas in Atlantic basin
+    # Open marginal seas in Atlantic basin inherit Atlantic Ocean and Ocean
     assert "Atlantic Ocean" in get_water_body_parents("Caribbean Sea")
+    assert "Ocean" in get_water_body_parents("Caribbean Sea")
     assert "Atlantic Ocean" in get_water_body_parents("Gulf of Mexico")
-    assert "Atlantic Ocean" in get_water_body_parents("Baltic Sea")
     assert "Atlantic Ocean" in get_water_body_parents("North Sea")
-    assert "Atlantic Ocean" in get_water_body_parents("Mediterranean Sea")
     assert "Atlantic Ocean" in get_water_body_parents("Celtic Sea")
+    assert "North Sea" in get_water_body_parents("Skagerrak")
+    assert "Atlantic Ocean" in get_water_body_parents("Skagerrak")
 
-    # Sub-seas of Mediterranean
-    assert "Mediterranean Sea" in get_water_body_parents("Adriatic Sea")
-    assert "Atlantic Ocean" in get_water_body_parents("Adriatic Sea")
-    assert "Mediterranean Sea" in get_water_body_parents("Aegean Sea")
-    assert "Atlantic Ocean" in get_water_body_parents("Aegean Sea")
-    assert "Mediterranean Sea" in get_water_body_parents("Black Sea")
-    assert "Atlantic Ocean" in get_water_body_parents("Black Sea")
+    # Baltic Sea is separate from North Sea and Atlantic Ocean
+    assert "Sea" in get_water_body_parents("Baltic Sea")
+    assert "Atlantic Ocean" not in get_water_body_parents("Baltic Sea")
+    assert "North Sea" not in get_water_body_parents("Baltic Sea")
+    assert "Ocean" not in get_water_body_parents("Baltic Sea")
 
-    # Sub-sea of Black Sea
+    # Sub-seas of Mediterranean map to Mediterranean Sea, NOT Atlantic Ocean
+    for sub_sea in ("Adriatic Sea", "Aegean Sea", "Ionian Sea", "Ligurian Sea", "Tyrrhenian Sea", "Sea of Crete", "Sea of Marmara"):
+        assert "Mediterranean Sea" in get_water_body_parents(sub_sea)
+        assert "Sea" in get_water_body_parents(sub_sea)
+        assert "Atlantic Ocean" not in get_water_body_parents(sub_sea)
+        assert "Ocean" not in get_water_body_parents(sub_sea)
+    assert "Atlantic Ocean" not in get_water_body_parents("Mediterranean Sea")
+    assert "Ocean" not in get_water_body_parents("Mediterranean Sea")
+
+    # Black Sea and Sea of Azov are separate from Mediterranean Sea and Atlantic Ocean
+    assert "Sea" in get_water_body_parents("Black Sea")
+    assert "Mediterranean Sea" not in get_water_body_parents("Black Sea")
+    assert "Atlantic Ocean" not in get_water_body_parents("Black Sea")
+    assert "Ocean" not in get_water_body_parents("Black Sea")
     assert "Black Sea" in get_water_body_parents("Sea of Azov")
-    assert "Mediterranean Sea" in get_water_body_parents("Sea of Azov")
-    assert "Atlantic Ocean" in get_water_body_parents("Sea of Azov")
-
+    assert "Mediterranean Sea" not in get_water_body_parents("Sea of Azov")
+    assert "Atlantic Ocean" not in get_water_body_parents("Sea of Azov")
 
 def test_water_hierarchy_transitive_pacific_basin():
     assert "Ocean" in get_water_body_parents("Pacific Ocean")
@@ -103,16 +114,17 @@ def test_water_hierarchy_transitive_pacific_basin():
 
 def test_water_hierarchy_transitive_indian_basin():
     assert "Ocean" in get_water_body_parents("Indian Ocean")
-    assert "Indian Ocean" in get_water_body_parents("Red Sea")
     assert "Red Sea" in get_water_body_parents("Gulf of Aqaba")
-    assert "Indian Ocean" in get_water_body_parents("Gulf of Aqaba")
-    assert "Indian Ocean" in get_water_body_parents("Persian Gulf")
-    assert "Arabian Sea" in get_water_body_parents("Persian Gulf")
+    assert "Indian Ocean" not in get_water_body_parents("Red Sea")
+    assert "Indian Ocean" not in get_water_body_parents("Gulf of Aqaba")
+    assert "Indian Ocean" not in get_water_body_parents("Persian Gulf")
+    assert "Arabian Sea" not in get_water_body_parents("Persian Gulf")
     assert "Indian Ocean" in get_water_body_parents("Arabian Sea")
+    assert "Indian Ocean" in get_water_body_parents("Gulf of Aden")
+    assert "Indian Ocean" in get_water_body_parents("Gulf of Oman")
     assert "Indian Ocean" in get_water_body_parents("Bay of Bengal")
     assert "Bay of Bengal" in get_water_body_parents("Andaman Sea")
     assert "Indian Ocean" in get_water_body_parents("Andaman Sea")
-
 
 def test_inland_water_bodies_classification():
     assert is_marine_water_body("Caspian Sea") is False
@@ -166,31 +178,42 @@ def test_single_ocean_countries_do_not_falsely_match_other_oceans():
     assert execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "India", "").answer is False
 
 
-def test_marginal_sea_countries_inherit_parent_ocean():
-    # Poland: Baltic Sea -> Atlantic Ocean
-    ans_pl = execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "Poland", "")
-    assert ans_pl.answer is True
-    assert "via the Baltic Sea" in ans_pl.explanation
+def test_marginal_and_enclosed_sea_country_rules():
+    # Poland: Baltic Sea -> Sea (True), but NOT Atlantic Ocean, North Sea, or Ocean
+    assert execute_local_plan(contains_plan("water_access", "Baltic Sea"), "Poland", "").answer is True
+    assert execute_local_plan(contains_plan("water_access", "Sea"), "Poland", "").answer is True
+    ans_pl_atl = execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "Poland", "")
+    assert ans_pl_atl.answer is False
+    assert "Baltic Sea" in ans_pl_atl.explanation
+    assert execute_local_plan(contains_plan("water_access", "North Sea"), "Poland", "").answer is False
+    assert execute_local_plan(contains_plan("water_access", "Ocean"), "Poland", "").answer is False
 
-    # Croatia: Adriatic Sea -> Mediterranean Sea -> Atlantic Ocean
+    # Black Sea countries (Romania, Bulgaria, Ukraine, Georgia): Black Sea (True), Mediterranean Sea (False), Atlantic Ocean (False)
+    for country in ("Romania", "Bulgaria", "Ukraine", "Georgia"):
+        assert execute_local_plan(contains_plan("water_access", "Black Sea"), country, "").answer is True, country
+        assert execute_local_plan(contains_plan("water_access", "Mediterranean Sea"), country, "").answer is False, country
+        assert execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), country, "").answer is False, country
+
+    # Turkey: Sea of Marmara, Black Sea, Aegean Sea, Mediterranean Sea (True), Atlantic Ocean (False)
+    assert execute_local_plan(contains_plan("water_access", "Sea of Marmara"), "Turkey", "").answer is True
+    assert execute_local_plan(contains_plan("water_access", "Mediterranean Sea"), "Turkey", "").answer is True
+    assert execute_local_plan(contains_plan("water_access", "Black Sea"), "Turkey", "").answer is True
+    assert execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "Turkey", "").answer is False
+
+    # Croatia: Adriatic Sea -> Mediterranean Sea (True), Atlantic Ocean (False)
     ans_hr_med = execute_local_plan(contains_plan("water_access", "Mediterranean Sea"), "Croatia", "")
     assert ans_hr_med.answer is True
     ans_hr_atl = execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "Croatia", "")
-    assert ans_hr_atl.answer is True
-    assert "via the Adriatic Sea" in ans_hr_atl.explanation
+    assert ans_hr_atl.answer is False
 
-    # Egypt: Mediterranean Sea (Atlantic) + Red Sea (Indian)
-    assert execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "Egypt", "").answer is True
-    assert execute_local_plan(contains_plan("water_access", "Indian Ocean"), "Egypt", "").answer is True
+    # Germany & Denmark: Baltic Sea + North Sea -> Atlantic Ocean (True via North Sea)
+    ans_de_atl = execute_local_plan(contains_plan("water_access", "Atlantic Ocean"), "Germany", "")
+    assert ans_de_atl.answer is True
+    assert "via the North Sea" in ans_de_atl.explanation
 
-    # Saudi Arabia: Red Sea + Persian Gulf -> Indian Ocean
-    ans_sa = execute_local_plan(contains_plan("water_access", "Indian Ocean"), "Saudi Arabia", "")
-    assert ans_sa.answer is True
-
-    # Vietnam: South China Sea + Gulf of Thailand -> Pacific Ocean
+    # Vietnam: South China Sea + Gulf of Thailand -> Pacific Ocean (True)
     ans_vn = execute_local_plan(contains_plan("water_access", "Pacific Ocean"), "Vietnam", "")
     assert ans_vn.answer is True
-
 
 def test_landlocked_countries_stay_false_for_all_oceans_and_seas():
     for country in ("Czech Republic", "Austria", "Hungary", "Switzerland", "Mali", "Niger", "Bolivia"):
@@ -317,7 +340,7 @@ def test_single_ocean_queries_are_not_multi_ocean(question):
     ("Canada", True),
     ("Colombia", True),
     ("Costa Rica", True),
-    ("Egypt", True),
+    ("Egypt", False),
     ("Honduras", True),
     ("Indonesia", True),
     ("Mexico", True),
