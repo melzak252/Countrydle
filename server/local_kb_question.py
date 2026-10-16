@@ -279,6 +279,25 @@ def norm(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
 
 
+POLISH_NEIGHBORING_COUNTRIES_ALIASES: dict[str, str] = {
+    "slovakia": "Słowacja",
+    "slowacja": "Słowacja",
+    "słowacja": "Słowacja",
+    "czech republic": "Czechy",
+    "czechia": "Czechy",
+    "czechy": "Czechy",
+    "germany": "Niemcy",
+    "niemcy": "Niemcy",
+    "ukraine": "Ukraina",
+    "ukraina": "Ukraina",
+    "belarus": "Białoruś",
+    "bialorus": "Białoruś",
+    "białoruś": "Białoruś",
+    "lithuania": "Litwa",
+    "litwa": "Litwa",
+    "russia": "Rosja",
+    "rosja": "Rosja",
+}
 def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_name: str) -> sqlite3.Row | None:
     conn.row_factory = sqlite3.Row
     row = conn.execute(
@@ -427,7 +446,11 @@ def evaluate(
         if is_self_reference(right_val, row, config):
             return True
         if isinstance(rel_items, list):
-            return any(norm(value) == norm(right_val) for value in rel_items)
+            right_norm = norm(right_val)
+            if rel_name == "borders_country" and right_norm in POLISH_NEIGHBORING_COUNTRIES_ALIASES:
+                target_country = POLISH_NEIGHBORING_COUNTRIES_ALIASES[right_norm]
+                return any(norm(value) == norm(target_country) for value in rel_items)
+            return any(norm(value) == right_norm for value in rel_items)
         return None
 
     if op == "not":
@@ -586,9 +609,12 @@ def evaluate(
         if isinstance(left, list):
             if type(right) is not bool and (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit())):
                 return float(len(left)) == float(right)
-            return any(norm(v) == norm(right) for v in left)
-        if isinstance(left, (bool, int, float)) and isinstance(right, (bool, int, float)):
-            return left == right
+            rel_name = left_node.get("relation") if isinstance(left_node, dict) else ""
+            r_norm = norm(right)
+            if rel_name == "borders_country" and r_norm in POLISH_NEIGHBORING_COUNTRIES_ALIASES:
+                target_country = POLISH_NEIGHBORING_COUNTRIES_ALIASES[r_norm]
+                return any(norm(v) == norm(target_country) for v in left)
+            return any(norm(v) == r_norm for v in left)
         n_left = norm(left)
         n_right = norm(right)
         if n_left == n_right:
@@ -943,12 +969,13 @@ def generate_mode_explanation(
                 name_display = name if name.startswith("Powiat") else f"Powiat {name}"
                 return f"{name_display} graniczy z {len(borders)} sąsiednimi powiatami{b_str}."
         if rel == "borders_country" and val:
+            canonical_country = POLISH_NEIGHBORING_COUNTRIES_ALIASES.get(norm(val), val)
             country_instr = {
                 "Niemcy": "Niemcami", "Czechy": "Czechami", "Słowacja": "Słowacją",
                 "Ukraina": "Ukrainą", "Białoruś": "Białorusią", "Litwa": "Litwą", "Rosja": "Rosją",
             }
-            val_instr = country_instr.get(val, val)
-            prep = "ze" if val in {"Słowacja", "Słowacją"} else "z"
+            val_instr = country_instr.get(canonical_country, canonical_country)
+            prep = "ze" if canonical_country in {"Słowacja", "Słowacją"} else "z"
             return f"{name} graniczy {prep} {val_instr}." if answer else f"{name} nie graniczy {prep} {val_instr}."
         if rel == "seat":
             return f"Siedzibą {name} jest {row['seat']}."

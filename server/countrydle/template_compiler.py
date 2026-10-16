@@ -148,7 +148,7 @@ _TARGET_SUBJECT_PREFIX = re.compile(
     r"^(is|does) (?:this country|the hidden country|hidden country) "
 )
 _LOCATIVE_PREFIX = re.compile(r"^(?:is (?:it|the country) in|in)\s+(?:the\s+)?(.+)$")
-_IDENTITY_PREFIX = re.compile(r"^(?:is (?:it|the country|this))\s+(?:the\s+)?(.+)$")
+_IDENTITY_PREFIX = re.compile(r"^(?:is (?:it|the country|this)|it is|it's|it\s+is|this is)\s+(?:the\s+)?(.+)$", re.IGNORECASE)
 _BARE_PREFIX = re.compile(r"^(?:the\s+)?(.+)$")
 _AMBIGUOUS_ENTITIES = frozenset({"america", "ameryka", "ameryce", "congo", "kongo"})
 _ENTITY_ACCENTS = frozenset(
@@ -306,9 +306,10 @@ _POPULATION_PEOPLE_QUESTION = re.compile(
     r"(?P<unit>inhabitants|people|citizens)"
 )
 _NAME_PATTERN_QUESTION = re.compile(
-    r"(?:does (?:(?:it|the country)(?:['\u2019]s)?|its|the) name )"
+    r"^(?:does (?:(?:it|the country)(?:['\u2019]s)?|its|the)(?: name)? )"
     r"(?P<op>end with|end in|contain|start with) "
-    r"[\"'\u201c\u201d]?(?P<val>[a-zA-Z]+)[\"'\u201c\u201d]?"
+    r"[\"'\u201c\u201d]?-?(?P<val>[a-zA-Z]+)[\"'\u201c\u201d]?$",
+    re.IGNORECASE,
 )
 _CAPITAL_TEXT = r"(?:its|the|(?:the|this) country['\u2019]s) capital(?: name)?"
 _CAPITAL_LENGTH_QUESTION = re.compile(
@@ -493,11 +494,11 @@ def compile_template_plan(
             if negative:
                 nodes.append({"operator": "not", "args": [1]})
             return nodes, f"Does the country {'not ' if negative else ''}have a land border with a country in {continent}?"
-    if _UNHANDLED_ENGLISH.search(q):
-        return None
     numeric = _compile_english_numeric_question(q)
     if numeric is not None:
         return numeric
+    if _UNHANDLED_ENGLISH.search(q):
+        return None
     comparison = re.fullmatch(
         r"does (?P<subject>[a-z0-9 '\u2019&.]+) have (?:a )?"
         r"(?P<relation>population|area) (?P<comparison>greater|larger|higher|less|smaller|lower) "
@@ -610,11 +611,24 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
     location = re.search(r"\b(?:in|w)\s+(?:the\s+)?", q)
     if location and _COUNTRY_PATTERN.match(q, location.end()):
         return None
+    m_name_pl = re.search(r"\b(?:czy\s+)?(?:nazwa\s+)?(?:ko[nń]czy\s+si[eę]\s+na|zaczyna\s+si[eę]\s+od|zawiera)\s+[\"'\u201c\u201d]?-?([a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)[\"'\u201c\u201d]?", question, re.I)
+    if m_name_pl:
+        val = m_name_pl.group(1).lower().lstrip("-")
+        matched_text = m_name_pl.group(0).lower()
+        if "ko" in matched_text:
+            op = "ends_with"
+            desc = f"Does the country name end with “{val}”?"
+        elif "zaczyna" in matched_text:
+            op = "starts_with"
+            desc = f"Does the country name start with “{val}”?"
+        else:
+            op = "contains_text"
+            desc = f"Does the country name contain “{val}”?"
+        return [_node(op, "name", val)], desc
     if any(term in q for term in ("border", "borders", "neighbor", "neighbour", "graniczy", "granic")):
         country = _country_in(q)
         if country:
             return [_node("contains", "borders_country", country)], f"Does the country border {country}?"
-
     if diagonal:
         country = _country_in(q)
         if country:

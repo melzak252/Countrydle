@@ -414,7 +414,7 @@ def analyze_question_for_local_plan(
     if entity is not None:
         ast, improved_question = entity
     else:
-        template = compile_template_plan(question, english_only=True)
+        template = compile_template_plan(question, english_only=False)
         if template is not None:
             nodes, improved_question = template
             ast = compile_planner_response(

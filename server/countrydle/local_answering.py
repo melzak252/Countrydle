@@ -1923,10 +1923,19 @@ def evaluate_plan_node(
             left_text = normalize(text_value(left) or "", preserve_separators=True)
             right_text = normalize(text_value(right) or "", preserve_separators=True)
             if operator == "starts_with":
+                stripped = right_text.rstrip("-").strip()
+                if stripped:
+                    right_text = stripped
                 return left_text.startswith(right_text)
             if operator == "ends_with":
+                stripped = right_text.lstrip("-").strip()
+                if stripped:
+                    right_text = stripped
                 return left_text.endswith(right_text)
             if operator == "contains_text":
+                stripped = right_text.strip("-").strip()
+                if stripped:
+                    right_text = stripped
                 return right_text in left_text
         if operator.startswith("word_count_"):
             left_num = word_count(text_value(left) or "")
@@ -2519,12 +2528,14 @@ def generate_factual_explanation(
             count = char_count(text)
             return intro + f"{label} has {count} characters, excluding spaces and hyphens."
         if op in {"starts_with", "ends_with", "contains_text"} and target_val is not None:
+            s_val = str(target_val)
+            clean_target = (s_val.lstrip("-").strip() or s_val) if op == "ends_with" else ((s_val.rstrip("-").strip() or s_val) if op == "starts_with" else (s_val.strip("-").strip() or s_val))
             positive, negative = {
                 "starts_with": ("starts with", "does not start with"),
                 "ends_with": ("ends with", "does not end with"),
                 "contains_text": ("contains", "does not contain"),
             }[op]
-            return intro + f"{label} {positive if answer else negative} “{target_val}”."
+            return intro + f"{label} {positive if answer else negative} “{clean_target}”."
         if rel == "name":
             role = "target" if country["id"] == target_country["id"] else "referenced"
             return f"{name} is the {role} country."
@@ -2547,12 +2558,14 @@ def generate_factual_explanation(
             mark = "a space" if op == "has_space" else "a hyphen"
             return f"The text “{left_value}” {'contains' if present else 'does not contain'} {mark}."
         if op in {"starts_with", "ends_with", "contains_text"}:
+            s_val = str(right_value)
+            clean_right = (s_val.lstrip("-").strip() or s_val) if op == "ends_with" else ((s_val.rstrip("-").strip() or s_val) if op == "starts_with" else (s_val.strip("-").strip() or s_val))
             positive, negative = {
                 "starts_with": ("starts with", "does not start with"),
                 "ends_with": ("ends with", "does not end with"),
                 "contains_text": ("contains", "does not contain"),
             }[op]
-            return f"The text “{left_value}” {positive if answer else negative} “{right_value}”."
+            return f"The text “{left_value}” {positive if answer else negative} “{clean_right}”."
     if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "north_of", "south_of", "east_of", "west_of"}:
         try:
             left_number = float(left_value)
@@ -2636,11 +2649,14 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
         if op == "equals" and val:
             return f"The country is {val}." if answer else f"The country is not {val}."
         if op == "ends_with" and val:
-            return f"The country name ends with “{val}”." if answer else f"The country name does not end with “{val}”."
+            clean_val = str(val).lstrip("-").strip() or str(val)
+            return f"The country name ends with “{clean_val}”." if answer else f"The country name does not end with “{clean_val}”."
         if op == "starts_with" and val:
-            return f"The country name starts with “{val}”." if answer else f"The country name does not start with “{val}”."
+            clean_val = str(val).rstrip("-").strip() or str(val)
+            return f"The country name starts with “{clean_val}”." if answer else f"The country name does not start with “{clean_val}”."
         if op == "contains_text" and val:
-            return f"The country name contains “{val}”." if answer else f"The country name does not contain “{val}”."
+            clean_val = str(val).strip("-").strip() or str(val)
+            return f"The country name contains “{clean_val}”." if answer else f"The country name does not contain “{clean_val}”."
 
     # Geography: Continents & Regions
     if rel in ("continent", "geographic_area", "region", "subregion"):
