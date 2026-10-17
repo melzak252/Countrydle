@@ -26,29 +26,22 @@ def test_countrydle_exact_and_comparison_neighbor_counts():
     ]
 
     for q, operator, count, expected in cases:
-        if q.startswith("Czy"):
-            ast, imp = compile_template_plan(q)
-        else:
-            assert compile_template_plan(q) is None
-            ast = {
-                "operator": operator,
-                "left": {"entity": "target_country", "relation": "borders_country"},
-                "right": {"value": count},
-            }
-            imp = q
+        compiled = compile_template_plan(q)
+        assert compiled is not None, f"Failed to compile {q}"
+        plan, imp = compiled
+        ast = plan[0]
+        assert ast["operator"] == operator
+        assert ast["left"]["relation"] == "borders_country"
+        assert ast["right"]["value"] == count
         ans = execute_local_plan(ast, "Poland", imp)
         assert ans is not None
         assert ans.answer is expected, f"Failed for {q}: expected {expected}, got {ans.answer}"
 
-
 def test_countrydle_islands_zero_neighbors():
     """Verify islands evaluate 0 neighbors correctly."""
-    assert compile_template_plan("Does it have 0 neighbors?") is None
-    ast = {
-        "operator": "equals",
-        "left": {"entity": "target_country", "relation": "borders_country"},
-        "right": {"value": 0},
-    }
+    compiled = compile_template_plan("Does it have 0 neighbors?")
+    assert compiled is not None
+    ast = compiled[0][0]
     ans_aus = execute_local_plan(ast, "Australia", "Does it have 0 neighbors?")
     assert ans_aus.answer is True
 

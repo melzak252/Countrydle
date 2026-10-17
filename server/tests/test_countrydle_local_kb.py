@@ -1115,8 +1115,11 @@ def test_historical_unions_matching_and_execution():
     ]
 
     for question, country, expected_union, expected_ans in english_cases:
-        assert compile_template_plan(question) is None
-        node = contains_plan("historical_union", expected_union)
+        compiled = compile_template_plan(question)
+        assert compiled is not None, f"Failed to compile {question}"
+        node = compiled[0][0]
+        assert node["left"]["relation"] == "historical_union"
+        assert node["right"]["value"] == expected_union
         ans = execute_local_plan(node, country, question)
         assert ans.answer is expected_ans, f"Failed for {country} in {expected_union}: expected {expected_ans}, got {ans.answer}"
 
