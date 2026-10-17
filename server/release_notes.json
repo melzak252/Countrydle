@@ -1,5 +1,5 @@
 {
-  "version": "1.33.2",
-  "title": "Equator template flexibility and cleaner question explanations",
-  "body": "- Enhanced natural language matching for equator questions without requiring the definite article (e.g. \"is it north of equator\").\n- Removed technical fact audit provenance details from player-facing question explanations and result cards.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.3",
+  "title": "Asynchronous background metric persistence and reduced question latency",
+  "body": "- Moved SQLite cost metric recording to non-blocking background tasks so question responses return immediately without waiting for disk writes.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
