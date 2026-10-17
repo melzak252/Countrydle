@@ -746,7 +746,7 @@ function DuelRoom({ code }: { code?: string }) {
             <div
               onWheel={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="pointer-events-auto flex flex-col overflow-hidden bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all max-md:absolute max-md:inset-x-0 max-md:bottom-0 max-md:h-[58dvh] max-md:max-h-[62dvh] max-md:rounded-t-2xl max-md:border-t max-md:border-white/20 max-md:pb-0 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85"
+              className="pointer-events-auto flex h-full flex-col overflow-hidden bg-obsidian-950/90 backdrop-blur-sm shadow-2xl transition-all max-md:absolute max-md:inset-0 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/80 md:backdrop-blur-md"
             >
               {/* Header */}
               <div className="duel-notebook-heading flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 md:py-2 shrink-0">
