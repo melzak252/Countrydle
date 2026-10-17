@@ -349,10 +349,10 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
             </button>
           </div>
         ) : (
-          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-x-0 bottom-0 flex h-[58dvh] max-h-[62dvh] flex-col overflow-hidden rounded-t-2xl border-t border-white/20 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:bg-obsidian-900/85 md:pb-0">
+          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950/90 backdrop-blur-sm shadow-2xl transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/80 md:backdrop-blur-md md:pb-0">
 
             {/* Notebook Tabbed Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950 px-2 py-1 shrink-0 md:px-4 md:py-3">
+            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-2 py-1 shrink-0 md:px-4 md:py-3 md:bg-obsidian-900/70 md:backdrop-blur-md">
               <div role="group" aria-label={i18n.language.startsWith('pl') ? 'Wybierz pytanie lub zgadnięcie' : 'Choose question or guess'} className="flex items-center gap-1">
                 <button
                   type="button"

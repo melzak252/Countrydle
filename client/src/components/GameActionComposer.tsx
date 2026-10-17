@@ -29,7 +29,7 @@ export default function GameActionComposer({
   const { i18n } = useTranslation();
   const isPl = i18n.language?.startsWith('pl') || false;
   return (
-    <section aria-label={isPl ? 'Panel akcji gry' : 'Game action composer'} className="game-action-composer flex min-h-0 shrink-0 flex-col border-t border-white/10 bg-obsidian-950/95 px-3 pt-2 pb-[max(calc(env(safe-area-inset-bottom)+0.5rem),1.25rem)]">
+    <section aria-label={isPl ? 'Panel akcji gry' : 'Game action composer'} className="game-action-composer flex min-h-0 shrink-0 flex-col border-t border-white/10 bg-obsidian-950/90 backdrop-blur-sm px-3 pt-2 pb-[max(calc(env(safe-area-inset-bottom)+0.5rem),1.25rem)] md:bg-obsidian-900/80 md:backdrop-blur-md">
       {(showActionTabs || trailingActions) && (
         <div className="mb-2 flex items-center justify-between gap-2">
           {showActionTabs && (
