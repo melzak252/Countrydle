@@ -1,5 +1,5 @@
 {
-  "version": "1.33.3",
-  "title": "Asynchronous background metric persistence and reduced question latency",
-  "body": "- Moved SQLite cost metric recording to non-blocking background tasks so question responses return immediately without waiting for disk writes.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.4",
+  "title": "System announcement banner for recent service disruption",
+  "body": "- Added a dismissible system announcement banner regarding the temporary Google AI service disruption.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
