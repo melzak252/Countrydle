@@ -202,7 +202,7 @@ export default function WojewodztwaGamePage() {
       <div className={`pointer-events-none ${
         isChatOpen
           ? 'game-notebook-layer absolute inset-0 z-[1100] md:absolute md:inset-0 md:z-[1000]'
-          : 'absolute inset-x-0 bottom-0 z-[995] w-full pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)]'
+          : 'absolute inset-x-0 bottom-0 z-[995] w-full pb-[max(calc(env(safe-area-inset-bottom)+0.25rem),0.75rem)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)] md:pb-0'
       }`}>
         {!isChatOpen ? (
           <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
@@ -222,7 +222,7 @@ export default function WojewodztwaGamePage() {
             </button>
           </div>
         ) : (
-          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950 pb-[env(safe-area-inset-bottom)] shadow-2xl transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:bg-obsidian-900/85 md:pb-0">
+          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-x-0 bottom-0 flex h-[58dvh] max-h-[62dvh] flex-col overflow-hidden rounded-t-2xl border-t border-white/20 bg-obsidian-950/95 shadow-2xl backdrop-blur-md transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:bg-obsidian-900/85 md:pb-0">
 
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950 px-2 py-1 shrink-0 md:px-4 md:py-3">
