@@ -502,6 +502,10 @@ def compile_template_plan(
     q = _normalized_english_question(question)
     if not q:
         return None
+    from slot_template_engine import match_slot_template
+    slot_res = match_slot_template(question, "countrydle")
+    if slot_res is not None:
+        return slot_res
     entity = compile_entity_question(question)
     if entity is not None:
         node, wording = entity
@@ -543,7 +547,7 @@ def compile_template_plan(
             "right": {"entity": country, "relation": relation},
         }], f"Does the country have a {relation} {comparison['comparison']} than {country}?"
     direction = re.fullmatch(
-        r"is (?P<subject>[a-z0-9 '\u2019&.]+) (?:(?:farther|further) )?"
+        r"is (?P<subject>[a-z0-9 '\u2019&.]+) (?:located )?(?:(?:farther|further) |to the )?"
         r"(?P<direction>north|south|east|west) (?:of|than) (?P<country>[a-z0-9 '\u2019&.]+)", q,
     )
     country = _english_reference_country(direction)
@@ -571,7 +575,8 @@ def compile_template_plan(
         nodes.append({"operator": "or", "args": branches})
         return nodes, f"Does the country share a continent with {country}?"
     border = re.fullmatch(
-        r"does (?:it|the country) border (?:the country\s+)?(?P<country>[a-z0-9 '\u2019&.-]+)", q,
+        r"(?:does (?:it|the country) (?:border|share a border with|have a border with)|is (?:it|the country) (?:bordering|next to)) "
+        r"(?:the country\s+)?(?P<country>[a-z0-9 '\u2019&.-]+)", q,
     )
     if border is not None:
         reference = border["country"]

@@ -221,7 +221,10 @@ _SIDE_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(s) for s in _SORTED_SID
 # 1.7 International Organizations & Historical Unions
 MEMBERSHIPS_MAP = {
     "eu": "EU", "european union": "EU",
-    "nato": "NATO", "un": "UN",
+    "nato": "NATO", "un": "UN", "united nations": "UN",
+    "schengen": "Schengen", "benelux": "Benelux",
+    "african union": "African Union", "asean": "ASEAN",
+    "commonwealth": "Commonwealth", "g7": "G7", "g20": "G20", "oecd": "OECD",
 }
 _SORTED_MEMBERSHIPS = sorted(MEMBERSHIPS_MAP.keys(), key=len, reverse=True)
 _MEMBERSHIP_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(m) for m in _SORTED_MEMBERSHIPS) + r")\b")
@@ -235,9 +238,39 @@ HISTORICAL_MAP = {
     "spanish empire": "Spanish Empire",
     "french empire": "French Empire",
     "ottoman empire": "Ottoman Empire",
+    "austro hungarian empire": "Austro-Hungarian Empire",
+    "austria hungary": "Austro-Hungarian Empire",
+    "gran colombia": "Gran Colombia",
 }
 _SORTED_HISTORICAL = sorted(HISTORICAL_MAP.keys(), key=len, reverse=True)
 _HISTORICAL_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(h) for h in _SORTED_HISTORICAL) + r")\b")
+
+# 1.8 Official Languages
+LANGUAGES_MAP: dict[str, str] = {
+    "english": "English", "spanish": "Spanish", "french": "French", "german": "German",
+    "arabic": "Arabic", "russian": "Russian", "portuguese": "Portuguese", "chinese": "Chinese",
+    "italian": "Italian", "japanese": "Japanese", "dutch": "Dutch", "greek": "Greek",
+    "turkish": "Turkish", "swahili": "Swahili", "polish": "Polish",
+}
+_SORTED_LANGUAGES = sorted(LANGUAGES_MAP.keys(), key=len, reverse=True)
+_LANGUAGE_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(lang) for lang in _SORTED_LANGUAGES) + r")\b")
+
+# 1.9 Flag Colors
+FLAG_COLORS_MAP: dict[str, str] = {
+    "red": "red", "white": "white", "blue": "blue", "green": "green",
+    "yellow": "yellow", "black": "black", "orange": "orange",
+}
+_SORTED_FLAG_COLORS = sorted(FLAG_COLORS_MAP.keys(), key=len, reverse=True)
+_FLAG_COLOR_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(c) for c in _SORTED_FLAG_COLORS) + r")\b")
+
+# 1.10 Flag Symbols
+FLAG_SYMBOLS_MAP: dict[str, str] = {
+    "star": "star", "stars": "star", "cross": "cross", "crescent": "crescent",
+    "sun": "sun", "stripes": "stripes", "circle": "circle", "eagle": "eagle",
+    "coat of arms": "coat_of_arms",
+}
+_SORTED_FLAG_SYMBOLS = sorted(FLAG_SYMBOLS_MAP.keys(), key=len, reverse=True)
+_FLAG_SYMBOL_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(s) for s in _SORTED_FLAG_SYMBOLS) + r")\b")
 
 
 # ==============================================================================
@@ -284,6 +317,25 @@ def mask_query(raw_query: str, mode: str = "countrydle") -> tuple[str, dict[str,
         slots["SIDE"] = DRIVING_SIDE_MAP[m.group(0)]
         return "[SIDE]"
     q = _SIDE_PATTERN.sub(_sub_side, q, count=1)
+
+    # Official Language (only if language or official in q)
+    if "language" in q or "official" in q:
+        def _sub_lang(m):
+            slots["LANGUAGE"] = LANGUAGES_MAP[m.group(0)]
+            return "[LANGUAGE]"
+        q = _LANGUAGE_PATTERN.sub(_sub_lang, q, count=1)
+
+    # Flag Colors & Symbols (only if flag in q)
+    if "flag" in q:
+        def _sub_color(m):
+            slots["COLOR"] = FLAG_COLORS_MAP[m.group(0)]
+            return "[COLOR]"
+        q = _FLAG_COLOR_PATTERN.sub(_sub_color, q, count=1)
+
+        def _sub_symbol(m):
+            slots["SYMBOL"] = FLAG_SYMBOLS_MAP[m.group(0)]
+            return "[SYMBOL]"
+        q = _FLAG_SYMBOL_PATTERN.sub(_sub_symbol, q, count=1)
 
     # Mode-specific Entity matching
     if mode in ("countrydle", "world", "continental"):
@@ -683,6 +735,10 @@ def _build_country_island(slots: dict[str, Any], mode: str):
         "does it drive on the [SIDE]",
         "does it have [SIDE] hand traffic",
         "does the country drive on the [SIDE]",
+        "does it drive [SIDE]",
+        "does the country drive [SIDE]",
+        "is it [SIDE] driving",
+        "is it a [SIDE] driving country",
     ]
 )
 def _build_country_driving_side(slots: dict[str, Any], mode: str):
@@ -696,10 +752,136 @@ def _build_country_driving_side(slots: dict[str, Any], mode: str):
 @register_skeleton(
     ["countrydle", "world", "continental"],
     [
+        "is it a monarchy",
+        "is the country a monarchy",
+    ],
+)
+def _build_country_monarchy(slots: dict[str, Any], mode: str):
+    ast = [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "government_type"}, "right": {"value": "Monarchy"}}
+    ]
+    return ast, "Is the country a monarchy?"
+
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "is it a republic",
+        "is the country a republic",
+    ],
+)
+def _build_country_republic(slots: dict[str, Any], mode: str):
+    ast = [
+        {"operator": "equals", "left": {"entity": "target_country", "relation": "government_type"}, "right": {"value": "Republic"}}
+    ]
+    return ast, "Is the country a republic?"
+
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "is [LANGUAGE] an official language",
+        "is [LANGUAGE] an official language of the country",
+        "is [LANGUAGE] the official language",
+        "does it have [LANGUAGE] as an official language",
+        "does the country have [LANGUAGE] as an official language",
+    ],
+)
+def _build_country_language(slots: dict[str, Any], mode: str):
+    lang = slots.get("LANGUAGE", "English")
+    ast = [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "official_language"}, "right": {"value": lang}}
+    ]
+    return ast, f"Is {lang} an official language?"
+
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "does its flag contain [COLOR]",
+        "does the flag contain [COLOR]",
+        "does its flag have [COLOR]",
+        "does the flag have [COLOR]",
+        "is there [COLOR] on its flag",
+        "is [COLOR] on its flag",
+    ],
+)
+def _build_country_flag_color(slots: dict[str, Any], mode: str):
+    color = slots.get("COLOR", "red")
+    ast = [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "flag_color"}, "right": {"value": color}}
+    ]
+    return ast, f"Does the country's flag contain {color}?"
+
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "does its flag contain a [SYMBOL]",
+        "does its flag contain [SYMBOL]",
+        "does the flag contain a [SYMBOL]",
+        "does the flag contain [SYMBOL]",
+        "does its flag have a [SYMBOL]",
+        "does its flag have [SYMBOL]",
+        "does the flag have a [SYMBOL]",
+        "does the flag have [SYMBOL]",
+    ],
+)
+def _build_country_flag_symbol(slots: dict[str, Any], mode: str):
+    symbol = slots.get("SYMBOL", "star")
+    ast = [
+        {"operator": "contains", "left": {"entity": "target_country", "relation": "flag_symbol"}, "right": {"value": symbol}}
+    ]
+    return ast, f"Does the country's flag contain {symbol}?"
+
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "does the country name have a hyphen",
+        "does its name have a hyphen",
+        "does the name have a hyphen",
+    ],
+)
+def _build_country_name_hyphen(slots: dict[str, Any], mode: str):
+    ast = [
+        {"operator": "has_hyphen", "left": {"entity": "target_country", "relation": "name"}}
+    ]
+    return ast, "Does the country name have a hyphen?"
+
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "does the country name have [NUMBER] words",
+        "does its name have [NUMBER] words",
+        "does the name have [NUMBER] words",
+        "is the country name [NUMBER] words",
+        "is its name [NUMBER] words",
+    ],
+)
+def _build_country_name_words(slots: dict[str, Any], mode: str):
+    num = slots.get("NUMBER", 2)
+    ast = [
+        {"operator": "word_count_equals", "left": {"entity": "target_country", "relation": "name"}, "right": {"value": num}}
+    ]
+    return ast, f"Does the country name have {num} words?"
+
+@register_skeleton(
+    ["countrydle", "world", "continental"],
+    [
+        "is it in [MEMBERSHIP]",
         "is it in the [MEMBERSHIP]",
         "is it a member of [MEMBERSHIP]",
         "is it a member of the [MEMBERSHIP]",
+        "is the country in [MEMBERSHIP]",
         "is the country in the [MEMBERSHIP]",
+        "is the country a member of [MEMBERSHIP]",
+        "is the country a member of the [MEMBERSHIP]",
+        "does it belong to [MEMBERSHIP]",
+        "does it belong to the [MEMBERSHIP]",
+        "does the country belong to [MEMBERSHIP]",
+        "does the country belong to the [MEMBERSHIP]",
         "czy nalezy do [MEMBERSHIP]",
         "czy to panstwo nalezy do [MEMBERSHIP]",
     ]

@@ -127,3 +127,23 @@ def test_powiatdle_rejects_city_conflation_and_complex_queries():
     for question, mode in adversarial_queries:
         res = compile_generic_template_plan(question, mode)
         assert res is None, f"Expected None for {question!r} in mode {mode}, got {res}"
+
+
+def test_english_powiatdle_and_wojewodztwodle_templates():
+    # Powiatdle English
+    res = compile_generic_template_plan("is it a city county?", "powiatdle")
+    assert res is not None and res[0]["right"]["value"] == 1
+    res = compile_generic_template_plan("is it a land county?", "powiatdle")
+    assert res is not None and res[0]["right"]["value"] == 0
+    res = compile_generic_template_plan("does it have 2-letter plates?", "powiatdle")
+    assert res is not None and res[0]["right"]["value"] == 2
+    res = compile_generic_template_plan("does it border Germany?", "powiatdle")
+    assert res is not None and res[0]["right"]["value"] == "Niemcy"
+
+    # Województwodle English
+    res = compile_generic_template_plan("does it border Germany?", "wojewodztwodle")
+    assert res is not None and res[0]["right"]["value"] == "Niemcy"
+    res = compile_generic_template_plan("is it coastal?", "wojewodztwodle")
+    assert res is not None and res[0]["right"]["value"] is True
+    res = compile_generic_template_plan("does the Vistula river flow through it?", "wojewodztwodle")
+    assert res is not None and res[0]["right"]["value"] == "Wisła"
