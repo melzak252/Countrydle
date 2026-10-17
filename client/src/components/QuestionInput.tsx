@@ -161,19 +161,19 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
   return (
     <form onSubmit={handleSubmit} onPointerDownCapture={event => { pointerTypeRef.current = event.pointerType; }} className="flex min-h-0 w-full flex-col">
-      <div className="mb-2 max-md:[@media(max-height:560px)]:hidden">
-        <div className="mb-1 flex items-center justify-between gap-2">
-          <p className="text-[11px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
-          <span className="shrink-0 text-[10px] text-zinc-500" aria-hidden="true">{isPl ? 'Przewiń →' : 'Scroll →'}</span>
+      <div className="mb-1.5 max-md:[@media(max-height:560px)]:hidden">
+        <div className="mb-0.5 flex items-center justify-between gap-2">
+          <p className="text-[10px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
+          <span className="shrink-0 text-[9px] text-zinc-500" aria-hidden="true">{isPl ? 'Przewiń →' : 'Scroll →'}</span>
         </div>
-        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label={t('inputs.quickQuestions')}>
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5" aria-label={t('inputs.quickQuestions')}>
           {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
             <button
               key={label}
               type="button"
               disabled={unavailable}
               onClick={() => setQuestion(suggestedQuestion)}
-              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+              className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
             >
               <span aria-hidden="true">{icon}</span>{label}
             </button>
