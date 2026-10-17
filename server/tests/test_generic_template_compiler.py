@@ -110,3 +110,20 @@ def test_washington_atlantic_access_is_false():
     plan_pac = analyze_question("Does it have access to Pacific Ocean?", US_CONFIG, use_cache=False)
     ans_wa_pac = execute_plan(US_CONFIG, "Washington", plan_pac)
     assert ans_wa_pac.answer is True
+
+
+def test_powiatdle_rejects_city_conflation_and_complex_queries():
+    adversarial_queries = [
+        ("Czy to Warszawa?", "powiatdle"),
+        ("Czy graniczy z Warszawą?", "powiatdle"),
+        ("Czy graniczy z Krakowem?", "powiatdle"),
+        ("Czy stolicą jest Kraków?", "powiatdle"),
+        ("Czy ma większą powierzchnię niż powiat w mazowieckim?", "powiatdle"),
+        ("Czy graniczy z powiatem, przez który płynie Wisła?", "powiatdle"),
+        ("Czy graniczy z województwem, które graniczy z Niemcami?", "powiatdle"),
+        ("Czy to Warszawa?", "wojewodztwodle"),
+        ("Czy graniczy z Warszawą?", "wojewodztwodle"),
+    ]
+    for question, mode in adversarial_queries:
+        res = compile_generic_template_plan(question, mode)
+        assert res is None, f"Expected None for {question!r} in mode {mode}, got {res}"

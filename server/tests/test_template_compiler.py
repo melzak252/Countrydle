@@ -31,7 +31,7 @@ from countrydle.template_compiler import _COUNTRY_NAMES, check_open_ended_questi
     ("has sea?", "exists", "water_access", None),
     ("Czy ma dostęp do morza?", "exists", "water_access", None),
     ("Is it landlocked?", "not", "marine_access", None),
-    ("Czy jest śródlądowe?", "not", "water_access", None),
+    ("Czy jest śródlądowe?", "not", "marine_access", None),
 
     # Driving side & Government type
     ("Czy to monarchia?", "equals", "government_type", "Monarchy"),
@@ -43,7 +43,20 @@ from countrydle.template_compiler import _COUNTRY_NAMES, check_open_ended_questi
     ("Is it in Southeast Asia?", "contains", "geographic_area", "Southeast Asia"),
     ("Does it border the Baltic Sea?", "contains", "water_access", "Baltic Sea"),
     ("Does it have access to the Mediterranean Sea?", "contains", "water_access", "Mediterranean Sea"),
-
+    ("Czy leży na Bałkanach?", "contains", "geographic_area", "Balkans"),
+    ("Czy należało do ZSRR?", "contains", "historical_union", "USSR"),
+    ("Czy ma dostęp do Morza Czarnego?", "contains", "water_access", "Black Sea"),
+    ("Czy obowiązuje ruch lewostronny?", "equals", "driving_side", "left"),
+    ("Czy ruch jest prawostronny?", "equals", "driving_side", "right"),
+    ("Czy to północna część Afryki?", "contains", "geographic_area", "Northern Africa"),
+    ("Czy ma ponad 10 milionów mieszkańców?", "greater_than", "population", 10_000_000),
+    ("Czy populacja jest poniżej 500 tysięcy?", "less_than", "population", 500_000),
+    ("Czy ma więcej mieszkańców niż Niemcy?", "greater_than", "population", "Germany"),
+    ("Czy ma mniej mieszkańców niż Włochy?", "less_than", "population", "Italy"),
+    ("Czy powierzchnia jest większa niż 500 tysięcy km2?", "greater_than", "area", 500_000),
+    ("Czy powierzchnia jest poniżej 100 tysięcy km2?", "less_than", "area", 100_000),
+    ("Czy jest większy od Polski?", "greater_than", "area", "Poland"),
+    ("Czy jest mniejszy od Niemiec?", "less_than", "area", "Germany"),
     # English Hemispheres, Equator, Prime Meridian
     ("Is it in the Southern Hemisphere?", "contains", "hemisphere", "Southern"),
     ("Is it in the Northern Hemisphere?", "contains", "hemisphere", "Northern"),
@@ -79,6 +92,8 @@ def test_compile_supported_templates(question, operator, relation, value):
         assert node["operator"] == operator
         assert node["left"]["relation"] == relation
     if operator in {"north_of", "south_of", "east_of", "west_of"}:
+        assert node["right"]["entity"] == value
+    elif isinstance(node.get("right"), dict) and "entity" in node["right"]:
         assert node["right"]["entity"] == value
     elif isinstance(value, dict):
         assert node["right"] == value
@@ -127,24 +142,11 @@ def test_compile_supported_templates(question, operator, relation, value):
     "south coastline?",
 
     # Polish regional, historical, directional, and comparison questions
-    # (Intentionally removed from templates: handled cleanly by Gemini 2.5 Flash Lite)
-    "Czy leży na Bałkanach?",
-    "Czy należało do ZSRR?",
-    "Czy ma dostęp do Morza Czarnego?",
-    "Czy obowiązuje ruch lewostronny?",
-    "Czy ruch jest prawostronny?",
-    "Czy ma ponad 10 milionów mieszkańców?",
-    "Czy populacja jest poniżej 500 tysięcy?",
-    "Czy ma więcej mieszkańców niż Niemcy?",
-    "Czy ma mniej mieszkańców niż Włochy?",
-    "Czy powierzchnia jest większa niż 500 tysięcy km2?",
-    "Czy powierzchnia jest poniżej 100 tysięcy km2?",
-    "Czy jest większy od Polski?",
-    "Czy jest mniejszy od Niemiec?",
+    # Polish bare-km area queries and vague directional phrases fall through
     "Czy jest większe niż 500k km?",
     "Czy ma ponad 500k km?",
     "Czy ma mniej niż 100k km?",
-    "Czy to północna część Afryki?",
+    "Czy leży na południu Afryki?",
 ])
 def test_unrecognized_or_ambiguous_questions_fall_through(question):
     assert compile_template_plan(question) is None

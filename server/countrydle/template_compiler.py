@@ -6,7 +6,7 @@ from math import isfinite
 import re
 import unicodedata
 
-from slot_template_engine import match_slot_template
+from polish_morphology import canonicalize_pl_clause, expand_polish_phrase_forms, norm_pl
 
 @lru_cache(maxsize=512)
 def _norm(value: str) -> str:
@@ -189,19 +189,18 @@ def compile_entity_question(question: str) -> tuple[dict, str] | None:
         country = _ENGLISH_COUNTRY_ALIASES.get(entity)
         if country is not None:
             return _node("equals", "name", country), f"Is the country {country}?"
-    continent = _ENTITY_CONTINENTS.get(entity)
-    if continent is not None:
-        return _node("contains", "continent", continent), f"Is the country in {continent}?"
-    area = _ENTITY_AREAS.get(entity)
     union = _ENTITY_UNIONS.get(entity)
-    if area is not None and union is None:
-        return _node("contains", "geographic_area", area), f"Is the country in {area}?"
     if union is not None:
         return {
             "operator": "or",
             "conditions": [_node("contains", "continent", value) for value in union],
         }, f"Is the country in {'Eurasia' if union == ('Europe', 'Asia') else 'the Americas'}?"
-    # Country containment has no local relation: let the model preserve that intent.
+    continent = _ENTITY_CONTINENTS.get(entity)
+    if continent is not None:
+        return _node("contains", "continent", continent), f"Is the country in {continent}?"
+    area = _ENTITY_AREAS.get(entity)
+    if area is not None:
+        return _node("contains", "geographic_area", area), f"Is the country in {area}?"
     return None
 
 
@@ -259,7 +258,37 @@ def _parse_number_literal(text: str) -> float | int | None:
     return int(res) if res.is_integer() else res
 
 
-_POLISH_PREFIX = re.compile(r"^(?:czy|nad|pod|na|po|lezy|jest|ma|panstwo|kraj|graniczy)\b")
+_POLISH_DIACRITICS = frozenset("ąćęłńóśźż")
+_POLISH_PREFIX = re.compile(
+    r"^(?:czy|nad|pod|na|po|w|we|z|ze|od|lezy|jest|ma|posiada|znajduje|"
+    r"graniczy|sasiaduje|nalezy|nalezal|nalezala|nalezalo|byl|byla|bylo|"
+    r"ten|to|ta|kraj|panstwo|wyspa|wyspiarskie|srodladowe|ruch|jezyk|jezykiem|"
+    r"flaga|fladze|populacja|powierzchnia|stolica)\b"
+)
+_POLISH_BARE_ENTITIES = frozenset(
+    norm_pl(name)
+    for name in (
+        *POLISH_COUNTRY_ALIASES.keys(),
+        "Europa", "Azja", "Afryka", "Ameryka Północna", "Ameryka Południowa", "Oceania",
+        "Eurasia", "Eurazja", "Ameryki",
+        "Bałkany", "Kraje Bałtyckie", "Europa Środkowa", "Europa Wschodnia",
+        "Europa Zachodnia", "Europa Północna", "Europa Południowa", "Skandynawia",
+        "Półwysep Iberyjski", "Bliski Wschód", "Półwysep Arabski", "Indochiny",
+    )
+)
+
+
+def _is_polish_question(question: str) -> bool:
+    if not isinstance(question, str) or not question.strip():
+        return False
+    if set(question.casefold()) & _POLISH_DIACRITICS:
+        return True
+    norm = norm_pl(question)
+    if _POLISH_PREFIX.match(norm):
+        return True
+    if norm in _POLISH_BARE_ENTITIES:
+        return True
+    return False
 _UNHANDLED_ENGLISH = re.compile(
     r"\b(?:and|or|not|never|neither|nor|but|except|without|ever|former|formerly|past)\b|[<>-]"
 )
@@ -468,7 +497,7 @@ def compile_template_plan(
     if not isinstance(question, str) or not question.strip():
         return None
     # The active planner must not newly activate legacy Polish compilation.
-    if _POLISH_PREFIX.match(_norm(question).lstrip()):
+    if _is_polish_question(question):
         return None if english_only else _compile_polish_template_plan(question)
     q = _normalized_english_question(question)
     if not q:
@@ -587,146 +616,447 @@ def compile_template_plan(
     return None
 
 
-def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | None:
-    """Existing Polish behavior, intentionally outside the English cutover."""
-    if not isinstance(question, str) or not question.strip():
+def _expand_slot_map(base_map: dict[str, Any], reversible: bool = False) -> dict[str, Any]:
+    expanded: dict[str, Any] = {}
+    for phrase, val in base_map.items():
+        expanded[norm_pl(phrase)] = val
+        for f in expand_polish_phrase_forms(phrase, reversible=reversible):
+            expanded[f] = val
+    return expanded
+
+
+_POLISH_BASE_HEMISPHERES = {
+    "półkula północna": "Northern",
+    "półkula południowa": "Southern",
+    "półkula wschodnia": "Eastern",
+    "półkula zachodnia": "Western",
+}
+_POLISH_HEMISPHERES = _expand_slot_map(_POLISH_BASE_HEMISPHERES)
+
+_POLISH_BASE_CONTINENTS = {
+    "Europa": "Europe",
+    "Azja": "Asia",
+    "Afryka": "Africa",
+    "Ameryka Północna": "North America",
+    "Ameryka Południowa": "South America",
+    "Oceania": "Oceania",
+}
+_POLISH_CONTINENTS = _expand_slot_map(_POLISH_BASE_CONTINENTS)
+
+_POLISH_BASE_UNIONS = {
+    "Eurazja": ("Europe", "Asia"),
+    "Ameryki": ("North America", "South America"),
+}
+_POLISH_UNIONS = _expand_slot_map(_POLISH_BASE_UNIONS)
+
+_POLISH_BASE_REGIONS = {
+    "Bałkany": "Balkans",
+    "Kraj bałtycki": "Baltic states",
+    "Kraje bałtyckie": "Baltic states",
+    "Skandynawia": "Scandinavia",
+    "Półwysep Iberyjski": "Iberia",
+    "Iberia": "Iberia",
+    "Bliski Wschód": "Middle East",
+    "Półwysep Arabski": "Arabian Peninsula",
+    "Indochiny": "Indochina",
+    "Ameryka Środkowa": "Central America",
+    "Karaiby": "Caribbean",
+    "Maghreb": "Maghreb",
+    "Sahel": "Sahel",
+    "Róg Afryki": "Horn of Africa",
+    "Europa Środkowa": "Central Europe",
+    "Środkowa Europa": "Central Europe",
+    "Europa Wschodnia": "Eastern Europe",
+    "Wschodnia Europa": "Eastern Europe",
+    "Europa Zachodnia": "Western Europe",
+    "Zachodnia Europa": "Western Europe",
+    "Europa Północna": "Northern Europe",
+    "Północna Europa": "Northern Europe",
+    "Europa Południowa": "Southern Europe",
+    "Południowa Europa": "Southern Europe",
+    "Azja Środkowa": "Central Asia",
+    "Środkowa Azja": "Central Asia",
+    "Azja Południowo-Wschodnia": "Southeast Asia",
+    "Południowo-Wschodnia Azja": "Southeast Asia",
+    "azja poludniowy wschodni": "Southeast Asia",
+    "azja poludniowo wschodni": "Southeast Asia",
+    "poludniowy wschodni azja": "Southeast Asia",
+    "poludniowo wschodnia azja": "Southeast Asia",
+    "azji poludniowo wschodniej": "Southeast Asia",
+    "Azja Południowa": "South Asia",
+    "Południowa Azja": "South Asia",
+    "Azja Wschodnia": "East Asia",
+    "Wschodnia Azja": "East Asia",
+    "Azja Zachodnia": "Western Asia",
+    "Zachodnia Azja": "Western Asia",
+    "Afryka Północna": "Northern Africa",
+    "Północna Afryka": "Northern Africa",
+    "Afryka Południowa": "Southern Africa",
+    "Południowa Afryka": "Southern Africa",
+    "Afryka Zachodnia": "Western Africa",
+    "Zachodnia Afryka": "Western Africa",
+    "Afryka Wschodnia": "Eastern Africa",
+    "Wschodnia Afryka": "Eastern Africa",
+    "Afryka Środkowa": "Middle Africa",
+    "Środkowa Afryka": "Middle Africa",
+}
+_POLISH_REGIONS = _expand_slot_map(_POLISH_BASE_REGIONS)
+
+_POLISH_BASE_WATERS = {
+    "Ocean Atlantycki": "Atlantic Ocean",
+    "Atlantyk": "Atlantic Ocean",
+    "Ocean Spokojny": "Pacific Ocean",
+    "Pacyfik": "Pacific Ocean",
+    "Ocean Arktyczny": "Arctic Ocean",
+    "Ocean Indyjski": "Indian Ocean",
+    "Ocean Południowy": "Southern Ocean",
+    "Morze Bałtyckie": "Baltic Sea",
+    "morze bałtycki": "Baltic Sea",
+    "Bałtyk": "Baltic Sea",
+    "Morze Śródziemne": "Mediterranean Sea",
+    "morze śródziemny": "Mediterranean Sea",
+    "Morze Czarne": "Black Sea",
+    "morze czarny": "Black Sea",
+    "Morze Północne": "North Sea",
+    "morze północny": "North Sea",
+    "Morze Czerwone": "Red Sea",
+    "morze czerwony": "Red Sea",
+    "Morze Karaibskie": "Caribbean Sea",
+    "morze karaibski": "Caribbean Sea",
+    "Morze Adriatyckie": "Adriatic Sea",
+    "morze adriatycki": "Adriatic Sea",
+    "Adriatyk": "Adriatic Sea",
+    "Morze Marmara": "Sea of Marmara",
+    "ocean atlantycki": "Atlantic Ocean",
+    "ocean spokojny": "Pacific Ocean",
+    "ocean arktyczny": "Arctic Ocean",
+    "ocean indyjski": "Indian Ocean",
+    "ocean południowy": "Southern Ocean",
+}
+_POLISH_WATERS = _expand_slot_map(_POLISH_BASE_WATERS, reversible=True)
+
+_POLISH_BASE_MEMBERSHIPS = {
+    "UE": "EU",
+    "Unia Europejska": "EU",
+    "NATO": "NATO",
+    "ONZ": "UN",
+    "Schengen": "Schengen",
+    "Beneluks": "Benelux",
+    "Benelux": "Benelux",
+    "Unia Afrykańska": "African Union",
+    "ASEAN": "ASEAN",
+    "Commonwealth": "Commonwealth",
+    "G7": "G7",
+    "G20": "G20",
+    "OECD": "OECD",
+}
+_POLISH_MEMBERSHIPS = _expand_slot_map(_POLISH_BASE_MEMBERSHIPS)
+
+_POLISH_BASE_HISTORICAL = {
+    "ZSRR": "USSR",
+    "Związek Radziecki": "USSR",
+    "Związek Sowiecki": "USSR",
+    "Jugosławia": "Yugoslavia",
+    "Układ Warszawski": "Warsaw Pact",
+    "Pakt Warszawski": "Warsaw Pact",
+    "Czechosłowacja": "Czechoslovakia",
+    "Austro-Węgry": "Austro-Hungarian Empire",
+    "austro wegry": "Austro-Hungarian Empire",
+    "austro wegier": "Austro-Hungarian Empire",
+    "austro wegrami": "Austro-Hungarian Empire",
+    "Cesarstwo Austro-Węgierskie": "Austro-Hungarian Empire",
+    "cesarstwo austro wegierski": "Austro-Hungarian Empire",
+    "cesarstwa austro wegierskiego": "Austro-Hungarian Empire",
+    "cesarstwo austro wegierskiego": "Austro-Hungarian Empire",
+    "Imperium Osmańskie": "Ottoman Empire",
+    "Imperium Brytyjskie": "British Empire",
+    "Imperium Hiszpańskie": "Spanish Empire",
+    "Imperium Francuskie": "French Empire",
+    "Imperium Portugalskie": "Portuguese Empire",
+    "Wielka Kolumbia": "Gran Colombia",
+}
+_POLISH_HISTORICAL = _expand_slot_map(_POLISH_BASE_HISTORICAL)
+
+_POLISH_BASE_LANGUAGES = {
+    "angielski": "English",
+    "polski": "Polish",
+    "hiszpański": "Spanish",
+    "francuski": "French",
+    "niemiecki": "German",
+    "arabski": "Arabic",
+    "rosyjski": "Russian",
+    "portugalski": "Portuguese",
+    "chiński": "Chinese",
+    "włoski": "Italian",
+    "japoński": "Japanese",
+    "niderlandzki": "Dutch",
+    "holenderski": "Dutch",
+    "grecki": "Greek",
+    "turecki": "Turkish",
+    "suahili": "Swahili",
+    "swahili": "Swahili",
+}
+_POLISH_LANGUAGES = _expand_slot_map(_POLISH_BASE_LANGUAGES)
+
+_POLISH_BASE_COLORS = {
+    "czerwony": "red",
+    "biały": "white",
+    "niebieski": "blue",
+    "zielony": "green",
+    "żółty": "yellow",
+    "czarny": "black",
+    "pomarańczowy": "orange",
+}
+_POLISH_COLORS = _expand_slot_map(_POLISH_BASE_COLORS)
+
+_POLISH_BASE_SYMBOLS = {
+    "gwiazda": "star",
+    "krzyż": "cross",
+    "półksiężyc": "crescent",
+    "słońce": "sun",
+    "pasy": "stripes",
+    "koło": "circle",
+    "orzeł": "eagle",
+    "herb": "coat_of_arms",
+}
+_POLISH_SYMBOLS = _expand_slot_map(_POLISH_BASE_SYMBOLS)
+
+_AMBIGUOUS_COUNTRY_LEMMAS = frozenset({
+    "ameryka", "ameryce", "ameryki", "kongo", "konga", "nigerie", "nigeriem",
+})
+
+def _build_polish_country_lemma_map() -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for alias, canonical in POLISH_COUNTRY_ALIASES.items():
+        n = norm_pl(alias)
+        if n not in _AMBIGUOUS_COUNTRY_LEMMAS:
+            mapping[n] = canonical
+        for form in expand_polish_phrase_forms(alias, reversible=False):
+            if form not in _AMBIGUOUS_COUNTRY_LEMMAS:
+                mapping[form] = canonical
+    for name in _CANONICAL_COUNTRIES.values():
+        n = norm_pl(name)
+        if n not in _AMBIGUOUS_COUNTRY_LEMMAS:
+            mapping[n] = name
+        for form in expand_polish_phrase_forms(name, reversible=False):
+            if form not in _AMBIGUOUS_COUNTRY_LEMMAS:
+                mapping[form] = name
+    for k, v in COUNTRY_NAME_SYNONYMS.items():
+        n = norm_pl(k)
+        if n not in _AMBIGUOUS_COUNTRY_LEMMAS:
+            mapping[n] = v
+    return mapping
+
+_POLISH_COUNTRY_LEMMAS = _build_polish_country_lemma_map()
+
+_POLISH_DIRECTION_CONTINENT_AREAS: dict[tuple[str, str], str] = {
+    ("polnocny", "Europe"): "Northern Europe",
+    ("poludniowy", "Europe"): "Southern Europe",
+    ("wschodni", "Europe"): "Eastern Europe",
+    ("zachodni", "Europe"): "Western Europe",
+    ("srodkowy", "Europe"): "Central Europe",
+    ("polnocny", "Africa"): "Northern Africa",
+    ("poludniowy", "Africa"): "Southern Africa",
+    ("wschodni", "Africa"): "Eastern Africa",
+    ("zachodni", "Africa"): "Western Africa",
+    ("srodkowy", "Africa"): "Middle Africa",
+    ("wschodni", "Asia"): "East Asia",
+    ("poludniowy", "Asia"): "South Asia",
+    ("zachodni", "Asia"): "Western Asia",
+    ("srodkowy", "Asia"): "Central Asia",
+}
+
+
+def _extract_single_polish_number(norm_q: str) -> tuple[str, float | int | None] | None:
+    # Standardize area unit representations while keeping bare km distinct
+    norm_q = re.sub(r"\bkilometrow kwadratowych\b", "km2", norm_q)
+    norm_q = re.sub(r"\bkm\s*2\b", "km2", norm_q)
+
+    number_pattern = re.compile(
+        r"\b\d+(?:[.,]\d+)?(?:\s*(?:mld|miliard\w*|billion\w*|mln|milion\w*|million\w*|tys\w*|thousand\w*|k\b|m\b|b\b))?\b"
+    )
+    matches = list(number_pattern.finditer(norm_q))
+    if len(matches) > 1:
         return None
-    if "/" in question or "\\" in question:
-        return None
-    slot_res = match_slot_template(question, "countrydle")
-    if slot_res is not None:
-        return slot_res
-    q = _norm(question)
-    diagonal = re.search(r"\b(north[- ]west|north[- ]east|south[- ]west|south[- ]east|northwest|northeast|southwest|southeast)\b", q)
-    logical = re.search(r"\b(and|or|i|lub|neither|nor|ani|not|brak)\b", q)
-    if logical:
-        country_match = _COUNTRY_PATTERN.search(q)
-        if country_match is None or any(
-            match.start() < country_match.start() or match.end() > country_match.end()
-            for match in re.finditer(r"\b(and|or|i|lub|neither|nor|ani|not|brak)\b", q)
-        ):
+    if len(matches) == 1:
+        m = matches[0]
+        val = _parse_number_literal(m.group(0))
+        if val is None:
             return None
-    if any(term in q for term in ("sea level", "poziom morza", "poziomu morza", "away from", "daleko od")):
+        q_with_num = norm_q[:m.start()] + "[NUM]" + norm_q[m.end():]
+        q_with_num = re.sub(r"\s+", " ", q_with_num).strip()
+        return q_with_num, val
+    return norm_q, None
+
+
+def _make_slot_matcher(mapping: dict[str, Any], tag: str):
+    sorted_keys = sorted(mapping.keys(), key=len, reverse=True)
+    if not sorted_keys:
+        return lambda clause: (clause, None)
+    pattern = re.compile(r"\b(?:" + "|".join(re.escape(k) for k in sorted_keys) + r")\b")
+
+    def substitute(clause: str) -> tuple[str, Any | None] | None:
+        matches = list(pattern.finditer(clause))
+        if len(matches) > 1:
+            return None
+        if len(matches) == 1:
+            m = matches[0]
+            val = mapping[m.group(0)]
+            new_clause = clause[:m.start()] + tag + clause[m.end():]
+            new_clause = re.sub(r"\s+", " ", new_clause).strip()
+            return new_clause, val
+        return clause, None
+
+    return substitute
+
+
+_MATCH_REGION = _make_slot_matcher(_POLISH_REGIONS, "[REGION]")
+_MATCH_UNION = _make_slot_matcher(_POLISH_UNIONS, "[UNION]")
+_MATCH_CONT = _make_slot_matcher(_POLISH_CONTINENTS, "[CONT]")
+_MATCH_WATER = _make_slot_matcher(_POLISH_WATERS, "[WATER]")
+_MATCH_HEMI = _make_slot_matcher(_POLISH_HEMISPHERES, "[HEMI]")
+_MATCH_MEM = _make_slot_matcher(_POLISH_MEMBERSHIPS, "[MEM]")
+_MATCH_HIST = _make_slot_matcher(_POLISH_HISTORICAL, "[HIST]")
+_MATCH_LANG = _make_slot_matcher(_POLISH_LANGUAGES, "[LANG]")
+_MATCH_COLOR = _make_slot_matcher(_POLISH_COLORS, "[COLOR]")
+_MATCH_SYMBOL = _make_slot_matcher(_POLISH_SYMBOLS, "[SYMBOL]")
+_MATCH_COUNTRY = _make_slot_matcher(_POLISH_COUNTRY_LEMMAS, "[COUNTRY]")
+
+
+def _substitute_polish_slots(clause: str) -> tuple[str, dict[str, Any]] | None:
+    slots: dict[str, Any] = {}
+
+    res = _MATCH_REGION(clause)
+    if res is None:
         return None
-    location = re.search(r"\b(?:in|w)\s+(?:the\s+)?", q)
-    if location and _COUNTRY_PATTERN.match(q, location.end()):
+    clause, slots["REGION"] = res
+
+    res = _MATCH_UNION(clause)
+    if res is None:
         return None
-    m_name_pl = re.search(r"\b(?:czy\s+)?(?:nazwa\s+)?(?:ko[nń]czy\s+si[eę]\s+na|zaczyna\s+si[eę]\s+od|zawiera)\s+[\"'\u201c\u201d]?-?([a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)[\"'\u201c\u201d]?", question, re.I)
-    if m_name_pl:
-        val = m_name_pl.group(1).lower().lstrip("-")
-        matched_text = m_name_pl.group(0).lower()
-        if "ko" in matched_text:
-            op = "ends_with"
-            desc = f"Does the country name end with “{val}”?"
-        elif "zaczyna" in matched_text:
-            op = "starts_with"
-            desc = f"Does the country name start with “{val}”?"
-        else:
-            op = "contains_text"
-            desc = f"Does the country name contain “{val}”?"
-        return [_node(op, "name", val)], desc
-    if any(term in q for term in ("border", "borders", "neighbor", "neighbour", "graniczy", "granic")):
-        country = _country_in(q)
+    clause, slots["UNION"] = res
+
+    res = _MATCH_CONT(clause)
+    if res is None:
+        return None
+    clause, slots["CONT"] = res
+
+    res = _MATCH_WATER(clause)
+    if res is None:
+        return None
+    clause, slots["WATER"] = res
+
+    res = _MATCH_HEMI(clause)
+    if res is None:
+        return None
+    clause, slots["HEMI"] = res
+
+    res = _MATCH_MEM(clause)
+    if res is None:
+        return None
+    clause, slots["MEM"] = res
+
+    res = _MATCH_HIST(clause)
+    if res is None:
+        return None
+    clause, slots["HIST"] = res
+
+    if any(k in clause for k in ("jezyk", "urzedowy")):
+        res = _MATCH_LANG(clause)
+        if res is None:
+            return None
+        clause, slots["LANG"] = res
+    else:
+        slots["LANG"] = None
+
+    if any(k in clause for k in ("flaga", "kolor")):
+        res = _MATCH_COLOR(clause)
+        if res is None:
+            return None
+        clause, slots["COLOR"] = res
+    else:
+        slots["COLOR"] = None
+
+    if any(k in clause for k in ("flaga", "symbol", "herb")):
+        res = _MATCH_SYMBOL(clause)
+        if res is None:
+            return None
+        clause, slots["SYMBOL"] = res
+    else:
+        slots["SYMBOL"] = None
+
+    res = _MATCH_COUNTRY(clause)
+    if res is None:
+        return None
+    clause, slots["COUNTRY"] = res
+
+    return clause, slots
+
+
+def _match_polish_canonical_skeletons(
+    clause: str,
+    slots: dict[str, Any],
+    num: float | int | None,
+) -> tuple[list[dict], str] | None:
+    # 1. Identity
+    if re.fullmatch(r"(?:byc )?\[COUNTRY\]", clause):
+        country = slots.get("COUNTRY")
         if country:
-            return [_node("contains", "borders_country", country)], f"Does the country border {country}?"
-    if diagonal:
-        country = _country_in(q)
-        if country:
-            directions = diagonal.group(1).replace("-", " ").replace("northwest", "north west").replace("northeast", "north east").replace("southwest", "south west").replace("southeast", "south east").split()
-            ast = [_direction({"north": "north_of", "south": "south_of", "west": "west_of", "east": "east_of"}[d], country) for d in directions]
-            ast.append({"operator": "and", "args": [0, 1]})
-            return ast, f"Is the country {directions[0]}-{directions[1]} of {country}?"
+            return [_node("equals", "name", country)], f"Is the country {country}?"
 
-    is_pop = any(term in q for term in ("population", "inhabitants", "people")) or bool(re.search(r"\bpop\b", q))
-    is_area = any(term in q for term in ("area", "sq km", "km2", "km 2", "square km", "square kilometer")) or bool(re.search(r"\bkm\b", q))
-    is_greater = any(term in q for term in (
-        "greater", "larger", "bigger", "more than", "more people", "more inhabitants", "more ",
-        "over", "above", "exceed", "exceeds"
-    ))
-    is_less = any(term in q for term in (
-        "less", "smaller", "fewer", "under", "below"
-    ))
-    if is_pop and (is_greater or is_less):
-        op = "greater_than" if is_greater else "less_than"
-        country = _country_in(q)
-        if country:
-            return [{
-                "operator": op,
-                "left": {**_TARGET, "relation": "population"},
-                "right": {"entity": country, "relation": "population"},
-            }], f"Is the population of the country {op.replace('_', ' ')} that of {country}?"
-        num = _parse_number_literal(q)
-        if num is not None:
-            return [{
-                "operator": op,
-                "left": {**_TARGET, "relation": "population"},
-                "right": {"value": num},
-            }], f"Is the population {op.replace('_', ' ')} {num}?"
+    # 2. Continent
+    if re.fullmatch(r"(?:(?:lezec|byc) (?:w|na) |w |na )?\[CONT\]", clause):
+        cont = slots.get("CONT")
+        if cont:
+            return [_node("contains", "continent", cont)], f"Is the country in {cont}?"
 
-    if is_area and (is_greater or is_less):
-        op = "greater_than" if is_greater else "less_than"
-        country = _country_in(q)
-        if country:
-            return [{
-                "operator": op,
-                "left": {**_TARGET, "relation": "area"},
-                "right": {"entity": country, "relation": "area"},
-            }], f"Is the area of the country {op.replace('_', ' ')} that of {country}?"
-        num = _parse_number_literal(q)
-        if num is not None:
-            return [{
-                "operator": op,
-                "left": {**_TARGET, "relation": "area"},
-                "right": {"value": num},
-            }], f"Is the area {op.replace('_', ' ')} {num}?"
+    # 3. Continent union
+    if re.fullmatch(r"(?:(?:lezec|byc) (?:w|na) |w |na )?\[UNION\]", clause):
+        union = slots.get("UNION")
+        if union:
+            ast = [
+                _node("contains", "continent", union[0]),
+                _node("contains", "continent", union[1]),
+                {"operator": "or", "args": [0, 1]},
+            ]
+            wording = f"Is the country in {'Eurasia' if union == ('Europe', 'Asia') else 'the Americas'}?"
+            return ast, wording
 
-    if not is_pop and (is_greater or is_less):
-        country = _country_in(q)
-        if country and any(term in q for term in ("bigger", "larger", "smaller", "wiekszy", "mniejszy", "wieksza", "mniejsza")):
-            op = "greater_than" if is_greater else "less_than"
-            return [{
-                "operator": op,
-                "left": {**_TARGET, "relation": "area"},
-                "right": {"entity": country, "relation": "area"},
-            }], f"Is the area of the country {op.replace('_', ' ')} that of {country}?"
+    # 4. Geographic area / subregion
+    if re.fullmatch(r"(?:(?:lezec|byc) (?:w|na) |w |na )?\[REGION\]", clause):
+        reg = slots.get("REGION")
+        if reg:
+            return [_node("contains", "geographic_area", reg)], f"Is the country in {reg}?"
 
-    identity = re.search(r"\b(?:is it|is this|czy to|czy jest to|is|it)\s+([a-z0-9 '\u2019&.-]+?)\s*[?!.]*$", q)
-    if identity:
-        candidate = identity.group(1).strip()
-        if not candidate.startswith(("in ", "a ", "an ")):
-            check_name = candidate[4:].strip() if candidate.startswith("the ") else candidate
-            country = _country(check_name) or _country(candidate)
-            if country:
-                return [_node("equals", "name", country)], f"Is the country {country}?"
+    m_dir_cont = re.fullmatch(r"(?:(?:lezec|byc) (?:w|na) |w |na )?(?P<dir>polnocny|poludniowy|wschodni|zachodni|srodkowy) czesc \[CONT\]", clause)
+    if m_dir_cont:
+        cont = slots.get("CONT")
+        dir_word = m_dir_cont.group("dir")
+        area = _POLISH_DIRECTION_CONTINENT_AREAS.get((dir_word, cont))
+        if area and area in AREAS:
+            return [_node("contains", "geographic_area", area)], f"Is the country in {area}?"
+        return None
 
-    is_entirely = any(term in q for term in ("entirely", "completely", "fully", "calkowicie", "w calosci", "tylko na polkuli", "only in the"))
-    hemi_mapping = (
-        (("northern hemisphere", "north hemisphere", "polkuli polnocnej", "polkula polnocna"), "Northern", "Southern"),
-        (("southern hemisphere", "south hemisphere", "polkuli poludniowej", "polkula poludniowa"), "Southern", "Northern"),
-        (("eastern hemisphere", "east hemisphere", "polkuli wschodniej", "polkula wschodnia"), "Eastern", "Western"),
-        (("western hemisphere", "west hemisphere", "polkuli zachodniej", "polkula zachodnia"), "Western", "Eastern"),
-    )
-    for phrases, target_hemi, opposite_hemi in hemi_mapping:
-        if any(phrase in q for phrase in phrases):
-            if is_entirely:
-                ast = [
-                    _node("contains", "hemisphere", target_hemi),
-                    _node("contains", "hemisphere", opposite_hemi),
-                    {"operator": "not", "args": [1]},
-                    {"operator": "and", "args": [0, 2]},
-                ]
-                return ast, f"Is the country entirely in the {target_hemi} Hemisphere?"
-            else:
-                return [_node("contains", "hemisphere", target_hemi)], f"Is the country in the {target_hemi} Hemisphere?"
+    # 5. Hemisphere
+    if re.fullmatch(r"(?:(?:lezec|byc) )?(?:calkowicie |w calosci |tylko )na \[HEMI\]", clause):
+        hemi = slots.get("HEMI")
+        if hemi:
+            opposite = {"Northern": "Southern", "Southern": "Northern", "Eastern": "Western", "Western": "Eastern"}[hemi]
+            ast = [
+                _node("contains", "hemisphere", hemi),
+                _node("contains", "hemisphere", opposite),
+                {"operator": "not", "args": [1]},
+                {"operator": "and", "args": [0, 2]},
+            ]
+            return ast, f"Is the country entirely in the {hemi} Hemisphere?"
 
-    equator_crossing_phrases = (
-        "cross the equator", "crosses the equator", "crossing the equator",
-        "crosses equator", "cross equator",
-        "on the equator", "on equator",
-        "straddle the equator", "straddles the equator",
-        "przecina rownik", "przecina ten rownik", "lezy na rowniku", "na rowniku",
-    )
-    if any(phrase in q for phrase in equator_crossing_phrases):
+    if re.fullmatch(r"(?:(?:lezec|byc) na |na )?\[HEMI\]", clause):
+        hemi = slots.get("HEMI")
+        if hemi:
+            return [_node("contains", "hemisphere", hemi)], f"Is the country in the {hemi} Hemisphere?"
+
+    # 6. Equator & Prime Meridian
+    if re.fullmatch(r"(?:przecinac rownik|(?:lezec|byc) na rownik|na rownik)", clause):
         ast = [
             _node("contains", "hemisphere", "Northern"),
             _node("contains", "hemisphere", "Southern"),
@@ -734,40 +1064,13 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
         ]
         return ast, "Does the country cross the equator?"
 
-    equator_rules = (
-        (
-            (
-                "north of the equator", "north of equator", "north to the equator", "north to equator",
-                "above the equator", "above equator",
-                "nad rownikiem", "powyzej rownika", "na polnoc od rownika",
-            ),
-            "Northern",
-            "north of the equator",
-        ),
-        (
-            (
-                "south of the equator", "south of equator", "south to the equator", "south to equator",
-                "below the equator", "below equator",
-                "pod rownikiem", "ponizej rownika", "na poludnie od rownika",
-            ),
-            "Southern",
-            "south of the equator",
-        ),
-    )
-    for phrases, hemi, wording in equator_rules:
-        if any(phrase in q for phrase in phrases):
-            return [_node("contains", "hemisphere", hemi)], f"Is the country {wording}?"
+    if re.fullmatch(r"(?:(?:lezec|byc) )?(?:na polnoc od rownik|nad rownik|powyzej rownik)", clause):
+        return [_node("contains", "hemisphere", "Northern")], "Is the country north of the equator?"
 
-    prime_meridian_crossing_phrases = (
-        "cross the prime meridian", "crosses the prime meridian", "crossing the prime meridian",
-        "cross the greenwich meridian", "crosses the greenwich meridian",
-        "cross the greenwich line", "crosses the greenwich line",
-        "on the prime meridian", "on the greenwich meridian", "on the greenwich line",
-        "przecina poludnik greenwich", "przecina poludnik zerowy",
-        "lezy na poludniku greenwich", "lezy na poludniku zerowym",
-        "na poludniku greenwich", "na poludniku zerowym",
-    )
-    if any(phrase in q for phrase in prime_meridian_crossing_phrases):
+    if re.fullmatch(r"(?:(?:lezec|byc) )?(?:na poludnie od rownik|pod rownik|ponizej rownik)", clause):
+        return [_node("contains", "hemisphere", "Southern")], "Is the country south of the equator?"
+
+    if re.fullmatch(r"(?:przecinac poludnik (?:greenwich|zerowy)|(?:lezec|byc) na poludnik (?:greenwich|zerowy)|na poludnik (?:greenwich|zerowy))", clause):
         ast = [
             _node("contains", "hemisphere", "Eastern"),
             _node("contains", "hemisphere", "Western"),
@@ -775,104 +1078,239 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
         ]
         return ast, "Does the country cross the prime meridian?"
 
-    prime_meridian_rules = (
-        (
-            (
-                "east of the prime meridian", "east of prime meridian", "east to the prime meridian", "east to prime meridian",
-                "east of greenwich", "east to greenwich",
-                "na wschod od poludnika greenwich", "na wschod od poludnika zerowego", "na wschod od greenwich",
-            ),
-            "Eastern",
-            "east of the prime meridian",
-        ),
-        (
-            (
-                "west of the prime meridian", "west of prime meridian", "west to the prime meridian", "west to prime meridian",
-                "west of greenwich", "west to greenwich",
-                "na zachod od poludnika greenwich", "na zachod od poludnika zerowego", "na zachod od greenwich",
-            ),
-            "Western",
-            "west of the prime meridian",
-        ),
-    )
-    for phrases, hemi, wording in prime_meridian_rules:
-        if any(phrase in q for phrase in phrases):
-            return [_node("contains", "hemisphere", hemi)], f"Is the country {wording}?"
-    direction_phrases = (
-        ("north_of", ("north of", "north to", "above", "na polnoc od", "na północ od", "wyzej niz", "wyżej niż", "powyzej", "powyżej")),
-        ("south_of", ("south of", "south to", "below", "na poludnie od", "na południe od", "nizej niz", "niżej niż", "ponizej", "poniżej")),
-        ("west_of", ("west of", "west to", "to the left of", "left of", "left to", "na zachod od", "na zachód od", "na lewo od", "po lewej stronie od", "po lewej od")),
-        ("east_of", ("east of", "east to", "to the right of", "right of", "right to", "na wschod od", "na wschód od", "na prawo od", "po prawej stronie od", "po prawej od")),
-    )
-    for operator, phrases in direction_phrases:
-        if any(phrase in q for phrase in phrases):
-            country = _country_in(q)
-            return ([_direction(operator, country)], f"Is the country {operator[:-3]} of {country}?") if country else None
+    if re.fullmatch(r"(?:(?:lezec|byc) )?na wschod od (?:poludnik )?(?:greenwich|zerowy)", clause):
+        return [_node("contains", "hemisphere", "Eastern")], "Is the country east of the prime meridian?"
 
-    if re.search(r"\b(landlocked|inland|srodladow\w*|no coastline|no access to (?:the )?(?:sea|ocean)|brak dostepu do morza|nie ma dostepu do morza)\b", q):
+    if re.fullmatch(r"(?:(?:lezec|byc) )?na zachod od (?:poludnik )?(?:greenwich|zerowy)", clause):
+        return [_node("contains", "hemisphere", "Western")], "Is the country west of the prime meridian?"
+
+    # 7. Country borders
+    if re.fullmatch(r"(?:graniczyc z \[COUNTRY\]|z \[COUNTRY\] graniczyc|\[COUNTRY\] graniczyc)", clause):
+        country = slots.get("COUNTRY")
+        if country:
+            return [_node("contains", "borders_country", country)], f"Does the country border {country}?"
+
+    # 8. Relative directions
+    m_dir = re.fullmatch(r"(?:(?:lezec|byc) )?(?:na (?P<dir>polnoc|poludnie|wschod|zachod|lewo|prawo) od|po (?P<side>lewy|prawy) strona od|(?P<rel>nad|pod|powyzej|ponizej|wyzej niz|nizej niz)) \[COUNTRY\]", clause)
+    if m_dir:
+        country = slots.get("COUNTRY")
+        if country:
+            d = m_dir.group("dir") or m_dir.group("rel") or m_dir.group("side")
+            if d in ("polnoc", "nad", "powyzej", "wyzej niz"):
+                op = "north_of"
+            elif d in ("poludnie", "pod", "ponizej", "nizej niz"):
+                op = "south_of"
+            elif d in ("wschod", "prawo", "prawy"):
+                op = "east_of"
+            else:
+                op = "west_of"
+            return [_direction(op, country)], f"Is the country {op[:-3]} of {country}?"
+
+    m_diag = re.fullmatch(r"(?:(?:lezec|byc) )?na (?P<d1>polnocny|poludniowy) (?P<d2>wschod|zachod) od \[COUNTRY\]", clause)
+    if m_diag:
+        country = slots.get("COUNTRY")
+        if country:
+            d1 = m_diag.group("d1")
+            d2 = m_diag.group("d2")
+            d1_op = "north_of" if d1 == "polnocny" else "south_of"
+            d2_op = "east_of" if d2 == "wschod" else "west_of"
+            ast = [
+                _direction(d1_op, country),
+                _direction(d2_op, country),
+                {"operator": "and", "args": [0, 1]},
+            ]
+            d1_lbl = "north" if d1 == "polnocny" else "south"
+            d2_lbl = "east" if d2 == "wschod" else "west"
+            return ast, f"Is the country {d1_lbl}-{d2_lbl} of {country}?"
+
+    # 9. Coastline, ocean, named water body, landlocked, island
+    if re.fullmatch(r"(?:miec dostep do morze(?: lub ocean)?|miec wybrzeze|(?:lezec|byc) nad morze|graniczyc z morze|(?:byc )?nadmorski)", clause):
+        return [_node("exists", "water_access")], "Does the country have access to the sea?"
+
+    if re.fullmatch(r"(?:miec dostep do ocean|(?:lezec|byc) nad ocean|graniczyc z ocean)", clause):
+        return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
+
+    if re.fullmatch(r"(?:miec dostep do (?:ocean )?\[WATER\]|(?:lezec|byc) nad \[WATER\]|graniczyc z \[WATER\])", clause):
+        water = slots.get("WATER")
+        if water:
+            return [_node("contains", "water_access", water)], f"Does the country have access to the {water}?"
+
+    if re.fullmatch(r"(?:(?:byc )?srodladowy|brak dostep do morze|nie miec dostep do morze)", clause):
         return [_node("exists", "marine_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
-    if any(x in q for x in ("island", "wyspa", "wyspiarsk", "archipelag", "archipelago")) and not any(term in q for term in ("share", "shares", "dziel", "border", "borders", "sasied")):
+
+    if re.fullmatch(r"(?:(?:byc )?(?:wyspa|wyspiarski)|archipelag)", clause):
         return [_node("equals", "is_island", True)], "Is the country an island?"
-    is_directional_coast = bool(re.search(r"\b(west\w*|east\w*|north\w*|south\w*|zachod\w*|wschod\w*|polnoc\w*|poludn\w*)\b.*?\b(coast|coastline|wybrzez\w*)\b", q))
-    water_body = _choices(WATERS, q) if not is_directional_coast else None
-    if not is_directional_coast:
-        if any(x in q for x in ("coastline", "coast", "access to sea", "access sea", "access to the sea", "has sea", "have sea", "has coast", "have coast", "dostep do morza")):
-            if water_body and water_body != "Sea":
-                return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
-            after_sea = re.search(r"\b(?:morza|morze|sea)\s+([a-z]+)", q)
-            if after_sea and after_sea.group(1) not in {"and", "or", "i", "lub", "oceanu", "ocean"}:
-                return None
-            return [_node("exists", "water_access")], "Does the country have access to the sea?"
-        if any(x in q for x in ("has ocean", "have ocean", "access ocean", "access to ocean", "access to the ocean")):
-            return [_node("contains", "water_access", "Ocean")], "Does the country have access to the ocean?"
 
-    for relation, choices in (("geographic_area", AREAS), ("continent", CONTINENTS), ("membership", MEMBERSHIPS), ("historical_union", HISTORICAL)):
-        if relation == "continent":
-            if re.search(r"\b(north\w*|south\w*|east\w*|west\w*|central\w*|middle\w*|polnoc\w*|poludn\w*|wschod\w*|zachod\w*|srodk\w*|centraln\w*)\b", q):
-                if not any(continent in q for continent in ("north america", "south america", "ameryka polnocna", "ameryce polnocnej", "ameryka poludniowa", "ameryce poludniowej")):
-                    continue
-        value = _choices(choices, q)
-        if value and any(x in q for x in (
-            "in ", " in the ", "in the", "lezy", "nalezy", "nalezal", "nalezala", "nalezaly", "nalezalo",
-            "part of", "member", "join", "joined", "belong", "belongs", "czlonkiem", " w ", "na ", "kraj", "panstwo", "z ",
-            "czescia", "czesc", "sklad", "wchodzil", "wchodzila", "wchodzilo",
-            "on te ", "on the ", "part of ",
-        )):
-            if relation == "membership":
-                if any(x in q for x in ("founding", "founder", "zaloz", "założ", "original", "pierwotn", "when", "kiedy", "accession", "akcesj")):
-                    continue
-                if re.search(r"\b(19\d\d|20\d\d)\b", q):
-                    continue
-            wording = f"Was the country historically part of {value}?" if relation == "historical_union" else f"Is the country in {value}?"
-            return [_node("contains", relation, value)], wording
-    if water_body and water_body != "Sea" and not is_directional_coast and any(x in q for x in ("access", "coast", "border", "dostep", "wybrze", "ma ")):
-        return [_node("contains", "water_access", water_body)], f"Does the country have access to the {water_body}?"
+    # 10. Population & area numeric and country comparisons
+    m_num_pop = re.fullmatch(
+        r"(?:miec (?P<op>ponad|powyzej|wiecej niz|ponizej|mniej niz|co najmniej|co najwyzej) \[NUM\] mieszkaniec"
+        r"|populacja (?:byc )?(?P<op2>wiekszy niz|mniejszy niz|ponad|powyzej|ponizej|co najmniej|co najwyzej) \[NUM\](?: mieszkaniec)?"
+        r"|miec populacja (?P<op3>wiekszy niz|mniejszy niz|ponad|powyzej|ponizej) \[NUM\](?: mieszkaniec)?)",
+        clause,
+    )
+    if m_num_pop and num is not None:
+        op_str = m_num_pop.group("op") or m_num_pop.group("op2") or m_num_pop.group("op3")
+        op = "greater_than" if any(k in op_str for k in ("wiecej", "wiekszy", "ponad", "powyzej", "co najmniej")) else "less_than"
+        ast = [{
+            "operator": op,
+            "left": {**_TARGET, "relation": "population"},
+            "right": {"value": num},
+        }]
+        return ast, f"Is the population {op.replace('_', ' ')} {num}?"
 
+    m_country_pop = re.fullmatch(
+        r"(?:miec (?P<op>wiecej|mniej) mieszkaniec (?:niz|od) \[COUNTRY\]"
+        r"|miec (?P<op2>wiekszy|mniejszy) populacja (?:niz|od) \[COUNTRY\]"
+        r"|populacja (?:byc )?(?P<op3>wiekszy|mniejszy) (?:niz|od) \[COUNTRY\])",
+        clause,
+    )
+    if m_country_pop:
+        country = slots.get("COUNTRY")
+        if country:
+            op_str = m_country_pop.group("op") or m_country_pop.group("op2") or m_country_pop.group("op3")
+            op = "greater_than" if any(k in op_str for k in ("wiecej", "wiekszy")) else "less_than"
+            ast = [{
+                "operator": op,
+                "left": {**_TARGET, "relation": "population"},
+                "right": {"entity": country, "relation": "population"},
+            }]
+            return ast, f"Is the population of the country {op.replace('_', ' ')} that of {country}?"
 
-    if any(x in q for x in ("left-driving", "drive on the left", "drive on left", "drive left", "drives left", "drives on left", "left drive", "left side of the road")):
-        return [_node("equals", "driving_side", "left")], "Does the country drive on the left?"
-    if any(x in q for x in ("right-driving", "drive on the right", "drive on right", "drive right", "drives right", "drives on right", "right drive", "right side of the road")):
-        return [_node("equals", "driving_side", "right")], "Does the country drive on the right?"
-    if any(x in q for x in ("monarchy", "monarch", "monarchia")) and not any(m in q for m in ("absolute", "absolutn", "constitutional", "konstytucyjn")):
-        return [_node("equals", "government_type", "Monarchy")], "Is the country a monarchy?"
-    if any(x in q for x in ("republic", "republika")):
-        return [_node("equals", "government_type", "Republic")], "Is the country a republic?"
+    m_num_area = re.fullmatch(
+        r"(?:powierzchnia (?:byc )?(?P<op>wiekszy niz|mniejszy niz|ponad|powyzej|ponizej|co najmniej|co najwyzej) \[NUM\] km2"
+        r"|miec powierzchnia (?P<op2>wiekszy niz|mniejszy niz|ponad|powyzej|ponizej) \[NUM\] km2"
+        r"|miec (?P<op3>ponad|powyzej|wiecej niz|ponizej|mniej niz) \[NUM\] km2(?: powierzchnia)?)",
+        clause,
+    )
+    if m_num_area and num is not None:
+        op_str = m_num_area.group("op") or m_num_area.group("op2") or m_num_area.group("op3")
+        op = "greater_than" if any(k in op_str for k in ("wiecej", "wiekszy", "ponad", "powyzej", "co najmniej")) else "less_than"
+        ast = [{
+            "operator": op,
+            "left": {**_TARGET, "relation": "area"},
+            "right": {"value": num},
+        }]
+        return ast, f"Is the area {op.replace('_', ' ')} {num}?"
 
-    if "flag" in q or "flaga" in q or "fladze" in q:
-        colors = {"red": ("red", "czerwony", "czerwona", "czerwone"), "white": ("white", "biały", "biała", "białe"), "blue": ("blue", "niebieski", "niebieska"), "green": ("green", "zielony", "zielona"), "yellow": ("yellow", "żółty", "żółta"), "black": ("black", "czarny", "czarna"), "orange": ("orange", "pomarańczowy", "pomarańczowa")}
-        value = _choices(colors, q)
-        relation = "flag_color"
-        if value is None:
-            symbols = {"star": ("star", "stars", "gwiazda", "gwiazdę", "gwiazdy"), "cross": ("cross", "krzyż"), "crescent": ("crescent", "półksiężyc"), "sun": ("sun", "słońce"), "stripes": ("stripes", "pasy"), "circle": ("circle", "koło"), "eagle": ("eagle", "orzeł"), "coat_of_arms": ("coat of arms", "herb")}
-            value = _choices(symbols, q)
-            relation = "flag_symbol"
-        return ([_node("contains", relation, value)], f"Does the country's flag contain {value}?") if value else None
+    m_country_area = re.fullmatch(
+        r"(?:byc (?P<op>wiekszy|mniejszy) (?:niz|od) \[COUNTRY\]"
+        r"|(?:miec )?powierzchnia (?:byc )?(?P<op2>wiekszy|mniejszy) (?:niz|od) \[COUNTRY\]"
+        r"|byc (?P<op3>wiekszy|mniejszy) powierzchnia (?:niz|od) \[COUNTRY\])",
+        clause,
+    )
+    if m_country_area:
+        country = slots.get("COUNTRY")
+        if country:
+            op_str = m_country_area.group("op") or m_country_area.group("op2") or m_country_area.group("op3")
+            op = "greater_than" if "wiekszy" in op_str else "less_than"
+            ast = [{
+                "operator": op,
+                "left": {**_TARGET, "relation": "area"},
+                "right": {"entity": country, "relation": "area"},
+            }]
+            return ast, f"Is the area of the country {op.replace('_', ' ')} that of {country}?"
 
-    if any(x in q for x in ("official language", "official languages", "jezyk urzedowy", "jezykiem urzedowym", "language", "speak", "speaks", "jezyk")):
-        languages = {"English": ("english", "angielski", "angielskim"), "Polish": ("polish", "polski", "polskim"), "Spanish": ("spanish", "hiszpański", "hiszpańskim"), "French": ("french", "francuski", "francuskim"), "German": ("german", "niemiecki", "niemieckim"), "Arabic": ("arabic", "arabski", "arabskim"), "Russian": ("russian", "rosyjski", "rosyjskim"), "Portuguese": ("portuguese", "portugalski", "portugalskim"), "Chinese": ("chinese", "chiński", "chińskim"), "Italian": ("italian", "włoski", "włoskim"), "Japanese": ("japanese", "japoński", "japońskim"), "Dutch": ("dutch", "niderlandzki", "holenderski"), "Greek": ("greek", "grecki", "greckim"), "Turkish": ("turkish", "turecki", "tureckim"), "Swahili": ("swahili",)}
-        language = _choices(languages, q)
-        return ([_node("contains", "official_language", language)], f"Is {language} an official language?") if language else None
+    # 11. Driving side, government, membership, historical union, language, flag, hyphen, words
+    m_side = re.fullmatch(r"(?:byc )?ruch (?:byc )?(?P<side>lewostronny|prawostronny)", clause)
+    if m_side:
+        side = "left" if m_side.group("side") == "lewostronny" else "right"
+        return [_node("equals", "driving_side", side)], f"Does the country drive on the {side}?"
+
+    m_gov = re.fullmatch(r"(?:byc )?(?P<gov>monarchia|republika)", clause)
+    if m_gov:
+        gov = "Monarchy" if m_gov.group("gov") == "monarchia" else "Republic"
+        return [_node("equals", "government_type", gov)], f"Is the country a {gov.lower()}?"
+
+    if re.fullmatch(r"(?:nalezec do \[MEM\]|byc (?:w|czlonkiem) \[MEM\])", clause):
+        mem = slots.get("MEM")
+        if mem:
+            return [_node("contains", "membership", mem)], f"Is the country in {mem}?"
+
+    if re.fullmatch(r"(?:nalezec_past do \[HIST\]|bylo_past (?:w|czesc) \[HIST\])", clause):
+        hist = slots.get("HIST")
+        if hist:
+            return [_node("contains", "historical_union", hist)], f"Was the country historically part of {hist}?"
+
+    if re.fullmatch(r"(?:jezyk urzedowy (?:byc|to) \[LANG\]|\[LANG\] (?:byc|to) jezyk urzedowy|miec \[LANG\] jako jezyk urzedowy)", clause):
+        lang = slots.get("LANG")
+        if lang:
+            return [_node("contains", "official_language", lang)], f"Is {lang} an official language?"
+
+    m_color = re.fullmatch(r"(?:miec (?:kolor )?\[COLOR\](?: kolor)? na flaga|na flaga byc (?:kolor )?\[COLOR\]|flaga miec (?:kolor )?\[COLOR\](?: kolor)?|flaga byc \[COLOR\])", clause)
+    if m_color:
+        color = slots.get("COLOR")
+        if color:
+            return [_node("contains", "flag_color", color)], f"Does the country's flag contain {color}?"
+
+    m_symbol = re.fullmatch(r"(?:miec \[SYMBOL\] na flaga|na flaga byc \[SYMBOL\]|flaga miec \[SYMBOL\])", clause)
+    if m_symbol:
+        symbol = slots.get("SYMBOL")
+        if symbol:
+            return [_node("contains", "flag_symbol", symbol)], f"Does the country's flag contain {symbol}?"
+
+    if re.fullmatch(r"(?:nazwa miec myslnik|miec myslnik w nazwa)", clause):
+        return [_node("has_hyphen", "name")], "Does the country name have a hyphen?"
+
+    if re.fullmatch(r"(?:nazwa byc dwuczlonowy|byc dwuczlonowy)", clause):
+        return [{"operator": "word_count_equals", "left": {**_TARGET, "relation": "name"}, "right": {"value": 2}}], "Does the country name have 2 words?"
+
     return None
+
+
+def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | None:
+    """Compile Polish natural language questions via whole-sentence canonical skeletons."""
+    if not isinstance(question, str) or not question.strip():
+        return None
+    if "/" in question or "\\" in question:
+        return None
+
+    norm_q = norm_pl(question)
+
+    # Step 3a: Check re.fullmatch for Polish name-pattern queries
+    m_name = re.fullmatch(
+        r"(?:czy )?(?:nazwa (?:tego )?(?:kraju|panstwa) |(?:ten |to )?(?:kraj|panstwo) |nazwa )?"
+        r"(?P<op>konczy sie na|zaczyna sie (?:od|na)|ma w nazwie|zawiera(?: w nazwie)?)"
+        r"(?: liter[eay]| sylab[eay]| koncowk[eai])? [\"'\u201c\u201d]?-?(?P<val>[a-z]+)[\"'\u201c\u201d]?",
+        norm_q,
+    )
+    if m_name is not None:
+        op_raw = m_name.group("op")
+        val = m_name.group("val")
+        if "konczy" in op_raw:
+            op = "ends_with"
+            desc = f"Does the country name end with “{val}”?"
+        elif "zaczyna" in op_raw:
+            op = "starts_with"
+            desc = f"Does the country name start with “{val}”?"
+        else:
+            op = "contains_text"
+            desc = f"Does the country name contain “{val}”?"
+        return [_node(op, "name", val)], desc
+
+    # Step 3b: Check match_slot_template
+    from slot_template_engine import match_slot_template
+    slot_res = match_slot_template(question, "countrydle")
+    if slot_res is not None:
+        return slot_res
+
+    # Step 3c & 3d: Canonicalize clause then extract at most one numeric literal ([NUM])
+    clause = canonicalize_pl_clause(norm_q, target_nouns=("kraj", "panstwo"))
+    if not clause:
+        return None
+
+    num_res = _extract_single_polish_number(clause)
+    if num_res is None:
+        return None
+    clause, extracted_num = num_res
+
+    # Step 3e: Substitute single slots
+    slot_res = _substitute_polish_slots(clause)
+    if slot_res is None:
+        return None
+    clause, extracted_slots = slot_res
+
+    # Step 3f: Match canonicalized clause against exact whole-sentence skeletons
+    return _match_polish_canonical_skeletons(clause, extracted_slots, extracted_num)
 
 def check_open_ended_question(question: str) -> str | None:
     """Detect open-ended questions about supported attributes that require a yes/no rephrasing."""
