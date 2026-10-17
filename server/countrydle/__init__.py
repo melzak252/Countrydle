@@ -30,7 +30,7 @@ from schemas.country import CountryDisplay
 from schemas.user import UserDisplay
 from schemas.countrydle import FullQuestionDisplay
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action,
     link_guest_participation, get_guest_identity, check_guest_question_available,
@@ -746,6 +746,7 @@ async def ask_question(
     response: Response,
     user: User | None = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = None,
 ):
     evidence: dict = {}
     handler_started = datetime.now(UTC)
@@ -786,8 +787,10 @@ async def ask_question(
             measurement["quota_failures"] = 1
         elif failure_status == status.HTTP_503_SERVICE_UNAVAILABLE:
             measurement["provider_failures"] = 1
-        _record_countrydle_cost_measurements(measurement, evidence)
-
+        if background_tasks is not None:
+            background_tasks.add_task(_record_countrydle_cost_measurements, measurement, evidence)
+        else:
+            _record_countrydle_cost_measurements(measurement, evidence)
 
 def _record_countrydle_cost_measurements(measurement: dict, evidence: dict) -> None:
     """Write only bounded event labels and observed numeric provider usage."""
