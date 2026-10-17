@@ -1014,20 +1014,24 @@ def test_subregions_not_collapsed_to_continents():
 
     # Polish subregion queries must NOT compile to templates (no fragile Polish regex, safely deferred to Gemini)
     # and crucially must NEVER collapse into broad continent questions
-    for q_pl in (
-        "Czy ten kraj leży w Azji Południowo-wschodniej?",
-        "Czy leży w Europie Środkowej?",
-        "Czy leży w południowej Azji?",
-        "Czy leży w Azji Południowej?",
-        "Czy leży na Bliskim Wschodzie?",
-        "Czy leży na południu Afryki?",
-        "Czy leży w Afryce Południowej?",
-        "Czy leży w Afryce Północnej?",
-        "Czy leży w Ameryce Środkowej?",
-    ):
+    polish_subregions = [
+        ("Czy ten kraj leży w Azji Południowo-wschodniej?", "Southeast Asia"),
+        ("Czy leży w Europie Środkowej?", "Central Europe"),
+        ("Czy leży w południowej Azji?", "South Asia"),
+        ("Czy leży w Azji Południowej?", "South Asia"),
+        ("Czy leży na Bliskim Wschodzie?", "Middle East"),
+        ("Czy leży w Afryce Południowej?", "Southern Africa"),
+        ("Czy leży w Afryce Północnej?", "Northern Africa"),
+        ("Czy leży w Ameryce Środkowej?", "Central America"),
+    ]
+    for q_pl, expected_subregion in polish_subregions:
         plan_pl = compile_template_plan(q_pl)
-        assert plan_pl is None, f"Polish subregion {q_pl} should not match template; got {plan_pl}"
+        assert plan_pl is not None, f"Polish subregion {q_pl} should match template"
+        assert plan_pl[0][0]["left"]["relation"] == "geographic_area"
+        assert plan_pl[0][0]["right"]["value"] == expected_subregion
 
+    # Vague directional descriptions fall through to planner
+    assert compile_template_plan("Czy leży na południu Afryki?") is None
     # English subregion queries compile accurately to geographic_area
     for q_en in ("Is it in Southeast Asia?", "Is it in South East Asia?", "Is it in South-East Asia?"):
         plan_en = compile_template_plan(q_en)
@@ -1118,27 +1122,30 @@ def test_historical_unions_matching_and_execution():
 
     # Fragile Polish historical union queries must return None from template compiler (deferred to Gemini)
     polish_unions = [
-        "Czy ten kraj należał do Układu Warszawskiego?",
-        "Czy był w Układzie Warszawskim?",
-        "Czy był częścią Układu Warszawskiego?",
-        "Czy należał do paktu warszawskiego?",
-        "Czy był częścią ZSRR?",
-        "Czy należał do ZSRR?",
-        "Czy był częścią Związku Radzieckiego?",
-        "Czy był częścią Związku Sowieckiego?",
-        "Czy był częścią Cesarstwa Austro-Węgierskiego?",
-        "Czy należał do Cesarstwa Austro-Węgierskiego?",
-        "Czy był częścią Austro-Węgier?",
-        "Czy należał do Austro-Węgier?",
-        "Czy był częścią Jugosławii?",
-        "Czy był częścią Czechosłowacji?",
-        "Czy był częścią Imperium Osmańskiego?",
-        "Czy był częścią Imperium Brytyjskiego?",
-        "Czy był częścią Imperium Francuskiego?",
-        "Czy był częścią Wielkiej Kolumbii?",
+        ("Czy ten kraj należał do Układu Warszawskiego?", "Warsaw Pact"),
+        ("Czy był w Układzie Warszawskim?", "Warsaw Pact"),
+        ("Czy był częścią Układu Warszawskiego?", "Warsaw Pact"),
+        ("Czy należał do paktu warszawskiego?", "Warsaw Pact"),
+        ("Czy był częścią ZSRR?", "USSR"),
+        ("Czy należał do ZSRR?", "USSR"),
+        ("Czy był częścią Związku Radzieckiego?", "USSR"),
+        ("Czy był częścią Związku Sowieckiego?", "USSR"),
+        ("Czy był częścią Cesarstwa Austro-Węgierskiego?", "Austro-Hungarian Empire"),
+        ("Czy należał do Cesarstwa Austro-Węgierskiego?", "Austro-Hungarian Empire"),
+        ("Czy był częścią Austro-Węgier?", "Austro-Hungarian Empire"),
+        ("Czy należał do Austro-Węgier?", "Austro-Hungarian Empire"),
+        ("Czy był częścią Jugosławii?", "Yugoslavia"),
+        ("Czy był częścią Czechosłowacji?", "Czechoslovakia"),
+        ("Czy był częścią Imperium Osmańskiego?", "Ottoman Empire"),
+        ("Czy był częścią Imperium Brytyjskiego?", "British Empire"),
+        ("Czy był częścią Imperium Francuskiego?", "French Empire"),
+        ("Czy był częścią Wielkiej Kolumbii?", "Gran Colombia"),
     ]
-    for question in polish_unions:
-        assert compile_template_plan(question) is None, f"Polish union query {question} should not match template"
+    for question, expected_union in polish_unions:
+        plan_pl = compile_template_plan(question)
+        assert plan_pl is not None, f"Polish union query {question} should match template"
+        assert plan_pl[0][0]["left"]["relation"] == "historical_union"
+        assert plan_pl[0][0]["right"]["value"] == expected_union
 
 def test_water_access_sea_and_or_ocean_evaluates_correctly():
     # Single node: contains "Sea"

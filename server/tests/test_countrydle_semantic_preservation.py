@@ -88,6 +88,8 @@ def semantic_facts(tmp_path, monkeypatch):
     ("Is it Italy?", "Italy", True),
     ("Is it Italy?", "Vatican City", False),
     ("Is it in Europe?", "Vatican City", True),
+    ("Czy leży w Europie?", "Vatican City", True),
+    ("Czy leży w Europie?", "Kiribati", False),
     ("Is it in Micronesia?", "Kiribati", True),
     ("Is it Micronesia?", "Kiribati", False),
     ("Is it landlocked?", "Vatican City", True),
@@ -186,7 +188,6 @@ def test_new_english_templates_do_not_drop_unparsed_meaning(offline_planner, que
     "Is it in Italy?", "In Italy?", "Is it in South Africa?",
     "Does it border Germany and France?", "Does it border Germany north of Austria?",
     "Is it entirely in the Northern Hemisphere?", "Is it an island in Europe?",
-    "Czy leży w Europie?",  # No newly activated Polish fast path.
 ])
 def test_active_planner_declines_complex_and_country_containment_queries(offline_planner, question):
     plan = local_planner.analyze_question_for_local_plan(question, use_cache=False)
@@ -401,3 +402,32 @@ def test_fallback_subject_binding_does_not_rebind_literals_or_other_language(que
 ])
 def test_fallback_subject_binding_keeps_named_feature_and_species_subjects_literal(question):
     assert template_compiler._bind_named_country_subject(question) == question
+
+
+POLISH_PERTURBED_QUESTIONS = [
+    # Negations
+    "Czy ten kraj nie leży w Europie?",
+    "Czy nie graniczy z Niemcami?",
+    "Czy to państwo nie jest wyspą?",
+    # Conjunctions / multiple entities
+    "Czy graniczy z Niemcami i Francją?",
+    "Czy leży w Europie lub Azji?",
+    "Czy graniczy z Czechami, ale nie z Polską?",
+    # Modifiers
+    "Czy leży tylko w Europie?",
+    "Czy leży głównie w Azji?",
+    "Czy leży częściowo w Europie?",
+    "Czy dawniej należał do ZSRR?",
+    "Czy kiedyś był w ONZ?",
+    # Relative clauses
+    "Czy to kraj, który graniczy z Niemcami?",
+    "Czy to państwo, w którym obowiązuje ruch lewostronny?",
+    # Secondary bounds
+    "Czy ma ponad 10 mln i mniej niż 50 mln mieszkańców?",
+    "Czy powierzchnia jest większa niż 100 tysięcy km2 i mniejsza niż 500 tysięcy km2?",
+]
+
+
+@pytest.mark.parametrize("question", POLISH_PERTURBED_QUESTIONS)
+def test_polish_perturbed_questions_decline_template_compilation(question):
+    assert template_compiler.compile_template_plan(question) is None

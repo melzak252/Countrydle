@@ -16,6 +16,10 @@ from countrydle.local_answering import (
     COUNTRY_NAME_SYNONYMS,
     POLISH_COUNTRY_ALIASES,
 )
+from polish_morphology import (
+    expand_polish_phrase_forms,
+    expand_polish_word_forms,
+)
 
 
 def norm_text(text: str) -> str:
@@ -82,7 +86,9 @@ for k, v in COUNTRY_NAME_SYNONYMS.items():
     COUNTRIES_MAP[norm_text(k)] = v
 for k, v in POLISH_COUNTRY_ALIASES.items():
     COUNTRIES_MAP[norm_text(k)] = v
-
+    for form in expand_polish_phrase_forms(k, reversible=False):
+        if form not in {"ameryka", "ameryce", "ameryki", "kongo", "konga", "nigerie", "nigeriem"}:
+            COUNTRIES_MAP[norm_text(form)] = v
 _SORTED_COUNTRIES = sorted(COUNTRIES_MAP.keys(), key=len, reverse=True)
 _COUNTRY_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(c) for c in _SORTED_COUNTRIES) + r")\b")
 
@@ -96,20 +102,35 @@ _US_STATES = [
     "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
     "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
 ]
-US_STATES_MAP: dict[str, str] = {norm_text(s): s for s in _US_STATES}
-# Polish inflections for popular states
-US_STATES_MAP.update({
-    "kalifornia": "California", "kalifornii": "California", "kalifornie": "California",
-    "teksas": "Texas", "teksasu": "Texas", "teksasem": "Texas",
-    "floryda": "Florida", "florydy": "Florida", "florydzie": "Florida",
-    "alaska": "Alaska", "alaski": "Alaska", "alasce": "Alaska",
-    "hawaje": "Hawaii", "hawajach": "Hawaii", "hawajow": "Hawaii",
-    "nowy jork": "New York", "nowego jorku": "New York",
-    "karolina polnocna": "North Carolina", "karoliny polnocnej": "North Carolina",
-    "karolina poludniowa": "South Carolina", "karoliny poludniowej": "South Carolina",
-    "dakota polnocna": "North Dakota", "dakota poludniowa": "South Dakota",
-    "wirginia": "Virginia", "wirginii": "Virginia",
-})
+US_STATES_MAP: dict[str, str] = {}
+for s in _US_STATES:
+    US_STATES_MAP[norm_text(s)] = s
+    for form in expand_polish_phrase_forms(s, reversible=True):
+        US_STATES_MAP[norm_text(form)] = s
+
+_BASE_POLISH_US_STATES = {
+    "Kalifornia": "California",
+    "Teksas": "Texas",
+    "Floryda": "Florida",
+    "Alaska": "Alaska",
+    "Hawaje": "Hawaii",
+    "Nowy Jork": "New York",
+    "Nowy Meksyk": "New Mexico",
+    "Karolina Północna": "North Carolina",
+    "Karolina Południowa": "South Carolina",
+    "Dakota Północna": "North Dakota",
+    "Dakota Południowa": "South Dakota",
+    "Wirginia": "Virginia",
+    "Wirginia Zachodnia": "West Virginia",
+    "Pensylwania": "Pennsylvania",
+    "Kolorado": "Colorado",
+    "Luizjana": "Louisiana",
+    "Waszyngton": "Washington",
+}
+for pl_name, canonical in _BASE_POLISH_US_STATES.items():
+    US_STATES_MAP[norm_text(pl_name)] = canonical
+    for form in expand_polish_phrase_forms(pl_name, reversible=True):
+        US_STATES_MAP[norm_text(form)] = canonical
 _SORTED_US_STATES = sorted(US_STATES_MAP.keys(), key=len, reverse=True)
 _US_STATE_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(s) for s in _SORTED_US_STATES) + r")\b")
 
@@ -122,6 +143,8 @@ _VOIVODESHIPS = [
 VOIVODESHIPS_MAP: dict[str, str] = {}
 for v in _VOIVODESHIPS:
     VOIVODESHIPS_MAP[norm_text(v)] = v
+    for form in expand_polish_word_forms(v):
+        VOIVODESHIPS_MAP[norm_text(form)] = v
     # Adjective/inflections
     stem = norm_text(v)
     if stem.endswith("ie"):
@@ -162,6 +185,28 @@ WATER_BODIES_MAP: dict[str, str] = {
     "gulf of mexico": "Gulf of Mexico", "gulf": "Gulf of Mexico", "zatoka meksykanska": "Gulf of Mexico",
     "great lakes": "Great Lakes", "wielkie jeziora": "Great Lakes",
 }
+_BASE_POLISH_WATER_BODIES = {
+    "Ocean Atlantycki": "Atlantic Ocean",
+    "Ocean Spokojny": "Pacific Ocean",
+    "Ocean Arktyczny": "Arctic Ocean",
+    "Ocean Indyjski": "Indian Ocean",
+    "Ocean Południowy": "Southern Ocean",
+    "Morze Bałtyckie": "Baltic Sea",
+    "Morze Śródziemne": "Mediterranean Sea",
+    "Morze Czarne": "Black Sea",
+    "Morze Północne": "North Sea",
+    "Morze Czerwone": "Red Sea",
+    "Morze Karaibskie": "Caribbean Sea",
+    "Zatoka Meksykańska": "Gulf of Mexico",
+    "Wielkie Jeziora": "Great Lakes",
+    "Bałtyk": "Baltic Sea",
+    "Atlantyk": "Atlantic Ocean",
+    "Pacyfik": "Pacific Ocean",
+}
+for pl_name, canonical in _BASE_POLISH_WATER_BODIES.items():
+    WATER_BODIES_MAP[norm_text(pl_name)] = canonical
+    for form in expand_polish_phrase_forms(pl_name, reversible=True):
+        WATER_BODIES_MAP[norm_text(form)] = canonical
 _SORTED_WATERS = sorted(WATER_BODIES_MAP.keys(), key=len, reverse=True)
 _WATER_PATTERN = re.compile(r"\b(?:" + "|".join(re.escape(w) for w in _SORTED_WATERS) + r")\b")
 
@@ -262,17 +307,8 @@ def mask_query(raw_query: str, mode: str = "countrydle") -> tuple[str, dict[str,
             slots["VOIVODESHIP"] = VOIVODESHIPS_MAP[m.group(0)]
             return "[VOIVODESHIP]"
         q = _VOIVODESHIP_PATTERN.sub(_sub_voj, q, count=1)
-        if "[VOIVODESHIP]" not in q:
-            def _sub_c(m):
-                slots["COUNTRY"] = COUNTRIES_MAP[m.group(0)]
-                return "[COUNTRY]"
-            q = _COUNTRY_PATTERN.sub(_sub_c, q, count=1)
     elif mode in ("powiatdle", "powiat"):
-        def _sub_c(m):
-            slots["COUNTRY"] = COUNTRIES_MAP[m.group(0)]
-            return "[COUNTRY]"
-        q = _COUNTRY_PATTERN.sub(_sub_c, q, count=1)
-
+        pass
     q = re.sub(r"\s+", " ", q).strip()
     return q, slots
 
@@ -394,6 +430,30 @@ def _build_us_state_border_count_comp(slots: dict[str, Any], mode: str):
     }
     op_label = "more than" if op == "greater_than" else "fewer than" if op == "less_than" else "at least"
     return ast, f"Does the state border {op_label} {num} states?"
+
+@register_skeleton(
+    ["usstatedle", "us_statedle", "us_state"],
+    [
+        "does it border [STATE]",
+        "does it border the state of [STATE]",
+        "does the state border [STATE]",
+        "does the state border the state of [STATE]",
+        "is it next to [STATE]",
+        "czy graniczy ze stanem [STATE]",
+        "czy graniczy ze [STATE]",
+        "czy graniczy z [STATE]",
+        "czy ten stan graniczy z [STATE]",
+        "czy ten stan graniczy ze stanem [STATE]",
+    ],
+)
+def _build_us_state_border_state(slots: dict[str, Any], mode: str):
+    state = slots.get("STATE", "Texas")
+    ast = {
+        "operator": "contains_exact",
+        "left": {"entity": "target_state", "relation": "borders_state"},
+        "right": {"value": state},
+    }
+    return ast, f"Does the state border {state}?"
 
 
 @register_skeleton(
@@ -562,6 +622,8 @@ def _build_us_state_water_body(slots: dict[str, Any], mode: str):
         "does the country border [WATER_BODY]",
         "does the country border the [WATER_BODY]",
         "czy ma dostep do [WATER_BODY]",
+        "czy ma dostep do oceanu [WATER_BODY]",
+        "czy ten kraj ma dostep do oceanu [WATER_BODY]",
         "czy lezy nad [WATER_BODY]",
         "czy graniczy z [WATER_BODY]",
         "czy to panstwo ma dostep do [WATER_BODY]",
@@ -592,7 +654,7 @@ def _build_country_water_body(slots: dict[str, Any], mode: str):
 )
 def _build_country_landlocked(slots: dict[str, Any], mode: str):
     ast = [
-        {"operator": "exists", "left": {"entity": "target_country", "relation": "water_access"}},
+        {"operator": "exists", "left": {"entity": "target_country", "relation": "marine_access"}},
         {"operator": "not", "args": [0]},
     ]
     return ast, "Is the country landlocked?"
@@ -705,6 +767,20 @@ def _build_powiat_land_county(slots: dict[str, Any], mode: str):
 # 4. PUBLIC COMPILER DISPATCH
 # ==============================================================================
 
+_MODE_CANONICAL = {
+    "countrydle": "countrydle",
+    "world": "countrydle",
+    "continental": "countrydle",
+    "usstatedle": "usstatedle",
+    "us_statedle": "usstatedle",
+    "us_state": "usstatedle",
+    "wojewodztwodle": "wojewodztwodle",
+    "wojewodztwo": "wojewodztwodle",
+    "powiatdle": "powiatdle",
+    "powiat": "powiatdle",
+}
+
+
 def match_slot_template(raw_query: str, mode: str = "countrydle") -> Optional[Tuple[Any, str]]:
     """Match a query against the declarative slot-masked template registry.
 
@@ -712,20 +788,13 @@ def match_slot_template(raw_query: str, mode: str = "countrydle") -> Optional[Tu
         (ast, improved_question) if matched, otherwise None.
     """
     mode_clean = mode.lower().replace("-", "_")
-    skeleton, slots = mask_query(raw_query, mode=mode_clean)
-    
-    # Try mode-specific skeleton lookup
-    builder = _SKELETON_REGISTRY.get((mode_clean, skeleton))
-    if not builder:
-        # Fall back to generic mode aliases
-        for alt_mode in ("countrydle", "usstatedle", "wojewodztwodle", "powiatdle"):
-            builder = _SKELETON_REGISTRY.get((alt_mode, skeleton))
-            if builder:
-                break
+    canon_mode = _MODE_CANONICAL.get(mode_clean, mode_clean)
+    skeleton, slots = mask_query(raw_query, mode=canon_mode)
 
+    builder = _SKELETON_REGISTRY.get((canon_mode, skeleton))
     if builder:
         try:
-            return builder(slots, mode_clean)
+            return builder(slots, canon_mode)
         except Exception:
             return None
 

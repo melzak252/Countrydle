@@ -5,10 +5,22 @@ import re
 from typing import Any
 import unicodedata
 
-from slot_template_engine import build_us_state_water_plan, match_slot_template
-from voivodeship_names import resolve_voivodeship_name, CANONICAL_VOIVODESHIPS
+from polish_morphology import (
+    canonicalize_pl_clause,
+    expand_polish_phrase_forms,
+    expand_polish_word_forms,
+    norm_pl,
+)
+from slot_template_engine import (
+    COUNTRIES_MAP,
+    US_STATES_MAP,
+    VOIVODESHIPS_MAP,
+    build_us_state_water_plan,
+    match_slot_template,
+)
 
 
+@lru_cache(maxsize=1024)
 def _norm(text: str) -> str:
     """Normalize Polish characters and accents, lowercase, strip punctuation."""
     folded = text.casefold().replace("ł", "l").replace("Ł", "l")
@@ -22,18 +34,18 @@ def _norm(text: str) -> str:
 POLISH_NEIGHBOR_COUNTRIES = {
     "Niemcy": ("niemcy", "niemcami", "niemiec", "niemczech", "germany"),
     "Czechy": ("czechy", "czechami", "czech", "czechach", "czechia", "czech republic"),
-    "Słowacja": ("slowacja", "slowacja", "slowacja", "slowacja", "slowacji", "slowacja", "slovakia"),
-    "Ukraina": ("ukraina", "ukraina", "ukrainie", "ukrainy", "ukraine"),
+    "Słowacja": ("slowacja", "slowacji", "slowacja", "slovakia"),
+    "Ukraina": ("ukraina", "ukrainie", "ukrainy", "ukraine"),
     "Białoruś": ("bialorus", "bialorusia", "bialorusi", "belarus"),
-    "Litwa": ("litwa", "litwa", "litwie", "litwy", "lithuania"),
-    "Rosja": ("rosja", "rosja", "rosji", "rosja", "obwodem krolewieckim", "obwodem kaliningradzkim", "krolewieckim", "kaliningradzkim", "russia"),
+    "Litwa": ("litwa", "litwie", "litwy", "lithuania"),
+    "Rosja": ("rosja", "rosji", "obwodem krolewieckim", "obwodem kaliningradzkim", "krolewieckim", "kaliningradzkim", "russia"),
 }
 
 # Major rivers in Poland
 POLISH_MAJOR_RIVERS = {
-    "Wisła": ("wisla", "wisly", "wisle", "wisla", "vistula"),
-    "Odra": ("odra", "odry", "odrze", "odra", "oder"),
-    "Warta": ("warta", "warty", "warcie", "warta"),
+    "Wisła": ("wisla", "wisly", "wisle", "vistula"),
+    "Odra": ("odra", "odry", "odrze", "oder"),
+    "Warta": ("warta", "warty", "warcie"),
     "Bug": ("bug", "bugu", "bugiem"),
     "Narew": ("narew", "narwi", "narwia"),
     "San": ("san", "sanu", "sanem"),
@@ -43,6 +55,50 @@ POLISH_MAJOR_RIVERS = {
     "Łyna": ("lyna", "lyny", "lynie"),
     "Drwęca": ("drweca", "drwecy", "drwece"),
 }
+
+_EXPANDED_POLISH_RIVERS: dict[str, str] = {}
+for canonical, aliases in POLISH_MAJOR_RIVERS.items():
+    _EXPANDED_POLISH_RIVERS[norm_pl(canonical)] = canonical
+    for a in aliases:
+        _EXPANDED_POLISH_RIVERS[norm_pl(a)] = canonical
+        for f in expand_polish_word_forms(a):
+            _EXPANDED_POLISH_RIVERS[f] = canonical
+
+_EXPANDED_POLISH_NEIGHBORS: dict[str, str] = {}
+for canonical, aliases in POLISH_NEIGHBOR_COUNTRIES.items():
+    _EXPANDED_POLISH_NEIGHBORS[norm_pl(canonical)] = canonical
+    for a in aliases:
+        _EXPANDED_POLISH_NEIGHBORS[norm_pl(a)] = canonical
+        for f in expand_polish_phrase_forms(a):
+            _EXPANDED_POLISH_NEIGHBORS[f] = canonical
+
+
+def _make_generic_slot_matcher(mapping: dict[str, Any], tag: str):
+    sorted_keys = sorted(mapping.keys(), key=len, reverse=True)
+    if not sorted_keys:
+        return lambda clause: (clause, None)
+    pattern = re.compile(r"\b(?:" + "|".join(re.escape(k) for k in sorted_keys) + r")\b")
+
+    def substitute(clause: str) -> tuple[str, Any | None] | None:
+        matches = list(pattern.finditer(clause))
+        if len(matches) > 1:
+            return None
+        if len(matches) == 1:
+            m = matches[0]
+            val = mapping[m.group(0)]
+            new_clause = clause[:m.start()] + tag + clause[m.end():]
+            new_clause = re.sub(r"\s+", " ", new_clause).strip()
+            return new_clause, val
+        return clause, None
+
+    return substitute
+
+
+_MATCH_VOJ = _make_generic_slot_matcher(VOIVODESHIPS_MAP, "[VOJ]")
+_MATCH_RIVER = _make_generic_slot_matcher(_EXPANDED_POLISH_RIVERS, "[RIVER]")
+_MATCH_NEIGHBOR = _make_generic_slot_matcher(_EXPANDED_POLISH_NEIGHBORS, "[COUNTRY]")
+_MATCH_US_STATE = _make_generic_slot_matcher(US_STATES_MAP, "[STATE]")
+_MATCH_US_COUNTRY = _make_generic_slot_matcher(COUNTRIES_MAP, "[COUNTRY]")
 
 
 def check_generic_open_ended_question(question: str) -> str | None:
@@ -62,176 +118,165 @@ def check_generic_open_ended_question(question: str) -> str | None:
 
 def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | None:
     """Match high-frequency Powiatdle player questions into canonical AST."""
-    norm_q = _norm(question)
-    words = norm_q.split()
-    if re.search(r"\b(?:nie\s+(?:ma|graniczy|lezy|jest|plynie|przeplywa|posiada)|not\b|ani\b|bez\b|brak\b)", norm_q) and not re.search(r"\bpowiat(?:em)? ziemski(?:m)?\b", norm_q):
+    clause = canonicalize_pl_clause(question, target_nouns=("powiat",))
+    if not clause:
         return None
-    if re.search(r"\b(?:and|or|i|lub|albo|ani|oraz)\b", norm_q):
-        return None
-    # 1. City with county rights (is_city_county == 1)
-    if re.search(r"\bmiasto na prawach powiatu\b", norm_q) or re.search(r"\bmiastem na prawach powiatu\b", norm_q):
-        if any(neg in norm_q for neg in ("nie jest", "nie ")):
-            pass # let complex negation pass to planner
-        elif "powiat ziemski" not in norm_q:
-            return (
-                {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 1}},
-                "Czy powiat jest miastem na prawach powiatu?",
-            )
 
-    # Powiat ziemski (is_city_county == 0)
-    if re.search(r"\bpowiat(?:em)? ziemski(?:m)?\b", norm_q):
+    # Substitute slots (reject if multiple of same type)
+    res = _MATCH_RIVER(clause)
+    if res is None:
+        return None
+    clause, river = res
+
+    res = _MATCH_NEIGHBOR(clause)
+    if res is None:
+        return None
+    clause, country = res
+
+    res = _MATCH_VOJ(clause)
+    if res is None:
+        return None
+    clause, voj = res
+
+    # 1. City county
+    if re.fullmatch(r"(?:byc )?(?:miasto na prawach|grodzki)", clause):
+        return (
+            {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 1}},
+            "Czy powiat jest miastem na prawach powiatu?",
+        )
+
+    # Land county
+    if re.fullmatch(r"(?:byc )?(?:powiat )?ziemski", clause):
         return (
             {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 0}},
             "Czy powiat jest powiatem ziemskim?",
         )
 
-    # 2. Registration plates length (char_count_equals on registration_plates)
-    plate_kw = any(k in norm_q for k in ("tablic", "rejestrac", "wyroznik"))
-    if plate_kw or any(k in norm_q for k in ("dwuliterow", "trzyliterow")):
-        if re.search(r"\b(?:2|dwie|dwu)\s*(?:litery|liter|literowe|literowy)?\b", norm_q) and ("2" in norm_q or "dwuliterow" in norm_q or "dwie litery" in norm_q):
-            return (
-                {"operator": "char_count_equals", "left": {"entity": "target_powiat", "relation": "registration_plates"}, "right": {"value": 2}},
-                "Czy tablice rejestracyjne powiatu mają 2 litery?",
-            )
-        if re.search(r"\b(?:3|trzy|trzy)\s*(?:litery|liter|literowe|literowy)?\b", norm_q) and ("3" in norm_q or "trzyliterow" in norm_q or "trzy litery" in norm_q):
-            return (
-                {"operator": "char_count_equals", "left": {"entity": "target_powiat", "relation": "registration_plates"}, "right": {"value": 3}},
-                "Czy tablice rejestracyjne powiatu mają 3 litery?",
-            )
-
-    # 3. Sea access (water_access exists)
-    if any(k in norm_q for k in ("morzem", "morza", "baltyk", "baltykiem")):
-        if any(k in norm_q for k in ("graniczy", "dostep", "lezy nad", "jest nad", "znajduje sie nad")):
-            return (
-                {"operator": "exists", "left": {"entity": "target_powiat", "relation": "water_access"}},
-                "Czy powiat ma dostęp do morza?",
-            )
-
-    # 4. Major rivers (major_rivers contains_text)
-    for river_canonical, aliases in POLISH_MAJOR_RIVERS.items():
-        if any(alias in words or f" {alias} " in f" {norm_q} " for alias in aliases):
-            if any(k in norm_q for k in ("plynie", "przeplywa", "lezy nad", "rzeka", "rzeki")):
-                return (
-                    {"operator": "contains_text", "left": {"entity": "target_powiat", "relation": "major_rivers"}, "right": {"value": river_canonical}},
-                    f"Czy przez powiat przepływa {river_canonical}?",
-                )
-
-    # 5. International borders (borders_country exists / contains_exact)
-    is_border_q = any(k in norm_q for k in ("graniczy", "granice", "granica", "sasiaduje"))
-    if is_border_q and any(k in norm_q for k in ("panstwem", "krajem", "zagranica", "obcym")):
-        # Generic foreign border
-        if not any(c in norm_q for aliases in POLISH_NEIGHBOR_COUNTRIES.values() for c in aliases):
-            return (
-                {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_country"}},
-                "Czy powiat graniczy z obcym państwem?",
-            )
-
-    for country_canonical, aliases in POLISH_NEIGHBOR_COUNTRIES.items():
-        if any(alias in words or f" {alias} " in f" {norm_q} " for alias in aliases):
-            if is_border_q:
-                return (
-                    {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_country"}, "right": {"value": country_canonical}},
-                    f"Czy powiat graniczy z: {country_canonical}?",
-                )
-
-    # Cardinal directions (e.g. "na zachód od Warszawy") are handled by the planner with coordinates
-    if any(phrase in norm_q for phrase in ("na zachod od", "na wschod od", "na polnoc od", "na poludnie od", "west of", "east of", "north of", "south of")):
-        return None
-
-    # 6. Voivodeship: Shorthand or explicit location/bordering
-    # Check if a voivodeship is explicitly named
-    matched_voivodeship = None
-    for word in words:
-        resolved = resolve_voivodeship_name(word)
-        if resolved:
-            matched_voivodeship = resolved
-            break
-
-    if matched_voivodeship is None:
-        for canonical in CANONICAL_VOIVODESHIPS:
-            res = resolve_voivodeship_name(norm_q)
-            if res == canonical:
-                matched_voivodeship = canonical
-                break
-            c_norm = _norm(canonical)
-            if c_norm in norm_q:
-                matched_voivodeship = canonical
-                break
-    if matched_voivodeship:
-        # Is it a question about BORDERING the voivodeship?
-        if is_border_q:
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_voivodeship"}, "right": {"value": matched_voivodeship}},
-                f"Czy powiat graniczy z województwem {matched_voivodeship}?",
-            )
-        # Otherwise it is asking if the powiat LIES IN the voivodeship
+    # 2. Registration plates length
+    m_plate = re.fullmatch(
+        r"(?:tablica (?:rejestracyjny )?miec (?P<n>2|3) litera"
+        r"|miec (?P<n2>dwuliterowy|trzyliterowy) tablica(?: rejestracyjny)?"
+        r"|tablica (?:byc )?(?P<n3>dwuliterowy|trzyliterowy))",
+        clause,
+    )
+    if m_plate:
+        n_val = 2 if (m_plate.group("n") == "2" or m_plate.group("n2") == "dwuliterowy" or m_plate.group("n3") == "dwuliterowy") else 3
         return (
-            {"operator": "equals", "left": {"entity": "target_powiat", "relation": "voivodeship"}, "right": {"value": matched_voivodeship}},
-            f"Czy powiat leży w województwie {matched_voivodeship}?",
+            {"operator": "char_count_equals", "left": {"entity": "target_powiat", "relation": "registration_plates"}, "right": {"value": n_val}},
+            f"Czy tablice rejestracyjne powiatu mają {n_val} litery?",
         )
+
+    # 3. Sea access
+    if re.fullmatch(r"(?:miec dostep do morze|graniczyc z morze|(?:lezec|byc) nad morze|miec dostep do baltyk|(?:lezec|byc) nad baltyk)", clause):
+        return (
+            {"operator": "exists", "left": {"entity": "target_powiat", "relation": "water_access"}},
+            "Czy powiat ma dostęp do morza?",
+        )
+
+    # 4. Major rivers
+    if re.fullmatch(r"(?:plynac \[RIVER\]|\[RIVER\] plynac|(?:lezec|byc) nad (?:rzeka )?\[RIVER\])", clause):
+        if river:
+            return (
+                {"operator": "contains_text", "left": {"entity": "target_powiat", "relation": "major_rivers"}, "right": {"value": river}},
+                f"Czy przez powiat przepływa {river}?",
+            )
+
+    # 5. International borders
+    if re.fullmatch(r"graniczyc z (?:inny |obcy )?(?:panstwo|kraj)", clause):
+        return (
+            {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_country"}},
+            "Czy powiat graniczy z obcym państwem?",
+        )
+
+    if re.fullmatch(r"graniczyc z inny wojewodztwo", clause):
+        return (
+            {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_voivodeship"}},
+            "Czy powiat graniczy z innym województwem?",
+        )
+
+    if re.fullmatch(r"(?:graniczyc z \[COUNTRY\]|z \[COUNTRY\] graniczyc)", clause):
+        if country:
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_country"}, "right": {"value": country}},
+                f"Czy powiat graniczy z: {country}?",
+            )
+
+    # 6. Voivodeship borders
+    if re.fullmatch(r"(?:graniczyc z (?:wojewodztwo )?\[VOJ\]|z (?:wojewodztwo )?\[VOJ\] graniczyc)", clause):
+        if voj:
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_voivodeship"}, "right": {"value": voj}},
+                f"Czy powiat graniczy z województwem {voj}?",
+            )
+
+    # 7. Lies in voivodeship
+    if re.fullmatch(r"(?:(?:lezec|byc) w (?:wojewodztwo )?\[VOJ\]|w (?:wojewodztwo )?\[VOJ\]|\[VOJ\])", clause):
+        if voj:
+            return (
+                {"operator": "equals", "left": {"entity": "target_powiat", "relation": "voivodeship"}, "right": {"value": voj}},
+                f"Czy powiat leży w województwie {voj}?",
+            )
 
     return None
 
 
 def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str] | None:
     """Match high-frequency Województwodle player questions into canonical AST."""
-    norm_q = _norm(question)
-    words = norm_q.split()
-    if re.search(r"\b(?:nie\s+(?:ma|graniczy|lezy|jest|plynie|przeplywa|posiada)|not\b|ani\b|bez\b|brak\b)", norm_q):
+    clause = canonicalize_pl_clause(question, target_nouns=("wojewodztwo", "region"))
+    if not clause:
         return None
-    if re.search(r"\b(?:and|or|i|lub|albo|ani|oraz)\b", norm_q):
-        return None
-    is_border_q = any(k in norm_q for k in ("graniczy", "granice", "granica", "sasiaduje"))
 
-    # 1. Sea access (is_coastal == True)
-    if any(k in norm_q for k in ("morzem", "morza", "baltyk", "baltykiem")):
-        if any(k in norm_q for k in ("graniczy", "dostep", "lezy nad", "jest nad", "linia brzegowa")):
+    res = _MATCH_RIVER(clause)
+    if res is None:
+        return None
+    clause, river = res
+
+    res = _MATCH_NEIGHBOR(clause)
+    if res is None:
+        return None
+    clause, country = res
+
+    res = _MATCH_VOJ(clause)
+    if res is None:
+        return None
+    clause, voj = res
+
+    # 1. Sea access
+    if re.fullmatch(r"(?:miec dostep do morze|graniczyc z morze|(?:lezec|byc) nad morze|miec wybrzeze|miec dostep do baltyk|(?:lezec|byc) nad baltyk)", clause):
+        return (
+            {"operator": "equals", "left": {"entity": "target_voivodeship", "relation": "is_coastal"}, "right": {"value": True}},
+            "Czy województwo ma dostęp do morza?",
+        )
+
+    # 2. International borders
+    if re.fullmatch(r"graniczyc z (?:inny |obcy )?(?:panstwo|kraj)", clause):
+        return (
+            {"operator": "exists", "left": {"entity": "target_voivodeship", "relation": "borders_country"}},
+            "Czy województwo graniczy z obcym państwem?",
+        )
+
+    if re.fullmatch(r"(?:graniczyc z \[COUNTRY\]|z \[COUNTRY\] graniczyc)", clause):
+        if country:
             return (
-                {"operator": "equals", "left": {"entity": "target_voivodeship", "relation": "is_coastal"}, "right": {"value": True}},
-                "Czy województwo ma dostęp do morza?",
+                {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_country"}, "right": {"value": country}},
+                f"Czy województwo graniczy z: {country}?",
             )
 
-    # 2. International borders (borders_country exists / contains_exact)
-    if is_border_q and any(k in norm_q for k in ("panstwem", "krajem", "zagranica", "obcym", "innego panstwa")):
-        if not any(c in norm_q for aliases in POLISH_NEIGHBOR_COUNTRIES.values() for c in aliases):
+    # 3. Neighboring voivodeship
+    if re.fullmatch(r"(?:graniczyc z (?:wojewodztwo )?\[VOJ\]|z (?:wojewodztwo )?\[VOJ\] graniczyc)", clause):
+        if voj:
             return (
-                {"operator": "exists", "left": {"entity": "target_voivodeship", "relation": "borders_country"}},
-                "Czy województwo graniczy z obcym państwem?",
+                {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_voivodeship"}, "right": {"value": voj}},
+                f"Czy województwo graniczy z województwem {voj}?",
             )
 
-    for country_canonical, aliases in POLISH_NEIGHBOR_COUNTRIES.items():
-        if any(alias in words or f" {alias} " in f" {norm_q} " for alias in aliases):
-            if is_border_q:
-                return (
-                    {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_country"}, "right": {"value": country_canonical}},
-                    f"Czy województwo graniczy z: {country_canonical}?",
-                )
-
-    # 3. Neighboring voivodeship (borders_voivodeship contains_exact)
-    if is_border_q:
-        for word in words:
-            resolved = resolve_voivodeship_name(word)
-            if resolved:
-                return (
-                    {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_voivodeship"}, "right": {"value": resolved}},
-                    f"Czy województwo graniczy z województwem {resolved}?",
-                )
-        for canonical in CANONICAL_VOIVODESHIPS:
-            c_norm = _norm(canonical)
-            if c_norm in norm_q:
-                return (
-                    {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_voivodeship"}, "right": {"value": canonical}},
-                    f"Czy województwo graniczy z województwem {canonical}?",
-                )
-
-    # 4. Major rivers (major_rivers contains_text)
-    for river_canonical, aliases in POLISH_MAJOR_RIVERS.items():
-        if any(alias in words or f" {alias} " in f" {norm_q} " for alias in aliases):
-            if any(k in norm_q for k in ("plynie", "przeplywa", "lezy nad", "rzeka", "rzeki")):
-                return (
-                    {"operator": "contains_text", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": river_canonical}},
-                    f"Czy przez województwo przepływa {river_canonical}?",
-                )
+    # 4. Major rivers
+    if re.fullmatch(r"(?:plynac \[RIVER\]|\[RIVER\] plynac|(?:lezec|byc) nad (?:rzeka )?\[RIVER\])", clause):
+        if river:
+            return (
+                {"operator": "contains_text", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": river}},
+                f"Czy przez województwo przepływa {river}?",
+            )
 
     return None
 
@@ -239,37 +284,25 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
 def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | None:
     """Match high-frequency US Statedle player questions into canonical AST."""
     norm_q = _norm(question)
-    # These substring templates handle only a single affirmative predicate.
-    # Leave negations and additional conditions intact for the provider planner.
+
+    # Guard: negations and complex conjunctions
     if re.search(r"\b(?:not|nie|never|neither|nor|no|without|bez|brak)\b|\b\w+n t\b", norm_q):
         return None
-    if re.search(r"\b(?:and|or|but|if|unless|except|when|while|where|that|which|whose|whether|whereas|with|having|although|despite|until|provided|assuming|only|all|both|either|oraz|i|lub|albo|ale|jesli|jezeli|chyba|jednak)\b", norm_q):
-        return None
-    if re.fullmatch(
-        r"is (?:it|the state) (?:located )?in (?:the )?north(?:[ -]?east)(?: region)?",
+    if re.search(
+        r"\b(?:and|or|but|if|unless|except|when|while|where|that|which|whose|whether|whereas|"
+        r"with|having|although|despite|until|provided|assuming|only|all|both|either|oraz|i|lub|albo|ale|jesli|jezeli|chyba|jednak)\b",
         norm_q,
     ):
+        return None
+
+    # Northeast region
+    if re.fullmatch(r"is (?:it|the state) (?:located )?in (?:the )?north(?:[ -]?east)(?: region)?", norm_q):
         return (
             {"operator": "equals", "left": {"entity": "target_state", "relation": "region"}, "right": {"value": "Northeast"}},
             "Is the state in the Northeast?",
         )
-    is_border_q = any(k in norm_q for k in ("border", "borders", "touch", "touches", "graniczy", "granica"))
-    # 1. Foreign borders (Canada, Mexico)
-    if is_border_q:
-        if "canada" in norm_q or "kanad" in norm_q:
-            return (
-                {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "borders_country"}, "right": {"value": "Canada"}},
-                "Does the state border Canada?",
-            )
-        if "mexico" in norm_q or "meksyk" in norm_q:
-            # Distinguish from Gulf of Mexico
-            if "gulf" not in norm_q and "zatok" not in norm_q:
-                return (
-                    {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "borders_country"}, "right": {"value": "Mexico"}},
-                    "Does the state border Mexico?",
-                )
 
-    # 2. Coastal state (is_coastal == True) or specific water bodies
+    # Water bodies (re.fullmatch water plans)
     _ATLANTIC_PATTERNS = (
         "atlantic", "atlantyck", "atlantyk", "antlantic", "atlantik",
         "atlanitc", "atlanic", "atlntic", "atlatnic", "antlantyk", "antlantyck",
@@ -283,9 +316,8 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
         "coastal", "coast", "ocean", "oceanu", "morza", "morze", "wybrzez", "linia brzegowa", "nadmorsk",
         *_ATLANTIC_PATTERNS, *_PACIFIC_PATTERNS, *_ARCTIC_PATTERNS, *_INDIAN_PATTERNS, *_SOUTHERN_PATTERNS, *_GULF_PATTERNS,
     )
+    is_border_q = any(k in norm_q for k in ("border", "borders", "touch", "touches", "graniczy", "granica"))
     if any(k in norm_q for k in _COASTAL_TRIGGERS):
-        # Broad access can include a parent ocean reached through a gulf.
-        # Bordering, coastline, or explicitly direct access remains literal.
         direct = (
             is_border_q
             or bool(re.search(r"\b(?:direct|directly|coast|coastline|shore|beach)\b|bezposredn|wybrzez|brzeg", norm_q))
@@ -300,8 +332,6 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
             (_GULF_PATTERNS, "Gulf of Mexico"),
         ):
             if any(k in norm_q for k in patterns):
-                # Match the entire water question, not just an ocean substring:
-                # otherwise a trailing clause or an unrecognized modifier is lost.
                 body_pattern = (
                     r"(?:gulf of mexico|zatok[ai] meksykansk[a-z]*)"
                     if body == "Gulf of Mexico"
@@ -320,60 +350,118 @@ def compile_us_statedle_template(question: str) -> tuple[dict[str, Any], str] | 
                 if not re.fullmatch("(?:" + english + "|" + polish + ")" + body_pattern, norm_q):
                     return None
                 return build_us_state_water_plan(body, direct=direct)
-        # Check regional labels (East Coast, West Coast, Gulf Coast, Great Lakes)
-        if "east coast" in norm_q or "wschodnie wybrzez" in norm_q:
+
+        if re.fullmatch(r"(?:is (?:it|the state) (?:located )?on (?:the )?east coast|czy (?:ten stan )?lezy na wschodnim wybrzezu)", norm_q):
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "regional_labels"}, "right": {"value": "East Coast"}},
                 "Is the state located on the East Coast?",
             )
-        if "west coast" in norm_q or "zachodnie wybrzez" in norm_q:
+        if re.fullmatch(r"(?:is (?:it|the state) (?:located )?on (?:the )?west coast|czy (?:ten stan )?lezy na zachodnim wybrzezu)", norm_q):
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "regional_labels"}, "right": {"value": "West Coast"}},
                 "Is the state located on the West Coast?",
             )
-        if "great lakes" in norm_q or "wielkie jezior" in norm_q:
+        if re.fullmatch(r"(?:is (?:it|the state) (?:located )?in (?:the )?great lakes region|czy (?:ten stan )?lezy w regionie wielkich jezior)", norm_q):
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "regional_labels"}, "right": {"value": "Great Lakes"}},
                 "Is the state located in the Great Lakes region?",
             )
 
-        # Guard: check if an unrecognized specific ocean is being asked, e.g. "foo ocean", "oceanu bar"
-        specific_ocean_en = re.search(r"\b([a-z]+)\s+ocean\b", norm_q)
-        if specific_ocean_en and specific_ocean_en.group(1) not in {"an", "the", "any", "some", "open", "to", "border", "borders", "touch", "touches", "have", "has", "with"}:
-            return None
-        specific_ocean_pl = re.search(r"\boceanu?\s+([a-z]+)\b", norm_q)
-        if specific_ocean_pl and specific_ocean_pl.group(1) not in {"otwartego", "otwartym", "swiatowego", "czy", "i", "lub"}:
-            return None
-
         # Generic ocean / coastal access
-        if any(k in norm_q for k in ("ocean", "coastal", "dostep do morza", "dostep do oceanu", "graniczy z oceanem", "nadmorsk")):
+        if re.fullmatch(
+            r"(?:does (?:it|the state) border an ocean|is (?:it|the state) coastal|"
+            r"czy (?:ten stan )?(?:ma dostep do (?:morza|oceanu)|graniczy z oceanem|jest nadmorski))",
+            norm_q,
+        ):
             return (
                 {"operator": "equals", "left": {"entity": "target_state", "relation": "is_coastal"}, "right": {"value": True}},
                 "Does the state border an ocean?",
             )
-    # 3. Original 13 colonies
-    if "13" in norm_q and any(k in norm_q for k in ("colon", "kolon")):
+
+    # Whole-sentence Polish canonical skeleton checks
+    clause = canonicalize_pl_clause(question, target_nouns=("stan",))
+    if clause:
+        res = _MATCH_US_STATE(clause)
+        if res is not None:
+            clause_st, state = res
+            if state and re.fullmatch(r"(?:graniczyc z (?:stan )?\[STATE\]|z (?:stan )?\[STATE\] graniczyc)", clause_st):
+                return (
+                    {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "borders_state"}, "right": {"value": state}},
+                    f"Does the state border {state}?",
+                )
+
+        res_c = _MATCH_US_COUNTRY(clause)
+        if res_c is not None:
+            clause_c, country = res_c
+            if country and re.fullmatch(r"(?:graniczyc z \[COUNTRY\]|z \[COUNTRY\] graniczyc)", clause_c):
+                return (
+                    {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "borders_country"}, "right": {"value": country}},
+                    f"Does the state border {country}?",
+                )
+
+        if re.fullmatch(r"graniczyc z (?:inny |obcy )?(?:panstwo|kraj)", clause):
+            return (
+                {"operator": "exists", "left": {"entity": "target_state", "relation": "borders_country"}},
+                "Does the state border a foreign country?",
+            )
+
+        if re.fullmatch(r"(?:nazwa byc dwuczlonowy|byc dwuczlonowy)", clause):
+            return (
+                {"operator": "word_count_equals", "left": {"entity": "target_state", "relation": "name"}, "right": {"value": 2}},
+                "Does the state name have 2 words?",
+            )
+
+        # 13 Colonies
+        if re.fullmatch(r"(?:byc )?(?:1 z )?13 (?:pierwotny )?kolonia", clause):
+            return (
+                {"operator": "less_than_or_equal", "left": {"entity": "target_state", "relation": "admission_order"}, "right": {"value": 13}},
+                "Was the state one of the original 13 colonies?",
+            )
+
+        # Civil War
+        m_cw_pl = re.fullmatch(r"(?:walczyc po strona (?P<side>konfederacja|unia) w wojna secesyjny|byc w (?P<side2>konfederacja|unia) w wojna secesyjny)", clause)
+        if m_cw_pl:
+            s_raw = m_cw_pl.group("side") or m_cw_pl.group("side2")
+            side = "Confederacy" if "konfederac" in s_raw else "Union"
+            return (
+                {"operator": "equals", "left": {"entity": "target_state", "relation": "civil_war_side"}, "right": {"value": side}},
+                f"Did the state fight for the {side} during the Civil War?",
+            )
+
+    # English whole-sentence checks
+    m_en_border_country = re.fullmatch(r"does (?:it|the state) border (?P<country>canada|mexico)", norm_q)
+    if m_en_border_country:
+        country_name = "Canada" if m_en_border_country.group("country") == "canada" else "Mexico"
+        return (
+            {"operator": "contains_exact", "left": {"entity": "target_state", "relation": "borders_country"}, "right": {"value": country_name}},
+            f"Does the state border {country_name}?",
+        )
+
+    # English 13 colonies
+    if re.fullmatch(r"was (?:it|the state) one of the (?:original )?13 colonies", norm_q):
         return (
             {"operator": "less_than_or_equal", "left": {"entity": "target_state", "relation": "admission_order"}, "right": {"value": 13}},
             "Was the state one of the original 13 colonies?",
         )
 
-    # 4. Civil War side
-    if any(k in norm_q for k in ("civil war", "wojna secesyjn", "wojny secesyjn")):
-        if any(k in norm_q for k in ("confederat", "konfederac", "south", "poludni")):
-            return (
-                {"operator": "equals", "left": {"entity": "target_state", "relation": "civil_war_side"}, "right": {"value": "Confederacy"}},
-                "Did the state fight for the Confederacy during the Civil War?",
-            )
-        if any(k in norm_q for k in ("union", "unia", "unij", "north", "polnoc")):
-            return (
-                {"operator": "equals", "left": {"entity": "target_state", "relation": "civil_war_side"}, "right": {"value": "Union"}},
-                "Did the state fight for the Union during the Civil War?",
-            )
+    # English Civil war
+    m_cw_en = re.fullmatch(
+        r"(?:did (?:it|the state) fight for the (?P<side>confederacy|union) during the civil war"
+        r"|was (?:it|the state) part of the (?P<side2>confederacy|union))",
+        norm_q,
+    )
+    if m_cw_en:
+        s_raw = m_cw_en.group("side") or m_cw_en.group("side2")
+        side = "Confederacy" if s_raw == "confederacy" else "Union"
+        return (
+            {"operator": "equals", "left": {"entity": "target_state", "relation": "civil_war_side"}, "right": {"value": side}},
+            f"Did the state fight for the {side} during the Civil War?",
+        )
 
     return None
 
 
+@lru_cache(maxsize=1024)
 def compile_generic_template_plan(question: str, mode_name: str) -> tuple[dict[str, Any], str] | None:
     """Entry point dispatching to mode-specific template compiler."""
     if not isinstance(question, str) or not question.strip():
