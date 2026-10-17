@@ -1,5 +1,5 @@
 {
-  "version": "1.31.2",
-  "title": "Natural comparative sentence answers",
-  "body": "- Enhanced comparative area and population clarifications (e.g. \"The country does not have a larger area than Turkey.\" or \"The country has a smaller population than Poland.\").\n- Cleaned up string formatting artifacts in comparative deduction queries.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.2",
+  "title": "Equator template flexibility and cleaner question explanations",
+  "body": "- Enhanced natural language matching for equator questions without requiring the definite article (e.g. \"is it north of equator\").\n- Removed technical fact audit provenance details from player-facing question explanations and result cards.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
