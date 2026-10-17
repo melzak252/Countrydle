@@ -599,13 +599,13 @@ def compile_template_plan(
     if hemisphere is not None:
         hemi = hemisphere["hemi"].capitalize()
         return [_node("contains", "hemisphere", hemi)], f"Is the country in the {hemi} Hemisphere?"
-    if re.fullmatch(r"does (?:it|the country) (?:cross|straddle) the equator", q):
+    if re.fullmatch(r"(?:does (?:it|the country) (?:cross|straddle)|is (?:it|the country) on) (?:the )?equator", q):
         return [
             _node("contains", "hemisphere", "Northern"),
             _node("contains", "hemisphere", "Southern"),
             {"operator": "and", "args": [0, 1]},
         ], "Does the country cross the equator?"
-    equator = re.fullmatch(r"is (?:it|the country) (?P<direction>north|south) of the equator", q)
+    equator = re.fullmatch(r"is (?:it|the country) (?P<direction>north|south) of (?:the )?equator", q)
     if equator is not None:
         direction = equator["direction"]
         hemi = "Northern" if direction == "north" else "Southern"
