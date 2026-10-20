@@ -177,11 +177,40 @@ def test_open_ended_driving_side_questions_reject_with_clarification():
         "Po której stronie drogi się jeździ?",
         "What side do they drive on?",
         "Which side do they drive?",
+        "when was this country founded",
+        "when was it founded",
+        "when did it gain independence",
+        "kiedy powstał ten kraj",
+        "where is this country located",
+        "where is it",
+        "gdzie leży ten kraj",
+        "who is the president",
+        "kto rządzi",
+        "what is the capital of this country",
+        "jaka jest stolica",
+        "what is the official language",
+        "jaki jest język",
+        "what is the currency",
+        "jaka jest waluta",
+        "how many people live in this country",
+        "how many countries border it",
+        "ile ma mieszkańców",
+        "why is this country famous",
+        "dlaczego ten kraj",
     ]
     for q in queries:
         res = check_open_ended_question(q)
-        assert res is not None
-        assert "driving side" in res or "stronę ruchu" in res
+        assert res is not None, f"Expected open-ended clarification for {q}"
+
+
+def test_local_planner_rejects_open_ended_questions():
+    from countrydle.local_planner import analyze_question_for_local_plan
+    for q in ("when was this country founded", "where is it", "kiedy powstał ten kraj", "how many people live there"):
+        plan = analyze_question_for_local_plan(q)
+        assert plan.valid is False
+        assert plan.supported is False
+        assert plan.plan is None
+        assert plan.explanation is not None
 @pytest.mark.parametrize("country", _COUNTRY_NAMES)
 def test_country_border_templates_cover_catalog_names(country):
     if " and " in country.casefold() or "-" in country:

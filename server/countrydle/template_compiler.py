@@ -1318,10 +1318,12 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
     return _match_polish_canonical_skeletons(clause, extracted_slots, extracted_num)
 
 def check_open_ended_question(question: str) -> str | None:
-    """Detect open-ended questions about supported attributes that require a yes/no rephrasing."""
+    """Detect open-ended questions that require a yes/no rephrasing."""
     if not isinstance(question, str) or not question.strip():
         return None
-    q = _norm(question)
+    q = _norm(question).strip()
+
+    # Driving side specific checks (existing)
     if (
         re.search(r"\b(?:which|what)\s+side\b.*\b(?:drive|road|car|traffic|street)\b", q)
         or re.search(r"\b(?:drive|road|car|traffic|street)\b.*\b(?:which|what)\s+side\b", q)
@@ -1332,4 +1334,62 @@ def check_open_ended_question(question: str) -> str | None:
         term in q for term in ("drog", "ulic", "jezd", "jech", "ruch", "samochod")
     ):
         return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o stronę ruchu, np. 'Czy ruch jest prawostronny?' lub 'Czy ruch jest lewostronny?'."
+
+    # When / Kiedy (Dates / Timeline)
+    if re.search(r"\b(?:when\s+(?:was|did|is|were)|when\s+(?:it|the\s+country))\b", q) or q.startswith("when "):
+        return "Please ask a yes/no question about dates or time periods (for example: 'Was the country founded after 1900?')."
+    if re.search(r"\b(?:kiedy\s+(?:powstal|powstalo|uzyskal|uzyskalo|stal|stalo|byl|bylo)|kiedy\s+(?:ten\s+kraj|to\s+panstwo))\b", q) or q.startswith("kiedy "):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o czas lub datę, np. 'Czy kraj powstał po 1900 roku?'."
+
+    # Where / Gdzie (Location / Geography)
+    if re.search(r"\b(?:where\s+(?:is|are|was|were|does|on\s+the\s+map))\b", q) or q.startswith("where "):
+        return "Please ask a yes/no question about the country's location (for example: 'Is the country in Europe?')."
+    if re.search(r"\b(?:gdzie\s+(?:lezy|jest|sie\s+znajduje|znajduje))\b", q) or q.startswith("gdzie "):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o położenie, np. 'Czy kraj leży w Europie?'."
+
+    # Who / Kto (People / Rulers)
+    if re.search(r"\b(?:who\s+(?:is|are|was|were|rules|governs|founded|discovered|leads))\b", q) or q.startswith("who "):
+        return "Please ask a yes/no question about government or leadership (for example: 'Is the country a monarchy?')."
+    if re.search(r"\b(?:kto\s+(?:jest|rzadzi|kieruje|panuje|zalozyl|odkryl))\b", q) or q.startswith("kto "):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o ustrój lub przywództwo, np. 'Czy kraj jest monarchią?'."
+
+    # How many / How much / Ile (Quantities / Counts)
+    if re.search(r"\bhow\s+(?:many|much)\b", q):
+        return "Please ask a yes/no comparison question (for example: 'Does it have more than 10 million people?' or 'Does it border more than 3 countries?')."
+    if re.search(r"\b(?:ile\s+(?:ma|liczy|wynosi|ludnosci|mieszkancow|ludzi|granic|sasiadow|powierzchni))\b", q) or q.startswith("ile "):
+        return "Proszę zadać pytanie porównawcze (Tak/Nie), np. 'Czy ma ponad 10 milionów mieszkańców?' lub 'Czy graniczy z więcej niż 3 państwami?'."
+
+    # Capital / Language / Currency / What is / Jaka jest
+    if re.search(r"\b(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+)?capital\b", q):
+        return "Please ask a yes/no question about the capital city (for example: 'Is the capital Warsaw?')."
+    if re.search(r"\b(?:jaka|jaka\s+jest|jak\s+sie\s+nazywa)\s+stolica\b", q):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o stolicę, np. 'Czy stolicą jest Warszawa?'."
+
+    if re.search(r"\b(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+)?(?:official\s+)?language\b", q):
+        return "Please ask a yes/no question about the language (for example: 'Is English an official language?')."
+    if re.search(r"\b(?:jaki|jaki\s+jest)\s+(?:jest\s+)?jezyk\b", q):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o język, np. 'Czy językiem urzędowym jest angielski?'."
+
+    if re.search(r"\b(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+)?currency\b", q):
+        return "Please ask a yes/no question about the currency (for example: 'Does it use the Euro?')."
+    if re.search(r"\b(?:jaka|jaka\s+jest)\s+(?:jest\s+)?waluta\b", q):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o walutę, np. 'Czy walutą jest Euro?'."
+
+    if re.search(r"\b(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+)?(?:country|name)\b", q):
+        return "Please ask a yes/no question rather than an open-ended question (for example: 'Is it Poland?')."
+    if re.search(r"\b(?:jaki|jaki\s+to|co\s+to\s+za)\s+(?:kraj|panstwo)\b", q):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie), np. 'Czy to Polska?'."
+
+    # General "what is / what are"
+    if re.search(r"^(?:what|which)\s+(?:is|are|was|were)\b", q):
+        return "Please ask a yes/no question rather than an open-ended question."
+    if re.search(r"^(?:jaki|jaka|jakie|jacy|jakich|jakim)\s+(?:jest|sa|to|bylo|byl)\b", q):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) zamiast pytania otwartego."
+
+    # Why / Dlaczego
+    if q.startswith("why ") or re.search(r"\bwhy\s+(?:is|does|did|was|are)\b", q):
+        return "Please ask a yes/no question about a geographic or historical fact."
+    if q.startswith("dlaczego ") or re.search(r"\bdlaczego\s+(?:jest|ma|byl)\b", q):
+        return "Proszę zadać pytanie rozstrzygnięcia (Tak/Nie) o fakt geograficzny lub historyczny."
+
     return None

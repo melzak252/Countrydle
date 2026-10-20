@@ -15,7 +15,8 @@ import sqlite3
 from countrydle import local_answering
 from countrydle.local_answering import LIST_RELATION_QUERIES
 from countrydle.template_compiler import (
-    _ENGLISH_COUNTRY_ALIASES, _norm, compile_entity_question, compile_template_plan,
+    _ENGLISH_COUNTRY_ALIASES, _norm, check_open_ended_question,
+    compile_entity_question, compile_template_plan,
 )
 from planner_protocol import (
     PLANNER_MAX_OUTPUT_TOKENS, PLANNER_OPERATORS, PLANNER_RULES, PLANNER_THINKING_BUDGET, PLANNER_VERSION,
@@ -433,6 +434,17 @@ def analyze_question_for_local_plan(
             improved_question=improved_question, explanation=None, plan=ast,
         )
 
+    open_ended = check_open_ended_question(question)
+    if open_ended is not None:
+        return QuestionPlan(
+            original_question=question,
+            valid=False,
+            supported=False,
+            improved_question=None,
+            explanation=open_ended,
+            plan=None,
+            fallback_reason="open_ended",
+        )
     from utils.plan_cache import plan_cache
     from utils.ai_clients import generate_gemini_json
 
