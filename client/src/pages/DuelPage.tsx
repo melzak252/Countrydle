@@ -903,57 +903,55 @@ function DuelRoom({ code }: { code?: string }) {
 
       {/* 3b. Lobby Secret Selector & Invite Overlay */}
       {snapshot.status === 'lobby' && (
-        <>
+        <div className="pointer-events-none absolute inset-x-2 top-14 z-[1000] flex flex-col items-center gap-3 sm:inset-x-auto sm:right-4 sm:top-14 sm:w-full sm:max-w-sm sm:items-stretch">
           {/* Secret country selector floating bar */}
-          <div className="pointer-events-none absolute left-16 right-2 top-14 z-[1000] lg:left-auto lg:right-4 lg:top-14 lg:w-auto lg:px-0">
-            <div className="pointer-events-auto flex flex-col items-stretch justify-between gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-2 shadow-xl backdrop-blur-md sm:flex-row sm:items-center sm:gap-3 sm:px-3.5">
-              <div className="flex items-center gap-2 min-w-0">
-                <EyeOff size={14} className="text-emerald-400 shrink-0" />
-                <div className="min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 block">{copy.secret}:</span>
-                  <span className="break-words font-semibold text-sand-100 text-xs">
-                    {snapshot.own_secret ? snapshot.own_secret.name : copy.chooseSecretOnMap}
-                  </span>
-                </div>
+          <div className="pointer-events-auto flex flex-col items-stretch justify-between gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-2.5 shadow-xl backdrop-blur-md sm:flex-row sm:items-center sm:gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <EyeOff size={14} className="text-emerald-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 block">{copy.secret}:</span>
+                <span className="break-words font-semibold text-sand-100 text-xs">
+                  {snapshot.own_secret ? snapshot.own_secret.name : copy.chooseSecretOnMap}
+                </span>
               </div>
+            </div>
 
-              <div className="flex items-stretch justify-end gap-2">
-                {!self?.ready && (
-                  <button
-                    type="button"
-                    onClick={() => { void room.act('randomize_secret', {}); }}
-                    disabled={busy || entitiesLoading}
-                    className="flex max-md:min-h-11 max-md:flex-1 min-w-0 items-center justify-center gap-1.5 rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-amber-300 transition-colors cursor-pointer"
-                    title={copy.random}
-                  >
-                    <Dices size={13} />
-                    <span>{copy.random}</span>
-                  </button>
-                )}
-
+            <div className="flex items-stretch justify-end gap-2 shrink-0">
+              {!self?.ready && (
                 <button
                   type="button"
-                  onClick={() => { void room.act('ready', { ready: !self?.ready }); }}
-                  disabled={busy || (!self?.ready && !snapshot.own_secret)}
-                  className={`max-md:min-h-11 max-md:flex-1 min-w-0 rounded-sm px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                    self?.ready
-                      ? 'bg-white/10 text-zinc-300 hover:bg-white/15 border border-white/15'
-                      : 'bg-emerald-400 text-obsidian-950 hover:bg-emerald-300 disabled:opacity-40'
-                  }`}
+                  onClick={() => { void room.act('randomize_secret', {}); }}
+                  disabled={busy || entitiesLoading}
+                  className="flex max-md:min-h-11 max-md:flex-1 min-w-0 items-center justify-center gap-1.5 rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-amber-300 transition-colors cursor-pointer"
+                  title={copy.random}
                 >
-                  {self?.ready ? copy.unready : copy.acceptAndReady}
+                  <Dices size={13} />
+                  <span>{copy.random}</span>
                 </button>
-              </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => { void room.act('ready', { ready: !self?.ready }); }}
+                disabled={busy || (!self?.ready && !snapshot.own_secret)}
+                className={`max-md:min-h-11 max-md:flex-1 min-w-0 rounded-sm px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                  self?.ready
+                    ? 'bg-white/10 text-zinc-300 hover:bg-white/15 border border-white/15'
+                    : 'bg-emerald-400 text-obsidian-950 hover:bg-emerald-300 disabled:opacity-40'
+                }`}
+              >
+                {self?.ready ? copy.unready : copy.acceptAndReady}
+              </button>
             </div>
           </div>
 
-          {/* Invite Link Card (stacked on mobile/tablet, right-floated on large desktop) */}
-          <div className="pointer-events-none absolute left-2 right-2 top-[11.5rem] z-[990] flex w-auto justify-center px-0 lg:left-auto lg:right-4 lg:top-14 lg:w-full lg:max-w-sm">
-            <div className="pointer-events-auto">
+          {/* Invite Link Card (hidden when friend joins the lobby) */}
+          {!opponent && (
+            <div className="pointer-events-auto w-full">
               <InviteLink code={snapshot.invite_code} copy={copy} />
             </div>
-          </div>
-        </>
+          )}
+        </div>
       )}
 
       {/* 4. Own Secret Viewing Pill (Top Right on Map during active duel) */}
