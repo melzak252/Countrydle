@@ -1,5 +1,5 @@
 {
-  "version": "1.33.4",
-  "title": "System announcement banner for recent service disruption",
-  "body": "- Added a dismissible system announcement banner regarding the temporary Google AI service disruption.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.5",
+  "title": "Fast open-ended question validation without turn consumption",
+  "body": "- Added deterministic validation rejecting open-ended questions (e.g. \"when was it founded\", \"what is the capital\", \"who is the president\") with helpful yes/no guidance.\n- Rejected open-ended questions no longer consume a player's question attempt.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
