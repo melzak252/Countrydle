@@ -211,6 +211,35 @@ def test_local_planner_rejects_open_ended_questions():
         assert plan.supported is False
         assert plan.plan is None
         assert plan.explanation is not None
+
+
+def test_flag_symbol_moon_and_crescent_matching():
+    from countrydle.local_planner import analyze_question_for_local_plan
+    from countrydle.local_answering import execute_local_plan
+
+    moon_queries = (
+        "does it have a moon in a flag",
+        "does it have a moon on its flag",
+        "does it have a crescent on its flag",
+        "does it have a crescent moon on its flag",
+        "does the flag have a moon",
+        "is there a moon on the flag",
+        "does its flag have a moon",
+        "czy na fladze jest księżyc",
+    )
+    for q in moon_queries:
+        plan = analyze_question_for_local_plan(q)
+        assert plan.valid is True
+        assert plan.supported is True
+        assert plan.plan is not None
+        assert plan.plan.get("operator") == "contains"
+        assert plan.plan.get("left", {}).get("relation") == "flag_symbol"
+        assert plan.plan.get("right", {}).get("value") == "crescent"
+        ans_uzb = execute_local_plan(plan.plan, "Uzbekistan", q)
+        assert ans_uzb.answer is True
+        ans_pol = execute_local_plan(plan.plan, "Poland", q)
+        assert ans_pol.answer is False
+
 @pytest.mark.parametrize("country", _COUNTRY_NAMES)
 def test_country_border_templates_cover_catalog_names(country):
     if " and " in country.casefold() or "-" in country:

@@ -132,7 +132,7 @@ FLAG_DATA = {
     "FSM": (["blue", "white"], ["star", "stars"]),
     "MDA": (["blue", "yellow", "red"], ["eagle", "coat_of_arms", "stripes"]),
     "MCO": (["red", "white"], ["stripes"]),
-    "MNG": (["red", "blue", "yellow"], ["sun", "stripes"]),
+    "MNG": (["red", "blue", "yellow"], ["sun", "crescent", "stripes"]),
     "MNE": (["red", "yellow"], ["eagle", "coat_of_arms"]),
     "MAR": (["red", "green"], ["star"]),
     "MOZ": (["green", "black", "yellow", "white", "red"], ["star", "stripes"]),

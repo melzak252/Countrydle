@@ -818,6 +818,7 @@ _POLISH_BASE_SYMBOLS = {
     "gwiazda": "star",
     "krzyż": "cross",
     "półksiężyc": "crescent",
+    "księżyc": "crescent",
     "słońce": "sun",
     "pasy": "stripes",
     "koło": "circle",

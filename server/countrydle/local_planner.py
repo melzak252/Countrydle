@@ -238,7 +238,8 @@ Semantic mapping:
   Past membership in active organizations, founding/creator/signatory status, accession
   dates/years, and unlisted historical groups require fallback. Never swap current and past.
 - `flag_color` values red, white, blue, green, yellow, black, orange; `flag_symbol` values
-  star, stars, cross, crescent, sun, stripes, circle, eagle, coat_of_arms. Use contains
+  star, stars, cross, crescent (crescent moon/moon/księżyc/półksiężyc maps to crescent),
+  sun, stripes, circle, eagle, coat_of_arms. Use contains
   for asked color/design presence only; majority/proportion/layout/exclusive colors
   require fallback.
 - Numeric operators preserve exact strict/inclusive thresholds: >/< are strict;
