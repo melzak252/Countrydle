@@ -1,5 +1,5 @@
 {
-  "version": "1.33.5",
-  "title": "Fast open-ended question validation without turn consumption",
-  "body": "- Added deterministic validation rejecting open-ended questions (e.g. \"when was it founded\", \"what is the capital\", \"who is the president\") with helpful yes/no guidance.\n- Rejected open-ended questions no longer consume a player's question attempt.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.6",
+  "title": "Flag symbol moon recognition and expanded symbol templates",
+  "body": "- Mapped \"moon\" and \"crescent moon\" (and Polish \"księżyc\") to the crescent flag symbol, resolving questions about flags featuring moons (e.g. Uzbekistan, Turkey, Algeria) deterministically.\n- Added comprehensive flag symbol question skeletons across game modes.\n- Added crescent flag symbol for Mongolia.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
