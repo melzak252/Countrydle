@@ -1,5 +1,5 @@
 {
-  "version": "1.33.6",
-  "title": "Flag symbol moon recognition and expanded symbol templates",
-  "body": "- Mapped \"moon\" and \"crescent moon\" (and Polish \"księżyc\") to the crescent flag symbol, resolving questions about flags featuring moons (e.g. Uzbekistan, Turkey, Algeria) deterministically.\n- Added comprehensive flag symbol question skeletons across game modes.\n- Added crescent flag symbol for Mongolia.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.7",
+  "title": "Clean lobby layout and conditional invite link in multiplayer friend duels",
+  "body": "- Resolved overlapping secret country selector and invite link boxes in multiplayer friend duels.\n- The invite link card now automatically hides once an opponent joins the lobby.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
