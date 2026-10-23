@@ -1,5 +1,5 @@
 {
-  "version": "1.33.7",
-  "title": "Clean lobby layout and conditional invite link in multiplayer friend duels",
-  "body": "- Resolved overlapping secret country selector and invite link boxes in multiplayer friend duels.\n- The invite link card now automatically hides once an opponent joins the lobby.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
+  "version": "1.33.8",
+  "title": "Remove temporary apology banner",
+  "body": "- Removed the temporary system announcement from the top of the game screen.\n- Your saved game progress, daily streaks, and normal game limits are unchanged."
 }
