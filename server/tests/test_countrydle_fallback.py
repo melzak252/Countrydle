@@ -124,6 +124,47 @@ async def test_invalid_question_stays_in_existing_rejection_flow(monkeypatch):
     assert question.answer is None
 
 
+
+@pytest.mark.parametrize("leaky_clarification", [
+    "Algeria is located to the west of the border it shares with Libya.",
+    "The country is located to the west of the border it shares with Libya.",
+    "The country is bordered to the east by Libya, placing it west of the border.",
+])
+def test_reported_shared_border_clarification_does_not_leak_target_identity(monkeypatch, leaky_clarification):
+    question = QuestionEnhanced(
+        original_question="is it west from libya - algieria border",
+        question="Is the country west of the border between Libya and Algeria?",
+        valid=True,
+        explanation="Check relative position to the Libya-Algeria border.",
+        intent="Check relative position to the Libya-Algeria border.",
+        required_info="Position relative to the border between Libya and Algeria.",
+    )
+    monkeypatch.setattr("utils.fallback_answers.gemini_json", lambda *args, **kwargs: {
+        "answer": True,
+        "explanation": "Algeria is bordered to the east by Libya, which places it to the west of the shared border.",
+        "clarification": leaky_clarification,
+    })
+    result = utils.answer_question_for_entity(question, "Algeria", "")
+    assert result["answer"] is True
+    assert result["clarification"] == "The country is west of the border between Libya and Algeria."
+    assert "shares" not in result["clarification"].casefold()
+    assert "bordered" not in result["clarification"].casefold()
+
+
+def test_reported_slash_sea_or_ocean_question_compiles_to_water_access():
+    from countrydle.local_answering import try_answer_locally
+    from countrydle.template_compiler import compile_template_plan
+
+    compiled = compile_template_plan("czy ma dostep do morza/oceanu?")
+    assert compiled is not None
+    ast, _ = compiled
+    assert ast == [{"operator": "exists", "left": {"entity": "target_country", "relation": "water_access"}}]
+
+    res = try_answer_locally("czy ma dostep do morza/oceanu?", "Tunisia")
+    assert res is not None
+    assert res.answer is True
+    assert res.relation == "water_access"
+
 @pytest.mark.skipif(
     os.getenv("COUNTRYDLE_RUN_LIVE_FALLBACK_EVAL") != "1",
     reason="Explicit live fallback opt-in required",

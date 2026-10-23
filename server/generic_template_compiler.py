@@ -20,6 +20,19 @@ from slot_template_engine import (
 )
 
 
+
+@lru_cache(maxsize=512)
+def _resolve_unique_powiat(candidate: str) -> str | None:
+    import sqlite3
+    from local_kb_question import ROOT_DIR
+    from powiat_names import resolve_powiat_name
+
+    db_path = ROOT_DIR / "data" / "powiat_facts.sqlite"
+    if not db_path.is_file():
+        return None
+    with sqlite3.connect(db_path) as conn:
+        return resolve_powiat_name(conn, candidate)
+
 @lru_cache(maxsize=1024)
 def _norm(text: str) -> str:
     """Normalize Polish characters and accents, lowercase, strip punctuation."""
@@ -118,10 +131,69 @@ def check_generic_open_ended_question(question: str) -> str | None:
 
 def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | None:
     """Match high-frequency Powiatdle player questions into canonical AST."""
+    norm_q = norm_pl(question)
+    m_voiv_river_pl = re.fullmatch(
+        r"(?:czy )?(?:przez )?wojewodztw(?:o|ie)(?: w ktorym (?:lezy|znajduje sie|jest)(?: ten powiat| powiat)?)? "
+        r"(?:przeplywa|plynie|ma|posiada)(?: rzek[ae])? (?P<river>[a-z]+)"
+        r"|(?:czy )?(?:rzeka )?(?P<river2>[a-z]+) (?:przeplywa|plynie) przez wojewodztwo w ktorym (?:lezy|znajduje sie|jest)(?: ten powiat| powiat)?",
+        norm_q,
+    )
+    if m_voiv_river_pl:
+        raw_r = m_voiv_river_pl.group("river") or m_voiv_river_pl.group("river2")
+        r_name = _EXPANDED_POLISH_RIVERS.get(raw_r)
+        if r_name:
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": r_name}},
+                f"Czy przez województwo, w którym leży powiat, przepływa {r_name}?",
+            )
+
+    norm_en_early = _norm(question)
+    m_voiv_river_en = re.fullmatch(
+        r"(?:does|is) (?:the )?(?:voivodeship|voidvoship|voivodship|province) (?:that |which |where )?(?:it|the county|this county) (?:lies|is|is located)(?: in)? "
+        r"(?:have|contain) (?:the )?(?P<river>[a-z ]+?)(?: river)?(?: in it)?"
+        r"|does (?:the )?(?P<river2>[a-z ]+?)(?: river)? flow through (?:the )?(?:voivodeship|voidvoship|voivodship|province) (?:that |which |where )?(?:it|the county|this county) (?:lies|is|is located)(?: in)?",
+        norm_en_early,
+    )
+    if m_voiv_river_en:
+        raw_r = (m_voiv_river_en.group("river") or m_voiv_river_en.group("river2") or "").strip()
+        r_name = _EXPANDED_POLISH_RIVERS.get(raw_r)
+        if r_name:
+            return (
+                {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": r_name}},
+                f"Czy przez województwo, w którym leży powiat, przepływa {r_name}?",
+            )
+
+    m_identity_en = re.fullmatch(
+        r"is (?:it|this|the county) (?:(?P<p1>[a-z -]+?) (?:powiat|county)|(?:powiat|county) (?P<p2>[a-z -]+))",
+        norm_en_early,
+    )
+    if m_identity_en:
+        raw_p = (m_identity_en.group("p1") or m_identity_en.group("p2") or "").strip()
+        if raw_p not in {"ziemski", "grodzki", "land", "city", "a land", "a city"}:
+            resolved_p = _resolve_unique_powiat(raw_p)
+            if resolved_p:
+                return (
+                    {"operator": "equals", "left": {"entity": "target_powiat", "relation": "name"}, "right": {"value": resolved_p}},
+                    f"Czy to {resolved_p}?",
+                )
+
+    m_identity_pl = re.fullmatch(
+        r"(?:czy )?(?:to |ten powiat to )?(?:jest )?(?:powiat (?P<p1>[a-z -]+)|(?P<p2>[a-z -]+) powiat)",
+        norm_q,
+    )
+    if m_identity_pl:
+        raw_p = (m_identity_pl.group("p1") or m_identity_pl.group("p2") or "").strip()
+        if raw_p not in {"ziemski", "grodzki"}:
+            resolved_p = _resolve_unique_powiat(raw_p)
+            if resolved_p:
+                return (
+                    {"operator": "equals", "left": {"entity": "target_powiat", "relation": "name"}, "right": {"value": resolved_p}},
+                    f"Czy to {resolved_p}?",
+                )
+
     clause = canonicalize_pl_clause(question, target_nouns=("powiat",))
     if not clause:
         return None
-
     # Substitute slots (reject if multiple of same type)
     res = _MATCH_RIVER(clause)
     if res is None:

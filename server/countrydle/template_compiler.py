@@ -1267,6 +1267,7 @@ def _compile_polish_template_plan(question: str) -> tuple[list[dict], str] | Non
     """Compile Polish natural language questions via whole-sentence canonical skeletons."""
     if not isinstance(question, str) or not question.strip():
         return None
+    question = re.sub(r"\b(morz\w*)\s*/\s*(ocean\w*)\b", r"\1 lub \2", question, flags=re.IGNORECASE)
     if "/" in question or "\\" in question:
         return None
 

@@ -519,3 +519,133 @@ def test_compound_ocean_access_keeps_the_second_condition(state, expected, monke
     result = execute_plan(US_STATE_CONFIG, state, plan)
     assert result is not None
     assert result.answer is expected
+
+
+@pytest.mark.parametrize("queried_name", [
+    "Braniewski powiat",
+    "braniewski powiat",
+    "Powiat braniewski",
+    "Braniewski county",
+    "powiatu braniewskiego",
+])
+def test_reported_powiat_suffix_identity_and_explanation(queried_name):
+    plan = {
+        "operator": "equals",
+        "left": left(POWIAT_CONFIG, "name"),
+        "right": {"value": queried_name},
+    }
+    hit = answer(POWIAT_CONFIG, "Powiat braniewski", plan)
+    assert hit is not None
+    assert hit.answer is True
+    assert hit.explanation == "Tak - To jest Powiat braniewski."
+
+    miss = answer(POWIAT_CONFIG, "Powiat kępiński", plan)
+    assert miss is not None
+    assert miss.answer is False
+    assert miss.explanation == "Nie - To nie jest Powiat braniewski."
+    assert "kępiński" not in miss.explanation.casefold()
+
+
+@pytest.mark.parametrize("question", [
+    "Is it Braniewski powiat",
+    "Is it Braniewski county?",
+    "Czy to powiat braniewski?",
+    "Czy to braniewski powiat?",
+])
+def test_reported_powiat_identity_question_evaluates_without_model(question, monkeypatch):
+    import local_kb_question
+
+    def unexpected_provider(*args, **kwargs):
+        pytest.fail("Powiat identity question must compile and evaluate without a model")
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", unexpected_provider)
+    plan = local_kb_question.analyze_question(question, POWIAT_CONFIG, use_cache=False)
+    hit = execute_plan(POWIAT_CONFIG, "Powiat braniewski", plan)
+    assert hit is not None
+    assert hit.answer is True
+    assert hit.explanation == "Tak - To jest Powiat braniewski."
+
+    miss = execute_plan(POWIAT_CONFIG, "Powiat kępiński", plan)
+    assert miss is not None
+    assert miss.answer is False
+    assert miss.explanation == "Nie - To nie jest Powiat braniewski."
+
+
+@pytest.mark.anyio
+async def test_powiatdle_analyze_and_answer_locally_does_not_redact_candidate_on_name_check(monkeypatch):
+    import powiatdle.utils as putils
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    class DummyRepo:
+        def __init__(self, session):
+            pass
+
+        async def get(self, powiat_id):
+            return SimpleNamespace(id=powiat_id, nazwa="Powiat braniewski")
+
+    monkeypatch.setattr(putils, "PowiatRepository", DummyRepo)
+    monkeypatch.setattr(
+        putils,
+        "analyze_question",
+        lambda q, cfg, **kw: QuestionPlan(
+            original_question=q,
+            valid=True,
+            supported=True,
+            improved_question=q,
+            explanation=None,
+            plan={
+                "operator": "equals",
+                "left": {"entity": "target_powiat", "relation": "name"},
+                "right": {"value": "Braniewski powiat"},
+            },
+        ),
+    )
+    res, _ = await putils.analyze_and_answer_locally(
+        "Is it Braniewski powiat", SimpleNamespace(id=199, powiat_id=1), None, AsyncMock()
+    )
+    assert res is not None
+    assert res.answer is True
+    assert res.explanation == "Tak - To jest Powiat braniewski."
+
+
+@pytest.mark.parametrize("question", [
+    "does the voidvoship that it lies in have the vistula river in it",
+    "Does the voivodeship that it lies in have the Vistula river in it?",
+    "Czy przez województwo, w którym leży ten powiat, przepływa Wisła?",
+    "Czy województwo w którym leży ma rzekę Wisłę?",
+])
+@pytest.mark.parametrize("powiat, expected", [
+    ("Powiat kępiński", False),
+    ("Powiat krakowski", True),
+])
+def test_reported_powiat_parent_voivodeship_river_evaluates_locally_without_model(
+    question, powiat, expected, monkeypatch
+):
+    import local_kb_question
+
+    def unexpected_provider(*args, **kwargs):
+        pytest.fail("Parent-voivodeship river query in Powiatdle must compile and evaluate locally")
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", unexpected_provider)
+    plan = local_kb_question.analyze_question(question, POWIAT_CONFIG, use_cache=False)
+    result = execute_plan(POWIAT_CONFIG, powiat, plan)
+    assert result is not None
+    assert result.answer is expected
+    assert "Wisła" in result.explanation
+
+
+def test_powiatdle_fallback_prompt_includes_verified_parent_voivodeship_rivers():
+    import powiatdle.utils as putils
+    from schemas.powiatdle import PowiatQuestionEnhanced
+
+    q = PowiatQuestionEnhanced(
+        original_question="does the voidvoship that it lies in have the vistula river in it",
+        question="does the voidvoship that it lies in have the vistula river in it",
+        valid=True,
+        intent="Check if parent voivodeship has the Vistula river",
+        required_info="Voivodeship rivers",
+    )
+    system_prompt, _ = putils.answer_prompts(q, "Powiat kępiński", "Context chunk")
+    assert "Wielkopolskie" in system_prompt
+    assert "Noteć, Obra, Prosna, Warta" in system_prompt

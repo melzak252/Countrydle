@@ -7,7 +7,8 @@ import sqlite3
 import unicodedata
 from collections.abc import Iterable, Mapping
 
-_PREFIX_RE = re.compile(r"^(?:powiat|powiatu|powiatem|powiecie)\s+", re.IGNORECASE)
+_PREFIX_RE = re.compile(r"^(?:powiat|powiatu|powiatem|powiecie|county)\s+", re.IGNORECASE)
+_SUFFIX_RE = re.compile(r"\s+(?:powiat|powiatu|powiatem|powiecie|county)$", re.IGNORECASE)
 _SPACE_RE = re.compile(r"\s+")
 
 
@@ -16,8 +17,10 @@ def _normalize(value: str) -> str:
     value = "".join(character for character in value if not unicodedata.combining(character))
     value = value.replace("ł", "l")
     value = re.sub(r"[\W_]+", " ", value, flags=re.UNICODE)
-    return _PREFIX_RE.sub("", _SPACE_RE.sub(" ", value).strip(), count=1)
-
+    cleaned = _SPACE_RE.sub(" ", value).strip()
+    cleaned = _PREFIX_RE.sub("", cleaned, count=1).strip()
+    cleaned = _SUFFIX_RE.sub("", cleaned, count=1).strip()
+    return cleaned
 
 def _inflect_adjectives(value: str, ending: str) -> str | None:
     """Inflect recognized adjective tokens, including multiword compounds."""

@@ -402,9 +402,9 @@ def canonicalize_pl_clause(
     """Canonicalize a single-clause Polish query by lemmatizing and stripping filler syntax."""
     if not isinstance(raw_query, str) or not raw_query.strip():
         return None
+    raw_query = re.sub(r"\b(morz\w*)\s*/\s*(ocean\w*)\b", r"\1 lub \2", raw_query, flags=re.IGNORECASE)
     if any(ch in raw_query for ch in _FORBIDDEN_CHARS):
         return None
-
     # Check for invalid non-Latin combining marks
     nfkd = unicodedata.normalize("NFKD", raw_query)
     for ch in nfkd:

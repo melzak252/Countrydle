@@ -245,7 +245,7 @@ Suggested Rewrite (do not drop the original proposition's modifiers): {simplifie
 def _build_fallback_clarification(question: QuestionEnhanced, answer: bool | None) -> str | None:
     if type(answer) is not bool:
         return None
-    raw = (question.question or question.original_question or "").strip().rstrip("?.!").strip()
+    raw = (_bind_named_country_subject(question.question or question.original_question) or "").strip().rstrip("?.!").strip()
     if not raw:
         return None
     subj = r"(?:the\s+country|this\s+country|my\s+country|it|they)"
@@ -298,6 +298,40 @@ def _normalize_clarification_prefix(text: str | None) -> str | None:
         return None
     return cleaned[0].upper() + cleaned[1:]
 
+
+def _is_leaky_clarification(
+    raw_clarification: str | None,
+    target_names: set[str],
+    question: QuestionEnhanced,
+) -> bool:
+    if not raw_clarification or not isinstance(raw_clarification, str):
+        return True
+    for name in target_names:
+        if name and len(name) >= 2 and re.search(rf"\b{re.escape(name)}\b", raw_clarification, flags=re.IGNORECASE):
+            return True
+    question_text = f"{question.original_question or ''} {question.question or ''}"
+    if re.search(r"\b(?:shares?|shared|bordered|bordering)\b", raw_clarification, flags=re.IGNORECASE) and not re.search(
+        r"\b(?:shares?|shared|bordered|bordering)\b", question_text, flags=re.IGNORECASE
+    ):
+        return True
+    return False
+
+
+def _select_clarification(
+    raw_clarification: str | None,
+    target_names: set[str],
+    question: QuestionEnhanced,
+    answer: bool | None,
+) -> str | None:
+    fallback_clar = _build_fallback_clarification(question, answer)
+    if _is_leaky_clarification(raw_clarification, target_names, question) and fallback_clar:
+        return fallback_clar
+    sanitized = _normalize_clarification_prefix(
+        sanitize_explanation_for_player(raw_clarification, target_names, "the country")
+    )
+    return sanitized or fallback_clar
+
+
 def answer_question_for_entity(
     question: QuestionEnhanced, entity_name: str, context: str, *,
     evidence: dict | None = None, request_timeout: float | None = None,
@@ -310,15 +344,14 @@ def answer_question_for_entity(
         system_prompt, question_prompt, evidence=evidence,
         request_timeout=request_timeout, deadline=deadline, model=model,
     )
+    raw_clarification = answer_dict.get("clarification")
     answer_dict["explanation"] = sanitize_explanation_for_player(
         answer_dict.get("explanation"), {entity_name}, "the country"
     )
-    raw_clar = _normalize_clarification_prefix(sanitize_explanation_for_player(
-        answer_dict.get("clarification"), {entity_name}, "the country"
-    ))
-    answer_dict["clarification"] = raw_clar or _build_fallback_clarification(question, answer_dict.get("answer"))
+    answer_dict["clarification"] = _select_clarification(
+        raw_clarification, {entity_name}, question, answer_dict.get("answer")
+    )
     return answer_dict
-
 async def ask_question(
     question: QuestionEnhanced,
     day_country: CountrydleDay,
@@ -355,13 +388,11 @@ async def ask_question(
             {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
             "the country",
         ),
-        clarification=(
-            _normalize_clarification_prefix(sanitize_explanation_for_player(
-                answer_dict.get("clarification"),
-                {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
-                "the country",
-            ))
-            or _build_fallback_clarification(question, answer_dict.get("answer"))
+        clarification=_select_clarification(
+            answer_dict.get("clarification"),
+            {country.name, getattr(country, "official_name", None)} if getattr(country, "official_name", None) else {country.name},
+            question,
+            answer_dict.get("answer"),
         ),
         context=context,
     )

@@ -97,7 +97,11 @@ LOCAL_CONFIG = LocalModeConfig(
         "use operator char_count_equals with left relation registration_plates and right value 2 or 3.\n"
         "- Shorthand questions consisting only of a voivodeship name or adjective, with or without a question mark "
         "(e.g. 'mazowieckie?', 'lubuskie', 'warmińsko mazurskie?'), are valid yes/no questions asking whether the target "
-        "powiat lies in that voivodeship (relation voivodeship equals the canonical voivodeship name)."
+        "powiat lies in that voivodeship (relation voivodeship equals the canonical voivodeship name).\n"
+        "- When a question asks about a property of the voivodeship that the target powiat lies in "
+        "(e.g. whether the voivodeship has the Vistula river, borders Germany, or has sea access), "
+        "use entity 'target_voivodeship' with the corresponding relation (major_rivers, borders_country, "
+        "borders_voivodeship, water_access, is_coastal, mountain_ranges)."
     ),
 )
 
@@ -160,9 +164,11 @@ async def analyze_and_answer_locally(
             evidence["local_duration_ms"] = (time.perf_counter() - local_started) * 1000
     if answer is None:
         return None, plan
-    target_names = {powiat.nazwa}
-    if powiat.nazwa.startswith("Powiat "):
-        target_names.add(powiat.nazwa.replace("Powiat ", "", 1).strip())
+    target_names: set[str] = set()
+    if not (answer.relations == ["name"] and answer.answer is True):
+        target_names.add(powiat.nazwa)
+        if powiat.nazwa.startswith("Powiat "):
+            target_names.add(powiat.nazwa.replace("Powiat ", "", 1).strip())
     clean_exp = sanitize_explanation_for_player(answer.explanation, target_names, "ten powiat")
     return PowiatQuestionCreate(
         user_id=user.id if user else None,
@@ -243,17 +249,60 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
 
 
 
+def _build_powiat_verified_facts_block(entity_name: str) -> str:
+    import sqlite3
+    from local_kb_question import get_entity_row, _get_parent_voivodeship_relation
+
+    if not LOCAL_CONFIG.db_path.is_file():
+        return ""
+    try:
+        with sqlite3.connect(LOCAL_CONFIG.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = get_entity_row(conn, LOCAL_CONFIG, entity_name)
+            if row is None:
+                return ""
+            voiv = _get_parent_voivodeship_relation(row, "name") or row["voivodeship"]
+            powiat_rivers = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT river_name FROM powiat_major_rivers WHERE powiat_id = ?",
+                    (row["id"],),
+                ).fetchall()
+            ]
+            voiv_rivers = _get_parent_voivodeship_relation(row, "major_rivers") or []
+            voiv_countries = _get_parent_voivodeship_relation(row, "borders_country") or []
+            voiv_neighbors = _get_parent_voivodeship_relation(row, "borders_voivodeship") or []
+            lines = [
+                f"- Województwo docelowego powiatu: {voiv}",
+                f"- Siedziba powiatu: {row['seat']}",
+                f"- Główne rzeki przepływające przez powiat: {', '.join(powiat_rivers) if powiat_rivers else 'brak w wykazie'}",
+            ]
+            if voiv_rivers:
+                lines.append(
+                    f"- Główne rzeki województwa {voiv} (pełny wykaz): {', '.join(voiv_rivers)} (inne główne rzeki, np. niewymienione powyżej, NIE przepływają przez województwo {voiv})"
+                )
+            if voiv_neighbors:
+                lines.append(f"- Sąsiednie województwa dla województwa {voiv}: {', '.join(voiv_neighbors)}")
+            lines.append(
+                f"- Sąsiednie państwa dla województwa {voiv}: {', '.join(voiv_countries) if voiv_countries else 'brak (nie graniczy z obcym państwem)'}"
+            )
+            return "\n### Zweryfikowane fakty z bazy danych (zawsze nadrzędne wobec wiedzy ogólnej):\n" + "\n".join(lines) + "\n"
+    except Exception:
+        return ""
+
+
 def answer_prompts(
     question: PowiatQuestionEnhanced, entity_name: str, context: str,
 ) -> tuple[str, str]:
     """Build the shared daily and explicit-target answer instructions."""
+    verified_facts = _build_powiat_verified_facts_block(entity_name)
     system_prompt = f"""
 Jesteś 'Mistrzem Gry' w Powiatdle. Twoim zadaniem jest odpowiedzieć na pytanie Tak/Nie dotyczące konkretnego polskiego powiatu na podstawie dostarczonego kontekstu i Twojej wiedzy ogólnej.
 
 ### Docelowy powiat: {entity_name}
 ### Intencja pytania: {question.intent}
 ### Wymagane informacje: {question.required_info}
-
+{verified_facts}
 ### Fragmenty kontekstu:
 {context}
 
