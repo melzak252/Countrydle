@@ -5,7 +5,6 @@ import { useAdvertisingPolicy } from '../advertising';
 import Header from './Header';
 import Footer from './Footer';
 import VersionDisplay from './VersionDisplay';
-import IncidentBanner from './IncidentBanner';
 
 export default function Layout() {
   useAdvertisingPolicy();
@@ -55,7 +54,6 @@ export default function Layout() {
     <div className={`flex min-h-screen flex-col bg-obsidian-950 font-sans text-sand-100 ${isGameFullscreen ? 'max-md:min-h-0 max-md:h-[100dvh] max-md:max-h-[var(--app-height,100dvh)] md:h-screen overflow-hidden' : ''}`}>
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[2000] focus:bg-sand-100 focus:px-4 focus:py-3 focus:text-obsidian-950">Skip to content</a>
       <Header />
-      <IncidentBanner />
       <main id="main-content" className={isGameFullscreen ? "relative flex min-h-0 w-full flex-1 flex-col overflow-hidden p-0" : location.pathname === '/admin' ? "mx-auto min-w-0 w-full max-w-[1600px] flex-1 px-4 py-4 lg:px-6" : "mx-auto min-w-0 w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 md:py-10"}>
         <Outlet />
       </main>
