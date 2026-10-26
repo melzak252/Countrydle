@@ -1,5 +1,5 @@
 {
-  "version": "1.33.9",
-  "title": "Question answering and Powiatdle accuracy fixes",
-  "body": "- Fixed Powiatdle county identity questions with English/reversed word order (such as 'Is it Braniewski powiat').\n- Added local knowledge-base evaluation and verified voivodeship river facts for Powiatdle questions about the county's parent voivodeship.\n- Prevented in-game clarifications from revealing which country shares a named border."
+  "version": "1.34.0",
+  "title": "Expanded geography guides, full recap articles, and question answering fixes",
+  "body": "- Expanded the Geography Explorer and all nine mode deduction guides with regional reference tables and taxonomic breakdowns.\n- Enhanced daily country recaps with full geographic & deductive analysis, complete facts, and expanded community question statistics.\n- Fixed Powiatdle county identity word order, parent-voivodeship river evaluation, and shared-border clarification spoilers."
 }
