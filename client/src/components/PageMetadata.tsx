@@ -88,11 +88,13 @@ const utilityPages: Record<string, [string, string]> = {
   '/africa': ['Play Today’s African Country', 'Play today’s African-country deduction puzzle.'],
   '/americas': ['Play Today’s Country of the Americas', 'Play today’s country puzzle for the Americas.'],
   '/flagdle': ['Play Today’s Flag', 'Play today’s Flagdle puzzle.'],
+  '/flag-shades': ['Flag Shades — Grayscale Flag Challenge', 'Deduce the mystery national flag in shades of grey and unlock a single color hint after 3 guesses.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
 const modeGuidePaths: Record<string, string> = {
   '/game': '/explore/modes/countrydle',
   '/flagdle': '/explore/modes/flagdle',
+  '/flag-shades': '/explore/modes/flagdle',
   '/europe': '/explore/modes/europe',
   '/asia': '/explore/modes/asia',
   '/africa': '/explore/modes/africa',

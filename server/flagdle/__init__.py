@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 from db.models.flagdle import FlagdleState, FlagdleQuestion
 from db.repositories.question_accounting import consume_question, lock_question_state
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+import hashlib
 import logging
 import os
 import tempfile
@@ -14,6 +15,7 @@ from schemas.countrydle import QuestionBase, QuestionCreate, InvalidQuestionDisp
 from schemas.countrydle import LeaderboardEntry
 import urllib.request
 
+from country_eligibility import is_country_eligible
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import Response as RawResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,6 +41,10 @@ from schemas.flagdle import (
     FlagdleStateResponse,
     FlagdleStateSchema,
     FlagdleSyncSchema,
+    FlagShadesChallenge,
+    FlagShadesGuessRequest,
+    FlagShadesGuessResult,
+    FlagShadesTargetCountry,
 )
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.guest_session import (
@@ -53,8 +59,11 @@ from flagdle.utils import (
     UNMASK_ORDER,
     evaluate_flag_clues,
     generate_asset_token,
+    generate_shades_token,
     get_country_iso2,
+    normalize_svg_for_grid,
     verify_asset_token,
+    verify_shades_token,
 )
 
 logger = logging.getLogger("countrydle.flagdle")
@@ -149,6 +158,7 @@ async def get_countries(session: AsyncSession = Depends(get_db)):
 @router.get("/flag-asset")
 async def get_flag_asset(
     token: str = Query(...),
+    fit: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_db),
 ):
     """Securely streams the daily secret flag SVG without leaking the country name in URL."""
@@ -169,10 +179,172 @@ async def get_flag_asset(
 
     iso2 = get_country_iso2(target_country.name)
     svg_bytes = await asyncio.to_thread(_get_or_fetch_flag_svg, iso2)
+    if fit == "grid":
+        svg_bytes = normalize_svg_for_grid(svg_bytes, iso2)
     return RawResponse(
         content=svg_bytes,
         media_type="image/svg+xml",
         headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@router.get("/shades/challenge", response_model=FlagShadesChallenge)
+async def get_shades_challenge(
+    seed: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_db),
+):
+    """Generates or fetches a Flag Shades challenge round (daily or custom seed)."""
+    all_countries = await CountryRepository(session).get_all_countries()
+    eligible_countries = [c for c in all_countries if is_country_eligible(c.name, "flagdle")]
+    if not eligible_countries:
+        eligible_countries = all_countries
+    eligible_countries.sort(key=lambda c: c.id)
+    if not eligible_countries:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No eligible countries found.",
+        )
+
+    today_str = datetime.now(timezone.utc).date().isoformat()
+    if not seed or seed.strip() == "daily":
+        is_daily = True
+        effective_seed = f"daily-{today_str}"
+    else:
+        is_daily = False
+        effective_seed = seed.strip()[:64]
+
+    seed_hash_int = int(
+        hashlib.sha256(f"flag-shades:{effective_seed}".encode("utf-8")).hexdigest(),
+        16,
+    )
+    target_idx = seed_hash_int % len(eligible_countries)
+    target_country = eligible_countries[target_idx]
+
+    if is_daily:
+        today_flag = await FlagdleDayRepository(session).get_today_flag()
+        if today_flag and today_flag.country_id == target_country.id and len(eligible_countries) > 1:
+            target_idx = (target_idx + 1) % len(eligible_countries)
+            target_country = eligible_countries[target_idx]
+
+    token = generate_shades_token(effective_seed, target_country.id)
+    return FlagShadesChallenge(
+        seed=effective_seed,
+        is_daily=is_daily,
+        date=today_str,
+        max_guesses=8,
+        hint_unlock_guesses=3,
+        token=token,
+        flag_asset_url=f"/flagdle/shades/flag-asset?token={token}",
+    )
+
+
+@router.get("/shades/flag-asset")
+async def get_shades_flag_asset(
+    token: str = Query(...),
+    fit: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_db),
+):
+    """Securely streams the grayscale/color flag SVG for shades challenge without leaking country in URL."""
+    verified = verify_shades_token(token)
+    if not verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid shades token.",
+        )
+
+    _seed, country_id = verified
+    target_country = await CountryRepository(session).get(country_id)
+    if not target_country:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target country not found.",
+        )
+
+    iso2 = get_country_iso2(target_country.name)
+    svg_bytes = await asyncio.to_thread(_get_or_fetch_flag_svg, iso2)
+    if fit == "grid":
+        svg_bytes = normalize_svg_for_grid(svg_bytes, iso2)
+    return RawResponse(
+        content=svg_bytes,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@router.post("/shades/guess", response_model=FlagShadesGuessResult)
+async def make_shades_guess(
+    body: FlagShadesGuessRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """Evaluates a guess in Flag Shades challenge mode."""
+    verified = verify_shades_token(body.token)
+    if not verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid shades token.",
+        )
+
+    _seed, target_country_id = verified
+    target_country = await CountryRepository(session).get(target_country_id)
+    if not target_country:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target country not found.",
+        )
+
+    all_countries = await CountryRepository(session).get_all_countries()
+    guessed_country = None
+    if body.country_id:
+        guessed_country = next((c for c in all_countries if c.id == body.country_id), None)
+    if not guessed_country and body.guess:
+        clean_guess = body.guess.strip().casefold()
+        guessed_country = next(
+            (
+                c
+                for c in all_countries
+                if c.name.strip().casefold() == clean_guess
+                or (getattr(c, "official_name", None) and c.official_name.strip().casefold() == clean_guess)
+            ),
+            None,
+        )
+    if not guessed_country:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Guessed country not found.",
+        )
+
+    is_correct = (guessed_country.id == target_country.id)
+    clues = await asyncio.to_thread(
+        evaluate_flag_clues,
+        target_country_id=target_country.id,
+        guessed_country_id=guessed_country.id,
+        target_country_name=target_country.name,
+        guessed_country_name=guessed_country.name,
+    )
+
+    is_game_over = is_correct or (body.guesses_made >= 8)
+    target_info = (
+        FlagShadesTargetCountry(id=target_country.id, name=target_country.name)
+        if is_game_over
+        else None
+    )
+
+    return FlagShadesGuessResult(
+        answer=is_correct,
+        guess=guessed_country.name,
+        country_id=guessed_country.id,
+        iso2=get_country_iso2(guessed_country.name),
+        distance_km=clues.get("distance_km"),
+        bearing_degrees=clues.get("bearing_degrees"),
+        bearing_direction=clues.get("bearing_direction"),
+        bearing_arrow=clues.get("bearing_arrow"),
+        matched_colors=clues.get("matched_colors") or [],
+        missed_colors=clues.get("missed_colors") or [],
+        remaining_colors_count=clues.get("remaining_colors_count"),
+        matched_symbols=clues.get("matched_symbols") or [],
+        is_game_over=is_game_over,
+        won=is_correct,
+        target_country=target_info,
     )
 
 

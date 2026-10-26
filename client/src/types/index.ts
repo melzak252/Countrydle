@@ -257,6 +257,34 @@ export interface FlagdleStateResponse {
   country?: Country | null;
 }
 
+export interface FlagShadesChallenge {
+  seed: string;
+  is_daily: boolean;
+  date: string;
+  max_guesses: number;
+  hint_unlock_guesses: number;
+  token: string;
+  flag_asset_url: string;
+}
+
+export interface FlagShadesGuessResult {
+  answer: boolean;
+  guess: string;
+  country_id: number;
+  iso2: string;
+  distance_km: number | null;
+  bearing_degrees: number | null;
+  bearing_direction: string | null;
+  bearing_arrow: string | null;
+  matched_colors: string[];
+  missed_colors: string[];
+  remaining_colors_count: number | null;
+  matched_symbols: string[];
+  is_game_over: boolean;
+  won: boolean;
+  target_country?: { id: number; name: string } | null;
+}
+
 export interface PatchNote {
   id: number;
   version: string;

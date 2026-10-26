@@ -19,14 +19,18 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
 }) => {
   const effectiveStage = isGameOver ? 12 : Math.max(1, Math.min(12, stage));
   const revealedSet = new Set(UNMASK_ORDER.slice(0, effectiveStage));
+  const displayFlagUrl =
+    !isGameOver && flagUrl
+      ? `${flagUrl}${flagUrl.includes('?') ? '&' : '?'}fit=grid`
+      : flagUrl;
   return (
     <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-2 sm:p-3 shadow-2xl">
       <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-obsidian-900 flex items-center justify-center">
-        {flagUrl ? (
+        {displayFlagUrl ? (
           <img
-            src={flagUrl}
+            src={displayFlagUrl}
             alt={isGameOver && countryName ? `Flag of ${countryName}` : 'Mystery National Flag'}
-            className="h-full w-full object-cover transition-all duration-700 select-none"
+            className={`h-full w-full ${isGameOver ? 'object-contain p-1' : 'object-fill'} transition-all duration-700 select-none`}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-zinc-500 animate-pulse font-mono text-sm">

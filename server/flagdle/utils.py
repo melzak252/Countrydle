@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import os
 from pathlib import Path
+import re
 import sqlite3
 from typing import Any, Dict, List, Optional, Set, Tuple
-
 from utils.country_codes import COUNTRY_CCA2_MAP
 from utils.geo import calculate_bearing, calculate_distance_km
 
@@ -155,3 +156,83 @@ def verify_asset_token(day_id: int, token: str) -> bool:
 def get_country_iso2(country_name: str) -> str:
     """Resolves country name to lowercase ISO2 cca2 code."""
     return COUNTRY_CCA2_MAP.get(country_name, "").lower()
+
+
+def normalize_svg_for_grid(svg_bytes: bytes, iso2: str = "") -> bytes:
+    """Normalize SVG for 3:2 grid rendering edge-to-edge.
+
+    Removes any preserveAspectRatio attribute and sets preserveAspectRatio="none"
+    on the opening <svg> tag. For Nepal (iso2=="np"), injects an opaque background
+    rect right after the opening <svg> tag.
+    """
+    svg_text = svg_bytes.decode("utf-8", errors="replace")
+    match = re.search(r"<svg\b([^>]*)>", svg_text, flags=re.IGNORECASE)
+    if not match:
+        return svg_bytes
+
+    orig_attrs = match.group(1)
+    # Remove existing preserveAspectRatio="..." or '...'
+    clean_attrs = re.sub(
+        r'\s*preserveAspectRatio\s*=\s*(["\']).*?\1',
+        "",
+        orig_attrs,
+        flags=re.IGNORECASE | re.DOTALL,
+    ).strip()
+
+    if clean_attrs:
+        new_tag = f'<svg preserveAspectRatio="none" {clean_attrs}>'
+    else:
+        new_tag = '<svg preserveAspectRatio="none">'
+
+    # For Nepal, inject opaque backdrop rect
+    backdrop = ""
+    if iso2.strip().lower() == "np":
+        vb_match = re.search(
+            r'viewBox\s*=\s*["\']\s*([-\d.]+)[,\s]+([-\d.]+)[,\s]+([-\d.]+)[,\s]+([-\d.]+)\s*["\']',
+            orig_attrs,
+            flags=re.IGNORECASE,
+        )
+        if vb_match:
+            min_x, min_y = vb_match.group(1), vb_match.group(2)
+            backdrop = f'<rect x="{min_x}" y="{min_y}" width="100%" height="100%" fill="#1e293b"/>'
+        else:
+            backdrop = '<rect width="100%" height="100%" fill="#1e293b"/>'
+
+    start_idx, end_idx = match.span()
+    result_text = svg_text[:start_idx] + new_tag + backdrop + svg_text[end_idx:]
+    return result_text.encode("utf-8")
+
+
+def generate_shades_token(seed: str, country_id: int) -> str:
+    """Generates a tamper-proof base64url token encoding seed, country_id, and HMAC signature."""
+    sig = hmac.new(
+        SECRET_KEY.encode(),
+        f"flag-shades:{seed}:{country_id}".encode(),
+        hashlib.sha256,
+     ).hexdigest()[:16]
+    payload = f"{seed}:{country_id}:{sig}"
+    return base64.urlsafe_b64encode(payload.encode("utf-8")).decode("ascii").rstrip("=")
+
+
+def verify_shades_token(token: str) -> Optional[Tuple[str, int]]:
+    """Verifies base64url shades token and extracts (seed, country_id). Returns None if invalid."""
+    if not token or not isinstance(token, str):
+        return None
+    try:
+        token_padded = token + "=" * (-len(token) % 4)
+        payload = base64.urlsafe_b64decode(token_padded.encode("ascii")).decode("utf-8")
+        parts = payload.rsplit(":", 2)
+        if len(parts) != 3:
+            return None
+        seed, country_id_str, sig = parts
+        country_id = int(country_id_str)
+        expected_sig = hmac.new(
+            SECRET_KEY.encode(),
+            f"flag-shades:{seed}:{country_id}".encode(),
+            hashlib.sha256,
+        ).hexdigest()[:16]
+        if not hmac.compare_digest(sig, expected_sig):
+            return None
+        return seed, country_id
+    except Exception:
+        return None

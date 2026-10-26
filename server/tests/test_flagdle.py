@@ -11,8 +11,11 @@ from flagdle.utils import (
     UNMASK_ORDER,
     evaluate_flag_clues,
     generate_asset_token,
+    generate_shades_token,
     get_country_iso2,
+    normalize_svg_for_grid,
     verify_asset_token,
+    verify_shades_token,
 )
 
 
@@ -456,3 +459,249 @@ async def test_flagdle_named_facts_are_private_until_win_and_available_to_later_
     assert state.status_code == 200, state.text
     assert state.json()["state"]["is_game_over"] is True
     assert all("Romania" in question["explanation"] for question in state.json()["questions"])
+
+
+def test_normalize_svg_for_grid_standard():
+    """Verify preserveAspectRatio="none" is injected and existing attributes are handled."""
+    raw_svg = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><path d="M0 0"/></svg>'
+    result = normalize_svg_for_grid(raw_svg, "my")
+    assert b'preserveAspectRatio="none"' in result
+    assert b'<rect' not in result
+    assert b'viewBox="0 0 100 60"' in result
+
+    raw_svg_with_par = (
+        b'<svg preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" '
+        b'viewBox="0 0 100 60"><rect fill="#fff"/></svg>'
+    )
+    result_par = normalize_svg_for_grid(raw_svg_with_par, "qa")
+    assert b'preserveAspectRatio="none"' in result_par
+    assert b'xMidYMid meet' not in result_par
+
+
+def test_normalize_svg_for_grid_nepal():
+    """Verify Nepal flag gets opaque backdrop rect injected immediately after opening <svg>."""
+    nepal_svg = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120"><path d="M0 0"/></svg>'
+    result_nepal = normalize_svg_for_grid(nepal_svg, "np")
+    assert b'preserveAspectRatio="none"' in result_nepal
+    assert b'<rect x="0" y="0" width="100%" height="100%" fill="#1e293b"/>' in result_nepal
+
+    nepal_no_vb = b'<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'
+    result_nepal_no_vb = normalize_svg_for_grid(nepal_no_vb, "NP")
+    assert b'<rect width="100%" height="100%" fill="#1e293b"/>' in result_nepal_no_vb
+
+
+def test_shades_token_roundtrip_and_tamper():
+    """Verify stateless HMAC token generation, verification, and anti-tamper."""
+    token = generate_shades_token("daily-2026-10-26", 42)
+    assert isinstance(token, str)
+    verified = verify_shades_token(token)
+    assert verified == ("daily-2026-10-26", 42)
+
+    custom_token = generate_shades_token("my-challenge:seed#1", 99)
+    assert verify_shades_token(custom_token) == ("my-challenge:seed#1", 99)
+
+    assert verify_shades_token("invalid_token") is None
+    assert verify_shades_token("") is None
+    assert verify_shades_token(None) is None
+
+    tampered = token[:-1] + ("A" if token[-1] != "A" else "B")
+    assert verify_shades_token(tampered) is None
+
+
+@pytest.mark.anyio
+async def test_flagdle_flag_asset_fit_grid(async_client, tmp_path, monkeypatch):
+    """GET /flagdle/flag-asset?fit=grid transforms SVG to preserveAspectRatio="none"."""
+    monkeypatch.setattr("flagdle.FLAG_SVG_CACHE_DIR", tmp_path)
+    (tmp_path / "ch.svg").write_bytes(
+        b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#f00"/></svg>'
+    )
+    with (
+        patch(
+            "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
+            new_callable=AsyncMock,
+        ) as mock_get_today,
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            new_callable=AsyncMock,
+        ) as mock_get_country,
+    ):
+        mock_country = MagicMock()
+        mock_country.id = 75
+        mock_country.name = "Switzerland"
+
+        mock_day = MagicMock()
+        mock_day.id = 42
+        mock_day.country_id = 75
+        mock_day.country = mock_country
+        mock_day.date = date(2026, 9, 22)
+
+        mock_get_today.return_value = mock_day
+        mock_get_country.return_value = mock_country
+
+        valid_token = generate_asset_token(42)
+        res = await async_client.get(f"/flagdle/flag-asset?token={valid_token}&fit=grid")
+        assert res.status_code == 200
+        assert b'preserveAspectRatio="none"' in res.content
+
+
+@pytest.mark.anyio
+async def test_flagdle_shades_challenge_endpoint(async_client):
+    """GET /flagdle/shades/challenge generates challenge with token and asset URL."""
+    c1 = SimpleNamespace(id=1, name="Poland", official_name="Republic of Poland")
+    c2 = SimpleNamespace(id=2, name="Germany", official_name="Federal Republic of Germany")
+
+    with (
+        patch(
+            "db.repositories.country.CountryRepository.get_all_countries",
+            new_callable=AsyncMock,
+            return_value=[c1, c2],
+        ),
+        patch(
+            "db.repositories.flagdle.FlagdleDayRepository.get_today_flag",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        res_daily = await async_client.get("/flagdle/shades/challenge")
+        assert res_daily.status_code == 200
+        data_daily = res_daily.json()
+        assert data_daily["is_daily"] is True
+        assert data_daily["seed"].startswith("daily-")
+        assert data_daily["max_guesses"] == 8
+        assert data_daily["hint_unlock_guesses"] == 3
+        assert "/flagdle/shades/flag-asset?token=" in data_daily["flag_asset_url"]
+
+        verified = verify_shades_token(data_daily["token"])
+        assert verified is not None
+        assert verified[0] == data_daily["seed"]
+        assert verified[1] in (1, 2)
+
+        res_custom = await async_client.get("/flagdle/shades/challenge?seed=player-seed-42")
+        assert res_custom.status_code == 200
+        data_custom = res_custom.json()
+        assert data_custom["is_daily"] is False
+        assert data_custom["seed"] == "player-seed-42"
+        verified_custom = verify_shades_token(data_custom["token"])
+        assert verified_custom is not None
+        assert verified_custom[0] == "player-seed-42"
+
+
+@pytest.mark.anyio
+async def test_flagdle_shades_flag_asset_endpoint(async_client, tmp_path, monkeypatch):
+    """GET /flagdle/shades/flag-asset returns SVG with valid token, 403 on invalid."""
+    monkeypatch.setattr("flagdle.FLAG_SVG_CACHE_DIR", tmp_path)
+    (tmp_path / "pl.svg").write_bytes(
+        b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><rect fill="#fff"/></svg>'
+    )
+    poland = SimpleNamespace(id=1, name="Poland", official_name="Republic of Poland")
+
+    with patch(
+        "db.repositories.country.CountryRepository.get",
+        new_callable=AsyncMock,
+        return_value=poland,
+    ):
+        valid_token = generate_shades_token("test-seed", 1)
+        res = await async_client.get(f"/flagdle/shades/flag-asset?token={valid_token}&fit=grid")
+        assert res.status_code == 200
+        assert "image/svg+xml" in res.headers["content-type"]
+        assert b'preserveAspectRatio="none"' in res.content
+
+        res_bad = await async_client.get("/flagdle/shades/flag-asset?token=invalid")
+        assert res_bad.status_code == 403
+
+
+@pytest.mark.anyio
+async def test_flagdle_shades_guess_endpoint(async_client):
+    """POST /flagdle/shades/guess evaluates clue feedback, win status, and anti-cheat."""
+    poland = SimpleNamespace(id=1, name="Poland", official_name="Republic of Poland")
+    germany = SimpleNamespace(id=2, name="Germany", official_name="Federal Republic of Germany")
+
+    async def mock_get(cid):
+        if cid == 1:
+            return poland
+        if cid == 2:
+            return germany
+        return None
+
+    with (
+        patch(
+            "db.repositories.country.CountryRepository.get",
+            side_effect=mock_get,
+        ),
+        patch(
+            "db.repositories.country.CountryRepository.get_all_countries",
+            new_callable=AsyncMock,
+            return_value=[poland, germany],
+        ),
+    ):
+        token = generate_shades_token("test-seed", 1)
+
+        res_inc = await async_client.post(
+            "/flagdle/shades/guess",
+            json={
+                "token": token,
+                "guess": "Germany",
+                "country_id": 2,
+                "guesses_made": 1,
+            },
+        )
+        assert res_inc.status_code == 200
+        data_inc = res_inc.json()
+        assert data_inc["answer"] is False
+        assert data_inc["won"] is False
+        assert data_inc["is_game_over"] is False
+        assert data_inc["target_country"] is None
+        assert data_inc["iso2"] == "de"
+        assert "matched_colors" in data_inc
+        assert "missed_colors" in data_inc
+
+        res_loss = await async_client.post(
+            "/flagdle/shades/guess",
+            json={
+                "token": token,
+                "guess": "Germany",
+                "country_id": 2,
+                "guesses_made": 8,
+            },
+        )
+        assert res_loss.status_code == 200
+        data_loss = res_loss.json()
+        assert data_loss["is_game_over"] is True
+        assert data_loss["won"] is False
+        assert data_loss["target_country"] == {"id": 1, "name": "Poland"}
+
+        res_win = await async_client.post(
+            "/flagdle/shades/guess",
+            json={
+                "token": token,
+                "guess": "Poland",
+                "country_id": 1,
+                "guesses_made": 2,
+            },
+        )
+        assert res_win.status_code == 200
+        data_win = res_win.json()
+        assert data_win["answer"] is True
+        assert data_win["won"] is True
+        assert data_win["is_game_over"] is True
+        assert data_win["target_country"] == {"id": 1, "name": "Poland"}
+
+        res_bad = await async_client.post(
+            "/flagdle/shades/guess",
+            json={
+                "token": "bad-token",
+                "guess": "Poland",
+                "guesses_made": 1,
+            },
+        )
+        assert res_bad.status_code == 403
+
+        res_unknown = await async_client.post(
+            "/flagdle/shades/guess",
+            json={
+                "token": token,
+                "guess": "Atlantis",
+                "guesses_made": 1,
+            },
+        )
+        assert res_unknown.status_code == 400

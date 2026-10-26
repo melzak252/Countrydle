@@ -15,6 +15,7 @@ import USStatesGamePage from './pages/USStatesGamePage';
 import WojewodztwaGamePage from './pages/WojewodztwaGamePage';
 import ContinentalGamePage from './pages/ContinentalGamePage';
 import FlagdlePage from './pages/FlagdlePage';
+import FlagShadesPage from './pages/FlagShadesPage';
 import BorderHopPage from './pages/BorderHopPage';
 import DuelPage from './pages/DuelPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -136,6 +137,7 @@ function App() {
           <Route path="africa" element={<ContinentalGamePage continent="africa" />} />
           <Route path="americas" element={<ContinentalGamePage continent="americas" />} />
           <Route path="flagdle" element={<FlagdlePage />} />
+          <Route path="flag-shades" element={<FlagShadesPage />} />
           <Route path="border-hop" element={<BorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />

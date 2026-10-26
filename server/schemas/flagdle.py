@@ -100,3 +100,43 @@ class DayFlagdleDisplay(BaseModel):
     date: date
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FlagShadesChallenge(BaseModel):
+    seed: str
+    is_daily: bool
+    date: str
+    max_guesses: int = 8
+    hint_unlock_guesses: int = 3
+    token: str
+    flag_asset_url: str
+
+
+class FlagShadesGuessRequest(BaseModel):
+    token: str
+    guess: str
+    country_id: Optional[int] = None
+    guesses_made: int = 1
+
+
+class FlagShadesTargetCountry(BaseModel):
+    id: int
+    name: str
+
+
+class FlagShadesGuessResult(BaseModel):
+    answer: bool
+    guess: str
+    country_id: int
+    iso2: str
+    distance_km: Optional[int] = None
+    bearing_degrees: Optional[int] = None
+    bearing_direction: Optional[str] = None
+    bearing_arrow: Optional[str] = None
+    matched_colors: List[str] = Field(default_factory=list)
+    missed_colors: List[str] = Field(default_factory=list)
+    remaining_colors_count: Optional[int] = None
+    matched_symbols: List[str] = Field(default_factory=list)
+    is_game_over: bool
+    won: bool
+    target_country: Optional[FlagShadesTargetCountry] = None

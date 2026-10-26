@@ -58,7 +58,7 @@ export default function HomePage() {
     choose: isPl ? 'Wybierz inną grę' : 'Explore other games',
     modes: isPl ? 'Co odkryjesz dalej?' : 'What will you discover next?',
     modeNote: isPl ? 'Wybierz flagi, kontynent lub mniejszą mapę.' : 'Choose flags, a continent or a closer look at the map.',
-    flags: isPl ? 'Flagi' : 'Flags',
+    flags: isPl ? 'Symbole' : 'Symbols',
     continents: isPl ? 'Kontynenty' : 'Continents',
     regions: isPl ? 'Stany i regiony' : 'States and regions',
     questions: isPl ? 'Pytania' : 'Questions',
@@ -89,6 +89,9 @@ export default function HomePage() {
         { id: 'flagdle', title: 'Flagdle', region: isPl ? 'Flagi świata' : 'World flags',
           description: isPl ? 'Odkrywaj flagę pole po polu i korzystaj z podpowiedzi kolorów. Masz 12 prób.' : 'Reveal the flag tile by tile and use color clues. You have 12 guesses.',
           path: '/flagdle', icon: Flag, questions: null, guesses: 12 },
+        { id: 'flag-shades', title: isPl ? 'Odcienie Flagi' : 'Flag Shades', region: isPl ? 'Flagi w szarościach' : 'Grayscale flags',
+          description: isPl ? 'Cała flaga w odcieniach szarości. Po 3 próbach odkryj jeden prawdziwy kolor (≥10% flagi).' : 'Deduce the flag in shades of grey. After 3 guesses, unlock a true color hint (≥10% of the flag).',
+          path: '/flag-shades', icon: Flag, questions: null, guesses: 8 },
       ],
     },
     {

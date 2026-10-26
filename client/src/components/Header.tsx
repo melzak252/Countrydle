@@ -42,9 +42,15 @@ export default function Header() {
       category: isPl ? 'Świat i gra wieloosobowa' : 'World & multiplayer',
       items: [
         { path: '/game', name: isPl ? 'Mapa świata' : t('header.worldMap', 'World Map'), badge: 'Countrydle' },
-        { path: '/flagdle', name: 'Flagdle', badge: isPl ? '12 kart' : '12 Cards' },
         { path: '/friends', name: isPl ? 'Graj ze znajomym' : 'Play with a Friend', badge: '1v1' },
         { path: '/border-hop', name: 'Border Hop', badge: isPl ? 'Nowość' : 'New' },
+      ],
+    },
+    {
+      category: isPl ? 'Symbole' : 'Symbols',
+      items: [
+        { path: '/flagdle', name: 'Flagdle', badge: isPl ? '12 kart' : '12 Cards' },
+        { path: '/flag-shades', name: isPl ? 'Odcienie Flagi' : 'Flag Shades', badge: isPl ? 'Szarości' : 'Grayscale' },
       ],
     },
     {

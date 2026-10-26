@@ -13,6 +13,8 @@ import type {
   FlagdleCountry,
   FlagdleGuess,
   FlagdleStateResponse,
+  FlagShadesChallenge,
+  FlagShadesGuessResult,
   GameResponse,
   Guess,
   LeaderboardEntry,
@@ -324,6 +326,28 @@ export const flagdleService = {
   syncGuestData: async (data: unknown): Promise<FlagdleStateResponse> => {
     const response = await api.post('/flagdle/sync', data);
     return response.data;
+  },
+};
+
+export const flagShadesService = {
+  getChallenge: async (seed?: string): Promise<FlagShadesChallenge> => {
+    const response = await api.get<FlagShadesChallenge>('/flagdle/shades/challenge', {
+      params: seed ? { seed } : undefined,
+    });
+    return response.data;
+  },
+  submitGuess: async (data: {
+    token: string;
+    guess: string;
+    country_id?: number;
+    guesses_made: number;
+  }): Promise<FlagShadesGuessResult> => {
+    const response = await api.post<FlagShadesGuessResult>('/flagdle/shades/guess', data);
+    return response.data;
+  },
+  getCountries: async (): Promise<FlagdleCountry[]> => {
+    const response = await api.get('/flagdle/countries');
+    return response.data.filter((country: FlagdleCountry) => isCountryAvailable(country.name));
   },
 };
 
