@@ -5,7 +5,9 @@ import {
   Globe, 
   Play, 
   ChevronRight, 
-  X 
+  X,
+  Compass,
+  BookOpen
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AdSenseUnit from '../components/AdSenseUnit';
@@ -335,6 +337,314 @@ export default function ExplorePage() {
               </div>
             ))}
           </div>
+
+          {/* Section A — Comparative Overview of All 9 Daily Geography Modes */}
+          <article aria-labelledby="modes-comparative-overview" className="mt-12 space-y-6 rounded-lg border border-white/10 bg-obsidian-900/40 p-6 md:p-8">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-400">
+                <Compass size={14} aria-hidden="true" />
+                <span>{isPl ? 'Porównanie reguł gry' : 'Daily Game Mechanics'}</span>
+              </div>
+              <h2 id="modes-comparative-overview" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
+                {isPl ? 'Sekcja A — Zestawienie porównawcze 9 codziennych trybów geograficznych' : 'Section A — Comparative Overview of All 9 Daily Geography Modes'}
+              </h2>
+              <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
+                {isPl
+                  ? 'Countrydle oferuje 9 wyspecjalizowanych wyzwań geograficznych o zróżnicowanej skali przestrzennej — od globalnej dedukcji 195 suwerennych państw, poprzez kontynentalne podzbiory i heraldykę flagową, aż po jednostki subnarodowe: 50 stanów USA, 16 polskich województw oraz 380 powiatów. Poniższa tabela porządkuje wielkości puli, limity pytań i prób oraz nadrzędne osie dedukcyjne obowiązujące w każdym trybie.'
+                  : 'Countrydle offers 9 specialized daily deductive challenges spanning diverse spatial scales — from global sovereign states down to subnational counties and flags. Each mode balances a tailored question budget against a strict guess limit, rewarding systematic elimination over unstructured guessing. The comparative reference table below summarizes pool dimensions, question constraints, guess allowances, primary geographic axes, and direct links to comprehensive strategy guides.'}
+              </p>
+            </div>
+
+            <div className="overflow-x-auto rounded-md border border-white/10 bg-obsidian-950/80">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b border-white/10 bg-white/5 font-mono text-xs uppercase tracking-wider text-sand-100">
+                  <tr>
+                    <th scope="col" className="px-4 py-3.5">Mode & Guide</th>
+                    <th scope="col" className="px-4 py-3.5">Pool Size</th>
+                    <th scope="col" className="px-4 py-3.5">Questions</th>
+                    <th scope="col" className="px-4 py-3.5">Guesses</th>
+                    <th scope="col" className="px-4 py-3.5">Primary Geographic Axes & Invariants</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10 text-zinc-300">
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/countrydle" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Countrydle — World Countries
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">195 playable countries</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">10 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      Global physical continents (Africa, Asia, Europe, North America, South America, Oceania) and UN statistical regions; 4 global coordinate quadrants relative to the Equator (0°) and Prime Meridian (0°); open marine coastlines versus landlocked enclaves; direct land border topologies; population and surface area (km²) thresholds. Includes Kosovo; excludes Israel from playable targets.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/flagdle" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Flagdle — Daily Flag Reveal
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">195 national flags</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-zinc-400">Unlimited helper Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">12 tiles / guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      Vexillological geometry (horizontal/vertical bicolors, tricolors, Nordic crosses, saltires, cantons, triangles); primary heraldic tinctures (red, white, blue, yellow, green, black); national emblems (stars, crescents, suns, coats of arms); regional cultural color schemes (Pan-African, Pan-Arab, Pan-Slavic). Progressive 12-tile visual unmasking.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/europe" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Europedle — Europe
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">44 European countries</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      European macroregions (Nordic Fennoscandia, Western Europe, Central Europe, Eastern European Plain, Mediterranean/Southern Europe, Balkans); marginal and connected seas (Baltic, North, Mediterranean, Adriatic, Black Sea); 16 landlocked European states; Schengen Area and EU boundaries; Alpine and Carpathian mountain chains. Excludes transcontinental Kazakhstan, Azerbaijan, and Georgia.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/asia" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Asiadle — Asia
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">48 Asian countries</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      Asian geographic realms (West Asia/Middle East, Central Asia, South Asia, East Asia, Southeast Asia); oceanic drainage (Indian, Pacific, Arctic) vs. major endorheic terminal basins (Caspian Sea, Aral Sea); archipelagic maritime nations (Indonesia, Philippines, Japan) vs. landlocked Central Asian republics; Himalayan and Hindu Kush topographic barriers. Excludes Egypt.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/africa" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Africadle — Africa
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">54 African nations</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      UN subregions (North Africa/Maghreb, West Africa, Central Africa, East Africa, Southern Africa); oceanic and marginal water bodies (Atlantic Ocean, Indian Ocean, Mediterranean Sea, Red Sea); Great East African Rift Valley; Sahel transition belt; 7 Equator-straddling countries; 16 landlocked African states.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/americas" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Americadle — The Americas
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">35 American nations</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      Continental realms (North America, Central American isthmus, Caribbean island nations, South America); dual-ocean interfaces (Atlantic/Caribbean vs. Pacific); continuous Andean cordillera and Amazonian river basin; 2 landlocked South American nations (Bolivia, Paraguay); normalized borders (French Guiana mapped as a land border with France).
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/us-states" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        US Statedle — 50 States
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">50 US states</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      US Census Bureau 4 official regions (Northeast, Midwest, South, West) and 9 divisions; marine coastlines (Atlantic Ocean direct, Gulf of Mexico, Pacific Ocean) vs. freshwater Great Lakes shorelines; Mississippi-Missouri river drainage; Appalachian and Rocky Mountain orographic divides; statehood admission chronology (1787–1959). Excludes Washington, D.C. and US territories.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/wojewodztwa" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Województwodle — 16 Voivodeships
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">16 Polish voivodeships</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">5 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-amber-300 font-bold">2 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      Historical Polish lands (Wielkopolska, Małopolska, Mazowsze, Śląsk, Pomorze, Warmia i Mazury); Baltic Sea open maritime coastline (Pomorskie, Zachodniopomorskie); foreign international frontiers with 7 neighboring sovereign nations; Wisła and Odra river drainage basins; mutual voivodeship adjacency graphs. Tight 5-question / 2-guess budget.
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
+                      <Link to="/explore/modes/powiaty" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
+                        Powiatdle — 380 Counties
+                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    </th>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">380 Polish powiaty</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">15 Qs</td>
+                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
+                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
+                      Parent voivodeship jurisdiction (16 clusters); administrative legal status (314 land counties / powiaty ziemskie vs. 66 cities with county rights / miasta na prawach powiatu); vehicle registration plate prefixes (tablice rejestracyjne, 2-letter municipal vs. 3-letter land county); highway networks (A1, A2, A4, S3, S7, S8) and river arteries.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          {/* Section B — Core Geographic Taxonomies & Deductive Principles */}
+          <article aria-labelledby="modes-deductive-taxonomies" className="mt-12 space-y-10 rounded-lg border border-white/10 bg-obsidian-900/40 p-6 md:p-8">
+            <div className="space-y-2 border-b border-white/10 pb-6">
+              <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-400">
+                <BookOpen size={14} aria-hidden="true" />
+                <span>{isPl ? 'Zasady dedukcji i taksonomii' : 'Geographic Methodology & Theory'}</span>
+              </div>
+              <h2 id="modes-deductive-taxonomies" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
+                {isPl ? 'Sekcja B — Podstawowe taksonomie geograficzne i zasady dedukcji' : 'Section B — Core Geographic Taxonomies & Deductive Principles'}
+              </h2>
+              <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
+                {isPl
+                  ? 'Skuteczna dedukcja w Countrydle nie opiera się na przypadkowych strzałach, lecz na rygorystycznym podziale zbioru kandydatów przy pomocy jednoznacznych właściwości przestrzennych. Zrozumienie współrzędnych sferycznych, hydrografii morskiej i śródlądowej oraz wielopoziomowych hierarchii administracyjnych pozwala optymalnie wykorzystać skromny budżet pytań.'
+                  : 'Mastering Countrydle requires treating the globe as an interconnected mathematical coordinate system and political-geographic hierarchy. Rather than expending precious questions on subjective traits ("Is it a major power?"), experienced players query well-defined taxonomic boundaries. The educational guides below elucidate three fundamental geographical principles that underpin Countrydle’s deductive engine.'}
+              </p>
+            </div>
+
+            {/* Subsection 1 */}
+            <section aria-labelledby="taxonomy-hemispheres" className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 font-mono text-sm font-bold text-emerald-400">
+                  1
+                </div>
+                <h3 id="taxonomy-hemispheres" className="font-serif text-xl font-semibold text-sand-100 sm:text-2xl">
+                  Hemispheres, Equator & Prime Meridian Crossings
+                </h3>
+              </div>
+              <div className="space-y-3 text-sm leading-relaxed text-zinc-300 sm:text-base">
+                <p>
+                  Earth’s spherical coordinate system partitions the planetary surface into four geometric quadrants through two principal great circles: the <strong>Equator</strong> (0° latitude), which separates the Northern and Southern Hemispheres, and the <strong>Prime Meridian</strong> (0° longitude) paired with the 180° antimeridian, which separates the Eastern and Western Hemispheres. In deductive geography puzzles, players often begin by asking hemisphere questions to bisect the search space. However, a common pitfall is treating sovereign nations as dimensionless mathematical points rather than expansive, two-dimensional spatial polygons.
+                </p>
+                <p>
+                  Sovereign states whose territorial boundaries cross 0° latitude belong physically to <em>both the Northern and Southern Hemispheres simultaneously</em>. When querying territorial attributes in Countrydle, a country straddling the Equator will return an affirmative response for Northern Hemisphere inclusion as well as Southern Hemisphere inclusion. In South America, <strong>Ecuador</strong> (eponymously named after the line), <strong>Colombia</strong>, and <strong>Brazil</strong> have land in both hemispheres, with Brazil extending from +5°N down to −33°S. In Africa, seven sovereign states cross the Equator: <strong>Gabon</strong>, the <strong>Republic of the Congo</strong>, the <strong>Democratic Republic of the Congo</strong>, <strong>Uganda</strong>, <strong>Kenya</strong>, <strong>Somalia</strong>, and the island nation of <strong>São Tomé and Príncipe</strong>. In Southeast Asia, <strong>Indonesia</strong> spans the Equator across major islands including Sumatra, Borneo (Kalimantan), Sulawesi, and Halmahera, while the Pacific island nation of <strong>Kiribati</strong> uniquely straddles both the Equator and the 180° meridian.
+                </p>
+                <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4">
+                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold mb-2">Prime Meridian (0° Longitude) Crossings</h4>
+                  <p className="text-sm leading-relaxed text-zinc-300">
+                    The Prime Meridian, standardized at the Royal Observatory in Greenwich, London, bisects both Europe and Africa. Three European states cross 0° longitude: the <strong>United Kingdom</strong>, <strong>France</strong>, and <strong>Spain</strong>. In Africa, the Prime Meridian passes through five countries: <strong>Algeria</strong>, <strong>Mali</strong>, <strong>Burkina Faso</strong>, <strong>Ghana</strong>, and <strong>Togo</strong>. Consequently, questions such as <em>"Is it in the Western Hemisphere?"</em> or <em>"Is it in the Eastern Hemisphere?"</em> will both evaluate to true for these trans-meridian countries.
+                  </p>
+                </div>
+                <p>
+                  <strong>Strategic Deductive Heuristic:</strong> Querying <em>"Is the country in the Northern Hemisphere?"</em> immediately eliminates approximately 70% of the Earth’s total landmass if the answer is negative, because over two-thirds of all sovereign states lie entirely north of the Equator. Conversely, when an answer confirms Northern Hemisphere presence, a player must not hastily eliminate equatorial states like Brazil, Indonesia, or Kenya without secondary verification of their latitude bounds or centroid.
+                </p>
+              </div>
+            </section>
+
+            {/* Subsection 2 */}
+            <section aria-labelledby="taxonomy-marine-endorheic" className="space-y-4 border-t border-white/10 pt-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 font-mono text-sm font-bold text-emerald-400">
+                  2
+                </div>
+                <h3 id="taxonomy-marine-endorheic" className="font-serif text-xl font-semibold text-sand-100 sm:text-2xl">
+                  Marine Access vs. Endorheic Basins & Inland Lakes
+                </h3>
+              </div>
+              <div className="space-y-3 text-sm leading-relaxed text-zinc-300 sm:text-base">
+                <p>
+                  A fundamental distinction in physical geography and Countrydle deduction is the hydrological separation between <strong>open marine access</strong> and <strong>endorheic (closed) basins</strong> or inland freshwater lakes. While everyday speech often equates any large body of water with a "coast," international maritime law and geomorphology maintain strict boundary criteria.
+                </p>
+                <p>
+                  <strong>Open Marine Access:</strong> A sovereign country or subnational entity is classified as having marine coastal access if its coastline borders the contiguous World Ocean (Pacific, Atlantic, Indian, Arctic, or Southern Oceans) or marginal and mediterranean seas connected to the global ocean via natural navigable straits. Examples include the <em>Baltic Sea</em> (connected to the Atlantic via the Danish Straits / Kattegat and Skagerrak), the <em>Mediterranean Sea</em> (connected via the Strait of Gibraltar), the <em>Black Sea</em> (connected through the Bosporus, Sea of Marmara, and Dardanelles), the <em>Red Sea</em> (connected via the Bab-el-Mandeb), and the <em>Gulf of Mexico</em> (connected via the Straits of Florida). These marginal water bodies participate in global oceanic circulation, tidal regimes, and saline interchange.
+                </p>
+                <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4 space-y-2">
+                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">The Caspian Sea Endorheic Anomaly</h4>
+                  <p className="text-sm leading-relaxed text-zinc-300">
+                    Covering roughly 371,000 $km^2$, the <strong>Caspian Sea</strong> is the largest enclosed inland body of water on Earth. Despite its historical name and brackish salinity, it possesses no natural hydrological outlet to the World Ocean; it sits in a continental depression with its surface approximately 28 meters below global sea level. Consequently, the Caspian is an <em>endorheic lake basin</em>.
+                  </p>
+                  <p className="text-sm leading-relaxed text-zinc-300">
+                    In physical geography and Countrydle game rules, countries bordering solely the Caspian Sea — notably <strong>Azerbaijan</strong> and <strong>Turkmenistan</strong> — are classified as <strong>landlocked states</strong> (<em>państwa śródlądowe</em>). A query asking <em>"Is it landlocked?"</em> evaluates to affirmative for Azerbaijan, while asking <em>"Does it border the Caspian Sea?"</em> evaluates separately to affirmative. Shoreline on the Caspian Sea does not confer open marine access.
+                  </p>
+                </div>
+                <p>
+                  <strong>Freshwater Great Lakes vs. Marine Coastlines (US Statedle):</strong> The Laurentian Great Lakes (Superior, Michigan, Huron, Erie, Ontario) contain 21% of the world’s surface freshwater. States such as Michigan, Wisconsin, Illinois, Indiana, and Ohio possess thousands of miles of deepwater lacustrine shoreline and commercial shipping channels linked artificially to the Atlantic via the St. Lawrence Seaway. However, in geographic taxonomy, Great Lakes shoreline is freshwater lacustrine frontage, not oceanic coastline. In US Statedle, only states bordering the Atlantic Ocean, Pacific Ocean, Arctic Ocean, or Gulf of Mexico are recognized as coastal states; Great Lakes states are categorized as interior states unless they possess true marine frontage.
+                </p>
+                <p>
+                  <strong>Strategic Deductive Heuristic:</strong> When isolating nations in Eurasia or North America, querying <em>"Is it landlocked?"</em> eliminates 151 coastal nations worldwide while preserving all 44 landlocked states (including Caspian-littoral states). Only expend questions on specific water bodies (e.g., <em>"Does it border the Baltic Sea?"</em> or <em>"Does it border the Gulf of Mexico?"</em>) once the broader marine or continental cluster has been established.
+                </p>
+              </div>
+            </section>
+
+            {/* Subsection 3 */}
+            <section aria-labelledby="taxonomy-subnational-hierarchies" className="space-y-4 border-t border-white/10 pt-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 font-mono text-sm font-bold text-emerald-400">
+                  3
+                </div>
+                <h3 id="taxonomy-subnational-hierarchies" className="font-serif text-xl font-semibold text-sand-100 sm:text-2xl">
+                  Subnational Administrative Hierarchies (US States & Polish Regions)
+                </h3>
+              </div>
+              <div className="space-y-3 text-sm leading-relaxed text-zinc-300 sm:text-base">
+                <p>
+                  Subnational puzzle modes (US Statedle, Województwodle, Powiatdle) demand mastery of formal administrative subdivisions. Rather than memorizing hundreds of standalone entities in isolation, top players navigate these pools through their standardized hierarchical tiers, statistical regional partitions, and legal administrative classifications.
+                </p>
+                
+                <div className="space-y-3 rounded-md border border-white/10 bg-obsidian-950/60 p-4">
+                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">US Census Bureau Regional Taxonomy (50 States)</h4>
+                  <p className="text-sm leading-relaxed text-zinc-300">
+                    The US Census Bureau partitions the 50 states into four official regions, which further subdivide into nine geographic divisions:
+                  </p>
+                  <ul className="list-disc space-y-1.5 pl-5 text-xs text-zinc-300 sm:text-sm">
+                    <li><strong>Northeast Region (9 states):</strong> <em>New England Division</em> (Maine, New Hampshire, Vermont, Massachusetts, Rhode Island, Connecticut) and <em>Middle Atlantic Division</em> (New York, New Jersey, Pennsylvania).</li>
+                    <li><strong>Midwest Region (12 states):</strong> <em>East North Central Division</em> (Ohio, Indiana, Illinois, Michigan, Wisconsin) and <em>West North Central Division</em> (Minnesota, Iowa, Missouri, North Dakota, South Dakota, Nebraska, Kansas).</li>
+                    <li><strong>South Region (16 states):</strong> <em>South Atlantic Division</em> (Delaware, Maryland, Virginia, West Virginia, North Carolina, South Carolina, Georgia, Florida), <em>East South Central Division</em> (Kentucky, Tennessee, Alabama, Mississippi), and <em>West South Central Division</em> (Arkansas, Louisiana, Oklahoma, Texas).</li>
+                    <li><strong>West Region (13 states):</strong> <em>Mountain Division</em> (Montana, Idaho, Wyoming, Colorado, New Mexico, Arizona, Utah, Nevada) and <em>Pacific Division</em> (Washington, Oregon, California, Alaska, Hawaii).</li>
+                  </ul>
+                  <p className="text-xs text-zinc-400">
+                    *Note: Washington, D.C. and US territories (Puerto Rico, Guam, US Virgin Islands, American Samoa, Northern Mariana Islands) are excluded from the 50-state game pool.
+                  </p>
+                </div>
+
+                <div className="space-y-3 rounded-md border border-white/10 bg-obsidian-950/60 p-4">
+                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">Poland’s Three-Tier Administrative Structure (16 Voivodeships & 380 Powiaty)</h4>
+                  <p className="text-sm leading-relaxed text-zinc-300">
+                    Poland’s territorial division, enacted on January 1, 1999 (<em>zasadniczy trójstopniowy podział terytorialny państwa</em>), establishes three hierarchical tiers:
+                  </p>
+                  <ul className="list-disc space-y-2 pl-5 text-xs text-zinc-300 sm:text-sm">
+                    <li>
+                      <strong>Tier 1 — 16 Województwa (Voivodeships):</strong> First-order regional administrative units governed by a dual executive: the state-appointed <em>wojewoda</em> (representing the central Council of Ministers) and the regional self-government headed by the <em>marszałek województwa</em> and provincial assembly (<em>sejmik województwa</em>).
+                    </li>
+                    <li>
+                      <strong>Tier 2 — 380 Powiaty (Counties):</strong> The county level is strictly partitioned into two legal categories:
+                      <ul className="list-circle space-y-1 pl-5 pt-1 text-zinc-300">
+                        <li><strong>314 Powiaty Ziemskie (Land Counties):</strong> Multi-communal districts comprising several urban and rural gminas, administered by a county council (<em>rada powiatu</em>) and an executive board headed by a <em>starosta</em>.</li>
+                        <li><strong>66 Miasta na Prawach Powiatu (Cities with County Rights):</strong> Also known historically as <em>powiaty grodzkie</em>. Autonomous municipalities where the city president (<em>prezydent miasta</em>) and city council perform both municipal and county functions simultaneously (e.g., Warszawa, Kraków, Łódź, Wrocław, Poznań, Gdańsk, Szczecin, Katowice).</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Tier 3 — 2,477 Gminy:</strong> The primary local communal level, divided into urban (<em>gminy miejskie</em>), urban-rural (<em>gminy miejsko-wiejskie</em>), and rural (<em>gminy wiejskie</em>) units.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4">
+                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold mb-2">Polish Vehicle Registration Codes (Wyróżniki Tablic Rejestracyjnych)</h4>
+                  <p className="text-sm leading-relaxed text-zinc-300">
+                    In Powiatdle, vehicle registration plate prefixes provide an authoritative deductive axis. The initial letter designates the parent voivodeship (e.g., <strong>W</strong> for Mazowieckie, <strong>K</strong> for Małopolskie, <strong>D</strong> for Dolnośląskie, <strong>P</strong> for Wielkopolskie, <strong>G</strong> for Pomorskie, <strong>Z</strong> for Zachodniopomorskie, <strong>S</strong> for Śląskie, <strong>E</strong> for Łódzkie, <strong>B</strong> for Podlaskie, <strong>L</strong> for Lubelskie, <strong>R</strong> for Podkarpackie, <strong>T</strong> for Świętokrzyskie, <strong>O</strong> for Opolskie, <strong>C</strong> for Kujawsko-Pomorskie, <strong>F</strong> for Lubuskie, <strong>N</strong> for Warmińsko-Mazurskie). Furthermore, <strong>two-letter prefixes</strong> almost universally denote cities with county rights (e.g., <em>KR</em> for Kraków, <em>PO</em> for Poznań, <em>DW</em> for Wrocław, <em>GD</em> for Gdańsk), whereas <strong>three-letter prefixes</strong> denote land counties (e.g., <em>KRA</em> for powiat krakowski, <em>PZ</em> for powiat poznański, <em>DWR</em> for powiat wrocławski).
+                  </p>
+                </div>
+
+                <p>
+                  <strong>Strategic Deductive Heuristic:</strong> In Powiatdle, discovering whether the secret entity is a city with county rights (<em>miasto na prawach powiatu</em>) immediately tests a 66-versus-314 split, eliminating over 82% of the candidate set if negative. Following up by isolating the parent voivodeship reduces the candidate pool to an average of just 20 to 25 local counties.
+                </p>
+              </div>
+            </section>
+          </article>
         </section>
       )}
 

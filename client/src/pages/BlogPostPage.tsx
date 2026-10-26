@@ -253,6 +253,12 @@ export default function BlogPostPage() {
               </p>
             )}
 
+            {cleanDisplayText(post.summary) && cleanDisplayText(post.summary) !== cleanDisplayText(post.subtitle) && (
+              <p className="max-w-2xl break-words text-sm leading-relaxed text-zinc-300 md:text-base">
+                {cleanDisplayText(post.summary)}
+              </p>
+            )}
+
           </div>
         </div>
       </header>
@@ -272,7 +278,13 @@ export default function BlogPostPage() {
           <h2 className="text-lg font-semibold text-sand-100">
             {isPl ? 'Kraj w skrócie' : 'Country at a glance'}
           </h2>
-          <div className="grid min-w-0 grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div className="grid min-w-0 grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+            {(facts.region || post.continent) && (
+              <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
+                <span className="text-zinc-400 block text-xs">{isPl ? 'Region' : 'Region'}</span>
+                <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.region || post.continent}</span>
+              </div>
+            )}
             {facts.capital && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
                 <span className="text-zinc-400 block text-xs">{isPl ? 'Stolica' : 'Capital'}</span>
@@ -297,6 +309,12 @@ export default function BlogPostPage() {
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.coastline}</span>
               </div>
             )}
+            {facts.languages && (
+              <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
+                <span className="text-zinc-400 block text-xs">{isPl ? 'Języki urzędowe' : 'Official languages'}</span>
+                <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.languages}</span>
+              </div>
+            )}
           </div>
 
           {facts.borders && facts.borders !== 'None' && (
@@ -308,6 +326,118 @@ export default function BlogPostPage() {
         </section>
       )}
 
+      {/* Geographic & Deductive Analysis */}
+      <section className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 sm:p-6 space-y-6">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-emerald-300">
+          <Globe size={18} className="shrink-0" />
+          <span>{isPl ? 'Analiza geograficzna i ścieżka dedukcji' : 'Geographic & Deductive Analysis'}</span>
+        </h2>
+
+        <div className="space-y-4 text-sm sm:text-base leading-relaxed text-zinc-300">
+          <p>
+            {isPl ? (
+              <>
+                <strong className="text-sand-100">{post.country_name}</strong> to państwo położone {facts.region || post.continent ? <>w regionie <strong className="text-sand-100">{String(facts.region || post.continent)}</strong></> : 'na mapie świata'}{facts.capital ? <>, a jego centrum administracyjnym jest stolica — <strong className="text-sand-100">{String(facts.capital)}</strong></> : null}. {facts.languages ? <>Profil językowy kraju, w którym kluczową rolę odgrywa język <strong className="text-sand-100">{String(facts.languages)}</strong>, stanowi ważny wyznacznik tożsamości narodowej i ułatwia precyzyjną identyfikację w rozgrywce.</> : <>Jego profil geopolityczny i tożsamość regionalna stanowią kluczowy punkt odniesienia w skali całego kontynentu.</>}
+              </>
+            ) : (
+              <>
+                <strong className="text-sand-100">{post.country_name}</strong> occupies a distinctive position {facts.region || post.continent ? <>in <strong className="text-sand-100">{String(facts.region || post.continent)}</strong></> : 'in global geography'}{facts.capital ? <>, centered administratively around its capital, <strong className="text-sand-100">{String(facts.capital)}</strong></> : null}. {facts.languages ? <>The nation&apos;s linguistic landscape, featuring <strong className="text-sand-100">{String(facts.languages)}</strong>, serves as a defining cultural and regional identifier.</> : <>Its geopolitical profile anchors its identity within the broader continental framework.</>}
+              </>
+            )}
+          </p>
+
+          <p>
+            {isPl ? (
+              <>
+                Pod względem skali terytorialnej i demograficznej {post.country_name} obejmuje {facts.area ? <>obszar o powierzchni <strong className="text-sand-100">{String(facts.area)}</strong></> : 'swoje terytorium'}{facts.population ? <> zamieszkiwany przez około <strong className="text-sand-100">{String(facts.population)}</strong> obywateli</> : null}. W kontekście dostępu do wód morskich kraj charakteryzuje {facts.coastline ? <>status: <strong className="text-sand-100">{String(facts.coastline)}</strong></> : 'specyficzne położenie hydrograficzne'}. Z kolei układ granic lądowych {cleanBorderList(facts.borders) ? <>— ze szczególnym uwzględnieniem bezpośrednich sąsiadów: <strong className="text-sand-100">{cleanBorderList(facts.borders)}</strong> —</> : facts.borders === 'None' || !facts.borders ? '— nie zawiera lądowych sąsiadów, co nadaje mu wyspiarski lub odosobniony charakter terytorialny —' : null} precyzyjnie definiuje jego położenie w przestrzeni międzynarodowej.
+              </>
+            ) : (
+              <>
+                From a geographic and demographic perspective, {post.country_name} spans {facts.area ? <>a land area of <strong className="text-sand-100">{String(facts.area)}</strong></> : 'its national territory'}{facts.population ? <> with a population of approximately <strong className="text-sand-100">{String(facts.population)}</strong></> : null}. In terms of maritime connectivity, the country {facts.coastline ? <>features a coastline status of <strong className="text-sand-100">{String(facts.coastline)}</strong></> : 'has unique maritime characteristics'}. Its terrestrial boundary configuration {cleanBorderList(facts.borders) ? <>— including direct borders with <strong className="text-sand-100">{cleanBorderList(facts.borders)}</strong> —</> : facts.borders === 'None' || !facts.borders ? '— with no shared land borders, giving it an insular or isolated territorial profile —' : null} forms a distinct physical signature on the world map.
+              </>
+            )}
+          </p>
+
+          <p>
+            {isPl ? (
+              <>
+                Dla graczy mierzących się z wyzwaniem Countrydle, <strong className="text-sand-100">{post.country_name}</strong> stanowi doskonały przykład zastosowania ustrukturyzowanej ścieżki eliminacji. Rozpoczęcie od pytań makrogeograficznych o kontynent i strefę regionalną natychmiast odrzuca większość państw świata. Następnie weryfikacja dostępu do morza — ustalenie, czy państwo posiada linię brzegową, czy też jest krajem śródlądowym — pozwala błyskawicznie podzielić pozostałych kandydatów. Ostateczne zawężenie następuje poprzez pytania o liczbę i tożsamość graniczących sąsiadów oraz kryteria językowe, co umożliwia bezbłędne wytypowanie kraju <strong className="text-sand-100">{post.country_name}</strong> przy zachowaniu optymalnej liczby ruchów.
+              </>
+            ) : (
+              <>
+                For players navigating Countrydle&apos;s deductive challenges, <strong className="text-sand-100">{post.country_name}</strong> can be systematically pinpointed using a structured elimination tree. Beginning with macro-geographic queries targeting continent and regional coordinates narrows down hundreds of possibilities to a tight geographic cluster. Next, probing coastline status—determining whether the country has open sea access or is landlocked—instantly bifurcates candidate nations. Finally, analyzing the number and identity of neighboring states alongside linguistic cues allows solvers to rule out adjacent territories and isolate <strong className="text-sand-100">{post.country_name}</strong> with analytical precision.
+              </>
+            )}
+          </p>
+        </div>
+
+        {post.deduction_masterclass?.steps && post.deduction_masterclass.steps.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <h3 className="text-base font-semibold text-sand-100">
+              {isPl ? 'Zapisana ścieżka dedukcji krok po kroku' : 'Step-by-Step Deduction Path'}
+            </h3>
+            <ol className="space-y-3">
+              {post.deduction_masterclass.steps.map((step, idx) => {
+                const answer = step.answer ? step.answer.trim().toUpperCase() : '';
+                const isYes = answer === 'YES' || answer === 'TAK';
+                const isNo = answer === 'NO' || answer === 'NIE';
+                const explanation = cleanDisplayText(step.explanation);
+                return (
+                  <li
+                    key={idx}
+                    className="flex min-w-0 items-start gap-3 rounded-md border border-white/10 bg-obsidian-950 p-3 sm:gap-4 sm:p-4"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 font-mono text-xs font-bold text-emerald-300"
+                    >
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                        <span className="min-w-0 break-words text-sm font-semibold leading-6 text-sand-100">
+                          {step.question}
+                        </span>
+                        {step.answer && (
+                          <span
+                            className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${
+                              isYes
+                                ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
+                                : isNo
+                                ? 'border-rose-500/30 bg-rose-500/20 text-rose-300'
+                                : 'border-white/15 bg-white/5 text-zinc-300'
+                            }`}
+                          >
+                            {step.answer}
+                          </span>
+                        )}
+                      </div>
+                      {explanation && (
+                        <p className="min-w-0 break-words text-xs leading-5 text-zinc-400 sm:text-sm">
+                          {explanation}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
+
+        {post.deduction_masterclass?.pro_tip && cleanDisplayText(post.deduction_masterclass.pro_tip) && (
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-1.5">
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+              <Sparkles size={16} className="shrink-0" />
+              <span>{isPl ? 'Wskazówka strategiczna' : 'Strategy Pro-Tip'}</span>
+            </div>
+            <p className="min-w-0 break-words text-sm sm:text-base leading-relaxed text-sand-100">
+              {cleanDisplayText(post.deduction_masterclass.pro_tip)}
+            </p>
+          </div>
+        )}
+      </section>
+
       {/* Country Curiosities */}
       {curiosities && curiosities.length > 0 && (
         <section className="space-y-4">
@@ -316,7 +446,7 @@ export default function BlogPostPage() {
             <span>{isPl ? 'Dwie rzeczy warte poznania' : 'Two things worth knowing'}</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {curiosities.slice(0, 2).map((c, i) => (
+            {curiosities.map((c, i) => (
               <div key={i} className="min-w-0 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-2 sm:p-5">
                 <span className="block break-words text-base font-semibold leading-6 text-amber-300">
                   #{i + 1} &bull; {c.title}
@@ -330,7 +460,7 @@ export default function BlogPostPage() {
         </section>
       )}
       {/* Recorded daily question rankings */}
-      <details className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60">
+      <details open className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60">
         <summary className="min-h-11 cursor-pointer px-4 py-4 text-base font-semibold text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 sm:px-6">
           {isPl ? 'Jak grali inni? Statystyki i pytania' : 'How did others play? Stats and questions'}
         </summary>

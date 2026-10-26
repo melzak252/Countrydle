@@ -163,12 +163,6 @@ export default function Header() {
           <span className="text-xl font-semibold tracking-tight text-sand-100">
             Countrydle<span className="text-emerald-400">.</span>
           </span>
-          <span
-            className="hidden xl:inline text-[10px] font-mono tracking-wider uppercase text-zinc-400 border border-zinc-700/60 rounded px-1.5 py-0.5 ml-0.5 select-none"
-            title={isPl ? 'Strona w fazie aktywnego rozwoju' : 'Site is in active development'}
-          >
-            {isPl ? 'W rozwoju' : 'In Dev'}
-          </span>
         </Link>
 
         {/* Desktop Navigation */}

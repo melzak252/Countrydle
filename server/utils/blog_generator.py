@@ -125,6 +125,121 @@ def get_curator_pro_tip(country_name: str, facts: Dict[str, Any]) -> str:
         return f"Testing shared borders with {first_border} isolates the regional cluster immediately. Combine border queries with official languages to lock in {country_name}."
 
 
+def _clean_fact(value: Any, default: str = "N/A") -> str:
+    if value is None:
+        return default
+    if isinstance(value, str):
+        v = value.strip()
+        return v if v else default
+    if isinstance(value, (int, float)):
+        return str(value)
+    return default
+
+
+def build_geographic_synthesis_section(country_name: str, country_facts: Dict[str, Any]) -> str:
+    continent = _clean_fact(country_facts.get("continent"))
+    region = _clean_fact(country_facts.get("region"))
+    capital = _clean_fact(country_facts.get("capital"))
+    population = _clean_fact(country_facts.get("population"))
+    area_km2 = _clean_fact(country_facts.get("area_km2") or country_facts.get("area"))
+    languages = _clean_fact(country_facts.get("languages"))
+    water_access = _clean_fact(country_facts.get("water_access") or country_facts.get("coastline"), default="")
+    borders = _clean_fact(country_facts.get("borders"), default="")
+
+    # Paragraph 1: continental and regional placement, capital, population, land area, official languages
+    if region != "N/A" and continent != "N/A" and region.lower() != continent.lower():
+        placement_text = f"{country_name} is situated in {region} within the continent of {continent}"
+    elif continent != "N/A":
+        placement_text = f"{country_name} is situated on the continent of {continent}"
+    elif region != "N/A":
+        placement_text = f"{country_name} is situated in the region of {region}"
+    else:
+        placement_text = f"{country_name} occupies an established geographic position"
+
+    if capital != "N/A":
+        capital_text = f"with {capital} serving as its national capital and primary administrative hub"
+    else:
+        capital_text = "anchored by its central administrative capital"
+
+    if area_km2 != "N/A" and population != "N/A":
+        scale_text = f"Covering a total land area of {area_km2}, the country supports a resident population of approximately {population}."
+    elif area_km2 != "N/A":
+        scale_text = f"The country encompasses a total land area of {area_km2}."
+    elif population != "N/A":
+        scale_text = f"The nation maintains a resident population of approximately {population}."
+    else:
+        scale_text = "Its physical territory and population scale define its regional footprint."
+
+    if languages != "N/A":
+        lang_text = f"Its civic and cultural identity is framed by its official language(s): {languages}."
+    else:
+        lang_text = "Its recognized official languages provide essential cultural and regional clues during gameplay."
+
+    p1 = f"{placement_text}, {capital_text}. {scale_text} {lang_text}"
+
+    # Paragraph 2: boundary and maritime topology, classification (island / landlocked / coastal), and deduction strategy
+    water_lower = water_access.lower()
+    borders_lower = borders.lower()
+
+    if "landlocked" in water_lower:
+        border_clause = (
+            f"shares land frontiers with {borders}"
+            if borders and borders.lower() not in ("none", "n/a")
+            else "is bounded by neighboring continental nations"
+        )
+        p2 = (
+            f"In terms of boundary topology, {country_name} is a landlocked state with no direct access to open seas or oceans, "
+            f"relying on terrestrial boundaries where it {border_clause}. In Countrydle, identifying a landlocked nation provides "
+            f"exceptional deductive efficiency: confirming the absence of a coastline instantly eliminates every maritime territory and "
+            f"island state on the map. Players can subsequently zero in on {country_name} by testing shared borders with strategic "
+            f"regional anchors ({borders if borders and borders != 'N/A' else 'neighboring countries'}) and verifying continental subregions."
+        )
+    elif (
+        "island" in water_lower
+        or "island" in borders_lower
+        or borders_lower in ("none", "none (island nation)", "no land borders")
+        or (not borders and "island" in water_lower)
+    ):
+        border_clause = (
+            f"shares land boundaries with {borders}"
+            if borders and borders.lower() not in ("none", "none (island nation)", "n/a")
+            else "has zero terrestrial land borders"
+        )
+        water_clause = (
+            water_access
+            if water_access and water_access.lower() not in ("island nation", "n/a")
+            else "open maritime basins"
+        )
+        p2 = (
+            f"In terms of boundary topology, {country_name} is an island nation that {border_clause}, "
+            f"surrounded by {water_clause}. In Countrydle, confirming an island nation's insular geography "
+            f"is a critical deductive turning point: asking early whether the secret country shares any terrestrial "
+            f"borders immediately eliminates all mainland continental states. Solvers can then systematically filter "
+            f"remaining candidates by querying specific oceanic basins ({water_clause}), hemispheric coordinates, "
+            f"and regional archipelago traits to isolate {country_name} with minimal guesses."
+        )
+    else:
+        water_clause = (
+            f"direct coastline along the {water_access}"
+            if water_access and water_access.lower() != "n/a"
+            else "maritime coastline access"
+        )
+        border_clause = (
+            f"shares land borders with {borders}"
+            if borders and borders.lower() not in ("none", "n/a")
+            else "maintains sovereign terrestrial boundaries"
+        )
+        p2 = (
+            f"In terms of boundary topology, {country_name} is a coastal country featuring {water_clause} while it {border_clause}. "
+            f"In Countrydle, this coastal and bordered configuration invites a powerful two-stage elimination strategy: establishing "
+            f"that the mystery nation touches open water eliminates all landlocked countries, while subsequent questions targeting "
+            f"adjacent seas ({water_access if water_access and water_access != 'N/A' else 'coastal waters'}) or specific neighboring borders "
+            f"({borders if borders and borders != 'N/A' else 'neighboring states'}) rapidly isolate {country_name} from other nations in the region."
+        )
+
+    return f"### Geographic & Strategic Profile\n{p1}\n\n{p2}"
+
+
 def extract_clean_curiosities(country_name: str, wiki_fragments: List[str], facts: Dict[str, Any]) -> List[Dict[str, str]]:
     sentences = []
     banned_words = [
@@ -304,6 +419,7 @@ def _assemble_blog_post_payload(
 ) -> Dict[str, Any]:
     steps = get_deduction_steps(country_name, actual_questions)
     pro_tip = get_curator_pro_tip(country_name, country_facts)
+    geo_profile = build_geographic_synthesis_section(country_name, country_facts)
 
     step_lines = "\n".join([
         f"{s['step']}. **[{s['answer']}] \"{s['question']}\"** — {s['explanation']}"
@@ -328,6 +444,8 @@ def _assemble_blog_post_payload(
 - **Land Area**: {country_facts.get('area_km2', 'N/A')} ({country_facts.get('water_access', 'N/A')})
 - **Bordering Neighbors**: {country_facts.get('borders', 'N/A')}
 - **Official Languages**: {country_facts.get('languages', 'N/A')}
+
+{geo_profile}
 
 ### Two Things Worth Knowing
 {curiosity_lines}
@@ -428,6 +546,7 @@ def _generate_fallback_template(
     steps = get_deduction_steps(country_name, actual_questions)
     pro_tip = get_curator_pro_tip(country_name, country_facts)
     curiosities = extract_clean_curiosities(country_name, wiki_fragments, country_facts)
+    geo_profile = build_geographic_synthesis_section(country_name, country_facts)
 
     step_lines = "\n".join([
         f"{s['step']}. **[{s['answer']}] \"{s['question']}\"** — {s['explanation']}"
@@ -451,6 +570,8 @@ def _generate_fallback_template(
 - **Land Area**: {country_facts.get('area_km2', 'N/A')} ({country_facts.get('water_access', 'N/A')})
 - **Bordering Neighbors**: {country_facts.get('borders', 'N/A')}
 - **Official Languages**: {country_facts.get('languages', 'N/A')}
+
+{geo_profile}
 
 ### Two Things Worth Knowing
 {curiosity_lines}

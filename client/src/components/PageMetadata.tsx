@@ -55,6 +55,7 @@ const publicPages: Record<string, RouteMetadata> = {
   '/patch-notes': {
     title: 'Countrydle Patch Notes — Game Updates and Fixes',
     description: 'Read Countrydle’s published release notes covering game improvements, new features and fixes.',
+    noindex: true,
   },
 };
 
@@ -123,7 +124,7 @@ function routeMetadata(path: string): RouteMetadata {
     title: `${utility[0]} | Countrydle`,
     description: utility[1],
     canonicalPath: modeGuidePaths[path],
-    noindex: path === '/login' || path === '/register' || path === '/setup-profile' || path === '/admin' || path === '/friends' || path === '/archive' || path === '/leaderboard',
+    noindex: true,
   };
   if (/^\/profile\/[^/]+$/.test(path)) return {
     title: 'Player Profile | Countrydle', description: 'View a Countrydle player profile.', noindex: true,
