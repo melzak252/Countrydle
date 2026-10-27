@@ -16,6 +16,7 @@ import WojewodztwaGamePage from './pages/WojewodztwaGamePage';
 import ContinentalGamePage from './pages/ContinentalGamePage';
 import FlagdlePage from './pages/FlagdlePage';
 import FlagShadesPage from './pages/FlagShadesPage';
+import PowiatHeraldryPage from './pages/PowiatHeraldryPage';
 import BorderHopPage from './pages/BorderHopPage';
 import DuelPage from './pages/DuelPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -138,6 +139,7 @@ function App() {
           <Route path="americas" element={<ContinentalGamePage continent="americas" />} />
           <Route path="flagdle" element={<FlagdlePage />} />
           <Route path="flag-shades" element={<FlagShadesPage />} />
+          <Route path="herby-powiatow" element={<PowiatHeraldryPage />} />
           <Route path="border-hop" element={<BorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />

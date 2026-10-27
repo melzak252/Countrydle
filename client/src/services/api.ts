@@ -21,6 +21,9 @@ import type {
   LeaderboardPeriod,
   LiveFeedData,
   PatchNotesResponse,
+  PowiatHeraldryChallenge,
+  PowiatHeraldryGuessResult,
+  PowiatHeraldryItem,
   Question,
   QuestionTestEntity,
   QuestionTestMode,
@@ -348,6 +351,27 @@ export const flagShadesService = {
   getCountries: async (): Promise<FlagdleCountry[]> => {
     const response = await api.get('/flagdle/countries');
     return response.data.filter((country: FlagdleCountry) => isCountryAvailable(country.name));
+  },
+};
+
+export const powiatHeraldryService = {
+  getChallenge: async (params?: { seed?: string; token?: string }): Promise<PowiatHeraldryChallenge> => {
+    const response = await api.get<PowiatHeraldryChallenge>('/powiatdle/heraldry/challenge', {
+      params,
+    });
+    return response.data;
+  },
+  submitGuess: async (data: {
+    token: string;
+    guess: string;
+    powiat_id?: number;
+  }): Promise<PowiatHeraldryGuessResult> => {
+    const response = await api.post<PowiatHeraldryGuessResult>('/powiatdle/heraldry/guess', data);
+    return response.data;
+  },
+  getCounties: async (): Promise<PowiatHeraldryItem[]> => {
+    const response = await api.get<PowiatHeraldryItem[]>('/powiatdle/heraldry/counties');
+    return response.data;
   },
 };
 

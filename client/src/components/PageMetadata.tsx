@@ -89,6 +89,7 @@ const utilityPages: Record<string, [string, string]> = {
   '/americas': ['Play Today’s Country of the Americas', 'Play today’s country puzzle for the Americas.'],
   '/flagdle': ['Play Today’s Flag', 'Play today’s Flagdle puzzle.'],
   '/flag-shades': ['Flag Shades — Grayscale Flag Challenge', 'Deduce the mystery national flag in shades of grey and unlock a single color hint after 3 guesses.'],
+  '/herby-powiatow': ['County Coats of Arms — Herby Powiatów', 'Deduce the Polish county by its coat of arms with distance feedback and registration plate hints.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
 const modeGuidePaths: Record<string, string> = {

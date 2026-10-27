@@ -51,6 +51,7 @@ export default function Header() {
       items: [
         { path: '/flagdle', name: 'Flagdle', badge: isPl ? '12 kart' : '12 Cards' },
         { path: '/flag-shades', name: isPl ? 'Odcienie Flagi' : 'Flag Shades', badge: isPl ? 'Szarości' : 'Grayscale' },
+        { path: '/herby-powiatow', name: isPl ? 'Herby Powiatów' : 'County Coats of Arms', badge: isPl ? 'Herby' : 'Heraldry' },
       ],
     },
     {

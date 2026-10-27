@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Compass, Flag, Globe2, Map, MapPin, Sun, Users } from 'lucide-react';
+import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Compass, Flag, Globe2, Map, MapPin, Shield, Sun, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import GuestProgress from '../components/GuestProgress';
 import SpinningGlobe from '../components/SpinningGlobe';
@@ -92,6 +92,9 @@ export default function HomePage() {
         { id: 'flag-shades', title: isPl ? 'Odcienie Flagi' : 'Flag Shades', region: isPl ? 'Flagi w szarościach' : 'Grayscale flags',
           description: isPl ? 'Cała flaga w odcieniach szarości. Po 3 próbach odkryj jeden prawdziwy kolor (≥10% flagi).' : 'Deduce the flag in shades of grey. After 3 guesses, unlock a true color hint (≥10% of the flag).',
           path: '/flag-shades', icon: Flag, questions: null, guesses: 8 },
+        { id: 'herby-powiatow', title: isPl ? 'Herby Powiatów' : 'County Coats of Arms', region: isPl ? 'Herby Polski' : 'Polish coats of arms',
+          description: isPl ? 'Rozpoznaj polski powiat po herbie. Po 5 błędnych próbach poznasz wyróżnik tablic rejestracyjnych.' : 'Identify Polish counties by their coat of arms. Reveal registration plate prefixes after 5 wrong guesses.',
+          path: '/herby-powiatow', icon: Shield, questions: null, guesses: 8 },
       ],
     },
     {

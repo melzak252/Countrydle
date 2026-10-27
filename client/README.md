@@ -8,6 +8,13 @@ private routes retain the SPA shell. Image builds need no backend credentials or
 content service. Existing Bun tests cover gameplay, publisher metadata, content
 parsing, editorial conflicts and advertising/consent decisions.
 
+## Symbols category modes
+
+The `Symbols` category provides deductive visual puzzle game modes:
+
+- **Flag Shades** (`/flag-shades`): Players identify a mystery national flag rendered entirely in perceptual luminance grayscale within 8 guesses. After 3 guesses, an optional chromatic color hint unlocks that reveals one major color family covering at least 10% of the flag surface. Players receive great-circle distance (km) and compass bearing arrow feedback after each guess.
+- **Herby Powiatów / County Coats of Arms** (`/herby-powiatow`): Players deduce one of Poland's 380 counties (land counties and cities with county rights) from its official heraldic coat of arms in vector SVG format (sourced from Wikimedia Commons and Wikidata). Each guess returns centroid distance in kilometers, compass bearing, and voivodeship matching (`🟩` same voivodeship vs `⬛` different). After the 5th wrong guess, the county's official Polish registration plate prefix codes (e.g. `PO · PZ`, `WA`, `KRA`) are automatically revealed in a prominent Polish license-plate styled badge (`EU / PL`). Daily mode restores authoritative state via server token verification (`powiat_heraldry_daily_token_${date}`), and challenge mode supports on-demand randomized games.
+
 ## Public mobile layout
 
 Below 1280px, navigation uses a compact header and a native modal dialog instead

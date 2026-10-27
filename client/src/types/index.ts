@@ -285,6 +285,64 @@ export interface FlagShadesGuessResult {
   target_country?: { id: number; name: string } | null;
 }
 
+export interface PowiatHeraldrySourceAttribution {
+  title?: string | null;
+  artist?: string | null;
+  author?: string | null;
+  license?: string | null;
+  source_url?: string | null;
+  description?: string | null;
+}
+
+export interface PowiatHeraldryTarget {
+  id: number;
+  name: string;
+  voivodeship: string;
+}
+
+export interface PowiatHeraldryItem {
+  id: number;
+  name: string;
+  voivodeship: string;
+  is_city_county: boolean;
+}
+
+export interface PowiatHeraldryGuessResult {
+  answer: boolean;
+  guess: string;
+  powiat_id: number;
+  voivodeship: string;
+  distance_km: number | null;
+  bearing_degrees: number | null;
+  bearing_direction: string | null;
+  bearing_arrow: string | null;
+  same_voivodeship: boolean;
+  guesses_made: number;
+  remaining_guesses: number;
+  is_game_over: boolean;
+  won: boolean;
+  registration_plates?: string[] | null;
+  target_powiat?: PowiatHeraldryTarget | null;
+  source_attribution?: PowiatHeraldrySourceAttribution | null;
+  token?: string;
+}
+
+export interface PowiatHeraldryChallenge {
+  seed: string;
+  is_daily: boolean;
+  date: string;
+  max_guesses: number;
+  hint_unlock_guesses: number;
+  token: string;
+  coat_asset_url: string;
+  source_attribution?: PowiatHeraldrySourceAttribution | null;
+  guesses?: PowiatHeraldryGuessResult[];
+  is_game_over?: boolean;
+  won?: boolean;
+  registration_plates?: string[] | null;
+  target_powiat?: PowiatHeraldryTarget | null;
+}
+
 export interface PatchNote {
   id: number;
   version: string;

@@ -43,6 +43,9 @@ from utils.geo import enhance_guess_with_hint
 
 
 router = APIRouter(prefix="/powiatdle")
+from powiatdle.heraldry import router as heraldry_router
+
+router.include_router(heraldry_router)
 
 POWIATDLE_CONFIG = GameConfig(max_questions=15, max_guesses=3)
 game_rules = GameRules(POWIATDLE_CONFIG)
