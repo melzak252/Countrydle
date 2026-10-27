@@ -18,6 +18,18 @@ import { blogListSchema, type BlogSummary } from '../blogContent';
 const continents = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
 const difficulties = ['all', 'Easy', 'Medium', 'Challenging'];
 type JournalView = { page: number; search: string; continent: string; difficulty: string; sort: 'newest' | 'solvers' | 'fastest' };
+function formatBlogDate(dateStr: string, isPl: boolean): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!match) return dateStr;
+  const utcDate = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(utcDate.getTime())) return dateStr;
+  return new Intl.DateTimeFormat(isPl ? 'pl-PL' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(utcDate);
+}
 function requestedView(): JournalView {
   const params = new URLSearchParams(window.__COUNTRYDLE_PRERENDER__ ? '' : window.location.hash.slice(1));
   const page = Number(params.get('page') || 1);
@@ -255,9 +267,8 @@ export default function BlogListPage() {
                     </Link>
                   </h2>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
-                  <p className="mt-3 text-xs text-zinc-400">{featuredPost.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · {featuredPost.created_at ? <>Published <time dateTime={featuredPost.created_at}>{featuredPost.created_at}</time></> : 'Publication timestamp unavailable'} · Updated <time dateTime={featuredPost.updated_at}>{featuredPost.updated_at}</time></p>
                   <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
-                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.date}</span></span>
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><time dateTime={featuredPost.date} className="min-w-0 break-words">{formatBlogDate(featuredPost.date, isPl)}</time></span>
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Clock size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.reading_time_minutes} {isPl ? 'min czytania' : 'min read'}</span></span>
                     {featuredPost.continent && (
                       <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/20">
@@ -315,9 +326,8 @@ export default function BlogListPage() {
                           <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
                         </h3>
                         <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
-                        <p className="mt-3 text-xs text-zinc-400">{post.editorial_status === 'reviewed' ? 'Editorially reviewed' : 'Not yet editorially reviewed'} · {post.created_at ? <>Published <time dateTime={post.created_at}>{post.created_at}</time></> : 'Publication timestamp unavailable'} · Updated <time dateTime={post.updated_at}>{post.updated_at}</time></p>
                         <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
-                          <span>{post.date}</span>
+                          <time dateTime={post.date}>{formatBlogDate(post.date, isPl)}</time>
                           <span>{post.reading_time_minutes} min</span>
                           {post.difficulty && (
                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${

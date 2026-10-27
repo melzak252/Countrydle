@@ -20,6 +20,19 @@ import { usePageMetadata } from '../lib/pageMetadata';
 import { blogPostSchema, cleanDisplayText, safeSourceUrl, type BlogPost } from '../blogContent';
 
 
+function formatBlogDate(dateStr: string, isPl: boolean): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!match) return dateStr;
+  const utcDate = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(utcDate.getTime())) return dateStr;
+  return new Intl.DateTimeFormat(isPl ? 'pl-PL' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(utcDate);
+}
+
 function cleanBorderList(bordersStr?: string | number): string {
   if (!bordersStr) return '';
   const parts = String(bordersStr).split(',').map((b) => b.trim()).filter(Boolean);
@@ -190,9 +203,9 @@ export default function BlogPostPage() {
           <span>{isPl ? 'Wszystkie podsumowania' : 'All Solutions'}</span>
         </Link>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <span className="min-w-0 break-words text-zinc-500 font-mono">
-            {post.date}
-          </span>
+          <time dateTime={post.date} className="min-w-0 break-words text-zinc-500 font-mono">
+            {formatBlogDate(post.date, isPl)}
+          </time>
           <button
             type="button"
             onClick={handleShare}
@@ -224,7 +237,7 @@ export default function BlogPostPage() {
           <div className="min-w-0 space-y-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-emerald-400">
-                {isPl ? 'Rozwiązanie z poprzedniego dnia' : 'Past-day solution'} · {post.date}
+                {isPl ? 'Rozwiązanie z poprzedniego dnia' : 'Past-day solution'} · <time dateTime={post.date}>{formatBlogDate(post.date, isPl)}</time>
               </span>
               <span className="text-zinc-600">&bull;</span>
               {post.continent && (
@@ -657,7 +670,7 @@ export default function BlogPostPage() {
                   </h4>
                 </div>
                 <div className="mt-3 pt-2 border-t border-white/5 flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
-                  <span>{rp.date}</span>
+                  <time dateTime={rp.date}>{formatBlogDate(rp.date, isPl)}</time>
                   <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </div>
               </Link>
