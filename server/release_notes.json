@@ -1,5 +1,5 @@
 {
-  "version": "1.36.0",
-  "title": "Polish County Coats of Arms Grid Quiz and Geography Atlas",
-  "body": "- Added the 380 Polish County Coats of Arms Grid Quiz (/quiz-herbow) with voivodeship grouping, live stopwatch, instant client-side auto-accept typing, and Fullscreen Inspector.\n- Added the interactive Polish Counties & Coats of Arms Atlas on /explore with voivodeship and county type filters.\n- Added SVG normalization for legacy vector coats of arms missing xmlns and viewBox attributes.\n- Added 12-card tile covering and progressive reveal to Flag Shades."
+  "version": "1.36.1",
+  "title": "Fix daily coat of arms frame dimensions and loading state",
+  "body": "- Fixed daily heraldic shield pedestal collapsing into a thin strip by enforcing solid aspect-[4/5] dimensions during loading.\n- Restored image onLoad handler on Herby Powiatów so coats of arms render immediately upon load."
 }
