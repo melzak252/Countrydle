@@ -16,31 +16,19 @@ export interface GrayscaleFlagCanvasProps {
 
 // 12 grid tiles (3 rows x 4 columns) — same unmask progression as Flagdle
 const UNMASK_ORDER = [0, 11, 5, 6, 3, 8, 1, 10, 2, 9, 4, 7];
-/**
- * Appends fit=grid to flagUrl during gameplay to fill 3:2 canvas without spoilers,
- * or removes fit to show natural proportions when game is over.
- */
-function formatFlagUrl(rawUrl: string, isGameOver: boolean): string {
+function formatFlagUrl(rawUrl: string): string {
   try {
     const parsed = new URL(
       rawUrl,
       typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
     );
-    if (!isGameOver) {
-      parsed.searchParams.set('fit', 'grid');
-    } else {
-      parsed.searchParams.delete('fit');
-    }
+    parsed.searchParams.delete('fit');
     if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
       return `${parsed.pathname}${parsed.search}${parsed.hash}`;
     }
     return parsed.toString();
   } catch {
-    if (!isGameOver) {
-      const sep = rawUrl.includes('?') ? '&' : '?';
-      return `${rawUrl}${sep}fit=grid`;
-    }
-    return rawUrl;
+    return rawUrl.replace(/[?&]fit=grid/, '');
   }
 }
 
@@ -110,7 +98,7 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    const targetUrl = formatFlagUrl(flagUrl, isGameOver);
+    const targetUrl = formatFlagUrl(flagUrl);
 
     img.onload = () => {
       if (cancelled) return;
@@ -127,37 +115,32 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
 
         offCtx.clearRect(0, 0, 900, 600);
 
-        if (!isGameOver) {
-          // fit=grid flag fills the 3:2 canvas
-          offCtx.drawImage(img, 0, 0, 900, 600);
-        } else {
-          // Natural proportions: preserve aspect ratio and center on 900x600 canvas
-          const nw = img.naturalWidth || img.width;
-          const nh = img.naturalHeight || img.height;
-          if (nw > 0 && nh > 0) {
-            const imgAspect = nw / nh;
-            const canvasAspect = 900 / 600;
-            let dw = 900;
-            let dh = 600;
-            let dx = 0;
-            let dy = 0;
-            if (Math.abs(imgAspect - canvasAspect) > 0.01) {
-              if (imgAspect > canvasAspect) {
-                dw = 900;
-                dh = 900 / imgAspect;
-                dy = (600 - dh) / 2;
-              } else {
-                dh = 600;
-                dw = 600 * imgAspect;
-                dx = (900 - dw) / 2;
-              }
-              offCtx.drawImage(img, dx, dy, dw, dh);
+        // Always preserve natural proportions and center on 900x600 canvas without squashing width
+        const nw = img.naturalWidth || img.width;
+        const nh = img.naturalHeight || img.height;
+        if (nw > 0 && nh > 0) {
+          const imgAspect = nw / nh;
+          const canvasAspect = 900 / 600;
+          let dw = 900;
+          let dh = 600;
+          let dx = 0;
+          let dy = 0;
+          if (Math.abs(imgAspect - canvasAspect) > 0.01) {
+            if (imgAspect > canvasAspect) {
+              dw = 900;
+              dh = 900 / imgAspect;
+              dy = (600 - dh) / 2;
             } else {
-              offCtx.drawImage(img, 0, 0, 900, 600);
+              dh = 600;
+              dw = 600 * imgAspect;
+              dx = (900 - dw) / 2;
             }
+            offCtx.drawImage(img, dx, dy, dw, dh);
           } else {
             offCtx.drawImage(img, 0, 0, 900, 600);
           }
+        } else {
+          offCtx.drawImage(img, 0, 0, 900, 600);
         }
 
         const raw = offCtx.getImageData(0, 0, 900, 600);
