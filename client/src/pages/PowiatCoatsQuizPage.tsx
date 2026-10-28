@@ -736,12 +736,22 @@ export default function PowiatCoatsQuizPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-6 sm:p-10 transition-colors duration-200"
             >
-              {!modalImgLoaded && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 text-emerald-400 font-mono text-xs">
-                  <Loader2 className="animate-spin text-emerald-400" size={32} />
-                  <span>{isPl ? 'Ładowanie herbu...' : 'Loading coat of arms...'}</span>
-                </div>
-              )}
+              {/* Instant Cached Preview Image (Displays immediately with 0ms wait!) */}
+              <img
+                src={`/coats/${inspectedPowiat.id}.png`}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  height: `${Math.round(68 * inspectZoom)}vh`,
+                  maxHeight: `${Math.round(68 * inspectZoom)}vh`,
+                  width: 'auto',
+                }}
+                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
+                  modalImgLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}
+              />
+
+              {/* High-Resolution Vector SVG (Fades in over preview once loaded in background) */}
               <img
                 src={`/api/explore/powiats/${inspectedPowiat.id}/coat?v=2`}
                 alt={
@@ -750,21 +760,15 @@ export default function PowiatCoatsQuizPage() {
                     : 'Coat of arms'
                 }
                 onLoad={() => setModalImgLoaded(true)}
-                onError={(e) => {
-                  setModalImgLoaded(true);
-                  const el = e.currentTarget as HTMLImageElement;
-                  if (!el.src.includes('/coats/')) {
-                    el.src = `/coats/${inspectedPowiat.id}.png`;
-                  }
-                }}
+                onError={() => setModalImgLoaded(true)}
                 style={{
                   height: `${Math.round(68 * inspectZoom)}vh`,
                   maxHeight: `${Math.round(68 * inspectZoom)}vh`,
                   width: 'auto',
                 }}
-                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-all duration-200 ${
+                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
                   modalImgLoaded ? 'opacity-100' : 'opacity-0'
-                }`}
+                } absolute`}
               />
             </div>
           </div>

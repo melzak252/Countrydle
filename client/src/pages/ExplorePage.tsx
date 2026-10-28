@@ -1969,11 +1969,12 @@ export default function ExplorePage() {
           aria-modal="true"
           aria-label={inspectedAsset.title}
           onClick={() => setInspectedAsset(null)}
-          className="fixed inset-0 z-[2200] flex flex-col items-center justify-between bg-black/92 backdrop-blur-md p-3 sm:p-6 select-none"
+          className="fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
         >
+          {/* Top Toolbar */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-4xl flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/15 bg-obsidian-900/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-xl"
+            className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6 shrink-0"
           >
             <div className="flex items-center gap-2 min-w-0">
               <Shield size={16} className="text-emerald-400 shrink-0" />
@@ -2035,24 +2036,25 @@ export default function ExplorePage() {
             </div>
           </div>
 
+          {/* Centered Canvas */}
           <div
             onClick={() => setInspectedAsset(null)}
-            className="flex-1 w-full flex items-center justify-center overflow-auto my-3"
+            className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-8"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className={`rounded-2xl border p-6 sm:p-10 shadow-2xl transition-colors duration-200 flex items-center justify-center ${
+              className={`relative flex items-center justify-center rounded-2xl border p-6 sm:p-10 shadow-2xl transition-colors duration-200 ${
                 lightCoatsBackdrop
-                  ? 'bg-sand-100 border-sand-300'
-                  : 'bg-obsidian-900/95 border-white/15'
+                  ? 'border-zinc-300 bg-stone-100 shadow-black/50'
+                  : 'border-white/15 bg-obsidian-900/95 shadow-black/80'
               }`}
             >
               <img
                 src={inspectedAsset.url}
                 alt={inspectedAsset.title}
                 style={{
-                  height: `${Math.round(58 * inspectZoom)}vh`,
-                  maxHeight: `${Math.round(78 * inspectZoom)}vh`,
+                  height: `${Math.round(68 * inspectZoom)}vh`,
+                  maxHeight: `${Math.round(68 * inspectZoom)}vh`,
                   width: 'auto',
                 }}
                 className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-all duration-150"
