@@ -622,7 +622,7 @@ export default function PowiatHeraldryPage() {
                 ? 'Kliknij, aby powiększyć herb na pełny ekran'
                 : 'Click to inspect coat of arms in fullscreen'
             }
-            className={`group relative aspect-[4/5] max-h-80 w-auto flex items-center justify-center p-3 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all ${
+            className={`group relative h-72 sm:h-80 aspect-[4/5] flex items-center justify-center p-3 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
               resolvedCoatUrl && !imageError && !imageLoading
                 ? 'cursor-zoom-in hover:border-emerald-500/50 hover:shadow-emerald-950/30'
                 : ''
@@ -644,7 +644,7 @@ export default function PowiatHeraldryPage() {
                     ? 'Herb polskiego powiatu'
                     : 'Polish county coat of arms'
                 }
-                className={`max-h-full max-w-full object-contain filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.02] ${
+                className={`h-full w-full object-contain filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.02] ${
                   imageLoading ? 'opacity-0' : 'opacity-100'
                 }`}
                 onLoad={() => setImageLoading(false)}
