@@ -17,6 +17,7 @@ import ContinentalGamePage from './pages/ContinentalGamePage';
 import FlagdlePage from './pages/FlagdlePage';
 import FlagShadesPage from './pages/FlagShadesPage';
 import PowiatHeraldryPage from './pages/PowiatHeraldryPage';
+import PowiatCoatsQuizPage from './pages/PowiatCoatsQuizPage';
 import BorderHopPage from './pages/BorderHopPage';
 import DuelPage from './pages/DuelPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -140,6 +141,8 @@ function App() {
           <Route path="flagdle" element={<FlagdlePage />} />
           <Route path="flag-shades" element={<FlagShadesPage />} />
           <Route path="herby-powiatow" element={<PowiatHeraldryPage />} />
+          <Route path="quiz-herbow" element={<PowiatCoatsQuizPage />} />
+          <Route path="coats-of-arms-quiz" element={<PowiatCoatsQuizPage />} />
           <Route path="border-hop" element={<BorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />

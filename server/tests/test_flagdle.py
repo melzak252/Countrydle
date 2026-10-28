@@ -567,7 +567,7 @@ async def test_flagdle_shades_challenge_endpoint(async_client):
         data_daily = res_daily.json()
         assert data_daily["is_daily"] is True
         assert data_daily["seed"].startswith("daily-")
-        assert data_daily["max_guesses"] == 8
+        assert data_daily["max_guesses"] == 12
         assert data_daily["hint_unlock_guesses"] == 3
         assert "/flagdle/shades/flag-asset?token=" in data_daily["flag_asset_url"]
 
@@ -661,7 +661,7 @@ async def test_flagdle_shades_guess_endpoint(async_client):
                 "token": token,
                 "guess": "Germany",
                 "country_id": 2,
-                "guesses_made": 8,
+                "guesses_made": 12,
             },
         )
         assert res_loss.status_code == 200

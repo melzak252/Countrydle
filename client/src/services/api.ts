@@ -497,8 +497,17 @@ export const exploreService = {
     const response = await api.get(`/explore/voivodeships/${encodeURIComponent(name)}`);
     return response.data;
   },
-  getPowiatDetail: async (name: string) => {
-    const response = await api.get(`/explore/powiats/${encodeURIComponent(name)}`);
+  getPowiats: async (params?: { search?: string; voivodeship?: string; county_type?: string }) => {
+    const p = new URLSearchParams();
+    if (params?.search) p.append('search', params.search);
+    if (params?.voivodeship) p.append('voivodeship', params.voivodeship);
+    if (params?.county_type) p.append('county_type', params.county_type);
+    const qs = p.toString();
+    const response = await api.get(`/explore/powiats${qs ? `?${qs}` : ''}`);
+    return response.data;
+  },
+  getPowiatDetail: async (nameOrId: string | number) => {
+    const response = await api.get(`/explore/powiats/${encodeURIComponent(String(nameOrId))}`);
     return response.data;
   },
   getBorderHopChallenge: async (params?: { mode?: string; target?: string; origin?: string; seed?: string }) => {

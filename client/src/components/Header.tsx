@@ -52,6 +52,7 @@ export default function Header() {
         { path: '/flagdle', name: 'Flagdle', badge: isPl ? '12 kart' : '12 Cards' },
         { path: '/flag-shades', name: isPl ? 'Odcienie Flagi' : 'Flag Shades', badge: isPl ? 'Szarości' : 'Grayscale' },
         { path: '/herby-powiatow', name: isPl ? 'Herby Powiatów' : 'County Coats of Arms', badge: isPl ? 'Herby' : 'Heraldry' },
+        { path: '/quiz-herbow', name: isPl ? 'Quiz 380 Herbów' : '380 Coats Quiz', badge: 'JetPunk' },
       ],
     },
     {

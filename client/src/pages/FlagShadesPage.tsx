@@ -382,7 +382,7 @@ export default function FlagShadesPage() {
     );
   };
 
-  const maxGuesses = challenge?.max_guesses || 8;
+  const maxGuesses = challenge?.max_guesses || 12;
   const hintUnlockThreshold = challenge?.hint_unlock_guesses || 3;
   const canUnlockHint = !colorHintUsed && !isGameOver && guesses.length >= hintUnlockThreshold;
   const hintLocked = !colorHintUsed && !isGameOver && guesses.length < hintUnlockThreshold;
@@ -559,6 +559,7 @@ export default function FlagShadesPage() {
         {/* 1. Grayscale Flag Canvas Container */}
         <section aria-label={isPl ? 'Wizualizacja flagi w skali szarości' : 'Grayscale Flag Display'}>
           <GrayscaleFlagCanvas
+            stage={guesses.length + 1}
             flagUrl={resolvedFlagUrl}
             revealColorHint={colorHintUsed}
             isGameOver={isGameOver}

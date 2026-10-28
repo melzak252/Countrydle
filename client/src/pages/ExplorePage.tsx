@@ -7,18 +7,62 @@ import {
   ChevronRight, 
   X,
   Compass,
-  BookOpen
+  BookOpen,
+  Shield,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  Sun,
+  Moon,
+  MapPin,
+  Layers
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AdSenseUnit from '../components/AdSenseUnit';
 import { exploreService } from '../services/api';
 import { setPageEditorialEligibility } from '../advertising';
 
-type TabType = 'modes' | 'countries' | 'us_states' | 'voivodeships';
+type TabType = 'modes' | 'powiats' | 'voivodeships' | 'countries' | 'us_states';
+type CountyTypeFilter = 'all' | 'land' | 'city';
 
 type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
 const GUIDE_IDS: Record<string, string> = { countrydle: 'countrydle', us_statedle: 'us-states', wojewodztwodle: 'wojewodztwa', powiatdle: 'powiaty', flagdle: 'flagdle', europe: 'europe', asia: 'asia', africa: 'africa', americas: 'americas' };
 
+function foldPolish(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/ą/g, 'a')
+    .replace(/ć/g, 'c')
+    .replace(/ę/g, 'e')
+    .replace(/ł/g, 'l')
+    .replace(/ń/g, 'n')
+    .replace(/ó/g, 'o')
+    .replace(/ś/g, 's')
+    .replace(/ź/g, 'z')
+    .replace(/ż/g, 'z');
+}
+
+function MiniLicensePlate({ plates }: { plates: string[] }) {
+  if (!plates || plates.length === 0) return null;
+  return (
+    <div className="inline-flex flex-wrap items-center gap-1">
+      {plates.map((plate) => (
+        <span
+          key={plate}
+          className="inline-flex items-stretch overflow-hidden rounded-[3px] border border-zinc-400 bg-white text-obsidian-950 shadow-xs font-mono"
+          title={`Tablica rejestracyjna: ${plate}`}
+        >
+          <span className="flex flex-col items-center justify-center bg-[#003399] px-1 py-0.5 text-[7px] font-bold leading-none text-white">
+            PL
+          </span>
+          <span className="px-1.5 py-0.5 text-[11px] font-extrabold tracking-wider text-zinc-950">
+            {plate}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
 function initialView() {
   return new URLSearchParams(window.__COUNTRYDLE_PRERENDER__ ? '' : window.location.hash.slice(1));
 }
@@ -38,30 +82,51 @@ export default function ExplorePage() {
 
   const [activeTab, updateActiveTab] = useState<TabType>(() => {
     const tab = initialView().get('tab');
-    return tab === 'countries' || tab === 'us_states' || tab === 'voivodeships' ? tab : 'modes';
+    return tab === 'powiats' || tab === 'countries' || tab === 'us_states' || tab === 'voivodeships' ? tab : 'modes';
   });
   const [search, updateSearch] = useState(() => initialView().get('q') || '');
   const [selectedRegion, updateSelectedRegion] = useState(() => initialView().get('region') || 'all');
-  const setActiveTab = (tab: TabType) => { rememberView('tab', tab === 'modes' ? '' : tab); updateActiveTab(tab); };
-  const setSearch = (value: string) => { rememberView('q', value); updateSearch(value); };
-  const setSelectedRegion = (value: string) => { rememberView('region', value === 'all' ? '' : value); updateSelectedRegion(value); };
+  const [countyTypeFilter, setCountyTypeFilter] = useState<CountyTypeFilter>('all');
+  const [powiatPage, setPowiatPage] = useState<number>(1);
+  const [lightCoatsBackdrop, setLightCoatsBackdrop] = useState<boolean>(false);
+
+  const setActiveTab = (tab: TabType) => { rememberView('tab', tab === 'modes' ? '' : tab); updateActiveTab(tab); setPowiatPage(1); };
+  const setSearch = (value: string) => { rememberView('q', value); updateSearch(value); setPowiatPage(1); };
+  const setSelectedRegion = (value: string) => { rememberView('region', value === 'all' ? '' : value); updateSelectedRegion(value); setPowiatPage(1); };
 
   const [modes, setModes] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
   const [usStates, setUsStates] = useState<any[]>([]);
   const [voivodeships, setVoivodeships] = useState<any[]>([]);
-  const [loadStatus, setLoadStatus] = useState<Record<TabType, LoadStatus>>({ modes: 'idle', countries: 'idle', us_states: 'idle', voivodeships: 'idle' });
+  const [powiats, setPowiats] = useState<any[]>([]);
+  const [loadStatus, setLoadStatus] = useState<Record<TabType, LoadStatus>>({
+    modes: 'idle',
+    powiats: 'idle',
+    voivodeships: 'idle',
+    countries: 'idle',
+    us_states: 'idle',
+  });
 
   // Selected Entity Modal
   const [selectedCountry, updateSelectedCountry] = useState<any | null>(null);
   const [selectedState, updateSelectedState] = useState<any | null>(null);
   const [selectedVoivodeship, updateSelectedVoivodeship] = useState<any | null>(null);
+  const [selectedPowiat, updateSelectedPowiat] = useState<any | null>(null);
+
+  // Fullscreen Coat of Arms / Flag Lightbox
+  const [inspectedAsset, setInspectedAsset] = useState<{
+    url: string;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
+  const [inspectZoom, setInspectZoom] = useState<number>(1);
+
   const setSelectedCountry = (value: typeof selectedCountry) => { if (!value) rememberView('detail', ''); updateSelectedCountry(value); };
   const setSelectedState = (value: typeof selectedState) => { if (!value) rememberView('detail', ''); updateSelectedState(value); };
   const setSelectedVoivodeship = (value: typeof selectedVoivodeship) => { if (!value) rememberView('detail', ''); updateSelectedVoivodeship(value); };
+  const setSelectedPowiat = (value: typeof selectedPowiat) => { if (!value) rememberView('detail', ''); updateSelectedPowiat(value); };
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
-
   useEffect(() => {
     let cancelled = false;
     setLoadStatus(prev => ({ ...prev, modes: 'loading' }));
@@ -78,25 +143,39 @@ export default function ExplorePage() {
 
   useEffect(() => {
     if (activeTab === 'modes') return;
-    const existingCount = activeTab === 'countries' ? countries.length : activeTab === 'us_states' ? usStates.length : voivodeships.length;
+    const existingCount =
+      activeTab === 'countries'
+        ? countries.length
+        : activeTab === 'us_states'
+        ? usStates.length
+        : activeTab === 'voivodeships'
+        ? voivodeships.length
+        : powiats.length;
     if (existingCount > 0) return;
     let cancelled = false;
     const tab = activeTab;
     setLoadStatus(prev => ({ ...prev, [tab]: 'loading' }));
-    const request = tab === 'countries' ? exploreService.getCountries({ limit: 250 }) : tab === 'us_states' ? exploreService.getUSStates() : exploreService.getVoivodeships();
+    const request =
+      tab === 'countries'
+        ? exploreService.getCountries({ limit: 250 })
+        : tab === 'us_states'
+        ? exploreService.getUSStates()
+        : tab === 'voivodeships'
+        ? exploreService.getVoivodeships()
+        : exploreService.getPowiats();
     request.then(data => {
       if (!Array.isArray(data) || data.some(item => !item || typeof (tab === 'countries' ? item.app_country_name : item.name) !== 'string')) throw new Error('Invalid fact response');
       if (cancelled) return;
       if (tab === 'countries') setCountries(data);
       else if (tab === 'us_states') setUsStates(data);
-      else setVoivodeships(data);
+      else if (tab === 'voivodeships') setVoivodeships(data);
+      else setPowiats(data);
       setLoadStatus(prev => ({ ...prev, [tab]: 'success' }));
     }).catch(() => {
       if (!cancelled) setLoadStatus(prev => ({ ...prev, [tab]: 'error' }));
     });
     return () => { cancelled = true; };
-  }, [activeTab, countries.length, usStates.length, voivodeships.length]);
-
+  }, [activeTab, countries.length, usStates.length, voivodeships.length, powiats.length]);
   // Load detailed entity for modal
   const openCountryModal = async (cca3: string) => {
     rememberView('detail', `country:${cca3}`);
@@ -139,6 +218,19 @@ export default function ExplorePage() {
       setModalLoading(false);
     }
   };
+  const openPowiatModal = async (nameOrId: string | number) => {
+    rememberView('detail', `powiat:${nameOrId}`);
+    setModalError('');
+    setModalLoading(true);
+    try {
+      const data = await exploreService.getPowiatDetail(nameOrId);
+      setSelectedPowiat(data);
+    } catch {
+      setModalError(isPl ? 'Nie udało się wczytać karty powiatu.' : 'The county fact sheet could not be loaded. Close it and try again.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   useEffect(() => {
     const detail = initialView().get('detail');
@@ -146,19 +238,27 @@ export default function ExplorePage() {
     const separator = detail.indexOf(':');
     const kind = detail.slice(0, separator);
     const identifier = detail.slice(separator + 1);
-    if (!identifier || !['country', 'state', 'voivodeship'].includes(kind)) {
+    if (!identifier || !['country', 'state', 'voivodeship', 'powiat'].includes(kind)) {
       setModalError('This fact sheet address is not recognized. Close it to return to the explorer.');
       return;
     }
     let cancelled = false;
     setModalLoading(true);
-    const request = kind === 'country' ? exploreService.getCountryDetail(identifier) : kind === 'state' ? exploreService.getUSStateDetail(identifier) : exploreService.getVoivodeshipDetail(identifier);
+    const request =
+      kind === 'country'
+        ? exploreService.getCountryDetail(identifier)
+        : kind === 'state'
+        ? exploreService.getUSStateDetail(identifier)
+        : kind === 'voivodeship'
+        ? exploreService.getVoivodeshipDetail(identifier)
+        : exploreService.getPowiatDetail(identifier);
     request.then(data => {
       if (!data || typeof data !== 'object') throw new Error('Invalid fact sheet');
       if (cancelled) return;
       if (kind === 'country') updateSelectedCountry(data);
       else if (kind === 'state') updateSelectedState(data);
-      else updateSelectedVoivodeship(data);
+      else if (kind === 'voivodeship') updateSelectedVoivodeship(data);
+      else updateSelectedPowiat(data);
     }).catch(() => {
       if (!cancelled) setModalError('The requested fact sheet could not be loaded. Close it and try again.');
     }).finally(() => {
@@ -167,6 +267,14 @@ export default function ExplorePage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (!inspectedAsset) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInspectedAsset(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [inspectedAsset]);
   // Filtered lists
   const filteredCountries = useMemo(() => {
     return countries.filter((c) => {
@@ -196,6 +304,31 @@ export default function ExplorePage() {
         (v.seat && v.seat.toLowerCase().includes(search.toLowerCase()));
     });
   }, [voivodeships, search]);
+  const filteredPowiats = useMemo(() => {
+    const q = foldPolish(search.trim());
+    return powiats.filter((p) => {
+      if (selectedRegion !== 'all' && p.voivodeship.toLowerCase() !== selectedRegion.toLowerCase()) {
+        return false;
+      }
+      if (countyTypeFilter === 'city' && !p.is_city_county) return false;
+      if (countyTypeFilter === 'land' && p.is_city_county) return false;
+      if (!q) return true;
+      const nameMatch = foldPolish(p.name).includes(q);
+      const seatMatch = p.seat ? foldPolish(p.seat).includes(q) : false;
+      const voivMatch = foldPolish(p.voivodeship).includes(q);
+      const plateMatch = Array.isArray(p.registration_plates)
+        ? p.registration_plates.some((code: string) => code.toLowerCase().includes(q))
+        : false;
+      return nameMatch || seatMatch || voivMatch || plateMatch;
+    });
+  }, [powiats, search, selectedRegion, countyTypeFilter]);
+
+  const POWIATS_PER_PAGE = 48;
+  const totalPowiatPages = Math.max(1, Math.ceil(filteredPowiats.length / POWIATS_PER_PAGE));
+  const pagedPowiats = useMemo(() => {
+    const start = (powiatPage - 1) * POWIATS_PER_PAGE;
+    return filteredPowiats.slice(start, start + POWIATS_PER_PAGE);
+  }, [filteredPowiats, powiatPage]);
 
   const regions = useMemo(() => {
     if (activeTab === 'countries') {
@@ -204,13 +337,52 @@ export default function ExplorePage() {
     if (activeTab === 'us_states') {
       return ['all', 'Northeast', 'Midwest', 'South', 'West'];
     }
+    if (activeTab === 'powiats') {
+      return [
+        'all',
+        'dolnośląskie',
+        'kujawsko-pomorskie',
+        'lubelskie',
+        'lubuskie',
+        'łódzkie',
+        'małopolskie',
+        'mazowieckie',
+        'opolskie',
+        'podkarpackie',
+        'podlaskie',
+        'pomorskie',
+        'śląskie',
+        'świętokrzyskie',
+        'warmińsko-mazurskie',
+        'wielkopolskie',
+        'zachodniopomorskie',
+      ];
+    }
     return ['all'];
   }, [activeTab]);
 
   const status = loadStatus[activeTab];
   const loading = status === 'idle' || status === 'loading';
-  const visibleCount = activeTab === 'modes' ? modes.length : activeTab === 'countries' ? filteredCountries.length : activeTab === 'us_states' ? filteredUSStates.length : filteredVoivodeships.length;
-  const detailOpen = modalLoading || Boolean(modalError || selectedCountry || selectedState || selectedVoivodeship || initialView().get('detail'));
+  const visibleCount =
+    activeTab === 'modes'
+      ? modes.length
+      : activeTab === 'countries'
+      ? filteredCountries.length
+      : activeTab === 'us_states'
+      ? filteredUSStates.length
+      : activeTab === 'voivodeships'
+      ? filteredVoivodeships.length
+      : filteredPowiats.length;
+  const detailOpen =
+    modalLoading ||
+    Boolean(
+      modalError ||
+        selectedCountry ||
+        selectedState ||
+        selectedVoivodeship ||
+        selectedPowiat ||
+        initialView().get('detail')
+    );
   const publisherReady = status === 'success' && visibleCount > 0 && !detailOpen;
   const publisherError = status === 'error' || Boolean(modalError) || (status === 'success' && visibleCount === 0);
 
@@ -220,68 +392,151 @@ export default function ExplorePage() {
 
   useEffect(() => () => setPageEditorialEligibility(false), []);
 
+  const resolvePowiatCoatUrl = (powiatId: number) => `/api/explore/powiats/${powiatId}/coat?v=2`;
+  const resolvePowiatCoatThumbUrl = (powiatId: number) => `/coats/${powiatId}.png`;
+
   return (
-    <div data-publisher-ready={publisherReady ? 'true' : undefined} data-publisher-error={publisherError ? 'true' : undefined} className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6 md:py-12">
-      {/* Header */}
-      <header className="border-b border-white/10 pb-8 text-center sm:text-left">
+    <div data-publisher-ready={publisherReady ? 'true' : undefined} data-publisher-error={publisherError ? 'true' : undefined} className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 md:py-12">
+      {/* Header & Interactive Atlas Switcher */}
+      <header className="border-b border-white/10 pb-6 text-center sm:text-left">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-emerald-400">
           <Globe size={13} />
-          <span>{isPl ? 'Baza wiedzy geograficznej' : 'Geographic Knowledge Base & Guides'}</span>
+          <span>{isPl ? 'Atlas geograficzny i heraldyczny' : 'Geographic & Heraldic Knowledge Base'}</span>
         </div>
         <h1 className="font-serif text-3xl font-bold tracking-tight text-sand-100 sm:text-5xl">
-          {isPl ? 'Przewodnik i eksplorator Countrydle' : 'Geography Explorer & Mode Guides'}
+          {isPl ? 'Atlas Geograficzny, Herby Powiatów i Przewodnik' : 'Geography Atlas, County Coats of Arms & Guides'}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-300">
+        <p className="mt-3 max-w-3xl text-sm sm:text-base leading-7 text-zinc-300">
           {isPl
-            ? 'Przeglądaj aktualną bazę faktów o krajach, stanach USA i województwach Polski. Poznaj zasady i przykłady dedukcji; dane i interpretacje mogą być niepełne lub nieaktualne.'
-            : 'Explore the current knowledge base for countries, US states and Polish voivodeships. Read game-specific conventions and worked deduction examples; stored facts and interpretations may be incomplete or outdated.'}
+            ? 'Przeglądaj wszystkie 380 polskich powiatów wraz z oficjalnymi herbami, wyróżnikami tablic rejestracyjnych i faktami, 16 województw, 195 państw świata z flagami oraz 50 stanów USA.'
+            : 'Explore all 380 Polish counties with official coats of arms, registration plate codes and basic facts, 16 Polish voivodeships, 195 world countries with flags, 50 US states, and deduction strategy guides.'}
         </p>
 
-        {/* Tab Switcher */}
-        <div className="mt-8 flex flex-wrap gap-2 border-b border-white/10 pb-4">
+        {/* Redesigned Category Cards Switcher */}
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           <button
             type="button"
-            onClick={() => { setActiveTab('modes'); setSearch(''); }}
-            className={`rounded-sm px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
-              activeTab === 'modes'
-                ? 'bg-emerald-400 text-obsidian-950 font-bold'
-                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            onClick={() => { setActiveTab('powiats'); setSearch(''); setSelectedRegion('all'); }}
+            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+              activeTab === 'powiats'
+                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
-            {isPl ? 'Przewodniki po trybach' : 'Mode Guides'}
+            <div className="flex w-full items-center justify-between">
+              <Shield size={16} className={activeTab === 'powiats' ? 'text-emerald-300' : 'text-emerald-400/80'} />
+              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
+                380
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="font-serif text-sm font-bold text-sand-100">
+                {isPl ? 'Powiaty i Herby' : 'Polish Counties'}
+              </div>
+              <div className="mt-0.5 text-[11px] text-zinc-400">
+                {isPl ? 'Herby, tablice i fakty' : 'Coats of arms & facts'}
+              </div>
+            </div>
           </button>
-          <button
-            type="button"
-            onClick={() => { setActiveTab('countries'); setSearch(''); setSelectedRegion('all'); }}
-            className={`rounded-sm px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
-              activeTab === 'countries'
-                ? 'bg-emerald-400 text-obsidian-950 font-bold'
-                : 'text-zinc-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            {isPl ? 'Państwa świata (195)' : 'World Countries (195)'}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveTab('us_states'); setSearch(''); setSelectedRegion('all'); }}
-            className={`rounded-sm px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
-              activeTab === 'us_states'
-                ? 'bg-emerald-400 text-obsidian-950 font-bold'
-                : 'text-zinc-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            {isPl ? 'Stany USA (50)' : 'US States (50)'}
-          </button>
+
           <button
             type="button"
             onClick={() => { setActiveTab('voivodeships'); setSearch(''); setSelectedRegion('all'); }}
-            className={`rounded-sm px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
               activeTab === 'voivodeships'
-                ? 'bg-emerald-400 text-obsidian-950 font-bold'
-                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
-            {isPl ? 'Województwa (16)' : 'Voivodeships (16)'}
+            <div className="flex w-full items-center justify-between">
+              <Layers size={16} className={activeTab === 'voivodeships' ? 'text-emerald-300' : 'text-emerald-400/80'} />
+              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
+                16
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="font-serif text-sm font-bold text-sand-100">
+                {isPl ? 'Województwa' : 'Voivodeships'}
+              </div>
+              <div className="mt-0.5 text-[11px] text-zinc-400">
+                {isPl ? 'Stolice, TERYT i granice' : 'Polish provinces'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab('countries'); setSearch(''); setSelectedRegion('all'); }}
+            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+              activeTab === 'countries'
+                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
+            }`}
+          >
+            <div className="flex w-full items-center justify-between">
+              <Globe size={16} className={activeTab === 'countries' ? 'text-emerald-300' : 'text-emerald-400/80'} />
+              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
+                195
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="font-serif text-sm font-bold text-sand-100">
+                {isPl ? 'Państwa Świata' : 'World Countries'}
+              </div>
+              <div className="mt-0.5 text-[11px] text-zinc-400">
+                {isPl ? 'Flagi, stolice i granice' : 'Flags, capitals & borders'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab('us_states'); setSearch(''); setSelectedRegion('all'); }}
+            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+              activeTab === 'us_states'
+                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
+            }`}
+          >
+            <div className="flex w-full items-center justify-between">
+              <MapPin size={16} className={activeTab === 'us_states' ? 'text-emerald-300' : 'text-emerald-400/80'} />
+              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
+                50
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="font-serif text-sm font-bold text-sand-100">
+                {isPl ? 'Stany USA' : 'US States'}
+              </div>
+              <div className="mt-0.5 text-[11px] text-zinc-400">
+                {isPl ? 'Regiony, rzeki i autostrady' : 'Regions & state facts'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab('modes'); setSearch(''); }}
+            className={`col-span-2 sm:col-span-1 group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+              activeTab === 'modes'
+                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
+            }`}
+          >
+            <div className="flex w-full items-center justify-between">
+              <Compass size={16} className={activeTab === 'modes' ? 'text-emerald-300' : 'text-emerald-400/80'} />
+              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
+                {isPl ? 'Strategie' : 'Guides'}
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="font-serif text-sm font-bold text-sand-100">
+                {isPl ? 'Przewodniki po trybach' : 'Mode Guides'}
+              </div>
+              <div className="mt-0.5 text-[11px] text-zinc-400">
+                {isPl ? 'Zasady i taksonomia' : 'Rules & deduction axes'}
+              </div>
+            </div>
           </button>
         </div>
       </header>
@@ -291,8 +546,6 @@ export default function ExplorePage() {
       {status === 'success' && visibleCount === 0 && <p role="status" className="text-base leading-7 text-zinc-400">No entries match this view. Clear the search or choose another region; an empty response is not evidence that a place is absent from the game.</p>}
       {modalLoading && <p role="status" className="text-base leading-7 text-zinc-400">Loading fact sheet…</p>}
       {modalError && <div role="alert" className="space-y-3 text-amber-300"><p>{modalError}</p><button type="button" onClick={() => { rememberView('detail', ''); setModalError(''); }} className="underline underline-offset-4">Close fact sheet error</button></div>}
-
-      {/* TAB 1: Mode Guides */}
       {activeTab === 'modes' && (
         <section className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -648,51 +901,276 @@ export default function ExplorePage() {
         </section>
       )}
 
-      {/* TAB 2, 3, 4: Search & Filters Toolbar */}
+      {/* Search & Filters Toolbar for Atlas Tabs */}
       {activeTab !== 'modes' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative w-full sm:max-w-md">
+        <div className="space-y-4 rounded-lg border border-white/10 bg-obsidian-900/50 p-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            <div className="relative flex-1">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={isPl ? 'Szukaj po nazwie, stolicy lub kodzie...' : 'Search by name, capital, or code...'}
-                className="w-full rounded-sm border border-white/15 bg-obsidian-900 py-2.5 pl-10 pr-4 text-sm text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
+                placeholder={
+                  activeTab === 'powiats'
+                    ? isPl
+                      ? 'Szukaj powiatu, siedziby lub tablicy rejestracyjnej (np. KRA, PO, BI, krakowski)...'
+                      : 'Search county name, seat, or license plate prefix (e.g. KRA, PO, BI, krakowski)...'
+                    : isPl
+                    ? 'Szukaj po nazwie, stolicy lub kodzie...'
+                    : 'Search by name, capital, or code...'
+                }
+                className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-2.5 pl-10 pr-9 text-sm text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
                 >
                   <X size={14} />
                 </button>
               )}
             </div>
 
-            {regions.length > 1 && (
-              <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                <span className="text-xs text-zinc-500 mr-1 font-mono uppercase">Region:</span>
-                {regions.map((reg) => (
+            {activeTab === 'powiats' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-sm border border-white/10 bg-obsidian-950 p-0.5 text-xs">
                   <button
-                    key={reg}
                     type="button"
-                    onClick={() => setSelectedRegion(reg)}
-                    className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${
-                      selectedRegion === reg
+                    onClick={() => { setCountyTypeFilter('all'); setPowiatPage(1); }}
+                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                      countyTypeFilter === 'all'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
+                        : 'text-zinc-400 hover:text-sand-100'
                     }`}
                   >
-                    {reg}
+                    {isPl ? 'Wszystkie (380)' : 'All (380)'}
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => { setCountyTypeFilter('land'); setPowiatPage(1); }}
+                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                      countyTypeFilter === 'land'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'text-zinc-400 hover:text-sand-100'
+                    }`}
+                  >
+                    {isPl ? 'Ziemskie (314)' : 'Land (314)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setCountyTypeFilter('city'); setPowiatPage(1); }}
+                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                      countyTypeFilter === 'city'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'text-zinc-400 hover:text-sand-100'
+                    }`}
+                  >
+                    {isPl ? 'Miasta (66)' : 'Cities (66)'}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setLightCoatsBackdrop((v) => !v)}
+                  title={isPl ? 'Przełącz jasne/ciemne tło pod herbami' : 'Toggle light/dark backdrop behind coats of arms'}
+                  className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+                    lightCoatsBackdrop
+                      ? 'border-amber-400/50 bg-sand-100 text-obsidian-950 font-semibold'
+                      : 'border-white/15 bg-obsidian-950 text-zinc-300 hover:border-white/30'
+                  }`}
+                >
+                  {lightCoatsBackdrop ? <Sun size={13} /> : <Moon size={13} />}
+                  <span>{lightCoatsBackdrop ? (isPl ? 'Jasne tło' : 'Light shield bg') : (isPl ? 'Ciemne tło' : 'Dark shield bg')}</span>
+                </button>
               </div>
             )}
           </div>
+
+          {regions.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] text-zinc-500 mr-1 font-mono uppercase">
+                {activeTab === 'powiats' ? (isPl ? 'Województwo:' : 'Voivodeship:') : 'Region:'}
+              </span>
+              {regions.map((reg) => (
+                <button
+                  key={reg}
+                  type="button"
+                  onClick={() => setSelectedRegion(reg)}
+                  className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                    selectedRegion === reg
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
+                  }`}
+                >
+                  {reg === 'all' ? (isPl ? 'Wszystkie' : 'All') : reg}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+      )}
+
+      {/* TAB: Polish Counties & Coats of Arms (380) */}
+      {activeTab === 'powiats' && (
+        <section className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 font-mono">
+            <span>
+              {isPl
+                ? `Wyświetlanie ${filteredPowiats.length} z ${powiats.length || 380} powiatów`
+                : `Showing ${filteredPowiats.length} of ${powiats.length || 380} Polish counties`}
+            </span>
+            <div className="flex items-center gap-3">
+              <span>{isPl ? 'Kliknij herb, aby powiększyć • Kliknij kartę po pełne dane' : 'Click shield to zoom • Click card for full facts'}</span>
+              <Link
+                to="/herby-powiatow"
+                className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-emerald-300 hover:bg-emerald-500/25 font-sans font-semibold"
+              >
+                <Play size={11} />
+                <span>{isPl ? 'Gra: Herby Powiatów' : 'Play County Coats of Arms'}</span>
+              </Link>
+              <Link
+                to="/quiz-herbow"
+                className="inline-flex items-center gap-1 rounded-sm bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-amber-300 hover:bg-amber-500/25 font-sans font-semibold"
+              >
+                <Shield size={11} />
+                <span>{isPl ? 'Quiz 380 Herbów (JetPunk)' : '380 Coats Quiz (JetPunk)'}</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pagedPowiats.map((p) => {
+              const fullCoatUrl = resolvePowiatCoatUrl(p.id);
+              const thumbCoatUrl = resolvePowiatCoatThumbUrl(p.id);
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => openPowiatModal(p.id)}
+                  className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-3.5 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Compact Low-Res Coat of Arms Thumbnail with 1-click Fullscreen SVG Icon */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInspectZoom(1);
+                        setInspectedAsset({
+                          url: fullCoatUrl,
+                          title: p.name,
+                          subtitle: `woj. ${p.voivodeship} • ${p.is_city_county ? (isPl ? 'Miasto na prawach powiatu' : 'City county') : (isPl ? `Siedziba: ${p.seat || '—'}` : `Seat: ${p.seat || '—'}`)}`,
+                        });
+                      }}
+                      title={isPl ? 'Powiększ herb (pełna jakość SVG)' : 'Inspect coat of arms (full SVG)'}
+                      className={`relative h-15 w-13.5 shrink-0 rounded-md border p-1.5 flex items-center justify-center transition-all ${
+                        lightCoatsBackdrop
+                          ? 'bg-sand-100 border-sand-300 shadow-inner'
+                          : 'bg-obsidian-950/90 border-white/10 group-hover:border-emerald-500/30'
+                      }`}
+                    >
+                      <img
+                        src={thumbCoatUrl}
+                        alt={`Herb: ${p.name}`}
+                        width={42}
+                        height={48}
+                        loading="lazy"
+                        decoding="async"
+                        className="max-h-11 max-w-10 w-auto h-auto object-contain select-none drop-shadow-xs transition-transform duration-150 group-hover:scale-105"
+                      />
+                      <span
+                        aria-hidden="true"
+                        className="absolute bottom-0.5 right-0.5 inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-75 hover:opacity-100 hover:text-emerald-300 transition-opacity"
+                      >
+                        <Maximize2 size={10} />
+                      </span>
+                    </div>
+                    {/* County Identity & License Plates */}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
+                          woj. {p.voivodeship}
+                        </span>
+                        <span
+                          className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase ${
+                            p.is_city_county
+                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
+                              : 'bg-white/5 text-zinc-400 border border-white/10'
+                          }`}
+                        >
+                          {p.is_city_county
+                            ? isPl
+                              ? 'Miasto n.p.p.'
+                              : 'City county'
+                            : isPl
+                            ? 'Powiat ziemski'
+                            : 'Land county'}
+                        </span>
+                      </div>
+
+                      <h4 className="font-serif text-base font-bold text-sand-100 group-hover:text-emerald-300 transition-colors leading-snug">
+                        {p.name}
+                      </h4>
+
+                      <div className="pt-0.5">
+                        <MiniLicensePlate plates={p.registration_plates} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2.5 border-t border-white/5 grid grid-cols-3 gap-2 text-[11px] text-zinc-400 font-mono">
+                    <div className="truncate">
+                      <span className="text-zinc-500 block text-[10px]">{isPl ? 'Siedziba' : 'Seat'}</span>
+                      <span className="text-sand-100 truncate block" title={p.seat || '—'}>
+                        {p.seat || '—'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">{isPl ? 'Ludność' : 'Pop.'}</span>
+                      <span className="text-sand-100 block">
+                        {p.population ? Number(p.population).toLocaleString() : '—'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">{isPl ? 'Obszar' : 'Area'}</span>
+                      <span className="text-sand-100 block">
+                        {p.area_km2 ? `${Number(p.area_km2).toLocaleString()} km²` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {totalPowiatPages > 1 && (
+            <div className="flex items-center justify-between border-t border-white/10 pt-4 font-mono text-xs text-zinc-400">
+              <span>
+                {isPl
+                  ? `Strona ${powiatPage} z ${totalPowiatPages} (${filteredPowiats.length} powiatów)`
+                  : `Page ${powiatPage} of ${totalPowiatPages} (${filteredPowiats.length} counties)`}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={powiatPage <= 1}
+                  onClick={() => setPowiatPage((p) => Math.max(1, p - 1))}
+                  className="rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-sand-100 hover:border-emerald-400 disabled:opacity-40 cursor-pointer"
+                >
+                  {isPl ? 'Poprzednia' : 'Previous'}
+                </button>
+                <button
+                  type="button"
+                  disabled={powiatPage >= totalPowiatPages}
+                  onClick={() => setPowiatPage((p) => Math.min(totalPowiatPages, p + 1))}
+                  className="rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-sand-100 hover:border-emerald-400 disabled:opacity-40 cursor-pointer"
+                >
+                  {isPl ? 'Następna' : 'Next'}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       )}
 
       {/* TAB 2: Countries Grid */}
@@ -710,19 +1188,29 @@ export default function ExplorePage() {
                 onClick={() => openCountryModal(c.cca3 || c.app_country_name)}
                 className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-emerald-400">
-                      {c.cca3 || c.cca2}
-                    </span>
-                    <span className="text-[11px] text-zinc-500">{c.region}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-emerald-400">
+                        {c.cca3 || c.cca2}
+                      </span>
+                      <span className="text-[11px] text-zinc-500">{c.region}</span>
+                    </div>
+                    <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
+                      {c.app_country_name}
+                    </h4>
+                    <p className="text-xs text-zinc-400 break-words">
+                      {c.official_name || c.app_country_name}
+                    </p>
                   </div>
-                  <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
-                    {c.app_country_name}
-                  </h4>
-                  <p className="text-xs text-zinc-400 break-words">
-                    {c.official_name || c.app_country_name}
-                  </p>
+                  {c.cca2 && (
+                    <img
+                      src={`https://flagcdn.com/w80/${String(c.cca2).toLowerCase()}.png`}
+                      alt={`${c.app_country_name} flag`}
+                      loading="lazy"
+                      className="h-10 w-15 shrink-0 rounded-xs border border-white/15 object-cover shadow-xs"
+                    />
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
@@ -740,7 +1228,6 @@ export default function ExplorePage() {
           </div>
         </section>
       )}
-
       {/* TAB 3: US States Grid */}
       {activeTab === 'us_states' && (
         <section className="space-y-4">
@@ -1148,6 +1635,428 @@ export default function ExplorePage() {
               >
                 Zamknij kartę
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Polish County (Powiat) & Coat of Arms Details */}
+      {selectedPowiat && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setSelectedPowiat(null)}
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-3xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-12 sm:p-7 sm:pt-12 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh]"
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedPowiat(null)}
+              aria-label={isPl ? 'Zamknij kartę powiatu' : 'Close county details'}
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <header className="flex flex-col sm:flex-row items-center sm:items-start gap-5 border-b border-white/10 pb-5">
+              {/* Coat of Arms Pedestal with Fullscreen Trigger */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setInspectZoom(1);
+                  setInspectedAsset({
+                    url: resolvePowiatCoatUrl(selectedPowiat.id),
+                    title: selectedPowiat.name,
+                    subtitle: `woj. ${selectedPowiat.voivodeship}`,
+                  });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setInspectZoom(1);
+                    setInspectedAsset({
+                      url: resolvePowiatCoatUrl(selectedPowiat.id),
+                      title: selectedPowiat.name,
+                      subtitle: `woj. ${selectedPowiat.voivodeship}`,
+                    });
+                  }
+                }}
+                aria-label={isPl ? 'Powiększ herb powiatu' : 'Inspect county coat of arms'}
+                className={`group relative h-32 w-28 shrink-0 rounded-lg border p-3 flex items-center justify-center cursor-zoom-in transition-all ${
+                  lightCoatsBackdrop
+                    ? 'bg-sand-100 border-sand-300 shadow-md'
+                    : 'bg-obsidian-950 border-white/15 hover:border-emerald-400/50 shadow-inner'
+                }`}
+              >
+                <img
+                  src={resolvePowiatCoatUrl(selectedPowiat.id)}
+                  alt={`Herb: ${selectedPowiat.name}`}
+                  className="max-h-26 max-w-22 w-auto h-auto object-contain select-none drop-shadow-md transition-transform group-hover:scale-105"
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-1.5 right-1.5 inline-flex h-6 w-6 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 group-hover:border-emerald-400/50 group-hover:text-emerald-300"
+                >
+                  <Maximize2 size={13} />
+                </span>
+              </div>
+
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <span className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
+                    Województwo {selectedPowiat.voivodeship}
+                  </span>
+                  {selectedPowiat.terc && (
+                    <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5 font-mono text-[11px] text-zinc-400">
+                      TERYT {selectedPowiat.terc}
+                    </span>
+                  )}
+                  <span
+                    className={`rounded px-2 py-0.5 font-mono text-[11px] ${
+                      selectedPowiat.is_city_county
+                        ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                        : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                    }`}
+                  >
+                    {selectedPowiat.is_city_county
+                      ? isPl
+                        ? 'Miasto na prawach powiatu'
+                        : 'City with county rights'
+                      : isPl
+                      ? 'Powiat ziemski'
+                      : 'Land county (Powiat ziemski)'}
+                  </span>
+                </div>
+
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-sand-100">
+                  {selectedPowiat.name}
+                </h2>
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1">
+                  {selectedPowiat.seat && (
+                    <span className="text-xs text-zinc-300">
+                      {isPl ? 'Siedziba władz:' : 'County Seat:'}{' '}
+                      <strong className="text-sand-100">{selectedPowiat.seat}</strong>
+                    </span>
+                  )}
+                  {selectedPowiat.registration_plates && selectedPowiat.registration_plates.length > 0 && (
+                    <div className="inline-flex items-center gap-1.5">
+                      <span className="text-xs text-zinc-400 font-mono">
+                        {isPl ? 'Tablice:' : 'Plates:'}
+                      </span>
+                      <MiniLicensePlate plates={selectedPowiat.registration_plates} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+              <div className="p-3 bg-white/5 border border-white/5 rounded">
+                <span className="text-zinc-500 block">{isPl ? 'Ludność' : 'Population'}</span>
+                <span className="font-bold text-sand-100 text-sm">
+                  {selectedPowiat.population ? Number(selectedPowiat.population).toLocaleString() : '—'}
+                </span>
+              </div>
+              <div className="p-3 bg-white/5 border border-white/5 rounded">
+                <span className="text-zinc-500 block">{isPl ? 'Powierzchnia' : 'Area'}</span>
+                <span className="font-bold text-sand-100 text-sm">
+                  {selectedPowiat.area_km2 ? `${Number(selectedPowiat.area_km2).toLocaleString()} km²` : '—'}
+                </span>
+              </div>
+              <div className="p-3 bg-white/5 border border-white/5 rounded">
+                <span className="text-zinc-500 block">{isPl ? 'Gęstość zaludnienia' : 'Density'}</span>
+                <span className="font-bold text-sand-100 text-sm">
+                  {selectedPowiat.population_density
+                    ? `${Math.round(Number(selectedPowiat.population_density)).toLocaleString()} os./km²`
+                    : '—'}
+                </span>
+              </div>
+              <div className="p-3 bg-white/5 border border-white/5 rounded">
+                <span className="text-zinc-500 block">{isPl ? 'Liczba gmin' : 'Municipalities'}</span>
+                <span className="font-bold text-sand-100 text-sm">
+                  {selectedPowiat.gmina_count ?? '—'}
+                  {selectedPowiat.urbanization_percent != null
+                    ? ` • Urb. ${selectedPowiat.urbanization_percent}%`
+                    : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* Relational Geography & Borders */}
+            <div className="space-y-4 text-xs">
+              {selectedPowiat.neighboring_powiats && selectedPowiat.neighboring_powiats.length > 0 && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl
+                      ? `Sąsiednie powiaty (${selectedPowiat.neighboring_powiats.length}) — kliknij, aby przejść:`
+                      : `Neighboring Counties (${selectedPowiat.neighboring_powiats.length}) — click to inspect:`}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPowiat.neighboring_powiats.map((np: string) => (
+                      <button
+                        key={np}
+                        type="button"
+                        onClick={() => openPowiatModal(np)}
+                        className="px-2.5 py-1 bg-white/5 hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-500/40 rounded text-zinc-200 hover:text-emerald-300 transition-colors cursor-pointer"
+                      >
+                        {np}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPowiat.neighboring_voivodeships && selectedPowiat.neighboring_voivodeships.length > 0 && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl ? 'Granica z innymi województwami:' : 'Borders with other Voivodeships:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPowiat.neighboring_voivodeships.map((nv: string) => (
+                      <span key={nv} className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/25 text-purple-300 rounded">
+                        woj. {nv}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPowiat.neighboring_countries && selectedPowiat.neighboring_countries.length > 0 && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl ? 'Granica państwowa:' : 'International Border:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPowiat.neighboring_countries.map((nc: string) => (
+                      <span key={nc} className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded font-semibold">
+                        {nc}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {((selectedPowiat.major_rivers && selectedPowiat.major_rivers.length > 0) ||
+                (selectedPowiat.water_access && selectedPowiat.water_access.length > 0) ||
+                (selectedPowiat.lakes && selectedPowiat.lakes.length > 0)) && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl ? 'Rzeki, jeziora i dostęp do wód:' : 'Rivers, Lakes & Water Bodies:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selectedPowiat.water_access || []).map((w: string) => (
+                      <span key={`w-${w}`} className="px-2 py-0.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 rounded">
+                        {w}
+                      </span>
+                    ))}
+                    {(selectedPowiat.major_rivers || []).map((r: string) => (
+                      <span key={`r-${r}`} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
+                        rz. {r}
+                      </span>
+                    ))}
+                    {(selectedPowiat.lakes || []).map((l: string) => (
+                      <span key={`l-${l}`} className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-sky-300 rounded">
+                        jez. {l}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPowiat.major_roads && selectedPowiat.major_roads.length > 0 && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl ? 'Główne szlaki drogowe:' : 'Major Highways & National Roads:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPowiat.major_roads.map((rd: string) => (
+                      <span key={rd} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 rounded font-mono">
+                        {rd}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {((selectedPowiat.landform_regions && selectedPowiat.landform_regions.length > 0) ||
+                (selectedPowiat.historical_regions && selectedPowiat.historical_regions.length > 0)) && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl ? 'Krainy geograficzne i historyczne:' : 'Geographic & Historical Regions:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selectedPowiat.landform_regions || []).map((reg: string) => (
+                      <span key={`lf-${reg}`} className="px-2 py-0.5 bg-white/5 border border-white/10 text-zinc-300 rounded">
+                        {reg}
+                      </span>
+                    ))}
+                    {(selectedPowiat.historical_regions || []).map((hr: string) => (
+                      <span key={`hr-${hr}`} className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-200 rounded">
+                        {hr}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {((selectedPowiat.national_parks && selectedPowiat.national_parks.length > 0) ||
+                (selectedPowiat.health_resorts && selectedPowiat.health_resorts.length > 0) ||
+                (selectedPowiat.unesco_sites && selectedPowiat.unesco_sites.length > 0)) && (
+                <div>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                    {isPl ? 'Parki narodowe, uzdrowiska i dziedzictwo:' : 'National Parks, Health Resorts & UNESCO:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selectedPowiat.national_parks || []).map((np: string) => (
+                      <span key={`np-${np}`} className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded">
+                        {np}
+                      </span>
+                    ))}
+                    {(selectedPowiat.health_resorts || []).map((hr: string) => (
+                      <span key={`res-${hr}`} className="px-2 py-0.5 bg-teal-500/15 border border-teal-500/30 text-teal-300 rounded">
+                        Uzdrowisko: {hr}
+                      </span>
+                    ))}
+                    {(selectedPowiat.unesco_sites || []).map((u: string) => (
+                      <span key={`un-${u}`} className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 text-amber-200 rounded font-semibold">
+                        UNESCO: {u}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-white/10 pt-4 flex flex-wrap justify-between items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  to="/herby-powiatow"
+                  className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
+                >
+                  <Shield size={13} />
+                  <span>{isPl ? 'Zagraj w Herby Powiatów' : 'Play County Coats of Arms'}</span>
+                </Link>
+                <Link
+                  to="/powiaty"
+                  className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors"
+                >
+                  <Play size={13} />
+                  <span>{isPl ? 'Zagraj w Powiatdle' : 'Play Powiatdle'}</span>
+                </Link>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPowiat(null)}
+                className="text-xs text-zinc-400 hover:text-white cursor-pointer"
+              >
+                {isPl ? 'Zamknij kartę' : 'Close Fact Sheet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Coat of Arms Inspector Lightbox */}
+      {inspectedAsset && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={inspectedAsset.title}
+          onClick={() => setInspectedAsset(null)}
+          className="fixed inset-0 z-[2200] flex flex-col items-center justify-between bg-black/92 backdrop-blur-md p-3 sm:p-6 select-none"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-4xl flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/15 bg-obsidian-900/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-xl"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Shield size={16} className="text-emerald-400 shrink-0" />
+              <span className="font-serif text-sm font-bold text-sand-100 truncate">
+                {inspectedAsset.title}
+              </span>
+              {inspectedAsset.subtitle && (
+                <span className="hidden sm:inline font-mono text-xs text-zinc-400">
+                  • {inspectedAsset.subtitle}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => setInspectZoom((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
+                disabled={inspectZoom <= 1}
+                className="inline-flex items-center justify-center rounded border border-white/15 bg-obsidian-950 p-1.5 text-zinc-300 hover:text-white hover:border-white/30 disabled:opacity-40 cursor-pointer"
+              >
+                <ZoomOut size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectZoom(1)}
+                className="rounded border border-white/15 bg-obsidian-950 px-2 py-1 font-mono text-xs text-sand-200 hover:border-emerald-400/50 cursor-pointer"
+              >
+                {Math.round(inspectZoom * 100)}%
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectZoom((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
+                disabled={inspectZoom >= 3}
+                className="inline-flex items-center justify-center rounded border border-white/15 bg-obsidian-950 p-1.5 text-zinc-300 hover:text-white hover:border-white/30 disabled:opacity-40 cursor-pointer"
+              >
+                <ZoomIn size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLightCoatsBackdrop((b) => !b)}
+                className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-mono transition-colors cursor-pointer ${
+                  lightCoatsBackdrop
+                    ? 'border-amber-400/60 bg-sand-100 text-obsidian-950 font-semibold'
+                    : 'border-white/15 bg-obsidian-950 text-zinc-300 hover:text-white'
+                }`}
+              >
+                {lightCoatsBackdrop ? <Sun size={14} /> : <Moon size={14} />}
+                <span className="hidden sm:inline">
+                  {lightCoatsBackdrop ? (isPl ? 'Jasne tło' : 'Light bg') : (isPl ? 'Ciemne tło' : 'Dark bg')}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectedAsset(null)}
+                className="inline-flex items-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:border-rose-400/40 hover:text-rose-200 transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setInspectedAsset(null)}
+            className="flex-1 w-full flex items-center justify-center overflow-auto my-3"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`rounded-2xl border p-6 sm:p-10 shadow-2xl transition-colors duration-200 flex items-center justify-center ${
+                lightCoatsBackdrop
+                  ? 'bg-sand-100 border-sand-300'
+                  : 'bg-obsidian-900/95 border-white/15'
+              }`}
+            >
+              <img
+                src={inspectedAsset.url}
+                alt={inspectedAsset.title}
+                style={{
+                  height: `${Math.round(58 * inspectZoom)}vh`,
+                  maxHeight: `${Math.round(78 * inspectZoom)}vh`,
+                  width: 'auto',
+                }}
+                className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-all duration-150"
+              />
             </div>
           </div>
         </div>

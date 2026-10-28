@@ -90,6 +90,8 @@ const utilityPages: Record<string, [string, string]> = {
   '/flagdle': ['Play Today’s Flag', 'Play today’s Flagdle puzzle.'],
   '/flag-shades': ['Flag Shades — Grayscale Flag Challenge', 'Deduce the mystery national flag in shades of grey and unlock a single color hint after 3 guesses.'],
   '/herby-powiatow': ['County Coats of Arms — Herby Powiatów', 'Deduce the Polish county by its coat of arms with distance feedback and registration plate hints.'],
+  '/quiz-herbow': ['All 380 Polish Coats of Arms Quiz — Quiz Herbów Powiatów', 'JetPunk-style visual grid quiz: identify all 380 Polish county coats of arms.'],
+  '/coats-of-arms-quiz': ['All 380 Polish Coats of Arms Quiz — Quiz Herbów Powiatów', 'JetPunk-style visual grid quiz: identify all 380 Polish county coats of arms.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
 const modeGuidePaths: Record<string, string> = {

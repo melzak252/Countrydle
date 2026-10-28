@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 import sqlite3
@@ -5,8 +6,9 @@ from collections import deque
 from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel
+from powiatdle.heraldry import get_or_fetch_herb_svg, get_or_fetch_herb_thumb, get_source_attribution, polish_sort_key
 
 logger = logging.getLogger(__name__)
 
@@ -791,24 +793,142 @@ async def verify_border_hop(payload: BorderHopVerifyRequest):
     )
 
 
-@router.get("/powiats/{name}")
-async def get_powiat_detail(name: str):
-    """Get full encyclopedic facts for a specific Polish powiat."""
+@router.get("/powiats")
+async def list_powiats(
+    search: Optional[str] = Query(None, description="Search by county name, seat, or plate code"),
+    voivodeship: Optional[str] = Query(None, description="Filter by voivodeship name"),
+    county_type: Optional[str] = Query(None, description="Filter by type: 'city' or 'land'"),
+):
+    """List all 380 Polish counties with basic facts, registration plates, and coat-of-arms URL."""
+    conn = get_db_connection("powiat_facts.sqlite")
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, name, voivodeship, is_city_county, seat, terc,
+                   population, area_km2, population_density, urbanization_percent, gmina_count
+            FROM powiats
+            """
+        ).fetchall()
+        plate_rows = conn.execute(
+            "SELECT powiat_id, plate_code FROM powiat_registration_plates ORDER BY plate_code ASC"
+        ).fetchall()
+        plates_by_id: Dict[int, List[str]] = {}
+        for pr in plate_rows:
+            plates_by_id.setdefault(int(pr["powiat_id"]), []).append(str(pr["plate_code"]))
+
+        items: List[Dict[str, Any]] = []
+        voiv_filter = voivodeship.strip().lower() if voivodeship else None
+        search_filter = search.strip().lower() if search else None
+
+        for r in rows:
+            pid = int(r["id"])
+            name_val = str(r["name"])
+            voiv_val = str(r["voivodeship"])
+            is_city = bool(r["is_city_county"])
+            seat_val = str(r["seat"]) if r["seat"] else None
+            plates = plates_by_id.get(pid, [])
+
+            if voiv_filter and voiv_val.lower() != voiv_filter:
+                continue
+            if county_type == "city" and not is_city:
+                continue
+            if county_type == "land" and is_city:
+                continue
+            if search_filter:
+                haystack = " ".join(
+                    [name_val.lower(), (seat_val or "").lower(), voiv_val.lower()]
+                    + [p.lower() for p in plates]
+                )
+                if search_filter not in haystack:
+                    continue
+
+            items.append(
+                {
+                    "id": pid,
+                    "name": name_val,
+                    "voivodeship": voiv_val,
+                    "is_city_county": is_city,
+                    "seat": seat_val,
+                    "terc": r["terc"],
+                    "population": r["population"],
+                    "area_km2": r["area_km2"],
+                    "population_density": r["population_density"],
+                    "urbanization_percent": r["urbanization_percent"],
+                    "gmina_count": r["gmina_count"],
+                    "registration_plates": plates,
+                    "coat_of_arms_url": f"/explore/powiats/{pid}/coat",
+                    "coat_thumb_url": f"/explore/powiats/{pid}/coat?size=thumb",
+                }
+            )
+
+        items.sort(key=lambda c: polish_sort_key(c["name"]))
+        return items
+    finally:
+        conn.close()
+
+
+@router.get("/powiats/{powiat_id}/coat")
+async def get_powiat_coat_svg(
+    powiat_id: int,
+    size: Optional[str] = Query(None, description="'thumb' for low-res PNG thumbnail, or omit for full vector SVG"),
+    width: int = Query(80, ge=32, le=240),
+):
+    """Serve the coat of arms (low-res thumbnail or full SVG) for a Polish county."""
     conn = get_db_connection("powiat_facts.sqlite")
     try:
         row = conn.execute(
-            "SELECT * FROM powiats WHERE name = ? OR name LIKE ? LIMIT 1",
-            (name, f"%{name}%")
+            "SELECT id, name FROM powiats WHERE id = ? LIMIT 1",
+            (powiat_id,),
         ).fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Powiat not found.")
+
+    if size == "thumb":
+        body, media_type = await asyncio.to_thread(
+            get_or_fetch_herb_thumb, int(row["id"]), str(row["name"]), width
+        )
+        return Response(
+            content=body,
+            media_type=media_type,
+            headers={"Cache-Control": "public, max-age=604800, immutable"},
+        )
+
+    svg_bytes = await asyncio.to_thread(get_or_fetch_herb_svg, int(row["id"]), str(row["name"]))
+    return Response(
+        content=svg_bytes,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+@router.get("/powiats/{name}")
+async def get_powiat_detail(name: str):
+    """Get full encyclopedic facts and coat-of-arms metadata for a specific Polish powiat."""
+    conn = get_db_connection("powiat_facts.sqlite")
+    try:
+        row = None
+        if name.strip().isdigit():
+            row = conn.execute(
+                "SELECT * FROM powiats WHERE id = ? LIMIT 1",
+                (int(name.strip()),),
+            ).fetchone()
+
+        if not row:
+            row = conn.execute(
+                "SELECT * FROM powiats WHERE LOWER(name) = LOWER(?) OR LOWER(name) LIKE LOWER(?) LIMIT 1",
+                (name, f"%{name}%"),
+            ).fetchone()
 
         if not row:
             alias_row = conn.execute(
                 """
                 SELECT p.* FROM powiats p 
                 JOIN powiat_name_aliases a ON p.id = a.powiat_id 
-                WHERE a.alias = ? OR a.alias LIKE ? LIMIT 1
+                WHERE LOWER(a.alias) = LOWER(?) OR LOWER(a.alias) LIKE LOWER(?) LIMIT 1
                 """,
-                (name, f"%{name}%")
+                (name, f"%{name}%"),
             ).fetchone()
             if alias_row:
                 row = alias_row
@@ -817,23 +937,42 @@ async def get_powiat_detail(name: str):
             raise HTTPException(status_code=404, detail="Powiat not found in knowledge base.")
 
         powiat = dict(row)
-        p_id = powiat["id"]
+        p_id = int(powiat["id"])
 
         powiat_borders = [r[0] for r in conn.execute("SELECT border_powiat_name FROM powiat_borders_powiats WHERE powiat_id = ? ORDER BY border_powiat_name", (p_id,)).fetchall()]
         voiv_borders = [r[0] for r in conn.execute("SELECT voivodeship FROM powiat_borders_voivodeships WHERE powiat_id = ? ORDER BY voivodeship", (p_id,)).fetchall()]
         country_borders = [r[0] for r in conn.execute("SELECT country_name FROM powiat_borders_countries WHERE powiat_id = ? ORDER BY country_name", (p_id,)).fetchall()]
         plates = [r[0] for r in conn.execute("SELECT plate_code FROM powiat_registration_plates WHERE powiat_id = ? ORDER BY plate_code", (p_id,)).fetchall()]
         rivers = [r[0] for r in conn.execute("SELECT river_name FROM powiat_major_rivers WHERE powiat_id = ? ORDER BY river_name", (p_id,)).fetchall()]
+        roads = [r[0] for r in conn.execute("SELECT road_name FROM powiat_major_roads WHERE powiat_id = ? ORDER BY road_name", (p_id,)).fetchall()]
         water = [r[0] for r in conn.execute("SELECT water_name FROM powiat_water_access WHERE powiat_id = ?", (p_id,)).fetchall()]
         regions = [r[0] for r in conn.execute("SELECT region_name FROM powiat_landform_regions WHERE powiat_id = ?", (p_id,)).fetchall()]
+        hist_regions = [r[0] for r in conn.execute("SELECT region_name FROM powiat_historical_regions WHERE powiat_id = ?", (p_id,)).fetchall()]
+        partitions = [r[0] for r in conn.execute("SELECT partition_name FROM powiat_historical_partitions WHERE powiat_id = ?", (p_id,)).fetchall()]
+        parks = [r[0] for r in conn.execute("SELECT park_name FROM powiat_national_parks WHERE powiat_id = ?", (p_id,)).fetchall()]
+        lakes = [r[0] for r in conn.execute("SELECT lake_name FROM powiat_lakes WHERE powiat_id = ?", (p_id,)).fetchall()]
+        resorts = [r[0] for r in conn.execute("SELECT resort_name FROM powiat_health_resorts WHERE powiat_id = ?", (p_id,)).fetchall()]
+        unesco = [r[0] for r in conn.execute("SELECT site_name FROM powiat_unesco_sites WHERE powiat_id = ?", (p_id,)).fetchall()]
 
+        powiat["is_city_county"] = bool(powiat.get("is_city_county"))
         powiat["neighboring_powiats"] = powiat_borders
         powiat["neighboring_voivodeships"] = voiv_borders
         powiat["neighboring_countries"] = country_borders
         powiat["registration_plates"] = plates
         powiat["major_rivers"] = rivers
+        powiat["major_roads"] = roads
         powiat["water_access"] = water
         powiat["landform_regions"] = regions
+        powiat["historical_regions"] = hist_regions
+        powiat["historical_partitions"] = partitions
+        powiat["national_parks"] = parks
+        powiat["lakes"] = lakes
+        powiat["health_resorts"] = resorts
+        powiat["unesco_sites"] = unesco
+        powiat["coat_of_arms_url"] = f"/explore/powiats/{p_id}/coat"
+
+        attr = get_source_attribution(p_id)
+        powiat["source_attribution"] = attr.model_dump() if attr else None
 
         return powiat
     finally:

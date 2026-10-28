@@ -95,6 +95,9 @@ export default function HomePage() {
         { id: 'herby-powiatow', title: isPl ? 'Herby Powiatów' : 'County Coats of Arms', region: isPl ? 'Herby Polski' : 'Polish coats of arms',
           description: isPl ? 'Rozpoznaj polski powiat po herbie. Po 5 błędnych próbach poznasz wyróżnik tablic rejestracyjnych.' : 'Identify Polish counties by their coat of arms. Reveal registration plate prefixes after 5 wrong guesses.',
           path: '/herby-powiatow', icon: Shield, questions: null, guesses: 8 },
+        { id: 'quiz-herbow', title: isPl ? 'Quiz 380 Herbów' : '380 Coats of Arms Quiz', region: isPl ? 'Siatka 380 herbów' : 'JetPunk-style 380 grid',
+          description: isPl ? 'Siatka wszystkich 380 herbów powiatów w stylu JetPunk. Wpisuj nazwy na czas — odpowiedzi zatwierdzają się automatycznie!' : 'All 380 Polish county coats of arms in one JetPunk-style grid. Type county names against the clock with instant auto-accept!',
+          path: '/quiz-herbow', icon: Shield, questions: null, guesses: 380 },
       ],
     },
     {

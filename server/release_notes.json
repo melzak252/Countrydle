@@ -1,5 +1,5 @@
 {
-  "version": "1.35.0",
-  "title": "Symbols category, Flag Shades, Herby Powiatów, and Flagdle grid normalization",
-  "body": "- Added the Symbols category featuring Flagdle, Flag Shades (grayscale flag challenge with a 3-guess color hint), and Herby Powiatów (Polish county coats of arms with automatic registration plate reveal after the 5th wrong guess).\n- Improved Flagdle rendering for non-2:3 and non-rectangular flags such as Malaysia, Switzerland, and Nepal.\n- Cleaned up blog card date formatting and removed raw editorial timestamp lines."
+  "version": "1.36.0",
+  "title": "Polish County Coats of Arms Grid Quiz and Geography Atlas",
+  "body": "- Added the 380 Polish County Coats of Arms Grid Quiz (/quiz-herbow) with voivodeship grouping, live stopwatch, instant client-side auto-accept typing, and Fullscreen Inspector.\n- Added the interactive Polish Counties & Coats of Arms Atlas on /explore with voivodeship and county type filters.\n- Added SVG normalization for legacy vector coats of arms missing xmlns and viewBox attributes.\n- Added 12-card tile covering and progressive reveal to Flag Shades."
 }

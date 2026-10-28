@@ -162,6 +162,70 @@ def get_herb_cache_dir() -> Path:
     return cache_dir
 
 
+
+_HERALDRY_MAP_CACHE: Optional[dict[str, str]] = None
+
+
+def get_heraldry_filename(powiat_id: int) -> Optional[str]:
+    global _HERALDRY_MAP_CACHE
+    if _HERALDRY_MAP_CACHE is None:
+        map_path = get_db_path().parent / "powiat_heraldry_map.json"
+        if map_path.exists():
+            try:
+                _HERALDRY_MAP_CACHE = json.loads(map_path.read_text(encoding="utf-8"))
+            except Exception:
+                _HERALDRY_MAP_CACHE = {}
+        else:
+            _HERALDRY_MAP_CACHE = {}
+    return _HERALDRY_MAP_CACHE.get(str(powiat_id))
+
+def sanitize_svg_bytes(content: bytes) -> bytes:
+    """Ensure SVG contains xmlns, valid viewBox, and UTF-8 encoding so browsers render it cleanly."""
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        try:
+            text = content.decode("iso-8859-1")
+        except UnicodeDecodeError:
+            text = content.decode("latin1", errors="replace")
+
+    text = re.sub(
+        r'<\?xml[^>]*encoding=["\'][^"\']*["\'][^>]*\?>',
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        text,
+        count=1,
+    )
+
+    m = re.search(r'<svg([^>]*)>', text)
+    if not m:
+        return text.encode("utf-8")
+
+    attrs = m.group(1)
+
+    # Extract existing viewBox or build from width/height
+    vb_m = re.search(r'viewBox=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
+    if vb_m:
+        viewbox = vb_m.group(1)
+    else:
+        w_m = re.search(r'width=["\']([0-9.]+)(?:px|pt)?["\']', attrs)
+        h_m = re.search(r'height=["\']([0-9.]+)(?:px|pt)?["\']', attrs)
+        if w_m and h_m:
+            viewbox = f"0 0 {w_m.group(1)} {h_m.group(1)}"
+        else:
+            viewbox = None
+
+    clean_attrs = re.sub(r'\s*(?:width|height|viewBox|viewbox|xmlns)=["\'][^"\']*["\']', '', attrs).strip()
+
+    new_attrs = 'xmlns="http://www.w3.org/2000/svg"'
+    if viewbox:
+        new_attrs += f' viewBox="{viewbox}"'
+    if clean_attrs:
+        new_attrs += f' {clean_attrs}'
+
+    new_svg_tag = f'<svg {new_attrs}>'
+    text = text[:m.start()] + new_svg_tag + text[m.end():]
+    return text.encode("utf-8")
+
 def polish_sort_key(s: str) -> list[int]:
     return [PL_ORDER.get(ch, 1000 + ord(ch)) for ch in s.lower()]
 
@@ -338,11 +402,31 @@ def fetch_url(
     raise RuntimeError("Too many redirects")
 
 
+def _extract_wiki_fallback_coat_filename(wiki_title: str, page: dict) -> Optional[str]:
+    images = [
+        str(im.get("title", "")).replace("Plik:", "").replace("File:", "").strip()
+        for im in page.get("images", [])
+        if im.get("title")
+    ]
+    svg_coa = [img for img in images if img.lower().endswith("coa.svg")]
+    if not svg_coa:
+        return None
+    expected_exact = f"pol {wiki_title.lower()} coa.svg"
+    for img in svg_coa:
+        if img.lower() == expected_exact:
+            return img
+    if wiki_title.lower().startswith("powiat "):
+        for img in svg_coa:
+            if img.lower().startswith("pol powiat "):
+                return img
+    return svg_coa[0]
+
+
 def resolve_and_fetch_heraldry(wiki_title: str) -> tuple[bytes, dict]:
-    # 1. pl.wikipedia.org -> wikibase_item (QID)
+    # 1. pl.wikipedia.org -> wikibase_item (QID) + page images fallback
     wiki_url = (
         f"https://pl.wikipedia.org/w/api.php?action=query"
-        f"&titles={urllib.parse.quote(wiki_title)}&prop=pageprops&redirects=1&format=json"
+        f"&titles={urllib.parse.quote(wiki_title)}&prop=pageprops|images&imlimit=50&redirects=1&format=json"
     )
     wiki_bytes = fetch_url(wiki_url)
     wiki_data = json.loads(wiki_bytes.decode("utf-8"))
@@ -351,21 +435,22 @@ def resolve_and_fetch_heraldry(wiki_title: str) -> tuple[bytes, dict]:
         raise ValueError(f"No Wikipedia page found for '{wiki_title}'")
     page = next(iter(pages.values()))
     qid = page.get("pageprops", {}).get("wikibase_item")
-    if not qid:
-        raise ValueError(f"No wikibase_item found on page for '{wiki_title}'")
 
-    # 2. wikidata -> P94 (coat of arms filename)
-    wd_url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={qid}&props=claims&format=json"
-    wd_bytes = fetch_url(wd_url)
-    wd_data = json.loads(wd_bytes.decode("utf-8"))
-    claims = wd_data.get("entities", {}).get(qid, {}).get("claims", {})
-    p94 = claims.get("P94")
-    if not p94:
-        raise ValueError(f"No P94 coat of arms claim found on Wikidata entity {qid}")
-    filename = p94[0].get("mainsnak", {}).get("datavalue", {}).get("value")
+    filename: Optional[str] = None
+    if qid:
+        # 2. wikidata -> P94 (coat of arms filename)
+        wd_url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={qid}&props=claims&format=json"
+        wd_bytes = fetch_url(wd_url)
+        wd_data = json.loads(wd_bytes.decode("utf-8"))
+        claims = wd_data.get("entities", {}).get(qid, {}).get("claims", {})
+        p94 = claims.get("P94")
+        if p94:
+            filename = p94[0].get("mainsnak", {}).get("datavalue", {}).get("value")
+
     if not filename:
-        raise ValueError(f"Empty P94 coat of arms filename on Wikidata entity {qid}")
-
+        filename = _extract_wiki_fallback_coat_filename(wiki_title, page)
+    if not filename:
+        raise ValueError(f"No coat of arms filename found on Wikidata ({qid}) or Wikipedia for '{wiki_title}'")
     # 3. commons metadata
     commons_title = f"File:{filename}"
     commons_url = (
@@ -398,7 +483,7 @@ def resolve_and_fetch_heraldry(wiki_title: str) -> tuple[bytes, dict]:
         file_url
         or f"https://commons.wikimedia.org/wiki/Special:FilePath/{urllib.parse.quote(filename)}"
     )
-    svg_bytes = fetch_url(svg_download_url)
+    svg_bytes = sanitize_svg_bytes(fetch_url(svg_download_url))
     if not svg_bytes or (b"<svg" not in svg_bytes and b"<?xml" not in svg_bytes):
         raise ValueError(f"Downloaded file for '{filename}' is not valid SVG content")
 
@@ -417,7 +502,7 @@ def get_or_fetch_herb_svg(powiat_id: int, powiat_name: str) -> bytes:
 
     if svg_file.exists():
         try:
-            return svg_file.read_bytes()
+            return sanitize_svg_bytes(svg_file.read_bytes())
         except Exception:
             pass
 
@@ -439,6 +524,50 @@ def get_or_fetch_herb_svg(powiat_id: int, powiat_name: str) -> bytes:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Coat of arms asset temporarily unavailable.",
         ) from exc
+
+
+def get_or_fetch_herb_thumb(
+    powiat_id: int, powiat_name: str, width: int = 80
+) -> tuple[bytes, str]:
+    """Return a lightweight low-resolution PNG thumbnail for list views."""
+    cache_dir = get_herb_cache_dir() / "thumbs"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    thumb_file = cache_dir / f"thumb_{width}_{powiat_id}.png"
+
+    if thumb_file.exists():
+        try:
+            data = thumb_file.read_bytes()
+            if len(data) > 64:
+                return data, "image/png"
+        except Exception:
+            pass
+
+    filename = get_heraldry_filename(powiat_id)
+    if not filename:
+        json_file = get_herb_cache_dir() / f"{powiat_id}.json"
+        if json_file.exists():
+            try:
+                filename = json.loads(json_file.read_text(encoding="utf-8")).get("filename")
+            except Exception:
+                filename = None
+
+    if filename:
+        thumb_url = (
+            f"https://commons.wikimedia.org/wiki/Special:FilePath/"
+            f"{urllib.parse.quote(filename)}?width={width}"
+        )
+        try:
+            png_bytes = fetch_url(thumb_url)
+            if png_bytes and len(png_bytes) > 64:
+                atomic_write(thumb_file, png_bytes)
+                return png_bytes, "image/png"
+        except Exception as exc:
+            logger.warning(
+                f"Thumbnail fetch failed for powiat {powiat_id} ({filename}), falling back to SVG: {exc}"
+            )
+
+    svg_bytes = get_or_fetch_herb_svg(powiat_id, powiat_name)
+    return svg_bytes, "image/svg+xml"
 
 
 def get_source_attribution(

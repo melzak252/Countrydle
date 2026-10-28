@@ -9,8 +9,9 @@ venv
 
 node_modules
 
-data
-data/
+/data
+/data/
+!client/src/data/
 postgres_data*/
 postgres_test_data/
 qdrant_data/
@@ -22,6 +23,12 @@ docker-compose_dev.yml
 qdrant_data/
 qdrant_data_*/
 
+
+# Local backups and research artifacts
+countrydle_backup.zip
+*.dump
+layer1.json
+prior_art_structured_qa.json
 databases
 
 # Private operator instructions: never commit or publish.

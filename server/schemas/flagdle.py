@@ -106,7 +106,7 @@ class FlagShadesChallenge(BaseModel):
     seed: str
     is_daily: bool
     date: str
-    max_guesses: int = 8
+    max_guesses: int = 12
     hint_unlock_guesses: int = 3
     token: str
     flag_asset_url: str

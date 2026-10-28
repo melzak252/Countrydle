@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
@@ -17,6 +18,11 @@ import {
   ExternalLink,
   Car,
   Compass,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { powiatHeraldryService } from '../services/api';
 import type {
@@ -122,6 +128,9 @@ export default function PowiatHeraldryPage() {
   // UI state
   const [copied, setCopied] = useState<boolean>(false);
   const [showResultsModal, setShowResultsModal] = useState<boolean>(false);
+  const [isFullscreenOpen, setIsFullscreenOpen] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [lightBackdrop, setLightBackdrop] = useState<boolean>(false);
   const [showInstructions, setShowInstructions] = useState<boolean>(() => {
     try {
       return localStorage.getItem(POWIAT_HERALDRY_GUIDE_KEY) !== 'true';
@@ -164,6 +173,8 @@ export default function PowiatHeraldryPage() {
     setImageLoading(true);
     setImageError(false);
     setRetryNonce(0);
+    setIsFullscreenOpen(false);
+    setZoomLevel(1);
   }, [resolvedCoatUrl]);
 
   // Load challenge
@@ -248,6 +259,18 @@ export default function PowiatHeraldryPage() {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
+
+  // Close fullscreen modal on Escape
+  useEffect(() => {
+    if (!isFullscreenOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreenOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isFullscreenOpen]);
 
   const handleCloseInstructions = () => {
     setShowInstructions(false);
@@ -537,6 +560,12 @@ export default function PowiatHeraldryPage() {
             >
               ⚡ {isPl ? 'Wyzwanie losowe' : 'Random Challenge'}
             </button>
+            <Link
+              to="/quiz-herbow"
+              className="px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
+            >
+              🏆 {isPl ? 'Quiz 380 Herbów (JetPunk)' : '380 Coats Grid Quiz'}
+            </Link>
           </div>
 
           {mode === 'challenge' && (
@@ -567,7 +596,38 @@ export default function PowiatHeraldryPage() {
           />
 
           {/* Heraldic Shield Frame */}
-          <div className="relative aspect-[4/5] max-h-80 w-auto flex items-center justify-center p-3 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl">
+          <div
+            onClick={() => {
+              if (resolvedCoatUrl && !imageError && !imageLoading) {
+                setZoomLevel(1);
+                setIsFullscreenOpen(true);
+              }
+            }}
+            role={resolvedCoatUrl && !imageError && !imageLoading ? 'button' : undefined}
+            tabIndex={resolvedCoatUrl && !imageError && !imageLoading ? 0 : undefined}
+            onKeyDown={(e) => {
+              if (
+                resolvedCoatUrl &&
+                !imageError &&
+                !imageLoading &&
+                (e.key === 'Enter' || e.key === ' ')
+              ) {
+                e.preventDefault();
+                setZoomLevel(1);
+                setIsFullscreenOpen(true);
+              }
+            }}
+            aria-label={
+              isPl
+                ? 'Kliknij, aby powiększyć herb na pełny ekran'
+                : 'Click to inspect coat of arms in fullscreen'
+            }
+            className={`group relative aspect-[4/5] max-h-80 w-auto flex items-center justify-center p-3 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all ${
+              resolvedCoatUrl && !imageError && !imageLoading
+                ? 'cursor-zoom-in hover:border-emerald-500/50 hover:shadow-emerald-950/30'
+                : ''
+            }`}
+          >
             {resolvedCoatUrl && !imageError && (
               <img
                 src={
@@ -584,7 +644,7 @@ export default function PowiatHeraldryPage() {
                     ? 'Herb polskiego powiatu'
                     : 'Polish county coat of arms'
                 }
-                className={`max-h-full max-w-full object-contain filter drop-shadow-xl transition-opacity duration-300 ${
+                className={`max-h-full max-w-full object-contain filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.02] ${
                   imageLoading ? 'opacity-0' : 'opacity-100'
                 }`}
                 onLoad={() => setImageLoading(false)}
@@ -593,6 +653,14 @@ export default function PowiatHeraldryPage() {
                   setImageError(true);
                 }}
               />
+            )}
+            {resolvedCoatUrl && !imageError && !imageLoading && (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-85 group-hover:opacity-100 group-hover:border-emerald-400/50 group-hover:text-emerald-300 transition-all shadow"
+              >
+                <Maximize2 size={14} />
+              </span>
             )}
 
             {/* Spinner while loading */}
@@ -1248,6 +1316,125 @@ export default function PowiatHeraldryPage() {
               </button>
             </div>
           </section>
+        </div>
+      )}
+
+      {/* Fullscreen Coat of Arms Inspection Lightbox */}
+      {isFullscreenOpen && resolvedCoatUrl && !imageError && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={isPl ? 'Podgląd herbu na pełnym ekranie' : 'Fullscreen coat of arms inspection'}
+          className="fixed inset-0 z-[2100] flex flex-col bg-obsidian-950/95 backdrop-blur-md animate-fade-in"
+          onClick={() => setIsFullscreenOpen(false)}
+        >
+          {/* Top Toolbar */}
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2.5 text-sm font-semibold text-sand-100">
+              <Shield size={18} className="text-emerald-400 shrink-0" />
+              <span>
+                {targetPowiat
+                  ? targetPowiat.name
+                  : isPl
+                  ? 'Szczegółowy podgląd herbu'
+                  : 'Coat of Arms Detail Inspector'}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Zoom Controls */}
+              <div className="inline-flex items-center rounded-sm border border-white/15 bg-obsidian-950 p-0.5 text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
+                  disabled={zoomLevel <= 1}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-xs text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 cursor-pointer"
+                  aria-label={isPl ? 'Pomniejsz' : 'Zoom out'}
+                  title={isPl ? 'Pomniejsz' : 'Zoom out'}
+                >
+                  <ZoomOut size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(1)}
+                  className="px-2.5 h-8 text-sand-100 hover:bg-white/10 rounded-xs cursor-pointer"
+                  title={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
+                >
+                  {Math.round(zoomLevel * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
+                  disabled={zoomLevel >= 3}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-xs text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 cursor-pointer"
+                  aria-label={isPl ? 'Powiększ' : 'Zoom in'}
+                  title={isPl ? 'Powiększ' : 'Zoom in'}
+                >
+                  <ZoomIn size={14} />
+                </button>
+              </div>
+
+              {/* Backdrop Contrast Toggle (helpful for dark heraldic charges) */}
+              <button
+                type="button"
+                onClick={() => setLightBackdrop((prev) => !prev)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-950 px-3 text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                title={isPl ? 'Przełącz kontrast tła' : 'Toggle background contrast'}
+              >
+                {lightBackdrop ? <Moon size={14} className="text-sky-300" /> : <Sun size={14} className="text-amber-300" />}
+                <span>{lightBackdrop ? (isPl ? 'Ciemne tło' : 'Dark bg') : (isPl ? 'Jasne tło' : 'Light bg')}</span>
+              </button>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setIsFullscreenOpen(false)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-white/10 px-3 text-xs font-semibold text-sand-100 hover:bg-white/20 transition-colors cursor-pointer"
+                aria-label={isPl ? 'Zamknij pełny ekran' : 'Close fullscreen'}
+              >
+                <X size={15} />
+                <span>{isPl ? 'Zamknij (Esc)' : 'Close (Esc)'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable / Zoomable Shield Canvas */}
+          <div className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-8">
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`relative flex items-center justify-center rounded-2xl border p-6 sm:p-10 shadow-2xl transition-colors duration-200 ${
+                lightBackdrop
+                  ? 'border-zinc-300 bg-stone-100 shadow-black/50'
+                  : 'border-white/15 bg-obsidian-900/95 shadow-black/80'
+              }`}
+            >
+              <img
+                src={
+                  retryNonce > 0
+                    ? `${resolvedCoatUrl}${resolvedCoatUrl.includes('?') ? '&' : '?'}retry=${retryNonce}`
+                    : resolvedCoatUrl
+                }
+                alt={
+                  targetPowiat
+                    ? isPl
+                      ? `Herb: ${targetPowiat.name}`
+                      : `Coat of arms of ${targetPowiat.name}`
+                    : isPl
+                    ? 'Herb polskiego powiatu (pełny ekran)'
+                    : 'Polish county coat of arms (fullscreen)'
+                }
+                style={{
+                  height: `${Math.round(68 * zoomLevel)}vh`,
+                  maxHeight: `${Math.round(68 * zoomLevel)}vh`,
+                  width: 'auto',
+                }}
+                className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-all duration-150"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

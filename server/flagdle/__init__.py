@@ -231,7 +231,7 @@ async def get_shades_challenge(
         seed=effective_seed,
         is_daily=is_daily,
         date=today_str,
-        max_guesses=8,
+        max_guesses=12,
         hint_unlock_guesses=3,
         token=token,
         flag_asset_url=f"/flagdle/shades/flag-asset?token={token}",
@@ -322,7 +322,7 @@ async def make_shades_guess(
         guessed_country_name=guessed_country.name,
     )
 
-    is_game_over = is_correct or (body.guesses_made >= 8)
+    is_game_over = is_correct or (body.guesses_made >= 12)
     target_info = (
         FlagShadesTargetCountry(id=target_country.id, name=target_country.name)
         if is_game_over
