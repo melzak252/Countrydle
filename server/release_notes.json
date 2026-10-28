@@ -1,5 +1,5 @@
 {
-  "version": "1.36.1",
-  "title": "Fix daily coat of arms frame dimensions and loading state",
-  "body": "- Fixed daily heraldic shield pedestal collapsing into a thin strip by enforcing solid aspect-[4/5] dimensions during loading.\n- Restored image onLoad handler on Herby Powiatów so coats of arms render immediately upon load."
+  "version": "1.36.2",
+  "title": "Preserve natural flag aspect ratios without width distortion",
+  "body": "- Preserved natural flag aspect ratios in Flagdle and Flag Shades, eliminating horizontal width squashing on 1:2 and non-standard flags like Mongolia."
 }
