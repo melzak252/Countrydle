@@ -1,5 +1,5 @@
 {
-  "version": "1.36.2",
-  "title": "Preserve natural flag aspect ratios without width distortion",
-  "body": "- Preserved natural flag aspect ratios in Flagdle and Flag Shades, eliminating horizontal width squashing on 1:2 and non-standard flags like Mongolia."
+  "version": "1.36.3",
+  "title": "Instant fullscreen coat of arms preview with background vector swap",
+  "body": "- Enabled instant 0ms cached preview in the Fullscreen Coat of Arms Inspector so players never wait for images to load, with high-resolution vector SVGs seamlessly swapping in."
 }
