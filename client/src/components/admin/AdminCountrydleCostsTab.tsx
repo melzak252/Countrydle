@@ -5,7 +5,7 @@ import type { CountryCostDay, CountryCostReport, CountryCostUsage } from '../../
 
 const DAY_OPTIONS = [7, 14, 30] as const;
 type Days = (typeof DAY_OPTIONS)[number];
-const number = (value: number | null | undefined) => value == null ? '—' : new Intl.NumberFormat().format(value);
+const number = (value: number | null | undefined) => value == null ? '—' : new Intl.NumberFormat('en-US').format(value);
 const usd = (value: number | null | undefined) => value == null ? '—' : `$${value.toFixed(6)}`;
 const tokenFields: Array<[string, keyof CountryCostUsage]> = [
   ['Input tokens', 'input_tokens'], ['Cached input tokens', 'cached_input_tokens'],

@@ -30,7 +30,7 @@ type ReportResult = {
 const controlClass = 'admin-control';
 
 export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion: (report: AnswerReport) => void }) {
-  const { t, i18n } = useTranslation('translation', { keyPrefix: 'adminReports' });
+  const { t } = useTranslation('translation', { keyPrefix: 'adminReports' });
   const { t: modesT } = useTranslation('translation');
   const [query, setQuery] = useState<ReportQuery>({ status: 'open', mode: '', page: 1, revision: 0 });
   const [result, setResult] = useState<ReportResult | null>(null);
@@ -149,9 +149,9 @@ export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion:
                 <p className="text-sm text-slate-300">{t('caseId', { id: report.id })}</p>
                 <div className="flex flex-wrap gap-2">
                   <span className="admin-badge">{modesT(`adminModes.modes.${report.mode}`, { defaultValue: MODE_LABELS[report.mode] })}</span>
-                  <span className={`admin-badge ${report.reviewed_at ? '' : 'text-amber-300'}`}>{report.reviewed_at ? t('reviewedAt', { date: new Date(report.reviewed_at).toLocaleString(i18n.language) }) : t('open')}</span>
+                  <span className={`admin-badge ${report.reviewed_at ? '' : 'text-amber-300'}`}>{report.reviewed_at ? t('reviewedAt', { date: new Date(report.reviewed_at).toLocaleString('en-US') }) : t('open')}</span>
                 </div>
-                <p className="text-sm text-slate-300">{t('reporter')}: {report.reporter_username || t('guest')} · {t('submitted')}: {new Date(report.created_at).toLocaleString(i18n.language)}</p>
+                <p className="text-sm text-slate-300">{t('reporter')}: {report.reporter_username || t('guest')} · {t('submitted')}: {new Date(report.created_at).toLocaleString('en-US')}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button

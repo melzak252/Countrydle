@@ -16,18 +16,10 @@ export function safeFactSourceUrl(value: string | null | undefined): string | nu
   }
 }
 
-export function factProvenanceLabels(isPl: boolean) {
-  return isPl ? {
-    title: 'Pochodzenie faktów', unknown: 'Nieznane', cited: 'Ze źródłem',
-    aggregate: 'Cała relacja / brak wartości',
-    status: 'Status źródła', citation: 'Cytat / odniesienie', source_url: 'Adres źródła',
-    effective_from: 'Obowiązuje od', effective_to: 'Obowiązuje do',
-    retrieved_at: 'Data pobrania', updated_at: 'Data aktualizacji dowodu', convention: 'Konwencja',
-  } : {
+export const factProvenanceLabels = {
     title: 'Fact provenance', unknown: 'Unknown', cited: 'Cited',
     aggregate: 'Whole relation / absence',
     status: 'Evidence status', citation: 'Citation', source_url: 'Source URL',
     effective_from: 'Effective from', effective_to: 'Effective to',
     retrieved_at: 'Retrieved at', updated_at: 'Evidence updated at', convention: 'Convention',
-  };
-}
+} as const;

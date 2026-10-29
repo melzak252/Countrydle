@@ -1,5 +1,6 @@
 import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { gameCatalog } from '../lib/gameCatalog';
 import { usePageMetadataOverride, type PageMetadataInput } from '../lib/pageMetadata';
 
 const ORIGIN = 'https://countrydle.online';
@@ -9,8 +10,8 @@ const IMAGE = `${ORIGIN}/android-chrome-512x512.png`;
 type RouteMetadata = PageMetadataInput & { pageType?: string };
 const publicPages: Record<string, RouteMetadata> = {
   '/': {
-    title: 'Countrydle — Nine Daily Geography Games',
-    description: 'Play nine daily geography puzzles: world countries, flags, four continents, US states and Polish regions. Ask yes-or-no questions and reset at 00:00 UTC.',
+    title: 'Countrydle — Daily Country Guessing and Geography Games',
+    description: 'Guess the daily country with yes-or-no questions, then explore geography games featuring flags, coats of arms, continents, regions and friend duels. The daily country resets at 00:00 UTC.',
   },
   '/about': {
     title: 'About Countrydle — Publisher, Geography Data and Limitations',
@@ -193,7 +194,7 @@ function structuredData(metadata: RouteMetadata, path: string, url: string) {
     applicationCategory: 'GameApplication',
     operatingSystem: 'Web browser',
     isAccessibleForFree: true,
-    featureList: ['World countries', 'Flagdle', 'Europe', 'Asia', 'Africa', 'Americas', 'US states', 'Polish voivodeships', 'Polish counties', 'Live 1v1 duels'],
+    featureList: ['Daily country guessing', ...gameCatalog.flatMap(({ games }) => games.map(({ name }) => name))],
     author: { '@type': 'Person', name: 'Jakub Melzacki', url: `${ORIGIN}/about` },
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   };

@@ -145,7 +145,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     clearMapMarkings,
   } = useStore();
 
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 // today removed
 
   // HUD & Chat state
@@ -318,7 +318,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               className="max-md:min-h-11 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
             >
               <Trophy size={13} />
-              <span>{i18n.language.startsWith('pl') ? 'Wynik' : 'Result'}</span>
+              <span>{'Result'}</span>
             </button>
           )}
         </div>
@@ -334,14 +334,14 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
         {!isChatOpen ? (
           <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
             <button type="button" onClick={() => { setUserSelectedTab('question'); setIsChatOpen(true); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 md:hidden">
-              {i18n.language.startsWith('pl') ? 'Pytaj' : 'Ask'} <span className="text-zinc-400">{gameState.remaining_questions}/8</span>
+              {'Ask'} <span className="text-zinc-400">{gameState.remaining_questions}/8</span>
             </button>
             <button type="button" onClick={() => { setUserSelectedTab('guess'); setIsChatOpen(true); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 md:hidden">
-              {i18n.language.startsWith('pl') ? 'Zgadnij' : 'Guess'} <span className="text-emerald-400">{gameState.remaining_guesses}/3</span>
+              {'Guess'} <span className="text-emerald-400">{gameState.remaining_guesses}/3</span>
             </button>
-            <button type="button" onClick={() => setIsChatOpen(true)} className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 md:flex" aria-label={i18n.language.startsWith('pl') ? 'Otwórz notatnik' : 'Open notebook'}>
+            <button type="button" onClick={() => setIsChatOpen(true)} className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 md:flex" aria-label={'Open notebook'}>
               <MessageSquare size={13} className="text-emerald-400" />
-              <span>{i18n.language.startsWith('pl') ? 'Notatnik' : 'Notebook'}</span>
+              <span>{'Notebook'}</span>
               <span className="text-sand-100 font-semibold">Q: {questions.length}/8</span>
               <span className="text-zinc-500">·</span>
               <span className="text-emerald-400 font-semibold">G: {guesses.length}/3</span>
@@ -353,7 +353,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
 
             {/* Notebook Tabbed Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-2 py-1 shrink-0 md:px-4 md:py-3 md:bg-obsidian-900/70 md:backdrop-blur-md">
-              <div role="group" aria-label={i18n.language.startsWith('pl') ? 'Wybierz pytanie lub zgadnięcie' : 'Choose question or guess'} className="flex items-center gap-1">
+              <div role="group" aria-label={'Choose question or guess'} className="flex items-center gap-1">
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'questions'}
@@ -365,8 +365,8 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   }`}
                 >
                   <MessageSquare size={12} className={`hidden md:block ${activeChatTab === 'questions' ? 'text-emerald-400' : ''}`} />
-                  <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Pytaj' : 'Ask'}</span>
-                  <span className="hidden md:inline">{i18n.language.startsWith('pl') ? 'Pytania' : 'Questions'}</span>
+                  <span className="md:hidden">{'Ask'}</span>
+                  <span className="hidden md:inline">{'Questions'}</span>
                   <span className="font-mono text-[10px] text-zinc-500">({questions.length}/8)</span>
                 </button>
 
@@ -381,8 +381,8 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                   }`}
                 >
                   <Target size={12} className={`hidden md:block ${activeChatTab === 'guesses' ? 'text-emerald-400' : ''}`} />
-                  <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zgadnij' : 'Guess'}</span>
-                  <span className="hidden md:inline">{i18n.language.startsWith('pl') ? 'Zgadnięcia' : 'Guesses'}</span>
+                  <span className="md:hidden">{'Guess'}</span>
+                  <span className="hidden md:inline">{'Guesses'}</span>
                   <span className="font-mono text-[10px] text-zinc-500">({guesses.length}/3)</span>
                 </button>
               </div>
@@ -441,7 +441,7 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
                           ) : hasDistance ? (
                             <div className="flex items-center gap-1.5 font-mono text-[11px] shrink-0">
                               <span className={`rounded-sm border px-2 py-0.5 font-semibold ${getDistanceColor(g.distance_km!)}`}>
-                                {g.distance_km!.toLocaleString()} km
+                                {g.distance_km!.toLocaleString('en-US')} km
                               </span>
                               {hasBearing && (
                                 <span

@@ -30,7 +30,7 @@ APP_DIR = Path(__file__).resolve().parent
 ROOT_DIR = APP_DIR.parent if (APP_DIR.parent / "data").exists() else APP_DIR.parents[1]
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
 # Countrydle-only prompt/generation revision; shared contracts/modes keep PLANNER_VERSION.
-COUNTRYDLE_PROMPT_REVISION = "compact-v8-continent-borders-t1024"
+COUNTRYDLE_PROMPT_REVISION = "compact-v9-english-output-t1024"
 
 
 SUPPORTED_RELATIONS = [
@@ -143,8 +143,10 @@ Territory, history, culture, people and landmarks are valid subjects; when clear
 not locally supported, use fallback.
 Never weaken, drop, or add conditions.
 
-Output JSON and all fields/literals in English; use common English names, not official
-long names. Normalize translated names (Bałtyk→Baltic Sea, Niemcy→Germany, UE→EU).
+Output JSON and all fields/literals in English. Write all generated prose, including
+improved_question, clarification explanations, and fallback reasons, in English
+regardless of the input language. Use common English names, not official long names.
+Normalize translated names (Bałtyk→Baltic Sea, Niemcy→Germany, UE→EU).
 Quoted text patterns for starts_with/ends_with/contains_text preserve exact original
 characters, not translated meaning ("stan" stays "stan", never "state").
 Exception: identity literals preserve the candidate's exact original abbreviation or

@@ -10,7 +10,6 @@ import {
   Loader2,
   Award
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { blogService } from '../services/api';
 import AdSenseUnit from '../components/AdSenseUnit';
@@ -20,12 +19,12 @@ import { usePageMetadata } from '../lib/pageMetadata';
 import { blogPostSchema, cleanDisplayText, safeSourceUrl, type BlogPost } from '../blogContent';
 
 
-function formatBlogDate(dateStr: string, isPl: boolean): string {
+function formatBlogDate(dateStr: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!match) return dateStr;
   const utcDate = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
   if (Number.isNaN(utcDate.getTime())) return dateStr;
-  return new Intl.DateTimeFormat(isPl ? 'pl-PL' : 'en-US', {
+  return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -61,8 +60,6 @@ function cleanBorderList(bordersStr?: string | number): string {
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
   const [fetchedPost, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -130,7 +127,7 @@ export default function BlogPostPage() {
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = loadedPost?.title || (isPl ? 'Rozwiązanie Countrydle' : 'Countrydle solution');
+    const title = loadedPost?.title || ('Countrydle solution');
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
@@ -141,13 +138,13 @@ export default function BlogPostPage() {
     }
     await navigator.clipboard.writeText(url);
     setCopied(true);
-    toast.success(isPl ? 'Link skopiowany do schowka!' : 'Link copied to clipboard!');
+    toast.success('Link copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading || (!error && loadedSlug !== slug)) {
     return (
-      <div data-publisher-ready="false" role="status" aria-label={isPl ? 'Ładowanie podsumowania' : 'Loading recap'} className="flex justify-center py-32">
+      <div data-publisher-ready="false" role="status" aria-label={'Loading recap'} className="flex justify-center py-32">
         <Loader2 className="animate-spin text-emerald-400" size={36} />
       </div>
     );
@@ -157,11 +154,11 @@ export default function BlogPostPage() {
     return (
       <div data-publisher-ready="false" data-publisher-error="true" className="mx-auto max-w-3xl py-20 text-center">
         <Globe size={40} className="mx-auto mb-4 text-zinc-600" />
-        <h1 className="font-serif text-2xl text-sand-100">{isPl ? 'Podsumowanie niedostępne' : 'Recap unavailable'}</h1>
+        <h1 className="font-serif text-2xl text-sand-100">{'Recap unavailable'}</h1>
         <p role="alert" className="mt-2 text-sm text-zinc-400">{error || 'The recap could not be loaded.'}</p>
-        <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded border border-white/20 px-4 py-2 text-sand-100">{isPl ? 'Spróbuj ponownie' : 'Try again'}</button>
+        <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded border border-white/20 px-4 py-2 text-sand-100">{'Try again'}</button>
         <Link to="/blog" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded bg-emerald-400 px-4 py-2 text-sm font-bold text-obsidian-950">
-          <ArrowLeft size={14} /> {isPl ? 'Wróć do dziennika' : 'Back to journal'}
+          <ArrowLeft size={14} /> {'Back to journal'}
         </Link>
       </div>
     );
@@ -173,38 +170,28 @@ export default function BlogPostPage() {
   const facts = post.fast_facts || {};
   const questionLists = [
     {
-      title: isPl ? 'Najczęstsze pytania wszystkich graczy' : 'Most common questions overall',
+      title: 'Most common questions overall',
       questions: post.game_debrief?.top_questions ?? [],
-      empty: isPl ? 'Brak zapisanych pytań dla tej dziennej zagadki.' : 'No recorded questions are available for this daily puzzle.',
+      empty: 'No recorded questions are available for this daily puzzle.',
     },
     {
-      title: isPl ? 'Najczęstsze pytania zwycięzców' : 'Most common questions asked by winners',
+      title: 'Most common questions asked by winners',
       questions: post.game_debrief?.top_winner_questions ?? [],
-      empty: isPl ? 'Brak zapisanych pytań powiązanych ze zwycięzcami tej dziennej zagadki.' : 'No recorded questions linked to winners are available for this daily puzzle.',
+      empty: 'No recorded questions linked to winners are available for this daily puzzle.',
     },
   ];
-
-  const localizedMeta = (value: string): string => {
-    if (!isPl) return value;
-    const labels: Record<string, string> = {
-      Africa: 'Afryka', Americas: 'Ameryki', 'North America': 'Ameryka Północna',
-      'South America': 'Ameryka Południowa', Asia: 'Azja', Europe: 'Europa',
-      Oceania: 'Oceania', Easy: 'Łatwy', Medium: 'Średni', Challenging: 'Trudny',
-    };
-    return labels[value] || value;
-  };
 
   return (
     <article data-publisher-ready="true" className="mx-auto min-w-0 max-w-4xl space-y-6 py-4 [overflow-wrap:anywhere] md:space-y-10 md:py-10">
       {/* Navigation & Header */}
-      <nav aria-label={isPl ? 'Nawigacja podsumowania' : 'Recap navigation'} className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-white/10 pb-3 text-sm sm:gap-3">
+      <nav aria-label={'Recap navigation'} className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-white/10 pb-3 text-sm sm:gap-3">
         <Link to="/blog" className="inline-flex min-h-11 max-w-full items-center gap-1.5 text-zinc-400 hover:text-sand-100 transition-colors">
           <ArrowLeft size={14} />
-          <span>{isPl ? 'Wszystkie podsumowania' : 'All Solutions'}</span>
+          <span>{'All Solutions'}</span>
         </Link>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <time dateTime={post.date} className="min-w-0 break-words text-zinc-500 font-mono">
-            {formatBlogDate(post.date, isPl)}
+            {formatBlogDate(post.date)}
           </time>
           <button
             type="button"
@@ -212,7 +199,7 @@ export default function BlogPostPage() {
             className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded border border-white/15 px-3 py-1 text-zinc-300 hover:border-emerald-400/40 hover:text-emerald-300 transition-colors"
           >
             {copied ? <Check size={12} className="text-emerald-400" /> : <Share2 size={12} />}
-            <span>{copied ? (isPl ? 'Skopiowano' : 'Copied') : (isPl ? 'Udostępnij' : 'Share')}</span>
+            <span>{copied ? ('Copied') : ('Share')}</span>
           </button>
         </div>
       </nav>
@@ -237,12 +224,12 @@ export default function BlogPostPage() {
           <div className="min-w-0 space-y-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-emerald-400">
-                {isPl ? 'Rozwiązanie z poprzedniego dnia' : 'Past-day solution'} · <time dateTime={post.date}>{formatBlogDate(post.date, isPl)}</time>
+                {'Past-day solution'} · <time dateTime={post.date}>{formatBlogDate(post.date)}</time>
               </span>
               <span className="text-zinc-600">&bull;</span>
               {post.continent && (
                 <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-300 border border-emerald-500/20">
-                  {localizedMeta(post.continent)}
+                  {post.continent}
                 </span>
               )}
               {post.difficulty && (
@@ -251,7 +238,7 @@ export default function BlogPostPage() {
                   post.difficulty === 'Challenging' ? 'bg-rose-500/10 text-rose-400' :
                   'bg-amber-500/10 text-amber-400'
                 }`}>
-                  {localizedMeta(post.difficulty)}
+                  {post.difficulty}
                 </span>
               )}
             </div>
@@ -289,42 +276,42 @@ export default function BlogPostPage() {
       {facts && Object.keys(facts).length > 0 && (
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-sand-100">
-            {isPl ? 'Kraj w skrócie' : 'Country at a glance'}
+            {'Country at a glance'}
           </h2>
           <div className="grid min-w-0 grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
             {(facts.region || post.continent) && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{isPl ? 'Region' : 'Region'}</span>
+                <span className="text-zinc-400 block text-xs">{'Region'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.region || post.continent}</span>
               </div>
             )}
             {facts.capital && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{isPl ? 'Stolica' : 'Capital'}</span>
+                <span className="text-zinc-400 block text-xs">{'Capital'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.capital}</span>
               </div>
             )}
             {facts.population && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{isPl ? 'Ludność' : 'Population'}</span>
+                <span className="text-zinc-400 block text-xs">{'Population'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.population}</span>
               </div>
             )}
             {facts.area && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{isPl ? 'Powierzchnia' : 'Land area'}</span>
+                <span className="text-zinc-400 block text-xs">{'Land area'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.area}</span>
               </div>
             )}
             {facts.coastline && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{isPl ? 'Dostęp do morza' : 'Maritime access'}</span>
+                <span className="text-zinc-400 block text-xs">{'Maritime access'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.coastline}</span>
               </div>
             )}
             {facts.languages && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{isPl ? 'Języki urzędowe' : 'Official languages'}</span>
+                <span className="text-zinc-400 block text-xs">{'Official languages'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.languages}</span>
               </div>
             )}
@@ -332,7 +319,7 @@ export default function BlogPostPage() {
 
           {facts.borders && facts.borders !== 'None' && (
             <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/40 p-4 text-sm">
-              <span className="text-zinc-400 block text-xs mb-1.5">{isPl ? 'Sąsiednie kraje' : 'Bordering neighbors'}</span>
+              <span className="text-zinc-400 block text-xs mb-1.5">{'Bordering neighbors'}</span>
               <span className="break-words text-zinc-300 leading-6">{cleanBorderList(facts.borders)}</span>
             </div>
           )}
@@ -343,16 +330,12 @@ export default function BlogPostPage() {
       <section className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 sm:p-6 space-y-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-emerald-300">
           <Globe size={18} className="shrink-0" />
-          <span>{isPl ? 'Analiza geograficzna i ścieżka dedukcji' : 'Geographic & Deductive Analysis'}</span>
+          <span>{'Geographic & Deductive Analysis'}</span>
         </h2>
 
         <div className="space-y-4 text-sm sm:text-base leading-relaxed text-zinc-300">
           <p>
-            {isPl ? (
-              <>
-                <strong className="text-sand-100">{post.country_name}</strong> to państwo położone {facts.region || post.continent ? <>w regionie <strong className="text-sand-100">{String(facts.region || post.continent)}</strong></> : 'na mapie świata'}{facts.capital ? <>, a jego centrum administracyjnym jest stolica — <strong className="text-sand-100">{String(facts.capital)}</strong></> : null}. {facts.languages ? <>Profil językowy kraju, w którym kluczową rolę odgrywa język <strong className="text-sand-100">{String(facts.languages)}</strong>, stanowi ważny wyznacznik tożsamości narodowej i ułatwia precyzyjną identyfikację w rozgrywce.</> : <>Jego profil geopolityczny i tożsamość regionalna stanowią kluczowy punkt odniesienia w skali całego kontynentu.</>}
-              </>
-            ) : (
+            {(
               <>
                 <strong className="text-sand-100">{post.country_name}</strong> occupies a distinctive position {facts.region || post.continent ? <>in <strong className="text-sand-100">{String(facts.region || post.continent)}</strong></> : 'in global geography'}{facts.capital ? <>, centered administratively around its capital, <strong className="text-sand-100">{String(facts.capital)}</strong></> : null}. {facts.languages ? <>The nation&apos;s linguistic landscape, featuring <strong className="text-sand-100">{String(facts.languages)}</strong>, serves as a defining cultural and regional identifier.</> : <>Its geopolitical profile anchors its identity within the broader continental framework.</>}
               </>
@@ -360,11 +343,7 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            {isPl ? (
-              <>
-                Pod względem skali terytorialnej i demograficznej {post.country_name} obejmuje {facts.area ? <>obszar o powierzchni <strong className="text-sand-100">{String(facts.area)}</strong></> : 'swoje terytorium'}{facts.population ? <> zamieszkiwany przez około <strong className="text-sand-100">{String(facts.population)}</strong> obywateli</> : null}. W kontekście dostępu do wód morskich kraj charakteryzuje {facts.coastline ? <>status: <strong className="text-sand-100">{String(facts.coastline)}</strong></> : 'specyficzne położenie hydrograficzne'}. Z kolei układ granic lądowych {cleanBorderList(facts.borders) ? <>— ze szczególnym uwzględnieniem bezpośrednich sąsiadów: <strong className="text-sand-100">{cleanBorderList(facts.borders)}</strong> —</> : facts.borders === 'None' || !facts.borders ? '— nie zawiera lądowych sąsiadów, co nadaje mu wyspiarski lub odosobniony charakter terytorialny —' : null} precyzyjnie definiuje jego położenie w przestrzeni międzynarodowej.
-              </>
-            ) : (
+            {(
               <>
                 From a geographic and demographic perspective, {post.country_name} spans {facts.area ? <>a land area of <strong className="text-sand-100">{String(facts.area)}</strong></> : 'its national territory'}{facts.population ? <> with a population of approximately <strong className="text-sand-100">{String(facts.population)}</strong></> : null}. In terms of maritime connectivity, the country {facts.coastline ? <>features a coastline status of <strong className="text-sand-100">{String(facts.coastline)}</strong></> : 'has unique maritime characteristics'}. Its terrestrial boundary configuration {cleanBorderList(facts.borders) ? <>— including direct borders with <strong className="text-sand-100">{cleanBorderList(facts.borders)}</strong> —</> : facts.borders === 'None' || !facts.borders ? '— with no shared land borders, giving it an insular or isolated territorial profile —' : null} forms a distinct physical signature on the world map.
               </>
@@ -372,11 +351,7 @@ export default function BlogPostPage() {
           </p>
 
           <p>
-            {isPl ? (
-              <>
-                Dla graczy mierzących się z wyzwaniem Countrydle, <strong className="text-sand-100">{post.country_name}</strong> stanowi doskonały przykład zastosowania ustrukturyzowanej ścieżki eliminacji. Rozpoczęcie od pytań makrogeograficznych o kontynent i strefę regionalną natychmiast odrzuca większość państw świata. Następnie weryfikacja dostępu do morza — ustalenie, czy państwo posiada linię brzegową, czy też jest krajem śródlądowym — pozwala błyskawicznie podzielić pozostałych kandydatów. Ostateczne zawężenie następuje poprzez pytania o liczbę i tożsamość graniczących sąsiadów oraz kryteria językowe, co umożliwia bezbłędne wytypowanie kraju <strong className="text-sand-100">{post.country_name}</strong> przy zachowaniu optymalnej liczby ruchów.
-              </>
-            ) : (
+            {(
               <>
                 For players navigating Countrydle&apos;s deductive challenges, <strong className="text-sand-100">{post.country_name}</strong> can be systematically pinpointed using a structured elimination tree. Beginning with macro-geographic queries targeting continent and regional coordinates narrows down hundreds of possibilities to a tight geographic cluster. Next, probing coastline status—determining whether the country has open sea access or is landlocked—instantly bifurcates candidate nations. Finally, analyzing the number and identity of neighboring states alongside linguistic cues allows solvers to rule out adjacent territories and isolate <strong className="text-sand-100">{post.country_name}</strong> with analytical precision.
               </>
@@ -387,7 +362,7 @@ export default function BlogPostPage() {
         {post.deduction_masterclass?.steps && post.deduction_masterclass.steps.length > 0 && (
           <div className="space-y-3 pt-2">
             <h3 className="text-base font-semibold text-sand-100">
-              {isPl ? 'Zapisana ścieżka dedukcji krok po kroku' : 'Step-by-Step Deduction Path'}
+              {'Step-by-Step Deduction Path'}
             </h3>
             <ol className="space-y-3">
               {post.deduction_masterclass.steps.map((step, idx) => {
@@ -442,7 +417,7 @@ export default function BlogPostPage() {
           <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-1.5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
               <Sparkles size={16} className="shrink-0" />
-              <span>{isPl ? 'Wskazówka strategiczna' : 'Strategy Pro-Tip'}</span>
+              <span>{'Strategy Pro-Tip'}</span>
             </div>
             <p className="min-w-0 break-words text-sm sm:text-base leading-relaxed text-sand-100">
               {cleanDisplayText(post.deduction_masterclass.pro_tip)}
@@ -456,7 +431,7 @@ export default function BlogPostPage() {
         <section className="space-y-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-amber-300">
             <Sparkles size={18} className="shrink-0" />
-            <span>{isPl ? 'Dwie rzeczy warte poznania' : 'Two things worth knowing'}</span>
+            <span>{'Two things worth knowing'}</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {curiosities.map((c, i) => (
@@ -475,41 +450,41 @@ export default function BlogPostPage() {
       {/* Recorded daily question rankings */}
       <details open className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60">
         <summary className="min-h-11 cursor-pointer px-4 py-4 text-base font-semibold text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 sm:px-6">
-          {isPl ? 'Jak grali inni? Statystyki i pytania' : 'How did others play? Stats and questions'}
+          {'How did others play? Stats and questions'}
         </summary>
         <div className="min-w-0 space-y-5 border-t border-white/10 p-4 sm:p-6">
           <div className="flex min-w-0 flex-wrap gap-x-5 gap-y-3 rounded-md border border-white/10 bg-obsidian-950 p-4 text-sm leading-6 text-zinc-400">
             {post.game_debrief?.has_telemetry ? (
               <>
                 <span className="min-w-0 break-words text-sand-100">
-                  <strong>{post.game_debrief.win_rate_pct}%</strong> {isPl ? 'rozwiązało' : 'solved'} ({post.game_debrief.total_solvers} {isPl ? 'z' : 'of'} {post.game_debrief.total_challengers})
+                  <strong>{post.game_debrief.win_rate_pct}%</strong> {'solved'} ({post.game_debrief.total_solvers} {'of'} {post.game_debrief.total_challengers})
                 </span>
                 <span className="min-w-0 break-words">
-                  {isPl ? 'Średnia liczba pytań do wygranej: ' : 'Average questions to win: '}
+                  {'Average questions to win: '}
                   <strong className="text-sand-100">{post.game_debrief.avg_questions_to_win}</strong>
                 </span>
                 {post.game_debrief.high_score && (
                   <span className="min-w-0 break-words">
-                    {isPl ? 'Najlepszy wynik: ' : 'High score: '}
-                    <strong className="text-emerald-300">{post.game_debrief.high_score} {isPl ? 'pkt' : 'pts'}</strong>
+                    {'High score: '}
+                    <strong className="text-emerald-300">{post.game_debrief.high_score} {'pts'}</strong>
                   </span>
                 )}
               </>
             ) : post.player_stats && post.player_stats.total_players > 0 ? (
               <>
                 <span className="min-w-0 break-words text-sand-100">
-                  <strong>{post.player_stats.win_rate_pct}%</strong> {isPl ? 'rozwiązało' : 'solved'}
+                  <strong>{post.player_stats.win_rate_pct}%</strong> {'solved'}
                 </span>
                 <span className="min-w-0 break-words">
-                  {isPl ? 'Średnia liczba pytań: ' : 'Average questions: '}
+                  {'Average questions: '}
                   <strong className="text-sand-100">{post.player_stats.avg_questions_won}</strong>
                 </span>
                 <span className="min-w-0 break-words">
-                  <strong className="text-sand-100">{post.player_stats.total_players}</strong> {isPl ? 'graczy' : 'challengers'}
+                  <strong className="text-sand-100">{post.player_stats.total_players}</strong> {'challengers'}
                 </span>
               </>
             ) : (
-              <span className="min-w-0 break-words">{isPl ? 'Podsumowanie dziennej zagadki' : 'Daily puzzle recap'} #{post.id}</span>
+              <span className="min-w-0 break-words">{'Daily puzzle recap'} #{post.id}</span>
             )}
           </div>
           {questionLists.map((list) => (
@@ -527,13 +502,13 @@ export default function BlogPostPage() {
                         <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
                           <span className="min-w-0 break-words text-sm font-semibold leading-6 text-sand-100">{record.question}</span>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-zinc-400">{isPl ? 'Zadano' : 'Asked'} {record.count}×</span>
+                            <span className="text-xs text-zinc-400">{'Asked'} {record.count}×</span>
                             <span className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${
                               isYes ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300' :
                               isNo ? 'border-rose-500/30 bg-rose-500/20 text-rose-300' :
                               'border-white/15 bg-white/5 text-zinc-400'
                             }`}>
-                              {isYes ? (isPl ? 'TAK' : 'YES') : isNo ? (isPl ? 'NIE' : 'NO') : (isPl ? 'Brak zapisanej odpowiedzi' : 'Answer not recorded')}
+                              {isYes ? ('YES') : isNo ? ('NO') : ('Answer not recorded')}
                             </span>
                           </div>
                         </div>
@@ -551,15 +526,15 @@ export default function BlogPostPage() {
       {post.game_debrief?.has_telemetry && post.game_debrief.common_pitfalls.length > 0 && (
         <section className="min-w-0 rounded-lg border border-rose-500/20 bg-rose-500/5 p-4 space-y-3">
           <h2 className="text-base font-semibold text-rose-400">
-            {isPl ? 'Pułapki i błędne odpowiedzi' : 'Common traps and wrong guesses'}
+            {'Common traps and wrong guesses'}
           </h2>
           <p className="text-sm leading-6 text-zinc-300">
-            {isPl ? `Zapisane błędne odpowiedzi dla zagadki z ${post.date}, zanim gracze znaleźli kraj ${post.country_name}:` : `Recorded incorrect guesses for the ${post.date} puzzle before players found ${post.country_name}:`}
+            {`Recorded incorrect guesses for the ${post.date} puzzle before players found ${post.country_name}:`}
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {post.game_debrief.common_pitfalls.map((pf, idx) => (
               <span key={idx} className="min-w-0 max-w-full break-words rounded border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-                ❌ {pf.guess} <span className="text-rose-400/70 text-xs">({pf.count} {isPl ? 'odpowiedzi' : 'guesses'})</span>
+                ❌ {pf.guess} <span className="text-rose-400/70 text-xs">({pf.count} {'guesses'})</span>
               </span>
             ))}
           </div>
@@ -571,11 +546,11 @@ export default function BlogPostPage() {
 
 
       {post.deduction_masterclass?.quiz?.status === 'needs-editorial-repair' && (
-        <section aria-label={isPl ? 'Quiz wymaga korekty redakcyjnej' : 'Quiz needs editorial repair'} className="min-w-0 space-y-3 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-100">
-          <h2 className="font-semibold">{isPl ? 'Quiz niedostępny — wymaga korekty redakcyjnej' : 'Quiz unavailable — needs editorial repair'}</h2>
-          <p>{isPl ? 'Zapisany quiz jest niekompletny lub nieprawidłowy. Nie dodaliśmy wymyślonych odpowiedzi. Pozostała treść artykułu jest dostępna.' : 'The stored quiz is incomplete or invalid. We have not invented missing answers. The rest of this article remains available.'}</p>
+        <section aria-label={'Quiz needs editorial repair'} className="min-w-0 space-y-3 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-100">
+          <h2 className="font-semibold">{'Quiz unavailable — needs editorial repair'}</h2>
+          <p>{'The stored quiz is incomplete or invalid. We have not invented missing answers. The rest of this article remains available.'}</p>
           <details>
-            <summary className="cursor-pointer">{isPl ? 'Zapisana treść quizu (bez zmian)' : 'Stored quiz content (unchanged)'}</summary>
+            <summary className="cursor-pointer">{'Stored quiz content (unchanged)'}</summary>
             <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-xs leading-6">{JSON.stringify(post.deduction_masterclass.quiz.stored, null, 2)}</pre>
           </details>
         </section>
@@ -599,7 +574,7 @@ export default function BlogPostPage() {
           <section className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900 p-4 space-y-4 sm:p-6">
             <div className="flex items-center gap-2 text-base font-semibold text-emerald-300">
               <Award size={18} className="shrink-0" />
-              <span>{isPl ? 'Szybki test wiedzy' : 'Quick memory check'}</span>
+              <span>{'Quick memory check'}</span>
             </div>
             <h3 className="min-w-0 break-words font-serif text-xl font-semibold leading-7 text-sand-100">
               {questionText}
@@ -634,8 +609,8 @@ export default function BlogPostPage() {
               <div role="status" className="break-words rounded bg-emerald-500/10 border border-emerald-500/30 p-3 text-sm leading-6 text-emerald-300">
                 <span className="font-bold block mb-1">
                   {selectedTriviaOption === correctOptionIndex
-                    ? (isPl ? '✓ Prawidłowo!' : '✓ Correct!')
-                    : (isPl ? 'Niestety nie!' : 'Not quite!')}
+                    ? ('✓ Correct!')
+                    : ('Not quite!')}
                 </span>
                 <span>{explanationText}</span>
               </div>
@@ -652,7 +627,7 @@ export default function BlogPostPage() {
         <section className="border-t border-white/10 pt-8 space-y-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-sand-100">
             <Globe size={18} className="shrink-0" />
-            <span>{isPl ? 'Inne ostatnie rozwiązania' : 'More recent country solutions'}</span>
+            <span>{'More recent country solutions'}</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {post.related_posts.map((rp) => (
@@ -670,7 +645,7 @@ export default function BlogPostPage() {
                   </h4>
                 </div>
                 <div className="mt-3 pt-2 border-t border-white/5 flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
-                  <time dateTime={rp.date}>{formatBlogDate(rp.date, isPl)}</time>
+                  <time dateTime={rp.date}>{formatBlogDate(rp.date)}</time>
                   <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </div>
               </Link>
@@ -683,19 +658,17 @@ export default function BlogPostPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="font-semibold text-sand-100">
-              {isPl ? 'Autor i redakcja: Jakub Melzacki' : 'Author & Editorial: Jakub Melzacki'}
+              {'Author & Editorial: Jakub Melzacki'}
             </p>
             <p className="text-xs leading-5 text-zinc-400">
-              {isPl
-                ? 'Twórca Countrydle i entuzjasta geografii. Analiza geograficzna oparta na zweryfikowanych danych CIA World Factbook, Natural Earth i REST Countries.'
-                : 'Countrydle creator and geography enthusiast. Geographic analysis compiled from verified CIA World Factbook, Natural Earth, and REST Countries data.'}
+              {'Countrydle creator and geography enthusiast. Geographic analysis compiled from verified CIA World Factbook, Natural Earth, and REST Countries data.'}
             </p>
           </div>
           <Link
             to="/about"
             className="inline-flex min-h-11 shrink-0 items-center justify-center rounded border border-white/15 px-3 py-1.5 text-xs text-sand-100 hover:border-emerald-400/40 hover:text-emerald-300 transition-colors"
           >
-            {isPl ? 'O projekcie i źródłach' : 'About & Sources'}
+            {'About & Sources'}
           </Link>
         </div>
       </footer>
@@ -704,10 +677,10 @@ export default function BlogPostPage() {
       {/* Play Today's Game CTA */}
       <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 text-center space-y-3">
         <h3 className="font-serif text-xl font-bold text-sand-100">
-          {isPl ? 'Gotowi na dzisiejsze wyzwanie?' : "Ready for today's daily challenge?"}
+          {"Ready for today's daily challenge?"}
         </h3>
         <p className="text-sm leading-6 text-zinc-400 max-w-md mx-auto">
-          {isPl ? 'Nowy tajemniczy kraj już czeka. Sprawdź swoją dedukcję przed północą UTC!' : 'A new mystery country is ready. Test your deduction skills before midnight UTC!'}
+          {'A new mystery country is ready. Test your deduction skills before midnight UTC!'}
         </p>
         <div className="pt-2">
           <Link
@@ -715,7 +688,7 @@ export default function BlogPostPage() {
             className="inline-flex min-h-11 max-w-full items-center gap-2 rounded bg-emerald-400 px-4 py-3 text-sm font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow"
           >
             <Play size={14} />
-            <span>{isPl ? 'Zagraj w dzisiejsze Countrydle' : "Play today's Countrydle"}</span>
+            <span>{"Play today's Countrydle"}</span>
           </Link>
         </div>
       </div>

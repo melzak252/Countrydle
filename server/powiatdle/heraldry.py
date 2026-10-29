@@ -842,21 +842,21 @@ async def make_guess(body: PowiatHeraldryGuessRequest):
     if is_already_over:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Gra jest już zakończona.",
+            detail="The game is already over.",
         )
 
     guessed_county = resolve_guessed_county(body.guess, body.powiat_id)
     if not guessed_county:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nieznany powiat: '{body.guess}'.",
+            detail=f"Unknown county: '{body.guess}'.",
         )
 
     guessed_id = guessed_county["id"]
     if guessed_id in guesses:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ten powiat został już sprawdzony.",
+            detail="This county has already been checked.",
         )
 
     guesses.append(guessed_id)

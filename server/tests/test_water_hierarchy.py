@@ -375,6 +375,16 @@ def test_multi_ocean_countrydle_evaluation(country, expected):
         else:
             assert "only 1 ocean:" in ans.explanation
 
+def test_regional_multi_ocean_rewrite_is_english_for_polish_input():
+    from local_kb_question import analyze_question
+    from powiatdle.utils import LOCAL_CONFIG
+
+    plan = analyze_question("Czy ma dostęp do dwóch oceanów?", LOCAL_CONFIG, use_cache=False)
+    assert "county" in plan.improved_question.lower()
+    assert "oceans" in plan.improved_question.lower()
+    assert "powiat" not in plan.improved_question.lower()
+
+
 def test_multi_ocean_us_states_evaluation():
     from local_kb_question import analyze_question, execute_plan
     from us_statedle.utils import LOCAL_CONFIG as US_CONFIG

@@ -16,7 +16,6 @@ import {
   Eye,
   Loader2,
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import POWIAT_CATALOG from '../data/powiats_quiz_catalog.json';
 
 interface QuizPowiat {
@@ -126,7 +125,6 @@ interface ShieldCellProps {
   onSelect: (id: number) => void;
   onInspect: (id: number) => void;
   setRef: (id: number, el: HTMLButtonElement | null) => void;
-  isPl: boolean;
 }
 
 const ShieldCell = React.memo(function ShieldCell({
@@ -137,7 +135,6 @@ const ShieldCell = React.memo(function ShieldCell({
   onSelect,
   onInspect,
   setRef,
-  isPl,
 }: ShieldCellProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -150,18 +147,18 @@ const ShieldCell = React.memo(function ShieldCell({
         role="button"
         tabIndex={-1}
         onClick={() => onInspect(powiat.id)}
-        aria-label={isPl ? 'Powiększ herb' : 'Fullscreen coat of arms'}
+        aria-label={'Fullscreen coat of arms'}
         className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-lg p-1.5 sm:p-2 cursor-zoom-in transition-transform duration-100 group-hover:scale-[1.03]"
       >
         {!loaded && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-zinc-500 font-mono text-[10px] animate-pulse">
             <Loader2 className="animate-spin text-emerald-400/60" size={20} />
-            <span>{isPl ? 'Ładowanie...' : 'Loading...'}</span>
+            <span>{'Loading...'}</span>
           </div>
         )}
         <img
           src={thumbUrl}
-          alt={isGuessed || isRevealedMissed ? powiat.name : isPl ? 'Herb powiatu' : 'Coat of arms'}
+          alt={isGuessed || isRevealedMissed ? powiat.name : 'Coat of arms'}
           width={128}
           height={140}
           loading="lazy"
@@ -203,7 +200,7 @@ const ShieldCell = React.memo(function ShieldCell({
             ref={(el) => setRef(powiat.id, el)}
             type="button"
             onClick={() => onSelect(powiat.id)}
-            aria-label={isPl ? 'Wybierz herb' : 'Select coat of arms'}
+            aria-label={'Select coat of arms'}
             className={`flex min-h-[44px] w-full items-center justify-center rounded border px-1.5 sm:px-2 text-center font-mono text-xs transition-colors cursor-pointer ${
               isTargeted
                 ? 'border-emerald-400 bg-emerald-500/15 ring-2 ring-emerald-400/40 shadow-md'
@@ -217,8 +214,6 @@ const ShieldCell = React.memo(function ShieldCell({
 });
 
 export default function PowiatCoatsQuizPage() {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
 
   // Gameplay state
   const [guessedIds, setGuessedIds] = useState<Set<number>>(() => new Set());
@@ -434,12 +429,10 @@ export default function PowiatCoatsQuizPage() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-white/10 pb-4">
         <div>
           <h1 className="font-serif text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
-            {isPl ? 'Quiz: Wszystkie Herby Powiatów w Polsce' : 'Polish County Coats of Arms Quiz'}
+            {'Polish County Coats of Arms Quiz'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">
-            {isPl
-              ? 'Wpisuj nazwy powiatów w górnym polu. Kliknij dowolny herb, aby go powiększyć. Kliknij pole pod herbem, aby go wybrać (Tab = następny, Shift+Tab = poprzedni).'
-              : 'Type county names in the top input. Click any coat of arms for fullscreen inspection. Click a box below to select (Tab = next, Shift+Tab = previous).'}
+            {'Type county names in the top input. Click any coat of arms for fullscreen inspection. Click a box below to select (Tab = next, Shift+Tab = previous).'}
           </p>
         </div>
 
@@ -449,21 +442,21 @@ export default function PowiatCoatsQuizPage() {
             className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-xs font-medium text-sand-200 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors"
           >
             <Shield size={13} />
-            <span>{isPl ? 'Dzienna zagadka' : 'Daily Puzzle'}</span>
+            <span>{'Daily Puzzle'}</span>
           </Link>
           <Link
             to="/explore#tab=powiats"
             className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-xs font-medium text-sand-200 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors"
           >
             <Eye size={13} />
-            <span>{isPl ? 'Atlas' : 'Atlas'}</span>
+            <span>{'Atlas'}</span>
           </Link>
         </div>
       </header>
 
       {/* FAST FIXED STICKY TOP CONTROLS & INPUT */}
       <section
-        aria-label={isPl ? 'Pole wpisywania i wynik' : 'Input and Scoreboard'}
+        aria-label={'Input and Scoreboard'}
         className="sticky top-14 xl:top-20 z-40 rounded-b-lg border border-emerald-500/40 bg-obsidian-950/98 px-2.5 py-1.5 sm:px-4 sm:py-3 shadow-2xl backdrop-blur-md space-y-1.5 sm:space-y-2.5"
       >
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2.5 md:gap-3">
@@ -479,15 +472,9 @@ export default function PowiatCoatsQuizPage() {
               onKeyDown={handleHeaderKeyDown}
               placeholder={
                 isPaused
-                  ? isPl
-                    ? 'Pauza — kliknij Wznów'
-                    : 'Paused — click Resume'
+                  ? 'Paused — click Resume'
                   : targetedPowiat
-                  ? isPl
-                    ? `Wpisz: ${targetedPowiat.voivodeship}...`
-                    : `Type: ${targetedPowiat.voivodeship}...`
-                  : isPl
-                  ? 'Wpisz powiat...'
+                  ? `Type: ${targetedPowiat.voivodeship}...`
                   : 'Type county...'
               }
               className="w-full min-h-[44px] rounded-md border border-emerald-500/50 bg-obsidian-900 pl-3 pr-11 py-2 text-xs sm:text-sm font-medium text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 truncate placeholder:truncate"
@@ -499,7 +486,7 @@ export default function PowiatCoatsQuizPage() {
                   setInputVal('');
                   headerInputRef.current?.focus();
                 }}
-                aria-label={isPl ? 'Wyczyść pole' : 'Clear input'}
+                aria-label={'Clear input'}
                 className="absolute right-0 top-0 bottom-0 flex min-h-[44px] min-w-[44px] items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
               >
                 <X size={15} />
@@ -519,7 +506,7 @@ export default function PowiatCoatsQuizPage() {
 
               <div
                 className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 sm:gap-2 rounded-md border border-white/15 bg-obsidian-900 px-1.5 sm:px-3 font-mono shrink-0"
-                title={isPl ? `Odgadnięto: ${guessedCount} z ${TOTAL_COUNT} (${pct}%)` : `Guessed: ${guessedCount} of ${TOTAL_COUNT} (${pct}%)`}
+                title={`Guessed: ${guessedCount} of ${TOTAL_COUNT} (${pct}%)`}
               >
                 <Trophy size={13} className="hidden sm:block text-emerald-400 shrink-0 sm:w-[15px] sm:h-[15px]" />
                 <span className="text-xs sm:text-base font-extrabold text-emerald-400">
@@ -533,7 +520,7 @@ export default function PowiatCoatsQuizPage() {
 
               <div
                 className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 rounded-md border border-white/15 bg-obsidian-900 px-1.5 sm:px-3 font-mono text-xs sm:text-sm text-sand-100 shrink-0"
-                title={isPl ? 'Czas gry' : 'Elapsed time'}
+                title={'Elapsed time'}
               >
                 <span className="hidden sm:inline text-[11px] sm:text-xs">⏱</span>
                 <span className="font-bold">{formatTime(elapsedSeconds)}</span>
@@ -558,22 +545,14 @@ export default function PowiatCoatsQuizPage() {
                     !isRunning
                       ? 'Start'
                       : isPaused
-                      ? isPl
-                        ? 'Wznów'
-                        : 'Resume'
-                      : isPl
-                      ? 'Pauza'
+                      ? 'Resume'
                       : 'Pause'
                   }
                   title={
                     !isRunning
                       ? 'Start'
                       : isPaused
-                      ? isPl
-                        ? 'Wznów'
-                        : 'Resume'
-                      : isPl
-                      ? 'Pauza'
+                      ? 'Resume'
                       : 'Pause'
                   }
                   className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md bg-emerald-400 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
@@ -583,11 +562,7 @@ export default function PowiatCoatsQuizPage() {
                     {!isRunning
                       ? 'Start'
                       : isPaused
-                      ? isPl
-                        ? 'Wznów'
-                        : 'Resume'
-                      : isPl
-                      ? 'Pauza'
+                      ? 'Resume'
                       : 'Pause'}
                   </span>
                 </button>
@@ -601,13 +576,13 @@ export default function PowiatCoatsQuizPage() {
                     setIsRunning(false);
                     setTargetedId(null);
                   }}
-                  aria-label={isPl ? 'Poddaj się' : 'Give Up'}
-                  title={isPl ? 'Poddaj się' : 'Give Up'}
+                  aria-label={'Give Up'}
+                  title={'Give Up'}
                   className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md border border-rose-500/35 bg-rose-950/40 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-rose-200 hover:bg-rose-900/50 cursor-pointer"
                 >
                   <Flag size={13} className="shrink-0" />
                   <span className="hidden sm:inline">
-                    {isPl ? 'Poddaj się' : 'Give Up'}
+                    {'Give Up'}
                   </span>
                 </button>
               )}
@@ -615,8 +590,8 @@ export default function PowiatCoatsQuizPage() {
               <button
                 type="button"
                 onClick={handleResetQuiz}
-                aria-label={isPl ? 'Zresetuj quiz' : 'Reset quiz'}
-                title={isPl ? 'Zresetuj quiz' : 'Reset quiz'}
+                aria-label={'Reset quiz'}
+                title={'Reset quiz'}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md border border-white/15 bg-obsidian-900 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-sand-200 hover:border-emerald-400/50 cursor-pointer"
               >
                 <RotateCcw size={13} className="shrink-0" />
@@ -646,17 +621,11 @@ export default function PowiatCoatsQuizPage() {
           <div className="space-y-1">
             <h2 className="font-serif text-lg font-bold">
               {isCompleted
-                ? isPl
-                  ? `Gratulacje! Odgadłeś wszystkie ${TOTAL_COUNT} herbów w czasie ${formatTime(elapsedSeconds)}!`
-                  : `Congratulations! You solved all ${TOTAL_COUNT} coats of arms in ${formatTime(elapsedSeconds)}!`
-                : isPl
-                ? `Koniec quizu — odgadnięto ${guessedCount} z ${TOTAL_COUNT} herbów (${pct}%) w czasie ${formatTime(elapsedSeconds)}.`
+                ? `Congratulations! You solved all ${TOTAL_COUNT} coats of arms in ${formatTime(elapsedSeconds)}!`
                 : `Quiz ended — you solved ${guessedCount} of ${TOTAL_COUNT} coats of arms (${pct}%) in ${formatTime(elapsedSeconds)}.`}
             </h2>
             <p className="text-xs text-zinc-300">
-              {isPl
-                ? 'Wszystkie brakujące nazwy zostały odsłonięte na siatce poniżej. Kliknij dowolny herb, aby powiększyć go na pełny ekran.'
-                : 'All missed county names are now revealed below. Click any coat of arms for fullscreen inspection.'}
+              {'All missed county names are now revealed below. Click any coat of arms for fullscreen inspection.'}
             </p>
           </div>
           <button
@@ -665,7 +634,7 @@ export default function PowiatCoatsQuizPage() {
             className="inline-flex min-h-[44px] items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
           >
             <RotateCcw size={14} />
-            <span>{isPl ? 'Zagraj ponownie' : 'Play Again'}</span>
+            <span>{'Play Again'}</span>
           </button>
         </div>
       )}
@@ -678,7 +647,7 @@ export default function PowiatCoatsQuizPage() {
             <section key={voiv} className="space-y-4">
               <div className="flex items-center justify-between border-b border-white/15 pb-2">
                 <h2 className="font-serif text-xl sm:text-2xl font-bold capitalize text-sand-100">
-                  Województwo {voiv}
+                  Voivodeship {voiv}
                 </h2>
                 <span className="rounded bg-white/5 border border-white/10 px-2.5 py-0.5 font-mono text-xs text-emerald-400 font-bold">
                   {voivSolved} / {items.length}
@@ -695,7 +664,6 @@ export default function PowiatCoatsQuizPage() {
                     onSelect={selectShieldSlot}
                     onInspect={handleInspect}
                     setRef={setSlotRef}
-                    isPl={isPl}
                   />
                 ))}
               </div>
@@ -709,7 +677,7 @@ export default function PowiatCoatsQuizPage() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={isPl ? 'Podgląd herbu' : 'Coat of arms preview'}
+          aria-label={'Coat of arms preview'}
           onClick={handleCloseInspect}
           className="fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
         >
@@ -724,8 +692,6 @@ export default function PowiatCoatsQuizPage() {
                 <div className="font-serif text-xs sm:text-sm font-bold text-sand-100 leading-snug break-words">
                   {guessedIds.has(inspectedPowiat.id) || isGivenUp
                     ? inspectedPowiat.name
-                    : isPl
-                    ? 'Herb powiatu'
                     : 'County coat of arms'}
                 </div>
                 <div className="font-mono text-[10px] sm:text-xs text-zinc-400 leading-tight">
@@ -739,8 +705,8 @@ export default function PowiatCoatsQuizPage() {
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
                 disabled={inspectZoom <= 1}
-                aria-label={isPl ? 'Pomniejsz' : 'Zoom out'}
-                title={isPl ? 'Pomniejsz' : 'Zoom out'}
+                aria-label={'Zoom out'}
+                title={'Zoom out'}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 p-2 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
               >
                 <ZoomOut size={16} />
@@ -748,8 +714,8 @@ export default function PowiatCoatsQuizPage() {
               <button
                 type="button"
                 onClick={() => setInspectZoom(1)}
-                aria-label={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
-                title={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
+                aria-label={'Reset zoom'}
+                title={'Reset zoom'}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 px-2 font-mono text-[11px] sm:text-xs text-sand-200 hover:border-emerald-400/50 cursor-pointer"
               >
                 {Math.round(inspectZoom * 100)}%
@@ -758,8 +724,8 @@ export default function PowiatCoatsQuizPage() {
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
                 disabled={inspectZoom >= 3}
-                aria-label={isPl ? 'Powiększ' : 'Zoom in'}
-                title={isPl ? 'Powiększ' : 'Zoom in'}
+                aria-label={'Zoom in'}
+                title={'Zoom in'}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 p-2 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
               >
                 <ZoomIn size={16} />
@@ -767,12 +733,12 @@ export default function PowiatCoatsQuizPage() {
               <button
                 type="button"
                 onClick={handleCloseInspect}
-                aria-label={isPl ? 'Zamknij' : 'Close'}
-                title={isPl ? 'Zamknij' : 'Close'}
+                aria-label={'Close'}
+                title={'Close'}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:text-rose-200 cursor-pointer"
               >
                 <X size={16} />
-                <span className="hidden sm:inline">{isPl ? 'Zamknij' : 'Close'}</span>
+                <span className="hidden sm:inline">{'Close'}</span>
               </button>
             </div>
           </div>

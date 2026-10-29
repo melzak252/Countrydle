@@ -51,7 +51,7 @@ export default function ShareResultCard({
   mode,
   notices,
 }: ShareResultCardProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { today, remainingSeconds } = useDailyClock();
   
   const [copied, setCopied] = useState(false);
@@ -236,7 +236,7 @@ export default function ShareResultCard({
           </div>
           {won && points !== undefined && points > 0 && (
             <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
-              +{points.toLocaleString(i18n.language)} {t('share.pointsUnit', 'pts')}
+              +{points.toLocaleString('en-US')} {t('share.pointsUnit', 'pts')}
             </div>
           )}
         </div>

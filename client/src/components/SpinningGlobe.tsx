@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { Pause, Play } from 'lucide-react';
 import { CONTINENT_POINTS } from './globeData';
 
@@ -12,8 +12,8 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
   className = '',
   size = 340,
 }) => {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hudCoords, setHudCoords] = useState<{ lon: string; tilt: string; isStopped: boolean }>({
@@ -571,7 +571,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
           className="absolute inset-0 block h-full w-full touch-pan-y"
-          aria-label={isPl ? 'Interaktywny animowany globus. Przeciągnij w bok, aby go obrócić; dotknij, aby zatrzymać lub wznowić obrót.' : 'Interactive animated globe. Drag sideways to rotate; tap to pause or resume.'}
+          aria-label={'Interactive animated globe. Drag sideways to rotate; tap to pause or resume.'}
           role="img"
         />
 
@@ -597,20 +597,20 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
       <figcaption className="mt-2 flex w-full items-center justify-between gap-2 border-t border-emerald-500/20 pt-1 text-xs text-emerald-300/80" style={{ maxWidth: size }}>
         <span className="min-w-0">
           {isInteracting
-            ? (isPl ? 'Obracasz globus' : 'Rotating by hand')
+            ? ('Rotating by hand')
             : hudCoords.isStopped
-              ? (isPl ? 'Obrót wstrzymany' : 'Rotation paused')
-              : (isPl ? 'Przeciągnij globus' : 'Drag to explore')}
+              ? ('Rotation paused')
+              : ('Drag to explore')}
         </span>
         <button
           type="button"
           onClick={toggleRotation}
           aria-label={hudCoords.isStopped
-            ? (isPl ? 'Wznów obrót globusa' : 'Resume globe rotation')
-            : (isPl ? 'Wstrzymaj obrót globusa' : 'Pause globe rotation')}
+            ? ('Resume globe rotation')
+            : ('Pause globe rotation')}
           title={hudCoords.isStopped
-            ? (isPl ? 'Wznów obrót globusa' : 'Resume globe rotation')
-            : (isPl ? 'Wstrzymaj obrót globusa' : 'Pause globe rotation')}
+            ? ('Resume globe rotation')
+            : ('Pause globe rotation')}
           aria-pressed={hudCoords.isStopped}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-emerald-300 hover:bg-emerald-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
         >

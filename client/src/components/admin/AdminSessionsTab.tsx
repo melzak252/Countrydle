@@ -109,8 +109,8 @@ function getAnswerLabel(
 }
 
 export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }) => {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const { t } = useTranslation();
+  const locale = 'en-US';
   const idPrefix = useId().replace(/:/g, '');
   const [selectedMode, setSelectedMode] = useState<string>('countrydle');
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));

@@ -100,7 +100,7 @@ async def analyze_and_answer_locally(
             question=plan.improved_question,
             valid=False,
             answer=None,
-            explanation=plan.explanation or plan.fallback_reason or "Niepoprawne pytanie.",
+            explanation=plan.explanation or plan.fallback_reason or "Invalid question.",
             context="local_planner:invalid",
             intent=plan.explanation,
             required_info=plan.fallback_reason,
@@ -136,53 +136,22 @@ async def analyze_and_answer_locally(
 
 async def enhance_question(question: str) -> WojewodztwoQuestionEnhanced:
     system_prompt = """
-Jesteś ekspertem ds. analizy pytań w grze w zgadywanie polskich województw. Twoim celem jest przetworzenie pytań użytkowników na ustrukturyzowany format, który ułatwia dokładne wyszukiwanie informacji.
+You analyze questions for a game about Polish voivodeships. Understand Polish and
+English input identically. Determine whether it is a valid yes/no question about
+a voivodeship, including direct identity questions and inclusive lists of possible
+identities. Interpret first-person and pronoun references as the target voivodeship.
+Rewrite the main question clearly in English with the voivodeship as its subject,
+and describe the user's intent and the specific facts needed to answer it in English.
+Preserve the meaning and names. For invalid or open-ended input, explain why in English.
 
-### Twoje główne obowiązki:
-1. **Analiza semantyczna**: Zrozum prawdziwą intencję pytania użytkownika, niezależnie od języka czy sformułowania.
-2. **Walidacja**: Określ, czy dane wejściowe są poprawnym pytaniem Tak/Nie dotyczącym atrybutów województwa (geografia, historia, symbole, itp.).
-3. **Uproszczenie**: Przepisz pytanie na jasne, atomowe i standaryzowane zdanie w języku polskim, w którym "województwo" jest podmiotem.
-4. **Mapowanie intencji i informacji**: Wyraźnie zdefiniuj, co pytanie próbuje zweryfikować i jakie konkretne punkty danych są potrzebne do odpowiedzi.
+Return strict JSON with question, intent, required_info, valid and explanation.
+For valid input, explanation is null. For invalid input, question, intent and
+required_info are null, valid is false and explanation is a concise reason.
 
-### Wytyczne:
-- **Podmiot**: Uproszczone pytanie MUSI zaczynać się od słowa "województwo" lub skupiać się na nim (np. "Czy województwo...", "Czy w województwie...").
-- **Odniesienie do encji**: Użytkownik może odnosić się do docelowego województwa na różne sposoby:
-    - Mówiąc o sobie: "Czy jestem...?", "Czy leżę...?", "Czy mam...?"
-    - Używając "ono/to": "Czy ono...", "Czy to...", "Czy jest ono..."
-    - Używając "województwo": "Czy województwo...", "Czy w województwie..."
-- **Atomowość**: Jeśli pytanie jest złożone, skup się na głównym zapytaniu.
-
-- **Wymagane informacje**: Bądź precyzyjny co do potrzebnych danych (np. "Lista miast na prawach powiatu", "Sąsiednie województwa", "Powierzchnia").
-
-### Format wyjściowy (Strict JSON):
-{
-  "question": "Uproszczone pytanie T/N po polsku",
-  "intent": "Szczegółowy opis intencji użytkownika i tego, co próbuje on ustalić",
-  "required_info": "Konkretne punkty danych potrzebne z bazy danych",
-  "valid": true,
-  "explanation": null
-}
--- LUB jeśli niepoprawne --
-{
-  "question": null,
-  "intent": null,
-  "required_info": null,
-  "valid": false,
-  "explanation": "Jasny powód, dla którego pytanie jest nieprawidłowe (np. to nie jest pytanie T/N, bełkot)"
-}
-
-### Przykłady:
 User: "Czy graniczy z morzem?"
-Output: {"question": "Czy województwo ma dostęp do Morza Bałtyckiego?", "intent": "Użytkownik chce zweryfikować, czy docelowe województwo jest położone nad Morzem Bałtyckim.", "required_info": "Położenie geograficzne i granice morskie województwa", "valid": true, "explanation": null}
-
-User: "Czy to małopolskie?"
-Output: {"question": "Czy województwo to małopolskie?", "intent": "Użytkownik próbuje bezpośrednio odgadnąć nazwę województwa, sprawdzając czy jest to województwo małopolskie.", "required_info": "Nazwa województwa", "valid": true, "explanation": null}
-
-User: "Czy to małopolskie, śląskie czy opolskie?"
-Output: {"question": "Czy województwo to jedno z wymienionych: małopolskie, śląskie lub opolskie?", "intent": "Użytkownik podaje listę potencjalnych nazw województw i chce wiedzieć, czy docelowe województwo znajduje się na tej liście.", "required_info": "Nazwa województwa", "valid": true, "explanation": null}
-
+Output: {"question": "Does the voivodeship have access to the Baltic Sea?", "intent": "Check whether the voivodeship is on the Baltic Sea.", "required_info": "Geographic location and maritime borders", "valid": true, "explanation": null}
 User: "Ile ma mieszkańców?"
-Output: {"question": null, "intent": null, "required_info": null, "valid": false, "explanation": "To jest pytanie otwarte o liczbę, a nie pytanie Tak/Nie."}
+Output: {"question": null, "intent": null, "required_info": null, "valid": false, "explanation": "This is an open-ended question, not a yes/no question."}
 """
 
     question_prompt = f"""User's Question: {question}"""
@@ -194,7 +163,7 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
         question=answer_dict.get("question", None),
         intent=answer_dict.get("intent", None),
         required_info=answer_dict.get("required_info", None),
-        explanation=answer_dict.get("explanation") or ("Brak wyjaśnienia." if not answer_dict["valid"] else None),
+        explanation=answer_dict.get("explanation") or ("No explanation provided." if not answer_dict["valid"] else None),
     )
 
 
@@ -204,35 +173,30 @@ def answer_prompts(
 ) -> tuple[str, str]:
     """Build the shared daily and explicit-target answer instructions."""
     system_prompt = f"""
-Jesteś 'Mistrzem Gry' w Wojewodztwodle. Twoim zadaniem jest odpowiedzieć na pytanie Tak/Nie dotyczące konkretnego polskiego województwa na podstawie dostarczonego kontekstu i Twojej wiedzy ogólnej.
+You are the game master for Wojewodztwodle. Answer the yes/no question about the
+specified Polish voivodeship using the supplied context and your general knowledge.
+Interpret Polish and English questions identically. Write the explanation in English.
 
-### Docelowe województwo: {entity_name}
-### Intencja pytania: {question.intent}
-### Wymagane informacje: {question.required_info}
-
-### Fragmenty kontekstu:
+Target voivodeship: {entity_name}
+Question intent: {question.intent}
+Required information: {question.required_info}
+Context:
 {context}
 
-### Twoje instrukcje:
-1. **Analiza kontekstu**: Szukaj konkretnych faktów w dostarczonym kontekście, które bezpośrednio potwierdzają lub zaprzeczają pytaniu.
-2. **Wiedza ogólna**: Jeśli w kontekście brakuje konkretnego faktu, użyj swojej wiedzy wewnętrznej o geografii, historii i administracji Polski, aby udzielić dokładnej odpowiedzi.
-3. **Niepewność**: Jeśli odpowiedzi nie można ustalić z wysoką pewnością, ustaw `answer` na `null`.
-4. **Zasada sąsiedztwa**: Jeśli padnie pytanie, czy województwo sąsiaduje z [X], a docelowym województwem JEST [X], odpowiedź brzmi ZAWSZE `true`. Traktuj województwo jako sąsiadujące samo ze sobą na potrzeby tej gry.
-5. **Informacyjne Wyjaśnienia**: Napisz `explanation` jako informację o województwie, która odpowiada na pytanie i podaje szczegóły. Unikaj zaczynania od 'Tak' lub 'Nie' oraz prostego powtarzania odpowiedzi. Wyjaśnienie powinno być zdaniem informacyjnym o województwie, które uzasadnia odpowiedź Tak/Nie (np. zamiast 'Tak, województwo leży nad morzem', użyj 'Województwo {entity_name} jest położone w północnej części Polski i posiada szeroki dostęp do Morza Bałtyckiego.').
-6. **Obsługa logicznego 'LUB' i list**: Jeśli pytanie zawiera słowo 'lub' lub podaje listę opcji (np. 'Czy to małopolskie lub śląskie?'), odpowiedź brzmi `true`, jeśli docelowe województwo pasuje do **przynajmniej jednej** z tych opcji.
+Find facts that confirm or contradict the proposition; use general knowledge of
+Polish geography, history and administration when context lacks a fact. If the
+answer cannot be determined with high confidence, set answer to null. For this game
+a voivodeship borders itself. Treat "or" and lists as inclusive: any matching option
+is enough. Answer about the voivodeship in the third person, even for first-person
+questions. Provide an informative factual explanation supporting the answer,
+rather than starting with yes or no or simply repeating it.
 
-7. **Perspektywa użytkownika**: Jeśli użytkownik odnosi się do siebie jako do województwa (np. "Czy jestem w północnej Polsce?"), powinieneś nadal odpowiadać o województwie w trzeciej osobie (np. "Województwo {entity_name} leży w północnej części Polski"), aby zachować rzeczowy i informacyjny ton.
-
-### Format wyjściowy (Strict JSON):
-{{
-    "explanation": "Informacyjne stwierdzenie faktyczne o województwie.",
-    "answer": true | false | null
-}}
+Return strict JSON: {{"explanation": "Informative factual statement in English.", "answer": true | false | null}}
 """
 
 
-    question_prompt = f"""Oryginalne pytanie użytkownika: {question.original_question}
-Uproszczone pytanie: {question.question}"""
+    question_prompt = f"""Original user question: {question.original_question}
+Simplified question: {question.question}"""
     return system_prompt, question_prompt
 
 
@@ -283,7 +247,7 @@ async def ask_question(
         valid=question.valid,
         question=question.question,
         answer=answer_dict.get("answer"),
-        explanation=answer_dict.get("explanation") or "Brak wyjaśnienia.",
+        explanation=answer_dict.get("explanation") or "No explanation provided.",
         context=context,
     )
     return question_create, question_vector

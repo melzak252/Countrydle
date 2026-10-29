@@ -63,6 +63,27 @@ def scalar(config: LocalModeConfig, operator: str, relation: str, value) -> dict
     return {"operator": operator, "left": left(config, relation), "right": value}
 
 
+def test_regional_category_explanations_use_english_display_values():
+    macroregion = answer(VOIVODESHIP_CONFIG, "Małopolskie", equals(VOIVODESHIP_CONFIG, "macroregion", "południe"))
+    assert macroregion.answer is True
+    assert "south" in macroregion.explanation.lower()
+    assert "południe" not in macroregion.explanation.lower()
+
+    direction = answer(VOIVODESHIP_CONFIG, "Małopolskie", contains(VOIVODESHIP_CONFIG, "regional_labels", "południowa Polska"))
+    assert direction.answer is True
+    assert "southern Poland" in direction.explanation
+    assert "południowa Polska" not in direction.explanation
+    assert "Małopolska" in direction.explanation
+
+
+def test_water_explanation_lists_recorded_bodies_not_hierarchy_aliases():
+    result = answer(VOIVODESHIP_CONFIG, "Pomorskie", {"operator": "exists", "left": left(VOIVODESHIP_CONFIG, "water_access")})
+    assert result.answer is True
+    assert "Baltic Sea" in result.explanation
+    assert "(1)" in result.explanation
+    assert result.explanation.count("Baltic Sea") == 1
+
+
 def test_inclusive_numeric_comparisons_keep_equality_and_direction():
     for operator, excluded_year in (("less_than_or_equal", 1791), ("greater_than_or_equal", 1793)):
         result = answer(US_STATE_CONFIG, "Kentucky", scalar(US_STATE_CONFIG, operator, "admission_year", 1792))
@@ -244,6 +265,61 @@ def test_powiat_numeric_boolean_and_negative_cases():
     assert answer(POWIAT_CONFIG, "Powiat tatrzański", contains(POWIAT_CONFIG, "borders_powiat", "Kraków")).answer is False
 
 
+@pytest.mark.parametrize("question", [
+    "czy jest to miasto na prawach powiatu?",
+    "is it a city county?",
+])
+@pytest.mark.parametrize(("county", "expected"), [
+    ("Kraków", True), ("Powiat krakowski", False),
+])
+def test_city_county_questions_in_both_languages_have_english_factual_output(
+    question, county, expected, monkeypatch
+):
+    import local_kb_question
+
+    def unexpected_provider(*args, **kwargs):
+        pytest.fail("City-county questions must be answered locally")
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", unexpected_provider)
+    plan = local_kb_question.analyze_question(question, POWIAT_CONFIG, use_cache=False)
+    result = execute_plan(POWIAT_CONFIG, county, plan)
+    assert plan.original_question == question
+    assert "city county" in plan.improved_question.lower()
+    assert result is not None
+    assert result.answer is expected
+    assert "is_city_county" in result.relations
+    assert result.explanation.startswith("Yes" if expected else "No")
+    assert ("city with county rights" if expected else "land county") in result.explanation
+
+
+@pytest.mark.parametrize("question", [
+    "czy to województwo graniczy z Niemcami?",
+    "does it border Germany?",
+])
+@pytest.mark.parametrize(("voivodeship", "expected"), [
+    ("Dolnośląskie", True), ("Małopolskie", False),
+])
+def test_border_questions_in_both_languages_have_english_factual_output(
+    question, voivodeship, expected, monkeypatch
+):
+    import local_kb_question
+
+    def unexpected_provider(*args, **kwargs):
+        pytest.fail("Border questions must be answered locally")
+
+    monkeypatch.setattr(local_kb_question, "gemini_json", unexpected_provider)
+    plan = local_kb_question.analyze_question(question, VOIVODESHIP_CONFIG, use_cache=False)
+    result = execute_plan(VOIVODESHIP_CONFIG, voivodeship, plan)
+    assert plan.original_question == question
+    assert "Germany" in plan.improved_question
+    assert result is not None
+    assert result.answer is expected
+    assert "borders_country" in result.relations
+    assert result.explanation.startswith("Yes" if expected else "No")
+    assert "neighboring countries" in result.explanation
+    assert "Germany" in result.explanation
+
+
 @pytest.mark.parametrize(
     ("voivodeship", "relation", "value"),
     [
@@ -287,7 +363,8 @@ def test_voivodeship_mountain_ranges():
     ans_mazowieckie = execute_plan(VOIVODESHIP_CONFIG, "Mazowieckie", exist_plan)
     assert ans_mazowieckie is not None
     assert ans_mazowieckie.answer is False
-    assert "brak pasm górskich" in ans_mazowieckie.explanation
+    assert "mountain ranges" in ans_mazowieckie.explanation
+    assert "none" in ans_mazowieckie.explanation
 
 def test_voivodeship_lodzkie_does_not_border_pomorskie_question():
     plan = question_plan(contains(VOIVODESHIP_CONFIG, "borders_voivodeship", "Pomorskie"))
@@ -314,7 +391,8 @@ def test_slaskie_borders_lodzkie_with_city_and_inflected_names():
         assert ans is not None
         assert ans.answer is True, f"Failed for {name}: {ans.explanation}"
         assert "Łódzkie" in ans.explanation
-        assert "nie graniczy" not in ans.explanation
+        assert "neighboring voivodeships" in ans.explanation
+        assert "true" in ans.explanation
 
 def test_voivodeship_partial_contains_keeps_old_substring_behavior():
     result = answer(VOIVODESHIP_CONFIG, "Łódzkie", contains_partial(VOIVODESHIP_CONFIG, "borders_voivodeship", "Pomorskie"))
@@ -537,12 +615,15 @@ def test_reported_powiat_suffix_identity_and_explanation(queried_name):
     hit = answer(POWIAT_CONFIG, "Powiat braniewski", plan)
     assert hit is not None
     assert hit.answer is True
-    assert hit.explanation == "Tak - To jest Powiat braniewski."
+    assert hit.explanation.startswith("Yes")
+    assert "Powiat braniewski" in hit.explanation
 
     miss = answer(POWIAT_CONFIG, "Powiat kępiński", plan)
     assert miss is not None
     assert miss.answer is False
-    assert miss.explanation == "Nie - To nie jest Powiat braniewski."
+    assert miss.explanation.startswith("No")
+    assert "not" in miss.explanation.lower()
+    assert "Powiat braniewski" in miss.explanation
     assert "kępiński" not in miss.explanation.casefold()
 
 
@@ -563,12 +644,17 @@ def test_reported_powiat_identity_question_evaluates_without_model(question, mon
     hit = execute_plan(POWIAT_CONFIG, "Powiat braniewski", plan)
     assert hit is not None
     assert hit.answer is True
-    assert hit.explanation == "Tak - To jest Powiat braniewski."
+    assert plan.original_question == question
+    assert hit.explanation.startswith("Yes")
+    assert "Powiat braniewski" in hit.explanation
 
     miss = execute_plan(POWIAT_CONFIG, "Powiat kępiński", plan)
     assert miss is not None
     assert miss.answer is False
-    assert miss.explanation == "Nie - To nie jest Powiat braniewski."
+    assert miss.explanation.startswith("No")
+    assert "not" in miss.explanation.lower()
+    assert "Powiat braniewski" in miss.explanation
+    assert "kępiński" not in miss.explanation.casefold()
 
 
 @pytest.mark.anyio
@@ -606,7 +692,31 @@ async def test_powiatdle_analyze_and_answer_locally_does_not_redact_candidate_on
     )
     assert res is not None
     assert res.answer is True
-    assert res.explanation == "Tak - To jest Powiat braniewski."
+    assert res.explanation.startswith("Yes")
+    assert "Powiat braniewski" in res.explanation
+
+
+@pytest.mark.anyio
+async def test_powiat_local_answer_redacts_target_in_english(monkeypatch):
+    import powiatdle.utils as putils
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    class DummyRepo:
+        def __init__(self, session):
+            pass
+
+        async def get(self, powiat_id):
+            return SimpleNamespace(id=powiat_id, nazwa="Kraków")
+
+    monkeypatch.setattr(putils, "PowiatRepository", DummyRepo)
+    result, _ = await putils.analyze_and_answer_locally(
+        "Czy to miasto na prawach powiatu?", SimpleNamespace(id=1, powiat_id=1), None, AsyncMock()
+    )
+    assert result.answer is True
+    assert "Kraków" not in result.explanation
+    assert "county" in result.explanation
+    assert result.original_question == "Czy to miasto na prawach powiatu?"
 
 
 @pytest.mark.parametrize("question", [
@@ -632,6 +742,9 @@ def test_reported_powiat_parent_voivodeship_river_evaluates_locally_without_mode
     result = execute_plan(POWIAT_CONFIG, powiat, plan)
     assert result is not None
     assert result.answer is expected
+    assert plan.original_question == question
+    assert result.explanation.startswith("Yes" if expected else "No")
+    assert "major rivers" in result.explanation
     assert "Wisła" in result.explanation
 
 

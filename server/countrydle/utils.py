@@ -187,6 +187,7 @@ def answer_prompts(
     """Build the shared daily and explicit-target answer instructions."""
     system_prompt = f"""
 You are the 'Game Master' for Countrydle. Evaluate the exact True/False proposition using the entity-binding rules first, then the provided context and reliable general knowledge.
+Write all generated explanation and clarification text in English, regardless of the question's language.
 
 ### Hidden Target Country: {entity_name}
 

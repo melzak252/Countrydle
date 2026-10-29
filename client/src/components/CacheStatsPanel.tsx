@@ -8,8 +8,8 @@ const REFRESH_INTERVAL_MS = 15_000;
 const cardClass = 'admin-panel min-w-0 space-y-3';
 
 export default function CacheStatsPanel() {
-  const { t, i18n } = useTranslation('translation', { keyPrefix: 'adminCache' });
-  const locale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-GB';
+  const { t } = useTranslation('translation', { keyPrefix: 'adminCache' });
+  const locale = 'en-GB';
   const numberFormat = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const [snapshot, setSnapshot] = useState<{ stats: CacheStats; receivedAt: Date } | null>(null);

@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -97,8 +97,8 @@ export function ControlledUSStatesMap({
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/us-states.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  
+  
   const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctStateName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
@@ -316,8 +316,8 @@ export function ControlledUSStatesMap({
           <button
             onClick={handleZoomToCorrect}
             className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
-            title={isPl ? 'Przybliż poprawny stan' : 'Zoom to correct state'}
-            aria-label={isPl ? 'Przybliż poprawny stan' : 'Zoom to correct state'}
+            title={'Zoom to correct state'}
+            aria-label={'Zoom to correct state'}
           >
             <Check size={16} />
           </button>

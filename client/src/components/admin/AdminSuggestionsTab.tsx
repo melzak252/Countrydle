@@ -7,7 +7,7 @@ import type { Suggestion } from '../../types';
 const PAGE_SIZE = 25;
 
 export default function AdminSuggestionsTab() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [items, setItems] = useState<Suggestion[]>([]);
@@ -40,7 +40,7 @@ export default function AdminSuggestionsTab() {
     };
   }, [page, refreshVersion]);
 
-  const dateLocale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const dateLocale = 'en-US';
   const refresh = useCallback(() => setRefreshVersion((version) => version + 1), []);
   const pageCount = Math.ceil(total / PAGE_SIZE);
   const numberFormat = new Intl.NumberFormat(dateLocale);

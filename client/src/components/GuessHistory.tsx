@@ -78,7 +78,7 @@ export default function GuessHistory({ guesses }: GuessHistoryProps) {
                     g.distance_km!
                   )}`}
                 >
-                  {g.distance_km!.toLocaleString()} km
+                  {g.distance_km!.toLocaleString('en-US')} km
                 </span>
 
                 {hasBearing && (

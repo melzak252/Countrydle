@@ -22,12 +22,13 @@ import CountdownTimer from './CountdownTimer';
 import CountrydleLogo from './CountrydleLogo';
 import { PrivacySettingsButton } from './PrivacySettingsButton';
 import { isPrerenderCapture } from '../lib/pageMetadata'
+import { gameCatalog } from '../lib/gameCatalog';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const location = useLocation();
-  const isPl = i18n?.language?.startsWith('pl');
+  
   const showAccount = isAuthenticated && !isPrerenderCapture();
   const [menuLocation, setMenuLocation] = useState<typeof location | null>(null);
   const isMenuOpen = menuLocation === location;
@@ -37,57 +38,20 @@ export default function Header() {
   const homeLinkRef = useRef<HTMLAnchorElement>(null);
   const restoreMenuFocusRef = useRef(true);
 
-  const gameCategories = [
-    {
-      category: isPl ? 'Świat i gra wieloosobowa' : 'World & multiplayer',
-      items: [
-        { path: '/game', name: isPl ? 'Mapa świata' : t('header.worldMap', 'World Map'), badge: 'Countrydle' },
-        { path: '/friends', name: isPl ? 'Graj ze znajomym' : 'Play with a Friend', badge: '1v1' },
-        { path: '/border-hop', name: 'Border Hop', badge: isPl ? 'Nowość' : 'New' },
-      ],
-    },
-    {
-      category: isPl ? 'Symbole' : 'Symbols',
-      items: [
-        { path: '/flagdle', name: 'Flagdle', badge: isPl ? '12 kart' : '12 Cards' },
-        { path: '/flag-shades', name: isPl ? 'Odcienie Flagi' : 'Flag Shades', badge: isPl ? 'Szarości' : 'Grayscale' },
-        { path: '/herby-powiatow', name: isPl ? 'Herby Powiatów' : 'County Coats of Arms', badge: isPl ? 'Herby' : 'Heraldry' },
-        { path: '/quiz-herbow', name: isPl ? 'Quiz 380 Herbów' : '380 Coats Quiz', badge: 'JetPunk' },
-      ],
-    },
-    {
-      category: isPl ? 'Kontynenty' : 'Continents',
-      items: [
-        { path: '/europe', name: t('header.europe', 'Europedle'), badge: '47' },
-        { path: '/asia', name: t('header.asia', 'Asiadle'), badge: '46' },
-        { path: '/africa', name: t('header.africa', 'Africadle'), badge: '54' },
-        { path: '/americas', name: t('header.americas', 'Americadle'), badge: '35' },
-      ],
-    },
-    {
-      category: isPl ? 'Mapy regionalne' : 'Regional maps',
-      items: [
-        { path: '/us-states', name: isPl ? 'Stany USA' : t('header.usStates', 'US States'), badge: '50' },
-        { path: '/wojewodztwa', name: isPl ? 'Województwa' : t('header.wojewodztwa', 'Voivodeships'), badge: '16' },
-        { path: '/powiaty', name: isPl ? 'Powiaty' : t('header.powiaty', 'Counties'), badge: '380' },
-      ],
-    },
-  ];
-
   const exploreItems = [
-    { path: '/archive', name: isPl ? 'Archiwum' : t('header.archive', 'Archive'), icon: Archive },
-    { path: '/how-it-works', name: isPl ? 'Jak działają pytania' : t('header.howItWorks', 'How Questions Work'), icon: Cpu },
-    { path: '/explore', name: isPl ? 'Przewodnik geograficzny' : 'Geography Guides', icon: BookOpen },
-    { path: '/patch-notes', name: isPl ? 'Historia zmian' : t('header.patchNotes', 'Patch notes'), icon: Sparkles },
-    ...(showAccount && user?.is_admin ? [{ path: '/admin', name: isPl ? 'Panel administratora' : 'Admin Dashboard', icon: ShieldCheck }] : []),
+    { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
+    { path: '/how-it-works', name: t('header.howItWorks', 'How Questions Work'), icon: Cpu },
+    { path: '/explore', name: 'Geography Guides', icon: BookOpen },
+    { path: '/patch-notes', name: t('header.patchNotes', 'Patch notes'), icon: Sparkles },
+    ...(showAccount && user?.is_admin ? [{ path: '/admin', name: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];
 
   const aboutItems = [
-    { path: '/about', name: isPl ? 'O nas' : t('header.about', 'About'), icon: Info },
-    { path: '/faq', name: isPl ? 'Najczęstsze pytania' : t('header.faq', 'FAQ'), icon: HelpCircle },
-    { path: '/contact', name: isPl ? 'Sugestie' : t('header.suggestions', 'Suggestions'), icon: Mail },
-    { path: '/privacy-policy', name: isPl ? 'Polityka prywatności' : t('footer.privacyPolicy', 'Privacy Policy'), icon: ShieldCheck },
-    { path: '/terms', name: isPl ? 'Regulamin' : t('footer.termsOfService', 'Terms of Service'), icon: FileText },
+    { path: '/about', name: t('header.about', 'About'), icon: Info },
+    { path: '/faq', name: t('header.faq', 'FAQ'), icon: HelpCircle },
+    { path: '/contact', name: t('header.suggestions', 'Suggestions'), icon: Mail },
+    { path: '/privacy-policy', name: t('footer.privacyPolicy', 'Privacy Policy'), icon: ShieldCheck },
+    { path: '/terms', name: t('footer.termsOfService', 'Terms of Service'), icon: FileText },
   ];
 
   const closeMenu = (restoreFocus = true) => {
@@ -174,7 +138,11 @@ export default function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav aria-label={isPl ? 'Nawigacja główna' : 'Main navigation'} className="hidden items-center gap-1 xl:flex">
+        <nav aria-label={'Main navigation'} className="hidden items-center gap-1 xl:flex">
+          <NavLink to="/game" className={navLinkClass}>
+            Play
+          </NavLink>
+
           {/* Games Dropdown */}
           <details
             className="group relative"
@@ -189,22 +157,22 @@ export default function Header() {
             }}
           >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              <span>{isPl ? 'Gry' : t('header.games', 'Games')}</span>
+              <span>{t('header.games', 'Games')}</span>
               <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
             </summary>
             <div
-              className="absolute left-0 top-full mt-1 w-80 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-md p-1.5 before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
+              className="absolute left-0 top-full z-50 max-h-[calc(100dvh-6rem)] w-80 overflow-y-auto rounded-md border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
               }}
             >
-              {gameCategories.map((group) => (
-                <div key={group.category} className="p-2">
+              {gameCatalog.map((group) => (
+                <div key={group.title} className="border-b border-white/10 p-2 last:border-b-0">
                   <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                    {group.category}
+                    {group.title}
                   </span>
-                  <div className={group.items.length > 2 ? 'grid grid-cols-2 gap-1' : 'flex flex-col gap-1'}>
-                    {group.items.map((item) => (
+                  <div className={group.games.length > 2 ? 'grid grid-cols-2 gap-1' : 'flex flex-col gap-1'}>
+                    {group.games.map((item) => (
                       <NavLink
                         key={item.path}
                         to={item.path}
@@ -217,11 +185,6 @@ export default function Header() {
                         }
                       >
                         <span className="truncate">{item.name}</span>
-                        {item.badge && (
-                          <span className="shrink-0 text-[10px] text-zinc-400 font-mono">
-                            {item.badge}
-                          </span>
-                        )}
                       </NavLink>
                     ))}
                   </div>
@@ -244,7 +207,7 @@ export default function Header() {
             }}
           >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              <span>{isPl ? 'Odkrywaj' : t('header.explore', 'Explore')}</span>
+              <span>{t('header.explore', 'Explore')}</span>
               <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
             </summary>
             <div
@@ -278,7 +241,7 @@ export default function Header() {
           </details>
 
           <NavLink to="/leaderboard" className={navLinkClass}>
-            {isPl ? 'Ranking' : t('header.leaderboard', 'Leaderboard')}
+            {t('header.leaderboard', 'Leaderboard')}
           </NavLink>
           
           <NavLink to="/blog" className={navLinkClass}>
@@ -299,7 +262,7 @@ export default function Header() {
             }}
           >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              <span>{isPl ? 'O nas' : t('header.about', 'About')}</span>
+              <span>{t('header.about', 'About')}</span>
               <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
             </summary>
             <div
@@ -347,16 +310,16 @@ export default function Header() {
               <Link
                 to={`/profile/${user?.username}`}
                 className="max-w-28 truncate text-sm text-sand-100 hover:text-emerald-300 transition-colors"
-                title={isPl ? 'Zobacz profil' : t('header.viewProfile', 'View Profile')}
+                title={t('header.viewProfile', 'View Profile')}
               >
                 {user?.username}
               </Link>
               <button
                 type="button"
                 onClick={handleLogout}
-                aria-label={isPl ? 'Wyloguj się' : t('header.logout', 'Logout')}
+                aria-label={t('header.logout', 'Logout')}
                 className="p-1.5 text-zinc-400 hover:text-sand-100 transition-colors"
-                title={isPl ? 'Wyloguj się' : t('header.logout', 'Logout')}
+                title={t('header.logout', 'Logout')}
               >
                 <LogOut size={16} />
               </button>
@@ -367,13 +330,13 @@ export default function Header() {
                 to="/login"
                 className="text-sm text-zinc-300 hover:text-white transition-colors"
               >
-                {isPl ? 'Zaloguj się' : t('header.login', 'Login')}
+                {t('header.login', 'Login')}
               </Link>
               <Link
                 to="/register"
                 className="border border-sand-200/40 px-3 py-1.5 text-sm rounded hover:bg-sand-100 hover:text-obsidian-950 font-medium transition-colors"
               >
-                {isPl ? 'Zarejestruj się' : t('header.signUp', 'Sign Up')}
+                {t('header.signUp', 'Sign Up')}
               </Link>
             </div>
           )}
@@ -392,7 +355,7 @@ export default function Header() {
             aria-expanded={isMenuOpen}
             aria-controls="mobile-navigation"
             aria-haspopup="dialog"
-            aria-label={isPl ? 'Menu nawigacyjne' : 'Navigation menu'}
+            aria-label={'Navigation menu'}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-sand-100 hover:bg-white/5 transition-colors"
           >
             <Menu size={22} aria-hidden="true" />
@@ -429,14 +392,14 @@ export default function Header() {
               ref={closeButtonRef}
               type="button"
               onClick={() => closeMenu()}
-              aria-label={isPl ? 'Zamknij menu' : 'Close menu'}
+              aria-label={'Close menu'}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-200 transition-colors hover:bg-white/10"
             >
               <X size={22} aria-hidden="true" />
             </button>
           </div>
           <nav
-            aria-label={isPl ? 'Nawigacja mobilna' : 'Mobile navigation'}
+            aria-label={'Mobile navigation'}
             className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4"
             onClick={(event) => {
               if ((event.target as HTMLElement).closest('a')) closeMenu();
@@ -447,35 +410,38 @@ export default function Header() {
                 to="/game"
                 className="flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-4 py-3 text-center text-base font-semibold leading-snug text-obsidian-950 transition-colors hover:bg-emerald-300"
               >
-                {isPl ? 'Zagraj dzisiaj' : 'Play today'}
+                {'Play today'}
               </NavLink>
               <NavLink to="/blog" className={mobileLinkClass}>
                 {t('header.blog', 'Blog')}
               </NavLink>
               <NavLink to="/leaderboard" className={mobileLinkClass}>
-                {isPl ? 'Ranking' : t('header.leaderboard', 'Leaderboard')}
+                {t('header.leaderboard', 'Leaderboard')}
               </NavLink>
             </div>
 
             <div className="divide-y divide-white/10 border-y border-white/10">
-              {gameCategories.map((group) => (
-                <details key={group.category} className="group">
-                  <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium leading-relaxed [&::-webkit-details-marker]:hidden">
-                    <span className="min-w-0 [overflow-wrap:anywhere]">{group.category}</span>
-                    <ChevronDown size={18} className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden="true" />
-                  </summary>
-                  <div className="space-y-1 pb-3">
-                    {group.items.map((item) => (
-                      <NavLink key={item.path} to={item.path} className={mobileLinkClass}>
-                        {item.name}
-                      </NavLink>
-                    ))}
-                  </div>
-                </details>
-              ))}
               <details className="group">
                 <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium leading-relaxed [&::-webkit-details-marker]:hidden">
-                  <span>{isPl ? 'Przewodniki i archiwum' : 'Guides & archive'}</span>
+                  <span>Games</span>
+                  <ChevronDown size={18} className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <div className="space-y-3 pb-3">
+                  {gameCatalog.map((group) => (
+                    <section key={group.title}>
+                      <h3 className="px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">{group.title}</h3>
+                      {group.games.map((item) => (
+                        <NavLink key={item.path} to={item.path} className={mobileLinkClass}>
+                          {item.name}
+                        </NavLink>
+                      ))}
+                    </section>
+                  ))}
+                </div>
+              </details>
+              <details className="group">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium leading-relaxed [&::-webkit-details-marker]:hidden">
+                  <span>{'Guides & archive'}</span>
                   <ChevronDown size={18} className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
                 <div className="space-y-1 pb-3">
@@ -488,7 +454,7 @@ export default function Header() {
               </details>
               <details className="group">
                 <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium leading-relaxed [&::-webkit-details-marker]:hidden">
-                  <span>{isPl ? 'Pomoc i prywatność' : 'Help & privacy'}</span>
+                  <span>{'Help & privacy'}</span>
                   <ChevronDown size={18} className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
                 <div className="space-y-1 pb-3">
@@ -514,7 +480,7 @@ export default function Header() {
                     to={`/profile/${user?.username}`}
                     className="flex min-h-11 w-full min-w-0 flex-col justify-center rounded-lg px-3 py-2.5 text-sm leading-relaxed text-emerald-300 transition-colors hover:bg-white/5"
                   >
-                    <span className="text-xs text-zinc-400">{isPl ? 'Twój profil' : 'Your profile'}</span>
+                    <span className="text-xs text-zinc-400">{'Your profile'}</span>
                     <span className="w-full [overflow-wrap:anywhere]">{user?.username}</span>
                   </Link>
                   <button
@@ -523,16 +489,16 @@ export default function Header() {
                     className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm leading-relaxed text-zinc-300 transition-colors hover:bg-white/5"
                   >
                     <LogOut size={16} className="shrink-0" aria-hidden="true" />
-                    {isPl ? 'Wyloguj się' : t('header.logout', 'Logout')}
+                    {t('header.logout', 'Logout')}
                   </button>
                 </>
               ) : (
                 <>
                   <Link to="/login" className="flex min-h-11 w-full items-center rounded-lg px-3 py-2.5 text-sm leading-relaxed text-zinc-200 transition-colors hover:bg-white/5">
-                    {isPl ? 'Zaloguj się' : t('header.login', 'Login')}
+                    {t('header.login', 'Login')}
                   </Link>
                   <Link to="/register" className="flex min-h-11 w-full items-center rounded-lg border border-white/25 px-3 py-2.5 text-sm font-medium leading-relaxed text-sand-100 transition-colors hover:bg-white/5">
-                    {isPl ? 'Zarejestruj się' : t('header.signUp', 'Sign Up')}
+                    {t('header.signUp', 'Sign Up')}
                   </Link>
                 </>
               )}

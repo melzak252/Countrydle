@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   HelpCircle,
@@ -96,8 +95,6 @@ function PolishLicensePlateBadge({ plates }: { plates: string[] }) {
 }
 
 export default function PowiatHeraldryPage() {
-  const { i18n } = useTranslation();
-  const isPl = i18n?.language?.startsWith('pl');
 
   // Mode state
   const [mode, setMode] = useState<GameMode>('daily');
@@ -223,15 +220,13 @@ export default function PowiatHeraldryPage() {
       } catch (err) {
         console.error('Failed to load heraldry challenge:', err);
         toast.error(
-          isPl
-            ? 'Nie udało się załadować wyzwania herbu.'
-            : 'Failed to load coat of arms challenge.'
+          'Failed to load coat of arms challenge.'
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [isPl]
+    []
   );
 
   // Initial load
@@ -339,7 +334,7 @@ export default function PowiatHeraldryPage() {
 
     const guessedNames = new Set(guesses.map((g) => g.guess.toLowerCase()));
     if (guessedNames.has(name.toLowerCase())) {
-      toast.error(isPl ? 'Ten powiat został już wytypowany!' : 'You already guessed this county!');
+      toast.error('You already guessed this county!');
       return;
     }
 
@@ -395,15 +390,15 @@ export default function PowiatHeraldryPage() {
         setShowResultsModal(true);
         if (result.won) {
           toast.success(
-            isPl ? 'Brawo! Rozpoznano herb powiatu!' : 'Congratulations! You solved the coat of arms!'
+            'Congratulations! You solved the coat of arms!'
           );
         } else {
-          toast.error(isPl ? 'Wykorzystano limit 8 prób!' : 'All 8 guesses exhausted!');
+          toast.error('All 8 guesses exhausted!');
         }
       }
     } catch (err) {
       console.error('Failed to submit heraldry guess:', err);
-      toast.error(isPl ? 'Błąd podczas wysyłania odpowiedzi.' : 'Error submitting your guess.');
+      toast.error('Error submitting your guess.');
     } finally {
       setIsSubmitting(false);
     }
@@ -418,8 +413,8 @@ export default function PowiatHeraldryPage() {
     const scoreText = won ? `${guesses.length}/${maxGuesses}` : `X/${maxGuesses}`;
     const headerTitle =
       mode === 'daily'
-        ? (isPl ? `Herby Powiatów · ${challenge.date}` : `County Coats of Arms · ${challenge.date}`)
-        : (isPl ? 'Herby Powiatów · Wyzwanie' : 'County Coats of Arms · Challenge');
+        ? (`County Coats of Arms · ${challenge.date}`)
+        : ('County Coats of Arms · Challenge');
 
     const lines: string[] = [];
     lines.push(headerTitle);
@@ -451,7 +446,7 @@ export default function PowiatHeraldryPage() {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(fullShareText);
       setCopied(true);
-      toast.success(isPl ? 'Skopiowano wynik do schowka!' : 'Copied results to clipboard!');
+      toast.success('Copied results to clipboard!');
       setTimeout(() => setCopied(false), 2500);
     }
   };
@@ -463,7 +458,7 @@ export default function PowiatHeraldryPage() {
       <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
         <span className="text-sm font-medium text-sand-300">
-          {isPl ? 'Ładowanie Herbów Powiatów...' : 'Loading County Coats of Arms...'}
+          {'Loading County Coats of Arms...'}
         </span>
       </div>
     );
@@ -478,18 +473,16 @@ export default function PowiatHeraldryPage() {
             <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
               <span className="flex items-center gap-1.5">
                 <Shield size={14} className="text-emerald-400" />
-                {isPl ? 'Heraldyka Powiatowa' : 'County Heraldry'}
+                {'County Heraldry'}
               </span>
               <span>•</span>
-              <span>{mode === 'daily' ? challenge?.date || 'Daily' : isPl ? 'Wyzwanie' : 'Challenge'}</span>
+              <span>{mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}</span>
             </div>
             <h1 className="text-lg font-bold tracking-tight text-sand-100 sm:text-3xl">
-              {isPl ? 'Herby Powiatów' : 'County Coats of Arms'}
+              {'County Coats of Arms'}
             </h1>
             <p className="mt-0.5 text-[11px] leading-tight text-sand-400 sm:text-sm sm:leading-normal">
-              {isPl
-                ? 'Rozpoznaj polski powiat po jego oficjalnym herbie. Po 5 błędnych próbach poznasz tablice rejestracyjne.'
-                : 'Identify the Polish county by its official coat of arms. Registration plates reveal after 5 wrong guesses.'}
+              {'Identify the Polish county by its official coat of arms. Registration plates reveal after 5 wrong guesses.'}
             </p>
           </div>
 
@@ -497,7 +490,7 @@ export default function PowiatHeraldryPage() {
             {/* Guesses Remaining Pill */}
             <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
               <span className="mr-1.5 sm:mr-2 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-zinc-400">
-                {isPl ? 'Próby:' : 'Guesses:'}
+                {'Guesses:'}
               </span>
               <span
                 className={`font-mono text-sm sm:text-base font-bold ${
@@ -514,8 +507,8 @@ export default function PowiatHeraldryPage() {
               type="button"
               onClick={() => setShowInstructions(true)}
               className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors cursor-pointer"
-              title={isPl ? 'Zasady gry Herby Powiatów' : 'How to play County Coats of Arms'}
-              aria-label={isPl ? 'Zasady gry' : 'Instructions'}
+              title={'How to play County Coats of Arms'}
+              aria-label={'Instructions'}
             >
               <HelpCircle size={17} />
             </button>
@@ -526,10 +519,10 @@ export default function PowiatHeraldryPage() {
                 type="button"
                 onClick={() => setShowResultsModal(true)}
                 className="flex h-8 sm:h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-sm border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
-                title={isPl ? 'Pokaż wynik' : 'Show results'}
+                title={'Show results'}
               >
                 <Trophy size={14} />
-                <span>{isPl ? 'Wyniki' : 'Results'}</span>
+                <span>{'Results'}</span>
               </button>
             )}
           </div>
@@ -547,7 +540,7 @@ export default function PowiatHeraldryPage() {
                   : 'text-zinc-400 hover:text-sand-200'
               }`}
             >
-              📅 {isPl ? 'Dzisiejszy herb' : 'Daily Shield'}
+              📅 {'Daily Shield'}
             </button>
             <button
               type="button"
@@ -558,13 +551,13 @@ export default function PowiatHeraldryPage() {
                   : 'text-zinc-400 hover:text-sand-200'
               }`}
             >
-              ⚡ {isPl ? 'Wyzwanie losowe' : 'Random Challenge'}
+              ⚡ {'Random Challenge'}
             </button>
             <Link
               to="/quiz-herbow"
               className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
             >
-              🏆 {isPl ? 'Quiz 380 Herbów (JetPunk)' : '380 Coats Grid Quiz'}
+              🏆 {'380 Coats Grid Quiz'}
             </Link>
           </div>
 
@@ -577,14 +570,14 @@ export default function PowiatHeraldryPage() {
                 className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-sand-700 bg-sand-900/60 text-sand-200 hover:bg-sand-800 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-                <span>{isPl ? 'Nowy herb' : 'New Challenge'}</span>
+                <span>{'New Challenge'}</span>
               </button>
             )}
             <Link
               to="/quiz-herbow"
               className="sm:hidden flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded-sm border border-white/10 bg-obsidian-950 text-zinc-400 hover:text-emerald-300 text-xs font-medium transition-colors text-center"
             >
-              <span className="truncate">🏆 {isPl ? 'Quiz 380 Herbów' : '380 Coats Quiz'}</span>
+              <span className="truncate">🏆 {'380 Coats Quiz'}</span>
             </Link>
           </div>
         </div>
@@ -594,7 +587,7 @@ export default function PowiatHeraldryPage() {
       <main className="space-y-2.5 sm:space-y-6">
         {/* 1. Coat of Arms Shield Display */}
         <section
-          aria-label={isPl ? 'Tarcza herbowa powiatu' : 'County Coat of Arms Shield'}
+          aria-label={'County Coat of Arms Shield'}
           className="relative flex flex-col items-center justify-center rounded-xl border border-sand-800/80 bg-obsidian-950/60 p-2 sm:p-6 shadow-inner"
         >
           {/* Decorative heraldic background glow */}
@@ -626,9 +619,7 @@ export default function PowiatHeraldryPage() {
               }
             }}
             aria-label={
-              isPl
-                ? 'Kliknij, aby powiększyć herb na pełny ekran'
-                : 'Click to inspect coat of arms in fullscreen'
+              'Click to inspect coat of arms in fullscreen'
             }
             className={`group relative h-48 sm:h-80 aspect-[4/5] flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
               resolvedCoatUrl && !imageError && !imageLoading
@@ -645,11 +636,7 @@ export default function PowiatHeraldryPage() {
                 }
                 alt={
                   targetPowiat
-                    ? isPl
-                      ? `Herb: ${targetPowiat.name}`
-                      : `Coat of arms of ${targetPowiat.name}`
-                    : isPl
-                    ? 'Herb polskiego powiatu'
+                    ? `Coat of arms of ${targetPowiat.name}`
                     : 'Polish county coat of arms'
                 }
                 className={`h-full w-full object-contain filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.02] ${
@@ -679,7 +666,7 @@ export default function PowiatHeraldryPage() {
               >
                 <Loader2 className="animate-spin" size={28} aria-hidden="true" />
                 <span className="text-[11px] sm:text-xs font-mono text-sand-300">
-                  {isPl ? 'Wczytywanie tarczy herbowej...' : 'Loading heraldic shield...'}
+                  {'Loading heraldic shield...'}
                 </span>
               </div>
             )}
@@ -693,12 +680,10 @@ export default function PowiatHeraldryPage() {
                 <AlertCircle size={30} className="text-amber-400" />
                 <div className="space-y-1">
                   <p className="text-xs sm:text-sm font-semibold text-sand-100">
-                    {isPl ? 'Błąd pobierania herbu' : 'Failed to load coat of arms'}
+                    {'Failed to load coat of arms'}
                   </p>
                   <p className="text-[11px] sm:text-xs text-sand-400 leading-snug">
-                    {isPl
-                      ? 'Wystąpił błąd sieciowy lub usługa Wikimedia/cache zwróciła błąd 503.'
-                      : 'Network error or Wikimedia/cache service returned status 503.'}
+                    {'Network error or Wikimedia/cache service returned status 503.'}
                   </p>
                 </div>
                 <button
@@ -711,7 +696,7 @@ export default function PowiatHeraldryPage() {
                   className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 text-xs font-medium transition-colors cursor-pointer"
                 >
                   <RefreshCw size={12} />
-                  <span>{isPl ? 'Spróbuj ponownie' : 'Retry loading'}</span>
+                  <span>{'Retry loading'}</span>
                 </button>
               </div>
             )}
@@ -719,15 +704,13 @@ export default function PowiatHeraldryPage() {
         </section>
 
         {/* 2. Automatic Full Registration Plate Hint After 5th Wrong Guess */}
-        <section aria-label={isPl ? 'Podpowiedź tablicy rejestracyjnej' : 'Registration plate hint'}>
+        <section aria-label={'Registration plate hint'}>
           {isPlatesUnlocked ? (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 rounded-lg border border-blue-500/30 bg-blue-950/30 p-2.5 sm:px-5 sm:py-4 shadow-sm">
               <div className="flex items-center gap-2 text-blue-300 text-xs sm:text-sm font-medium">
                 <Car size={16} className="text-blue-400 shrink-0" />
                 <span>
-                  {isPl
-                    ? 'Odsłonięto tablice rejestracyjne poszukiwanego powiatu:'
-                    : 'Target county registration plate codes revealed:'}
+                  {'Target county registration plate codes revealed:'}
                 </span>
               </div>
               <PolishLicensePlateBadge plates={registrationPlates!} />
@@ -737,20 +720,16 @@ export default function PowiatHeraldryPage() {
               <div className="flex items-center gap-2 min-w-0">
                 <Lock size={15} className="text-amber-400 shrink-0" />
                 <span className="leading-snug">
-                  {isPl
-                    ? `Pełny wyróżnik tablicy rejestracyjnej odsłoni się automatycznie po 5. błędnej próbie (${guesses.length}/${hintUnlockThreshold})`
-                    : `Full registration plate ID reveals after 5th wrong guess (${guesses.length}/${hintUnlockThreshold})`}
+                  {`Full registration plate ID reveals after 5th wrong guess (${guesses.length}/${hintUnlockThreshold})`}
                 </span>
               </div>
               <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs text-amber-400 font-bold shrink-0">
                 {guesses.length < hintUnlockThreshold ? (
                   <span>
-                    {isPl
-                      ? `Pozostało: ${hintUnlockThreshold - guesses.length}`
-                      : `${hintUnlockThreshold - guesses.length} left`}
+                    {`${hintUnlockThreshold - guesses.length} left`}
                   </span>
                 ) : (
-                  <span>{isPl ? 'Gotowe do odblokowania' : 'Ready'}</span>
+                  <span>{'Ready'}</span>
                 )}
               </div>
             </div>
@@ -759,7 +738,7 @@ export default function PowiatHeraldryPage() {
 
         {/* 3. County Autocomplete & Guess Input Form */}
         {!isGameOver ? (
-          <section aria-label={isPl ? 'Wprowadzanie odpowiedzi' : 'Submit guess'}>
+          <section aria-label={'Submit guess'}>
             <div className="relative">
               <div className="flex flex-row items-stretch gap-1.5 sm:gap-2">
                 <div className="relative flex-1 min-w-0">
@@ -778,9 +757,7 @@ export default function PowiatHeraldryPage() {
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder={
-                      isPl
-                        ? 'Wpisz nazwę powiatu (np. Poznań)...'
-                        : 'Type county name (e.g. Poznań)...'
+                      'Type county name (e.g. Poznań)...'
                     }
                     disabled={isSubmitting}
                     autoComplete="off"
@@ -796,7 +773,7 @@ export default function PowiatHeraldryPage() {
                         setShowSuggestions(false);
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-sand-500 hover:text-sand-300 p-1 cursor-pointer"
-                      aria-label={isPl ? 'Wyczyść pole' : 'Clear input'}
+                      aria-label={'Clear input'}
                     >
                       <X size={14} />
                     </button>
@@ -814,7 +791,7 @@ export default function PowiatHeraldryPage() {
                   ) : (
                     <ArrowRight size={15} />
                   )}
-                  <span>{isPl ? 'Zgadnij' : 'Guess'}</span>
+                  <span>{'Guess'}</span>
                 </button>
               </div>
               {/* Autocomplete Dropdown */}
@@ -846,11 +823,7 @@ export default function PowiatHeraldryPage() {
                             </span>
                             <span className="rounded-xs border border-sand-800 bg-obsidian-900 px-1.5 py-0.5 text-[10px] text-zinc-400">
                               {item.is_city_county
-                                ? isPl
-                                  ? 'Miasto na pr. pow.'
-                                  : 'City county'
-                                : isPl
-                                ? 'Powiat ziemski'
+                                ? 'City county'
                                 : 'Land county'}
                             </span>
                           </div>
@@ -867,7 +840,7 @@ export default function PowiatHeraldryPage() {
         {/* 4. Terminal / Victory Banner & Attribution */}
         {isGameOver && (
           <section
-            aria-label={isPl ? 'Podsumowanie gry' : 'Game summary'}
+            aria-label={'Game summary'}
             className="rounded-xl border border-sand-800 bg-obsidian-900/90 p-4 sm:p-6 shadow-xl space-y-4"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -876,12 +849,12 @@ export default function PowiatHeraldryPage() {
                   {won ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
                       <Trophy size={14} />
-                      {isPl ? 'Zwycięstwo!' : 'Victory!'}
+                      {'Victory!'}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-semibold text-red-300">
                       <X size={14} />
-                      {isPl ? 'Koniec prób' : 'Game Over'}
+                      {'Game Over'}
                     </span>
                   )}
                 </div>
@@ -894,16 +867,12 @@ export default function PowiatHeraldryPage() {
                       </span>
                     </>
                   ) : (
-                    isPl ? 'Koniec gry' : 'Game Over'
+                    'Game Over'
                   )}
                 </h2>
                 <p className="mt-0.5 text-xs text-sand-400">
                   {won
-                    ? isPl
-                      ? `Odgadnięto w ${guesses.length} z ${maxGuesses} prób!`
-                      : `Solved in ${guesses.length} of ${maxGuesses} guesses!`
-                    : isPl
-                    ? `Niestety, limit ${maxGuesses} prób został wyczerpany.`
+                    ? `Solved in ${guesses.length} of ${maxGuesses} guesses!`
                     : `Out of guesses. Better luck next time!`}
                 </p>
               </div>
@@ -912,7 +881,7 @@ export default function PowiatHeraldryPage() {
               {registrationPlates && registrationPlates.length > 0 && (
                 <div className="flex flex-col sm:items-end gap-1">
                   <span className="text-[11px] font-mono text-sand-400 uppercase tracking-wider">
-                    {isPl ? 'Wyróżnik tablic:' : 'Registration plates:'}
+                    {'Registration plates:'}
                   </span>
                   <PolishLicensePlateBadge plates={registrationPlates} />
                 </div>
@@ -924,7 +893,7 @@ export default function PowiatHeraldryPage() {
               <div className="rounded-lg border border-white/5 bg-obsidian-950/60 p-3 text-xs text-sand-400 space-y-1">
                 <div className="font-semibold text-sand-300 flex items-center gap-1.5">
                   <Shield size={13} className="text-emerald-400" />
-                  <span>{isPl ? 'Źródło herbu i licencja:' : 'Heraldic Source & Attribution:'}</span>
+                  <span>{'Heraldic Source & Attribution:'}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-zinc-400">
                   {attribution.title && (
@@ -934,7 +903,7 @@ export default function PowiatHeraldryPage() {
                   )}
                   {(attribution.artist || attribution.author) && (
                     <span>
-                      {isPl ? 'Autor: ' : 'Author: '}
+                      {'Author: '}
                       {attribution.artist || attribution.author}
                     </span>
                   )}
@@ -966,7 +935,7 @@ export default function PowiatHeraldryPage() {
                 className="inline-flex items-center gap-2 rounded-sm bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors cursor-pointer"
               >
                 {copied ? <Check size={15} /> : <Share2 size={15} />}
-                <span>{copied ? (isPl ? 'Skopiowano!' : 'Copied!') : isPl ? 'Udostępnij wynik' : 'Share Results'}</span>
+                <span>{copied ? ('Copied!') : 'Share Results'}</span>
               </button>
 
               <button
@@ -982,26 +951,24 @@ export default function PowiatHeraldryPage() {
                 className="inline-flex items-center gap-2 rounded-sm border border-sand-700 bg-sand-900/60 px-4 py-2 text-xs sm:text-sm font-semibold text-sand-200 hover:bg-sand-800 transition-colors cursor-pointer"
               >
                 <RefreshCw size={15} />
-                <span>{isPl ? 'Nowe wyzwanie' : 'New Challenge'}</span>
+                <span>{'New Challenge'}</span>
               </button>
             </div>
           </section>
         )}
 
         {/* 5. Guess History List */}
-        <section aria-label={isPl ? 'Historia prób' : 'Guess history'} className="space-y-2">
+        <section aria-label={'Guess history'} className="space-y-2">
           <div className="flex items-center justify-between border-b border-sand-800/80 pb-2">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-sand-400 font-mono flex items-center gap-1.5">
-              <span>{isPl ? 'Historia Twoich typów' : 'Guess History'}</span>
+              <span>{'Guess History'}</span>
               <span className="text-xs text-zinc-500">({guesses.length}/{maxGuesses})</span>
             </h3>
           </div>
 
           {guesses.length === 0 ? (
             <div className="rounded-lg border border-dashed border-sand-800 p-6 text-center text-xs sm:text-sm text-sand-500">
-              {isPl
-                ? 'Wpisz nazwę powiatu powyżej, aby oddać pierwszy strzał.'
-                : 'Enter a county name above to submit your first guess.'}
+              {'Enter a county name above to submit your first guess.'}
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -1025,7 +992,7 @@ export default function PowiatHeraldryPage() {
                       {g.answer && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
                           <Check size={12} />
-                          {isPl ? 'Trafiony!' : 'Correct!'}
+                          {'Correct!'}
                         </span>
                       )}
                     </div>
@@ -1041,11 +1008,7 @@ export default function PowiatHeraldryPage() {
                         }`}
                         title={
                           g.same_voivodeship
-                            ? isPl
-                              ? 'To samo województwo co cel!'
-                              : 'Same voivodeship as target!'
-                            : isPl
-                            ? 'Inne województwo niż cel.'
+                            ? 'Same voivodeship as target!'
                             : 'Different voivodeship than target.'
                         }
                       >
@@ -1055,7 +1018,7 @@ export default function PowiatHeraldryPage() {
                       {/* Distance */}
                       <span
                         className="font-mono text-xs font-semibold min-w-[60px] text-right"
-                        title={isPl ? 'Odległość od celu' : 'Distance to target'}
+                        title={'Distance to target'}
                       >
                         {g.distance_km !== null && g.distance_km !== undefined
                           ? `${g.distance_km} km`
@@ -1067,7 +1030,7 @@ export default function PowiatHeraldryPage() {
                         className="font-mono text-xs text-sand-300 flex items-center gap-1 min-w-[45px]"
                         title={
                           g.bearing_direction
-                            ? `${isPl ? 'Kierunek:' : 'Direction:'} ${g.bearing_direction}`
+                            ? `${'Direction:'} ${g.bearing_direction}`
                             : undefined
                         }
                       >
@@ -1097,7 +1060,7 @@ export default function PowiatHeraldryPage() {
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={isPl ? 'Podsumowanie wyników' : 'Game Results'}
+            aria-label={'Game Results'}
             className="relative z-10 w-full max-w-lg rounded-xl border border-white/15 bg-obsidian-950 p-5 sm:p-7 shadow-2xl space-y-4 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1107,22 +1070,18 @@ export default function PowiatHeraldryPage() {
                   {won ? (
                     <>
                       <Trophy className="text-emerald-400" size={24} />
-                      <span>{isPl ? 'Zwycięstwo!' : 'Victory!'}</span>
+                      <span>{'Victory!'}</span>
                     </>
                   ) : (
                     <>
                       <X className="text-red-400" size={24} />
-                      <span>{isPl ? 'Koniec gry' : 'Game Over'}</span>
+                      <span>{'Game Over'}</span>
                     </>
                   )}
                 </h2>
                 <p className="mt-1 text-xs text-sand-400">
                   {won
-                    ? isPl
-                      ? `Rozpoznano herb powiatu w ${guesses.length}/${maxGuesses} próbach!`
-                      : `Identified county coat of arms in ${guesses.length}/${maxGuesses} guesses!`
-                    : isPl
-                    ? 'Nie udało się odgadnąć w tej rundzie.'
+                    ? `Identified county coat of arms in ${guesses.length}/${maxGuesses} guesses!`
                     : 'Out of guesses this round.'}
                 </p>
               </div>
@@ -1130,7 +1089,7 @@ export default function PowiatHeraldryPage() {
                 type="button"
                 onClick={() => setShowResultsModal(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                aria-label={isPl ? 'Zamknij' : 'Close'}
+                aria-label={'Close'}
               >
                 <X size={16} />
               </button>
@@ -1140,11 +1099,11 @@ export default function PowiatHeraldryPage() {
             {targetPowiat && (
               <div className="rounded-lg border border-sand-800 bg-obsidian-900/80 p-4 space-y-2">
                 <div className="text-xs font-mono uppercase text-sand-400">
-                  {isPl ? 'Poszukiwany powiat:' : 'Target county:'}
+                  {'Target county:'}
                 </div>
                 <div className="text-lg font-bold text-sand-100">{targetPowiat.name}</div>
                 <div className="text-xs text-emerald-400 font-mono">
-                  województwo {targetPowiat.voivodeship}
+                  Voivodeship {targetPowiat.voivodeship}
                 </div>
               </div>
             )}
@@ -1153,7 +1112,7 @@ export default function PowiatHeraldryPage() {
             {registrationPlates && registrationPlates.length > 0 && (
               <div className="rounded-lg border border-blue-500/20 bg-blue-950/20 p-3 flex items-center justify-between">
                 <span className="text-xs text-blue-300 font-medium">
-                  {isPl ? 'Wyróżnik tablic:' : 'Registration plates:'}
+                  {'Registration plates:'}
                 </span>
                 <PolishLicensePlateBadge plates={registrationPlates} />
               </div>
@@ -1165,7 +1124,7 @@ export default function PowiatHeraldryPage() {
                 {attribution.title && <div>{attribution.title}</div>}
                 {(attribution.artist || attribution.author) && (
                   <div>
-                    {isPl ? 'Autor: ' : 'Author: '}
+                    {'Author: '}
                     {attribution.artist || attribution.author} {attribution.license ? `(${attribution.license})` : ''}
                   </div>
                 )}
@@ -1180,7 +1139,7 @@ export default function PowiatHeraldryPage() {
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors cursor-pointer"
               >
                 {copied ? <Check size={15} /> : <Share2 size={15} />}
-                <span>{copied ? (isPl ? 'Skopiowano!' : 'Copied!') : isPl ? 'Udostępnij wynik' : 'Share Results'}</span>
+                <span>{copied ? ('Copied!') : 'Share Results'}</span>
               </button>
 
               <button
@@ -1197,7 +1156,7 @@ export default function PowiatHeraldryPage() {
                 className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-sand-700 bg-sand-900/60 px-4 py-2 text-xs sm:text-sm font-semibold text-sand-200 hover:bg-sand-800 transition-colors cursor-pointer"
               >
                 <RefreshCw size={14} />
-                <span>{isPl ? 'Nowa gra' : 'New Challenge'}</span>
+                <span>{'New Challenge'}</span>
               </button>
             </div>
           </section>
@@ -1217,7 +1176,7 @@ export default function PowiatHeraldryPage() {
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={isPl ? 'Zasady gry Herby Powiatów' : 'How to Play County Coats of Arms'}
+            aria-label={'How to Play County Coats of Arms'}
             className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-xl border border-white/15 bg-obsidian-950 p-4 md:max-h-[92vh] sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1225,19 +1184,17 @@ export default function PowiatHeraldryPage() {
               <div>
                 <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
                   <Shield className="text-emerald-400" size={26} />
-                  <span>{isPl ? 'Jak grać w Herby Powiatów' : 'How to Play County Coats of Arms'}</span>
+                  <span>{'How to Play County Coats of Arms'}</span>
                 </h2>
                 <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
-                  {isPl
-                    ? 'Odgadnij polski powiat na podstawie jego oficjalnego herbu w maksymalnie 8 próbach.'
-                    : 'Deduce the Polish county from its official coat of arms in 8 guesses or fewer.'}
+                  {'Deduce the Polish county from its official coat of arms in 8 guesses or fewer.'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                aria-label={isPl ? 'Zamknij' : 'Close'}
+                aria-label={'Close'}
               >
                 <X size={16} />
               </button>
@@ -1248,16 +1205,14 @@ export default function PowiatHeraldryPage() {
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
                     <Shield size={16} />
-                    <span>1. {isPl ? 'Oficjalna tarcza herbu' : 'Official Heraldic Shield'}</span>
+                    <span>1. {'Official Heraldic Shield'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'W każdym wyzwaniu prezentowany jest herb jednego z 380 polskich powiatów (ziemskich lub miast na prawach powiatu), pochodzący ze zbiorów Wikimedia Commons i Wikidata.'
-                      : 'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
+                    {'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Wektorowe grafiki SVG' : 'Vector SVG artwork'}
+                  {'Vector SVG artwork'}
                 </div>
               </div>
 
@@ -1265,16 +1220,14 @@ export default function PowiatHeraldryPage() {
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
                     <Car size={16} />
-                    <span>2. {isPl ? 'Podpowiedź tablic po 5. próbie' : 'Plate Code Reveal after 5 Guesses'}</span>
+                    <span>2. {'Plate Code Reveal after 5 Guesses'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Po 5 błędnych próbach automatycznie odsłania się wyróżnik polskich tablic rejestracyjnych poszukiwanego powiatu (np. PO dla Poznania czy KRA dla powiatu krakowskiego).'
-                      : 'After 5 wrong guesses, the target county\'s official registration plate prefix (e.g. PO for Poznań or KRA for Krakow land county) is automatically revealed.'}
+                    {'After 5 wrong guesses, the target county\'s official registration plate prefix (e.g. PO for Poznań or KRA for Krakow land county) is automatically revealed.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Automatyczne odblokowanie' : 'Automatic unlock'}
+                  {'Automatic unlock'}
                 </div>
               </div>
 
@@ -1282,16 +1235,14 @@ export default function PowiatHeraldryPage() {
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                     <Compass size={16} />
-                    <span>3. {isPl ? 'Odległość i kierunek' : 'Distance & Direction'}</span>
+                    <span>3. {'Distance & Direction'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Każdy nietrafiony typ informuje o odległości w kilometrach między centroidami powiatów oraz wskazuje kierunek geograficzny strzałką.'
-                      : 'Every missed attempt shows distance in kilometers between county centroids along with a compass direction arrow.'}
+                    {'Every missed attempt shows distance in kilometers between county centroids along with a compass direction arrow.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Nawigacja geograficzna' : 'Geographic feedback'}
+                  {'Geographic feedback'}
                 </div>
               </div>
 
@@ -1299,16 +1250,14 @@ export default function PowiatHeraldryPage() {
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
                     <Sparkles size={16} />
-                    <span>4. {isPl ? 'Zgodność województwa' : 'Voivodeship Match'}</span>
+                    <span>4. {'Voivodeship Match'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Oznaczenie 🟩 woj. oznacza, że wytypowany powiat leży w tym samym województwie co szukany cel. Oznaczenie ⬛ woj. wskazuje inne województwo.'
-                      : 'A 🟩 tag shows that your guess is located in the same voivodeship as the mystery county. A ⬛ tag indicates a different province.'}
+                    {'A 🟩 tag shows that your guess is located in the same voivodeship as the mystery county. A ⬛ tag indicates a different province.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? '16 województw w Polsce' : '16 Polish provinces'}
+                  {'16 Polish provinces'}
                 </div>
               </div>
             </div>
@@ -1319,7 +1268,7 @@ export default function PowiatHeraldryPage() {
                 onClick={handleCloseInstructions}
                 className="w-full sm:w-auto px-6 py-2.5 rounded-sm bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors cursor-pointer"
               >
-                {isPl ? 'Zrozumiałem, gramy!' : 'Got it, let\'s play!'}
+                {'Got it, let\'s play!'}
               </button>
             </div>
           </section>
@@ -1331,7 +1280,7 @@ export default function PowiatHeraldryPage() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={isPl ? 'Podgląd herbu na pełnym ekranie' : 'Fullscreen coat of arms inspection'}
+          aria-label={'Fullscreen coat of arms inspection'}
           className="fixed inset-0 z-[2100] flex flex-col bg-obsidian-950/95 backdrop-blur-md animate-fade-in"
           onClick={() => setIsFullscreenOpen(false)}
         >
@@ -1345,8 +1294,6 @@ export default function PowiatHeraldryPage() {
               <span className="truncate">
                 {targetPowiat
                   ? targetPowiat.name
-                  : isPl
-                  ? 'Szczegółowy podgląd herbu'
                   : 'Coat of Arms Detail Inspector'}
               </span>
             </div>
@@ -1359,8 +1306,8 @@ export default function PowiatHeraldryPage() {
                   onClick={() => setZoomLevel((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
                   disabled={zoomLevel <= 1}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-xs text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 cursor-pointer"
-                  aria-label={isPl ? 'Pomniejsz' : 'Zoom out'}
-                  title={isPl ? 'Pomniejsz' : 'Zoom out'}
+                  aria-label={'Zoom out'}
+                  title={'Zoom out'}
                 >
                   <ZoomOut size={14} />
                 </button>
@@ -1368,7 +1315,7 @@ export default function PowiatHeraldryPage() {
                   type="button"
                   onClick={() => setZoomLevel(1)}
                   className="px-2 h-8 text-sand-100 hover:bg-white/10 rounded-xs cursor-pointer text-xs"
-                  title={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
+                  title={'Reset zoom'}
                 >
                   {Math.round(zoomLevel * 100)}%
                 </button>
@@ -1377,8 +1324,8 @@ export default function PowiatHeraldryPage() {
                   onClick={() => setZoomLevel((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
                   disabled={zoomLevel >= 3}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-xs text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 cursor-pointer"
-                  aria-label={isPl ? 'Powiększ' : 'Zoom in'}
-                  title={isPl ? 'Powiększ' : 'Zoom in'}
+                  aria-label={'Zoom in'}
+                  title={'Zoom in'}
                 >
                   <ZoomIn size={14} />
                 </button>
@@ -1389,10 +1336,10 @@ export default function PowiatHeraldryPage() {
                 type="button"
                 onClick={() => setLightBackdrop((prev) => !prev)}
                 className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-950 px-2 sm:px-3 text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                title={isPl ? 'Przełącz kontrast tła' : 'Toggle background contrast'}
+                title={'Toggle background contrast'}
               >
                 {lightBackdrop ? <Moon size={13} className="text-sky-300" /> : <Sun size={13} className="text-amber-300" />}
-                <span className="hidden xs:inline">{lightBackdrop ? (isPl ? 'Ciemne tło' : 'Dark bg') : (isPl ? 'Jasne tło' : 'Light bg')}</span>
+                <span className="hidden xs:inline">{lightBackdrop ? ('Dark bg') : ('Light bg')}</span>
               </button>
 
               {/* Close Button */}
@@ -1400,10 +1347,10 @@ export default function PowiatHeraldryPage() {
                 type="button"
                 onClick={() => setIsFullscreenOpen(false)}
                 className="inline-flex h-8 sm:h-9 items-center gap-1 rounded-sm border border-white/15 bg-white/10 px-2 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-white/20 transition-colors cursor-pointer"
-                aria-label={isPl ? 'Zamknij pełny ekran' : 'Close fullscreen'}
+                aria-label={'Close fullscreen'}
               >
                 <X size={14} />
-                <span>{isPl ? 'Zamknij' : 'Close'}<span className="hidden sm:inline"> (Esc)</span></span>
+                <span>{'Close'}<span className="hidden sm:inline"> (Esc)</span></span>
               </button>
             </div>
           </div>
@@ -1426,11 +1373,7 @@ export default function PowiatHeraldryPage() {
                 }
                 alt={
                   targetPowiat
-                    ? isPl
-                      ? `Herb: ${targetPowiat.name}`
-                      : `Coat of arms of ${targetPowiat.name}`
-                    : isPl
-                    ? 'Herb polskiego powiatu (pełny ekran)'
+                    ? `Coat of arms of ${targetPowiat.name}`
                     : 'Polish county coat of arms (fullscreen)'
                 }
                 style={{

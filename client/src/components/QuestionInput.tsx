@@ -97,8 +97,7 @@ export function getQuickQuestions(currentMode: string, t: (key: string) => strin
     ];
   };
 export default function QuestionInput({ onAsk, isLoading, remainingQuestions, placeholder, disabled = false, minLength = 1, maxLength = 100, mode = 'country' }: QuestionInputProps) {
-  const { t, i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  const { t } = useTranslation();
   const inputId = useId();
   const isMobile = useIsMobile();
   
@@ -211,41 +210,39 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
     if (isMobile) {
       if (norm.includes('wojewodztw')) {
         return t('inputs.questionPlaceholderWojMobile', {
-          defaultValue: isPl ? 'Pytanie o województwo…' : 'Ask about voivodeship…',
+          defaultValue: 'Ask about voivodeship…',
         });
       }
       if (norm.includes('powiat')) {
         return t('inputs.questionPlaceholderPowiatMobile', {
-          defaultValue: isPl ? 'Pytanie o powiat…' : 'Ask about the county…',
+          defaultValue: 'Ask about the county…',
         });
       }
       if (norm.includes('us_state') || norm.includes('usstate') || norm.includes('us-state')) {
         return t('inputs.questionPlaceholderUsStateMobile', {
-          defaultValue: isPl ? 'Pytanie o stan…' : 'Ask about the state…',
+          defaultValue: 'Ask about the state…',
         });
       }
       if (norm === 'europe' || norm === 'asia' || norm === 'africa' || norm === 'americas' || norm === 'country') {
         return t('inputs.questionPlaceholderCountryMobile', {
-          defaultValue: isPl ? 'Pytanie o państwo…' : 'Ask about the country…',
+          defaultValue: 'Ask about the country…',
         });
       }
       return t('inputs.questionPlaceholderMobile', {
-        defaultValue: isPl ? 'Zadaj pytanie tak/nie…' : 'Ask a yes/no question…',
+        defaultValue: 'Ask a yes/no question…',
       });
     }
 
     if (remainingQuestions !== undefined) {
       return t('inputs.questionPlaceholder', {
         count: remainingQuestions,
-        defaultValue: isPl
-          ? `Zadaj pytanie tak/nie (np. „Czy leży w Europie?”) – pozostało: ${remainingQuestions}`
-          : `Ask a yes/no question (e.g., "Is it in Europe?") - ${remainingQuestions} left`,
+        defaultValue: `Ask a yes/no question (e.g., "Is it in Europe?") - ${remainingQuestions} left`,
       });
     }
     return t('inputs.questionPlaceholderNoCount', {
-      defaultValue: isPl ? 'Zadaj pytanie tak/nie (np. „Czy leży w Europie?”)' : 'Ask a yes/no question (e.g., "Is it in Europe?")',
+      defaultValue: 'Ask a yes/no question (e.g., "Is it in Europe?")',
     });
-  }, [isMobile, isPl, mode, remainingQuestions, t]);
+  }, [isMobile, mode, remainingQuestions, t]);
 
   const resolvedPlaceholder = isMobile
     ? defaultPlaceholder
@@ -253,16 +250,16 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
 
   const scrollPrompt = useMemo(() => {
     if (!canScrollLeft && canScrollRight) {
-      return t('inputs.scrollRightPrompt', isPl ? 'Przewiń →' : 'Scroll →');
+      return t('inputs.scrollRightPrompt', 'Scroll →');
     }
     if (canScrollLeft && canScrollRight) {
-      return t('inputs.scrollBothPrompt', isPl ? '← Przewiń →' : '← Scroll →');
+      return t('inputs.scrollBothPrompt', '← Scroll →');
     }
     if (canScrollLeft && !canScrollRight) {
-      return t('inputs.scrollLeftPrompt', isPl ? '← Przewiń' : '← Scroll');
+      return t('inputs.scrollLeftPrompt', '← Scroll');
     }
     return null;
-  }, [canScrollLeft, canScrollRight, isPl, t]);
+  }, [canScrollLeft, canScrollRight, t]);
 
   const maskStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (canScrollLeft && canScrollRight) {
@@ -319,7 +316,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
           </div>
         </div>
       </div>
-      <label htmlFor={inputId} className="sr-only">{isPl ? 'Pytanie tak lub nie' : 'Yes-or-no question'}</label>
+      <label htmlFor={inputId} className="sr-only">{'Yes-or-no question'}</label>
       <div className="relative flex items-center">
         <input
           id={inputId}
@@ -339,11 +336,11 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
         <button
           type="submit"
-          aria-label={isPl ? 'Zadaj pytanie' : 'Ask question'}
+          aria-label={'Ask question'}
           disabled={question.trim().length < minLength || unavailable}
           className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40"
         >
-          <span>{isPl ? 'Pytaj' : 'Ask'}</span>
+          <span>{'Ask'}</span>
           {isLoading ? (
             <Loader2 size={14} className="animate-spin" aria-hidden="true" />
           ) : (

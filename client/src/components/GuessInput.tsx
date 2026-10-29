@@ -48,8 +48,8 @@ export default function GuessInput<Id extends string | number = number>({
   alreadyGuessedNames = [],
   alreadyGuessedIds = [],
 }: GuessInputProps<Id>) {
-  const { t, i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  const { t } = useTranslation();
+  
   
   const inputId = useId();
   const listId = `${inputId}-suggestions`;
@@ -99,7 +99,7 @@ export default function GuessInput<Id extends string | number = number>({
   const warnDuplicate = (input: string) => {
     setShowSuggestions(false);
     if (onWarning) onWarning(input);
-    else setDuplicateWarning(isPl ? `Ta lokalizacja była już typowana: ${input}. Próba nie została wysłana. Wybierz inną.` : `You already guessed ${input}. This attempt was not submitted. Choose a different location.`);
+    else setDuplicateWarning(`You already guessed ${input}. This attempt was not submitted. Choose a different location.`);
   };
 
   const handleSelect = async (country: LocationOption<Id>) => {
@@ -169,7 +169,7 @@ export default function GuessInput<Id extends string | number = number>({
       }}
     >
       <form onSubmit={handleSubmit} autoComplete="off" className="relative flex items-center">
-        <label htmlFor={inputId} className="sr-only">{isPl ? 'Szukaj lokalizacji' : 'Search for a location'}</label>
+        <label htmlFor={inputId} className="sr-only">{'Search for a location'}</label>
         <input
           id={inputId}
           type="text"
@@ -210,14 +210,14 @@ export default function GuessInput<Id extends string | number = number>({
           disabled={!query.trim() || disabled || (!filteredCountries.length && !onUnknownGuess)}
           className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40"
         >
-          <span>{submitLabel || (isPl ? 'Strzał' : 'Guess')}</span>
+          <span>{submitLabel || ('Guess')}</span>
           <ArrowRight size={14} aria-hidden="true" />
         </button>
       </form>
       {duplicateWarning && <p role="status" className="mt-2 text-sm leading-relaxed text-amber-200">{duplicateWarning}</p>}
 
       {suggestionsVisible && (
-        <div id={listId} role="listbox" aria-label={isPl ? 'Pasujące lokalizacje' : 'Matching locations'} className={`absolute left-0 right-0 ${dropup ? 'bottom-full mb-1.5 max-h-[min(18rem,calc(var(--app-height,100dvh)-8rem))]' : 'top-full mt-1 max-h-72'} z-50 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900/95 shadow-xl backdrop-blur-md divide-y divide-white/5`}>
+        <div id={listId} role="listbox" aria-label={'Matching locations'} className={`absolute left-0 right-0 ${dropup ? 'bottom-full mb-1.5 max-h-[min(18rem,calc(var(--app-height,100dvh)-8rem))]' : 'top-full mt-1 max-h-72'} z-50 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900/95 shadow-xl backdrop-blur-md divide-y divide-white/5`}>
           {filteredCountries.map(({ country }, index) => (
             <button
               id={`${listId}-${index}`}
@@ -237,7 +237,7 @@ export default function GuessInput<Id extends string | number = number>({
           ))}
         </div>
       )}
-      {query.trim() && !filteredCountries.length && !onUnknownGuess && !disabled && <p role="status" className="mt-2 text-xs text-zinc-400">{noMatchesLabel || (isPl ? 'Brak pasujących lokalizacji.' : 'No matching locations.')}</p>}
+      {query.trim() && !filteredCountries.length && !onUnknownGuess && !disabled && <p role="status" className="mt-2 text-xs text-zinc-400">{noMatchesLabel || ('No matching locations.')}</p>}
     </div>
   );
 }

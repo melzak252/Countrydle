@@ -30,7 +30,7 @@ type DivergenceResult = {
 const controlClass = 'admin-control';
 
 export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQuestion?: (question: string, mode: string) => void }) {
-  const { t, i18n } = useTranslation('translation', { keyPrefix: 'adminTemplateAudit' });
+  const { t } = useTranslation('translation', { keyPrefix: 'adminTemplateAudit' });
   const { t: modesT } = useTranslation('translation');
   const [query, setQuery] = useState<DivergenceQuery>({ status: 'open', mode: '', page: 1, revision: 0 });
   const [result, setResult] = useState<DivergenceResult | null>(null);
@@ -140,8 +140,8 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
                       <span className="admin-badge">{item.divergence_type}</span>
                       <span className={`admin-badge ${item.reviewed_at ? '' : 'text-emerald-300'}`}>{item.reviewed_at ? t('reviewed') : t('open')}</span>
                     </div>
-                    <p className="text-sm text-slate-300">{t('captured')} <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString(i18n.language)}</time></p>
-                    {item.reviewed_at && <p className="text-sm text-slate-300">{t('reviewedAt')} <time dateTime={item.reviewed_at}>{new Date(item.reviewed_at).toLocaleString(i18n.language)}</time></p>}
+                    <p className="text-sm text-slate-300">{t('captured')} <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('en-US')}</time></p>
+                    {item.reviewed_at && <p className="text-sm text-slate-300">{t('reviewedAt')} <time dateTime={item.reviewed_at}>{new Date(item.reviewed_at).toLocaleString('en-US')}</time></p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {onTestQuestion && <button type="button" disabled={busyId !== null} onClick={() => onTestQuestion(item.question, item.mode)} className="admin-button">{t('testInQa')}</button>}

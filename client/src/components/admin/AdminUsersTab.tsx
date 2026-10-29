@@ -39,9 +39,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   onPageChange,
   onRefresh,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [inputSearch, setInputSearch] = useState(search);
-  const locale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const locale = 'en-US';
   const numberFormat = new Intl.NumberFormat(locale);
   const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
   const pageCount = Math.ceil(totalUsers / PAGE_SIZE);

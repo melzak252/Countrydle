@@ -264,6 +264,7 @@ Instructions:
 - Base your answers primarily on the provided context. If the context does not contain enough information, use your general knowledge to provide the most accurate answer possible.
 - If you cannot determine the answer even with general knowledge, set "answer" to null.
 - Incorporate any relevant details from the provided context about the state into your explanations.
+- Write the explanation in English regardless of the question's language.
 - If the question asks if the state borders/neighbors [X], and the secret state IS [X], answer "true". Treat a state as bordering itself for the purpose of this game.
 - **Informative Explanations**: Write the `explanation` as factual information about the state that answers the question and provides details. Avoid starting with 'Yes' or 'No' or simply repeating the answer. The explanation should be an informative statement about the state that justifies the True/False answer (e.g., instead of 'Yes, it is in the South', use '{entity_name} is located in the Southeastern United States and is known for its humid subtropical climate.').
 - **User Perspective**: If the user refers to themselves as the state (e.g., "Am I in the South?"), you should still answer about the state in the third person (e.g., "{entity_name} is in the South") to maintain a factual and informative tone.

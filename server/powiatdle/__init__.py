@@ -334,7 +334,7 @@ async def ask_question(
             question=question.question,
             valid=False,
             answer=None,
-            explanation="Nie udało się zweryfikować tego pytania w tym momencie. Twoja próba nie została zużyta.",
+            explanation="This question could not be verified right now. Your attempt was not used.",
             asked_at=datetime.now(),
             user_id=user_id,
             day_id=0,

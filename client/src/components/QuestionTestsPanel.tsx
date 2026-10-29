@@ -12,10 +12,10 @@ const MODE_LABELS: Record<QuestionTestMode | 'continental', string> = {
   powiatdle: 'Powiatdle',
   wojewodztwodle: 'Województwodle',
   continental: 'Europedle / Continental',
-  europe: 'Europa',
-  asia: 'Azja',
-  africa: 'Afryka',
-  americas: 'Ameryki',
+  europe: 'Europe',
+  asia: 'Asia',
+  africa: 'Africa',
+  americas: 'The Americas',
   flagdle: 'Flagdle',
 };
 export interface QuestionTestBridgeTarget {
@@ -40,10 +40,10 @@ function matchesReportMode(mode: QuestionTestMode, reportMode: AnswerReport['mod
   return false;
 }
 const SOURCE_LABELS: Record<QuestionTestResult['source'], string> = {
-  local_kb: 'Lokalna baza wiedzy',
-  local_planner: 'Lokalny planer',
-  fallback: 'Ścieżka zapasowa modelu',
-  flag_kb: 'Lokalna baza flag',
+  local_kb: 'Local knowledge base',
+  local_planner: 'Local planner',
+  fallback: 'Model fallback',
+  flag_kb: 'Local flag database',
 };
 const controlClass = 'admin-control w-full min-w-0';
 const cardClass = 'admin-panel min-w-0 space-y-4 p-4 sm:p-5';
@@ -83,7 +83,7 @@ export default function QuestionTestsPanel({
   initialTarget?: QuestionTestBridgeTarget | null;
   onClearInitialTarget?: () => void;
 }) {
-  const { t, i18n } = useTranslation('translation', { keyPrefix: 'adminQuestionTests' });
+  const { t } = useTranslation('translation', { keyPrefix: 'adminQuestionTests' });
   const { t: modesT } = useTranslation('translation');
   const [mode, setMode] = useState<QuestionTestMode>(initialTestMode(report, initialTarget));
   const [question, setQuestion] = useState(initialTarget?.questionText || report?.details.original_question || '');
@@ -296,7 +296,7 @@ export default function QuestionTestsPanel({
             )}
             <div className="min-w-0 sm:col-span-2"><dt className="text-sm text-slate-400">{t('explanation')}</dt><dd className="whitespace-pre-wrap break-words text-slate-300">{completed.result.explanation || t('noExplanation')}</dd></div>
             <div className="min-w-0"><dt className="text-sm text-slate-400">{t('answerSource')}</dt><dd className="text-slate-300">{t(`sources.${completed.result.source}`, { defaultValue: SOURCE_LABELS[completed.result.source] })} <span className="font-mono text-xs">({completed.result.source})</span></dd></div>
-            <div><dt className="text-sm text-slate-400">{t('serverDuration')}</dt><dd className="text-slate-300">{completed.result.duration_ms.toLocaleString(i18n.language)} ms</dd></div>
+            <div><dt className="text-sm text-slate-400">{t('serverDuration')}</dt><dd className="text-slate-300">{completed.result.duration_ms.toLocaleString('en-US')} ms</dd></div>
             <div className="min-w-0 sm:col-span-2"><dt className="text-sm text-slate-400">{t('currentServer')}</dt><dd className="break-words font-mono text-sm text-slate-300">{completed.result.server_version}</dd></div>
           </dl>
           <details className="min-w-0 border-t border-white/10 pt-3">

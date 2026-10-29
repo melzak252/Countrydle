@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { MapContainer, TileLayer, GeoJSON, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
@@ -136,8 +136,8 @@ function MapControls({
   showReferenceLines,
   onToggleReferenceLines,
 }: MapControlsProps) {
-  const { i18n } = useTranslation();
-  const isPl = i18n?.language?.startsWith('pl');
+  
+  
   const { isGameOver, activeMarkerColor, setActiveMarkerColor, clearMapMarkings } = interaction;
   const handleZoomToCorrect = () => {
     if (map && correctCountryName && geoJsonData) {
@@ -174,8 +174,8 @@ function MapControls({
               handleResetView();
             }}
             className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
-            title={isPl ? 'Resetuj widok' : 'Reset view'}
-            aria-label={isPl ? 'Resetuj widok' : 'Reset view'}
+            title={'Reset view'}
+            aria-label={'Reset view'}
           >
             <RotateCcw size={15} />
           </button>
@@ -192,9 +192,9 @@ function MapControls({
                 : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-white'
             }`}
             title={showReferenceLines
-              ? (isPl ? 'Ukryj równik i południk Greenwich' : 'Hide Equator & Greenwich lines')
-              : (isPl ? 'Pokaż równik i południk Greenwich' : 'Show Equator & Greenwich lines')}
-            aria-label={isPl ? 'Przełącz linie równika i południka Greenwich' : 'Toggle Equator and Greenwich reference lines'}
+              ? ('Hide Equator & Greenwich lines')
+              : ('Show Equator & Greenwich lines')}
+            aria-label={'Toggle Equator and Greenwich reference lines'}
             aria-pressed={showReferenceLines}
           >
             <Compass size={15} />
@@ -207,8 +207,8 @@ function MapControls({
               handleZoomToCorrect();
             }}
             className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
-            title={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
-            aria-label={isPl ? 'Przybliż poprawne państwo' : 'Zoom to correct country'}
+            title={'Zoom to correct country'}
+            aria-label={'Zoom to correct country'}
           >
             <Check size={16} />
           </button>

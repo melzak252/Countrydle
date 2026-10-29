@@ -198,7 +198,7 @@ export default function FlagdlePage() {
         const isClose = (g.distance_km !== null && g.distance_km !== undefined && g.distance_km < 2500) || (g.matched_colors && g.matched_colors.length > 0);
         const tile = isClose ? '🟨' : '⬛';
         const arrow = g.bearing_arrow ? `${g.bearing_arrow} ` : '';
-        const dist = g.distance_km ? `${g.distance_km.toLocaleString()} km` : '';
+        const dist = g.distance_km ? `${g.distance_km.toLocaleString('en-US')} km` : '';
         lines.push(`${tile} ${arrow}${dist}`.trim());
       }
     });
@@ -386,7 +386,7 @@ export default function FlagdlePage() {
                   {g.distance_km !== null && g.distance_km !== undefined && !g.answer && (
                     <div className="flex items-center gap-1.5 font-mono text-xs text-zinc-400">
                       <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-zinc-300">
-                        {g.distance_km.toLocaleString()} km
+                        {g.distance_km.toLocaleString('en-US')} km
                       </span>
                       {g.bearing_arrow && (
                         <span className="text-emerald-400 text-sm font-semibold">{g.bearing_arrow}</span>
@@ -411,7 +411,7 @@ export default function FlagdlePage() {
                 {correctCountry?.name || 'Mystery Flag'}
               </h3>
               {isWon && gameState && gameState.points > 0 ? (
-                <p className="font-mono text-xs text-emerald-400">+{gameState.points.toLocaleString()} pts</p>
+                <p className="font-mono text-xs text-emerald-400">+{gameState.points.toLocaleString('en-US')} pts</p>
               ) : null}
             </div>
             <button
@@ -513,7 +513,7 @@ export default function FlagdlePage() {
                   </div>
                   {isWon && gameState?.points ? (
                     <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
-                      +{gameState.points.toLocaleString()} pts
+                      +{gameState.points.toLocaleString('en-US')} pts
                     </div>
                   ) : null}
                 </div>
@@ -536,7 +536,7 @@ export default function FlagdlePage() {
                     Points Earned
                   </span>
                   <div className="mt-1 font-mono text-2xl sm:text-3xl font-bold text-emerald-300">
-                    {isWon && gameState?.points ? `+${gameState.points.toLocaleString()}` : '0 pts'}
+                    {isWon && gameState?.points ? `+${gameState.points.toLocaleString('en-US')}` : '0 pts'}
                   </div>
                 </div>
 

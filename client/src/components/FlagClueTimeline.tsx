@@ -104,7 +104,7 @@ export const FlagClueTimeline: React.FC<FlagClueTimelineProps> = ({ guesses }) =
                           g.distance_km!
                         )}`}
                       >
-                        {g.distance_km!.toLocaleString()} km
+                        {g.distance_km!.toLocaleString('en-US')} km
                       </span>
                       {hasBearing && (
                         <span className="font-mono font-bold text-amber-300">

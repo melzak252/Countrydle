@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+
 
 type GameAction = 'question' | 'guess';
 
@@ -26,17 +26,17 @@ export default function GameActionComposer({
   helperText,
   children,
 }: GameActionComposerProps) {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language?.startsWith('pl') || false;
+  
+  
   return (
     <section
-      aria-label={isPl ? 'Panel akcji gry' : 'Game action composer'}
+      aria-label={'Game action composer'}
       className="game-action-composer flex min-h-0 shrink-0 flex-col border-t border-white/10 bg-obsidian-950/90 backdrop-blur-sm px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] max-md:[@media(max-height:560px)]:pt-1 max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:bg-obsidian-900/80 md:backdrop-blur-md md:pt-2.5 md:pb-3"
     >
       {(showActionTabs || trailingActions) && (
         <div className="mb-2 flex items-center justify-between gap-2 max-md:[@media(max-height:560px)]:mb-1">
           {showActionTabs && (
-            <div role="group" aria-label={isPl ? 'Wybierz pytanie lub strzał' : 'Choose question or guess'} className="flex min-w-0 items-center gap-1">
+            <div role="group" aria-label={'Choose question or guess'} className="flex min-w-0 items-center gap-1">
               <button
                 type="button"
                 aria-pressed={activeAction === 'question'}
@@ -48,7 +48,7 @@ export default function GameActionComposer({
                     : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
                 }`}
               >
-                <span>{isPl ? 'Pytanie' : 'Question'}</span>
+                <span>{'Question'}</span>
                 {questionCount && <span className="font-mono text-[10px] text-zinc-500">({questionCount})</span>}
               </button>
               <button
@@ -61,7 +61,7 @@ export default function GameActionComposer({
                     : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
                 }`}
               >
-                <span>{isPl ? 'Strzał' : 'Guess'}</span>
+                <span>{'Guess'}</span>
                 {guessCount && <span className="font-mono text-[10px] text-zinc-500">({guessCount})</span>}
               </button>
             </div>

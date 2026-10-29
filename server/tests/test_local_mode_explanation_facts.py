@@ -57,8 +57,9 @@ def test_false_coastal_comparison_does_not_claim_coastal_entity_is_inland(facts)
     })
     assert answer is False
     assert "Amber" in explanation
-    assert "nie ma dostępu" not in explanation
-    assert "śródląd" not in explanation
+    assert "has direct access to the Baltic Sea" in explanation
+    assert "does not have" not in explanation
+    assert "inland" not in explanation
 
 
 def test_named_seat_reference_explains_referenced_entity_not_target(facts):
@@ -88,9 +89,10 @@ def test_logical_explanation_preserves_actual_population(facts, language, operat
     assert "12345" in explanation.replace(" ", "").replace(",", "").replace("\u00a0", "")
 
 
+@pytest.mark.parametrize("language", ["English", "Polish"])
 @pytest.mark.parametrize("operator", ["any", "all"])
-def test_quantified_explanation_uses_neighbor_population_not_target(facts, operator):
-    answer, explanation = explain(facts, config(), {
+def test_quantified_explanation_uses_neighbor_population_not_target(facts, language, operator):
+    answer, explanation = explain(facts, config(language), {
         "operator": operator, "items": {"entity": "target", "relation": "neighbors"},
         "condition": {
             "operator": "greater_than", "left": {"entity": "item", "relation": "population"},
@@ -98,6 +100,8 @@ def test_quantified_explanation_uses_neighbor_population_not_target(facts, opera
         },
     })
     assert answer is True
+    assert explanation.startswith("Yes")
+    assert "neighbors" in explanation
     assert "Birch" in explanation
     assert "67890" in explanation.replace(" ", "").replace(",", "").replace("\u00a0", "")
     assert "12345" not in explanation.replace(" ", "").replace(",", "")
@@ -110,17 +114,21 @@ def test_list_count_explanation_preserves_real_rivers_instead_of_inventing_numer
         "right": {"value": 1},
     })
     assert answer is True
+    assert "major rivers" in explanation
     assert "Silver River" in explanation
     assert "Copper River" in explanation
 
 
-def test_named_comparison_preserves_both_population_facts(facts):
-    answer, explanation = explain(facts, config(), {
+@pytest.mark.parametrize("language", ["English", "Polish"])
+def test_named_comparison_preserves_both_population_facts(facts, language):
+    answer, explanation = explain(facts, config(language), {
         "operator": "less_than",
         "left": {"entity": "target", "relation": "population"},
         "right": {"entity": "Birch", "relation": "population"},
     })
     assert answer is True
+    assert explanation.startswith("Yes")
+    assert "population" in explanation
     assert "Amber" in explanation
     assert "Birch" in explanation
     numbers = explanation.replace(" ", "").replace(",", "").replace("\u00a0", "")
@@ -178,4 +186,4 @@ def test_explanation_preserves_decisive_answer_without_visiting_skipped_predicat
     plan = QuestionPlan("Question?", True, True, "Question?", "Planner note", node)
     explanation = generate_mode_explanation(mode, row, plan, expected, conn)
     assert "Amber" in explanation
-    assert explanation.startswith("Tak" if expected else "Nie")
+    assert explanation.startswith("Yes" if expected else "No")

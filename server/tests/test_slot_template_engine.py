@@ -61,3 +61,34 @@ def test_expanded_polish_us_states():
     assert res_ca is not None
     ast_ca, _ = res_ca
     assert ast_ca["right"]["value"] == "California"
+
+
+def test_state_border_slot_wording_is_english_for_polish_and_english():
+    results = [
+        match_slot_template(question, "usstatedle")
+        for question in ("Czy graniczy z Teksasem?", "Does it border Texas?")
+    ]
+    assert all(result is not None for result in results)
+    for ast, improved in results:
+        assert ast["operator"] == "contains_exact"
+        assert ast["left"] == {"entity": "target_state", "relation": "borders_state"}
+        assert ast["right"]["value"] == "Texas"
+        assert "border" in improved.lower()
+        assert "Texas" in improved
+        assert improved.rstrip().endswith("?")
+
+
+def test_water_slot_wording_is_english_for_polish_and_english():
+    results = [
+        match_slot_template(question, "countrydle")
+        for question in (
+            "Czy ma dostęp do Oceanu Atlantyckiego?",
+            "Does it have access to the Atlantic Ocean?",
+        )
+    ]
+    assert all(result is not None for result in results)
+    for ast, improved in results:
+        assert ast[0]["left"] == {"entity": "target_country", "relation": "water_access"}
+        assert ast[0]["right"]["value"] == "Atlantic Ocean"
+        assert "access" in improved.lower()
+        assert "Atlantic Ocean" in improved

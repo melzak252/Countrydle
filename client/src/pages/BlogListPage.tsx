@@ -9,7 +9,6 @@ import {
   Globe, 
   Loader2
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import AdSenseUnit from '../components/AdSenseUnit';
 import { blogService } from '../services/api';
 import { setPageEditorialEligibility } from '../advertising';
@@ -18,12 +17,12 @@ import { blogListSchema, type BlogSummary } from '../blogContent';
 const continents = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania'];
 const difficulties = ['all', 'Easy', 'Medium', 'Challenging'];
 type JournalView = { page: number; search: string; continent: string; difficulty: string; sort: 'newest' | 'solvers' | 'fastest' };
-function formatBlogDate(dateStr: string, isPl: boolean): string {
+function formatBlogDate(dateStr: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!match) return dateStr;
   const utcDate = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
   if (Number.isNaN(utcDate.getTime())) return dateStr;
-  return new Intl.DateTimeFormat(isPl ? 'pl-PL' : 'en-US', {
+  return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -56,8 +55,6 @@ function rememberView(view: JournalView) {
   if (url !== window.location.pathname + window.location.search + window.location.hash) window.history.pushState(window.history.state, '', url);
 }
 export default function BlogListPage() {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
   const [posts, setPosts] = useState<BlogSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, updateView] = useState<JournalView>(requestedView);
@@ -116,13 +113,7 @@ export default function BlogListPage() {
   }, [page, search, retry, requestKey]);
 
   const filterLabel = (value: string): string => {
-    const labels: Record<string, string> = {
-      all: 'Wszystkie', Africa: 'Afryka', Americas: 'Ameryki', Asia: 'Azja',
-      'North America': 'Ameryka Północna', 'South America': 'Ameryka Południowa',
-      Europe: 'Europa', Oceania: 'Oceania', Easy: 'Łatwy', Medium: 'Średni',
-      Challenging: 'Trudny', newest: 'Najnowsze', solvers: 'Najwięcej rozwiązań', fastest: 'Najszybsze',
-    };
-    return isPl ? labels[value] || value : value === 'all' ? 'All' : value === 'newest' ? 'Newest' : value === 'solvers' ? 'Most solved' : value === 'fastest' ? 'Fastest' : value;
+    return value === 'all' ? 'All' : value === 'newest' ? 'Newest' : value === 'solvers' ? 'Most solved' : value === 'fastest' ? 'Fastest' : value;
   };
   const hasActiveFilters = Boolean(search || selectedContinent !== 'all' || selectedDifficulty !== 'all' || sortBy !== 'newest');
   const resetFilters = () => {
@@ -167,20 +158,20 @@ export default function BlogListPage() {
           <div className="min-w-0">
             <h1 className="flex items-center gap-2 font-serif text-3xl leading-tight tracking-tight text-sand-100 md:text-5xl">
               <BookOpen size={24} className="shrink-0 text-emerald-400" />
-              {isPl ? 'Dziennik krajów' : 'Country journal'}
+              {'Country journal'}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400 md:text-base">
-              {isPl ? 'Poznaj rozwiązania z poprzednich dni, dedukcję i pytania społeczności oraz źródła zapisane w artykułach.' : 'Explore past-day solutions, country-specific reasoning, community questions and sources recorded in the articles.'}
+              {'Explore past-day solutions, country-specific reasoning, community questions and sources recorded in the articles.'}
             </p>
           </div>
           <div className="min-w-0">
             <label htmlFor="journal-search" className="mb-2 block text-sm font-medium text-zinc-300">
-              {isPl ? 'Szukaj artykułów' : 'Search articles'}
+              {'Search articles'}
             </label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
               <input id="journal-search" type="search" value={search} onChange={(e) => setView({ search: e.target.value, page: 1 })}
-                placeholder={isPl ? 'Kraj, fakt lub słowo kluczowe…' : 'Country, fact or keyword…'}
+                placeholder={'Country, fact or keyword…'}
                 className="min-h-11 w-full min-w-0 rounded-md border border-white/15 bg-obsidian-900 py-3 pl-11 pr-4 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
           </div>
@@ -189,23 +180,23 @@ export default function BlogListPage() {
         <div className="min-w-0 border-b border-white/10 pb-4">
           <details className="rounded-md border border-white/10 bg-obsidian-900/60">
             <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-medium text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-              {isPl ? 'Filtry i sortowanie' : 'Filters and sorting'}
+              {'Filters and sorting'}
             </summary>
             <div className="grid gap-4 border-t border-white/10 p-4 sm:grid-cols-3">
               <label className="min-w-0 space-y-2 text-sm text-zinc-400">
-                <span className="block">{isPl ? 'Kontynent' : 'Continent'}</span>
+                <span className="block">{'Continent'}</span>
                 <select value={selectedContinent} onChange={(e) => setView({ continent: e.target.value, page: 1 })} className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-obsidian-950 px-2 text-sand-100 focus:outline-emerald-400">
                   {continents.map((cont) => <option key={cont} value={cont}>{filterLabel(cont)}</option>)}
                 </select>
               </label>
               <label className="min-w-0 space-y-2 text-sm text-zinc-400">
-                <span className="block">{isPl ? 'Trudność' : 'Difficulty'}</span>
+                <span className="block">{'Difficulty'}</span>
                 <select value={selectedDifficulty} onChange={(e) => setView({ difficulty: e.target.value, page: 1 })} className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-obsidian-950 px-2 text-sand-100 focus:outline-emerald-400">
                   {difficulties.map((diff) => <option key={diff} value={diff}>{filterLabel(diff)}</option>)}
                 </select>
               </label>
               <label className="min-w-0 space-y-2 text-sm text-zinc-400">
-                <span className="block">{isPl ? 'Sortowanie' : 'Sort by'}</span>
+                <span className="block">{'Sort by'}</span>
                 <select value={sortBy} onChange={(e) => setView({ sort: e.target.value as typeof sortBy })} className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-obsidian-950 px-2 text-sand-100 focus:outline-emerald-400">
                   {(['newest', 'solvers', 'fastest'] as const).map((sort) => <option key={sort} value={sort}>{filterLabel(sort)}</option>)}
                 </select>
@@ -215,11 +206,11 @@ export default function BlogListPage() {
           {hasActiveFilters && (
             <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
               <p role="status" className="min-w-0 flex-1 break-words">
-                {isPl ? 'Aktywne ustawienia: ' : 'Active settings: '}
+                {'Active settings: '}
                 {[search && `“${search}”`, selectedContinent !== 'all' && filterLabel(selectedContinent), selectedDifficulty !== 'all' && filterLabel(selectedDifficulty), sortBy !== 'newest' && filterLabel(sortBy)].filter(Boolean).join(' · ')}
               </p>
               <button type="button" onClick={resetFilters} className="min-h-11 rounded px-3 text-emerald-300 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-                {isPl ? 'Wyczyść' : 'Reset'}
+                {'Reset'}
               </button>
             </div>
           )}
@@ -228,10 +219,10 @@ export default function BlogListPage() {
         {error ? (
           <div role="alert" className="rounded-lg border border-amber-500/30 bg-obsidian-900 p-8 text-center text-zinc-300">
             <p>{error}</p>
-            <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded border border-white/20 px-4 py-2">{isPl ? 'Spróbuj ponownie' : 'Try again'}</button>
+            <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded border border-white/20 px-4 py-2">{'Try again'}</button>
           </div>
         ) : pending ? (
-          <div role="status" aria-label={isPl ? 'Ładowanie artykułów' : 'Loading articles'} className="flex justify-center py-24">
+          <div role="status" aria-label={'Loading articles'} className="flex justify-center py-24">
             <Loader2 className="animate-spin text-emerald-400" size={32} />
           </div>
         ) : (
@@ -256,7 +247,7 @@ export default function BlogListPage() {
                 <div className="flex min-w-0 flex-col justify-center p-4 sm:p-8 md:p-10">
                   <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-xs">
                     <span className="font-medium text-emerald-400">
-                      {isPl ? 'Najnowsze rozwiązanie z poprzednich dni' : 'Most recent past-day recap'}
+                      {'Most recent past-day recap'}
                     </span>
                     <span className="text-zinc-500">/</span>
                     <span className="text-zinc-400">{featuredPost.country_name}</span>
@@ -268,8 +259,8 @@ export default function BlogListPage() {
                   </h2>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
                   <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
-                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><time dateTime={featuredPost.date} className="min-w-0 break-words">{formatBlogDate(featuredPost.date, isPl)}</time></span>
-                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Clock size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.reading_time_minutes} {isPl ? 'min czytania' : 'min read'}</span></span>
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><time dateTime={featuredPost.date} className="min-w-0 break-words">{formatBlogDate(featuredPost.date)}</time></span>
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Clock size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.reading_time_minutes} {'min read'}</span></span>
                     {featuredPost.continent && (
                       <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/20">
                         {filterLabel(featuredPost.continent)}
@@ -285,7 +276,7 @@ export default function BlogListPage() {
                     to={`/blog/${featuredPost.slug}`}
                     className="mt-4 inline-flex min-h-11 w-fit max-w-full items-center gap-3 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300 md:mt-7"
                   >
-                    {isPl ? 'Czytaj artykuł' : 'Read article'}
+                    {'Read article'}
                     <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -296,7 +287,7 @@ export default function BlogListPage() {
               <section>
                 <div className="mb-6 flex items-center gap-4">
                   <h2 className="min-w-0 text-sm font-medium text-zinc-400">
-                    {search ? (isPl ? 'Wyniki wyszukiwania' : 'Search results') : (isPl ? 'Poprzednie artykuły' : 'Earlier entries')}
+                    {search ? ('Search results') : ('Earlier entries')}
                   </h2>
                   <div className="h-px flex-1 bg-white/10" />
                 </div>
@@ -327,7 +318,7 @@ export default function BlogListPage() {
                         </h3>
                         <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
                         <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
-                          <time dateTime={post.date}>{formatBlogDate(post.date, isPl)}</time>
+                          <time dateTime={post.date}>{formatBlogDate(post.date)}</time>
                           <span>{post.reading_time_minutes} min</span>
                           {post.difficulty && (
                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
@@ -340,7 +331,7 @@ export default function BlogListPage() {
                           )}
                         </div>
                         <Link to={`/blog/${post.slug}`} className="mt-auto flex min-h-11 items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">
-                          {isPl ? 'Czytaj artykuł' : 'Read article'}
+                          {'Read article'}
                           <ArrowRight size={15} />
                         </Link>
                       </div>
@@ -352,7 +343,7 @@ export default function BlogListPage() {
               !featuredPost && (
                 <div className="rounded-lg border border-white/10 bg-obsidian-900 px-6 py-20 text-center">
                   <Globe size={36} strokeWidth={1} className="mx-auto mb-4 text-zinc-600" />
-                  <p className="text-base text-zinc-400">{isPl ? 'Brak artykułów pasujących do wyszukiwania.' : 'No articles match your search.'}</p>
+                  <p className="text-base text-zinc-400">{'No articles match your search.'}</p>
                 </div>
               )
             )}

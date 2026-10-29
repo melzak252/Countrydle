@@ -21,6 +21,30 @@ APP_DIR = Path(__file__).resolve().parent
 # In Docker, docker-compose mounts ./server as /usr/src/app and ./data as /usr/src/app/data.
 ROOT_DIR = APP_DIR if (APP_DIR / "data").exists() else APP_DIR.parent
 
+_REGIONAL_DISPLAY = {
+    "centrum": "central", "południe": "south", "północ": "north",
+    "wschód": "east", "zachód": "west",
+    "południowe centrum": "south central", "północne centrum": "north central",
+    "zachodnie centrum": "west central", "południowy wschód": "southeast",
+    "południowy zachód": "southwest", "północny wschód": "northeast",
+    "północny zachód": "northwest",
+    "polska centralna": "central Poland", "centralna polska": "central Poland",
+    "polska wschodnia": "eastern Poland", "wschodnia polska": "eastern Poland",
+    "polska zachodnia": "western Poland", "zachodnia polska": "western Poland",
+    "południowa polska": "southern Poland", "północna polska": "northern Poland",
+    "południowo-centralna polska": "south-central Poland",
+    "południowo-wschodnia polska": "southeastern Poland",
+    "południowo-zachodnia polska": "southwestern Poland",
+    "północno-centralna polska": "north-central Poland",
+    "północno-wschodnia polska": "northeastern Poland",
+    "północno-zachodnia polska": "northwestern Poland",
+    "zachodnio-centralna polska": "west-central Poland",
+    "nadmorska polska": "coastal Poland", "wybrzeże bałtyku": "Baltic coast",
+    "zabór austriacki": "Austrian partition", "zabór pruski": "Prussian partition",
+    "zabór rosyjski": "Russian partition", "ziemie odzyskane": "Recovered Territories",
+    "morze bałtyckie": "Baltic Sea",
+}
+
 
 @dataclass(frozen=True)
 class LocalModeConfig:
@@ -96,19 +120,18 @@ def analyze_question(
 
     load_dotenv()
     model = os.getenv("LOCAL_QUESTION_MODEL") or os.getenv("GEMINI_QUESTION_MODEL") or "gemini-2.5-flash-lite"
-    version = f"{PLANNER_VERSION}:{model}"
+    version = f"{PLANNER_VERSION}:english-output-v1:{model}"
     cached = plan_cache.get(config.mode_name, question, version=version) if use_cache else None
     if evidence is not None:
-        evidence.update(provider="gemini", model=model, contract_version=PLANNER_VERSION, cache_hit=cached is not None)
+        evidence.update(provider="gemini", model=model, contract_version=f"{PLANNER_VERSION}:english-output-v1", cache_hit=cached is not None)
     if cached is not None:
         return replace(cached, original_question=question)
     from utils.water_hierarchy import is_multi_ocean_question, build_multi_ocean_plan
     if is_multi_ocean_question(question):
-        improved = (
-            "Does the state have access to two or more oceans?"
-            if config.mode_name == "USStatedle"
-            else "Czy jednostka ma dostęp do dwóch lub więcej oceanów?"
+        entity = {"USStatedle": "state", "Powiatdle": "county", "Wojewodztwodle": "voivodeship"}.get(
+            config.mode_name, "location",
         )
+        improved = f"Does the {entity} have access to two or more oceans?"
         return QuestionPlan(
             original_question=question,
             valid=True,
@@ -164,10 +187,11 @@ Supported SQLite relations:
 
 Task:
 1. Decide whether the user input is a valid yes/no question about the hidden {config.entity_label}.
-2. Rewrite it only if translation or clarification is needed; otherwise omit improved_question.
+2. Rewrite Polish questions in English, preserving their meaning; otherwise rewrite only if clarification is needed.
 3. If it can be answered from the supported relations, return route="local", plan and any needed improved_question. Do not generate an explanation for a local plan: the executor explains the facts.
 4. If a clear question needs external knowledge, return route="fallback", plan=null and a short fallback_reason.
 5. If the question needs clarification or is unrelated/open-ended, return route="clarify", plan=null and a short explanation.
+Write every improved_question, clarification explanation, and fallback_reason in English, regardless of the input language. Preserve native geographic names and interpret Polish and English questions equivalently.
 
 Use common names, not long official names. Normalize Polish and informal names when obvious.
 When a user explicitly names an entity in the question (e.g. "Czy Kraków jest miastem na prawach powiatu?", "Czy Małopolskie graniczy ze Słowacją?"), do NOT reject it as invalid or clarify. Treat it as testing whether that property holds for the candidate or hidden target.
@@ -804,10 +828,7 @@ def generate_mode_explanation(
     item_value: Any = None,
 ) -> str:
     target_row = row
-    polish = config.language == "Polish"
-    verdict = ("Tak" if answer else "Nie") if polish else ("Yes" if answer else "No")
-    if answer is None:
-        verdict = "Brak danych" if polish else "Unknown"
+    verdict = "Unknown" if answer is None else ("Yes" if answer else "No")
     node = plan.plan or {}
     op = node.get("operator") if isinstance(node, dict) else None
     left = node.get("left", {}) if isinstance(node, dict) else {}
@@ -824,8 +845,8 @@ def generate_mode_explanation(
     row = subject_row if subject_row is not None else target_row
     name = row[config.name_column]
     from utils.water_hierarchy import is_multi_ocean_question, get_distinct_oceans
-    if is_multi_ocean_question(plan.original_question):
-        direct_waters = [r[0] for r in conn.execute(f"SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))] if config.mode_name == "USStatedle" else []
+    if config.mode_name == "USStatedle" and is_multi_ocean_question(plan.original_question):
+        direct_waters = [r[0] for r in conn.execute("SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
         oceans = sorted(get_distinct_oceans(direct_waters))
         count = len(oceans)
         if count >= 2:
@@ -837,13 +858,13 @@ def generate_mode_explanation(
 
     def value_text(value: Any) -> str:
         if value is None or isinstance(value, dict):
-            return "brak danych" if polish else "unknown"
+            return "unknown"
         if isinstance(value, list):
-            return ", ".join(value_text(item) for item in value) if value else ("brak" if polish else "none")
+            return ", ".join(value_text(item) for item in value) if value else "none"
         if isinstance(value, bool):
-            return ("tak" if value else "nie") if polish else ("yes" if value else "no")
+            return "yes" if value else "no"
         if isinstance(value, (int, float)):
-            return f"{value:,}".removesuffix(".0").replace(",", " " if polish else ",")
+            return f"{value:,}".removesuffix(".0")
         return str(value)
 
     def reference_fact(reference: Any) -> str:
@@ -853,30 +874,7 @@ def generate_mode_explanation(
         subject = referenced_row[config.name_column] if referenced_row is not None else None
         if isinstance(reference, dict) and reference.get("entity") == "item" and subject is None:
             subject = item_value if not isinstance(item_value, (dict, sqlite3.Row)) else None
-        labels = {
-            "name": "nazwa", "population": "populacja", "area": "powierzchnia",
-            "population_density": "gęstość zaludnienia", "urbanization": "urbanizacja",
-            "latitude": "szerokość geograficzna", "longitude": "długość geograficzna",
-            "seat": "siedziba", "macroregion": "makroregion", "voivodeship": "województwo",
-            "is_coastal": "dostęp do morza", "is_city_county": "miasto na prawach powiatu",
-            "borders_state": "sąsiednie stany", "borders_country": "sąsiednie państwa",
-            "borders_voivodeship": "sąsiednie województwa", "borders_powiat": "sąsiednie powiaty",
-            "water_access": "dostęp do wód", "major_rivers": "główne rzeki",
-            "major_roads": "główne drogi", "major_highways": "główne autostrady",
-            "mountain_ranges": "pasma górskie", "national_parks": "parki narodowe",
-            "major_lakes": "duże jeziora", "lakes": "jeziora", "unesco_sites": "obiekty UNESCO",
-            "health_resorts": "uzdrowiska", "registration_plates": "wyróżniki tablic",
-            "historical_region": "regiony historyczne", "historical_regions": "regiony historyczne",
-            "historical_partitions": "zabory", "landform_regions": "regiony geograficzne",
-            "regional_labels": "określenia regionalne", "region": "region", "division": "podregion",
-            "nickname": "przydomek", "civil_war_side": "strona wojny secesyjnej",
-            "admission_year": "rok przyjęcia do Unii", "admission_order": "kolejność przyjęcia do Unii",
-            "gmina_count": "liczba gmin", "urban_gmina_count": "liczba gmin miejskich",
-            "rural_gmina_count": "liczba gmin wiejskich", "urban_rural_gmina_count": "liczba gmin miejsko-wiejskich",
-            "powiat_count": "liczba powiatów", "city_count": "liczba miast",
-            "city_count_with_powiat_rights": "liczba miast na prawach powiatu",
-        }
-        label = labels.get(relation, str(relation or "").replace("_", " ")) if polish else str(relation or "").replace("_", " ")
+        label = str(relation or "").replace("_", " ")
         text = value_text(value)
         if relation in {"latitude", "longitude"} and isinstance(value, (int, float)):
             positive, negative = ("E", "W") if relation == "longitude" else ("N", "S")
@@ -900,10 +898,10 @@ def generate_mode_explanation(
                 facts.append(right_fact)
         left_value = resolve_ref(conn, config, target_row, left, item_value)
         if isinstance(op, str) and op.startswith("word_count_") and isinstance(left_value, str):
-            label = "liczba słów" if polish else "word count"
+            label = "word count"
             facts.append(f"{label}: {len(left_value.split())}")
         if isinstance(op, str) and op.startswith("char_count_"):
-            label = "liczba znaków" if polish else "character count"
+            label = "character count"
             if isinstance(left_value, list):
                 facts.append(f"{label}: " + ", ".join(f"{value_text(item)} ({len(str(item).strip())})" for item in left_value))
             elif isinstance(left_value, str):
@@ -991,19 +989,6 @@ def generate_mode_explanation(
                 comparison = "<="
             else:
                 comparison = "=" if op == "equals" else (">" if op in {"greater_than", "east_of", "north_of"} else "<")
-            if config.language == "Polish":
-                axis = "długości geograficznej" if rel == "longitude" else "szerokości geograficznej"
-                if coord == threshold:
-                    position = f"na tej samej {axis} co"
-                elif rel == "longitude":
-                    position = "na wschód od" if coord > threshold else "na zachód od"
-                else:
-                    position = "na północ od" if coord > threshold else "na południe od"
-                verdict = "Tak" if answer else "Nie"
-                condition = "prawdziwy" if answer else "fałszywy"
-                reference_name = _reference_row(conn, config, target_row, right_node, item_value)
-                reference_text = f" ({reference_name[config.name_column]})" if reference_name is not None else ""
-                return f"{verdict} - {name} leży na {axis} {coord_text} ({position} {threshold_text}{reference_text}; warunek {coord} {comparison} {threshold} jest {condition})."
             if coord == threshold:
                 position = f"at the same {rel} as"
             elif rel == "longitude":
@@ -1014,114 +999,89 @@ def generate_mode_explanation(
             reference_text = f" ({reference_name[config.name_column]})" if reference_name is not None else ""
             return f"{verdict} - {name} is located at {rel} {coord_text} ({position} {threshold_text}{reference_text}; the condition {coord} {comparison} {threshold} is {'true' if answer else 'false'})."
 
-    if config.language == "Polish":
+    if config.mode_name in {"Powiatdle", "Wojewodztwodle"}:
         if rel == "name" and op in {"equals", "contains_exact", "contains"} and val:
             if config.mode_name == "Powiatdle":
                 display_val = resolve_powiat_name(conn, val) or str(val)
-            elif config.mode_name == "Wojewodztwodle":
-                display_val = resolve_voivodeship_name(val) or str(val)
             else:
-                display_val = str(val)
-            return f"{verdict} - To jest {display_val}." if answer else f"{verdict} - To nie jest {display_val}."
-        if (
-            config.mode_name == "Powiatdle"
-            and isinstance(left, dict)
+                display_val = resolve_voivodeship_name(val) or str(val)
+            return f"{verdict} - This is{' not' if not answer else ''} {display_val}."
+
+        parent = (
+            config.mode_name == "Powiatdle" and isinstance(left, dict)
             and left.get("entity") in {"target_voivodeship", "voivodeship", "wojewodztwo"}
-            and rel == "major_rivers"
-            and val
-        ):
-            canonical_river = POLISH_RIVER_ALIASES.get(norm(val), val)
-            v_rivers = _get_parent_voivodeship_relation(target_row, "major_rivers") or []
-            rivers_text = ", ".join(v_rivers) if v_rivers else "brak"
-            voiv_name = _get_parent_voivodeship_relation(target_row, "name") or target_row["voivodeship"]
-            if answer:
-                return f"{verdict} - {name} leży w województwie {voiv_name}, przez które przepływa {canonical_river} (główne rzeki województwa: {rivers_text})."
-            return f"{verdict} - {name} leży w województwie {voiv_name}, przez które nie przepływa {canonical_river} (główne rzeki województwa: {rivers_text})."
-        if rel in {"is_coastal", "water_access"}:
-            label = "Powiat" if config.mode_name == "Powiatdle" else "Województwo"
-            coastal = bool(row["is_coastal"]) if config.mode_name == "Wojewodztwodle" else bool(get_relation_value(conn, config, row, "water_access"))
-            return f"{label} {name} ma bezpośredni dostęp do Morza Bałtyckiego." if coastal else f"{label} {name} nie ma dostępu do morza (jest jednostką śródlądową)."
-        if rel == "national_parks" and (op == "exists" or not val):
-            parks = [r[0] for r in conn.execute("SELECT park_name FROM powiat_national_parks WHERE powiat_id=?", (row["id"],))]
-            return f"Na terenie {name} znajduje się park narodowy: {', '.join(parks)}." if answer else f"Na terenie {name} nie ma parku narodowego."
-        if rel == "national_parks" and val:
-            return f"Na terenie {name} znajduje się: {val}." if answer else f"Na terenie {name} nie leży {val}."
-        if rel in {"major_lakes", "lakes"} and (op == "exists" or not val):
-            lakes = [r[0] for r in conn.execute("SELECT lake_name FROM powiat_lakes WHERE powiat_id=?", (row["id"],))]
-            return f"W {name} znajduje się jezioro / zbiornik wodny: {', '.join(lakes)}." if answer else f"W {name} nie ma dużego jeziora ani zbiornika."
-        if rel in {"major_lakes", "lakes"} and val:
-            return f"W {name} znajduje się: {val}." if answer else f"W {name} nie leży {val}."
-        if rel == "unesco_sites" and (op == "exists" or not val):
-            sites = [r[0] for r in conn.execute("SELECT site_name FROM powiat_unesco_sites WHERE powiat_id=?", (row["id"],))]
-            return f"Na terenie {name} znajduje się obiekt z listy UNESCO: {', '.join(sites)}." if answer else f"Na terenie {name} nie ma obiektu z listy UNESCO."
-        if rel == "unesco_sites" and val:
-            return f"Na terenie {name} znajduje się obiekt UNESCO: {val}." if answer else f"Na terenie {name} nie leży obiekt UNESCO: {val}."
-        if rel == "health_resorts":
-            spas = [r[0] for r in conn.execute("SELECT resort_name FROM powiat_health_resorts WHERE powiat_id=?", (row["id"],))]
-            return f"Na terenie {name} znajduje się uzdrowisko: {', '.join(spas)}." if spas else f"Na terenie {name} nie ma statutowego uzdrowiska."
-        if rel == "borders_voivodeship" and val:
-            borders = get_relation_value(conn, config, row, rel) or []
-            entity_name = f"Województwo {name}" if config.target_entity == "target_voivodeship" else name
-            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
-                b_str = f" ({', '.join(borders)})" if borders else ""
-                return f"{entity_name} graniczy z {len(borders)} sąsiednimi województwami{b_str}."
-            display_val = resolve_voivodeship_name(val) or val
-            if answer:
-                return f"{entity_name} graniczy z: {display_val}."
-            neighbors = f" Graniczy z: {', '.join(borders)}." if borders else ""
-            return f"{entity_name} nie graniczy z {display_val}.{neighbors}"
-        if rel == "borders_powiat" and val:
-            borders = get_relation_value(conn, config, row, rel) or []
-            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
-                b_str = f" ({', '.join(borders)})" if borders else ""
-                name_display = name if name.startswith("Powiat") else f"Powiat {name}"
-                return f"{name_display} graniczy z {len(borders)} sąsiednimi powiatami{b_str}."
-        if rel == "borders_country" and val:
-            canonical_country = POLISH_NEIGHBORING_COUNTRIES_ALIASES.get(norm(val), val)
-            country_instr = {
-                "Niemcy": "Niemcami", "Czechy": "Czechami", "Słowacja": "Słowacją",
-                "Ukraina": "Ukrainą", "Białoruś": "Białorusią", "Litwa": "Litwą", "Rosja": "Rosją",
+        )
+        if parent:
+            parent_name = _get_parent_voivodeship_relation(target_row, "name") or target_row["voivodeship"]
+            subject = f"{parent_name} voivodeship"
+            context = f"{name} is in {subject}. "
+        else:
+            subject = name
+            context = ""
+
+        if rel == "is_city_county" and rel in config.scalar_relations:
+            city_county = row[config.scalar_relations[rel]]
+            if city_county is None:
+                return factual_fallback()
+            kind = "a city with county rights" if city_county else "a land county"
+            return f"{verdict} - {name} is {kind}."
+        if rel == "is_coastal":
+            coastal = resolve_ref(conn, config, target_row, left, item_value)
+            if coastal is None:
+                return factual_fallback()
+            return f"{verdict} - {context}{subject} {'has' if coastal else 'does not have'} direct access to the Baltic Sea."
+        if rel in {"seat", "macroregion", "voivodeship"}:
+            actual = resolve_ref(conn, config, target_row, left, item_value)
+            label = {"seat": "administrative seat", "macroregion": "macroregion", "voivodeship": "voivodeship"}[rel]
+            text = _REGIONAL_DISPLAY.get(str(actual).casefold(), value_text(actual)) if rel == "macroregion" else value_text(actual)
+            return f"{verdict} - {context}{subject}'s {label}: {text}."
+
+        if rel in config.list_relations or (parent and rel in _VOIVODESHIP_LIST_RELATIONS):
+            if rel == "water_access" and parent:
+                values = _get_parent_voivodeship_relation(target_row, rel)
+            elif rel == "water_access":
+                table, column = config.list_relations[rel]
+                fk_column = config.fk_column or f"{config.table[:-1]}_id"
+                values = [r[0] for r in conn.execute(
+                    f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)
+                )]
+            else:
+                values = resolve_ref(conn, config, target_row, left, item_value)
+            if values is None or isinstance(values, dict):
+                return factual_fallback()
+            if not isinstance(values, list):
+                return factual_fallback()
+            labels = {
+                "water_access": "water bodies", "national_parks": "national parks",
+                "major_lakes": "major lakes", "lakes": "lakes",
+                "unesco_sites": "UNESCO sites", "health_resorts": "health resorts",
+                "borders_voivodeship": "neighboring voivodeships",
+                "borders_powiat": "neighboring counties", "borders_country": "neighboring countries",
+                "major_roads": "major roads", "major_rivers": "major rivers",
+                "registration_plates": "registration plate codes", "mountain_ranges": "mountain ranges",
             }
-            val_instr = country_instr.get(canonical_country, canonical_country)
-            prep = "ze" if canonical_country in {"Słowacja", "Słowacją"} else "z"
-            return f"{name} graniczy {prep} {val_instr}." if answer else f"{name} nie graniczy {prep} {val_instr}."
-        if rel == "seat":
-            return f"Siedzibą {name} jest {row['seat']}."
-        if rel == "major_roads" and val:
-            label = "Województwo" if config.mode_name == "Wojewodztwodle" else "Powiat"
-            return f"Przez {label} {name} przebiega {val}." if answer else f"Przez {label} {name} nie przebiega {val}."
-        if rel == "major_rivers" and val:
-            canonical_river = POLISH_RIVER_ALIASES.get(norm(val), val)
-            label = "Województwo" if config.mode_name == "Wojewodztwodle" else "Powiat"
-            return f"Przez {label} {name} przepływa {canonical_river}." if answer else f"Przez {label} {name} nie przepływa {canonical_river}."
-        if rel == "macroregion":
-            return f"{name} leży w makroregionie: {row['macroregion']}."
-        if rel == "registration_plates" and val:
-            plates = [r[0] for r in conn.execute("SELECT plate_code FROM powiat_registration_plates WHERE powiat_id=?", (row["id"],))]
-            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
-                return f"Wyróżnik tablic powiatu {name} ma {val} znaki ({', '.join(plates)})." if answer else f"Wyróżnik tablic powiatu {name} nie ma {val} znaków ({', '.join(plates)})."
-            return f"Wyróżnik tablic powiatu {name} to: {val}. Wszystkie kody: {', '.join(plates)}." if answer else f"Powiat {name} nie ma wyróżnika {val}. Tablice to: {', '.join(plates)}."
-        if rel == "voivodeship":
-            voiv_locative = {
-                "dolnośląskie": "dolnośląskim", "kujawsko-pomorskie": "kujawsko-pomorskim", "lubelskie": "lubelskim",
-                "lubuskie": "lubuskim", "łódzkie": "łódzkim", "małopolskie": "małopolskim", "mazowieckie": "mazowieckim",
-                "opolskie": "opolskim", "podkarpackie": "podkarpackim", "podlaskie": "podlaskim", "pomorskie": "pomorskim",
-                "śląskie": "śląskim", "świętokrzyskie": "świętokrzyskim", "warmińsko-mazurskie": "warmińsko-mazurskim",
-                "wielkopolskie": "wielkopolskim", "zachodniopomorskie": "zachodniopomorskim",
+            label = labels.get(rel, rel.replace("_", " "))
+            countries = {
+                "Niemcy": "Germany", "Czechy": "Czechia", "Słowacja": "Slovakia",
+                "Ukraina": "Ukraine", "Białoruś": "Belarus", "Litwa": "Lithuania", "Rosja": "Russia",
             }
-            loc_woj = voiv_locative.get(str(row['voivodeship']).lower(), row['voivodeship'])
-            name_display = name if name.startswith("Powiat") else f"Powiat {name}"
-            return f"{name_display} leży w województwie {loc_woj}."
-        if rel == "is_city_county":
-            return f"{name} jest miastem na prawach powiatu." if row[config.scalar_relations[rel]] else f"{name} jest powiatem ziemskim."
-        if rel == "mountain_ranges":
-            ranges = [r[0] for r in conn.execute("SELECT range_name FROM voivodeship_mountain_ranges WHERE voivodeship_id=?", (row["id"],))] if "voivodeship" in config.table else []
-            r_str = ", ".join(ranges)
-            if ranges:
-                if val:
-                    return f"{name} leży w paśmie: {val}. Pasma w województwie: {r_str}." if answer else f"{name} nie leży w paśmie: {val}. Pasma w województwie: {r_str}."
-                return f"{name} leży w pasmach górskich: {r_str}."
-            return f"{name} nie leży w górach (brak pasm górskich)."
+            def display(value: Any) -> str:
+                if rel == "borders_country":
+                    canonical = POLISH_NEIGHBORING_COUNTRIES_ALIASES.get(norm(value), value)
+                    return countries.get(canonical, str(canonical))
+                if rel == "major_rivers":
+                    return str(POLISH_RIVER_ALIASES.get(norm(value), value))
+                if rel == "borders_voivodeship":
+                    return str(resolve_voivodeship_name(value) or value)
+                if rel in {"regional_labels", "historical_partitions", "water_access"}:
+                    return _REGIONAL_DISPLAY.get(str(value).casefold(), str(value))
+                return str(value)
+
+            recorded = ", ".join(display(value) for value in values) if values else "none"
+            fact = f"{context}{subject}'s {label} ({len(values)}): {recorded}"
+            if val is not None and not numeric_value and op != "exists":
+                fact += f"; the condition involving {display(val)} is {'true' if answer else 'false'}"
+            return f"{verdict} - {fact}."
         return factual_fallback()
     else:
         if rel == "name" and op in {"equals", "contains_exact", "contains"} and val:

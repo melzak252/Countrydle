@@ -1,10 +1,8 @@
-import { useTranslation } from 'react-i18next';
 import type { FactProvenanceRecord } from '../types';
 import { factProvenanceLabels, PROVENANCE_TEXT_FIELDS, safeFactSourceUrl } from '../lib/factProvenance';
 
 export default function FactProvenance({ records }: { records?: FactProvenanceRecord[] }) {
-  const { i18n } = useTranslation();
-  const labels = factProvenanceLabels(i18n.language.startsWith('pl'));
+  const labels = factProvenanceLabels;
   if (!records?.length) return null;
 
   return (

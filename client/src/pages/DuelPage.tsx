@@ -221,8 +221,8 @@ function ResultsModal({
 }
 
 function DuelRoom({ code }: { code?: string }) {
-  const { i18n, t } = useTranslation();
-  const copy = duelCopy(i18n.resolvedLanguage || i18n.language);
+  const { t } = useTranslation();
+  const copy = duelCopy;
   const navigate = useNavigate();
 
   const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
@@ -397,7 +397,7 @@ function DuelRoom({ code }: { code?: string }) {
               title={copy.rulesTitle}
             >
               <HelpCircle size={13} className="text-emerald-400" />
-              <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zasady' : 'Guide'}</span>
+              <span className="md:hidden">{'Guide'}</span>
               <span className="hidden md:inline">{copy.rulesTitle}</span>
             </button>
           </div>
@@ -666,7 +666,7 @@ function DuelRoom({ code }: { code?: string }) {
             title={copy.rulesTitle}
           >
             <HelpCircle size={13} className="text-emerald-400" />
-            <span className="md:hidden">{i18n.language.startsWith('pl') ? 'Zasady' : 'Guide'}</span>
+            <span className="md:hidden">{'Guide'}</span>
             <span className="hidden md:inline">{copy.rulesTitle}</span>
           </button>
 

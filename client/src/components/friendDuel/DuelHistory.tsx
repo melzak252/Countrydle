@@ -214,7 +214,7 @@ function ChatHistoryCard({
               </span>
               <span>·</span>
               <span>
-                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(item.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
             <div

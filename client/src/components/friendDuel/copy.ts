@@ -1,4 +1,4 @@
-const en = {
+export const duelCopy = {
   title: 'Friend duel', subtitle: 'Your secret. Your answers. A live geography duel for two.',
   multiplayer: 'Play with a friend', play_countrydle: 'Guess the Country', play_us_statedle: 'Guess the US State', play_wojewodztwodle: 'Guess the Voivodeship', play_powiatdle: 'Guess the County', play_europe: 'Guess the European Nation', play_asia: 'Guess the Asian Nation', play_africa: 'Guess the African Nation', play_americas: 'Guess the American Nation',
   atlas: 'Atlas', searchArea: 'Search area', mapHelp: 'Mark locations on the map to keep track of your ideas. Your marks are private.',
@@ -54,64 +54,8 @@ const en = {
   askQuestionTab: 'Ask Question', makeGuessTab: 'Make Guess', intelHistory: 'Intel & History',
 } as const;
 
-type DuelCopy = { [K in keyof typeof en]: string };
-const pl: DuelCopy = {
-  title: 'Pojedynek ze znajomym', subtitle: 'Twój sekret. Twoje odpowiedzi. Geograficzny pojedynek na żywo.',
-  multiplayer: 'Zagraj ze znajomym', play_countrydle: 'Zgadnij kraj', play_us_statedle: 'Zgadnij stan USA', play_wojewodztwodle: 'Zgadnij województwo', play_powiatdle: 'Zgadnij powiat', play_europe: 'Zgadnij kraj w Europie', play_asia: 'Zgadnij kraj w Azji', play_africa: 'Zgadnij kraj w Afryce', play_americas: 'Zgadnij kraj w Amerykach',
-  atlas: 'Atlas', searchArea: 'Obszar poszukiwań', mapHelp: 'Zaznaczaj miejsca na mapie, aby śledzić swoje pomysły. Tylko Ty widzisz te oznaczenia.',
-  turnHelp: 'Zadaj pytanie albo zgaduj. Każda operacja zużywa turę.', questionPlaceholder: 'Zadaj pytanie typu tak lub nie…', choose: 'Wybierz',
-  questionHistory: 'Historia pytań', noQuestions: 'Zadaj pierwsze pytanie i zawęź obszar poszukiwań.', noGuesses: 'Tutaj pojawią się Twoje próby.', rulesTitle: 'Jak grać',
-  rules: 'Każdy wybiera własny sekret. W swojej turze zadajesz pytanie ALBO zgadujesz. Pytania i próby są bez limitu; każda operacja zużywa jedną turę. Odpowiadasz samodzielnie — prywatna rada AI nigdy nie wstrzymuje gry.',
-  create: 'Utwórz zaproszenie', name: 'Twoja nazwa gracza', mode: 'Geografia', join: 'Dołącz do pojedynku',
-  countrydle: 'Kraje świata', europe: 'Europa (Europedle)', asia: 'Azja (Asiadle)', africa: 'Afryka (Africadle)', americas: 'Ameryki (Americadle)', us_statedle: 'Stany USA', wojewodztwodle: 'Województwa', powiatdle: 'Powiaty',
-  groupGlobal: 'Globalne', groupContinents: 'Kontynenty', groupRegional: 'Regionalne',
-  loading: 'Wczytywanie pojedynku…', error: 'Nie udało się wykonać operacji. Sprawdź połączenie i spróbuj ponownie.',
-  stale: 'Stan gry zmienił się przed odebraniem operacji. Wczytano aktualny stan — ponownie wybierz ruch.',
-  refresh: 'Odśwież stan', retry: 'Ponów tę samą operację', uncertain: 'Operacja mogła już dotrzeć. Bezpiecznie ponów ją przed następnym ruchem.',
-  invite: 'Zaproś znajomego', copy: 'Kopiuj link zaproszenia', copied: 'Skopiowano link', share: 'Udostępnij zaproszenie', copyFailed: 'Kopiowanie niedostępne. Zaznacz i skopiuj link poniżej.',
-  full: 'Ten link z zaproszeniem wygasł — oba miejsca zostały już zajęte. Utwórz nowy pojedynek, aby zagrać ze znajomym.',
-  ended: 'Ten pojedynek został zakończony, a link wygasł. Wyniki mogą zobaczyć tylko jego gracze.',
-  joining: 'Dołączanie', guest: 'Konto nie jest potrzebne. Twoje miejsce zapisuje ciasteczko tej przeglądarki. Zachowaj link, aby wrócić.',
-  collection: 'Zapisujemy pytania, odpowiedzi graczy i rekomendacje AI, aby porównywać ich zgodność i ulepszać odpowiedzi. Wyjaśnienia AI widzi tylko właściciel sekretu i uprawnieni administratorzy.',
-  privacy: 'Prywatność i przechowywanie danych',
-  lobby: 'Poczekalnia', waitingFriend: 'Czekamy na znajomego…', waitingReady: 'Obaj gracze muszą być połączeni i gotowi, aby rozpocząć.',
-  secret: 'Sekret', chooseSecretOnMap: 'Kliknij mapę lub wylosuj', secretHelp: 'Kliknij swoje sekretne miejsce bezpośrednio na mapie lub wylosuj. Następnie kliknij Zaakceptuj i graj.',
-  search: 'Szukaj miejsca', select: 'Wybierz miejsce', noMatches: 'Brak pasujących miejsc.', random: 'Wylosuj sekret',
-  saveSecret: 'Ustaw ten sekret', acceptAndReady: 'Zaakceptuj i graj', ready: 'Gotowość do gry', notReady: 'Brak gotowości', unready: 'Zmień sekret',
-  you: 'Ty', connected: 'Połączono', disconnected: 'Rozłączono', connecting: 'Łączenie…', recovering: 'Ponowne łączenie — synchronizacja przez HTTP',
-  turn: 'Tura', deadline: 'Pozostały czas', expired: 'Oczekiwanie na decyzję serwera…', yourTurn: 'Twoja tura', theirTurn: 'Znajomy wybiera ruch.',
-  answering: 'Odpowiedz znajomemu', awaitingAnswer: 'Czekamy na odpowiedź znajomego. AI nie decyduje ani nie opóźnia odpowiedzi.',
-  reply: 'Ostatnia szansa: traf, aby zremisować, albo spasuj. W tej turze nie można zadawać pytań.',
-  question: 'Twoje pytanie', ask: 'Zapytaj i zużyj turę', guess: 'Zgadnij miejsce', submitGuess: 'Zatwierdź wybraną odpowiedź', pass: 'Spasuj w tej turze',
-  unlimited: 'Pytania i próby bez limitu. Jeden ruch na turę.', questions: 'Pytania', guesses: 'Próby',
-  yes: 'Tak', mostly_yes: 'Raczej tak', mostly_no: 'Raczej nie', no: 'Nie', unknown: 'Nie wiem',
-  aiAnswered: '🤖 Odpowiedź AI (Upływ czasu)',
-  aiAnsweredDesc: 'Gracz nie odpowiedział w wyznaczonym czasie, więc wysłano automatyczną odpowiedź AI.',
-  ai: 'Prywatna rada AI', aiHelp: 'Tylko Ty widzisz radę dotyczącą własnego sekretu. Odpowiedz od razu — nie musisz czekać.',
-  aiPending: 'AI niezależnie sprawdza odpowiedź…', aiFailed: 'Rada AI jest niedostępna. Nadal możesz od razu odpowiedzieć.',
-  aiNoExplanation: 'AI zwróciło odpowiedź bez wyjaśnienia.',
-  YES: 'TAK', NO: 'NIE', INVALID: 'NIEPRAWIDŁOWE PYTANIE', late: 'Otrzymano po odpowiedzi gracza', source: 'Źródło',
-  history: 'Publiczne ruchy', noHistory: 'Tutaj pojawią się ruchy. Udostępniamy tylko odpowiedź gracza — bez rad AI i notatek.',
-  passed: 'Pas', correct: 'Trafna odpowiedź', incorrect: 'Błędna odpowiedź', pending: 'Oczekiwanie na odpowiedź', revision: 'Wersja',
-  correctAnswer: 'Popraw moją odpowiedź', saveCorrection: 'Opublikuj poprawkę', cancel: 'Anuluj', older: 'Wczytaj starsze ruchy',
-  privateHistory: 'Twoja prywatna historia AI', privateHistoryHelp: 'Obejmuje spóźnione rady. Nigdy nie trafia do przeciwnika, nawet po zakończeniu gry.',
-  offerDraw: 'Zaproponuj remis', drawOffered: 'Twoja propozycja remisu oczekuje. Czas tury nadal biegnie.', drawReceived: 'Znajomy proponuje remis. Czas nadal biegnie.', acceptDraw: 'Przyjmij remis', declineDraw: 'Odrzuć remis',
-  leave: 'Opuść pojedynek', leaveConfirm: 'Opuścić pojedynek? W trakcie gry oznacza to przegraną walkowerem.',
-  results: 'Wyniki pojedynku', won: 'Wygrywasz', lost: 'Znajomy wygrywa', draw: 'Remis', solved: 'Odgadnięto', forfeit: 'Walkower', interrupted: 'Gra przerwana — bez wyniku sportowego', cancelled: 'Pojedynek anulowany',
-  reveals: 'Sekrety graczy', rematch: 'Zaproponuj rewanż', rematchWaiting: 'Zaproponowano rewanż. Czekamy na znajomego…', rematchReceived: 'Znajomy chce rewanżu. Przyjmij, aby zacząć z nowymi sekretami.', rematchOpen: 'Otwórz rewanż',
-  report: 'Zgłoś odpowiedź', reportHelp: 'Opisz błąd merytoryczny. Zgłoszenie trafi do weryfikacji, nie do przeciwnika. Nie zmienia wyniku gry.', sendReport: 'Wyślij zgłoszenie', reported: 'Wysłano zgłoszenie', newDuel: 'Utwórz nowy pojedynek', wins: 'Wygrane', draws: 'Remisy',
-  noEntities: 'Lista miejsc jest niedostępna. Ponów wczytanie przed wyborem sekretu lub odpowiedzi.', showSecret: 'Pokaż sekret', hideSecret: 'Ukryj sekret',
-  timedOut: 'Czas minął — automatyczny pas', unanswered: 'Brak odpowiedzi gracza — czas minął',
-  timeoutWarning: 'Kolejne przekroczenia czasu', timeoutRules: 'Ruch: 2 minuty. Odpowiedź: 1 minuta. Przekroczenie czasu pytania oddaje turę, a brak odpowiedzi generuje automatyczną odpowiedź AI; dwa z rzędu oznaczają walkower. Upływ czasu ostatniej szansy przyznaje oczekujące zwycięstwo.',
-  allMoves: 'Wszystkie ruchy', yourMoves: 'Twoje ruchy', friendMoves: 'Ruchy znajomego',
-  expandMap: 'Rozwiń mapę', actionRequired: 'Wymagana odpowiedź',
-  yourTurnToAct: 'Twoja kolej na ruch', waitingForFriend: 'Oczekiwanie na znajomego', waitingForAnswer: 'Oczekiwanie na odpowiedź',
-  youAsked: 'Twoje pytanie', friendAsked: 'Pytanie znajomego', youGuessed: 'Twój strzał', friendGuessed: 'Strzał znajomego',
-  youPassed: 'Pas', friendPassed: 'Znajomy spasował', activeTurn: 'Aktywna tura', waiting: 'Czeka',
-  askQuestionTab: 'Zadaj pytanie', makeGuessTab: 'Zgadnij miejsce', intelHistory: 'Historia wywiadu',
-};
+type DuelCopy = { [K in keyof typeof duelCopy]: string };
 export type { DuelCopy };
-export function duelCopy(language: string): DuelCopy { return language.startsWith('pl') ? pl : en; }
 export const duelModes = ['countrydle', 'europe', 'asia', 'africa', 'americas', 'us_statedle', 'wojewodztwodle', 'powiatdle'] as const;
 export const humanAnswers = ['yes', 'mostly_yes', 'mostly_no', 'no', 'unknown'] as const;
 export const duelPanel = 'rounded-sm border border-white/10 bg-obsidian-900 p-4 sm:p-5';

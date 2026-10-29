@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+
 import CountrydleLogo from './CountrydleLogo';
 import { PrivacySettingsButton } from './PrivacySettingsButton';
 
 export default function Footer() {
-  const { i18n } = useTranslation();
-  const isPl = i18n?.language?.startsWith('pl');
+  
+  
   const links = [
-    { path: '/privacy-policy', label: isPl ? 'Prywatność' : 'Privacy' },
-    { path: '/cookie-policy', label: isPl ? 'Pliki cookie' : 'Cookies' },
-    { path: '/terms', label: isPl ? 'Regulamin' : 'Terms of use' },
-    { path: '/contact', label: isPl ? 'Kontakt' : 'Contact' },
+    { path: '/privacy-policy', label: 'Privacy' },
+    { path: '/cookie-policy', label: 'Cookies' },
+    { path: '/terms', label: 'Terms of use' },
+    { path: '/contact', label: 'Contact' },
   ];
   const linkClass = 'flex min-h-11 min-w-0 items-center rounded-lg px-3 py-2 text-sm leading-relaxed text-zinc-400 transition-colors hover:bg-white/5 hover:text-white [overflow-wrap:anywhere]';
 
@@ -24,7 +24,7 @@ export default function Footer() {
           <span className="text-sm font-bold tracking-tight text-zinc-300">Countrydle</span>
         </div>
 
-        <nav aria-label={isPl ? 'Nawigacja w stopce' : 'Footer navigation'} className="grid w-full min-w-0 grid-cols-2 gap-x-2 md:flex md:w-auto md:flex-wrap md:gap-x-1">
+        <nav aria-label={'Footer navigation'} className="grid w-full min-w-0 grid-cols-2 gap-x-2 md:flex md:w-auto md:flex-wrap md:gap-x-1">
           {links.map((link) => (
             <Link key={link.path} to={link.path} className={linkClass}>{link.label}</Link>
           ))}

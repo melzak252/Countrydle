@@ -54,6 +54,16 @@ POLISH_NEIGHBOR_COUNTRIES = {
     "Rosja": ("rosja", "rosji", "obwodem krolewieckim", "obwodem kaliningradzkim", "krolewieckim", "kaliningradzkim", "russia"),
 }
 
+_NEIGHBOR_ENGLISH_NAMES = {
+    "Niemcy": "Germany",
+    "Czechy": "Czechia",
+    "Słowacja": "Slovakia",
+    "Ukraina": "Ukraine",
+    "Białoruś": "Belarus",
+    "Litwa": "Lithuania",
+    "Rosja": "Russia",
+}
+
 # Major rivers in Poland
 POLISH_MAJOR_RIVERS = {
     "Wisła": ("wisla", "wisly", "wisle", "vistula"),
@@ -144,7 +154,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if r_name:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": r_name}},
-                f"Czy przez województwo, w którym leży powiat, przepływa {r_name}?",
+                f"Does {r_name} flow through the voivodeship containing the county?",
             )
 
     norm_en_early = _norm(question)
@@ -160,7 +170,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if r_name:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": r_name}},
-                f"Czy przez województwo, w którym leży powiat, przepływa {r_name}?",
+                f"Does {r_name} flow through the voivodeship containing the county?",
             )
 
     m_identity_en = re.fullmatch(
@@ -174,7 +184,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
             if resolved_p:
                 return (
                     {"operator": "equals", "left": {"entity": "target_powiat", "relation": "name"}, "right": {"value": resolved_p}},
-                    f"Czy to {resolved_p}?",
+                    f"Is this {resolved_p}?",
                 )
 
     m_identity_pl = re.fullmatch(
@@ -188,7 +198,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
             if resolved_p:
                 return (
                     {"operator": "equals", "left": {"entity": "target_powiat", "relation": "name"}, "right": {"value": resolved_p}},
-                    f"Czy to {resolved_p}?",
+                    f"Is this {resolved_p}?",
                 )
 
     clause = canonicalize_pl_clause(question, target_nouns=("powiat",))
@@ -214,14 +224,14 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
     if re.fullmatch(r"(?:byc )?(?:miasto na prawach|grodzki)", clause):
         return (
             {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 1}},
-            "Czy powiat jest miastem na prawach powiatu?",
+            "Is the county a city county?",
         )
 
     # Land county
     if re.fullmatch(r"(?:byc )?(?:powiat )?ziemski", clause):
         return (
             {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 0}},
-            "Czy powiat jest powiatem ziemskim?",
+            "Is the county a land county?",
         )
 
     # 2. Registration plates length
@@ -235,14 +245,14 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         n_val = 2 if (m_plate.group("n") == "2" or m_plate.group("n2") == "dwuliterowy" or m_plate.group("n3") == "dwuliterowy") else 3
         return (
             {"operator": "char_count_equals", "left": {"entity": "target_powiat", "relation": "registration_plates"}, "right": {"value": n_val}},
-            f"Czy tablice rejestracyjne powiatu mają {n_val} litery?",
+            f"Do the county's registration plates have {n_val} letters?",
         )
 
     # 3. Sea access
     if re.fullmatch(r"(?:miec dostep do morze|graniczyc z morze|(?:lezec|byc) nad morze|miec dostep do baltyk|(?:lezec|byc) nad baltyk)", clause):
         return (
             {"operator": "exists", "left": {"entity": "target_powiat", "relation": "water_access"}},
-            "Czy powiat ma dostęp do morza?",
+            "Does the county have access to the sea?",
         )
 
     # 4. Major rivers
@@ -250,27 +260,27 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if river:
             return (
                 {"operator": "contains_text", "left": {"entity": "target_powiat", "relation": "major_rivers"}, "right": {"value": river}},
-                f"Czy przez powiat przepływa {river}?",
+                f"Does {river} flow through the county?",
             )
 
     # 5. International borders
     if re.fullmatch(r"graniczyc z (?:inny |obcy )?(?:panstwo|kraj)", clause):
         return (
             {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_country"}},
-            "Czy powiat graniczy z obcym państwem?",
+            "Does the county border a foreign country?",
         )
 
     if re.fullmatch(r"graniczyc z inny wojewodztwo", clause):
         return (
             {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_voivodeship"}},
-            "Czy powiat graniczy z innym województwem?",
+            "Does the county border another voivodeship?",
         )
 
     if re.fullmatch(r"(?:graniczyc z \[COUNTRY\]|z \[COUNTRY\] graniczyc)", clause):
         if country:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_country"}, "right": {"value": country}},
-                f"Czy powiat graniczy z: {country}?",
+                f"Does the county border {_NEIGHBOR_ENGLISH_NAMES.get(country, country)}?",
             )
 
     # 6. Voivodeship borders
@@ -278,7 +288,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if voj:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_voivodeship"}, "right": {"value": voj}},
-                f"Czy powiat graniczy z województwem {voj}?",
+                f"Does the county border {voj} voivodeship?",
             )
 
     # 7. Lies in voivodeship
@@ -286,7 +296,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if voj:
             return (
                 {"operator": "equals", "left": {"entity": "target_powiat", "relation": "voivodeship"}, "right": {"value": voj}},
-                f"Czy powiat leży w województwie {voj}?",
+                f"Is the county in {voj} voivodeship?",
             )
 
     # 8. English Powiatdle checks
@@ -294,12 +304,12 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
     if re.fullmatch(r"is (?:it|the county) a city (?:county|with county rights)", norm_en):
         return (
             {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 1}},
-            "Czy powiat jest miastem na prawach powiatu?",
+            "Is the county a city county?",
         )
     if re.fullmatch(r"is (?:it|the county) a land county", norm_en):
         return (
             {"operator": "equals", "left": {"entity": "target_powiat", "relation": "is_city_county"}, "right": {"value": 0}},
-            "Czy powiat jest powiatem ziemskim?",
+            "Is the county a land county?",
         )
     m_plate_en = re.fullmatch(
         r"(?:do (?:its|the county) (?:registration )?plates have (?P<n>2|3) letters"
@@ -310,22 +320,22 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         n_val = int(m_plate_en.group("n") or m_plate_en.group("n2"))
         return (
             {"operator": "char_count_equals", "left": {"entity": "target_powiat", "relation": "registration_plates"}, "right": {"value": n_val}},
-            f"Czy tablice rejestracyjne powiatu mają {n_val} litery?",
+            f"Do the county's registration plates have {n_val} letters?",
         )
     if re.fullmatch(r"(?:does (?:it|the county) have (?:access to (?:the )?sea|a coastline)|is (?:it|the county) coastal)", norm_en):
         return (
             {"operator": "exists", "left": {"entity": "target_powiat", "relation": "water_access"}},
-            "Czy powiat ma dostęp do morza?",
+            "Does the county have access to the sea?",
         )
     if re.fullmatch(r"does (?:it|the county) border (?:a )?(?:foreign |neighboring )?country", norm_en):
         return (
             {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_country"}},
-            "Czy powiat graniczy z obcym państwem?",
+            "Does the county border a foreign country?",
         )
     if re.fullmatch(r"does (?:it|the county) border another voivodeship", norm_en):
         return (
             {"operator": "exists", "left": {"entity": "target_powiat", "relation": "borders_voivodeship"}},
-            "Czy powiat graniczy z innym województwem?",
+            "Does the county border another voivodeship?",
         )
     m_border_en = re.fullmatch(r"does (?:it|the county) border (?P<country>[a-z ]+)", norm_en)
     if m_border_en:
@@ -333,7 +343,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if c_name:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_powiat", "relation": "borders_country"}, "right": {"value": c_name}},
-                f"Czy powiat graniczy z: {c_name}?",
+                f"Does the county border {_NEIGHBOR_ENGLISH_NAMES.get(c_name, c_name)}?",
             )
     m_river_en = re.fullmatch(r"does (?:the )?(?P<river>[a-z ]+?)(?: river)? flow through (?:it|the county)", norm_en)
     if m_river_en:
@@ -341,7 +351,7 @@ def compile_powiatdle_template(question: str) -> tuple[dict[str, Any], str] | No
         if r_name:
             return (
                 {"operator": "contains_text", "left": {"entity": "target_powiat", "relation": "major_rivers"}, "right": {"value": r_name}},
-                f"Czy przez powiat przepływa {r_name}?",
+                f"Does {r_name} flow through the county?",
             )
     return None
 
@@ -371,21 +381,21 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
     if re.fullmatch(r"(?:miec dostep do morze|graniczyc z morze|(?:lezec|byc) nad morze|miec wybrzeze|miec dostep do baltyk|(?:lezec|byc) nad baltyk)", clause):
         return (
             {"operator": "equals", "left": {"entity": "target_voivodeship", "relation": "is_coastal"}, "right": {"value": True}},
-            "Czy województwo ma dostęp do morza?",
+            "Does the voivodeship have access to the sea?",
         )
 
     # 2. International borders
     if re.fullmatch(r"graniczyc z (?:inny |obcy )?(?:panstwo|kraj)", clause):
         return (
             {"operator": "exists", "left": {"entity": "target_voivodeship", "relation": "borders_country"}},
-            "Czy województwo graniczy z obcym państwem?",
+            "Does the voivodeship border a foreign country?",
         )
 
     if re.fullmatch(r"(?:graniczyc z \[COUNTRY\]|z \[COUNTRY\] graniczyc)", clause):
         if country:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_country"}, "right": {"value": country}},
-                f"Czy województwo graniczy z: {country}?",
+                f"Does the voivodeship border {_NEIGHBOR_ENGLISH_NAMES.get(country, country)}?",
             )
 
     # 3. Neighboring voivodeship
@@ -393,7 +403,7 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
         if voj:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_voivodeship"}, "right": {"value": voj}},
-                f"Czy województwo graniczy z województwem {voj}?",
+                f"Does the voivodeship border {voj} voivodeship?",
             )
 
     # 4. Major rivers
@@ -401,7 +411,7 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
         if river:
             return (
                 {"operator": "contains_text", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": river}},
-                f"Czy przez województwo przepływa {river}?",
+                f"Does {river} flow through the voivodeship?",
             )
 
     # 5. English Województwodle checks
@@ -409,12 +419,12 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
     if re.fullmatch(r"(?:does (?:it|the voivodeship) have (?:access to (?:the )?sea|a coastline)|is (?:it|the voivodeship) coastal)", norm_en):
         return (
             {"operator": "equals", "left": {"entity": "target_voivodeship", "relation": "is_coastal"}, "right": {"value": True}},
-            "Czy województwo ma dostęp do morza?",
+            "Does the voivodeship have access to the sea?",
         )
     if re.fullmatch(r"does (?:it|the voivodeship) border (?:a )?(?:foreign |neighboring )?country", norm_en):
         return (
             {"operator": "exists", "left": {"entity": "target_voivodeship", "relation": "borders_country"}},
-            "Czy województwo graniczy z obcym państwem?",
+            "Does the voivodeship border a foreign country?",
         )
     m_border_en = re.fullmatch(r"does (?:it|the voivodeship) border (?P<country>[a-z ]+)", norm_en)
     if m_border_en:
@@ -422,7 +432,7 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
         if c_name:
             return (
                 {"operator": "contains_exact", "left": {"entity": "target_voivodeship", "relation": "borders_country"}, "right": {"value": c_name}},
-                f"Czy województwo graniczy z: {c_name}?",
+                f"Does the voivodeship border {_NEIGHBOR_ENGLISH_NAMES.get(c_name, c_name)}?",
             )
     m_river_en = re.fullmatch(r"does (?:the )?(?P<river>[a-z ]+?)(?: river)? flow through (?:it|the voivodeship)", norm_en)
     if m_river_en:
@@ -430,7 +440,7 @@ def compile_wojewodztwodle_template(question: str) -> tuple[dict[str, Any], str]
         if r_name:
             return (
                 {"operator": "contains_text", "left": {"entity": "target_voivodeship", "relation": "major_rivers"}, "right": {"value": r_name}},
-                f"Czy przez województwo przepływa {r_name}?",
+                f"Does {r_name} flow through the voivodeship?",
             )
     return None
 

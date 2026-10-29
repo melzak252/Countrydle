@@ -1,5 +1,4 @@
 import { useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useDailyClock } from '../hooks/useDailyClock';
 import { isPrerenderCapture } from '../lib/pageMetadata'
 
@@ -10,11 +9,10 @@ export interface CountdownTimerProps {
 }
 
 export default function CountdownTimer(props: CountdownTimerProps) {
-  const { i18n } = useTranslation();
   if (isPrerenderCapture()) {
     return (
       <span className={`text-xs text-zinc-400 ${props.className ?? ''}`}>
-        {i18n.language.startsWith('pl') ? 'Nowe zagadki codziennie o 00:00 UTC' : 'New daily puzzles at 00:00 UTC'}
+        New daily puzzles at 00:00 UTC
       </span>
     );
   }
@@ -28,8 +26,7 @@ function LiveCountdownTimer({
 }: CountdownTimerProps) {
   const { remainingSeconds } = useDailyClock();
   const location = useLocation();
-  const { i18n } = useTranslation();
-  const isPl = i18n?.language?.startsWith('pl');
+  
 
   if (remainingSeconds === null) return null;
 
@@ -40,7 +37,7 @@ function LiveCountdownTimer({
 
   if (variant === 'minimal') {
     return (
-      <span className={`font-mono tabular-nums ${className}`} title={isPl ? 'Czas do kolejnej zagadki (00:00 UTC)' : 'Time until next puzzle (00:00 UTC)'}>
+      <span className={`font-mono tabular-nums ${className}`} title={'Time until next puzzle (00:00 UTC)'}>
         {timeLeft}
       </span>
     );
@@ -50,11 +47,11 @@ function LiveCountdownTimer({
   const getLabel = () => {
     if (label) return label;
     const path = location.pathname;
-    if (path.startsWith('/us-states')) return isPl ? 'Nowy stan za' : 'New state in';
-    if (path.startsWith('/wojewodztwa')) return isPl ? 'Nowe woj. za' : 'New voivodeship in';
-    if (path.startsWith('/powiaty')) return isPl ? 'Nowy powiat za' : 'New county in';
-    if (path.startsWith('/flagdle')) return isPl ? 'Nowa flaga za' : 'New flag in';
-    return isPl ? 'Nowe państwo za' : 'New country in';
+    if (path.startsWith('/us-states')) return 'New state in';
+    if (path.startsWith('/wojewodztwa')) return 'New voivodeship in';
+    if (path.startsWith('/powiaty')) return 'New county in';
+    if (path.startsWith('/flagdle')) return 'New flag in';
+    return 'New country in';
   };
 
   const displayLabel = getLabel();
@@ -62,7 +59,7 @@ function LiveCountdownTimer({
   return (
     <div
       className={`flex items-center gap-2 border border-white/10 bg-white/[0.02] px-2.5 py-1 sm:px-3 sm:py-1.5 rounded font-mono text-xs ${className}`}
-      title={isPl ? 'Czas do kolejnej zagadki (00:00 UTC)' : 'Time until next daily puzzle (00:00 UTC)'}
+      title={'Time until next daily puzzle (00:00 UTC)'}
     >
       <span className="text-zinc-400 whitespace-nowrap">{displayLabel}:</span>
       <span className="text-sand-50 font-bold tabular-nums text-sm sm:text-base tracking-wide whitespace-nowrap">

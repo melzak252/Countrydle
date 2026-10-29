@@ -32,13 +32,20 @@ Phone gameplay uses compact map and notebook spacing with bottom safe-area
 insets. The coat quiz keeps its input and controls visible while scrolling;
 Flag Shades, County Coats and Border Hop also use compact phone layouts.
 
-The homepage puts one daily-puzzle action first, followed by the spinning globe
-on phones as well as desktop. Guest progress controls the play/continue/result
-label only when its date and loading state are current. Other games, rules and
-device progress are available through disclosures. The globe supports horizontal
-drag, tap and keyboard-operable pause/resume; vertical touch gestures can scroll
-the page, and reduced-motion mode starts paused.
-The other-games link stays on a separate line with 1rem of top spacing.
+The homepage leads with Countrydle's daily country puzzle, its 10-question and
+3-guess limits, and the spinning globe on phones and desktop. Guest progress
+controls the play/continue/result label only when its date and loading state are
+current. An always-visible directory shares `src/lib/gameCatalog.ts` with the
+header's Games menu and groups the other modes into flags and coats, continents,
+states and regions, and more ways to play. Rules and device progress remain in
+disclosures; the page also links to the blog and explains the 00:00 UTC reset.
+The globe supports horizontal drag, tap and keyboard-operable pause/resume;
+vertical touch gestures can scroll the page, and reduced-motion mode starts paused.
+
+Application labels are English. English and Polish questions and geographic
+aliases remain valid inputs; native names, player-authored questions and saved
+history are preserved verbatim. New model-generated explanations and clarifications
+are requested in English, although model responses can vary.
 
 The country journal keeps search visible and groups continent, difficulty and
 sorting controls in one disclosure. Articles use the country-name hero, compact
@@ -100,8 +107,8 @@ game and contact layouts retain their own styling.
 - Friend-duel agreements are comparisons, not verified truth. Cache counters are
   scoped to one backend process and describe question plans, not target answers.
 
-Admin interface copy is available in English and Polish. Recorded player text,
-fact relation names, and technical identifiers retain their original values.
+Admin interface copy is English. Recorded player text, fact relation names, and
+technical identifiers retain their original values.
 
 ## General Suggestion Box
 
@@ -109,8 +116,8 @@ fact relation names, and technical identifiers retain their original values.
 Choose general feedback, a bug report, a feature request, or a data correction;
 name and email are optional. Submissions are stored through `POST /suggestions`.
 The form confirms success only after the backend returns `201`, prevents repeat
-submits while pending, and preserves the draft on failure. Public copy is
-available in English and Polish. Direct email support remains a separate link.
+submits while pending, and preserves the draft on failure. Public copy is English.
+Direct email support remains a separate link.
 Character limits count Unicode code points consistently with the backend.
 Submission cooldowns show a localized message and retain the draft for retry.
 
@@ -207,7 +214,7 @@ returned daily Border Hop
 target rather than treating a county or voivodeship as a country.
 
 The footer retains cross-game navigation and Close and View Map, with mobile
-safe-area padding. Interface labels are localized in English and Polish.
+safe-area padding. Interface labels are English.
 
 ## Mobile layout
 
@@ -257,7 +264,7 @@ maps with their own interaction state.
   downloads are not cached, so an explicit retry can recover.
 - `src/hooks/useMapData.ts` ignores results from unmounted/obsolete loads and hides
   old geometry when the asset URL changes. `MapLoading.tsx` preserves the caller's
-  map dimensions, announces loading/failure, and offers English/Polish retry copy.
+  map dimensions, announces loading/failure, and offers an English retry control.
 - All four maps use 60px wheel sensitivity and half-level zoom buttons. Wheel/pinch
   zoom stays fractional, without snapping on release. Phone double-tap zoom is
   disabled so quick repeat taps toggle a mark without moving the camera; desktop

@@ -33,9 +33,9 @@ const control = 'admin-control';
 const pageSize = 30;
 
 function ReviewCard({ item, onSaved }: { item: Evidence; onSaved: () => void }) {
-  const { t, i18n } = useTranslation('translation', { keyPrefix: 'adminFriendDuels' });
+  const { t } = useTranslation('translation', { keyPrefix: 'adminFriendDuels' });
   const { t: modesT } = useTranslation('translation');
-  const dateLocale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-GB';
+  const dateLocale = 'en-GB';
   const formatTime = (value: string | null) => value
     ? new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
     : t('timeUnavailable');

@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -97,8 +97,8 @@ export function ControlledWojewodztwaMap({
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/wojewodztwa.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  
+  
   const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctWojewodztwoName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
@@ -316,8 +316,8 @@ export function ControlledWojewodztwaMap({
           <button
             onClick={handleZoomToCorrect}
             className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
-            title={isPl ? 'Przybliż poprawne województwo' : 'Zoom to correct voivodeship'}
-            aria-label={isPl ? 'Przybliż poprawne województwo' : 'Zoom to correct voivodeship'}
+            title={'Zoom to correct voivodeship'}
+            aria-label={'Zoom to correct voivodeship'}
           >
             <Check size={16} />
           </button>

@@ -50,8 +50,8 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
   onAddListFact,
   onDeleteListFact,
 }) => {
-  const { t, i18n } = useTranslation();
-  const numberFormat = new Intl.NumberFormat(i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US');
+  const { t } = useTranslation();
+  const numberFormat = new Intl.NumberFormat('en-US');
   const [pendingWrites, setPendingWrites] = useState(0);
   const busy = isEntitiesLoading || isFactsLoading || pendingWrites > 0;
   const writesDisabled = busy || !entityFacts || Boolean(factError);

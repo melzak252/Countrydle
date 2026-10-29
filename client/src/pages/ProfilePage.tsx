@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const { username } = useParams();
   const navigate = useNavigate();
   const { user: currentUser, setUser } = useAuthStore();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [loaded, setLoaded] = useState<{ username: string; data: ProfileStats } | null>(null);
   const [failure, setFailure] = useState<{ username: string; notFound: boolean } | null>(null);
   const [reload, setReload] = useState(0);
@@ -58,7 +58,7 @@ export default function ProfilePage() {
   const stats = loaded && loaded.username === username ? loaded.data : null;
   const error = failure?.username === username ? failure : null;
   const isOwnProfile = Boolean(stats && currentUser?.id === stats.user.id);
-  const formatNumber = (value: number) => value.toLocaleString(i18n.language);
+  const formatNumber = (value: number) => value.toLocaleString('en-US');
 
   useEffect(() => {
     if (!username) return;
@@ -171,7 +171,7 @@ export default function ProfilePage() {
                 {isOwnProfile && <button type="button" onClick={() => setIsEditing(true)} aria-label={t('profile.editNickname')} className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-white/10 text-zinc-400 hover:border-emerald-400/40 hover:text-emerald-300 ${focusStyle}`}><Edit2 size={16} aria-hidden="true" /></button>}
               </div>
             )}
-            {stats.user.created_at && <p className="mt-3 flex items-center gap-2 text-sm text-zinc-400"><CalendarDays size={14} className="shrink-0 text-zinc-500" aria-hidden="true" />{t('profile.memberSince', { date: new Date(stats.user.created_at).toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' }) })}</p>}
+            {stats.user.created_at && <p className="mt-3 flex items-center gap-2 text-sm text-zinc-400"><CalendarDays size={14} className="shrink-0 text-zinc-500" aria-hidden="true" />{t('profile.memberSince', { date: new Date(stats.user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) })}</p>}
           </div>
           {isOwnProfile && <span className="self-start rounded-sm border border-emerald-400/20 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-emerald-300 sm:self-center">{t('profile.yourProfile')}</span>}
         </div>
@@ -227,7 +227,7 @@ export default function ProfilePage() {
               <li key={match.id} className="flex items-center gap-3 px-4 py-5 sm:gap-5 sm:px-6">
                 <span className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-sm border sm:flex ${match.outcome === 'won' ? 'border-emerald-400/20 bg-emerald-400/[0.05] text-emerald-400' : 'border-white/10 text-zinc-500'}`} aria-hidden="true">{match.outcome === 'won' ? <Check size={16} /> : match.outcome === 'lost' ? <X size={16} /> : <Sparkles size={15} />}</span>
                 <div className="min-w-0 flex-1">
-                  <time dateTime={match.finished_at} className="font-mono text-xs text-zinc-500">{new Date(match.finished_at).toLocaleString(i18n.language)}</time>
+                  <time dateTime={match.finished_at} className="font-mono text-xs text-zinc-500">{new Date(match.finished_at).toLocaleString('en-US')}</time>
                   <p className="mt-1 text-sm font-medium text-sand-100">{t(`profile.friendModes.${match.mode}`, { defaultValue: match.mode })}</p>
                 </div>
                 <p className={`text-right text-sm font-medium ${match.outcome === 'won' ? 'text-emerald-300' : 'text-zinc-400'}`}>{t(`profile.matchOutcome.${match.outcome}`)}</p>

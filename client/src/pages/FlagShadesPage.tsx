@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   HelpCircle,
@@ -37,8 +36,6 @@ interface StoredDailyState {
 const FLAG_SHADES_GUIDE_KEY = 'flag_shades_guide_seen';
 
 export default function FlagShadesPage() {
-  const { i18n } = useTranslation();
-  const isPl = i18n?.language?.startsWith('pl');
 
   // Mode state
   const [mode, setMode] = useState<GameMode>('daily');
@@ -195,12 +192,12 @@ export default function FlagShadesPage() {
         }
       } catch (err) {
         console.error('Failed to load Flag Shades challenge:', err);
-        toast.error(isPl ? 'Nie udało się załadować wyzwania flagi.' : 'Failed to load flag challenge.');
+        toast.error('Failed to load flag challenge.');
       } finally {
         setIsLoading(false);
       }
     },
-    [isPl, persistDailyState]
+    [persistDailyState]
   );
 
   // Initial load on mount or when mode toggles
@@ -295,7 +292,7 @@ export default function FlagShadesPage() {
 
     const guessedNames = new Set(guesses.map((g) => g.guess.toLowerCase()));
     if (guessedNames.has(name.toLowerCase())) {
-      toast.error(isPl ? 'Ten kraj został już wytypowany!' : 'You already guessed this country!');
+      toast.error('You already guessed this country!');
       return;
     }
 
@@ -313,15 +310,13 @@ export default function FlagShadesPage() {
 
     if (!countryId || !countries.some((c) => c.id === countryId)) {
       toast.error(
-        isPl
-          ? 'Wybierz prawidłowy kraj z listy podpowiedzi.'
-          : 'Please select a valid sovereign country from the list.'
+        'Please select a valid sovereign country from the list.'
       );
       return;
     }
 
     if (guesses.some((g) => g.country_id === countryId)) {
-      toast.error(isPl ? 'Ten kraj został już wytypowany!' : 'You already guessed this country!');
+      toast.error('You already guessed this country!');
       return;
     }
 
@@ -361,7 +356,7 @@ export default function FlagShadesPage() {
       }
     } catch (err) {
       console.error('Failed to submit Flag Shades guess:', err);
-      toast.error(isPl ? 'Błąd podczas wysyłania odpowiedzi.' : 'Error submitting your guess.');
+      toast.error('Error submitting your guess.');
     } finally {
       setIsSubmitting(false);
     }
@@ -376,9 +371,7 @@ export default function FlagShadesPage() {
       persistDailyState(challenge.date, { colorHintUsed: true });
     }
     toast.success(
-      isPl
-        ? 'Odkryto 1 kolor na fladze (≥10% powierzchni)!'
-        : '1 color hint revealed on the flag (≥10% of flag)!'
+      '1 color hint revealed on the flag (≥10% of flag)!'
     );
   };
 
@@ -391,12 +384,12 @@ export default function FlagShadesPage() {
     if (!challenge) return;
     const scoreText = won ? `${guesses.length}/${maxGuesses}` : `X/${maxGuesses}`;
     const hintBadge = colorHintUsed
-      ? (isPl ? '🎨 Użyto podpowiedzi koloru' : '🎨 Color Hint used')
-      : (isPl ? '🖤 Czyste odgadnięcie w szarości' : '🖤 Pure Grayscale solve');
+      ? ('🎨 Color Hint used')
+      : ('🖤 Pure Grayscale solve');
     const headerTitle =
       mode === 'daily'
-        ? (isPl ? `Odcienie Flagi · ${challenge.date}` : `Flag Shades · ${challenge.date}`)
-        : (isPl ? 'Odcienie Flagi · Wyzwanie' : 'Flag Shades · Challenge');
+        ? (`Flag Shades · ${challenge.date}`)
+        : ('Flag Shades · Challenge');
 
     const lines: string[] = [];
     lines.push(headerTitle);
@@ -412,7 +405,7 @@ export default function FlagShadesPage() {
           (g.matched_symbols && g.matched_symbols.length > 0);
         const tile = isClose ? '🟨' : '⬛';
         const arrow = g.bearing_arrow ? `${g.bearing_arrow} ` : '';
-        const dist = g.distance_km !== null && g.distance_km !== undefined ? `${g.distance_km.toLocaleString()} km` : '';
+        const dist = g.distance_km !== null && g.distance_km !== undefined ? `${g.distance_km.toLocaleString('en-US')} km` : '';
         const sym = g.matched_symbols && g.matched_symbols.length > 0 ? ` ✦${g.matched_symbols.length}` : '';
         lines.push(`${tile} ${arrow}${dist}${sym}`.trim());
       }
@@ -429,7 +422,7 @@ export default function FlagShadesPage() {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(fullShareText);
       setCopied(true);
-      toast.success(isPl ? 'Skopiowano wynik do schowka!' : 'Copied results to clipboard!');
+      toast.success('Copied results to clipboard!');
       setTimeout(() => setCopied(false), 2500);
     }
   };
@@ -441,7 +434,7 @@ export default function FlagShadesPage() {
       <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
         <span className="text-sm font-medium text-sand-300">
-          {isPl ? 'Ładowanie Odcieni Flagi...' : 'Loading Flag Shades...'}
+          {'Loading Flag Shades...'}
         </span>
       </div>
     );
@@ -456,20 +449,18 @@ export default function FlagShadesPage() {
             <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono font-semibold uppercase tracking-wider text-sand-400 sm:mb-1">
               <span className="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                 <Palette size={14} className="text-emerald-400 shrink-0" />
-                <span>{isPl ? 'Tryb Szarości' : 'Grayscale Deduction'}</span>
+                <span>{'Grayscale Deduction'}</span>
               </span>
               <span className="text-sand-600 hidden min-[340px]:inline select-none" aria-hidden="true">•</span>
               <span className="whitespace-nowrap shrink-0 text-sand-300">
-                {mode === 'daily' ? challenge?.date || 'Daily' : isPl ? 'Wyzwanie' : 'Challenge'}
+                {mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}
               </span>
             </div>
             <h1 className="text-xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-              {isPl ? 'Odcienie Flagi' : 'Flag Shades'}
+              {'Flag Shades'}
             </h1>
             <p className="mt-0.5 text-xs text-sand-400 sm:text-sm leading-snug">
-              {isPl
-                ? 'Rozpoznaj flagę państwową wyświetlaną wyłącznie w odcieniach szarości.'
-                : 'Identify the national flag rendered entirely in shades of grey.'}
+              {'Identify the national flag rendered entirely in shades of grey.'}
             </p>
           </div>
 
@@ -477,7 +468,7 @@ export default function FlagShadesPage() {
             {/* Guesses Remaining Pill */}
             <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
               <span className="mr-1.5 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-zinc-400 sm:mr-2">
-                {isPl ? 'Próby:' : 'Guesses:'}
+                {'Guesses:'}
               </span>
               <span
                 className={`font-mono text-sm sm:text-base font-bold ${
@@ -494,8 +485,8 @@ export default function FlagShadesPage() {
               type="button"
               onClick={() => setShowInstructions(true)}
               className="flex h-11 w-11 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors shrink-0"
-              title={isPl ? 'Zasady gry Odcienie Flagi' : 'How to play Flag Shades'}
-              aria-label={isPl ? 'Zasady gry' : 'Instructions'}
+              title={'How to play Flag Shades'}
+              aria-label={'Instructions'}
             >
               <HelpCircle size={18} />
             </button>
@@ -506,10 +497,10 @@ export default function FlagShadesPage() {
                 type="button"
                 onClick={() => setShowResultsModal(true)}
                 className="flex min-h-[44px] sm:min-h-0 sm:h-9 items-center gap-1.5 px-3 rounded-sm border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer shrink-0"
-                title={isPl ? 'Pokaż wynik' : 'Show results'}
+                title={'Show results'}
               >
                 <Trophy size={15} />
-                <span>{isPl ? 'Wyniki' : 'Results'}</span>
+                <span>{'Results'}</span>
               </button>
             )}
           </div>
@@ -527,7 +518,7 @@ export default function FlagShadesPage() {
                   : 'text-zinc-400 hover:text-sand-200'
               }`}
             >
-              📅 {isPl ? 'Dzisiejsza zagadka' : 'Daily Puzzle'}
+              📅 {'Daily Puzzle'}
             </button>
             <button
               type="button"
@@ -538,7 +529,7 @@ export default function FlagShadesPage() {
                   : 'text-zinc-400 hover:text-sand-200'
               }`}
             >
-              ⚡ {isPl ? 'Wyzwanie losowe' : 'Challenge Mode'}
+              ⚡ {'Challenge Mode'}
             </button>
           </div>
 
@@ -550,7 +541,7 @@ export default function FlagShadesPage() {
               className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-sm border border-sand-700 bg-sand-900/60 text-sand-200 hover:bg-sand-800 text-[11px] sm:text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
             >
               <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-              <span>{isPl ? 'Nowa flaga' : 'New Challenge'}</span>
+              <span>{'New Challenge'}</span>
             </button>
           )}
         </div>
@@ -559,7 +550,7 @@ export default function FlagShadesPage() {
       {/* Main Content Area */}
       <main className="space-y-2.5 sm:space-y-6">
         {/* 1. Grayscale Flag Canvas Container */}
-        <section aria-label={isPl ? 'Wizualizacja flagi w skali szarości' : 'Grayscale Flag Display'}>
+        <section aria-label={'Grayscale Flag Display'}>
           <GrayscaleFlagCanvas
             stage={guesses.length + 1}
             flagUrl={resolvedFlagUrl}
@@ -571,7 +562,7 @@ export default function FlagShadesPage() {
         </section>
 
         {/* 2. Color Hint Control Bar */}
-        <section aria-label={isPl ? 'Podpowiedź koloru' : 'Color Hint Control'} className="mx-auto w-full max-w-xl">
+        <section aria-label={'Color Hint Control'} className="mx-auto w-full max-w-xl">
           {hintLocked && (
             <button
               type="button"
@@ -581,13 +572,11 @@ export default function FlagShadesPage() {
               <div className="flex items-center gap-2 min-w-0 text-left">
                 <Lock size={15} className="text-zinc-500 shrink-0" />
                 <span className="leading-snug sm:leading-normal">
-                  {isPl
-                    ? `Podpowiedź koloru po 3 próbach (${guesses.length}/${hintUnlockThreshold})`
-                    : `Color Hint unlocks after 3 guesses (${guesses.length}/${hintUnlockThreshold})`}
+                  {`Color Hint unlocks after 3 guesses (${guesses.length}/${hintUnlockThreshold})`}
                 </span>
               </div>
               <span className="font-mono text-[11px] text-zinc-500 shrink-0 ml-2 whitespace-nowrap">
-                {hintUnlockThreshold - guesses.length} {isPl ? 'pozostało' : 'left'}
+                {hintUnlockThreshold - guesses.length} {'left'}
               </span>
             </button>
           )}
@@ -600,9 +589,7 @@ export default function FlagShadesPage() {
             >
               <Palette size={16} className="text-amber-300 transition-transform group-hover:scale-110 shrink-0 sm:h-[18px] sm:w-[18px]" />
               <span className="text-center leading-snug sm:leading-normal">
-                {isPl
-                  ? 'Odkryj 1 kolor na fladze (≥10% powierzchni)'
-                  : 'Reveal 1 Color Hint (≥10% of flag)'}
+                {'Reveal 1 Color Hint (≥10% of flag)'}
               </span>
               <Sparkles size={15} className="text-yellow-300 shrink-0 sm:h-4 sm:w-4" />
             </button>
@@ -613,13 +600,11 @@ export default function FlagShadesPage() {
               <div className="flex items-center gap-2 min-w-0 text-left">
                 <Palette size={15} className="text-emerald-400 shrink-0" />
                 <span className="leading-snug sm:leading-normal">
-                  {isPl
-                    ? `Podpowiedź koloru aktywna: ${hintInfo?.colorName ? `przywrócono ${hintInfo.colorName}` : 'przywrócono 1 kolor'} (${hintInfo?.sharePct || '≥10'}% flagi)`
-                    : `Color Hint Active: ${hintInfo?.colorName || '1 color'} restored (${hintInfo?.sharePct || '≥10'}% of flag)`}
+                  {`Color Hint Active: ${hintInfo?.colorName || '1 color'} restored (${hintInfo?.sharePct || '≥10'}% of flag)`}
                 </span>
               </div>
               <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-emerald-300 shrink-0 ml-2 whitespace-nowrap">
-                {isPl ? 'Aktywna' : 'Active'}
+                {'Active'}
               </span>
             </div>
           )}
@@ -627,7 +612,7 @@ export default function FlagShadesPage() {
 
         {/* 3. Autocomplete Guess Input */}
         {!isGameOver && (
-          <section aria-label={isPl ? 'Wpisywanie odpowiedzi' : 'Guess Input'} className="mx-auto w-full max-w-xl">
+          <section aria-label={'Guess Input'} className="mx-auto w-full max-w-xl">
             <div className="relative">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1 min-w-0">
@@ -646,9 +631,7 @@ export default function FlagShadesPage() {
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder={
-                      isPl
-                        ? 'Wyszukaj flagę państwa...'
-                        : 'Search flag by country name...'
+                      'Search flag by country name...'
                     }
                     disabled={isSubmitting || isLoading}
                     className="w-full min-w-0 rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2.5 text-base md:text-sm text-sand-100 placeholder:text-zinc-500 shadow-inner focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-50 sm:px-4 sm:py-3"
@@ -696,7 +679,7 @@ export default function FlagShadesPage() {
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <>
-                      <span>{isPl ? 'Zgadnij' : 'Guess'}</span>
+                      <span>{'Guess'}</span>
                       <ArrowRight size={16} />
                     </>
                   )}
@@ -708,10 +691,10 @@ export default function FlagShadesPage() {
 
         {/* 4. Previous Guesses Trail */}
         {guesses.length > 0 && (
-          <section aria-label={isPl ? 'Historia prób' : 'Guess History'} className="mx-auto w-full max-w-xl space-y-2">
+          <section aria-label={'Guess History'} className="mx-auto w-full max-w-xl space-y-2">
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                {isPl ? 'Twoje próby' : 'Your Guesses'}
+                {'Your Guesses'}
               </span>
               <span className="text-xs font-mono text-zinc-500">
                 {guesses.length} / {maxGuesses}
@@ -740,7 +723,7 @@ export default function FlagShadesPage() {
                     {g.distance_km !== null && g.distance_km !== undefined && !g.answer && (
                       <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
                         <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5">
-                          {g.distance_km.toLocaleString()} km
+                          {g.distance_km.toLocaleString('en-US')} km
                         </span>
                         {g.bearing_arrow && (
                           <span className="text-emerald-400 text-sm font-bold" title={g.bearing_direction || ''}>
@@ -791,35 +774,27 @@ export default function FlagShadesPage() {
         {/* 5. Game Over Banner */}
         {isGameOver && (
           <section
-            aria-label={isPl ? 'Podsumowanie wyniku' : 'Game Result Summary'}
+            aria-label={'Game Result Summary'}
             className="mx-auto w-full max-w-xl rounded-sm border border-emerald-500/30 bg-obsidian-950 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
             <div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold whitespace-nowrap">
-                  {won ? (isPl ? 'Flaga Odgadnięta!' : 'Flag Identified!') : (isPl ? 'Koniec Gry' : 'Game Over')}
+                  {won ? ('Flag Identified!') : ('Game Over')}
                 </span>
                 <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
                 <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">
                   {colorHintUsed
-                    ? isPl
-                      ? '🎨 Użyto podpowiedzi koloru'
-                      : '🎨 Color Hint used'
-                    : isPl
-                    ? '🖤 Czyste odgadnięcie w szarości'
+                    ? '🎨 Color Hint used'
                     : '🖤 Pure Grayscale solve'}
                 </span>
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-sand-100 mt-1">
-                {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || (isPl ? 'Tajemniczy Kraj' : 'Mystery Country')}
+                {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || ('Mystery Country')}
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
                 {won
-                  ? isPl
-                    ? `Zgadnięto w ${guesses.length} z ${maxGuesses} prób.`
-                    : `Solved in ${guesses.length} of ${maxGuesses} guesses.`
-                  : isPl
-                  ? 'Wykorzystano wszystkie próby. Sprawdź pełną flagę!'
+                  ? `Solved in ${guesses.length} of ${maxGuesses} guesses.`
                   : 'All guesses used. Check out the revealed flag!'}
               </p>
             </div>
@@ -831,14 +806,14 @@ export default function FlagShadesPage() {
                 className="inline-flex min-h-10 items-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 text-xs sm:text-sm font-semibold text-obsidian-950 transition-colors cursor-pointer"
               >
                 <Trophy size={16} aria-hidden="true" />
-                <span>{isPl ? 'Szczegóły' : 'View Results'}</span>
+                <span>{'View Results'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleShare}
                 className="inline-flex min-h-10 items-center gap-1.5 rounded-sm border border-white/20 bg-white/5 hover:bg-white/10 px-3 py-2 text-xs sm:text-sm font-semibold text-sand-100 transition-colors cursor-pointer"
-                title={isPl ? 'Udostępnij' : 'Share'}
+                title={'Share'}
               >
                 {copied ? <Check size={16} className="text-emerald-400" /> : <Share2 size={16} />}
               </button>
@@ -860,7 +835,7 @@ export default function FlagShadesPage() {
             <section
               role="dialog"
               aria-modal="true"
-              aria-label={isPl ? 'Wynik gry' : 'Game Result'}
+              aria-label={'Game Result'}
               className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-4 sm:p-8 shadow-2xl text-left space-y-4 sm:space-y-6 my-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -868,18 +843,18 @@ export default function FlagShadesPage() {
               <div className="flex items-center justify-between border-b border-white/10 pb-3 text-left">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                   <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold whitespace-nowrap">
-                    {isPl ? 'Wynik Odcieni Flagi' : 'Flag Shades Result'}
+                    {'Flag Shades Result'}
                   </span>
                   <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
                   <span className="font-mono text-xs text-zinc-400 whitespace-nowrap">
-                    {mode === 'daily' ? challenge?.date || 'Daily' : isPl ? 'Wyzwanie' : 'Challenge'}
+                    {mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                  aria-label={isPl ? 'Zamknij' : 'Close'}
+                  aria-label={'Close'}
                 >
                   <X size={16} />
                 </button>
@@ -899,18 +874,14 @@ export default function FlagShadesPage() {
                   </div>
                   <div className="min-w-0">
                     <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-emerald-400 font-semibold">
-                      {isPl ? 'Prawidłowa flaga państwowa' : 'Secret National Flag'}
+                      {'Secret National Flag'}
                     </span>
                     <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
-                      {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || (isPl ? 'Tajemniczy Kraj' : 'Mystery Country')}
+                      {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || ('Mystery Country')}
                     </h2>
                     <p className="mt-1 text-xs text-zinc-400">
                       {won
-                        ? isPl
-                          ? `Rozpoznano w ${guesses.length} z ${maxGuesses} prób.`
-                          : `Identified in ${guesses.length} of ${maxGuesses} guesses.`
-                        : isPl
-                        ? `Wykorzystano wszystkie ${maxGuesses} prób.`
+                        ? `Identified in ${guesses.length} of ${maxGuesses} guesses.`
                         : `Used all ${maxGuesses} guesses.`}
                     </p>
                   </div>
@@ -925,16 +896,12 @@ export default function FlagShadesPage() {
                     }`}
                   >
                     {won ? <Sparkles size={14} /> : <AlertCircle size={14} />}
-                    <span>{won ? (isPl ? 'Odgadnięte' : 'Solved') : (isPl ? 'Nieodgadnięte' : 'Game Over')}</span>
+                    <span>{won ? ('Solved') : ('Game Over')}</span>
                   </div>
 
                   <span className="text-xs font-mono text-zinc-400">
                     {colorHintUsed
-                      ? isPl
-                        ? '🎨 Użyto podpowiedzi koloru'
-                        : '🎨 Color Hint used'
-                      : isPl
-                      ? '🖤 Czyste odgadnięcie w szarości'
+                      ? '🎨 Color Hint used'
                       : '🖤 Pure Grayscale solve'}
                   </span>
                 </div>
@@ -944,7 +911,7 @@ export default function FlagShadesPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
                   <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
-                    {isPl ? 'Wykorzystane próby' : 'Guesses Used'}
+                    {'Guesses Used'}
                   </span>
                   <div className="mt-1 flex items-baseline gap-1.5">
                     <span className="font-mono text-2xl font-bold text-sand-100">{guesses.length}</span>
@@ -954,18 +921,18 @@ export default function FlagShadesPage() {
 
                 <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
                   <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
-                    {isPl ? 'Tryb Rozwiązania' : 'Solve Mode'}
+                    {'Solve Mode'}
                   </span>
                   <div className="mt-1 font-mono text-sm font-semibold text-emerald-300 flex items-center gap-1.5">
                     {colorHintUsed ? (
                       <>
                         <Palette size={15} />
-                        <span>{isPl ? 'Z podpowiedzią' : 'With Hint'}</span>
+                        <span>{'With Hint'}</span>
                       </>
                     ) : (
                       <>
                         <span>🖤</span>
-                        <span>{isPl ? 'Czyste szarości' : 'Pure Grayscale'}</span>
+                        <span>{'Pure Grayscale'}</span>
                       </>
                     )}
                   </div>
@@ -973,7 +940,7 @@ export default function FlagShadesPage() {
 
                 <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
                   <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
-                    {isPl ? 'Następna zagadka' : 'Next Daily'}
+                    {'Next Daily'}
                   </span>
                   <div className="mt-1 font-mono text-lg font-semibold text-emerald-400">
                     <CountdownTimer variant="minimal" className="text-lg text-emerald-400 font-semibold" />
@@ -990,7 +957,7 @@ export default function FlagShadesPage() {
                     className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
                   >
                     {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-                    <span>{copied ? (isPl ? 'Skopiowano do schowka!' : 'Copied to Clipboard!') : (isPl ? 'Udostępnij wynik' : 'Share Results')}</span>
+                    <span>{copied ? ('Copied to Clipboard!') : ('Share Results')}</span>
                   </button>
 
                   <button
@@ -1002,7 +969,7 @@ export default function FlagShadesPage() {
                     }}
                     className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/20 transition-colors cursor-pointer"
                   >
-                    <span>⚡ {isPl ? 'Zagraj w wyzwanie' : 'Play Challenge Round'}</span>
+                    <span>⚡ {'Play Challenge Round'}</span>
                     <ArrowRight size={15} />
                   </button>
                 </div>
@@ -1012,7 +979,7 @@ export default function FlagShadesPage() {
                   onClick={() => setShowResultsModal(false)}
                   className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
                 >
-                  {isPl ? 'Zamknij i zobacz flagę' : 'Close & View Flag'}
+                  {'Close & View Flag'}
                 </button>
               </div>
             </section>
@@ -1033,7 +1000,7 @@ export default function FlagShadesPage() {
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={isPl ? 'Zasady gry Odcienie Flagi' : 'How to Play Flag Shades'}
+            aria-label={'How to Play Flag Shades'}
             className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-4 md:max-h-[92vh] sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1041,19 +1008,17 @@ export default function FlagShadesPage() {
               <div>
                 <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
                   <Palette className="text-emerald-400" size={26} />
-                  <span>{isPl ? 'Jak grać w Odcienie Flagi' : 'How to Play Flag Shades'}</span>
+                  <span>{'How to Play Flag Shades'}</span>
                 </h2>
                 <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
-                  {isPl
-                    ? 'Odgadnij tajemniczą flagę państwową w 8 próbach lub mniej. Cała flaga wyświetla się w odcieniach szarości.'
-                    : 'Deduce the secret national flag in 8 guesses or fewer. The full flag is shown in shades of grey.'}
+                  {'Deduce the secret national flag in 8 guesses or fewer. The full flag is shown in shades of grey.'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                aria-label={isPl ? 'Zamknij' : 'Close'}
+                aria-label={'Close'}
               >
                 <X size={16} />
               </button>
@@ -1063,80 +1028,70 @@ export default function FlagShadesPage() {
               <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                    <span>🖤 1. {isPl ? 'Skala jasności szarości' : 'Luminance Grayscale'}</span>
+                    <span>🖤 1. {'Luminance Grayscale'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Wszystkie barwy flagi zostają przekonwertowane na odcienie szarości na podstawie ich percepcyjnej jasności. Żółty jest jasny, granat ciemny, a biel i czerń pozostają sobą.'
-                      : 'All flag colors are transformed into perceptual luminance grayscale. Yellow renders light grey, navy renders dark grey, and white/black stay true.'}
+                    {'All flag colors are transformed into perceptual luminance grayscale. Yellow renders light grey, navy renders dark grey, and white/black stay true.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Pełna flaga od startu' : 'Full flag visible from start'}
+                  {'Full flag visible from start'}
                 </div>
               </div>
 
               <div className="rounded-sm border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                    <span>🎨 2. {isPl ? 'Podpowiedź koloru po 3 próbach' : 'Color Hint after 3 Guesses'}</span>
+                    <span>🎨 2. {'Color Hint after 3 Guesses'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Po 3 nieudanych próbach odblokowuje się przycisk podpowiedzi, który przywraca dokładnie 1 główny kolor chromatyczny (pokrywający ≥10% powierzchni flagi).'
-                      : 'After 3 guesses, unlock a color hint button that restores exactly 1 major chromatic color family (covering ≥10% of the flag image).'}
+                    {'After 3 guesses, unlock a color hint button that restores exactly 1 major chromatic color family (covering ≥10% of the flag image).'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Opcjonalna pomoc po 3 próbach' : 'Optional hint after 3 attempts'}
+                  {'Optional hint after 3 attempts'}
                 </div>
               </div>
 
               <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                    <span>🧭 3. {isPl ? 'Odległość i kierunek geograficzny' : 'Distance & Compass Bearing'}</span>
+                    <span>🧭 3. {'Distance & Compass Bearing'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Każda nietrafiona próba podaje odległość w kilometrach oraz strzałkę kierunkową wskazującą położenie poszukiwanego państwa na kuli ziemskiej.'
-                      : 'Each missed guess provides great-circle distance in kilometers and a compass bearing arrow pointing toward the secret target country.'}
+                    {'Each missed guess provides great-circle distance in kilometers and a compass bearing arrow pointing toward the secret target country.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Geograficzne wskazówki' : 'Great-circle guidance'}
+                  {'Great-circle guidance'}
                 </div>
               </div>
 
               <div className="rounded-sm border border-indigo-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-                    <span>✦ 4. {isPl ? 'Wspólne symbole na flagach' : 'Shared Flag Symbols'}</span>
+                    <span>✦ 4. {'Shared Flag Symbols'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {isPl
-                      ? 'Jeśli Twoja wytypowana flaga dzieli z celem symbole (np. gwiazdy, pasy, słońce, orła), pojawią się one w historii prób jako wskazówki!'
-                      : 'If your guessed flag shares national symbols with the target (e.g. stars, stripes, sun, eagle), they appear in your guess trail as clues!'}
+                    {'If your guessed flag shares national symbols with the target (e.g. stars, stripes, sun, eagle), they appear in your guess trail as clues!'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
-                  {isPl ? 'Dopasowanie symboli' : 'Symbol overlap clues'}
+                  {'Symbol overlap clues'}
                 </div>
               </div>
             </div>
 
             <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-xs text-zinc-500 font-mono text-center sm:text-left">
-                {isPl
-                  ? 'Zagadka codzienna zmienia się o 00:00 UTC. Tryb wyzwania pozwala grać bez limitu.'
-                  : 'Daily puzzle rotates at 00:00 UTC. Challenge mode lets you play unlimited rounds.'}
+                {'Daily puzzle rotates at 00:00 UTC. Challenge mode lets you play unlimited rounds.'}
               </p>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer"
               >
-                <span>{isPl ? 'Rozumiem, gramy!' : "Got it, let's play!"}</span>
+                <span>{"Got it, let's play!"}</span>
                 <ArrowRight size={16} />
               </button>
             </div>

@@ -133,6 +133,46 @@ def test_country_prompt_cutover_ignores_old_interpretation(monkeypatch, isolated
         assert execute_local_plan(reused.plan, "Switzerland", question).answer is False
 
 
+@pytest.mark.parametrize(("mode", "question", "english_fragment"), [
+    ("powiat", "czy jest to miasto na prawach powiatu?", "city county"),
+    ("voivodeship", "czy to województwo graniczy z Niemcami?", "Germany"),
+])
+def test_regional_english_output_cutover_ignores_but_preserves_old_cached_plans(
+    monkeypatch, isolated_cache, mode, question, english_fragment
+):
+    from local_kb_question import QuestionPlan
+    from planner_protocol import PLANNER_VERSION
+    from powiatdle.utils import LOCAL_CONFIG as powiat_config
+    from wojewodztwodle.utils import LOCAL_CONFIG as voivodeship_config
+
+    config = powiat_config if mode == "powiat" else voivodeship_config
+    model = "test-cache-model"
+    monkeypatch.setenv("LOCAL_QUESTION_MODEL", model)
+    old_version = f"{PLANNER_VERSION}:{model}"
+    old_plan = QuestionPlan(
+        original_question=question, valid=True, supported=True,
+        improved_question="Czy to stare pytanie?", explanation="Stare wyjaśnienie.",
+        plan={"operator": "exists", "left": {
+            "entity": config.target_entity, "relation": "name",
+        }},
+    )
+    isolated_cache.set(config.mode_name, question, old_plan, version=old_version)
+
+    first_evidence, second_evidence = {}, {}
+    fresh = analyze_question(question, config, evidence=first_evidence)
+    reused = analyze_question(question.upper(), config, evidence=second_evidence)
+
+    assert first_evidence["cache_hit"] is False
+    assert second_evidence["cache_hit"] is True
+    assert fresh.original_question == question
+    assert reused.original_question == question.upper()
+    assert english_fragment.lower() in fresh.improved_question.lower()
+    assert reused.improved_question == fresh.improved_question
+    assert reused.plan == fresh.plan
+    assert fresh.plan != old_plan.plan
+    assert isolated_cache.get(config.mode_name, question, version=old_version) == old_plan
+
+
 @pytest.mark.parametrize("country", [True, False])
 def test_provider_failure_does_not_poison_next_attempt(monkeypatch, country):
     responses = iter([

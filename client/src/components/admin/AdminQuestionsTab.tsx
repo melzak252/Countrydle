@@ -20,7 +20,7 @@ const ANSWERS = [['all', 'allAnswers'], ['yes', 'yes'], ['no', 'no'], ['invalid'
 const PAGE_LIMIT = 30;
 
 export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({ onTestInQA, initialMode = 'all', initialSearch = '' }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [mode, setMode] = useState(initialMode);
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
@@ -41,7 +41,7 @@ export const AdminQuestionsTab: React.FC<AdminQuestionsTabProps> = ({ onTestInQA
   const requestSequence = useRef(0);
   const mounted = useRef(false);
   const generatedId = useId().replace(/:/g, '');
-  const locale = i18n.language?.toLowerCase().startsWith('pl') ? 'pl-PL' : 'en-US';
+  const locale = 'en-US';
   const queryKey = JSON.stringify([mode, debouncedSearch.trim(), date, source, answer, hasReport, page]);
   const [resultQueryKey, setResultQueryKey] = useState<string | null>(null);
 

@@ -535,7 +535,7 @@ def _build_wojewodztwo_border_count_eq(slots: dict[str, Any], mode: str):
         "left": {"entity": "target_voivodeship", "relation": "borders_voivodeship"},
         "right": {"value": num},
     }
-    return ast, f"Czy województwo graniczy z {num} województwami?"
+    return ast, f"Does the voivodeship border {num} voivodeships?"
 
 
 @register_skeleton(
@@ -556,7 +556,7 @@ def _build_wojewodztwo_border_count_comp(slots: dict[str, Any], mode: str):
         "left": {"entity": "target_voivodeship", "relation": "borders_voivodeship"},
         "right": {"value": num},
     }
-    return ast, f"Czy województwo ma {op.replace('_', ' ')} {num} sąsiadów?"
+    return ast, f"Does the voivodeship have {op.replace('_', ' ')} {num} neighbors?"
 
 
 @register_skeleton(
@@ -579,7 +579,7 @@ def _build_powiat_border_count_eq(slots: dict[str, Any], mode: str):
         "left": {"entity": "target_powiat", "relation": "borders_powiat"},
         "right": {"value": num},
     }
-    return ast, f"Czy powiat graniczy z {num} powiatami?"
+    return ast, f"Does the county border {num} counties?"
 
 
 @register_skeleton(
@@ -601,7 +601,7 @@ def _build_powiat_border_count_comp(slots: dict[str, Any], mode: str):
         "left": {"entity": "target_powiat", "relation": "borders_powiat"},
         "right": {"value": num},
     }
-    return ast, f"Czy powiat graniczy z {op.replace('_', ' ')} {num} powiatami?"
+    return ast, f"Does the county border {op.replace('_', ' ')} {num} counties?"
 
 
 # ------------------------------------------------------------------------------
@@ -958,7 +958,7 @@ def _build_powiat_city_county(slots: dict[str, Any], mode: str):
         "left": {"entity": "target_powiat", "relation": "is_city_county"},
         "right": {"value": 1},
     }
-    return ast, "Czy to miasto na prawach powiatu?"
+    return ast, "Is this a city county?"
 
 
 @register_skeleton(
@@ -974,7 +974,7 @@ def _build_powiat_land_county(slots: dict[str, Any], mode: str):
         "left": {"entity": "target_powiat", "relation": "is_city_county"},
         "right": {"value": 0},
     }
-    return ast, "Czy to powiat ziemski?"
+    return ast, "Is this a land county?"
 
 
 # ==============================================================================

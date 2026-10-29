@@ -17,7 +17,6 @@ import {
   MapPin,
   Layers
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import AdSenseUnit from '../components/AdSenseUnit';
 import { exploreService } from '../services/api';
 import { setPageEditorialEligibility } from '../advertising';
@@ -27,6 +26,14 @@ type CountyTypeFilter = 'all' | 'land' | 'city';
 
 type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
 const GUIDE_IDS: Record<string, string> = { countrydle: 'countrydle', us_statedle: 'us-states', wojewodztwodle: 'wojewodztwa', powiatdle: 'powiaty', flagdle: 'flagdle', europe: 'europe', asia: 'asia', africa: 'africa', americas: 'americas' };
+const regionalDisplay: Record<string, string> = {
+  centrum: 'Central', południe: 'South', 'południowe centrum': 'South central',
+  'południowy wschód': 'Southeast', 'południowy zachód': 'Southwest', północ: 'North',
+  'północne centrum': 'North central', 'północny wschód': 'Northeast',
+  'północny zachód': 'Northwest', wschód: 'East', 'zachodnie centrum': 'West central', zachód: 'West',
+  Białoruś: 'Belarus', Czechy: 'Czechia', Litwa: 'Lithuania', Niemcy: 'Germany',
+  Rosja: 'Russia', Słowacja: 'Slovakia', Ukraina: 'Ukraine',
+};
 
 function foldPolish(str: string): string {
   return str
@@ -50,7 +57,7 @@ function MiniLicensePlate({ plates }: { plates: string[] }) {
         <span
           key={plate}
           className="inline-flex items-stretch overflow-hidden rounded-[3px] border border-zinc-400 bg-white text-obsidian-950 shadow-xs font-mono"
-          title={`Tablica rejestracyjna: ${plate}`}
+          title={`Registration plate: ${plate}`}
         >
           <span className="flex flex-col items-center justify-center bg-[#003399] px-1 py-0.5 text-[7px] font-bold leading-none text-white">
             PL
@@ -77,8 +84,6 @@ function rememberView(key: string, value: string) {
 }
 
 export default function ExplorePage() {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
 
   const [activeTab, updateActiveTab] = useState<TabType>(() => {
     const tab = initialView().get('tab');
@@ -226,7 +231,7 @@ export default function ExplorePage() {
       const data = await exploreService.getPowiatDetail(nameOrId);
       setSelectedPowiat(data);
     } catch {
-      setModalError(isPl ? 'Nie udało się wczytać karty powiatu.' : 'The county fact sheet could not be loaded. Close it and try again.');
+      setModalError('The county fact sheet could not be loaded. Close it and try again.');
     } finally {
       setModalLoading(false);
     }
@@ -401,15 +406,13 @@ export default function ExplorePage() {
       <header className="border-b border-white/10 pb-6 text-center sm:text-left">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-emerald-400">
           <Globe size={13} />
-          <span>{isPl ? 'Atlas geograficzny i heraldyczny' : 'Geographic & Heraldic Knowledge Base'}</span>
+          <span>{'Geographic & Heraldic Knowledge Base'}</span>
         </div>
         <h1 className="font-serif text-3xl font-bold tracking-tight text-sand-100 sm:text-5xl">
-          {isPl ? 'Atlas Geograficzny, Herby Powiatów i Przewodnik' : 'Geography Atlas, County Coats of Arms & Guides'}
+          {'Geography Atlas, County Coats of Arms & Guides'}
         </h1>
         <p className="mt-3 max-w-3xl text-sm sm:text-base leading-7 text-zinc-300">
-          {isPl
-            ? 'Przeglądaj wszystkie 380 polskich powiatów wraz z oficjalnymi herbami, wyróżnikami tablic rejestracyjnych i faktami, 16 województw, 195 państw świata z flagami oraz 50 stanów USA.'
-            : 'Explore all 380 Polish counties with official coats of arms, registration plate codes and basic facts, 16 Polish voivodeships, 195 world countries with flags, 50 US states, and deduction strategy guides.'}
+          {'Explore all 380 Polish counties with official coats of arms, registration plate codes and basic facts, 16 Polish voivodeships, 195 world countries with flags, 50 US states, and deduction strategy guides.'}
         </p>
 
         {/* Redesigned Category Cards Switcher */}
@@ -431,10 +434,10 @@ export default function ExplorePage() {
             </div>
             <div className="mt-2.5">
               <div className="font-serif text-sm font-bold text-sand-100">
-                {isPl ? 'Powiaty i Herby' : 'Polish Counties'}
+                {'Polish Counties'}
               </div>
               <div className="mt-0.5 text-[11px] text-zinc-400">
-                {isPl ? 'Herby, tablice i fakty' : 'Coats of arms & facts'}
+                {'Coats of arms & facts'}
               </div>
             </div>
           </button>
@@ -456,10 +459,10 @@ export default function ExplorePage() {
             </div>
             <div className="mt-2.5">
               <div className="font-serif text-sm font-bold text-sand-100">
-                {isPl ? 'Województwa' : 'Voivodeships'}
+                {'Voivodeships'}
               </div>
               <div className="mt-0.5 text-[11px] text-zinc-400">
-                {isPl ? 'Stolice, TERYT i granice' : 'Polish provinces'}
+                {'Polish provinces'}
               </div>
             </div>
           </button>
@@ -481,10 +484,10 @@ export default function ExplorePage() {
             </div>
             <div className="mt-2.5">
               <div className="font-serif text-sm font-bold text-sand-100">
-                {isPl ? 'Państwa Świata' : 'World Countries'}
+                {'World Countries'}
               </div>
               <div className="mt-0.5 text-[11px] text-zinc-400">
-                {isPl ? 'Flagi, stolice i granice' : 'Flags, capitals & borders'}
+                {'Flags, capitals & borders'}
               </div>
             </div>
           </button>
@@ -506,10 +509,10 @@ export default function ExplorePage() {
             </div>
             <div className="mt-2.5">
               <div className="font-serif text-sm font-bold text-sand-100">
-                {isPl ? 'Stany USA' : 'US States'}
+                {'US States'}
               </div>
               <div className="mt-0.5 text-[11px] text-zinc-400">
-                {isPl ? 'Regiony, rzeki i autostrady' : 'Regions & state facts'}
+                {'Regions & state facts'}
               </div>
             </div>
           </button>
@@ -526,15 +529,15 @@ export default function ExplorePage() {
             <div className="flex w-full items-center justify-between">
               <Compass size={16} className={activeTab === 'modes' ? 'text-emerald-300' : 'text-emerald-400/80'} />
               <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
-                {isPl ? 'Strategie' : 'Guides'}
+                {'Guides'}
               </span>
             </div>
             <div className="mt-2.5">
               <div className="font-serif text-sm font-bold text-sand-100">
-                {isPl ? 'Przewodniki po trybach' : 'Mode Guides'}
+                {'Mode Guides'}
               </div>
               <div className="mt-0.5 text-[11px] text-zinc-400">
-                {isPl ? 'Zasady i taksonomia' : 'Rules & deduction axes'}
+                {'Rules & deduction axes'}
               </div>
             </div>
           </button>
@@ -576,7 +579,7 @@ export default function ExplorePage() {
                     to={`/explore/modes/${GUIDE_IDS[mode.id]}`}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
                   >
-                    <span>{isPl ? 'Czytaj przewodnik i strategię' : 'Read Strategy Guide'}</span>
+                    <span>{'Read Strategy Guide'}</span>
                     <ChevronRight size={14} />
                   </Link>
                   <Link
@@ -584,7 +587,7 @@ export default function ExplorePage() {
                     className="inline-flex items-center gap-1.5 rounded-sm bg-white/10 px-3 py-1.5 text-xs font-medium text-sand-100 hover:bg-emerald-400 hover:text-obsidian-950 transition-colors"
                   >
                     <Play size={12} />
-                    <span>{isPl ? 'Graj teraz' : 'Play Mode'}</span>
+                    <span>{'Play Mode'}</span>
                   </Link>
                 </div>
               </div>
@@ -596,15 +599,13 @@ export default function ExplorePage() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-400">
                 <Compass size={14} aria-hidden="true" />
-                <span>{isPl ? 'Porównanie reguł gry' : 'Daily Game Mechanics'}</span>
+                <span>{'Daily Game Mechanics'}</span>
               </div>
               <h2 id="modes-comparative-overview" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-                {isPl ? 'Sekcja A — Zestawienie porównawcze 9 codziennych trybów geograficznych' : 'Section A — Comparative Overview of All 9 Daily Geography Modes'}
+                {'Section A — Comparative Overview of All 9 Daily Geography Modes'}
               </h2>
               <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
-                {isPl
-                  ? 'Countrydle oferuje 9 wyspecjalizowanych wyzwań geograficznych o zróżnicowanej skali przestrzennej — od globalnej dedukcji 195 suwerennych państw, poprzez kontynentalne podzbiory i heraldykę flagową, aż po jednostki subnarodowe: 50 stanów USA, 16 polskich województw oraz 380 powiatów. Poniższa tabela porządkuje wielkości puli, limity pytań i prób oraz nadrzędne osie dedukcyjne obowiązujące w każdym trybie.'
-                  : 'Countrydle offers 9 specialized daily deductive challenges spanning diverse spatial scales — from global sovereign states down to subnational counties and flags. Each mode balances a tailored question budget against a strict guess limit, rewarding systematic elimination over unstructured guessing. The comparative reference table below summarizes pool dimensions, question constraints, guess allowances, primary geographic axes, and direct links to comprehensive strategy guides.'}
+                {'Countrydle offers 9 specialized daily deductive challenges spanning diverse spatial scales — from global sovereign states down to subnational counties and flags. Each mode balances a tailored question budget against a strict guess limit, rewarding systematic elimination over unstructured guessing. The comparative reference table below summarizes pool dimensions, question constraints, guess allowances, primary geographic axes, and direct links to comprehensive strategy guides.'}
               </p>
             </div>
 
@@ -756,15 +757,13 @@ export default function ExplorePage() {
             <div className="space-y-2 border-b border-white/10 pb-6">
               <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-400">
                 <BookOpen size={14} aria-hidden="true" />
-                <span>{isPl ? 'Zasady dedukcji i taksonomii' : 'Geographic Methodology & Theory'}</span>
+                <span>{'Geographic Methodology & Theory'}</span>
               </div>
               <h2 id="modes-deductive-taxonomies" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-                {isPl ? 'Sekcja B — Podstawowe taksonomie geograficzne i zasady dedukcji' : 'Section B — Core Geographic Taxonomies & Deductive Principles'}
+                {'Section B — Core Geographic Taxonomies & Deductive Principles'}
               </h2>
               <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
-                {isPl
-                  ? 'Skuteczna dedukcja w Countrydle nie opiera się na przypadkowych strzałach, lecz na rygorystycznym podziale zbioru kandydatów przy pomocy jednoznacznych właściwości przestrzennych. Zrozumienie współrzędnych sferycznych, hydrografii morskiej i śródlądowej oraz wielopoziomowych hierarchii administracyjnych pozwala optymalnie wykorzystać skromny budżet pytań.'
-                  : 'Mastering Countrydle requires treating the globe as an interconnected mathematical coordinate system and political-geographic hierarchy. Rather than expending precious questions on subjective traits ("Is it a major power?"), experienced players query well-defined taxonomic boundaries. The educational guides below elucidate three fundamental geographical principles that underpin Countrydle’s deductive engine.'}
+                {'Mastering Countrydle requires treating the globe as an interconnected mathematical coordinate system and political-geographic hierarchy. Rather than expending precious questions on subjective traits ("Is it a major power?"), experienced players query well-defined taxonomic boundaries. The educational guides below elucidate three fundamental geographical principles that underpin Countrydle’s deductive engine.'}
               </p>
             </div>
 
@@ -913,11 +912,7 @@ export default function ExplorePage() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={
                   activeTab === 'powiats'
-                    ? isPl
-                      ? 'Szukaj powiatu, siedziby lub tablicy rejestracyjnej (np. KRA, PO, BI, krakowski)...'
-                      : 'Search county name, seat, or license plate prefix (e.g. KRA, PO, BI, krakowski)...'
-                    : isPl
-                    ? 'Szukaj po nazwie, stolicy lub kodzie...'
+                    ? 'Search county name, seat, or license plate prefix (e.g. KRA, PO, BI, krakowski)...'
                     : 'Search by name, capital, or code...'
                 }
                 className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-2.5 pl-10 pr-9 text-sm text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
@@ -945,7 +940,7 @@ export default function ExplorePage() {
                         : 'text-zinc-400 hover:text-sand-100'
                     }`}
                   >
-                    {isPl ? 'Wszystkie (380)' : 'All (380)'}
+                    {'All (380)'}
                   </button>
                   <button
                     type="button"
@@ -956,7 +951,7 @@ export default function ExplorePage() {
                         : 'text-zinc-400 hover:text-sand-100'
                     }`}
                   >
-                    {isPl ? 'Ziemskie (314)' : 'Land (314)'}
+                    {'Land (314)'}
                   </button>
                   <button
                     type="button"
@@ -967,14 +962,14 @@ export default function ExplorePage() {
                         : 'text-zinc-400 hover:text-sand-100'
                     }`}
                   >
-                    {isPl ? 'Miasta (66)' : 'Cities (66)'}
+                    {'Cities (66)'}
                   </button>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setLightCoatsBackdrop((v) => !v)}
-                  title={isPl ? 'Przełącz jasne/ciemne tło pod herbami' : 'Toggle light/dark backdrop behind coats of arms'}
+                  title={'Toggle light/dark backdrop behind coats of arms'}
                   className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
                     lightCoatsBackdrop
                       ? 'border-amber-400/50 bg-sand-100 text-obsidian-950 font-semibold'
@@ -982,7 +977,7 @@ export default function ExplorePage() {
                   }`}
                 >
                   {lightCoatsBackdrop ? <Sun size={13} /> : <Moon size={13} />}
-                  <span>{lightCoatsBackdrop ? (isPl ? 'Jasne tło' : 'Light shield bg') : (isPl ? 'Ciemne tło' : 'Dark shield bg')}</span>
+                  <span>{lightCoatsBackdrop ? ('Light shield bg') : ('Dark shield bg')}</span>
                 </button>
               </div>
             )}
@@ -991,7 +986,7 @@ export default function ExplorePage() {
           {regions.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="text-[11px] text-zinc-500 mr-1 font-mono uppercase">
-                {activeTab === 'powiats' ? (isPl ? 'Województwo:' : 'Voivodeship:') : 'Region:'}
+                {activeTab === 'powiats' ? ('Voivodeship:') : 'Region:'}
               </span>
               {regions.map((reg) => (
                 <button
@@ -1004,7 +999,7 @@ export default function ExplorePage() {
                       : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
                   }`}
                 >
-                  {reg === 'all' ? (isPl ? 'Wszystkie' : 'All') : reg}
+                  {reg === 'all' ? ('All') : reg}
                 </button>
               ))}
             </div>
@@ -1017,25 +1012,23 @@ export default function ExplorePage() {
         <section className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 font-mono">
             <span>
-              {isPl
-                ? `Wyświetlanie ${filteredPowiats.length} z ${powiats.length || 380} powiatów`
-                : `Showing ${filteredPowiats.length} of ${powiats.length || 380} Polish counties`}
+              {`Showing ${filteredPowiats.length} of ${powiats.length || 380} Polish counties`}
             </span>
             <div className="flex items-center gap-3">
-              <span>{isPl ? 'Kliknij herb, aby powiększyć • Kliknij kartę po pełne dane' : 'Click shield to zoom • Click card for full facts'}</span>
+              <span>{'Click shield to zoom • Click card for full facts'}</span>
               <Link
                 to="/herby-powiatow"
                 className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-emerald-300 hover:bg-emerald-500/25 font-sans font-semibold"
               >
                 <Play size={11} />
-                <span>{isPl ? 'Gra: Herby Powiatów' : 'Play County Coats of Arms'}</span>
+                <span>{'Play County Coats of Arms'}</span>
               </Link>
               <Link
                 to="/quiz-herbow"
                 className="inline-flex items-center gap-1 rounded-sm bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-amber-300 hover:bg-amber-500/25 font-sans font-semibold"
               >
                 <Shield size={11} />
-                <span>{isPl ? 'Quiz 380 Herbów (JetPunk)' : '380 Coats Quiz (JetPunk)'}</span>
+                <span>{'380 Coats Quiz (JetPunk)'}</span>
               </Link>
             </div>
           </div>
@@ -1059,10 +1052,10 @@ export default function ExplorePage() {
                         setInspectedAsset({
                           url: fullCoatUrl,
                           title: p.name,
-                          subtitle: `woj. ${p.voivodeship} • ${p.is_city_county ? (isPl ? 'Miasto na prawach powiatu' : 'City county') : (isPl ? `Siedziba: ${p.seat || '—'}` : `Seat: ${p.seat || '—'}`)}`,
+                          subtitle: `Voivodeship ${p.voivodeship} • ${p.is_city_county ? ('City county') : (`Seat: ${p.seat || '—'}`)}`,
                         });
                       }}
-                      title={isPl ? 'Powiększ herb (pełna jakość SVG)' : 'Inspect coat of arms (full SVG)'}
+                      title={'Inspect coat of arms (full SVG)'}
                       className={`relative h-15 w-13.5 shrink-0 rounded-md border p-1.5 flex items-center justify-center transition-all ${
                         lightCoatsBackdrop
                           ? 'bg-sand-100 border-sand-300 shadow-inner'
@@ -1089,7 +1082,7 @@ export default function ExplorePage() {
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
-                          woj. {p.voivodeship}
+                          Voivodeship {p.voivodeship}
                         </span>
                         <span
                           className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase ${
@@ -1099,11 +1092,7 @@ export default function ExplorePage() {
                           }`}
                         >
                           {p.is_city_county
-                            ? isPl
-                              ? 'Miasto n.p.p.'
-                              : 'City county'
-                            : isPl
-                            ? 'Powiat ziemski'
+                            ? 'City county'
                             : 'Land county'}
                         </span>
                       </div>
@@ -1120,21 +1109,21 @@ export default function ExplorePage() {
 
                   <div className="pt-2.5 border-t border-white/5 grid grid-cols-3 gap-2 text-[11px] text-zinc-400 font-mono">
                     <div className="truncate">
-                      <span className="text-zinc-500 block text-[10px]">{isPl ? 'Siedziba' : 'Seat'}</span>
+                      <span className="text-zinc-500 block text-[10px]">{'Seat'}</span>
                       <span className="text-sand-100 truncate block" title={p.seat || '—'}>
                         {p.seat || '—'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-zinc-500 block text-[10px]">{isPl ? 'Ludność' : 'Pop.'}</span>
+                      <span className="text-zinc-500 block text-[10px]">{'Pop.'}</span>
                       <span className="text-sand-100 block">
-                        {p.population ? Number(p.population).toLocaleString() : '—'}
+                        {p.population ? Number(p.population).toLocaleString('en-US') : '—'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-zinc-500 block text-[10px]">{isPl ? 'Obszar' : 'Area'}</span>
+                      <span className="text-zinc-500 block text-[10px]">{'Area'}</span>
                       <span className="text-sand-100 block">
-                        {p.area_km2 ? `${Number(p.area_km2).toLocaleString()} km²` : '—'}
+                        {p.area_km2 ? `${Number(p.area_km2).toLocaleString('en-US')} km²` : '—'}
                       </span>
                     </div>
                   </div>
@@ -1146,9 +1135,7 @@ export default function ExplorePage() {
           {totalPowiatPages > 1 && (
             <div className="flex items-center justify-between border-t border-white/10 pt-4 font-mono text-xs text-zinc-400">
               <span>
-                {isPl
-                  ? `Strona ${powiatPage} z ${totalPowiatPages} (${filteredPowiats.length} powiatów)`
-                  : `Page ${powiatPage} of ${totalPowiatPages} (${filteredPowiats.length} counties)`}
+                {`Page ${powiatPage} of ${totalPowiatPages} (${filteredPowiats.length} counties)`}
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -1157,7 +1144,7 @@ export default function ExplorePage() {
                   onClick={() => setPowiatPage((p) => Math.max(1, p - 1))}
                   className="rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-sand-100 hover:border-emerald-400 disabled:opacity-40 cursor-pointer"
                 >
-                  {isPl ? 'Poprzednia' : 'Previous'}
+                  {'Previous'}
                 </button>
                 <button
                   type="button"
@@ -1165,7 +1152,7 @@ export default function ExplorePage() {
                   onClick={() => setPowiatPage((p) => Math.min(totalPowiatPages, p + 1))}
                   className="rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-sand-100 hover:border-emerald-400 disabled:opacity-40 cursor-pointer"
                 >
-                  {isPl ? 'Następna' : 'Next'}
+                  {'Next'}
                 </button>
               </div>
             </div>
@@ -1220,7 +1207,7 @@ export default function ExplorePage() {
                   </div>
                   <div>
                     <span className="text-zinc-600 block">Population</span>
-                    <span className="text-sand-100 block">{c.population ? Number(c.population).toLocaleString() : 'N/A'}</span>
+                    <span className="text-sand-100 block">{c.population ? Number(c.population).toLocaleString('en-US') : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -1265,7 +1252,7 @@ export default function ExplorePage() {
                   </div>
                   <div>
                     <span className="text-zinc-600 block">Population</span>
-                    <span className="text-sand-100 block">{s.population ? Number(s.population).toLocaleString() : 'N/A'}</span>
+                    <span className="text-sand-100 block">{s.population ? Number(s.population).toLocaleString('en-US') : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -1294,23 +1281,23 @@ export default function ExplorePage() {
                     <span className="font-mono text-xs font-bold text-emerald-400">
                       TERYT {v.teryt}
                     </span>
-                    <span className="text-[11px] text-zinc-500">{v.macroregion}</span>
+                    <span className="text-[11px] text-zinc-500">{regionalDisplay[v.macroregion] ?? v.macroregion}</span>
                   </div>
                   <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
                     {v.name}
                   </h4>
                   <p className="text-xs text-zinc-400">
-                    Siedziba: <strong className="text-sand-100">{v.seat}</strong>
+                    Administrative seat: <strong className="text-sand-100">{v.seat}</strong>
                   </p>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
                   <div>
-                    <span className="text-zinc-600 block">Powiaty</span>
+                    <span className="text-zinc-600 block">Counties</span>
                     <span className="text-sand-100 block">{v.powiat_count}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 block">Urbanizacja</span>
+                    <span className="text-zinc-600 block">Urbanization</span>
                     <span className="text-sand-100 block">{v.urbanization_percent}%</span>
                   </div>
                 </div>
@@ -1335,7 +1322,7 @@ export default function ExplorePage() {
             <button 
               type="button" 
               onClick={() => setSelectedCountry(null)}
-              aria-label={isPl ? 'Zamknij szczegóły kraju' : 'Close country details'}
+              aria-label={'Close country details'}
               className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
             >
               <X size={20} />
@@ -1360,11 +1347,11 @@ export default function ExplorePage() {
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Population</span>
-                <span className="font-bold text-sand-100">{Number(selectedCountry.population).toLocaleString()}</span>
+                <span className="font-bold text-sand-100">{Number(selectedCountry.population).toLocaleString('en-US')}</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Area (km²)</span>
-                <span className="font-bold text-sand-100">{Number(selectedCountry.area_km2).toLocaleString()}</span>
+                <span className="font-bold text-sand-100">{Number(selectedCountry.area_km2).toLocaleString('en-US')}</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Driving Side</span>
@@ -1455,7 +1442,7 @@ export default function ExplorePage() {
             <button 
               type="button" 
               onClick={() => setSelectedState(null)}
-              aria-label={isPl ? 'Zamknij szczegóły stanu' : 'Close state details'}
+              aria-label={'Close state details'}
               className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
             >
               <X size={20} />
@@ -1480,11 +1467,11 @@ export default function ExplorePage() {
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Population</span>
-                <span className="font-bold text-sand-100">{Number(selectedState.population).toLocaleString()}</span>
+                <span className="font-bold text-sand-100">{Number(selectedState.population).toLocaleString('en-US')}</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Area (sq mi)</span>
-                <span className="font-bold text-sand-100">{Number(selectedState.area_sq_mi).toLocaleString()}</span>
+                <span className="font-bold text-sand-100">{Number(selectedState.area_sq_mi).toLocaleString('en-US')}</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
                 <span className="text-zinc-500 block">Admission Year</span>
@@ -1555,7 +1542,7 @@ export default function ExplorePage() {
             <button 
               type="button" 
               onClick={() => setSelectedVoivodeship(null)}
-              aria-label={isPl ? 'Zamknij szczegóły województwa' : 'Close voivodeship details'}
+              aria-label={'Close voivodeship details'}
               className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
             >
               <X size={20} />
@@ -1563,31 +1550,31 @@ export default function ExplorePage() {
 
             <header className="border-b border-white/10 pb-4">
               <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
-                TERYT {selectedVoivodeship.teryt} &bull; Makroregion {selectedVoivodeship.macroregion}
+                TERYT {selectedVoivodeship.teryt} &bull; Macroregion {regionalDisplay[selectedVoivodeship.macroregion] ?? selectedVoivodeship.macroregion}
               </span>
               <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
-                Województwo {selectedVoivodeship.name}
+                {selectedVoivodeship.name} Voivodeship
               </h2>
               <p className="text-xs text-zinc-400 mt-1">
-                Siedziba władz: <strong className="text-sand-100">{selectedVoivodeship.seat}</strong>
+                Administrative seat: <strong className="text-sand-100">{selectedVoivodeship.seat}</strong>
               </p>
             </header>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
               <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Liczba ludności</span>
-                <span className="font-bold text-sand-100">{Number(selectedVoivodeship.population).toLocaleString()}</span>
+                <span className="text-zinc-500 block">Population</span>
+                <span className="font-bold text-sand-100">{Number(selectedVoivodeship.population).toLocaleString('en-US')}</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Powierzchnia</span>
-                <span className="font-bold text-sand-100">{Number(selectedVoivodeship.area_km2).toLocaleString()} km²</span>
+                <span className="text-zinc-500 block">Area</span>
+                <span className="font-bold text-sand-100">{Number(selectedVoivodeship.area_km2).toLocaleString('en-US')} km²</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Liczba powiatów</span>
+                <span className="text-zinc-500 block">Counties</span>
                 <span className="font-bold text-sand-100">{selectedVoivodeship.powiat_count}</span>
               </div>
               <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Urbanizacja</span>
+                <span className="text-zinc-500 block">Urbanization</span>
                 <span className="font-bold text-sand-100">{selectedVoivodeship.urbanization_percent}%</span>
               </div>
             </div>
@@ -1595,7 +1582,7 @@ export default function ExplorePage() {
             <div className="space-y-4 text-xs">
               {selectedVoivodeship.neighboring_voivodeships && selectedVoivodeship.neighboring_voivodeships.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Sąsiadujące województwa ({selectedVoivodeship.neighboring_voivodeships.length}):</span>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Neighboring voivodeships ({selectedVoivodeship.neighboring_voivodeships.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedVoivodeship.neighboring_voivodeships.map((v: string) => (
                       <span key={v} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
@@ -1608,11 +1595,11 @@ export default function ExplorePage() {
 
               {selectedVoivodeship.neighboring_countries && selectedVoivodeship.neighboring_countries.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Granica z państwami:</span>
+                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Bordering countries:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedVoivodeship.neighboring_countries.map((c: string) => (
                       <span key={c} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded">
-                        {c}
+                        {regionalDisplay[c] ?? c}
                       </span>
                     ))}
                   </div>
@@ -1626,14 +1613,14 @@ export default function ExplorePage() {
                 className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
               >
                 <Play size={13} />
-                <span>Zagraj w Województwodle</span>
+                <span>Play Województwodle</span>
               </Link>
               <button 
                 type="button" 
                 onClick={() => setSelectedVoivodeship(null)}
                 className="text-xs text-zinc-400 hover:text-white"
               >
-                Zamknij kartę
+                Close fact sheet
               </button>
             </div>
           </div>
@@ -1655,7 +1642,7 @@ export default function ExplorePage() {
             <button
               type="button"
               onClick={() => setSelectedPowiat(null)}
-              aria-label={isPl ? 'Zamknij kartę powiatu' : 'Close county details'}
+              aria-label={'Close county details'}
               className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
             >
               <X size={20} />
@@ -1671,7 +1658,7 @@ export default function ExplorePage() {
                   setInspectedAsset({
                     url: resolvePowiatCoatUrl(selectedPowiat.id),
                     title: selectedPowiat.name,
-                    subtitle: `woj. ${selectedPowiat.voivodeship}`,
+                    subtitle: `Voivodeship ${selectedPowiat.voivodeship}`,
                   });
                 }}
                 onKeyDown={(e) => {
@@ -1681,11 +1668,11 @@ export default function ExplorePage() {
                     setInspectedAsset({
                       url: resolvePowiatCoatUrl(selectedPowiat.id),
                       title: selectedPowiat.name,
-                      subtitle: `woj. ${selectedPowiat.voivodeship}`,
+                      subtitle: `Voivodeship ${selectedPowiat.voivodeship}`,
                     });
                   }
                 }}
-                aria-label={isPl ? 'Powiększ herb powiatu' : 'Inspect county coat of arms'}
+                aria-label={'Inspect county coat of arms'}
                 className={`group relative h-32 w-28 shrink-0 rounded-lg border p-3 flex items-center justify-center cursor-zoom-in transition-all ${
                   lightCoatsBackdrop
                     ? 'bg-sand-100 border-sand-300 shadow-md'
@@ -1708,7 +1695,7 @@ export default function ExplorePage() {
               <div className="flex-1 text-center sm:text-left space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <span className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
-                    Województwo {selectedPowiat.voivodeship}
+                    {selectedPowiat.voivodeship} Voivodeship
                   </span>
                   {selectedPowiat.terc && (
                     <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5 font-mono text-[11px] text-zinc-400">
@@ -1722,13 +1709,7 @@ export default function ExplorePage() {
                         : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                     }`}
                   >
-                    {selectedPowiat.is_city_county
-                      ? isPl
-                        ? 'Miasto na prawach powiatu'
-                        : 'City with county rights'
-                      : isPl
-                      ? 'Powiat ziemski'
-                      : 'Land county (Powiat ziemski)'}
+                    {selectedPowiat.is_city_county ? 'City with county rights' : 'Land county'}
                   </span>
                 </div>
 
@@ -1739,14 +1720,14 @@ export default function ExplorePage() {
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1">
                   {selectedPowiat.seat && (
                     <span className="text-xs text-zinc-300">
-                      {isPl ? 'Siedziba władz:' : 'County Seat:'}{' '}
+                      {'County Seat:'}{' '}
                       <strong className="text-sand-100">{selectedPowiat.seat}</strong>
                     </span>
                   )}
                   {selectedPowiat.registration_plates && selectedPowiat.registration_plates.length > 0 && (
                     <div className="inline-flex items-center gap-1.5">
                       <span className="text-xs text-zinc-400 font-mono">
-                        {isPl ? 'Tablice:' : 'Plates:'}
+                        {'Plates:'}
                       </span>
                       <MiniLicensePlate plates={selectedPowiat.registration_plates} />
                     </div>
@@ -1758,27 +1739,27 @@ export default function ExplorePage() {
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{isPl ? 'Ludność' : 'Population'}</span>
+                <span className="text-zinc-500 block">{'Population'}</span>
                 <span className="font-bold text-sand-100 text-sm">
-                  {selectedPowiat.population ? Number(selectedPowiat.population).toLocaleString() : '—'}
+                  {selectedPowiat.population ? Number(selectedPowiat.population).toLocaleString('en-US') : '—'}
                 </span>
               </div>
               <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{isPl ? 'Powierzchnia' : 'Area'}</span>
+                <span className="text-zinc-500 block">{'Area'}</span>
                 <span className="font-bold text-sand-100 text-sm">
-                  {selectedPowiat.area_km2 ? `${Number(selectedPowiat.area_km2).toLocaleString()} km²` : '—'}
+                  {selectedPowiat.area_km2 ? `${Number(selectedPowiat.area_km2).toLocaleString('en-US')} km²` : '—'}
                 </span>
               </div>
               <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{isPl ? 'Gęstość zaludnienia' : 'Density'}</span>
+                <span className="text-zinc-500 block">{'Density'}</span>
                 <span className="font-bold text-sand-100 text-sm">
                   {selectedPowiat.population_density
-                    ? `${Math.round(Number(selectedPowiat.population_density)).toLocaleString()} os./km²`
+                    ? `${Math.round(Number(selectedPowiat.population_density)).toLocaleString('en-US')} people/km²`
                     : '—'}
                 </span>
               </div>
               <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{isPl ? 'Liczba gmin' : 'Municipalities'}</span>
+                <span className="text-zinc-500 block">{'Municipalities'}</span>
                 <span className="font-bold text-sand-100 text-sm">
                   {selectedPowiat.gmina_count ?? '—'}
                   {selectedPowiat.urbanization_percent != null
@@ -1793,9 +1774,7 @@ export default function ExplorePage() {
               {selectedPowiat.neighboring_powiats && selectedPowiat.neighboring_powiats.length > 0 && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl
-                      ? `Sąsiednie powiaty (${selectedPowiat.neighboring_powiats.length}) — kliknij, aby przejść:`
-                      : `Neighboring Counties (${selectedPowiat.neighboring_powiats.length}) — click to inspect:`}
+                    {`Neighboring Counties (${selectedPowiat.neighboring_powiats.length}) — click to inspect:`}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.neighboring_powiats.map((np: string) => (
@@ -1815,12 +1794,12 @@ export default function ExplorePage() {
               {selectedPowiat.neighboring_voivodeships && selectedPowiat.neighboring_voivodeships.length > 0 && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl ? 'Granica z innymi województwami:' : 'Borders with other Voivodeships:'}
+                    {'Borders with other Voivodeships:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.neighboring_voivodeships.map((nv: string) => (
                       <span key={nv} className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/25 text-purple-300 rounded">
-                        woj. {nv}
+                        Voivodeship {nv}
                       </span>
                     ))}
                   </div>
@@ -1830,12 +1809,12 @@ export default function ExplorePage() {
               {selectedPowiat.neighboring_countries && selectedPowiat.neighboring_countries.length > 0 && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl ? 'Granica państwowa:' : 'International Border:'}
+                    {'International Border:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.neighboring_countries.map((nc: string) => (
                       <span key={nc} className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded font-semibold">
-                        {nc}
+                        {regionalDisplay[nc] ?? nc}
                       </span>
                     ))}
                   </div>
@@ -1847,7 +1826,7 @@ export default function ExplorePage() {
                 (selectedPowiat.lakes && selectedPowiat.lakes.length > 0)) && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl ? 'Rzeki, jeziora i dostęp do wód:' : 'Rivers, Lakes & Water Bodies:'}
+                    {'Rivers, Lakes & Water Bodies:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(selectedPowiat.water_access || []).map((w: string) => (
@@ -1857,12 +1836,12 @@ export default function ExplorePage() {
                     ))}
                     {(selectedPowiat.major_rivers || []).map((r: string) => (
                       <span key={`r-${r}`} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
-                        rz. {r}
+                        River {r}
                       </span>
                     ))}
                     {(selectedPowiat.lakes || []).map((l: string) => (
                       <span key={`l-${l}`} className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-sky-300 rounded">
-                        jez. {l}
+                        Lake {l}
                       </span>
                     ))}
                   </div>
@@ -1872,7 +1851,7 @@ export default function ExplorePage() {
               {selectedPowiat.major_roads && selectedPowiat.major_roads.length > 0 && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl ? 'Główne szlaki drogowe:' : 'Major Highways & National Roads:'}
+                    {'Major Highways & National Roads:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.major_roads.map((rd: string) => (
@@ -1888,7 +1867,7 @@ export default function ExplorePage() {
                 (selectedPowiat.historical_regions && selectedPowiat.historical_regions.length > 0)) && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl ? 'Krainy geograficzne i historyczne:' : 'Geographic & Historical Regions:'}
+                    {'Geographic & Historical Regions:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(selectedPowiat.landform_regions || []).map((reg: string) => (
@@ -1910,7 +1889,7 @@ export default function ExplorePage() {
                 (selectedPowiat.unesco_sites && selectedPowiat.unesco_sites.length > 0)) && (
                 <div>
                   <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
-                    {isPl ? 'Parki narodowe, uzdrowiska i dziedzictwo:' : 'National Parks, Health Resorts & UNESCO:'}
+                    {'National Parks, Health Resorts & UNESCO:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(selectedPowiat.national_parks || []).map((np: string) => (
@@ -1920,7 +1899,7 @@ export default function ExplorePage() {
                     ))}
                     {(selectedPowiat.health_resorts || []).map((hr: string) => (
                       <span key={`res-${hr}`} className="px-2 py-0.5 bg-teal-500/15 border border-teal-500/30 text-teal-300 rounded">
-                        Uzdrowisko: {hr}
+                        Health resort: {hr}
                       </span>
                     ))}
                     {(selectedPowiat.unesco_sites || []).map((u: string) => (
@@ -1940,14 +1919,14 @@ export default function ExplorePage() {
                   className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
                 >
                   <Shield size={13} />
-                  <span>{isPl ? 'Zagraj w Herby Powiatów' : 'Play County Coats of Arms'}</span>
+                  <span>{'Play County Coats of Arms'}</span>
                 </Link>
                 <Link
                   to="/powiaty"
                   className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors"
                 >
                   <Play size={13} />
-                  <span>{isPl ? 'Zagraj w Powiatdle' : 'Play Powiatdle'}</span>
+                  <span>{'Play Powiatdle'}</span>
                 </Link>
               </div>
               <button
@@ -1955,7 +1934,7 @@ export default function ExplorePage() {
                 onClick={() => setSelectedPowiat(null)}
                 className="text-xs text-zinc-400 hover:text-white cursor-pointer"
               >
-                {isPl ? 'Zamknij kartę' : 'Close Fact Sheet'}
+                {'Close Fact Sheet'}
               </button>
             </div>
           </div>
@@ -2023,7 +2002,7 @@ export default function ExplorePage() {
               >
                 {lightCoatsBackdrop ? <Sun size={14} /> : <Moon size={14} />}
                 <span className="hidden sm:inline">
-                  {lightCoatsBackdrop ? (isPl ? 'Jasne tło' : 'Light bg') : (isPl ? 'Ciemne tło' : 'Dark bg')}
+                  {lightCoatsBackdrop ? ('Light bg') : ('Dark bg')}
                 </span>
               </button>
               <button

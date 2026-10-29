@@ -144,7 +144,7 @@ async def analyze_and_answer_locally(
             question=plan.improved_question,
             valid=False,
             answer=None,
-            explanation=plan.explanation or plan.fallback_reason or "Niepoprawne pytanie.",
+            explanation=plan.explanation or plan.fallback_reason or "Invalid question.",
             context="local_planner:invalid",
             intent=plan.explanation,
             required_info=plan.fallback_reason,
@@ -169,7 +169,7 @@ async def analyze_and_answer_locally(
         target_names.add(powiat.nazwa)
         if powiat.nazwa.startswith("Powiat "):
             target_names.add(powiat.nazwa.replace("Powiat ", "", 1).strip())
-    clean_exp = sanitize_explanation_for_player(answer.explanation, target_names, "ten powiat")
+    clean_exp = sanitize_explanation_for_player(answer.explanation, target_names, "this county")
     return PowiatQuestionCreate(
         user_id=user.id if user else None,
         day_id=day_powiat.id,
@@ -186,53 +186,22 @@ async def analyze_and_answer_locally(
 
 async def enhance_question(question: str) -> PowiatQuestionEnhanced:
     system_prompt = """
-Jesteś ekspertem ds. analizy pytań w grze w zgadywanie polskich powiatów. Twoim celem jest przetworzenie pytań użytkowników na ustrukturyzowany format, który ułatwia dokładne wyszukiwanie informacji.
+You analyze questions for a game about Polish counties. Understand Polish and English
+input identically. Determine whether it is a valid yes/no question about a county,
+including direct identity questions and inclusive lists of possible identities.
+Interpret first-person and pronoun references as referring to the target county.
+Rewrite the main question clearly in English with the county as its subject, and
+describe the user's intent and the specific facts needed to answer it in English.
+Preserve the meaning and names. For invalid or open-ended input, explain why in English.
 
-### Twoje główne obowiązki:
-1. **Analiza semantyczna**: Zrozum prawdziwą intencję pytania użytkownika, niezależnie od języka (polski/angielski) czy sformułowania.
-2. **Walidacja**: Określ, czy dane wejściowe są poprawnym pytaniem Tak/Nie dotyczącym atrybutów powiatu (geografia, przynależność do województwa, symbole, itp.).
-3. **Uproszczenie**: Przepisz pytanie na jasne, atomowe i standaryzowane zdanie w języku polskim, w którym "powiat" jest podmiotem.
-4. **Mapowanie intencji i informacji**: Wyraźnie zdefiniuj, co pytanie próbuje zweryfikować i jakie konkretne punkty danych są potrzebne do odpowiedzi.
+Return strict JSON with question, intent, required_info, valid and explanation.
+For valid input, explanation is null. For invalid input, question, intent and
+required_info are null, valid is false and explanation is a concise reason.
 
-### Wytyczne:
-- **Podmiot**: Uproszczone pytanie MUSI zaczynać się od słowa "powiat" lub skupiać się na nim (np. "Czy powiat...", "Czy w powiecie...").
-- **Odniesienie do encji**: Użytkownik może odnosić się do docelowego powiatu na różne sposoby:
-    - Mówiąc o sobie: "Czy jestem...?", "Czy leżę...?", "Czy mam...?"
-    - Używając "on/to": "Czy on...", "Czy to...", "Czy jest on..."
-    - Używając "powiat": "Czy powiat...", "Czy w powiecie..."
-- **Atomowość**: Jeśli pytanie jest złożone, skup się na głównym zapytaniu.
-
-- **Wymagane informacje**: Bądź precyzyjny co do potrzebnych danych (np. "Lista powiatów sąsiadujących", "Nazwa województwa", "Liczba ludności").
-
-### Format wyjściowy (Strict JSON):
-{
-  "question": "Uproszczone pytanie T/N po polsku",
-  "intent": "Szczegółowy opis intencji użytkownika i tego, co próbuje on ustalić",
-  "required_info": "Konkretne punkty danych potrzebne z bazy danych",
-  "valid": true,
-  "explanation": null
-}
--- LUB jeśli niepoprawne --
-{
-  "question": null,
-  "intent": null,
-  "required_info": null,
-  "valid": false,
-  "explanation": "Jasny powód, dla którego pytanie jest nieprawidłowe (np. to nie jest pytanie T/N, bełkot)"
-}
-
-### Przykłady:
 User: "Czy leży w małopolskim?"
-Output: {"question": "Czy powiat znajduje się w województwie małopolskim?", "intent": "Użytkownik chce zweryfikować przynależność administracyjną powiatu do konkretnego województwa (małopolskiego).", "required_info": "Nazwa województwa, w którym leży powiat", "valid": true, "explanation": null}
-
-User: "Czy to powiat krakowski?"
-Output: {"question": "Czy powiat to powiat krakowski?", "intent": "Użytkownik próbuje bezpośrednio odgadnąć nazwę powiatu, sprawdzając czy jest to powiat krakowski.", "required_info": "Nazwa powiatu", "valid": true, "explanation": null}
-
-User: "Czy to powiat krakowski, wielicki czy poznański?"
-Output: {"question": "Czy powiat to jeden z wymienionych: krakowski, wielicki lub poznański?", "intent": "Użytkownik podaje listę potencjalnych nazw powiatów i chce wiedzieć, czy docelowy powiat znajduje się na tej liście.", "required_info": "Nazwa powiatu", "valid": true, "explanation": null}
-
+Output: {"question": "Is the county in Małopolskie voivodeship?", "intent": "Check the county's administrative location.", "required_info": "County's voivodeship", "valid": true, "explanation": null}
 User: "Powiedz mi coś o nim."
-Output: {"question": null, "intent": null, "required_info": null, "valid": false, "explanation": "To jest prośba otwarta, a nie pytanie Tak/Nie."}
+Output: {"question": null, "intent": null, "required_info": null, "valid": false, "explanation": "This is an open-ended request, not a yes/no question."}
 """
 
     question_prompt = f"""User's Question: {question}"""
@@ -244,7 +213,7 @@ Output: {"question": null, "intent": null, "required_info": null, "valid": false
         question=answer_dict.get("question", None),
         intent=answer_dict.get("intent", None),
         required_info=answer_dict.get("required_info", None),
-        explanation=answer_dict.get("explanation") or ("Brak wyjaśnienia." if not answer_dict["valid"] else None),
+        explanation=answer_dict.get("explanation") or ("No explanation provided." if not answer_dict["valid"] else None),
     )
 
 
@@ -273,20 +242,20 @@ def _build_powiat_verified_facts_block(entity_name: str) -> str:
             voiv_countries = _get_parent_voivodeship_relation(row, "borders_country") or []
             voiv_neighbors = _get_parent_voivodeship_relation(row, "borders_voivodeship") or []
             lines = [
-                f"- Województwo docelowego powiatu: {voiv}",
-                f"- Siedziba powiatu: {row['seat']}",
-                f"- Główne rzeki przepływające przez powiat: {', '.join(powiat_rivers) if powiat_rivers else 'brak w wykazie'}",
+                f"- Target county's voivodeship: {voiv}",
+                f"- County seat: {row['seat']}",
+                f"- Major rivers flowing through the county: {', '.join(powiat_rivers) if powiat_rivers else 'none listed'}",
             ]
             if voiv_rivers:
                 lines.append(
-                    f"- Główne rzeki województwa {voiv} (pełny wykaz): {', '.join(voiv_rivers)} (inne główne rzeki, np. niewymienione powyżej, NIE przepływają przez województwo {voiv})"
+                    f"- Major rivers of {voiv} voivodeship (complete list): {', '.join(voiv_rivers)} (other major rivers not listed do NOT flow through {voiv} voivodeship)"
                 )
             if voiv_neighbors:
-                lines.append(f"- Sąsiednie województwa dla województwa {voiv}: {', '.join(voiv_neighbors)}")
+                lines.append(f"- Voivodeships neighboring {voiv}: {', '.join(voiv_neighbors)}")
             lines.append(
-                f"- Sąsiednie państwa dla województwa {voiv}: {', '.join(voiv_countries) if voiv_countries else 'brak (nie graniczy z obcym państwem)'}"
+                f"- Countries neighboring {voiv} voivodeship: {', '.join(voiv_countries) if voiv_countries else 'none (does not border a foreign country)'}"
             )
-            return "\n### Zweryfikowane fakty z bazy danych (zawsze nadrzędne wobec wiedzy ogólnej):\n" + "\n".join(lines) + "\n"
+            return "\n### Verified database facts (always take precedence over general knowledge):\n" + "\n".join(lines) + "\n"
     except Exception:
         return ""
 
@@ -297,35 +266,31 @@ def answer_prompts(
     """Build the shared daily and explicit-target answer instructions."""
     verified_facts = _build_powiat_verified_facts_block(entity_name)
     system_prompt = f"""
-Jesteś 'Mistrzem Gry' w Powiatdle. Twoim zadaniem jest odpowiedzieć na pytanie Tak/Nie dotyczące konkretnego polskiego powiatu na podstawie dostarczonego kontekstu i Twojej wiedzy ogólnej.
+You are the game master for Powiatdle. Answer the yes/no question about the
+specified Polish county using the supplied context and your general knowledge.
+Interpret Polish and English questions identically. Write the explanation in English.
 
-### Docelowy powiat: {entity_name}
-### Intencja pytania: {question.intent}
-### Wymagane informacje: {question.required_info}
+Target county: {entity_name}
+Question intent: {question.intent}
+Required information: {question.required_info}
 {verified_facts}
-### Fragmenty kontekstu:
+Context:
 {context}
 
-### Twoje instrukcje:
-1. **Analiza kontekstu**: Szukaj konkretnych faktów w dostarczonym kontekście, które bezpośrednio potwierdzają lub zaprzeczają pytaniu.
-2. **Wiedza ogólna**: Jeśli w kontekście brakuje konkretnego faktu, użyj swojej wiedzy wewnętrznej o geografii i administracji Polski, aby udzielić dokładnej odpowiedzi.
-3. **Niepewność**: Jeśli odpowiedzi nie można ustalić z wysoką pewnością, ustaw `answer` na `null`.
-4. **Zasada sąsiedztwa**: Jeśli padnie pytanie, czy powiat sąsiaduje z [X], a docelowym powiatem JEST [X], odpowiedź brzmi ZAWSZE `true`. Traktuj powiat jako sąsiadujący sam ze sobą na potrzeby tej gry.
-5. **Informacyjne Wyjaśnienia**: Napisz `explanation` jako informację o powiecie, która odpowiada na pytanie i podaje szczegóły. Unikaj zaczynania od 'Tak' lub 'Nie' oraz prostego powtarzania odpowiedzi. Wyjaśnienie powinno być zdaniem informacyjnym o powiecie, które uzasadnia odpowiedź Tak/Nie (np. zamiast 'Tak, powiat leży w małopolskim', użyj 'Powiat {entity_name} znajduje się w województwie małopolskim, w południowej części kraju.').
-6. **Obsługa logicznego 'LUB' i list**: Jeśli pytanie zawiera słowo 'lub' lub podaje listę opcji (np. 'Czy to powiat krakowski lub wielicki?'), odpowiedź brzmi `true`, jeśli docelowy powiat pasuje do **przynajmniej jednej** z tych opcji.
+Find facts that confirm or contradict the proposition; use general knowledge of
+Polish geography and administration when context lacks a fact. If the answer cannot
+be determined with high confidence, set answer to null. For this game a county
+borders itself. Treat "or" and lists as inclusive: any matching option is enough.
+Answer about the county in the third person, even for first-person questions.
+Provide an informative factual explanation supporting the answer, rather than
+starting with yes or no or simply repeating it.
 
-7. **Perspektywa użytkownika**: Jeśli użytkownik odnosi się do siebie jako do powiatu (np. "Czy jestem w małopolskim?"), powinieneś nadal odpowiadać o powiecie w trzeciej osobie (np. "Powiat {entity_name} leży w województwie małopolskim"), aby zachować rzeczowy i informacyjny ton.
-
-### Format wyjściowy (Strict JSON):
-{{
-    "explanation": "Informacyjne stwierdzenie faktyczne o powiecie.",
-    "answer": true | false | null
-}}
+Return strict JSON: {{"explanation": "Informative factual statement in English.", "answer": true | false | null}}
 """
 
 
-    question_prompt = f"""Oryginalne pytanie użytkownika: {question.original_question}
-Uproszczone pytanie: {question.question}"""
+    question_prompt = f"""Original user question: {question.original_question}
+Simplified question: {question.question}"""
     return system_prompt, question_prompt
 
 
@@ -375,9 +340,9 @@ async def ask_question(
         question=question.question,
         answer=answer_dict.get("answer"),
         explanation=sanitize_explanation_for_player(
-            answer_dict.get("explanation") or "Brak wyjaśnienia.",
+            answer_dict.get("explanation") or "No explanation provided.",
             {powiat.nazwa, powiat.nazwa.replace("Powiat ", "", 1).strip()} if powiat.nazwa.startswith("Powiat ") else {powiat.nazwa},
-            "ten powiat",
+            "this county",
         ),
         context=context,
     )

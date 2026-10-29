@@ -147,3 +147,36 @@ def test_english_powiatdle_and_wojewodztwodle_templates():
     assert res is not None and res[0]["right"]["value"] is True
     res = compile_generic_template_plan("does the Vistula river flow through it?", "wojewodztwodle")
     assert res is not None and res[0]["right"]["value"] == "Wisła"
+
+
+@pytest.mark.parametrize("question", [
+    "czy jest to miasto na prawach powiatu?",
+    "is it a city county?",
+])
+def test_city_county_wording_is_english_for_both_input_languages(question):
+    ast, improved = compile_generic_template_plan(question, "powiatdle")
+    assert ast["operator"] == "equals"
+    assert ast["left"] == {"entity": "target_powiat", "relation": "is_city_county"}
+    assert ast["right"]["value"] == 1
+    assert "city county" in improved.lower()
+    assert improved.rstrip().endswith("?")
+
+
+@pytest.mark.parametrize("question", [
+    "czy to województwo graniczy z Niemcami?",
+    "does it border Germany?",
+])
+def test_voivodeship_border_wording_is_english_for_both_input_languages(question):
+    ast, improved = compile_generic_template_plan(question, "wojewodztwodle")
+    assert ast["left"]["relation"] == "borders_country"
+    assert ast["right"]["value"] == "Niemcy"
+    assert "border" in improved.lower()
+    assert "Germany" in improved
+
+
+@pytest.mark.parametrize("question", ["jaka jest stolica?", "what is the capital?"])
+def test_open_ended_clarification_is_english_for_both_input_languages(question):
+    clarification = check_generic_open_ended_question(question)
+    assert clarification is not None
+    assert "yes/no" in clarification.lower()
+    assert "question" in clarification.lower()

@@ -59,7 +59,7 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
   onRefresh,
   onTestInQA,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState('all');
   const [autoRefreshSecs, setAutoRefreshSecs] = useState(10);
   const [modeSnapshotReady, setModeSnapshotReady] = useState(false);
@@ -113,7 +113,7 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
   };
   const hasCurrentSnapshot = hasLoaded && modeSnapshotReady;
   const visibleData = hasCurrentSnapshot ? data : EMPTY_FEED;
-  const dateLocale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const dateLocale = 'en-US';
   const lastUpdated = formatTimestamp(lastUpdatedAt, dateLocale);
 
   const renderQuestion = (question: LiveQuestionItem) => {

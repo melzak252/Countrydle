@@ -142,7 +142,6 @@ def test_compile_supported_templates(question, operator, relation, value):
     "Does the capital touch South America?",
 
     # Compound / slash questions (must fall through to Gemini)
-    "czy ma dostep do morza/oceanu?",
     "sea/ocean access?",
     "west/east coast?",
 
@@ -201,6 +200,8 @@ def test_open_ended_driving_side_questions_reject_with_clarification():
     for q in queries:
         res = check_open_ended_question(q)
         assert res is not None, f"Expected open-ended clarification for {q}"
+        assert "yes/no" in res.lower()
+        assert "question" in res.lower()
 
 
 def test_local_planner_rejects_open_ended_questions():
@@ -212,6 +213,34 @@ def test_local_planner_rejects_open_ended_questions():
         assert plan.plan is None
         assert plan.explanation is not None
 
+
+
+@pytest.mark.parametrize("question", [
+    "Does it border Germany?",
+    "Czy graniczy z Niemcami?",
+])
+def test_border_rewrite_is_english_for_both_input_languages(question):
+    plan, improved = compile_template_plan(question)
+    assert plan[0]["operator"] == "contains"
+    assert plan[0]["left"]["relation"] == "borders_country"
+    assert plan[0]["right"]["value"] == "Germany"
+    assert "border" in improved.lower()
+    assert "Germany" in improved
+    assert improved.rstrip().endswith("?")
+
+
+@pytest.mark.parametrize("question", [
+    "Is it in Europe?",
+    "Czy leży w Europie?",
+])
+def test_continent_rewrite_is_english_for_both_input_languages(question):
+    plan, improved = compile_template_plan(question)
+    assert plan[0]["operator"] == "contains"
+    assert plan[0]["left"]["relation"] == "continent"
+    assert plan[0]["right"]["value"] == "Europe"
+    assert "country" in improved.lower()
+    assert "Europe" in improved
+    assert improved.rstrip().endswith("?")
 
 def test_flag_symbol_moon_and_crescent_matching():
     from countrydle.local_planner import analyze_question_for_local_plan

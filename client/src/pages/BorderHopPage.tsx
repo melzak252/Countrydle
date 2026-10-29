@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+
 import {
   Route,
   ArrowRight,
@@ -36,8 +36,8 @@ function getErrorDetail(err: unknown): string | undefined {
 }
 
 export default function BorderHopPage() {
-  const { i18n } = useTranslation();
-  const isPl = i18n.language.startsWith('pl');
+  
+  
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Mode from URL query or default
@@ -92,9 +92,7 @@ export default function BorderHopPage() {
       if (!data.connected || !data.start) {
         setError(
           data.message ||
-            (isPl
-              ? 'Nie można połączyć wybranych terytoriów drogą lądową.'
-              : 'Unable to establish a land-border connection for this target.')
+            ('Unable to establish a land-border connection for this target.')
         );
         setStatus('error');
         setChallenge(data);
@@ -113,9 +111,7 @@ export default function BorderHopPage() {
       const detail = getErrorDetail(err);
       setError(
         detail ||
-          (isPl
-            ? 'Błąd podczas ładowania wyzwania. Wybierz inną trasę.'
-            : 'Failed to load border hop challenge. Please try another route.')
+          ('Failed to load border hop challenge. Please try another route.')
       );
       setStatus('error');
     } finally {
@@ -244,10 +240,10 @@ export default function BorderHopPage() {
     try {
       await navigator.clipboard.writeText(shareText);
       setCopied(true);
-      toast.success(isPl ? 'Skopiowano wynik do schowka!' : 'Copied result to clipboard!');
+      toast.success('Copied result to clipboard!');
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error(isPl ? 'Nie udało się skopiować' : 'Failed to copy');
+      toast.error('Failed to copy');
     }
   };
 
@@ -262,16 +258,14 @@ export default function BorderHopPage() {
           <div className="flex items-center gap-2 sm:gap-2.5">
             <Route className="text-emerald-400 shrink-0" size={22} />
             <h1 className="font-mono text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
-              {isPl ? 'Border Hop' : 'Border Hop'}
+              {'Border Hop'}
             </h1>
             <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 shrink-0">
-              {isPl ? 'Mini-gra' : 'Mini-Game'}
+              {'Mini-Game'}
             </span>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">
-            {isPl
-              ? 'Przejdź od terytorium startowego do docelowego wyłącznie przez bezpośrednio graniczące państwa lub stany.'
-              : 'Navigate from start to target exclusively across bordering territories in the fewest hops possible.'}
+            {'Navigate from start to target exclusively across bordering territories in the fewest hops possible.'}
           </p>
         </div>
 
@@ -286,7 +280,7 @@ export default function BorderHopPage() {
                 : 'text-zinc-400 hover:text-sand-100'
             }`}
           >
-            {isPl ? 'Kraje Świata' : 'World Countries'}
+            {'World Countries'}
           </button>
           <button
             type="button"
@@ -297,7 +291,7 @@ export default function BorderHopPage() {
                 : 'text-zinc-400 hover:text-sand-100'
             }`}
           >
-            {isPl ? 'Stany USA' : 'US States'}
+            {'US States'}
           </button>
         </div>
       </div>
@@ -307,7 +301,7 @@ export default function BorderHopPage() {
         <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-8 sm:p-12 text-center space-y-3">
           <Loader2 className="mx-auto h-7 w-7 sm:h-8 sm:w-8 animate-spin text-emerald-400" />
           <p className="font-mono text-xs sm:text-sm text-zinc-300">
-            {isPl ? 'Generowanie wyzwania granic...' : 'Generating border path challenge...'}
+            {'Generating border path challenge...'}
           </p>
         </div>
       ) : error ? (
@@ -317,7 +311,7 @@ export default function BorderHopPage() {
             <AlertCircle className="text-amber-400 shrink-0 mt-0.5" size={18} />
             <div className="space-y-1">
               <h3 className="font-mono text-sm font-semibold text-sand-100">
-                {isPl ? 'Wyzwanie niedostępne' : 'Route Unavailable'}
+                {'Route Unavailable'}
               </h3>
               <p className="text-xs sm:text-sm text-zinc-300">{error}</p>
             </div>
@@ -329,7 +323,7 @@ export default function BorderHopPage() {
               className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-400 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300"
             >
               <Sparkles size={14} className="shrink-0" />
-              <span>{isPl ? 'Losuj inną trasę' : 'Try Another Random Route'}</span>
+              <span>{'Try Another Random Route'}</span>
             </button>
             <button
               type="button"
@@ -337,7 +331,7 @@ export default function BorderHopPage() {
               className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
             >
               <Globe size={14} className="shrink-0" />
-              <span>{isPl ? 'Dzisiejsza trasa dnia' : "Today's Daily Route"}</span>
+              <span>{"Today's Daily Route"}</span>
             </button>
           </div>
         </div>
@@ -347,7 +341,7 @@ export default function BorderHopPage() {
           <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
             <div className="space-y-1 sm:space-y-1.5 min-w-0">
               <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">
-                {isPl ? 'Zadanie trasy' : 'Route Objective'}
+                {'Route Objective'}
               </span>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-xs sm:text-base md:text-xl font-bold font-mono text-sand-100 min-w-0">
                 <span className="max-w-full bg-obsidian-950/80 border border-white/10 px-2 sm:px-2.5 py-1 rounded-xs text-sand-100 break-words [overflow-wrap:anywhere]">
@@ -367,14 +361,14 @@ export default function BorderHopPage() {
             <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 shrink-0">
               <div className="rounded-sm bg-obsidian-950/60 border border-white/10 px-2.5 sm:px-3 py-1.5 sm:py-2 text-center sm:min-w-24">
                 <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                  {isPl ? 'Wykonano' : 'Your Hops'}
+                  {'Your Hops'}
                 </span>
                 <span className="font-mono text-base sm:text-lg font-bold text-sand-100">{currentHops}</span>
               </div>
 
               <div className="rounded-sm bg-obsidian-950/60 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 sm:py-2 text-center sm:min-w-24">
                 <span className="block text-[10px] font-mono uppercase tracking-wider text-emerald-400">
-                  {isPl ? 'Optymalnie' : 'Optimal'}
+                  {'Optimal'}
                 </span>
                 <span className="font-mono text-base sm:text-lg font-bold text-emerald-300">{optimalHops}</span>
               </div>
@@ -389,10 +383,10 @@ export default function BorderHopPage() {
                 onClick={handleUndo}
                 disabled={path.length <= 1 || status === 'won'}
                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                title={isPl ? 'Cofnij ostatni krok' : 'Undo last hop'}
+                title={'Undo last hop'}
               >
                 <Undo2 size={13} className="shrink-0" />
-                <span>{isPl ? 'Cofnij krok' : 'Undo Hop'}</span>
+                <span>{'Undo Hop'}</span>
               </button>
 
               <button
@@ -400,10 +394,10 @@ export default function BorderHopPage() {
                 onClick={handleReset}
                 disabled={path.length <= 1 || status === 'won'}
                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                title={isPl ? 'Resetuj trasę od początku' : 'Reset to starting territory'}
+                title={'Reset to starting territory'}
               >
                 <RotateCcw size={13} className="shrink-0" />
-                <span>{isPl ? 'Reset trasy' : 'Reset'}</span>
+                <span>{'Reset'}</span>
               </button>
             </div>
 
@@ -414,7 +408,7 @@ export default function BorderHopPage() {
                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
               >
                 <Globe size={13} className="shrink-0" />
-                <span>{isPl ? 'Dzienne wyzwanie' : 'Daily Challenge'}</span>
+                <span>{'Daily Challenge'}</span>
               </button>
 
               <button
@@ -423,7 +417,7 @@ export default function BorderHopPage() {
                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm bg-white/10 text-sand-100 hover:bg-white/15 transition-colors font-medium"
               >
                 <Sparkles size={13} className="text-amber-400 shrink-0" />
-                <span>{isPl ? 'Losowa trasa' : 'New Random Route'}</span>
+                <span>{'New Random Route'}</span>
               </button>
             </div>
           </div>
@@ -431,7 +425,7 @@ export default function BorderHopPage() {
           {/* Path Trail (Breadcrumbs) */}
           <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-2.5 sm:p-3.5 space-y-1.5 sm:space-y-2 text-left">
             <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
-              {isPl ? `Twoja trasa (${path.length} etapów)` : `Your Path Trail (${path.length} locations)`}
+              {`Your Path Trail (${path.length} locations)`}
             </span>
             <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
               {path.map((step, idx) => {
@@ -472,19 +466,13 @@ export default function BorderHopPage() {
                   </div>
                   <div>
                     <h2 className="font-mono text-lg sm:text-2xl font-bold text-sand-100">
-                      {isPl ? 'Trasa ukończona!' : 'Route Completed!'}
+                      {'Route Completed!'}
                     </h2>
                     <p className="text-xs sm:text-sm text-emerald-400 font-semibold font-mono">
                       {verification.rank === 'gold'
-                        ? isPl
-                          ? '🥇 Złota Trasa — najkrótsza możliwa ścieżka!'
-                          : '🥇 Gold Route — Shortest Possible Path!'
+                        ? '🥇 Gold Route — Shortest Possible Path!'
                         : verification.rank === 'silver'
-                        ? isPl
-                          ? '🥈 Srebrna Trasa — świetna nawigacja!'
-                          : '🥈 Silver Route — Great Navigation!'
-                        : isPl
-                        ? '🥉 Brązowa Trasa — malowniczy objazd!'
+                        ? '🥈 Silver Route — Great Navigation!'
                         : '🥉 Bronze Route — Scenic Detour!'}
                     </p>
                   </div>
@@ -494,13 +482,13 @@ export default function BorderHopPage() {
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 w-full sm:w-auto self-start sm:self-auto">
                   <div className="rounded-sm bg-obsidian-950 border border-white/10 px-2.5 sm:px-3 py-1.5 text-center">
                     <span className="block text-[10px] font-mono uppercase text-zinc-400">
-                      {isPl ? 'Przeskoki' : 'Hops Taken'}
+                      {'Hops Taken'}
                     </span>
                     <span className="font-mono text-sm sm:text-base font-bold text-sand-100">{verification.hops}</span>
                   </div>
                   <div className="rounded-sm bg-obsidian-950 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 text-center">
                     <span className="block text-[10px] font-mono uppercase text-emerald-400">
-                      {isPl ? 'Optymalnie' : 'Optimal'}
+                      {'Optimal'}
                     </span>
                     <span className="font-mono text-sm sm:text-base font-bold text-emerald-300">
                       {verification.optimal_hops}
@@ -513,7 +501,7 @@ export default function BorderHopPage() {
               {verification.optimal_path && (
                 <div className="space-y-1.5 sm:space-y-2 text-xs">
                   <span className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
-                    {isPl ? 'Optymalna najkrótsza ścieżka:' : 'Optimal Shortest Path:'}
+                    {'Optimal Shortest Path:'}
                   </span>
                   <div className="p-2.5 sm:p-3 rounded-sm bg-obsidian-950/70 border border-white/10 font-mono text-zinc-300 flex flex-wrap items-center gap-1.5">
                     {verification.optimal_path.map((node, i) => (
@@ -536,7 +524,7 @@ export default function BorderHopPage() {
                   className="flex items-center gap-2 rounded-sm bg-emerald-400 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-md cursor-pointer"
                 >
                   {copied ? <Check size={14} /> : <Share2 size={14} />}
-                  <span>{copied ? (isPl ? 'Skopiowano!' : 'Copied!') : (isPl ? 'Kopiuj wynik' : 'Share Result')}</span>
+                  <span>{copied ? ('Copied!') : ('Share Result')}</span>
                 </button>
 
                 <button
@@ -545,7 +533,7 @@ export default function BorderHopPage() {
                   className="flex items-center gap-2 rounded-sm border border-white/15 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <Sparkles size={14} className="text-amber-400 shrink-0" />
-                  <span>{isPl ? 'Nowa trasa' : 'Play Another Route'}</span>
+                  <span>{'Play Another Route'}</span>
                 </button>
 
                 <Link
@@ -553,7 +541,7 @@ export default function BorderHopPage() {
                   className="flex items-center gap-1.5 rounded-sm border border-white/15 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-zinc-300 hover:bg-white/10 transition-colors"
                 >
                   <span className="break-words [overflow-wrap:anywhere]">
-                    {isPl ? `Odkryj ${challenge.target} w Atlasie` : `Explore ${challenge.target} in Atlas`}
+                    {`Explore ${challenge.target} in Atlas`}
                   </span>
                   <ExternalLink size={13} className="shrink-0" />
                 </Link>
@@ -562,7 +550,7 @@ export default function BorderHopPage() {
                   to={mode === 'us_states' ? '/us-states' : '/game'}
                   className="text-xs text-zinc-400 hover:text-sand-100 w-full sm:w-auto sm:ml-auto flex items-center justify-start sm:justify-end gap-1 pt-1 sm:pt-0 transition-colors"
                 >
-                  <span>{isPl ? 'Wróć do gry dnia' : 'Back to Daily Game'}</span>
+                  <span>{'Back to Daily Game'}</span>
                   <ArrowRight size={13} className="shrink-0" />
                 </Link>
               </div>
@@ -575,14 +563,10 @@ export default function BorderHopPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 border-b border-white/10 pb-2.5 sm:pb-3">
                 <div className="space-y-0.5 min-w-0">
                   <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-emerald-400 block">
-                    {isPl ? 'Następny przeskok' : 'Next Border Hop'}
+                    {'Next Border Hop'}
                   </span>
                   <p className="text-xs sm:text-sm font-semibold text-sand-100 font-mono break-words [overflow-wrap:anywhere]">
-                    {isPl ? (
-                      <>
-                        Jesteś w: <strong className="text-emerald-300">{currentLocation}</strong>. Wybierz sąsiada:
-                      </>
-                    ) : (
+                    {(
                       <>
                         You are in: <strong className="text-emerald-300">{currentLocation}</strong>. Choose next
                         bordering territory:
@@ -599,7 +583,7 @@ export default function BorderHopPage() {
                       type="text"
                       value={searchFilter}
                       onChange={(e) => setSearchFilter(e.target.value)}
-                      placeholder={isPl ? 'Szukaj sąsiada...' : 'Filter neighbors...'}
+                      placeholder={'Filter neighbors...'}
                       className="w-full rounded-sm border border-white/10 bg-obsidian-950 py-1.5 pl-8 pr-3 text-xs text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-hidden"
                     />
                   </div>
@@ -610,16 +594,12 @@ export default function BorderHopPage() {
               {loadingNeighbors ? (
                 <div className="py-6 text-center text-xs text-zinc-400 font-mono flex items-center justify-center gap-2">
                   <Loader2 size={14} className="animate-spin text-emerald-400" />
-                  <span>{isPl ? 'Sprawdzanie granic...' : 'Fetching bordering neighbors...'}</span>
+                  <span>{'Fetching bordering neighbors...'}</span>
                 </div>
               ) : filteredNeighbors.length === 0 ? (
                 <div className="py-6 text-center text-xs text-zinc-400 font-mono">
                   {searchFilter
-                    ? isPl
-                      ? 'Brak sąsiadów pasujących do filtra.'
-                      : 'No bordering neighbors match your search.'
-                    : isPl
-                    ? 'Brak lądowych sąsiadów (ślepy zaułek).'
+                    ? 'No bordering neighbors match your search.'
                     : 'No bordering neighbors found (dead end).'}
                 </div>
               ) : (
@@ -645,7 +625,7 @@ export default function BorderHopPage() {
                         <span className="font-mono text-xs font-semibold break-words [overflow-wrap:anywhere] min-w-0 pr-1 sm:pr-2 leading-tight">{neighbor}</span>
                         {isTarget ? (
                           <span className="shrink-0 rounded-xs bg-emerald-400 px-1.5 py-0.5 font-mono text-[9px] font-bold text-obsidian-950 uppercase">
-                            {isPl ? 'Cel' : 'Target'}
+                            {'Target'}
                           </span>
                         ) : (
                           <ArrowRight

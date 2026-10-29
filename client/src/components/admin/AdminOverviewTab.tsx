@@ -46,9 +46,9 @@ interface AdminOverviewTabProps {
 }
 
 export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, isLoading, error, onRefresh }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const hasOverview = overview !== null;
-  const locale = i18n.language.startsWith('pl') ? 'pl-PL' : 'en-US';
+  const locale = 'en-US';
   const numberFormat = new Intl.NumberFormat(locale);
   const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', dateStyle: 'medium' });
   const metrics = [

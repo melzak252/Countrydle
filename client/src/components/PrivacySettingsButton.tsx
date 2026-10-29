@@ -4,13 +4,11 @@ import toast from 'react-hot-toast';
 import { openPrivacySettings, usePrivacySettingsState } from '../advertising';
 
 export function PrivacySettingsButton({ className }: { className?: string }) {
-  const { t, i18n } = useTranslation();
-  const isPl = i18n?.language?.startsWith('pl');
+  const { t } = useTranslation();
+  
   const state = usePrivacySettingsState();
   const opening = state === 'opening';
-  const unavailableMessage = isPl
-    ? 'Nie udało się otworzyć ustawień prywatności Google. Mogą być niedostępne lub blokowane przez przeglądarkę. Żadne ustawienia nie zostały zmienione. Spróbuj ponownie później.'
-    : t('privacySettings.unavailable');
+  const unavailableMessage = t('privacySettings.unavailable');
 
   useEffect(() => {
     if (state === 'unavailable') toast.error(unavailableMessage, { id: 'privacy-settings-unavailable' });
@@ -23,7 +21,7 @@ export function PrivacySettingsButton({ className }: { className?: string }) {
 
   return (
     <button type="button" onClick={open} disabled={opening} aria-busy={opening} className={className}>
-      {isPl ? 'Ustawienia prywatności' : t('privacySettings.label')}
+      {t('privacySettings.label')}
     </button>
   );
 }

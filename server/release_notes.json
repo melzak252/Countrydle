@@ -1,5 +1,5 @@
 {
   "version": "1.36.4",
-  "title": "Mobile gameplay improvements",
-  "body": "- Improved phone layouts for game controls, county coats, Flag Shades and Border Hop.\n- Restored fact provenance in completed question histories."
+  "title": "English interface and game navigation",
+  "body": "- Simplified the interface and new gameplay wording to English while preserving Polish questions, native names and existing history.\n- Put Countrydle first on the homepage and grouped other games in a shared directory and Games menu."
 }
