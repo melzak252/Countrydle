@@ -151,7 +151,7 @@ const ShieldCell = React.memo(function ShieldCell({
         tabIndex={-1}
         onClick={() => onInspect(powiat.id)}
         aria-label={isPl ? 'Powiększ herb' : 'Fullscreen coat of arms'}
-        className="relative flex h-32 w-32 sm:h-36 sm:w-36 items-center justify-center rounded-lg p-2 cursor-zoom-in transition-transform duration-100 group-hover:scale-[1.03]"
+        className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-lg p-1.5 sm:p-2 cursor-zoom-in transition-transform duration-100 group-hover:scale-[1.03]"
       >
         {!loaded && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-zinc-500 font-mono text-[10px] animate-pulse">
@@ -171,7 +171,7 @@ const ShieldCell = React.memo(function ShieldCell({
             setError(true);
             setLoaded(true);
           }}
-          className={`max-h-28 max-w-28 sm:max-h-32 sm:max-w-32 w-auto h-auto object-contain pointer-events-none select-none drop-shadow-md transition-opacity duration-200 ${
+          className={`max-h-24 max-w-24 sm:max-h-32 sm:max-w-32 w-auto h-auto object-contain pointer-events-none select-none drop-shadow-md transition-opacity duration-200 ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
         />
@@ -186,17 +186,17 @@ const ShieldCell = React.memo(function ShieldCell({
 
       {/* Answer box under the coat: click to select, Tab / Shift+Tab to move */}
       {/* Answer box under the coat: clean JetPunk style with just the name */}
-      <div className="mt-2 w-full max-w-[210px]">
+      <div className="mt-1.5 sm:mt-2 w-full max-w-[210px]">
         {isGuessed || isRevealedMissed ? (
           <div
-            className={`flex h-9 items-center justify-center rounded border px-2 text-center text-xs font-bold leading-tight ${
+            className={`flex min-h-[38px] sm:min-h-[44px] items-center justify-center rounded border px-1.5 sm:px-2 py-1 text-center text-[11px] sm:text-xs font-bold leading-tight ${
               isGuessed
                 ? 'border-emerald-500/60 bg-emerald-950/50 text-emerald-200'
                 : 'border-rose-500/50 bg-rose-950/40 text-rose-200'
             }`}
             title={powiat.name}
           >
-            <span className="truncate">{powiat.name.replace(/\s*\([^)]*\)/g, '')}</span>
+            <span className="break-words line-clamp-2">{powiat.name.replace(/\s*\([^)]*\)/g, '')}</span>
           </div>
         ) : (
           <button
@@ -204,7 +204,7 @@ const ShieldCell = React.memo(function ShieldCell({
             type="button"
             onClick={() => onSelect(powiat.id)}
             aria-label={isPl ? 'Wybierz herb' : 'Select coat of arms'}
-            className={`flex h-9 w-full items-center justify-center rounded border px-2 text-center font-mono text-xs transition-colors cursor-pointer ${
+            className={`flex min-h-[44px] w-full items-center justify-center rounded border px-1.5 sm:px-2 text-center font-mono text-xs transition-colors cursor-pointer ${
               isTargeted
                 ? 'border-emerald-400 bg-emerald-500/15 ring-2 ring-emerald-400/40 shadow-md'
                 : 'border-white/15 bg-obsidian-950/80 hover:border-white/35'
@@ -274,11 +274,11 @@ export default function PowiatCoatsQuizPage() {
     const el = slotRefs.current.get(powiatId);
     if (el) {
       const rect = el.getBoundingClientRect();
-      const headerBuffer = window.innerWidth >= 1280 ? 175 : 150;
+      const headerBuffer = window.innerWidth >= 1280 ? 175 : window.innerWidth < 640 ? 210 : 160;
       const inView = rect.top >= headerBuffer && rect.bottom <= (window.innerHeight - 20);
       if (!inView) {
         if (rect.top < headerBuffer) {
-          window.scrollBy({ top: rect.top - headerBuffer - 16, behavior: 'auto' });
+          window.scrollBy({ top: rect.top - headerBuffer - 12, behavior: 'auto' });
         } else {
           el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
         }
@@ -429,11 +429,11 @@ export default function PowiatCoatsQuizPage() {
   const pct = TOTAL_COUNT > 0 ? Math.round((guessedCount / TOTAL_COUNT) * 100) : 0;
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 space-y-6">
+    <div className="mx-auto w-full max-w-7xl px-2.5 py-3 sm:px-6 sm:py-4 space-y-4 sm:space-y-6">
       {/* Simple, Clean Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-white/10 pb-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
+          <h1 className="font-serif text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
             {isPl ? 'Quiz: Wszystkie Herby Powiatów w Polsce' : 'Polish County Coats of Arms Quiz'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">
@@ -464,11 +464,11 @@ export default function PowiatCoatsQuizPage() {
       {/* FAST FIXED STICKY TOP CONTROLS & INPUT */}
       <section
         aria-label={isPl ? 'Pole wpisywania i wynik' : 'Input and Scoreboard'}
-        className="sticky top-14 xl:top-20 z-40 rounded-b-lg border border-emerald-500/40 bg-obsidian-950/98 px-4 py-3 shadow-2xl backdrop-blur-md space-y-2.5"
+        className="sticky top-14 xl:top-20 z-40 rounded-b-lg border border-emerald-500/40 bg-obsidian-950/98 px-2.5 py-1.5 sm:px-4 sm:py-3 shadow-2xl backdrop-blur-md space-y-1.5 sm:space-y-2.5"
       >
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2.5 md:gap-3">
           {/* Main Top Input Field */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <input
               ref={headerInputRef}
               type="text"
@@ -480,17 +480,17 @@ export default function PowiatCoatsQuizPage() {
               placeholder={
                 isPaused
                   ? isPl
-                    ? 'Quiz wstrzymany — kliknij Wznów...'
-                    : 'Quiz paused — click Resume...'
+                    ? 'Pauza — kliknij Wznów'
+                    : 'Paused — click Resume'
                   : targetedPowiat
                   ? isPl
-                    ? `Wybrany herb (${targetedPowiat.voivodeship}) — wpisz powiat (Tab = następny, Shift+Tab = poprzedni)...`
-                    : `Selected coat (${targetedPowiat.voivodeship}) — type county (Tab = next, Shift+Tab = prev)...`
+                    ? `Wpisz: ${targetedPowiat.voivodeship}...`
+                    : `Type: ${targetedPowiat.voivodeship}...`
                   : isPl
-                  ? 'Wpisz nazwę powiatu lub kliknij pole pod herbem (Tab = następny, Shift+Tab = poprzedni)...'
-                  : 'Type county name or click box under any shield (Tab = next, Shift+Tab = prev)...'
+                  ? 'Wpisz powiat...'
+                  : 'Type county...'
               }
-              className="w-full rounded-md border border-emerald-500/50 bg-obsidian-900 px-3.5 py-2 text-sm font-medium text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/25"
+              className="w-full min-h-[44px] rounded-md border border-emerald-500/50 bg-obsidian-900 pl-3 pr-11 py-2 text-xs sm:text-sm font-medium text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 truncate placeholder:truncate"
             />
             {inputVal && (
               <button
@@ -499,7 +499,8 @@ export default function PowiatCoatsQuizPage() {
                   setInputVal('');
                   headerInputRef.current?.focus();
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+                aria-label={isPl ? 'Wyczyść pole' : 'Clear input'}
+                className="absolute right-0 top-0 bottom-0 flex min-h-[44px] min-w-[44px] items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
               >
                 <X size={15} />
               </button>
@@ -507,87 +508,125 @@ export default function PowiatCoatsQuizPage() {
           </div>
 
           {/* Quick Score, Stopwatch & Controls */}
-          <div className="flex flex-wrap items-center justify-between md:justify-end gap-2">
-            {lastSolvedLabel && (
-              <span className="hidden xl:inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-xs font-mono text-emerald-300">
-                <Check size={12} />
-                <span className="truncate max-w-[150px]">{lastSolvedLabel.replace(/\s*\([^)]*\)/g, '')}</span>
-              </span>
-            )}
-
-            <div className="flex items-center gap-2 rounded-md border border-white/15 bg-obsidian-900 px-3 py-1.5 font-mono">
-              <Trophy size={15} className="text-emerald-400 shrink-0" />
-              <span className="text-base font-extrabold text-emerald-400">
-                {guessedCount}
-              </span>
-              <span className="text-xs text-zinc-400">/ {TOTAL_COUNT}</span>
-              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-bold text-emerald-300">
-                {pct}%
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 rounded-md border border-white/15 bg-obsidian-900 px-3 py-1.5 font-mono text-sm text-sand-100">
-              <span>⏱</span>
-              <span className="font-bold">{formatTime(elapsedSeconds)}</span>
-            </div>
-
-            {!isGivenUp && !isCompleted && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isRunning) {
-                    setIsRunning(true);
-                    setIsPaused(false);
-                    const first = ACTIVE_POOL.find((p) => !guessedIds.has(p.id));
-                    if (first) selectShieldSlot(first.id);
-                  } else {
-                    setIsPaused((p) => !p);
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-400 px-3.5 py-1.5 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
-              >
-                {!isRunning || isPaused ? <Play size={14} /> : <Pause size={14} />}
-                <span>
-                  {!isRunning
-                    ? 'Start'
-                    : isPaused
-                    ? isPl
-                      ? 'Wznów'
-                      : 'Resume'
-                    : isPl
-                    ? 'Pauza'
-                    : 'Pause'}
+          <div className="flex items-center justify-between md:justify-end gap-1 sm:gap-2 w-full md:w-auto min-w-0">
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+              {lastSolvedLabel && (
+                <span className="hidden xl:inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-xs font-mono text-emerald-300">
+                  <Check size={12} />
+                  <span className="truncate max-w-[150px]">{lastSolvedLabel.replace(/\s*\([^)]*\)/g, '')}</span>
                 </span>
-              </button>
-            )}
+              )}
 
-            {!isGivenUp && !isCompleted && (
+              <div
+                className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 sm:gap-2 rounded-md border border-white/15 bg-obsidian-900 px-1.5 sm:px-3 font-mono shrink-0"
+                title={isPl ? `Odgadnięto: ${guessedCount} z ${TOTAL_COUNT} (${pct}%)` : `Guessed: ${guessedCount} of ${TOTAL_COUNT} (${pct}%)`}
+              >
+                <Trophy size={13} className="hidden sm:block text-emerald-400 shrink-0 sm:w-[15px] sm:h-[15px]" />
+                <span className="text-xs sm:text-base font-extrabold text-emerald-400">
+                  {guessedCount}
+                </span>
+                <span className="text-[10px] sm:text-xs text-zinc-400">/{TOTAL_COUNT}</span>
+                <span className="hidden min-[380px]:inline-block rounded bg-emerald-500/15 px-1 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-300">
+                  {pct}%
+                </span>
+              </div>
+
+              <div
+                className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 rounded-md border border-white/15 bg-obsidian-900 px-1.5 sm:px-3 font-mono text-xs sm:text-sm text-sand-100 shrink-0"
+                title={isPl ? 'Czas gry' : 'Elapsed time'}
+              >
+                <span className="hidden sm:inline text-[11px] sm:text-xs">⏱</span>
+                <span className="font-bold">{formatTime(elapsedSeconds)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto md:ml-0">
+              {!isGivenUp && !isCompleted && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isRunning) {
+                      setIsRunning(true);
+                      setIsPaused(false);
+                      const first = ACTIVE_POOL.find((p) => !guessedIds.has(p.id));
+                      if (first) selectShieldSlot(first.id);
+                    } else {
+                      setIsPaused((p) => !p);
+                    }
+                  }}
+                  aria-label={
+                    !isRunning
+                      ? 'Start'
+                      : isPaused
+                      ? isPl
+                        ? 'Wznów'
+                        : 'Resume'
+                      : isPl
+                      ? 'Pauza'
+                      : 'Pause'
+                  }
+                  title={
+                    !isRunning
+                      ? 'Start'
+                      : isPaused
+                      ? isPl
+                        ? 'Wznów'
+                        : 'Resume'
+                      : isPl
+                      ? 'Pauza'
+                      : 'Pause'
+                  }
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md bg-emerald-400 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
+                >
+                  {!isRunning || isPaused ? <Play size={14} className="shrink-0" /> : <Pause size={14} className="shrink-0" />}
+                  <span className="hidden sm:inline">
+                    {!isRunning
+                      ? 'Start'
+                      : isPaused
+                      ? isPl
+                        ? 'Wznów'
+                        : 'Resume'
+                      : isPl
+                      ? 'Pauza'
+                      : 'Pause'}
+                  </span>
+                </button>
+              )}
+
+              {!isGivenUp && !isCompleted && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsGivenUp(true);
+                    setIsRunning(false);
+                    setTargetedId(null);
+                  }}
+                  aria-label={isPl ? 'Poddaj się' : 'Give Up'}
+                  title={isPl ? 'Poddaj się' : 'Give Up'}
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md border border-rose-500/35 bg-rose-950/40 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-rose-200 hover:bg-rose-900/50 cursor-pointer"
+                >
+                  <Flag size={13} className="shrink-0" />
+                  <span className="hidden sm:inline">
+                    {isPl ? 'Poddaj się' : 'Give Up'}
+                  </span>
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={() => {
-                  setIsGivenUp(true);
-                  setIsRunning(false);
-                  setTargetedId(null);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/35 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-900/50 cursor-pointer"
+                onClick={handleResetQuiz}
+                aria-label={isPl ? 'Zresetuj quiz' : 'Reset quiz'}
+                title={isPl ? 'Zresetuj quiz' : 'Reset quiz'}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md border border-white/15 bg-obsidian-900 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-sand-200 hover:border-emerald-400/50 cursor-pointer"
               >
-                <Flag size={13} />
-                <span>{isPl ? 'Poddaj się' : 'Give Up'}</span>
+                <RotateCcw size={13} className="shrink-0" />
+                <span className="hidden sm:inline">Reset</span>
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleResetQuiz}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-obsidian-900 px-3 py-1.5 text-xs font-semibold text-sand-200 hover:border-emerald-400/50 cursor-pointer"
-            >
-              <RotateCcw size={13} />
-              <span>Reset</span>
-            </button>
+            </div>
           </div>
         </div>
 
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-obsidian-900">
+        <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-obsidian-900">
           <div
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-200"
             style={{ width: `${pct}%` }}
@@ -623,7 +662,7 @@ export default function PowiatCoatsQuizPage() {
           <button
             type="button"
             onClick={handleResetQuiz}
-            className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
           >
             <RotateCcw size={14} />
             <span>{isPl ? 'Zagraj ponownie' : 'Play Again'}</span>
@@ -645,7 +684,7 @@ export default function PowiatCoatsQuizPage() {
                   {voivSolved} / {items.length}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {items.map((p) => (
                   <ShieldCell
                     key={p.id}
@@ -677,35 +716,41 @@ export default function PowiatCoatsQuizPage() {
           {/* Top Toolbar */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6 shrink-0"
+            className="flex items-center justify-between gap-2 border-b border-white/10 bg-obsidian-900/90 px-2 sm:px-6 py-2 shrink-0 min-h-[56px]"
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <Shield size={16} className="text-emerald-400 shrink-0" />
-              <span className="font-serif text-sm font-bold text-sand-100 truncate">
-                {guessedIds.has(inspectedPowiat.id) || isGivenUp
-                  ? inspectedPowiat.name
-                  : isPl
-                  ? 'Herb powiatu'
-                  : 'County coat of arms'}
-              </span>
-              <span className="font-mono text-xs text-zinc-400">
-                • woj. {inspectedPowiat.voivodeship}
-              </span>
+            <div className="flex items-center gap-2 min-w-0 flex-1 py-0.5">
+              <Shield size={18} className="text-emerald-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="font-serif text-xs sm:text-sm font-bold text-sand-100 leading-snug break-words">
+                  {guessedIds.has(inspectedPowiat.id) || isGivenUp
+                    ? inspectedPowiat.name
+                    : isPl
+                    ? 'Herb powiatu'
+                    : 'County coat of arms'}
+                </div>
+                <div className="font-mono text-[10px] sm:text-xs text-zinc-400 leading-tight">
+                  woj. {inspectedPowiat.voivodeship}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
                 disabled={inspectZoom <= 1}
-                className="inline-flex items-center justify-center rounded border border-white/15 bg-obsidian-950 p-1.5 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
+                aria-label={isPl ? 'Pomniejsz' : 'Zoom out'}
+                title={isPl ? 'Pomniejsz' : 'Zoom out'}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 p-2 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
               >
-                <ZoomOut size={15} />
+                <ZoomOut size={16} />
               </button>
               <button
                 type="button"
                 onClick={() => setInspectZoom(1)}
-                className="rounded border border-white/15 bg-obsidian-950 px-2 py-1 font-mono text-xs text-sand-200 cursor-pointer"
+                aria-label={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
+                title={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 px-2 font-mono text-[11px] sm:text-xs text-sand-200 hover:border-emerald-400/50 cursor-pointer"
               >
                 {Math.round(inspectZoom * 100)}%
               </button>
@@ -713,16 +758,21 @@ export default function PowiatCoatsQuizPage() {
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
                 disabled={inspectZoom >= 3}
-                className="inline-flex items-center justify-center rounded border border-white/15 bg-obsidian-950 p-1.5 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
+                aria-label={isPl ? 'Powiększ' : 'Zoom in'}
+                title={isPl ? 'Powiększ' : 'Zoom in'}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 p-2 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
               >
-                <ZoomIn size={15} />
+                <ZoomIn size={16} />
               </button>
               <button
                 type="button"
                 onClick={handleCloseInspect}
-                className="inline-flex items-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:text-rose-200 cursor-pointer"
+                aria-label={isPl ? 'Zamknij' : 'Close'}
+                title={isPl ? 'Zamknij' : 'Close'}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:text-rose-200 cursor-pointer"
               >
-                <X size={15} />
+                <X size={16} />
+                <span className="hidden sm:inline">{isPl ? 'Zamknij' : 'Close'}</span>
               </button>
             </div>
           </div>
@@ -730,11 +780,11 @@ export default function PowiatCoatsQuizPage() {
           {/* Perfectly Centered Shield Canvas */}
           <div
             onClick={handleCloseInspect}
-            className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-8"
+            className="flex-1 overflow-auto flex items-center justify-center p-3 sm:p-8"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-6 sm:p-10 transition-colors duration-200"
+              className="relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-4 sm:p-10 transition-colors duration-200"
             >
               {/* Instant Cached Preview Image (Displays immediately with 0ms wait!) */}
               <img

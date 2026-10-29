@@ -763,6 +763,7 @@ const resources = {
         upToPoints: 'Up to {{maxPoints}} points',
         examples: 'Example questions:',
       },
+      askPlaceholder: 'Ask a yes/no question about the country... ({{count}} left)',
       gamePage: {
         title: 'Guess the Country',
         date: 'Date: {{date}}',
@@ -1045,11 +1046,23 @@ const resources = {
       },
       inputs: {
         questionPlaceholder: 'Ask a yes/no question (e.g., "Is it in Europe?") - {{count}} left',
+        questionPlaceholderMobile: 'Ask a yes/no question…',
+        questionPlaceholderNoCount: 'Ask a yes/no question (e.g., "Is it in Europe?")',
+        questionPlaceholderMobileNoCount: 'Ask a yes/no question…',
+        questionPlaceholderCountryMobile: 'Ask about the country…',
+        questionPlaceholderUsStateMobile: 'Ask about the state…',
+        questionPlaceholderPowiatMobile: 'Ask about the county…',
+        questionPlaceholderWojMobile: 'Ask about voivodeship…',
         guessPlaceholder: 'Guess the country... ({{count}} left)',
+        guessPlaceholderMobile: 'Guess the country…',
         slowQuestionMessage: 'Checking additional records...',
         looksLikeQuestion: 'This looks like a question, not a country name. Switch to the "Question" tab to ask questions.',
         thinking: 'Countrydle is thinking...',
         quickQuestions: 'Quick questions',
+        scrollRightPrompt: 'Scroll →',
+        scrollLeftPrompt: '← Scroll',
+        scrollBothPrompt: '← Scroll →',
+        scrollQuickQuestions: 'Scroll quick questions',
         quickEurope: 'Europe',
         questionEurope: 'Is it in Europe?',
         quickCoastline: 'Coastline',
@@ -1163,6 +1176,23 @@ const resources = {
     translation: {
       game: {
         backToMap: 'Wróć do mapy',
+      },
+      askPlaceholder: 'Zadaj pytanie tak/nie o państwo... (pozostało: {{count}})',
+      gamePage: {
+        askPlaceholder: 'Zadaj pytanie tak/nie o państwo... (pozostało: {{count}})',
+        guessPlaceholder: 'Zgadnij państwo... (pozostało: {{count}})',
+      },
+      usStatesPage: {
+        askPlaceholder: 'Zadaj pytanie tak/nie o stan... (pozostało: {{count}})',
+        guessPlaceholder: 'Zgadnij stan... (pozostało: {{count}})',
+      },
+      powiatyPage: {
+        askPlaceholder: 'Zadaj pytanie tak/nie o powiat... (pozostało: {{count}})',
+        guessPlaceholder: 'Zgadnij powiat... (pozostało: {{count}})',
+      },
+      wojewodztwaPage: {
+        askPlaceholder: 'Zadaj pytanie tak/nie o województwo... (pozostało: {{count}})',
+        guessPlaceholder: 'Zgadnij województwo... (pozostało: {{count}})',
       },
       header: {
         howItWorks: 'Jak działają pytania',
@@ -1837,6 +1867,20 @@ const resources = {
       },
 
       inputs: {
+        questionPlaceholder: 'Zadaj pytanie tak/nie (np. „Czy leży w Europie?”) – pozostało: {{count}}',
+        questionPlaceholderMobile: 'Zadaj pytanie tak/nie…',
+        questionPlaceholderNoCount: 'Zadaj pytanie tak/nie (np. „Czy leży w Europie?”)',
+        questionPlaceholderMobileNoCount: 'Zadaj pytanie tak/nie…',
+        questionPlaceholderCountryMobile: 'Pytanie o państwo…',
+        questionPlaceholderUsStateMobile: 'Pytanie o stan…',
+        questionPlaceholderPowiatMobile: 'Pytanie o powiat…',
+        questionPlaceholderWojMobile: 'Pytanie o województwo…',
+        guessPlaceholder: 'Zgadnij państwo... (pozostało: {{count}})',
+        guessPlaceholderMobile: 'Zgadnij państwo…',
+        scrollRightPrompt: 'Przewiń →',
+        scrollLeftPrompt: '← Przewiń',
+        scrollBothPrompt: '← Przewiń →',
+        scrollQuickQuestions: 'Przewiń szybkie pytania',
         slowQuestionMessage: 'Sprawdzanie dodatkowych danych...',
         looksLikeQuestion: 'To wygląda na pytanie, a nie nazwę państwa. Przełącz się na zakładkę „Pytanie”, aby zadać pytanie.',
         thinking: 'Countrydle myśli...',

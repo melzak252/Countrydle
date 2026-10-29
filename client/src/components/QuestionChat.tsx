@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { AnswerReportMode, Question } from '../types';
 import AnswerReportForm from './AnswerReportForm';
+import FactProvenance from './FactProvenance';
 import type { GameplayNotice } from '../lib/gameplayNotices';
 import { getConversationMessages } from '../lib/chatMessages';
 
@@ -148,6 +149,7 @@ export default function QuestionChat({
                     <p className="text-zinc-400">{question.explanation}</p>
                   </div>
                 )}
+                {isGameOver && <FactProvenance records={question.fact_provenance} />}
                 {isGameOver && question.id > 0 && (
                   <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} compact />
                 )}

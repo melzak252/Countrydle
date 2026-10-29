@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Loader2, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 interface QuestionInputProps {
   onAsk: (question: string) => Promise<void | boolean>;
@@ -99,12 +100,16 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
   const { t, i18n } = useTranslation();
   const isPl = i18n.language.startsWith('pl');
   const inputId = useId();
+  const isMobile = useIsMobile();
   
   const [question, setQuestion] = useState('');
   const unavailable = disabled || isLoading || (remainingQuestions !== undefined && remainingQuestions <= 0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const quickQuestionsRef = useRef<HTMLDivElement>(null);
   const focusFrameRef = useRef<number | null>(null);
   const pointerTypeRef = useRef('mouse');
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const restoreFocus = useCallback(() => {
     // Keep the phone/touch keyboard closed while the player works with the map.
@@ -142,6 +147,51 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
       if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
     };
   }, [restoreFocus]);
+  const updateScrollState = useCallback(() => {
+    const el = quickQuestionsRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollWidth - (scrollLeft + clientWidth) > 4);
+  }, []);
+
+  useEffect(() => {
+    updateScrollState();
+    const el = quickQuestionsRef.current;
+    if (!el) return;
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => {
+        updateScrollState();
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+  }, [updateScrollState]);
+
+  useEffect(() => {
+    if (quickQuestionsRef.current) {
+      quickQuestionsRef.current.scrollLeft = 0;
+    }
+    updateScrollState();
+  }, [mode, updateScrollState]);
+
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = quickQuestionsRef.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    if (e.deltaX === 0 && e.deltaY !== 0) {
+      el.scrollLeft += e.deltaY;
+    }
+  }, []);
+
+  const handleScrollPromptClick = useCallback(() => {
+    const el = quickQuestionsRef.current;
+    if (!el) return;
+    if (canScrollRight) {
+      el.scrollBy({ left: 160, behavior: 'smooth' });
+    } else if (canScrollLeft) {
+      el.scrollBy({ left: -160, behavior: 'smooth' });
+    }
+  }, [canScrollLeft, canScrollRight]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,34 +204,123 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
     }
   };
 
-  const defaultPlaceholder = t('inputs.questionPlaceholder', { count: remainingQuestions });
+  const quickQuestions = useMemo(() => getQuickQuestions(mode, t), [mode, t]);
 
+  const defaultPlaceholder = useMemo(() => {
+    const norm = (mode || '').toLowerCase();
+    if (isMobile) {
+      if (norm.includes('wojewodztw')) {
+        return t('inputs.questionPlaceholderWojMobile', {
+          defaultValue: isPl ? 'Pytanie o województwo…' : 'Ask about voivodeship…',
+        });
+      }
+      if (norm.includes('powiat')) {
+        return t('inputs.questionPlaceholderPowiatMobile', {
+          defaultValue: isPl ? 'Pytanie o powiat…' : 'Ask about the county…',
+        });
+      }
+      if (norm.includes('us_state') || norm.includes('usstate') || norm.includes('us-state')) {
+        return t('inputs.questionPlaceholderUsStateMobile', {
+          defaultValue: isPl ? 'Pytanie o stan…' : 'Ask about the state…',
+        });
+      }
+      if (norm === 'europe' || norm === 'asia' || norm === 'africa' || norm === 'americas' || norm === 'country') {
+        return t('inputs.questionPlaceholderCountryMobile', {
+          defaultValue: isPl ? 'Pytanie o państwo…' : 'Ask about the country…',
+        });
+      }
+      return t('inputs.questionPlaceholderMobile', {
+        defaultValue: isPl ? 'Zadaj pytanie tak/nie…' : 'Ask a yes/no question…',
+      });
+    }
 
-  const quickQuestions = getQuickQuestions(mode, t);
+    if (remainingQuestions !== undefined) {
+      return t('inputs.questionPlaceholder', {
+        count: remainingQuestions,
+        defaultValue: isPl
+          ? `Zadaj pytanie tak/nie (np. „Czy leży w Europie?”) – pozostało: ${remainingQuestions}`
+          : `Ask a yes/no question (e.g., "Is it in Europe?") - ${remainingQuestions} left`,
+      });
+    }
+    return t('inputs.questionPlaceholderNoCount', {
+      defaultValue: isPl ? 'Zadaj pytanie tak/nie (np. „Czy leży w Europie?”)' : 'Ask a yes/no question (e.g., "Is it in Europe?")',
+    });
+  }, [isMobile, isPl, mode, remainingQuestions, t]);
+
+  const resolvedPlaceholder = isMobile
+    ? defaultPlaceholder
+    : (placeholder || defaultPlaceholder);
+
+  const scrollPrompt = useMemo(() => {
+    if (!canScrollLeft && canScrollRight) {
+      return t('inputs.scrollRightPrompt', isPl ? 'Przewiń →' : 'Scroll →');
+    }
+    if (canScrollLeft && canScrollRight) {
+      return t('inputs.scrollBothPrompt', isPl ? '← Przewiń →' : '← Scroll →');
+    }
+    if (canScrollLeft && !canScrollRight) {
+      return t('inputs.scrollLeftPrompt', isPl ? '← Przewiń' : '← Scroll');
+    }
+    return null;
+  }, [canScrollLeft, canScrollRight, isPl, t]);
+
+  const maskStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (canScrollLeft && canScrollRight) {
+      const gradient = 'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 24px), transparent 100%)';
+      return { WebkitMaskImage: gradient, maskImage: gradient };
+    }
+    if (canScrollRight) {
+      const gradient = 'linear-gradient(to right, black calc(100% - 24px), transparent 100%)';
+      return { WebkitMaskImage: gradient, maskImage: gradient };
+    }
+    if (canScrollLeft) {
+      const gradient = 'linear-gradient(to right, transparent 0, black 16px, black 100%)';
+      return { WebkitMaskImage: gradient, maskImage: gradient };
+    }
+    return undefined;
+  }, [canScrollLeft, canScrollRight]);
 
   return (
     <form onSubmit={handleSubmit} onPointerDownCapture={event => { pointerTypeRef.current = event.pointerType; }} className="flex min-h-0 w-full flex-col">
       <div className="mb-1.5 max-md:[@media(max-height:560px)]:hidden">
         <div className="mb-0.5 flex items-center justify-between gap-2">
           <p className="text-[10px] font-medium text-zinc-500">{t('inputs.quickQuestions')}</p>
-          <span className="shrink-0 text-[9px] text-zinc-500" aria-hidden="true">{isPl ? 'Przewiń →' : 'Scroll →'}</span>
-        </div>
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5" aria-label={t('inputs.quickQuestions')}>
-          {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
+          {scrollPrompt && (
             <button
-              key={label}
               type="button"
-              disabled={unavailable}
-              onClick={() => setQuestion(suggestedQuestion)}
-              className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+              onClick={handleScrollPromptClick}
+              className="inline-flex shrink-0 items-center gap-0.5 text-[9px] font-medium text-emerald-400/90 transition-colors hover:text-emerald-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-emerald-400 cursor-pointer"
+              aria-label={t('inputs.scrollQuickQuestions')}
             >
-              <span aria-hidden="true">{icon}</span>{label}
+              <span aria-hidden="true">{scrollPrompt}</span>
             </button>
-          ))}
+          )}
+        </div>
+        <div className="relative">
+          <div
+            ref={quickQuestionsRef}
+            onScroll={updateScrollState}
+            onWheel={handleWheel}
+            style={maskStyle}
+            className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5 touch-pan-x overscroll-x-contain scroll-smooth"
+            aria-label={t('inputs.quickQuestions')}
+          >
+            {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={unavailable}
+                onClick={() => setQuestion(suggestedQuestion)}
+                className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+              >
+                <span aria-hidden="true">{icon}</span>{label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <label htmlFor={inputId} className="sr-only">{isPl ? 'Pytanie tak lub nie' : 'Yes-or-no question'}</label>
-      <div className="relative rounded-2xl border border-white/10 bg-zinc-900/90 p-1 shadow-lg shadow-black/20 transition-colors focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
+      <div className="relative flex items-center">
         <input
           id={inputId}
           ref={inputRef}
@@ -191,23 +330,24 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder={placeholder || defaultPlaceholder}
+          placeholder={resolvedPlaceholder}
           minLength={minLength}
           maxLength={maxLength}
-          className="w-full rounded-xl border-0 bg-transparent py-3 pl-4 pr-14 text-base text-sand-100 placeholder:text-zinc-500 focus:outline-none focus:ring-0 disabled:opacity-40 sm:text-sm"
+          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-10 pr-28 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40 sm:text-sm"
           disabled={unavailable}
         />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
         <button
           type="submit"
           aria-label={isPl ? 'Zadaj pytanie' : 'Ask question'}
           disabled={question.trim().length < minLength || unavailable}
-          className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-transparent text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40 enabled:bg-emerald-500 enabled:text-white enabled:hover:bg-emerald-400"
+          className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40"
         >
-
+          <span>{isPl ? 'Pytaj' : 'Ask'}</span>
           {isLoading ? (
-            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            <Loader2 size={14} className="animate-spin" aria-hidden="true" />
           ) : (
-            <Send size={16} aria-hidden="true" />
+            <ArrowRight size={14} aria-hidden="true" />
           )}
 
         </button>

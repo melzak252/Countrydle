@@ -255,16 +255,16 @@ export default function BorderHopPage() {
   const optimalHops = challenge?.optimal_hops ?? '?';
 
   return (
-    <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6">
+    <div className="mx-auto max-w-4xl px-3 sm:px-6 py-3.5 sm:py-8 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-white/10 pb-3.5 sm:pb-5">
         <div>
-          <div className="flex items-center gap-2.5">
-            <Route className="text-emerald-400" size={26} />
-            <h1 className="font-mono text-2xl sm:text-3xl font-bold tracking-tight text-sand-100">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <Route className="text-emerald-400 shrink-0" size={22} />
+            <h1 className="font-mono text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
               {isPl ? 'Border Hop' : 'Border Hop'}
             </h1>
-            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 shrink-0">
               {isPl ? 'Mini-gra' : 'Mini-Game'}
             </span>
           </div>
@@ -276,11 +276,11 @@ export default function BorderHopPage() {
         </div>
 
         {/* Mode Selector Tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-sm bg-obsidian-900 border border-white/10 self-start sm:self-auto">
+        <div className="grid grid-cols-2 sm:flex items-center gap-1 sm:gap-1.5 p-1 rounded-sm bg-obsidian-900 border border-white/10 w-full sm:w-auto shrink-0">
           <button
             type="button"
             onClick={() => handleModeChange('countries')}
-            className={`px-3 py-1.5 rounded-xs text-xs font-semibold font-mono transition-colors ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xs text-xs font-semibold font-mono text-center transition-colors ${
               mode === 'countries'
                 ? 'bg-emerald-400 text-obsidian-950 shadow-xs'
                 : 'text-zinc-400 hover:text-sand-100'
@@ -291,7 +291,7 @@ export default function BorderHopPage() {
           <button
             type="button"
             onClick={() => handleModeChange('us_states')}
-            className={`px-3 py-1.5 rounded-xs text-xs font-semibold font-mono transition-colors ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xs text-xs font-semibold font-mono text-center transition-colors ${
               mode === 'us_states'
                 ? 'bg-emerald-400 text-obsidian-950 shadow-xs'
                 : 'text-zinc-400 hover:text-sand-100'
@@ -304,17 +304,17 @@ export default function BorderHopPage() {
 
       {/* Loading state */}
       {loadingChallenge ? (
-        <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-12 text-center space-y-3">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-400" />
-          <p className="font-mono text-sm text-zinc-300">
+        <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-8 sm:p-12 text-center space-y-3">
+          <Loader2 className="mx-auto h-7 w-7 sm:h-8 sm:w-8 animate-spin text-emerald-400" />
+          <p className="font-mono text-xs sm:text-sm text-zinc-300">
             {isPl ? 'Generowanie wyzwania granic...' : 'Generating border path challenge...'}
           </p>
         </div>
       ) : error ? (
         /* Error or Island notice */
-        <div className="rounded-sm border border-amber-500/30 bg-amber-500/10 p-6 space-y-4 text-left">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="text-amber-400 shrink-0 mt-0.5" size={20} />
+        <div className="rounded-sm border border-amber-500/30 bg-amber-500/10 p-4 sm:p-6 space-y-3 sm:space-y-4 text-left">
+          <div className="flex items-start gap-2.5 sm:gap-3">
+            <AlertCircle className="text-amber-400 shrink-0 mt-0.5" size={18} />
             <div className="space-y-1">
               <h3 className="font-mono text-sm font-semibold text-sand-100">
                 {isPl ? 'Wyzwanie niedostępne' : 'Route Unavailable'}
@@ -322,73 +322,76 @@ export default function BorderHopPage() {
               <p className="text-xs sm:text-sm text-zinc-300">{error}</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-1 sm:pt-2">
             <button
               type="button"
               onClick={handleNewRandomRoute}
-              className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-400 px-3.5 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-400 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300"
             >
-              <Sparkles size={14} />
+              <Sparkles size={14} className="shrink-0" />
               <span>{isPl ? 'Losuj inną trasę' : 'Try Another Random Route'}</span>
             </button>
             <button
               type="button"
               onClick={handleDailyRoute}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 px-3.5 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
             >
-              <Globe size={14} />
+              <Globe size={14} className="shrink-0" />
               <span>{isPl ? 'Dzisiejsza trasa dnia' : "Today's Daily Route"}</span>
             </button>
           </div>
         </div>
       ) : challenge ? (
-        <div className="space-y-5">
+        <div className="space-y-3 sm:space-y-5">
           {/* Mission Banner */}
-          <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="space-y-1.5">
+          <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+            <div className="space-y-1 sm:space-y-1.5 min-w-0">
               <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">
                 {isPl ? 'Zadanie trasy' : 'Route Objective'}
               </span>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-base sm:text-xl font-bold font-mono text-sand-100">
-                <span className="bg-obsidian-950/80 border border-white/10 px-2.5 py-1 rounded-xs text-sand-100">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-xs sm:text-base md:text-xl font-bold font-mono text-sand-100 min-w-0">
+                <span className="max-w-full bg-obsidian-950/80 border border-white/10 px-2 sm:px-2.5 py-1 rounded-xs text-sand-100 break-words [overflow-wrap:anywhere]">
                   {challenge.start}
                 </span>
-                <ArrowRight size={18} className="text-emerald-400 shrink-0" />
-                <span className="bg-obsidian-950/80 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-xs">
-                  {challenge.target}
-                </span>
+                <div className="inline-flex max-w-full items-center gap-1.5 sm:gap-3 min-w-0">
+                  <ArrowRight size={14} className="text-emerald-400 shrink-0 sm:hidden" />
+                  <ArrowRight size={18} className="text-emerald-400 shrink-0 hidden sm:inline-block" />
+                  <span className="max-w-full bg-obsidian-950/80 border border-emerald-500/40 text-emerald-300 px-2 sm:px-2.5 py-1 rounded-xs break-words [overflow-wrap:anywhere]">
+                    {challenge.target}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Score & Hop Benchmark Badges */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-sm bg-obsidian-950/60 border border-white/10 px-3 py-2 text-center min-w-24">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 shrink-0">
+              <div className="rounded-sm bg-obsidian-950/60 border border-white/10 px-2.5 sm:px-3 py-1.5 sm:py-2 text-center sm:min-w-24">
                 <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400">
                   {isPl ? 'Wykonano' : 'Your Hops'}
                 </span>
-                <span className="font-mono text-lg font-bold text-sand-100">{currentHops}</span>
+                <span className="font-mono text-base sm:text-lg font-bold text-sand-100">{currentHops}</span>
               </div>
 
-              <div className="rounded-sm bg-obsidian-950/60 border border-emerald-500/30 px-3 py-2 text-center min-w-24">
+              <div className="rounded-sm bg-obsidian-950/60 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 sm:py-2 text-center sm:min-w-24">
                 <span className="block text-[10px] font-mono uppercase tracking-wider text-emerald-400">
                   {isPl ? 'Optymalnie' : 'Optimal'}
                 </span>
-                <span className="font-mono text-lg font-bold text-emerald-300">{optimalHops}</span>
+                <span className="font-mono text-base sm:text-lg font-bold text-emerald-300">{optimalHops}</span>
               </div>
             </div>
           </div>
 
           {/* Action Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 text-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={handleUndo}
                 disabled={path.length <= 1 || status === 'won'}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 title={isPl ? 'Cofnij ostatni krok' : 'Undo last hop'}
               >
-                <Undo2 size={13} />
+                <Undo2 size={13} className="shrink-0" />
                 <span>{isPl ? 'Cofnij krok' : 'Undo Hop'}</span>
               </button>
 
@@ -396,50 +399,50 @@ export default function BorderHopPage() {
                 type="button"
                 onClick={handleReset}
                 disabled={path.length <= 1 || status === 'won'}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 title={isPl ? 'Resetuj trasę od początku' : 'Reset to starting territory'}
               >
-                <RotateCcw size={13} />
+                <RotateCcw size={13} className="shrink-0" />
                 <span>{isPl ? 'Reset trasy' : 'Reset'}</span>
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={handleDailyRoute}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-white/15 bg-obsidian-900/60 text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
               >
-                <Globe size={13} />
+                <Globe size={13} className="shrink-0" />
                 <span>{isPl ? 'Dzienne wyzwanie' : 'Daily Challenge'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleNewRandomRoute}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 text-sand-100 hover:bg-white/15 transition-colors font-medium"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm bg-white/10 text-sand-100 hover:bg-white/15 transition-colors font-medium"
               >
-                <Sparkles size={13} className="text-amber-400" />
+                <Sparkles size={13} className="text-amber-400 shrink-0" />
                 <span>{isPl ? 'Losowa trasa' : 'New Random Route'}</span>
               </button>
             </div>
           </div>
 
           {/* Path Trail (Breadcrumbs) */}
-          <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-3.5 space-y-2 text-left">
+          <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-2.5 sm:p-3.5 space-y-1.5 sm:space-y-2 text-left">
             <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
               {isPl ? `Twoja trasa (${path.length} etapów)` : `Your Path Trail (${path.length} locations)`}
             </span>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
               {path.map((step, idx) => {
                 const isCurrent = idx === path.length - 1;
                 const isTarget = step.toLowerCase() === challenge.target.toLowerCase();
                 const isStart = idx === 0;
 
                 return (
-                  <div key={`${step}-${idx}`} className="flex items-center gap-1.5">
+                  <div key={`${step}-${idx}`} className="flex items-center gap-1 sm:gap-1.5 max-w-full">
                     <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xs font-mono text-xs font-semibold ${
+                      className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xs font-mono text-xs font-semibold max-w-full break-words [overflow-wrap:anywhere] ${
                         isCurrent
                           ? isTarget
                             ? 'bg-emerald-400 text-obsidian-950 ring-2 ring-emerald-300'
@@ -449,8 +452,8 @@ export default function BorderHopPage() {
                           : 'bg-obsidian-950 border border-white/10 text-zinc-300'
                       }`}
                     >
-                      <MapPin size={11} className={isCurrent ? 'text-emerald-400' : 'text-zinc-500'} />
-                      <span>{step}</span>
+                      <MapPin size={11} className={`shrink-0 ${isCurrent ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                      <span className="break-words [overflow-wrap:anywhere]">{step}</span>
                     </span>
                     {idx < path.length - 1 && <ArrowRight size={12} className="text-zinc-600 shrink-0" />}
                   </div>
@@ -461,14 +464,14 @@ export default function BorderHopPage() {
 
           {/* Victory Debrief Modal / Card */}
           {status === 'won' && verification && (
-            <div className="rounded-sm border-2 border-emerald-400 bg-obsidian-900/90 p-5 sm:p-6 text-left space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-emerald-500/20 border border-emerald-500/40 p-2.5 text-emerald-400">
-                    <Trophy size={24} />
+            <div className="rounded-sm border-2 border-emerald-400 bg-obsidian-900/90 p-4 sm:p-6 text-left space-y-4 sm:space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-3 sm:pb-4">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="rounded-full bg-emerald-500/20 border border-emerald-500/40 p-2 sm:p-2.5 text-emerald-400 shrink-0">
+                    <Trophy size={22} className="sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="font-mono text-xl sm:text-2xl font-bold text-sand-100">
+                    <h2 className="font-mono text-lg sm:text-2xl font-bold text-sand-100">
                       {isPl ? 'Trasa ukończona!' : 'Route Completed!'}
                     </h2>
                     <p className="text-xs sm:text-sm text-emerald-400 font-semibold font-mono">
@@ -488,18 +491,18 @@ export default function BorderHopPage() {
                 </div>
 
                 {/* Score Summary */}
-                <div className="flex items-center gap-3 self-start sm:self-auto">
-                  <div className="rounded-sm bg-obsidian-950 border border-white/10 px-3 py-1.5 text-center">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 w-full sm:w-auto self-start sm:self-auto">
+                  <div className="rounded-sm bg-obsidian-950 border border-white/10 px-2.5 sm:px-3 py-1.5 text-center">
                     <span className="block text-[10px] font-mono uppercase text-zinc-400">
                       {isPl ? 'Przeskoki' : 'Hops Taken'}
                     </span>
-                    <span className="font-mono text-base font-bold text-sand-100">{verification.hops}</span>
+                    <span className="font-mono text-sm sm:text-base font-bold text-sand-100">{verification.hops}</span>
                   </div>
-                  <div className="rounded-sm bg-obsidian-950 border border-emerald-500/30 px-3 py-1.5 text-center">
+                  <div className="rounded-sm bg-obsidian-950 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 text-center">
                     <span className="block text-[10px] font-mono uppercase text-emerald-400">
                       {isPl ? 'Optymalnie' : 'Optimal'}
                     </span>
-                    <span className="font-mono text-base font-bold text-emerald-300">
+                    <span className="font-mono text-sm sm:text-base font-bold text-emerald-300">
                       {verification.optimal_hops}
                     </span>
                   </div>
@@ -508,16 +511,16 @@ export default function BorderHopPage() {
 
               {/* Path Reveal Comparison */}
               {verification.optimal_path && (
-                <div className="space-y-2 text-xs">
-                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
+                <div className="space-y-1.5 sm:space-y-2 text-xs">
+                  <span className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
                     {isPl ? 'Optymalna najkrótsza ścieżka:' : 'Optimal Shortest Path:'}
                   </span>
-                  <div className="p-3 rounded-sm bg-obsidian-950/70 border border-white/10 font-mono text-zinc-300 flex flex-wrap items-center gap-1.5">
+                  <div className="p-2.5 sm:p-3 rounded-sm bg-obsidian-950/70 border border-white/10 font-mono text-zinc-300 flex flex-wrap items-center gap-1.5">
                     {verification.optimal_path.map((node, i) => (
-                      <span key={node} className="inline-flex items-center gap-1">
-                        <span className="font-semibold text-emerald-300">{node}</span>
+                      <span key={node} className="inline-flex items-center gap-1 max-w-full">
+                        <span className="font-semibold text-emerald-300 break-words [overflow-wrap:anywhere]">{node}</span>
                         {i < verification.optimal_path!.length - 1 && (
-                          <ArrowRight size={11} className="text-zinc-600" />
+                          <ArrowRight size={11} className="text-zinc-600 shrink-0" />
                         )}
                       </span>
                     ))}
@@ -526,39 +529,41 @@ export default function BorderHopPage() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   type="button"
                   onClick={handleCopyResult}
-                  className="flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2.5 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-md cursor-pointer"
+                  className="flex items-center gap-2 rounded-sm bg-emerald-400 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-md cursor-pointer"
                 >
-                  {copied ? <Check size={15} /> : <Share2 size={15} />}
+                  {copied ? <Check size={14} /> : <Share2 size={14} />}
                   <span>{copied ? (isPl ? 'Skopiowano!' : 'Copied!') : (isPl ? 'Kopiuj wynik' : 'Share Result')}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleNewRandomRoute}
-                  className="flex items-center gap-2 rounded-sm border border-white/15 px-4 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="flex items-center gap-2 rounded-sm border border-white/15 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
                 >
-                  <Sparkles size={14} className="text-amber-400" />
+                  <Sparkles size={14} className="text-amber-400 shrink-0" />
                   <span>{isPl ? 'Nowa trasa' : 'Play Another Route'}</span>
                 </button>
 
                 <Link
                   to="/explore"
-                  className="flex items-center gap-1.5 rounded-sm border border-white/15 px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-1.5 rounded-sm border border-white/15 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-zinc-300 hover:bg-white/10 transition-colors"
                 >
-                  <span>{isPl ? `Odkryj ${challenge.target} w Atlasie` : `Explore ${challenge.target} in Atlas`}</span>
-                  <ExternalLink size={13} />
+                  <span className="break-words [overflow-wrap:anywhere]">
+                    {isPl ? `Odkryj ${challenge.target} w Atlasie` : `Explore ${challenge.target} in Atlas`}
+                  </span>
+                  <ExternalLink size={13} className="shrink-0" />
                 </Link>
 
                 <Link
                   to={mode === 'us_states' ? '/us-states' : '/game'}
-                  className="text-xs text-zinc-400 hover:text-sand-100 ml-auto flex items-center gap-1 transition-colors"
+                  className="text-xs text-zinc-400 hover:text-sand-100 w-full sm:w-auto sm:ml-auto flex items-center justify-start sm:justify-end gap-1 pt-1 sm:pt-0 transition-colors"
                 >
                   <span>{isPl ? 'Wróć do gry dnia' : 'Back to Daily Game'}</span>
-                  <ArrowRight size={13} />
+                  <ArrowRight size={13} className="shrink-0" />
                 </Link>
               </div>
             </div>
@@ -566,13 +571,13 @@ export default function BorderHopPage() {
 
           {/* Active Hop Dock (When still playing) */}
           {status === 'playing' && currentLocation && (
-            <div className="rounded-sm border border-white/10 bg-obsidian-900/50 p-4 sm:p-5 text-left space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-white/10 pb-3">
-                <div className="space-y-0.5">
+            <div className="rounded-sm border border-white/10 bg-obsidian-900/50 p-3 sm:p-5 text-left space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 border-b border-white/10 pb-2.5 sm:pb-3">
+                <div className="space-y-0.5 min-w-0">
                   <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-emerald-400 block">
                     {isPl ? 'Następny przeskok' : 'Next Border Hop'}
                   </span>
-                  <p className="text-sm font-semibold text-sand-100 font-mono">
+                  <p className="text-xs sm:text-sm font-semibold text-sand-100 font-mono break-words [overflow-wrap:anywhere]">
                     {isPl ? (
                       <>
                         Jesteś w: <strong className="text-emerald-300">{currentLocation}</strong>. Wybierz sąsiada:
@@ -618,7 +623,7 @@ export default function BorderHopPage() {
                     : 'No bordering neighbors found (dead end).'}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2">
                   {filteredNeighbors.map((neighbor) => {
                     const isTarget = neighbor.toLowerCase() === challenge.target.toLowerCase();
                     const alreadyVisited = path.includes(neighbor);
@@ -628,7 +633,8 @@ export default function BorderHopPage() {
                         key={neighbor}
                         type="button"
                         onClick={() => handleSelectNeighbor(neighbor)}
-                        className={`group relative flex items-center justify-between p-2.5 rounded-sm border text-left transition-all cursor-pointer ${
+                        title={neighbor}
+                        className={`group relative flex items-center justify-between p-2 sm:p-2.5 rounded-sm border text-left transition-all cursor-pointer min-w-0 ${
                           isTarget
                             ? 'bg-emerald-500/20 border-emerald-400/80 hover:bg-emerald-500/30 text-emerald-200'
                             : alreadyVisited
@@ -636,7 +642,7 @@ export default function BorderHopPage() {
                             : 'bg-obsidian-950/80 border-white/10 hover:border-emerald-400/50 hover:bg-white/5 text-sand-100'
                         }`}
                       >
-                        <span className="font-mono text-xs font-semibold truncate pr-2">{neighbor}</span>
+                        <span className="font-mono text-xs font-semibold break-words [overflow-wrap:anywhere] min-w-0 pr-1 sm:pr-2 leading-tight">{neighbor}</span>
                         {isTarget ? (
                           <span className="shrink-0 rounded-xs bg-emerald-400 px-1.5 py-0.5 font-mono text-[9px] font-bold text-obsidian-950 uppercase">
                             {isPl ? 'Cel' : 'Target'}

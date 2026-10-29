@@ -28,6 +28,10 @@ Contact and Privacy settings; games, blog, guides and help remain in the header.
 Phone map controls use 36px buttons and a compact vertical stack for zoom, reset,
 clear, reference lines and the revealed-target action. Desktop sizing is unchanged.
 
+Phone gameplay uses compact map and notebook spacing with bottom safe-area
+insets. The coat quiz keeps its input and controls visible while scrolling;
+Flag Shades, County Coats and Border Hop also use compact phone layouts.
+
 The homepage puts one daily-puzzle action first, followed by the spinning globe
 on phones as well as desktop. Guest progress controls the play/continue/result
 label only when its date and loading state are current. Other games, rules and

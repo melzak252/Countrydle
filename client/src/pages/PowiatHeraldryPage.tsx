@@ -470,12 +470,12 @@ export default function PowiatHeraldryPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-6 sm:py-4">
+    <div className="mx-auto w-full max-w-4xl px-2.5 py-1.5 sm:px-6 sm:py-4">
       {/* Header Bar */}
-      <header className="mb-3 border-b border-sand-800/80 pb-3 sm:mb-6 sm:pb-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <header className="mb-2 sm:mb-6 border-b border-sand-800/80 pb-2 sm:pb-4 space-y-2 sm:space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div>
-            <div className="mb-1 flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
+            <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
               <span className="flex items-center gap-1.5">
                 <Shield size={14} className="text-emerald-400" />
                 {isPl ? 'Heraldyka Powiatowa' : 'County Heraldry'}
@@ -483,41 +483,41 @@ export default function PowiatHeraldryPage() {
               <span>•</span>
               <span>{mode === 'daily' ? challenge?.date || 'Daily' : isPl ? 'Wyzwanie' : 'Challenge'}</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-sand-100 sm:text-3xl">
+            <h1 className="text-lg font-bold tracking-tight text-sand-100 sm:text-3xl">
               {isPl ? 'Herby Powiatów' : 'County Coats of Arms'}
             </h1>
-            <p className="mt-0.5 text-xs text-sand-400 sm:text-sm">
+            <p className="mt-0.5 text-[11px] leading-tight text-sand-400 sm:text-sm sm:leading-normal">
               {isPl
                 ? 'Rozpoznaj polski powiat po jego oficjalnym herbie. Po 5 błędnych próbach poznasz tablice rejestracyjne.'
                 : 'Identify the Polish county by its official coat of arms. Registration plates reveal after 5 wrong guesses.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Guesses Remaining Pill */}
-            <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2.5 py-1.5 shadow-sm sm:px-3.5 sm:py-2">
-              <span className="mr-2 font-mono text-xs uppercase tracking-wider text-zinc-400">
+            <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
+              <span className="mr-1.5 sm:mr-2 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-zinc-400">
                 {isPl ? 'Próby:' : 'Guesses:'}
               </span>
               <span
-                className={`font-mono text-base font-bold ${
+                className={`font-mono text-sm sm:text-base font-bold ${
                   guesses.length >= maxGuesses - 2 ? 'text-amber-400' : 'text-emerald-400'
                 }`}
               >
                 {guesses.length}
               </span>
-              <span className="font-mono text-xs text-zinc-500"> / {maxGuesses}</span>
+              <span className="font-mono text-[11px] sm:text-xs text-zinc-500"> / {maxGuesses}</span>
             </div>
 
             {/* Help Modal Button */}
             <button
               type="button"
               onClick={() => setShowInstructions(true)}
-              className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors cursor-pointer"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors cursor-pointer"
               title={isPl ? 'Zasady gry Herby Powiatów' : 'How to play County Coats of Arms'}
               aria-label={isPl ? 'Zasady gry' : 'Instructions'}
             >
-              <HelpCircle size={18} />
+              <HelpCircle size={17} />
             </button>
 
             {/* Results Button when Game is Over */}
@@ -525,10 +525,10 @@ export default function PowiatHeraldryPage() {
               <button
                 type="button"
                 onClick={() => setShowResultsModal(true)}
-                className="flex h-10 sm:h-9 items-center gap-1.5 px-3 rounded-sm border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
+                className="flex h-8 sm:h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-sm border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
                 title={isPl ? 'Pokaż wynik' : 'Show results'}
               >
-                <Trophy size={15} />
+                <Trophy size={14} />
                 <span>{isPl ? 'Wyniki' : 'Results'}</span>
               </button>
             )}
@@ -536,12 +536,12 @@ export default function PowiatHeraldryPage() {
         </div>
 
         {/* Mode Switcher Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5">
-          <div className="inline-flex rounded-sm border border-white/10 bg-obsidian-950 p-1 text-xs font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 pt-1 border-t border-white/5">
+          <div className="grid grid-cols-2 sm:inline-flex rounded-sm border border-white/10 bg-obsidian-950 p-0.5 sm:p-1 text-xs font-medium w-full sm:w-auto">
             <button
               type="button"
               onClick={() => handleSwitchMode('daily')}
-              className={`px-3 py-1.5 rounded-xs transition-colors cursor-pointer ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xs transition-colors cursor-pointer text-center ${
                 mode === 'daily'
                   ? 'bg-emerald-500/20 text-emerald-300 font-semibold shadow-xs'
                   : 'text-zinc-400 hover:text-sand-200'
@@ -552,7 +552,7 @@ export default function PowiatHeraldryPage() {
             <button
               type="button"
               onClick={() => handleSwitchMode('challenge')}
-              className={`px-3 py-1.5 rounded-xs transition-colors cursor-pointer ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xs transition-colors cursor-pointer text-center ${
                 mode === 'challenge'
                   ? 'bg-emerald-500/20 text-emerald-300 font-semibold shadow-xs'
                   : 'text-zinc-400 hover:text-sand-200'
@@ -562,32 +562,40 @@ export default function PowiatHeraldryPage() {
             </button>
             <Link
               to="/quiz-herbow"
-              className="px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
+              className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
             >
               🏆 {isPl ? 'Quiz 380 Herbów (JetPunk)' : '380 Coats Grid Quiz'}
             </Link>
           </div>
 
-          {mode === 'challenge' && (
-            <button
-              type="button"
-              onClick={() => loadChallenge('challenge', `challenge-${Date.now()}`)}
-              disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-sand-700 bg-sand-900/60 text-sand-200 hover:bg-sand-800 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            {mode === 'challenge' && (
+              <button
+                type="button"
+                onClick={() => loadChallenge('challenge', `challenge-${Date.now()}`)}
+                disabled={isLoading}
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-sand-700 bg-sand-900/60 text-sand-200 hover:bg-sand-800 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+                <span>{isPl ? 'Nowy herb' : 'New Challenge'}</span>
+              </button>
+            )}
+            <Link
+              to="/quiz-herbow"
+              className="sm:hidden flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded-sm border border-white/10 bg-obsidian-950 text-zinc-400 hover:text-emerald-300 text-xs font-medium transition-colors text-center"
             >
-              <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-              <span>{isPl ? 'Nowy herb' : 'New Challenge'}</span>
-            </button>
-          )}
+              <span className="truncate">🏆 {isPl ? 'Quiz 380 Herbów' : '380 Coats Quiz'}</span>
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="space-y-4 sm:space-y-6">
+      <main className="space-y-2.5 sm:space-y-6">
         {/* 1. Coat of Arms Shield Display */}
         <section
           aria-label={isPl ? 'Tarcza herbowa powiatu' : 'County Coat of Arms Shield'}
-          className="relative flex flex-col items-center justify-center rounded-xl border border-sand-800/80 bg-obsidian-950/60 p-4 sm:p-6 shadow-inner"
+          className="relative flex flex-col items-center justify-center rounded-xl border border-sand-800/80 bg-obsidian-950/60 p-2 sm:p-6 shadow-inner"
         >
           {/* Decorative heraldic background glow */}
           <div
@@ -622,7 +630,7 @@ export default function PowiatHeraldryPage() {
                 ? 'Kliknij, aby powiększyć herb na pełny ekran'
                 : 'Click to inspect coat of arms in fullscreen'
             }
-            className={`group relative h-72 sm:h-80 aspect-[4/5] flex items-center justify-center p-3 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
+            className={`group relative h-48 sm:h-80 aspect-[4/5] flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
               resolvedCoatUrl && !imageError && !imageLoading
                 ? 'cursor-zoom-in hover:border-emerald-500/50 hover:shadow-emerald-950/30'
                 : ''
@@ -657,9 +665,9 @@ export default function PowiatHeraldryPage() {
             {resolvedCoatUrl && !imageError && !imageLoading && (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-85 group-hover:opacity-100 group-hover:border-emerald-400/50 group-hover:text-emerald-300 transition-all shadow"
+                className="pointer-events-none absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-85 group-hover:opacity-100 group-hover:border-emerald-400/50 group-hover:text-emerald-300 transition-all shadow"
               >
-                <Maximize2 size={14} />
+                <Maximize2 size={13} />
               </span>
             )}
 
@@ -669,8 +677,8 @@ export default function PowiatHeraldryPage() {
                 role="status"
                 className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-emerald-400 bg-obsidian-950/70 backdrop-blur-xs rounded-lg"
               >
-                <Loader2 className="animate-spin" size={32} aria-hidden="true" />
-                <span className="text-xs font-mono text-sand-300">
+                <Loader2 className="animate-spin" size={28} aria-hidden="true" />
+                <span className="text-[11px] sm:text-xs font-mono text-sand-300">
                   {isPl ? 'Wczytywanie tarczy herbowej...' : 'Loading heraldic shield...'}
                 </span>
               </div>
@@ -680,14 +688,14 @@ export default function PowiatHeraldryPage() {
             {imageError && (
               <div
                 role="alert"
-                className="flex flex-col items-center justify-center p-6 text-center text-amber-300 gap-3 max-w-xs"
+                className="flex flex-col items-center justify-center p-4 sm:p-6 text-center text-amber-300 gap-2.5 max-w-xs"
               >
-                <AlertCircle size={36} className="text-amber-400" />
+                <AlertCircle size={30} className="text-amber-400" />
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-sand-100">
+                  <p className="text-xs sm:text-sm font-semibold text-sand-100">
                     {isPl ? 'Błąd pobierania herbu' : 'Failed to load coat of arms'}
                   </p>
-                  <p className="text-xs text-sand-400 leading-relaxed">
+                  <p className="text-[11px] sm:text-xs text-sand-400 leading-snug">
                     {isPl
                       ? 'Wystąpił błąd sieciowy lub usługa Wikimedia/cache zwróciła błąd 503.'
                       : 'Network error or Wikimedia/cache service returned status 503.'}
@@ -700,9 +708,9 @@ export default function PowiatHeraldryPage() {
                     setImageLoading(true);
                     setRetryNonce((n) => n + 1);
                   }}
-                  className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 text-xs font-medium transition-colors cursor-pointer"
+                  className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 text-xs font-medium transition-colors cursor-pointer"
                 >
-                  <RefreshCw size={13} />
+                  <RefreshCw size={12} />
                   <span>{isPl ? 'Spróbuj ponownie' : 'Retry loading'}</span>
                 </button>
               </div>
@@ -713,9 +721,9 @@ export default function PowiatHeraldryPage() {
         {/* 2. Automatic Full Registration Plate Hint After 5th Wrong Guess */}
         <section aria-label={isPl ? 'Podpowiedź tablicy rejestracyjnej' : 'Registration plate hint'}>
           {isPlatesUnlocked ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-lg border border-blue-500/30 bg-blue-950/30 p-3.5 sm:px-5 sm:py-4 shadow-sm">
-              <div className="flex items-center gap-2.5 text-blue-300 text-xs sm:text-sm font-medium">
-                <Car size={18} className="text-blue-400 shrink-0" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 rounded-lg border border-blue-500/30 bg-blue-950/30 p-2.5 sm:px-5 sm:py-4 shadow-sm">
+              <div className="flex items-center gap-2 text-blue-300 text-xs sm:text-sm font-medium">
+                <Car size={16} className="text-blue-400 shrink-0" />
                 <span>
                   {isPl
                     ? 'Odsłonięto tablice rejestracyjne poszukiwanego powiatu:'
@@ -725,16 +733,16 @@ export default function PowiatHeraldryPage() {
               <PolishLicensePlateBadge plates={registrationPlates!} />
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-obsidian-900/60 px-4 py-3 text-xs sm:text-sm text-sand-300">
-              <div className="flex items-center gap-2.5">
-                <Lock size={16} className="text-amber-400 shrink-0" />
-                <span>
+            <div className="flex items-center justify-between gap-2.5 sm:gap-3 rounded-lg border border-amber-500/20 bg-obsidian-900/60 px-3 py-2 sm:px-4 sm:py-3 text-[11px] sm:text-sm text-sand-300">
+              <div className="flex items-center gap-2 min-w-0">
+                <Lock size={15} className="text-amber-400 shrink-0" />
+                <span className="leading-snug">
                   {isPl
                     ? `Pełny wyróżnik tablicy rejestracyjnej odsłoni się automatycznie po 5. błędnej próbie (${guesses.length}/${hintUnlockThreshold})`
                     : `Full registration plate ID reveals after 5th wrong guess (${guesses.length}/${hintUnlockThreshold})`}
                 </span>
               </div>
-              <div className="flex items-center gap-1 font-mono text-xs text-amber-400 font-bold shrink-0">
+              <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs text-amber-400 font-bold shrink-0">
                 {guesses.length < hintUnlockThreshold ? (
                   <span>
                     {isPl
@@ -753,8 +761,8 @@ export default function PowiatHeraldryPage() {
         {!isGameOver ? (
           <section aria-label={isPl ? 'Wprowadzanie odpowiedzi' : 'Submit guess'}>
             <div className="relative">
-              <div className="flex flex-col sm:flex-row items-stretch gap-2">
-                <div className="relative flex-1">
+              <div className="flex flex-row items-stretch gap-1.5 sm:gap-2">
+                <div className="relative flex-1 min-w-0">
                   <input
                     ref={inputRef}
                     type="text"
@@ -771,13 +779,13 @@ export default function PowiatHeraldryPage() {
                     onKeyDown={handleKeyDown}
                     placeholder={
                       isPl
-                        ? 'Wpisz nazwę powiatu (np. poznański, Poznań, tatrzański)...'
-                        : 'Type county name (e.g. Poznań, tatrzański, gdański)...'
+                        ? 'Wpisz nazwę powiatu (np. Poznań)...'
+                        : 'Type county name (e.g. Poznań)...'
                     }
                     disabled={isSubmitting}
                     autoComplete="off"
                     spellCheck="false"
-                    className="w-full rounded-sm border border-sand-700 bg-obsidian-950 px-3.5 py-2.5 text-sm text-sand-100 placeholder-sand-500 focus:border-emerald-500 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-sm border border-sand-700 bg-obsidian-950 px-3 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-sand-100 placeholder-sand-500 focus:border-emerald-500 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
                   />
                   {inputVal && (
                     <button
@@ -787,10 +795,10 @@ export default function PowiatHeraldryPage() {
                         setSelectedCounty(null);
                         setShowSuggestions(false);
                       }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sand-500 hover:text-sand-300 p-1 cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-sand-500 hover:text-sand-300 p-1 cursor-pointer"
                       aria-label={isPl ? 'Wyczyść pole' : 'Clear input'}
                     >
-                      <X size={15} />
+                      <X size={14} />
                     </button>
                   )}
                 </div>
@@ -799,17 +807,16 @@ export default function PowiatHeraldryPage() {
                   type="button"
                   onClick={handleSubmitGuess}
                   disabled={isSubmitting || !inputVal.trim()}
-                  className="flex items-center justify-center gap-2 rounded-sm bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-sm bg-emerald-600 px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
                 >
                   {isSubmitting ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <ArrowRight size={16} />
+                    <ArrowRight size={15} />
                   )}
                   <span>{isPl ? 'Zgadnij' : 'Guess'}</span>
                 </button>
               </div>
-
               {/* Autocomplete Dropdown */}
               {showSuggestions && filteredCounties.length > 0 && (
                 <div
@@ -1330,12 +1337,12 @@ export default function PowiatHeraldryPage() {
         >
           {/* Top Toolbar */}
           <div
-            className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6"
+            className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 bg-obsidian-900/90 px-3 py-2 sm:px-6 sm:py-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2.5 text-sm font-semibold text-sand-100">
-              <Shield size={18} className="text-emerald-400 shrink-0" />
-              <span>
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-sand-100">
+              <Shield size={16} className="text-emerald-400 shrink-0" />
+              <span className="truncate">
                 {targetPowiat
                   ? targetPowiat.name
                   : isPl
@@ -1344,7 +1351,7 @@ export default function PowiatHeraldryPage() {
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Zoom Controls */}
               <div className="inline-flex items-center rounded-sm border border-white/15 bg-obsidian-950 p-0.5 text-xs font-mono">
                 <button
@@ -1360,7 +1367,7 @@ export default function PowiatHeraldryPage() {
                 <button
                   type="button"
                   onClick={() => setZoomLevel(1)}
-                  className="px-2.5 h-8 text-sand-100 hover:bg-white/10 rounded-xs cursor-pointer"
+                  className="px-2 h-8 text-sand-100 hover:bg-white/10 rounded-xs cursor-pointer text-xs"
                   title={isPl ? 'Resetuj powiększenie' : 'Reset zoom'}
                 >
                   {Math.round(zoomLevel * 100)}%
@@ -1381,22 +1388,22 @@ export default function PowiatHeraldryPage() {
               <button
                 type="button"
                 onClick={() => setLightBackdrop((prev) => !prev)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-950 px-3 text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-950 px-2 sm:px-3 text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 title={isPl ? 'Przełącz kontrast tła' : 'Toggle background contrast'}
               >
-                {lightBackdrop ? <Moon size={14} className="text-sky-300" /> : <Sun size={14} className="text-amber-300" />}
-                <span>{lightBackdrop ? (isPl ? 'Ciemne tło' : 'Dark bg') : (isPl ? 'Jasne tło' : 'Light bg')}</span>
+                {lightBackdrop ? <Moon size={13} className="text-sky-300" /> : <Sun size={13} className="text-amber-300" />}
+                <span className="hidden xs:inline">{lightBackdrop ? (isPl ? 'Ciemne tło' : 'Dark bg') : (isPl ? 'Jasne tło' : 'Light bg')}</span>
               </button>
 
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setIsFullscreenOpen(false)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-white/10 px-3 text-xs font-semibold text-sand-100 hover:bg-white/20 transition-colors cursor-pointer"
+                className="inline-flex h-8 sm:h-9 items-center gap-1 rounded-sm border border-white/15 bg-white/10 px-2 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-white/20 transition-colors cursor-pointer"
                 aria-label={isPl ? 'Zamknij pełny ekran' : 'Close fullscreen'}
               >
-                <X size={15} />
-                <span>{isPl ? 'Zamknij (Esc)' : 'Close (Esc)'}</span>
+                <X size={14} />
+                <span>{isPl ? 'Zamknij' : 'Close'}<span className="hidden sm:inline"> (Esc)</span></span>
               </button>
             </div>
           </div>

@@ -6,6 +6,7 @@ import type { AnswerReportMode, Question } from '../types';
 import type { GameplayNotice } from '../lib/gameplayNotices';
 import { getConversationMessages } from '../lib/chatMessages';
 import AnswerReportForm from './AnswerReportForm';
+import FactProvenance from './FactProvenance';
 
 interface ResultsQuestionHistoryProps {
   questions: Question[];
@@ -74,6 +75,7 @@ export default function ResultsQuestionHistory({ questions, mode, isGameOver, no
                     {question?.explanation && (!question.valid || isGameOver) && (
                       <p className="whitespace-pre-wrap text-zinc-300">{question.explanation}</p>
                     )}
+                    {isGameOver && <FactProvenance records={question?.fact_provenance} />}
                   </>
                 )}
                 <button

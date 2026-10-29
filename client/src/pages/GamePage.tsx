@@ -155,7 +155,7 @@ export default function GamePage() {
 
       {/* 2. Top Status HUD Bar */}
       <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
-        <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono md:h-8 md:w-auto md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:shadow-lg md:backdrop-blur-md">
+        <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono max-md:[@media(max-height:560px)]:h-8 md:h-8 md:w-auto md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:shadow-lg md:backdrop-blur-md">
           <div className="hidden md:flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span className="hidden sm:inline">Daily fieldwork</span>
@@ -184,14 +184,14 @@ export default function GamePage() {
             examples={t('gamePage.examples', { returnObjects: true }) as string[]}
             scoring={{ maxPoints: 3300, details: t('gamePage.scoringDetails', { returnObjects: true }) as string[] }}
             compact={true}
-            triggerClassName="max-md:min-h-11 max-md:min-w-11 flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+            triggerClassName="max-md:min-h-11 max-md:min-w-11 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:min-w-8 flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
           />
 
           {isGameOver && (
             <button
               type="button"
               onClick={() => setIsResultDismissed(false)}
-              className="max-md:min-h-11 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+              className="max-md:min-h-11 max-md:[@media(max-height:560px)]:min-h-8 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
             >
               <Trophy size={13} />
               <span>{i18n.language.startsWith('pl') ? 'Wynik' : 'Result'}</span>
@@ -205,17 +205,30 @@ export default function GamePage() {
       <div className={`pointer-events-none ${
         isChatOpen
           ? 'game-notebook-layer absolute inset-0 z-[1100] md:absolute md:inset-0 md:z-[1000]'
-          : 'absolute inset-x-0 bottom-0 z-[995] w-full pb-[max(calc(env(safe-area-inset-bottom)+0.25rem),0.75rem)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)] md:pb-0'
+          : 'absolute inset-x-0 bottom-0 z-[995] w-full bg-obsidian-950 pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)] md:bg-transparent md:pb-0'
       }`}>
         {!isChatOpen ? (
-          <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
-            <button type="button" onClick={() => { setUserSelectedTab('question'); setIsChatOpen(true); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 md:hidden">
+          <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl max-md:[@media(max-height:560px)]:p-0.5 md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
+            <button
+              type="button"
+              onClick={() => { setUserSelectedTab('question'); setIsChatOpen(true); }}
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 md:hidden"
+            >
               {i18n.language.startsWith('pl') ? 'Pytaj' : 'Ask'} <span className="text-zinc-400">{gameState.remaining_questions}/10</span>
             </button>
-            <button type="button" onClick={() => { setUserSelectedTab('guess'); setIsChatOpen(true); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 md:hidden">
+            <button
+              type="button"
+              onClick={() => { setUserSelectedTab('guess'); setIsChatOpen(true); }}
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 md:hidden"
+            >
               {i18n.language.startsWith('pl') ? 'Zgadnij' : 'Guess'} <span className="text-emerald-400">{gameState.remaining_guesses}/3</span>
             </button>
-            <button type="button" onClick={() => setIsChatOpen(true)} className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 md:flex" aria-label={i18n.language.startsWith('pl') ? 'Otwórz notatnik' : 'Open notebook'}>
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 md:flex"
+              aria-label={i18n.language.startsWith('pl') ? 'Otwórz notatnik' : 'Open notebook'}
+            >
               <MessageSquare size={13} className="text-emerald-400" />
               <span>{i18n.language.startsWith('pl') ? 'Notatnik' : 'Notebook'}</span>
               <span className="text-sand-100 font-semibold">Q: {questions.length}/10</span>
@@ -228,13 +241,13 @@ export default function GamePage() {
           <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950/90 backdrop-blur-sm shadow-2xl transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/80 md:backdrop-blur-md md:pb-0">
 
             {/* Notebook Tabbed Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-2 py-1 shrink-0 md:px-4 md:py-3 md:bg-obsidian-900/70 md:backdrop-blur-md">
+            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-2 py-1 shrink-0 max-md:[@media(max-height:560px)]:py-0.5 md:px-4 md:py-3 md:bg-obsidian-900/70 md:backdrop-blur-md">
               <div role="group" aria-label={i18n.language.startsWith('pl') ? 'Wybierz pytanie lub zgadnięcie' : 'Choose question or guess'} className="flex items-center gap-1">
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'questions'}
                   onClick={() => setUserSelectedTab('question')}
-                  className={`flex min-h-11 items-center gap-1 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`flex min-h-11 max-md:[@media(max-height:560px)]:min-h-8 items-center gap-1 rounded-xl px-2 py-2 max-md:[@media(max-height:560px)]:py-1 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'questions'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
                       : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
@@ -250,7 +263,7 @@ export default function GamePage() {
                   type="button"
                   aria-pressed={activeChatTab === 'guesses'}
                   onClick={() => setUserSelectedTab('guess')}
-                  className={`flex min-h-11 items-center gap-1 rounded-xl px-2 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`flex min-h-11 max-md:[@media(max-height:560px)]:min-h-8 items-center gap-1 rounded-xl px-2 py-2 max-md:[@media(max-height:560px)]:py-1 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'guesses'
                       ? 'bg-emerald-400/15 font-semibold text-sand-100'
                       : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
@@ -263,26 +276,91 @@ export default function GamePage() {
                 </button>
               </div>
 
-              <BackToMapButton onClick={() => setIsChatOpen(false)} />
+              <BackToMapButton onClick={() => setIsChatOpen(false)} className="max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1" />
             </div>
 
             {/* Tab 1: Questions Stream */}
             {activeChatTab === 'questions' && (
-              <div ref={questionsContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar overscroll-contain">
-                <QuestionChat questions={sortedQuestions} notices={notices} mode="countrydle" isGameOver={isGameOver} isLoading={isLoading} pendingQuestion={pendingQuestion} />
+              <div
+                ref={questionsContainerRef}
+                className={`flex-1 min-h-0 overflow-y-auto p-4 max-md:[@media(max-height:560px)]:p-2 custom-scrollbar overscroll-contain ${
+                  sortedQuestions.length === 0 && notices.length === 0 && !pendingQuestion
+                    ? 'flex flex-col justify-center'
+                    : ''
+                }`}
+              >
+                {sortedQuestions.length === 0 && notices.length === 0 && !pendingQuestion ? (
+                  <div className="my-auto mx-auto flex w-full max-w-sm flex-col items-center justify-center text-center select-text py-4 max-md:[@media(max-height:560px)]:py-1 space-y-3 max-md:[@media(max-height:560px)]:space-y-1.5">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-400/10 text-emerald-300 shadow-sm max-md:[@media(max-height:560px)]:h-8 max-md:[@media(max-height:560px)]:w-8 max-md:[@media(max-height:560px)]:rounded-lg">
+                      <MessageSquare size={22} className="max-md:[@media(max-height:560px)]:h-4 max-md:[@media(max-height:560px)]:w-4" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-sand-100 max-md:[@media(max-height:560px)]:text-xs">
+                        {i18n.language.startsWith('pl') ? 'Każde pytanie jest wskazówką' : 'Every question is a clue'}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-400 max-w-xs mx-auto max-md:[@media(max-height:560px)]:hidden">
+                        {i18n.language.startsWith('pl')
+                          ? 'Zadaj poniżej pytanie tak lub nie o geografię, ludność lub kulturę, aby zawęzić wybór.'
+                          : 'Ask a yes-or-no question below about geography, population, or culture to narrow it down.'}
+                      </p>
+                    </div>
+                    <div className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left space-y-1.5 max-md:[@media(max-height:560px)]:hidden">
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-emerald-400/90 font-semibold">
+                        {i18n.language.startsWith('pl') ? 'Przykłady pytań:' : 'Example questions:'}
+                      </p>
+                      <ul className="text-xs text-zinc-300 space-y-1">
+                        <li className="flex items-center gap-1.5">
+                          <span className="text-emerald-400 text-[10px]">●</span>
+                          <span>{i18n.language.startsWith('pl') ? 'Czy ma dostęp do morza?' : 'Does it have a coastline?'}</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <span className="text-emerald-400 text-[10px]">●</span>
+                          <span>{i18n.language.startsWith('pl') ? 'Czy leży w Europie?' : 'Is it in Europe?'}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <QuestionChat
+                    questions={sortedQuestions}
+                    notices={notices}
+                    mode="countrydle"
+                    isGameOver={isGameOver}
+                    isLoading={isLoading}
+                    pendingQuestion={pendingQuestion}
+                  />
+                )}
               </div>
             )}
 
             {/* Tab 2: Guesses Stream */}
             {activeChatTab === 'guesses' && (
-              <div ref={guessesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 text-xs custom-scrollbar overscroll-contain">
+              <div
+                ref={guessesContainerRef}
+                className={`flex-1 min-h-0 overflow-y-auto p-3 max-md:[@media(max-height:560px)]:p-2 space-y-2 max-md:[@media(max-height:560px)]:space-y-1 text-xs custom-scrollbar overscroll-contain ${
+                  guesses.length === 0 ? 'flex flex-col justify-center' : ''
+                }`}
+              >
                 {guesses.length === 0 ? (
-                  <div className="py-7 text-center text-zinc-400 space-y-1 border border-dashed border-white/10 rounded-sm p-4">
-                    <Compass size={20} className="mx-auto text-zinc-600" />
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-sand-200">No attempts logged</p>
-                    <p className="text-xs text-zinc-500">
-                      Submit country guesses when ready (max 3 tries).
-                    </p>
+                  <div className="my-auto mx-auto w-full max-w-sm text-center text-zinc-400 space-y-2.5 border border-dashed border-white/10 rounded-2xl bg-white/[0.02] p-5 max-md:[@media(max-height:560px)]:py-2 max-md:[@media(max-height:560px)]:space-y-1 max-md:[@media(max-height:560px)]:rounded-lg">
+                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sand-200 max-md:[@media(max-height:560px)]:h-7 max-md:[@media(max-height:560px)]:w-7 max-md:[@media(max-height:560px)]:rounded-md">
+                      <Compass size={22} className="text-emerald-400 max-md:[@media(max-height:560px)]:h-4 max-md:[@media(max-height:560px)]:w-4" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
+                        {i18n.language.startsWith('pl') ? 'Brak prób odgadnięcia' : 'No attempts logged'}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-400 max-md:[@media(max-height:560px)]:hidden">
+                        {i18n.language.startsWith('pl')
+                          ? 'Wpisz swoje strzały kraju, gdy będziesz gotowy (maks. 3 próby).'
+                          : 'Submit country guesses when ready (max 3 tries).'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-white/5 bg-obsidian-950/60 px-3 py-2 text-[11px] leading-relaxed text-zinc-400 max-md:[@media(max-height:560px)]:hidden">
+                      {i18n.language.startsWith('pl')
+                        ? 'Każdy strzał wskaże odległość w kilometrach oraz kierunek geograficzny do celu.'
+                        : 'Each guess reveals the distance in kilometers and compass bearing to the target.'}
+                    </div>
                   </div>
                 ) : (
                   guesses.map((g, index) => {
@@ -295,7 +373,7 @@ export default function GamePage() {
                           <span>#{String(index + 1).padStart(2, '0')} · Location Attempt</span>
                         </div>
                         <div
-                          className={`flex items-center justify-between gap-3 border-l-2 bg-obsidian-950/70 px-3 py-2 rounded-r-sm transition-colors ${
+                          className={`flex items-center justify-between gap-3 border-l-2 bg-obsidian-950/70 px-3 py-2 max-md:[@media(max-height:560px)]:py-1 rounded-r-sm transition-colors ${
                             g.answer
                               ? 'border-l-emerald-400 bg-emerald-500/10'
                               : 'border-l-rose-500/60'
@@ -367,11 +445,11 @@ export default function GamePage() {
                 )}
               </GameActionComposer>
             ) : (
-              <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
+              <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-obsidian-950/80 px-4 py-3 max-md:[@media(max-height:560px)]:py-1.5 max-md:[@media(max-height:560px)]:px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:pb-3">
                 <div className="flex items-center gap-3">
                   <Trophy size={16} className="text-amber-400" />
                   <span className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
-                    {gameState.won ? 'Fieldwork solved' : 'Investigation concluded'}
+                    {gameState.won ? (i18n.language.startsWith('pl') ? 'Zagadka rozwiązana' : 'Fieldwork solved') : (i18n.language.startsWith('pl') ? 'Śledztwo zakończone' : 'Investigation concluded')}
                   </span>
                   <span className="font-mono text-xs text-emerald-400">{gameState.points} pts</span>
                 </div>
@@ -380,7 +458,7 @@ export default function GamePage() {
                   onClick={() => setIsResultDismissed(false)}
                   className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
                 >
-                  View Result Card
+                  {i18n.language.startsWith('pl') ? 'Karta wyniku' : 'View Result Card'}
                 </button>
               </div>
             )}
