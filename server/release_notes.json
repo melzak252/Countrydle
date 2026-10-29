@@ -1,5 +1,5 @@
 {
-  "version": "1.36.3",
-  "title": "Instant fullscreen coat of arms preview with background vector swap",
-  "body": "- Enabled instant 0ms cached preview in the Fullscreen Coat of Arms Inspector so players never wait for images to load, with high-resolution vector SVGs seamlessly swapping in."
+  "version": "1.36.4",
+  "title": "Mobile gameplay improvements",
+  "body": "- Improved phone layouts for game controls, county coats, Flag Shades and Border Hop.\n- Restored fact provenance in completed question histories."
 }
