@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios';
 import { z } from 'zod';
 import { blogService } from '../../services/api';
 import { blogListSchema, blogPostSchema, blogFactsSchema, blogFunFactsSchema, blogDeductionSchema, blogSourceSchema, safeSourceUrl, type BlogSummary } from '../../blogContent';
+import { BlogArticle } from '../../pages/BlogPostPage';
 
 const editableSchema = z.object({
   title: z.string().trim().min(1).max(240), subtitle: z.string().trim().min(1).max(500),
@@ -90,6 +91,7 @@ export default function AdminBlogTab() {
   const dirty = !!post && !!draft && JSON.stringify(draft) !== JSON.stringify(postDraft(post));
   const privateDate = !!post && post.date >= new Date().toISOString().slice(0, 10);
   const reviewed = post?.editorial_status === 'reviewed';
+  const previewPost = post ? blogPostSchema.safeParse(post) : null;
   const mutate = async (action: 'save' | 'review' | 'unreview') => {
     if (!post || !draft || busy) return;
     if (action === 'save' && (staleVersion || !post.updated_at)) {
@@ -102,7 +104,7 @@ export default function AdminBlogTab() {
     if (action === 'review' && (dirty || privateDate || !post.source_links.length)) {
       setError('Save edits first, and review only a past-day post with actual source links.'); return;
     }
-    if (action === 'review' && !window.confirm('Record your signed-in admin identity and the current time as the reviewer of this saved post? Only confirm after you have personally checked the content against its recorded sources.')) return;
+    if (action === 'review' && !window.confirm('Approve this saved post for publication and record your signed-in admin identity and the current time? You are responsible for the decision. Source checking may be human or AI-assisted; do not represent AI-assisted checking as a personal human fact-check. Confirm only after considering the article, source report and its limitations.')) return;
     setBusy(true); setError(null); setMessage(null);
     try {
       let response: unknown;
@@ -141,7 +143,7 @@ export default function AdminBlogTab() {
   };
 
   return <section className="space-y-6 text-zinc-300">
-    <header><h2 className="font-serif text-2xl text-sand-100">Blog editorial management</h2><p className="mt-2 text-sm">Generated recaps are not automatically approved. Saving any edit clears review attribution. Review requires a sourced, substantive past-day post and a deliberate action by the signed-in administrator.</p></header>
+    <header><h2 className="font-serif text-2xl text-sand-100">Blog editorial management</h2><p className="mt-2 text-sm">Generated recaps are not automatically approved. Saving any edit clears approval. Publication approval requires a sourced, substantive past-day post and a deliberate action by the signed-in administrator, who is responsible for that decision.</p></header>
     <label className="block text-sm">Search posts<input type="search" value={search} disabled={busy} onChange={(event) => { setSearch(event.target.value); setPage(1); }} className="mt-2 block w-full rounded border border-white/20 bg-obsidian-950 p-3" /></label>
     {listLoading ? <p role="status">Loading posts…</p> : listError ? <div role="alert"><p>{listError}</p><button type="button" onClick={() => setRefresh((value) => value + 1)} className="mt-2 underline">Retry list</button></div> : <>
       <ul className="grid gap-3 sm:grid-cols-2">{posts.map((item) => <li key={item.id}><button type="button" disabled={busy} onClick={() => {
@@ -156,11 +158,12 @@ export default function AdminBlogTab() {
     {post && (staleVersion || !post.updated_at) && <p className="rounded border border-amber-500/40 p-4 text-amber-300">Saving and review are blocked until you reload and inspect the latest saved version. Unsaved edits will not be discarded without your confirmation. <button type="button" disabled={busy} onClick={reloadLatest} className="underline">Reload latest saved post</button></p>}
     {message && <p role="status" className="text-emerald-300">{message}</p>}
     {post && draft && <form onSubmit={(event) => { event.preventDefault(); void mutate('save'); }} className="space-y-5 rounded border border-white/20 p-5">
-      <header><h3 className="font-serif text-xl text-sand-100">Editing {post.country_name} · {post.date}</h3><p className="text-sm">{post.ai_assisted ? 'AI-assisted' : 'Countrydle recap'} · {reviewed ? `Reviewed by ${post.reviewer_name} at ${post.reviewed_at}` : 'Unreviewed'} · Updated {post.updated_at || 'timestamp unavailable'}</p>{privateDate && <p className="mt-2 text-amber-300">Today/future post: private admin preview only. It cannot be reviewed for public publication.</p>}</header>
+      <header><h3 className="font-serif text-xl text-sand-100">Editing {post.country_name} · {post.date}</h3><p className="text-sm">{post.ai_assisted ? 'AI-assisted' : 'Countrydle recap'} · {reviewed ? `Publication approved by ${post.reviewer_name} at ${post.reviewed_at}` : 'Unreviewed'} · Updated {post.updated_at || 'timestamp unavailable'}</p>{privateDate && <p className="mt-2 text-amber-300">Today/future post: private admin preview only. It cannot be reviewed for public publication.</p>}</header>
       <fieldset disabled={busy} className="space-y-5">
         {(['title', 'subtitle', 'summary', 'content_markdown', 'editorial_note', 'fast_facts', 'fun_facts', 'deduction_masterclass'] as const).map((field) => <label key={field} className="block text-sm"><span className="mb-2 block">{field.replaceAll('_', ' ')}{['fast_facts', 'fun_facts', 'deduction_masterclass'].includes(field) ? ' (JSON; use null for absent facts/deduction)' : ''}</span><textarea value={draft[field]} onChange={(event) => setDraft({ ...draft, [field]: event.target.value })} rows={field === 'content_markdown' ? 12 : ['title', 'subtitle'].includes(field) ? 2 : 5} required={['title', 'subtitle', 'summary', 'content_markdown'].includes(field)} className="block w-full rounded border border-white/20 bg-obsidian-950 p-3 font-mono text-sm" /></label>)}
         <p className="text-xs text-zinc-400">Fast facts accept text, numbers, booleans and null for unknown values; unknown facts are omitted from the public display. Curiosities require title and description strings. Deduction steps require a question, with optional answer and explanation strings; a quiz requires question, correct_answer, incorrect_distractor and explanation strings. Stored JSON that needs repair remains editable, but must be corrected before saving or reviewing.</p>
-        <section className="space-y-3"><h4 className="font-semibold text-sand-100">Source links actually consulted</h4><p className="text-xs">Add real sources you checked. A URL alone does not verify a claim. HTTP(S) URLs only; sources are not fetched by this form.</p>
+        <p className="text-sm leading-6 text-amber-200">Before approving publication, inspect the rendered article body, title, summary, fast facts, curiosities, question explanations, strategy tip, and every quiz question, answer, distractor, and explanation. Consider the source checking and its limitations; correct or remove unsupported claims and misleading labels. Source checking may be performed by a human or with AI assistance, but AI-assisted checking is not a personal human fact-check. Preserve player questions and statistics. Record accurate AI and editorial attribution, including source limitations; a source link or valid JSON alone does not establish factual accuracy. The approving publisher is responsible for the publication decision.</p>
+        <section className="space-y-3"><h4 className="font-semibold text-sand-100">Sources consulted</h4><p className="text-xs">Add real sources consulted during checking and accurately disclose AI assistance and limitations in the editorial note. A URL alone does not verify a claim. HTTP(S) URLs only; sources are not fetched by this form.</p>
           {draft.source_links.map((source, index) => <div key={index} className="space-y-2 rounded border border-white/10 p-3">
             <label className="block text-sm">Source label<input value={source.label} maxLength={200} required onChange={(event) => setDraft({ ...draft, source_links: draft.source_links.map((entry, position) => position === index ? { ...entry, label: event.target.value } : entry) })} className="mt-1 block w-full rounded bg-obsidian-950 p-2" /></label>
             <label className="block text-sm">Source URL<input type="url" value={source.url} maxLength={2048} required onChange={(event) => setDraft({ ...draft, source_links: draft.source_links.map((entry, position) => position === index ? { ...entry, url: event.target.value } : entry) })} className="mt-1 block w-full rounded bg-obsidian-950 p-2" /></label>
@@ -173,5 +176,12 @@ export default function AdminBlogTab() {
         {dirty && <p className="text-xs text-amber-300">Unsaved changes. Save before recording a review. Revoking review preserves these unsaved edits.</p>}
       </fieldset>
     </form>}
+    {post && <details className="rounded border border-white/20 p-5">
+      <summary className="cursor-pointer font-semibold text-sand-100">Preview saved article</summary>
+      <p className="mt-3 text-sm text-amber-200">Private admin preview of the last loaded saved version, not a publication. {dirty ? 'Unsaved edits are not included; save them to update this preview.' : 'There are no unsaved edits.'}{staleVersion ? ' This version may be stale; reload before reviewing.' : ''} Ads and sharing are disabled in this preview.</p>
+      {previewPost?.success
+        ? <BlogArticle key={`${post.id}:${post.updated_at}`} post={previewPost.data} preview />
+        : <p role="alert" className="mt-3 text-sm text-rose-300">This saved article cannot be rendered because its stored fields need repair. Correct and save the fields above first.</p>}
+    </details>}
   </section>;
 }

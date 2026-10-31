@@ -218,13 +218,14 @@ async def dynamic_sitemap(session: AsyncSession = Depends(get_db)):
     from xml.sax.saxutils import escape
 
     from db.models.blog import DailyBlogPost
+    from db.repositories.blog import public_post_conditions
     from sqlalchemy import desc, select
 
     posts = []
     try:
         res = await session.execute(
             select(DailyBlogPost.slug, DailyBlogPost.updated_at, DailyBlogPost.created_at)
-            .where(DailyBlogPost.date < _publisher_datetime.now(timezone.utc).date())
+            .where(*public_post_conditions(_publisher_datetime.now(timezone.utc).date()))
             .order_by(desc(DailyBlogPost.date))
         )
         posts = res.all()

@@ -25,20 +25,20 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
     pool: '44 European countries (curated physical continent pool)',
     questions: '8',
     guesses: 3,
-    description: 'Deduce a hidden European sovereign state using geographic subregions, coastal sea basins, shared international borders, and physical landforms. The candidate pool covers 44 nations across the European continent, excluding transcontinental Eurasian states (Kazakhstan, Azerbaijan, Georgia) and Israel.',
+    description: 'Deduce a hidden European country using geographic subregions, coastal sea basins, shared international borders, and physical landforms. The 44-entry game pool excludes Kazakhstan, Azerbaijan, Georgia and Israel; inclusion is a game eligibility convention, not a statement about diplomatic recognition.',
     tips: [
       'Begin by isolating the European subregion (Nordic, Western, Central, Eastern, Southern/Mediterranean, or Balkan) rather than asking whether the country is in Europe.',
       'Use marginal sea access (Baltic Sea, North Sea, Mediterranean Sea, Adriatic Sea, or Black Sea) or landlocked status to partition candidates rapidly.',
       'Test shared land frontiers with major central nations such as Germany, France, or Austria to split Western from Central or Eastern European candidates.',
-      'Remember that 16 European nations are landlocked; an affirmative answer to landlocked status eliminates coastal giants like Spain, Italy, and Norway.',
+      'Landlocked status can distinguish inland candidates such as Austria from coastal countries such as Spain, Italy, and Norway.',
     ],
     example: {
       title: 'Kosovo: Landlocked Status and Balkan Frontiers',
       steps: [
-        'Kosovo is an eligible sovereign candidate within the 44-nation European game pool.',
+        'Kosovo is an eligible candidate within the European game pool; eligibility does not imply universal diplomatic recognition.',
         'Asking "Is the country landlocked?" evaluates to affirmative; interior river systems draining toward the Adriatic or Black Sea do not confer maritime coastline.',
-        'Querying "Does it border Albania?" evaluates to affirmative, instantly narrowing remaining Balkan candidates down to Kosovo, Montenegro, North Macedonia, and Greece.',
-        'Combining these clues with "Does it border Serbia?" definitively isolates Kosovo before submitting a guess.',
+        'Querying "Does it border Albania?" also yields yes, but Montenegro and North Macedonia share that border too.',
+        'A further question about Serbia still leaves North Macedonia as a possibility, so these clues alone do not establish a unique answer.',
       ],
       lesson: 'Verify multiple independent spatial clues (landlocked status plus multiple adjacent land neighbors) before expending a guess attempt.',
     },
@@ -46,12 +46,12 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
       heading: 'European Regional Geography & Maritime Topography',
       paragraphs: [
         'The European continent encompasses approximately 10.18 million square kilometres, characterized by an exceptionally complex coastline indented by major marginal and semi-enclosed seas. Geographers partition the continent into six core macroregions: Northern Europe (Scandinavia, the Baltic states, and the British Isles), Western Europe (the Low Countries, France, and Monaco), Central Europe (the Alpine states and Visegrád Group), Southern and Mediterranean Europe (the Iberian, Italian, and Greek peninsulas), Southeastern Europe (the Balkan nations), and Eastern Europe (the expansive East European Plain stretching toward the Ural Mountains).',
-        'A defining feature of European physical geography is its dual nature: extensive oceanic access contrasted with interior landlocked isolation. Sixteen sovereign European states are completely landlocked: Andorra, Austria, Belarus, the Czech Republic, Hungary, Kosovo, Liechtenstein, Luxembourg, Moldova, North Macedonia, San Marino, Serbia, Slovakia, Switzerland, and Vatican City (plus transcontinental Armenia in broader regional scopes). Europe’s coastal nations border distinctive marginal seas: the brackish Baltic Sea in the north, the stormy North Sea and Norwegian Sea along the Atlantic margin, the warm Mediterranean Sea (subdivided into the Ligurian, Tyrrhenian, Adriatic, Ionian, and Aegean seas), and the Black Sea in the southeast.',
+        'European geography contrasts oceanic access with interior landlocked locations such as Austria, Switzerland and Kosovo. Coastal countries border distinctive marginal seas: the Baltic Sea in the north, the North Sea and Norwegian Sea along the Atlantic margin, the Mediterranean Sea to the south, and the Black Sea in the southeast. Counts depend on the geographic and political scope used.',
         'Major orographic barriers and river arteries structure continental connectivity. The Alps, Carpathians, Pyrenees, Apennines, and Scandinavian Mountains divide climate zones and historical frontiers. Meanwhile, transnational river corridors — most notably the Danube (which flows through or borders 10 sovereign nations from the Black Forest to the Black Sea) and the Rhine (Europe’s primary commercial fluvial axis) — provide critical geographical reference lines for deductive puzzle solvers.',
       ],
       keyFacts: [
-        { label: 'Geographic Macroregions', detail: 'Nordic/Northern (8), Western (7), Central (5), Southern/Mediterranean (8), Balkans/SE (10), Eastern (6)' },
-        { label: 'Landlocked vs. Coastal', detail: '16 landlocked European states; 28 nations possess marine or marginal sea coastline' },
+        { label: 'Geographic Macroregions', detail: 'Northern, Western, Central, Southern, Southeastern and Eastern Europe; regional definitions can overlap' },
+        { label: 'Landlocked vs. Coastal', detail: 'Austria and Switzerland are landlocked; Poland and Italy have sea coasts' },
         { label: 'Major Maritime Basins', detail: 'Baltic Sea, North Sea, Mediterranean Sea (Adriatic, Tyrrhenian, Aegean), Black Sea, Norwegian Sea' },
         { label: 'Key Mountain Dividers', detail: 'Alps (highest peak Mont Blanc 4,808 m), Carpathians, Pyrenees, Apennines, Urals' },
       ],
@@ -177,36 +177,36 @@ const MODES: Record<string, ModeData> = {
   countrydle: {
     name: 'Countrydle — World Countries',
     path: '/game',
-    pool: '195 playable sovereign countries',
+    pool: '195 playable countries',
     questions: '10',
     guesses: 3,
-    description: 'The premier worldwide daily geography puzzle. Deduce a hidden country from a catalog of 195 sovereign nations using factual yes/no questions testing continents, coordinate quadrants, borders, coastlines, and physical geography.',
+    description: 'Deduce a hidden country from the game catalog using factual yes/no questions about continents, borders, coastlines, and physical geography. The playable catalog is a game convention, not a list of universally recognized states.',
     tips: [
       'Bisect the globe early by querying continent clusters or hemisphere coordinates relative to the Equator (0° lat) and Prime Meridian (0° long).',
-      'Distinguish open marine coastlines from landlocked status; remember that 44 sovereign countries have no access to the World Ocean.',
+      'Distinguish open marine coastlines from landlocked status: a country on an inland sea can still be landlocked.',
       'Use named international land borders to verify candidate clusters once a region is identified.',
       'Check explicit numeric metrics like population or surface area in square kilometres to differentiate large nations from microstates.',
     ],
     example: {
-      title: 'Poland: Combining Coastal and Border Intersections',
+      title: 'Poland: Combining coastal and border clues',
       steps: [
-        'Poland is an eligible sovereign country within the 195-nation worldwide catalog.',
-        'Asking "Is it in Europe?" evaluates to affirmative, cutting the search pool from 195 to 44 candidates.',
-        'Querying "Is it landlocked?" evaluates to negative because Poland borders the Baltic Sea.',
-        'Asking "Does it border Germany and the Czech Republic?" isolates Poland along Central Europe’s northern coastal plain, allowing a confident solve.',
+        'For this practice example, suppose the hidden country is Poland.',
+        '“Is it in Europe?” — Yes. Keep European candidates, allowing for the game’s continent conventions.',
+        '“Is it landlocked?” — No. Poland has a Baltic Sea coast, so landlocked candidates can be ruled out.',
+        '“Does it border Germany?” — Yes. Poland shares a land border with Germany, but other coastal countries do too.',
       ],
-      lesson: 'Layer continent, coastal classification, and specific border checks to eliminate remaining candidates before expending your 3 guesses.',
+      lesson: 'Combine independent clues before guessing. These three answers fit Poland but do not prove it is the only candidate; a further specific question can help.',
     },
     reference: {
-      heading: 'Global Sovereign State Distribution & Planetary Geography',
+      heading: 'Country eligibility and physical geography',
       paragraphs: [
-        'The global political map comprises 195 universally recognized or eligible sovereign entities across six inhabited continents: Africa (54 sovereign nations), Asia (48 nations), Europe (44 nations), the Americas (35 nations across North and South America), and Oceania (14 sovereign island states). In accordance with Countrydle’s editorial eligibility rules, Kosovo is included in the European pool, while Israel is globally excluded from playable targets and guesses without altering objective physical geography.',
-        'From a spatial perspective, sovereign nations are distributed unevenly across Earth’s four coordinate quadrants. Over 68% of sovereign states lie entirely within the Northern Hemisphere, while only 32 states lie entirely within the Southern Hemisphere, with a select group of 13 nations straddling the Equator. Similarly, the Prime Meridian (0° longitude) bisects eight countries across Europe and Africa, while the 180° antimeridian passes through the Pacific island nations of Kiribati and Fiji.',
-        'Globally, 44 sovereign states are classified as landlocked, possessing no direct territorial access to the World Ocean or its connected marginal seas. Among these, two nations — Liechtenstein in Europe and Uzbekistan in Central Asia — hold the rare distinction of being "doubly landlocked," surrounded entirely by other landlocked countries. Conversely, 151 nations possess marine coastlines, ranging from microstates with concise coastal strips (Monaco, Nauru, Tuvalu) to vast archipelagic nations like Indonesia and Canada, which boasts the world’s longest national coastline at over 202,000 kilometres.',
+        'The game catalog contains 195 playable countries. Kosovo is included and Israel is excluded from playable targets and guesses. These eligibility choices do not establish universal diplomatic recognition or change physical geography. Continent associations can overlap, so pool counts need not add up to the worldwide catalog.',
+        'Geographic clues can narrow a candidate list without settling it. A country can span more than one hemisphere or continent, and the game uses stored associations and specific territorial conventions rather than inferring every classification from a map.',
+        'Landlocked countries lack direct access to the World Ocean or its connected seas. Liechtenstein and Uzbekistan are doubly landlocked: each is surrounded by landlocked countries. An inland sea such as the Caspian does not provide marine access.',
       ],
       keyFacts: [
-        { label: 'Continental Breakdown', detail: 'Africa: 54 | Asia: 48 | Europe: 44 | Americas: 35 | Oceania: 14' },
-        { label: 'Landlocked States', detail: '44 worldwide (16 in Africa, 16 in Europe, 12 in Asia, 2 in South America)' },
+        { label: 'Continent associations', detail: 'Some countries belong to more than one continental pool; game-specific exclusions also apply.' },
+        { label: 'Landlocked examples', detail: 'Austria, Mongolia, Botswana and Paraguay lack marine coastlines.' },
         { label: 'Doubly Landlocked', detail: 'Liechtenstein (Europe) and Uzbekistan (Asia)' },
         { label: 'Transcontinental States', detail: 'Turkey, Russia, Egypt, Kazakhstan, Azerbaijan, Georgia, Panama' },
       ],
@@ -457,6 +457,11 @@ export default function ModeGuidePage() {
           ))}
         </ol>
         <p className="border-t border-white/10 pt-4 text-base leading-7">{mode.example.lesson}</p>
+        {normalizedId === 'countrydle' && (
+          <p className="text-sm text-zinc-400">
+            Geography source: <a href="https://www.britannica.com/place/Poland" className="text-emerald-300 underline underline-offset-4">Encyclopaedia Britannica, Poland</a>.
+          </p>
+        )}
       </section>
 
       {/* Mode-Specific Geographic Reference & Regional Breakdown */}

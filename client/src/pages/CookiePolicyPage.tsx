@@ -2,7 +2,7 @@ import LegalDocument from '../components/LegalDocument';
 import { PrivacySettingsButton } from '../components/PrivacySettingsButton';
 
 export default function CookiePolicyPage() {
-  const lastUpdated = "October 9, 2026";
+  const lastUpdated = "October 31, 2026";
 
   return (
     <LegalDocument title="Cookie Policy" lastUpdated={lastUpdated}>
@@ -66,12 +66,12 @@ export default function CookiePolicyPage() {
       <section>
         <h2>3. Analytics, Advertising and External Services</h2>
         <p className="mb-4">
-          Countrydle can load optional Rybbit analytics to measure visits and navigation when its deployment
-          settings are enabled independently of advertising inventory. It is a separate analytics service,
-          not an AdSense unit.
-          The external script and its configuration determine collection and storage behavior; this policy
-          does not assume that analytics necessarily uses cookies. Optional analytics and advertising are not
-          loaded during static page capture. Analytics is distinct from storage needed for your game or login.
+          Google Analytics may measure visits after the consent service reports either the required Google
+          consent or that GDPR does not apply. Optional Rybbit analytics is configured separately from advertising
+          and runs only when the consent service explicitly reports that GDPR does not apply; Google's consent
+          does not authorize Rybbit. Unknown or denied permission and unavailable consent services do not start
+          analytics. External scripts and their configuration determine collection and storage behavior; we do not
+          assume analytics necessarily uses cookies. Analytics and advertising are disabled during static capture.
         </p>
         <p className="mb-4">
           Google AdSense advertising is optional and disabled by default. The deployment must explicitly set
@@ -100,16 +100,17 @@ export default function CookiePolicyPage() {
         <h2>4. Managing Cookies and Advertising Choices</h2>
         <p className="mb-4">
           Privacy settings reopen the existing Google Funding Choices / Privacy &amp; Messaging consent service
-          so you can review, reject or withdraw your optional advertising choices when those settings are available:
+          so you can review, reject or withdraw your optional Google choices when those settings are available:
         </p>
         <div className="mb-4">
           <PrivacySettingsButton className="min-h-11 rounded-sm border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400" />
         </div>
         <p className="mb-4">
-          Rejecting or withdrawing optional advertising consent stops advertising requests; active advertising is
-          cleared by reloading the page when permission is withdrawn. This does not delete necessary game or login
-          cookies, your saved progress, or server records. Playing, creating an account or accepting the Terms of
-          Service is not consent to optional advertising storage or tracking.
+          Rejecting or withdrawing the required Google consent stops advertising and Google Analytics; active
+          provider runtimes are cleared by reloading the page when permission is withdrawn. A change from an
+          explicit non-GDPR determination also unloads active Rybbit analytics. This does not delete necessary
+          game or login cookies, your saved progress, or server records. Playing, creating an account or accepting
+          the Terms of Service is not consent to optional advertising storage or tracking.
         </p>
         <p className="mb-4">
           Opening settings while ads are active first takes you to an ad-free Cookie Policy document.

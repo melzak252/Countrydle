@@ -177,8 +177,7 @@ async def test_concurrent_admin_generation_releases_auth_and_input_reads_before_
         assert post["deduction_masterclass"]["quiz"] == paused_provider.article["trivia_quiz"]
         assert post["source_links"][0]["url"] == "https://en.wikipedia.org/wiki/Poland"
         public = await store.client.get(f"/blog/{day.isoformat()}")
-        assert public.status_code == 200, public.text
-        assert public.json()["updated_at"] == post["updated_at"]
+        assert public.status_code == 404, public.text
     # Existing posts are returned without another provider invocation.
     existing = await store.client.post("/blog/generate-daily", params={"target_date": store.dates[0].isoformat()})
     assert existing.status_code == 200

@@ -76,8 +76,8 @@ def get_country_sqlite_facts(country_name: str) -> Dict[str, Any]:
             "area_km2": f"{int(row['area_km2']):,} km²" if row["area_km2"] else "N/A",
             "continent": ", ".join(continents) or row["region"] or "N/A",
             "region": row["subregion"] or row["region"] or "N/A",
-            "water_access": ", ".join(water) if water else ("Island Nation" if row["is_island"] else "Landlocked"),
-            "borders": ", ".join(borders) if borders else ("None (Island nation)" if row["is_island"] else "None"),
+            "water_access": ", ".join(water) if water else "N/A",
+            "borders": ", ".join(borders) if borders else "N/A",
             "languages": ", ".join(languages) if languages else "N/A",
             "driving_side": row["driving_side"] or "Right",
         }
@@ -106,197 +106,7 @@ def get_deduction_steps(country_name: str, actual_questions: Optional[List[Dict[
 
 
 def get_curator_pro_tip(country_name: str, facts: Dict[str, Any]) -> str:
-    water = facts.get("water_access", "")
-    continent = facts.get("continent", "")
-    borders = facts.get("borders", "")
-    border_list = [b.strip() for b in borders.split(',') if b.strip() and b.strip() != 'None']
-
-    if "landlocked" in water.lower():
-        if "africa" in continent.lower():
-            return f"There are only 16 landlocked nations in Africa. When your query confirms zero coastline, immediately ask about latitude (Equator) or borders with {border_list[0] if border_list else 'neighbors'} to isolate the target."
-        elif "south america" in continent.lower():
-            return "There are only two landlocked nations in South America: Bolivia and Paraguay. Asking about sea access immediately narrows your search to a 50/50 split."
-        else:
-            return f"When a nation is landlocked, eliminate all coastal states early and test regional anchors like {border_list[0] if border_list else 'bordering hubs'}."
-    elif "none" in borders.lower() or "island" in borders.lower():
-        return f"{country_name} has zero land borders. Once you confirm an island nation, test oceanic basins ({water}) or population thresholds to pinpoint the answer."
-    else:
-        first_border = border_list[0] if border_list else "a major neighbor"
-        return f"Testing shared borders with {first_border} isolates the regional cluster immediately. Combine border queries with official languages to lock in {country_name}."
-
-
-def _clean_fact(value: Any, default: str = "N/A") -> str:
-    if value is None:
-        return default
-    if isinstance(value, str):
-        v = value.strip()
-        return v if v else default
-    if isinstance(value, (int, float)):
-        return str(value)
-    return default
-
-
-def build_geographic_synthesis_section(country_name: str, country_facts: Dict[str, Any]) -> str:
-    continent = _clean_fact(country_facts.get("continent"))
-    region = _clean_fact(country_facts.get("region"))
-    capital = _clean_fact(country_facts.get("capital"))
-    population = _clean_fact(country_facts.get("population"))
-    area_km2 = _clean_fact(country_facts.get("area_km2") or country_facts.get("area"))
-    languages = _clean_fact(country_facts.get("languages"))
-    water_access = _clean_fact(country_facts.get("water_access") or country_facts.get("coastline"), default="")
-    borders = _clean_fact(country_facts.get("borders"), default="")
-
-    # Paragraph 1: continental and regional placement, capital, population, land area, official languages
-    if region != "N/A" and continent != "N/A" and region.lower() != continent.lower():
-        placement_text = f"{country_name} is situated in {region} within the continent of {continent}"
-    elif continent != "N/A":
-        placement_text = f"{country_name} is situated on the continent of {continent}"
-    elif region != "N/A":
-        placement_text = f"{country_name} is situated in the region of {region}"
-    else:
-        placement_text = f"{country_name} occupies an established geographic position"
-
-    if capital != "N/A":
-        capital_text = f"with {capital} serving as its national capital and primary administrative hub"
-    else:
-        capital_text = "anchored by its central administrative capital"
-
-    if area_km2 != "N/A" and population != "N/A":
-        scale_text = f"Covering a total land area of {area_km2}, the country supports a resident population of approximately {population}."
-    elif area_km2 != "N/A":
-        scale_text = f"The country encompasses a total land area of {area_km2}."
-    elif population != "N/A":
-        scale_text = f"The nation maintains a resident population of approximately {population}."
-    else:
-        scale_text = "Its physical territory and population scale define its regional footprint."
-
-    if languages != "N/A":
-        lang_text = f"Its civic and cultural identity is framed by its official language(s): {languages}."
-    else:
-        lang_text = "Its recognized official languages provide essential cultural and regional clues during gameplay."
-
-    p1 = f"{placement_text}, {capital_text}. {scale_text} {lang_text}"
-
-    # Paragraph 2: boundary and maritime topology, classification (island / landlocked / coastal), and deduction strategy
-    water_lower = water_access.lower()
-    borders_lower = borders.lower()
-
-    if "landlocked" in water_lower:
-        border_clause = (
-            f"shares land frontiers with {borders}"
-            if borders and borders.lower() not in ("none", "n/a")
-            else "is bounded by neighboring continental nations"
-        )
-        p2 = (
-            f"In terms of boundary topology, {country_name} is a landlocked state with no direct access to open seas or oceans, "
-            f"relying on terrestrial boundaries where it {border_clause}. In Countrydle, identifying a landlocked nation provides "
-            f"exceptional deductive efficiency: confirming the absence of a coastline instantly eliminates every maritime territory and "
-            f"island state on the map. Players can subsequently zero in on {country_name} by testing shared borders with strategic "
-            f"regional anchors ({borders if borders and borders != 'N/A' else 'neighboring countries'}) and verifying continental subregions."
-        )
-    elif (
-        "island" in water_lower
-        or "island" in borders_lower
-        or borders_lower in ("none", "none (island nation)", "no land borders")
-        or (not borders and "island" in water_lower)
-    ):
-        border_clause = (
-            f"shares land boundaries with {borders}"
-            if borders and borders.lower() not in ("none", "none (island nation)", "n/a")
-            else "has zero terrestrial land borders"
-        )
-        water_clause = (
-            water_access
-            if water_access and water_access.lower() not in ("island nation", "n/a")
-            else "open maritime basins"
-        )
-        p2 = (
-            f"In terms of boundary topology, {country_name} is an island nation that {border_clause}, "
-            f"surrounded by {water_clause}. In Countrydle, confirming an island nation's insular geography "
-            f"is a critical deductive turning point: asking early whether the secret country shares any terrestrial "
-            f"borders immediately eliminates all mainland continental states. Solvers can then systematically filter "
-            f"remaining candidates by querying specific oceanic basins ({water_clause}), hemispheric coordinates, "
-            f"and regional archipelago traits to isolate {country_name} with minimal guesses."
-        )
-    else:
-        water_clause = (
-            f"direct coastline along the {water_access}"
-            if water_access and water_access.lower() != "n/a"
-            else "maritime coastline access"
-        )
-        border_clause = (
-            f"shares land borders with {borders}"
-            if borders and borders.lower() not in ("none", "n/a")
-            else "maintains sovereign terrestrial boundaries"
-        )
-        p2 = (
-            f"In terms of boundary topology, {country_name} is a coastal country featuring {water_clause} while it {border_clause}. "
-            f"In Countrydle, this coastal and bordered configuration invites a powerful two-stage elimination strategy: establishing "
-            f"that the mystery nation touches open water eliminates all landlocked countries, while subsequent questions targeting "
-            f"adjacent seas ({water_access if water_access and water_access != 'N/A' else 'coastal waters'}) or specific neighboring borders "
-            f"({borders if borders and borders != 'N/A' else 'neighboring states'}) rapidly isolate {country_name} from other nations in the region."
-        )
-
-    return f"### Geographic & Strategic Profile\n{p1}\n\n{p2}"
-
-
-def extract_clean_curiosities(country_name: str, wiki_fragments: List[str], facts: Dict[str, Any]) -> List[Dict[str, str]]:
-    sentences = []
-    banned_words = [
-        "redirects here", "see also", "main article", "from wikipedia",
-        "coordinates:", "citation needed", "for the former", "for other uses",
-        "human rights", "conflict"
-    ]
-
-    for frag in wiki_fragments:
-        if frag.strip().startswith('|') or '--- | ---' in frag:
-            continue
-
-        cleaned = frag.replace(r'\[', '[').replace(r'\]', ']').replace(r'\(', '(').replace(r'\)', ')').replace(r'\_', '_').replace(r'\*', '*').replace(r'\-', '-')
-        cleaned = re.sub(r'\[\d+\]', '', cleaned)
-        cleaned = cleaned.replace('\\', '')
-        # A warning after sentence punctuation still belongs to the preceding claim.
-        # Move it inside that sentence before splitting, preserving unrelated sentences.
-        cleaned = re.sub(
-            rf"([.!?])\s*({_CITATION_NEEDED.pattern})",
-            r" \2\1",
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-
-        raw_sentences = re.split(r'(?<=[.!?])\s+', cleaned)
-        for s in raw_sentences:
-            s = re.sub(r'\s+', ' ', s).strip()
-            if len(s) >= 50 and len(s) <= 280 and s[0].isupper() and s[-1] in ('.', '!'):
-                if not s.startswith(('#', '|', '-', '*', '•', '>', 'State in', 'Country in')):
-                    if not _CITATION_NEEDED.search(s) and not any(bw in s.lower() for bw in banned_words):
-                        if s not in sentences:
-                            sentences.append(s)
-
-    curiosities = []
-    if len(sentences) >= 1:
-        curiosities.append({
-            "title": "Geographic Fact",
-            "description": sentences[0]
-        })
-    if len(sentences) >= 2:
-        curiosities.append({
-            "title": "Cultural Heritage",
-            "description": sentences[1]
-        })
-
-    if len(curiosities) < 1:
-        curiosities.append({
-            "title": "Geographic Profile",
-            "description": f"{country_name} spans {facts.get('area_km2', 'an extensive territory')} in {facts.get('continent', 'its region')}, situated with {facts.get('water_access', 'its territorial borders')}."
-        })
-    if len(curiosities) < 2:
-        borders = facts.get('borders', 'neighboring states')
-        curiosities.append({
-            "title": "Border Connections",
-            "description": f"The country shares land borders with {borders}." if borders != "None" else f"{country_name} is an island nation surrounded by {facts.get('water_access', 'ocean basins')}."
-        })
-    return curiosities
+    return "Questions about region, borders, and access to water can help narrow the candidates."
 
 def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -> Dict[str, Any]:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -344,7 +154,7 @@ async def generate_blog_content_ai(
 - Land Area: {country_facts.get('area_km2', 'N/A')}
 - Coastline / Water Access: {country_facts.get('water_access', 'N/A')}
 - Neighboring Borders: {country_facts.get('borders', 'N/A')}
-- Official Languages: {country_facts.get('languages', 'N/A')}
+- Languages in dataset (not necessarily official): {country_facts.get('languages', 'N/A')}
 """
     clean_frags = []
     for frag in wiki_fragments:
@@ -361,7 +171,7 @@ async def generate_blog_content_ai(
     prompt = f"""You are the lead geography editor and game analyst for Countrydle.
 Generate the daily blog recap for: {country_name} on {post_date.strftime('%B %d, %Y')}.
 
-Verified Ground Truth Facts:
+Stored country data (not independently verified):
 {facts_summary}
 
 Wikipedia Context Excerpts:
@@ -419,39 +229,21 @@ def _assemble_blog_post_payload(
 ) -> Dict[str, Any]:
     steps = get_deduction_steps(country_name, actual_questions)
     pro_tip = get_curator_pro_tip(country_name, country_facts)
-    geo_profile = build_geographic_synthesis_section(country_name, country_facts)
-
-    step_lines = "\n".join([
-        f"{s['step']}. **[{s['answer']}] \"{s['question']}\"** — {s['explanation']}"
-        for s in steps
-    ])
-
     fun_facts = ai_data.get("fun_facts") or []
-    curiosity_lines = "\n".join([
-        f"- **{c['title']}**: {c['description']}"
-        for c in fun_facts
-    ])
-
-    markdown = f"""## Yesterday's Solution: {country_name}
-
-### The Deduction Path
-{step_lines}
-
-### Quick Facts
-- **Capital**: {country_facts.get('capital', 'N/A')}
-- **Region**: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
-- **Population**: {country_facts.get('population', 'N/A')}
-- **Land Area**: {country_facts.get('area_km2', 'N/A')} ({country_facts.get('water_access', 'N/A')})
-- **Bordering Neighbors**: {country_facts.get('borders', 'N/A')}
-- **Official Languages**: {country_facts.get('languages', 'N/A')}
-
-{geo_profile}
-
-### Two Things Worth Knowing
-{curiosity_lines}
-
-### Curator's Pro Tip
-> {pro_tip}"""
+    fact_lines = [
+        f"- **{label}**: {value}"
+        for label, value in (
+            ("Capital", country_facts.get("capital")),
+            ("Region", country_facts.get("region")),
+            ("Population", country_facts.get("population")),
+            ("Area", country_facts.get("area_km2")),
+            ("Water access", country_facts.get("water_access")),
+            ("Borders", country_facts.get("borders")),
+            ("Languages in dataset", country_facts.get("languages")),
+        )
+        if value and value != "N/A"
+    ]
+    markdown = f"## {country_name}\n\nStored country data:\n\n" + "\n".join(fact_lines)
 
     deduction_masterclass = {
         "steps": steps,
@@ -489,9 +281,9 @@ def _assemble_blog_post_payload(
 def _generation_provenance(wiki_fragments: List[str], *, ai_assisted: bool) -> Dict[str, Any]:
     origin = "AI-assisted recap" if ai_assisted else "Automatically assembled template recap"
     note = (
-        f"{origin} using stored country facts and retrieved local article excerpts. "
-        "The article excerpts do not retain original source URLs; no external source "
-        "pages were fetched for this recap. No human editorial review was recorded during generation."
+        f"{origin} using stored country facts"
+        + (" and local article excerpts without retained source URLs" if ai_assisted else "")
+        + ". No external source pages were fetched for this recap. No human editorial review was recorded during generation."
     )
     if any(
         _CITATION_NEEDED.search(fragment.replace("\\", ""))
@@ -500,7 +292,7 @@ def _generation_provenance(wiki_fragments: List[str], *, ai_assisted: bool) -> D
     ):
         note += " Retrieved excerpts include unresolved [citation needed] warnings."
         if not ai_assisted:
-            note += " Claims carrying those warnings were excluded from the template."
+            note += " No excerpt claims were included in the template."
         note += " Warning-bearing claims must not be treated as verified without checking their evidence."
     return {"source_links": [], "editorial_note": note, "ai_assisted": ai_assisted}
 
@@ -543,65 +335,9 @@ def _generate_fallback_template(
     actual_questions: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     country_facts = get_country_sqlite_facts(country_name)
-    steps = get_deduction_steps(country_name, actual_questions)
-    pro_tip = get_curator_pro_tip(country_name, country_facts)
-    curiosities = extract_clean_curiosities(country_name, wiki_fragments, country_facts)
-    geo_profile = build_geographic_synthesis_section(country_name, country_facts)
-
-    step_lines = "\n".join([
-        f"{s['step']}. **[{s['answer']}] \"{s['question']}\"** — {s['explanation']}"
-        for s in steps
-    ])
-
-    curiosity_lines = "\n".join([
-        f"- **{c['title']}**: {c['description']}"
-        for c in curiosities
-    ])
-
-    markdown = f"""## Yesterday's Solution: {country_name}
-
-### The Deduction Path
-{step_lines}
-
-### Quick Facts
-- **Capital**: {country_facts.get('capital', 'N/A')}
-- **Region**: {country_facts.get('continent', 'N/A')} ({country_facts.get('region', 'N/A')})
-- **Population**: {country_facts.get('population', 'N/A')}
-- **Land Area**: {country_facts.get('area_km2', 'N/A')} ({country_facts.get('water_access', 'N/A')})
-- **Bordering Neighbors**: {country_facts.get('borders', 'N/A')}
-- **Official Languages**: {country_facts.get('languages', 'N/A')}
-
-{geo_profile}
-
-### Two Things Worth Knowing
-{curiosity_lines}
-
-### Curator's Pro Tip
-> {pro_tip}"""
-
-    return _validate_generated_payload({
-        "title": f"Countrydle Solution: {country_name}",
-        "subtitle": f"Game recap and deduction breakdown for {post_date.strftime('%B %d, %Y')}.",
-        "reading_time_minutes": 2,
-        "summary": f"The Countrydle mystery country for {post_date.isoformat()} was {country_name}. This recap combines stored geographic facts with available question history.",
-        "fast_facts": {
-            "capital": country_facts.get("capital", "N/A"),
-            "continent": country_facts.get("continent", "N/A"),
-            "region": country_facts.get("region", "N/A"),
-            "population": country_facts.get("population", "N/A"),
-            "area": country_facts.get("area_km2", "N/A"),
-            "coastline": country_facts.get("water_access", "N/A"),
-            "borders": country_facts.get("borders", "N/A"),
-            "languages": country_facts.get("languages", "N/A"),
-        },
-        "fun_facts": curiosities,
-        "deduction_masterclass": {
-            "steps": steps,
-            "pro_tip": pro_tip,
-        },
-        "content_markdown": markdown,
-        **_generation_provenance(wiki_fragments, ai_assisted=False),
-    })
+    payload = _assemble_blog_post_payload(country_name, country_facts, {}, post_date, actual_questions)
+    payload.update(_generation_provenance(wiki_fragments, ai_assisted=False))
+    return _validate_generated_payload(payload)
 
 
 async def create_daily_blog_post(

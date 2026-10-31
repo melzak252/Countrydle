@@ -141,6 +141,19 @@ class ArtifactFixture(ArtifactSetup, unittest.TestCase):
             self.assertEqual(request("/")[0], 200)
             self.assertEqual(request("/healthz")[0], 200)
 
+    def test_withdrawn_article_disappears_after_public_metadata_refresh(self):
+        self.release()
+        self.refresh()
+        rows = [post("one", reviewed=False), post("two", 2)]
+        with patch.object(runtime, "fetch_bytes", return_value=json.dumps({"posts": rows, "total": 2}).encode()):
+            runtime.refresh_blog(self.state, "http://fixture-api")
+        with self.http() as request:
+            self.assertEqual(request("/blog/one")[0], 404)
+            self.assertEqual(request("/blog/2020-01-02")[0], 404)
+            self.assertEqual(request("/blog")[0], 503)
+            self.assertEqual(request("/")[0], 200)
+
+
     def test_all_metadata_changes_invalidate_not_only_update_timestamp(self):
         self.release()
         changed = {**self.posts, "one": {**self.posts["one"], "summary": "Corrected public facts"}}
@@ -375,6 +388,12 @@ class MetadataFixtures(unittest.TestCase):
     def test_today_future_metadata_never_becomes_known_public_article(self):
         rows = [post("one"), {**post("future", 2), "date": "2999-01-01"}]
         with patch.object(runtime, "fetch_bytes", return_value=json.dumps({"posts": rows, "total": 2}).encode()):
+            actual = runtime.published_posts("http://fixture-api")
+        self.assertEqual(set(actual), {"one"})
+
+    def test_unreviewed_rows_and_missing_review_status_are_not_captured(self):
+        rows = [post("one"), post("two", 2, reviewed=False), {**post("three", 3), "editorial_status": None}]
+        with patch.object(runtime, "fetch_bytes", return_value=json.dumps({"posts": rows, "total": 3}).encode()):
             actual = runtime.published_posts("http://fixture-api")
         self.assertEqual(set(actual), {"one"})
 

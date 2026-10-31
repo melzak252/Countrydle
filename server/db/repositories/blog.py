@@ -7,6 +7,15 @@ from db.models.blog import DailyBlogPost
 from db.models.country import Country
 from db.repositories.participation import _aggregate, _participants, _stats
 
+def public_post_conditions(today: date):
+    """A recap is public only after its puzzle day and an attributed human review."""
+    return (
+        DailyBlogPost.date < today,
+        DailyBlogPost.reviewed_by_id.is_not(None),
+        DailyBlogPost.reviewed_at.is_not(None),
+    )
+
+
 class BlogRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -16,7 +25,7 @@ class BlogRepository:
             joinedload(DailyBlogPost.country), joinedload(DailyBlogPost.reviewer)
         )
         if public_only:
-            query = query.where(DailyBlogPost.date < datetime.now(timezone.utc).date())
+            query = query.where(*public_post_conditions(datetime.now(timezone.utc).date()))
         return query
 
     async def get_by_id(self, post_id: int, *, for_update: bool = False) -> Optional[DailyBlogPost]:
@@ -50,7 +59,7 @@ class BlogRepository:
     ) -> Tuple[List[DailyBlogPost], int]:
         base_query = select(DailyBlogPost).join(DailyBlogPost.country)
         if public_only:
-            base_query = base_query.where(DailyBlogPost.date < datetime.now(timezone.utc).date())
+            base_query = base_query.where(*public_post_conditions(datetime.now(timezone.utc).date()))
         if search and search.strip():
             term = f"%{search.strip()}%"
             base_query = base_query.where(or_(

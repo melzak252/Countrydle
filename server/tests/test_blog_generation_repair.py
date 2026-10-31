@@ -108,6 +108,29 @@ def test_fact_only_fallback_is_also_validated_before_it_can_be_saved(monkeypatch
         generator._generate_fallback_template("Poland", [], date(2026, 9, 19))
 
 
+@pytest.mark.parametrize("fragment", [
+    "A woman in traditional Japanese dress stands in front of a building.",
+    "Basketball and volleyball are popular sports in the Marshall Islands.",
+])
+def test_fallback_never_promotes_contextless_article_fragments_to_facts(monkeypatch, fragment):
+    monkeypatch.setattr(generator, "get_country_sqlite_facts", lambda _: {
+        "capital": "Tokyo", "continent": "Asia", "languages": "Japanese",
+    })
+    article = generator._generate_fallback_template("Japan", [fragment], date(2026, 9, 19))
+    assert all(fragment not in fact["description"] for fact in article["fun_facts"])
+    assert fragment not in article["content_markdown"]
+    assert article["fast_facts"]["capital"] == "Tokyo"
+
+
+def test_fallback_preserves_recorded_questions_without_fabricating_missing_facts(monkeypatch):
+    monkeypatch.setattr(generator, "get_country_sqlite_facts", lambda _: {})
+    questions = [{"question": "Czy ma granicę?", "answer": "YES", "explanation": "Recorded explanation."}]
+    article = generator._generate_fallback_template("Example", [], date(2026, 9, 19), questions)
+    assert article["deduction_masterclass"]["steps"][0]["question"] == questions[0]["question"]
+    assert article["fun_facts"] == []
+    assert "quiz" not in article["deduction_masterclass"]
+
+
 @pytest.mark.anyio
 async def test_ai_article_with_omitted_quiz_remains_valid_and_ai_assisted(
     monkeypatch, provider_article,

@@ -41,11 +41,13 @@ async def test_sitemap_excludes_private_routes_and_unfinished_daily_targets(monk
                     "content_markdown": "Daily geography recap.",
                     "created_at": datetime(2026, 9, 25, 18, 0),
                     "updated_at": datetime(2026, 9, 25, 19, 0),
+                    "reviewed_by_id": reviewer, "reviewed_at": datetime(2026, 9, 25, 20, 0) if reviewer else None,
                 }
-                for post_date, slug in [
-                    (date(2026, 9, 25), "daily-recap-rock&roll"),
-                    (date(2026, 9, 26), "current-recap"),
-                    (date(2026, 9, 27), "future-recap"),
+                for post_date, slug, reviewer in [
+                    (date(2026, 9, 24), "unreviewed-recap", None),
+                    (date(2026, 9, 25), "daily-recap-rock&roll", 1),
+                    (date(2026, 9, 26), "current-recap", 1),
+                    (date(2026, 9, 27), "future-recap", 1),
                 ]
             ])
             response = await dynamic_sitemap(SitemapSession(connection))
@@ -55,6 +57,7 @@ async def test_sitemap_excludes_private_routes_and_unfinished_daily_targets(monk
         urls = root.findall("sm:url", namespace)
         locations = {node.find("sm:loc", namespace).text for node in urls}
         assert "https://countrydle.online/blog/daily-recap-rock&roll" in locations
+        assert "https://countrydle.online/blog/unreviewed-recap" not in locations
         assert "https://countrydle.online/blog/current-recap" not in locations
         assert "https://countrydle.online/blog/future-recap" not in locations
         assert "https://countrydle.online/friends" not in locations

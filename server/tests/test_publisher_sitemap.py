@@ -57,6 +57,8 @@ def insert_recap(connection, post_date, slug, created_at, updated_at):
         "content_markdown": "The completed puzzle's deduction analysis.",
         "created_at": created_at,
         "updated_at": updated_at,
+        "reviewed_by_id": 1,
+        "reviewed_at": updated_at,
     })
 
 

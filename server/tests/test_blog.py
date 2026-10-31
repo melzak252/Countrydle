@@ -63,7 +63,7 @@ def hostile_wiki_excerpt(request):
     return f"{unsupported}{request.param} {supported}", supported
 
 
-def test_fallback_omits_marked_claim_but_keeps_other_content_and_source_warning(
+def test_fallback_omits_all_excerpt_claims_but_keeps_stored_facts_and_source_warning(
     monkeypatch, hostile_wiki_excerpt,
 ):
     import utils.blog_generator as generator
@@ -77,8 +77,8 @@ def test_fallback_omits_marked_claim_but_keeps_other_content_and_source_warning(
     assert "oldest continuously inhabited castle" not in article["content_markdown"]
     descriptions = [fact["description"] for fact in article["fun_facts"]]
     assert all("oldest continuously inhabited castle" not in text for text in descriptions)
-    assert supported in descriptions
-    assert supported in article["content_markdown"]
+    assert supported not in descriptions
+    assert supported not in article["content_markdown"]
     assert article["fast_facts"]["capital"] == "Warsaw"
     assert "citation needed" in article["editorial_note"].lower()
     assert article["source_links"] == []

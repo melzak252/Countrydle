@@ -62,13 +62,69 @@ Trivia appears only when a real quiz was recorded; no distractors are invented.
 Public and editor response contracts share `src/blogContent.ts` Zod schemas.
 When `game_debrief` is present, the native API payload must contain both
 `top_questions` and `top_winner_questions`; there is no old-payload rollout shim.
-Past-day, retry, editorial-review and advertising gates remain unchanged.
+Public visibility and advertising eligibility are subject to the editorial and
+consent prerequisites below.
 The question inspector stacks its tabs on phones and confines JSON/SQL scrolling
 to labelled, focusable code panels.
 The Americas filter includes articles tagged North America, South America or
 Americas, while still combining with the search and difficulty filters.
 
-Verification used real Chromium rendering and interactions at 320, 390, 430,
+## Publisher content and consent prerequisites
+
+Public blog lists, article pages, related posts, sitemap entries and publisher
+captures must expose only eligible past-day articles with a recorded editorial
+approval. When none qualify, the journal is empty; it is not filled with
+unreviewed material. The 55 archived articles cannot be approved automatically:
+the publisher must deliberately accept responsibility for each saved article
+after considering its content, source checking and limitations, with necessary
+corrections made before publication. Source checking may be human or AI-assisted;
+AI-assisted source checking must not be presented as a personal human fact-check.
+Saving edits or regenerating an article withdraws its approval and requires a new
+approval. Today's and future articles remain private.
+The private admin preview uses the same article renderer as the public page,
+including its Markdown, but shows the last loaded saved version, not unsaved
+edits. Save changes to update it; a conflict can leave the loaded version stale,
+so reload and inspect the latest saved version before reviewing. Reloading a
+dirty draft requires confirmation before discarding edits. Ads and sharing are
+disabled in preview, and preview is not publication. If stored fields cannot be
+rendered, correct and save them first. Sources must have actually been consulted;
+adding a URL alone does not verify a claim, and the editor form does not fetch
+sources. The editorial note should accurately disclose AI assistance and source
+limitations rather than claiming that every fact was verified.
+
+Approved articles render their stored Markdown, not a reconstructed or
+silently rewritten article. Publication attribution, source links and
+AI-assistance disclosure must reflect recorded provenance rather than invented
+credentials or approval. Article language labels describe the stored content;
+they do not promise that historical content has been translated. The homepage's
+worked Poland example is explicitly illustrative, not a clue to today's answer.
+
+Google Analytics starts only after the configured consent service reports the
+required Google consent or explicitly determines that GDPR does not apply.
+Optional Rybbit is separate: pending its own consent integration it starts only
+on an explicit non-GDPR determination, not on Google consent. Unknown, denied
+or unavailable permission does not start these analytics. The external Rybbit
+endpoint currently returns HTTP 503, but it remains optional and configured for
+future use; restoring it is not a prerequisite for Google Analytics or this release.
+These measures do not guarantee
+advertising approval or complete operational compliance. This work is local only;
+deployment and publication require separate approval.
+
+### Draft next release notes (unpublished)
+
+Title: Publisher content and privacy improvements
+
+- The country journal now shows only articles with a recorded editorial review,
+  including their reviewed content and source attribution.
+- Added a clearly illustrative example to the homepage and clarified article
+  language and provenance.
+- Analytics respects the configured consent service before loading.
+
+This draft is not a release manifest or a publication. Assign a version and update
+the server release manifest only when a future release is approved; the current
+version's immutable release notes must not be overwritten.
+
+Earlier mobile-layout verification used real Chromium rendering and interactions at 320, 390, 430,
 768, 1024 and 1440px in English and Polish for home, journal, article and world
 game, plus narrow public-route and landscape/short-viewport checks. Expanded
 navigation, long usernames, filters/search/reset, trivia, clipboard sharing,
@@ -610,10 +666,10 @@ Quiz nonblank validation uses the client's display-whitespace set: U+FEFF-only
 fields cannot be saved or approved from historical storage. Heading annotations
 retain their whole qualified section, including repeated facts; ordinary
 unannotated duplicate claims are still removed.
-Public recaps retain real source links when recorded and citation-needed markers
-in article content. The article view does not display the editorial disclosure
-block, editorial notes, or publication/update timestamps. Review controls and
-advertising eligibility remain independent of that presentation.
+Public recaps display recorded source links, article Markdown, editorial notes,
+AI assistance and actual review attribution. Publication requires both reviewer
+attribution and a review timestamp for a past UTC puzzle date; draft records
+remain available only through authenticated admin endpoints and preview.
 
 ### Explicit inventory and consent
 
@@ -651,9 +707,10 @@ on recovery; an actual dialog failure remains visible. Failed loading can be
 retried, and revocation removes serving permission. Privacy settings are in the
 footer, navigation and Cookie Policy; unavailable provider state reports that
 no choices were changed.
-Old `cookie-consent` localStorage values are not consent. Rybbit remains an
-independently configured analytics integration, suppressed only during capture;
-verify its deployment-specific collection, retention and legal basis separately.
+Old `cookie-consent` localStorage values are not consent. Optional Rybbit remains
+configured for future use, starts only after an explicit non-GDPR determination,
+and is suppressed during publisher capture. Its availability does not gate Google
+Analytics. Verify its collection, retention and legal basis before expanding use.
 
 **Account prerequisite:** In AdSense → Privacy & messaging → European
 regulations, configure and publish the message for `countrydle.online`, with

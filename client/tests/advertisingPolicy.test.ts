@@ -175,6 +175,8 @@ async function createFixture(path: string, controlledTimers = false): Promise<Po
         'import.meta.env.VITE_GOOGLE_ADSENSE_ID': JSON.stringify(publisher),
         'import.meta.env.VITE_ADSENSE_ENABLED': '"true"',
         'import.meta.env.VITE_ADSENSE_SLOTS': JSON.stringify('{"journal":"1234567890"}'),
+        'import.meta.env.VITE_RYBBIT_SCRIPT_URL': '"https://analytics.example.test/api/script.js"',
+        'import.meta.env.VITE_RYBBIT_SITE_ID': '"test-site"',
       },
       // Use the same installed real React/router/i18n/toast graph as this test.
       // Ordinary package resolution works because output remains client-local.
@@ -287,6 +289,55 @@ async function createFixture(path: string, controlledTimers = false): Promise<Po
     throw error;
   }
 }
+
+test('analytics wait for a determinate grant and stop on withdrawal', async () => {
+  await withPolicy('/game', async fixture => {
+    fixture.readyCMP();
+    fixture.policy.initializeAdvertisingPolicy();
+    const analytics = () => Array.from(fixture.dom.document.querySelectorAll('script[src]'))
+      .filter(script => script.src.includes('googletagmanager.com/gtag/js') || script.src.startsWith('https://analytics.example.test/'));
+    expect(analytics()).toHaveLength(0);
+    await fixture.emitConsent({}, false);
+    expect(analytics()).toHaveLength(0);
+    await fixture.emitConsent({ gdprApplies: true, cmpStatus: 'loaded', eventStatus: 'useractioncomplete', tcString: 'denied' });
+    expect(analytics()).toHaveLength(0);
+    await fixture.emitConsent({ gdprApplies: false });
+    expect(analytics().map(script => script.src).sort()).toEqual([
+      'https://analytics.example.test/api/script.js',
+      'https://www.googletagmanager.com/gtag/js?id=G-QQFSC14LRB',
+    ]);
+    await fixture.emitConsent({ gdprApplies: false });
+    expect(analytics()).toHaveLength(2);
+    await fixture.emitConsent({ gdprApplies: true, cmpStatus: 'loaded', eventStatus: 'useractioncomplete', tcString: 'denied' });
+    expect(fixture.navigation).toEqual([{ method: 'reload', url: 'https://countrydle.test/game' }]);
+  });
+});
+
+test('Google vendor consent does not authorize an unrelated analytics provider', async () => {
+  await withPolicy('/game', async fixture => {
+    fixture.readyCMP();
+    fixture.policy.initializeAdvertisingPolicy();
+    await fixture.emitConsent({
+      gdprApplies: true, cmpStatus: 'loaded', eventStatus: 'useractioncomplete', tcString: 'fixture-consent',
+      purpose: { consents: { 1: true, 2: true, 3: true, 4: true, 7: true, 9: true, 10: true } },
+      vendor: { consents: { 755: true } },
+    });
+    const sources = Array.from(fixture.dom.document.querySelectorAll('script[src]')).map(script => script.src);
+    expect(sources).toContain('https://www.googletagmanager.com/gtag/js?id=G-QQFSC14LRB');
+    expect(sources).not.toContain('https://analytics.example.test/api/script.js');
+  });
+});
+
+test('publisher capture never loads analytics even when the CMP is available', async () => {
+  await withPolicy('/game', async fixture => {
+    fixture.browser.__COUNTRYDLE_PRERENDER__ = true;
+    fixture.readyCMP();
+    fixture.policy.initializeAdvertisingPolicy();
+    expect(fixture.subscriptions).toBe(0);
+    const sources = Array.from(fixture.dom.document.querySelectorAll('script[src]')).map(script => script.src);
+    expect(sources.some(src => src.includes('googletagmanager.com/gtag/js') || src.startsWith('https://analytics.example.test/'))).toBe(false);
+  });
+});
 
 test('a successful standard non-GDPR four-field response authorizes a rendered ad and its unit request', async () => {
   await withPolicy('/blog', async fixture => {

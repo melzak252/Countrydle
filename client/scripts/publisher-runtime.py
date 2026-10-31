@@ -91,6 +91,8 @@ def post_error(post):
     """Malformed known metadata invalidates that route, not unrelated pages."""
     if not isinstance(post, dict) or type(post.get("id")) is not int:
         return "Missing article identifier"
+    if post.get("editorial_status") != "reviewed":
+        return "Article has not been reviewed"
     if not isinstance(post.get("slug"), str) or not SLUG.fullmatch(post["slug"]):
         return "Unsafe article slug"
     try:
@@ -139,7 +141,7 @@ def published_posts(backend):
                 future = date.fromisoformat(post.get("date")) >= today
             except (TypeError, ValueError):
                 future = False  # Known malformed article remains a route-specific 503.
-            if not future:
+            if not future and post.get("editorial_status") == "reviewed":
                 posts[slug] = post
         if received > total:
             raise PublisherError("Published blog total disagrees with its results")

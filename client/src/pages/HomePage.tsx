@@ -91,6 +91,21 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section aria-labelledby="practice-heading" className="border-b border-white/10 py-6 md:py-8">
+        <h2 id="practice-heading" className="text-xl font-bold text-sand-50">See a country deduction in action</h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+          For practice, imagine the hidden country is Poland. This example is illustrative, not a clue about today&apos;s puzzle.
+        </p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-300 marker:text-emerald-400">
+          <li><strong>Is it in Europe? Yes.</strong> Keep European countries as candidates.</li>
+          <li><strong>Is it landlocked? No.</strong> Poland has a Baltic Sea coast, so inland candidates can be ruled out.</li>
+          <li><strong>Does it border Germany? Yes.</strong> This narrows the coastal candidates further, but does not by itself prove the answer.</li>
+        </ol>
+        <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          Check the geography in <a href="https://www.britannica.com/place/Poland" className="text-emerald-300 underline underline-offset-4">Britannica&apos;s Poland profile</a>, then explore the <Link to="/explore/modes/countrydle" className="text-emerald-300 underline underline-offset-4">country deduction guide</Link>.
+        </p>
+      </section>
+
       <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 py-6 md:py-10">
         <h2 id="maps-heading" className="text-2xl font-bold tracking-tight text-sand-50">{copy.modes}</h2>
         <p className="mb-4 mt-2 text-sm leading-relaxed text-slate-400">{copy.modeNote}</p>

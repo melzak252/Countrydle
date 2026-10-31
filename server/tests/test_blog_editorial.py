@@ -162,7 +162,7 @@ async def editorial_store(monkeypatch):
 @pytest.mark.parametrize("identity,expected", [(None, 401), ("player@example.com", 403)])
 async def test_every_editorial_operation_requires_a_real_admin(editorial_store, identity, expected):
     client = editorial_store.client
-    loaded = (await client.get("/blog/2026-10-08-poland")).json()
+    loaded = {"updated_at": "2026-10-06T00:30:00Z"}
     if identity:
         login(client, identity)
     operations = [
@@ -185,10 +185,36 @@ async def test_every_editorial_operation_requires_a_real_admin(editorial_store, 
         assert post.summary != "Unauthorized change"
 
 
+async def test_publication_requires_review_and_withdraws_on_edit_and_unreview(editorial_store):
+    client = editorial_store.client
+    login(client, "editor-one@example.com")
+    slug = "/blog/2026-10-08-poland"
+    assert (await client.get(slug)).status_code == 404
+    assert (await client.get("/blog/2026-10-08")).status_code == 404
+    assert (await client.get("/blog/latest")).status_code == 404
+    assert (await client.get("/blog")).json() == {"total": 0, "posts": []}
+    assert (await client.get("/blog/admin/posts")).json()["total"] == 4
+
+    assert (await review_loaded_post(client)).status_code == 200
+    assert (await client.get(slug)).status_code == 200
+    assert (await client.get("/blog/2026-10-08")).status_code == 200
+    assert (await client.get("/blog/latest")).json()["id"] == 1
+    assert (await client.get(slug)).json()["related_posts"] == []
+    assert (await client.get("/blog?search=France")).json()["total"] == 0
+
+    assert (await patch_loaded_post(client, {"title": "An edited recap"})).status_code == 200
+    assert (await client.get(slug)).status_code == 404
+    assert (await client.get("/blog/latest")).status_code == 404
+    assert (await review_loaded_post(client)).status_code == 200
+    assert (await client.post("/blog/admin/posts/1/unreview")).status_code == 200
+    assert (await client.get(slug)).status_code == 404
+    assert (await client.get("/blog/admin/posts/1")).status_code == 200
+
+
 async def test_review_edit_and_revoke_are_persisted_and_publicly_visible(editorial_store):
     client = editorial_store.client
     login(client, "editor-one@example.com")
-    initial = (await client.get("/blog/2026-10-08-poland")).json()
+    initial = (await client.get("/blog/admin/posts/1")).json()
     assert initial["editorial_status"] == "unreviewed"
     assert initial["reviewer_name"] is None
     assert initial["reviewed_at"] is None
@@ -226,9 +252,8 @@ async def test_review_edit_and_revoke_are_persisted_and_publicly_visible(editori
     assert edited.json()["reviewer_name"] is None
     assert edited.json()["reviewed_at"] is None
     assert timestamp(edited.json()["updated_at"]) > timestamp(result["updated_at"])
-    after_edit = (await client.get("/blog/latest")).json()
-    assert after_edit["summary"] == edited.json()["summary"]
-    assert after_edit["editorial_status"] == "unreviewed"
+    assert (await client.get("/blog/latest")).status_code == 404
+    after_edit = edited.json()
     async with editorial_store.sessions() as session:
         post = await session.get(DailyBlogPost, 1)
         assert post.reviewed_by_id is None
@@ -249,9 +274,7 @@ async def test_review_edit_and_revoke_are_persisted_and_publicly_visible(editori
     assert revoked.json()["reviewer_name"] is None
     assert revoked.json()["reviewed_at"] is None
     assert timestamp(revoked.json()["updated_at"]) > timestamp(rereviewed.json()["updated_at"])
-    public = (await client.get("/blog/2026-10-08-poland")).json()
-    assert public["editorial_status"] == "unreviewed"
-    assert public["reviewed_at"] is None
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
     async with editorial_store.sessions() as session:
         post = await session.get(DailyBlogPost, 1)
         assert post.reviewed_by_id is None and post.reviewed_at is None
@@ -302,6 +325,10 @@ async def test_review_requires_sources_and_substantive_content(editorial_store):
 
 async def test_utc_today_and_future_remain_secret_in_public_consumers(editorial_store):
     client = editorial_store.client
+    login(client, "editor-one@example.com")
+    assert (await review_loaded_post(client, 1)).status_code == 200
+    assert (await review_loaded_post(client, 4)).status_code == 200
+    client.cookies.clear()
     # UTC is already Oct 9 while a western local timezone would still be Oct 8.
     response = await client.get("/blog?limit=1")
     assert response.status_code == 200
@@ -375,7 +402,7 @@ async def test_admin_editing_current_draft_never_makes_it_public(editorial_store
     client.cookies.clear()
     assert (await client.get("/blog/2026-10-09-germany")).status_code == 404
     assert (await client.get("/blog?search=Germany")).json()["total"] == 0
-    assert (await client.get("/blog/latest")).json()["id"] == 1
+    assert (await client.get("/blog/latest")).status_code == 404
 
 
 async def test_only_current_and_future_drafts_means_no_public_latest(editorial_store):
@@ -417,9 +444,7 @@ async def test_review_rejects_another_editors_unseen_version_until_deliberate_re
         assert saved.reviewed_by_id is None and saved.reviewed_at is None
         assert saved.summary == changed.json()["summary"]
         assert saved.updated_at == timestamp(changed.json()["updated_at"])
-    public = await client.get("/blog/2026-10-08-poland")
-    assert public.status_code == 200
-    assert public.json()["editorial_status"] == "unreviewed"
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
 
     reloaded = (await client.get("/blog/admin/posts/1")).json()
     assert reloaded["summary"] == changed.json()["summary"]
@@ -583,10 +608,16 @@ async def test_distinct_displayed_quiz_choices_preserve_raw_text_and_citation_ma
     assert generated.model_dump(exclude_unset=True)["deduction_masterclass"]["quiz"] == quiz
     response = await patch_loaded_post(client, {"deduction_masterclass": {"quiz": quiz}})
     assert response.status_code == 200, response.text
-    for path in ["/blog/admin/posts/1", "/blog/2026-10-08-poland"]:
-        readable = await client.get(path)
-        assert readable.status_code == 200, readable.text
-        assert readable.json()["deduction_masterclass"]["quiz"] == quiz
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
+    draft = await client.get("/blog/admin/posts/1")
+    assert draft.status_code == 200, draft.text
+    assert draft.json()["editorial_status"] == "unreviewed"
+    assert draft.json()["deduction_masterclass"]["quiz"] == quiz
+    reviewed = await review_loaded_post(client)
+    assert reviewed.status_code == 200, reviewed.text
+    public = await client.get("/blog/2026-10-08-poland")
+    assert public.status_code == 200, public.text
+    assert public.json()["deduction_masterclass"]["quiz"] == quiz
     async with editorial_store.sessions() as session:
         post = await session.get(DailyBlogPost, 1)
         assert post.deduction_masterclass["quiz"] == quiz
@@ -614,12 +645,20 @@ async def test_valid_generated_nested_shapes_and_unknown_facts_round_trip_withou
     }
     response = await patch_loaded_post(client, patch)
     assert response.status_code == 200, response.text
-    for path in ["/blog/admin/posts/1", "/blog/2026-10-08-poland"]:
-        readable = await client.get(path)
-        assert readable.status_code == 200, readable.text
-        for field, value in patch.items():
-            assert readable.json()[field] == value
-        assert readable.json()["fast_facts"]["population"] is None
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
+    draft = await client.get("/blog/admin/posts/1")
+    assert draft.status_code == 200, draft.text
+    assert draft.json()["editorial_status"] == "unreviewed"
+    for field, value in patch.items():
+        assert draft.json()[field] == value
+    assert draft.json()["fast_facts"]["population"] is None
+    reviewed = await review_loaded_post(client)
+    assert reviewed.status_code == 200, reviewed.text
+    public = await client.get("/blog/2026-10-08-poland")
+    assert public.status_code == 200, public.text
+    for field, value in patch.items():
+        assert public.json()[field] == value
+    assert public.json()["fast_facts"]["population"] is None
     async with editorial_store.sessions() as session:
         post = await session.get(DailyBlogPost, 1)
         assert post.fast_facts == patch["fast_facts"]
@@ -654,15 +693,16 @@ async def test_persisted_malformed_draft_is_admin_readable_but_requires_repair_b
         "deduction_masterclass": {"steps": []},
     })
     assert repaired.status_code == 200, repaired.text
-    public = await client.get("/blog/2026-10-08-poland")
-    assert public.status_code == 200, public.text
-    assert public.json()["fun_facts"] == repaired.json()["fun_facts"]
-    assert public.json()["deduction_masterclass"] == {"steps": []}
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
     reviewed = await client.post(
         "/blog/admin/posts/1/review", json={"expected_updated_at": repaired.json()["updated_at"]},
     )
     assert reviewed.status_code == 200, reviewed.text
     assert reviewed.json()["reviewer_name"] == "editor_one"
+    public = await client.get("/blog/2026-10-08-poland")
+    assert public.status_code == 200, public.text
+    assert public.json()["fun_facts"] == repaired.json()["fun_facts"]
+    assert public.json()["deduction_masterclass"] == {"steps": []}
 
 
 @pytest.mark.parametrize("version", ["missing", None, 1791246600, "not-a-date", "2026-10-06T00:30:00"])
@@ -885,10 +925,7 @@ async def test_regeneration_clears_review_in_sql_and_refreshes_stale_identity(ed
         assert refreshed.date.isoformat() == loaded["date"]
         assert refreshed.slug == loaded["slug"]
         assert refreshed.reading_time_minutes == loaded["reading_time_minutes"]
-    public = (await client.get("/blog/2026-10-08-poland")).json()
-    assert public["title"] == payload["title"]
-    assert public["editorial_status"] == "unreviewed"
-    assert public["reviewer_name"] is None and public["reviewed_at"] is None
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
 
 
 @pytest.mark.parametrize("intervening_change", ["edit", "review", "delete"])
@@ -936,6 +973,9 @@ async def test_unknown_historical_creation_timestamp_stays_null_in_all_readers_a
         # Raw SQL guarantees an actual historical NULL, not an ORM default on insert.
         await session.execute(text("UPDATE daily_blog_posts SET created_at = NULL WHERE id IN (1, 4)"))
         await session.commit()
+    assert (await review_loaded_post(client, 1)).status_code == 200
+    assert (await review_loaded_post(client, 4)).status_code == 200
+    initial = (await client.get("/blog/admin/posts/1")).json()
     for path in ["/blog", "/blog/admin/posts"]:
         listed = await client.get(path)
         assert listed.status_code == 200, listed.text
@@ -1049,10 +1089,8 @@ async def test_display_blank_quiz_cannot_be_saved_or_approved_from_legacy_storag
 
     rejected_review = await review_loaded_post(client)
     assert rejected_review.status_code == 400, rejected_review.text
-    public = await client.get("/blog/2026-10-08-poland")
-    assert public.status_code == 200, public.text
-    assert public.json()["deduction_masterclass"]["quiz"] == quiz
-    assert public.json()["editorial_status"] == "unreviewed"
+    assert (await client.get("/blog/2026-10-08-poland")).status_code == 404
+    assert (await client.get("/blog/admin/posts/1")).json()["deduction_masterclass"]["quiz"] == quiz
     async with editorial_store.sessions() as session:
         post = await session.get(DailyBlogPost, 1)
         assert post.reviewed_at is None and post.reviewed_by_id is None

@@ -1,4 +1,5 @@
 import React from 'react';
+import { safeSourceUrl } from '../blogContent';
 
 interface MarkdownRendererProps {
   content: string;
@@ -26,12 +27,15 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
     }
     const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
     if (linkMatch) {
+      const url = linkMatch[2];
+      const safeUrl = safeSourceUrl(url) || (/^\/(?![\/\\])[^\\\u0000-\u001f]*$/.test(url) ? url : null);
+      if (!safeUrl) return <span key={index}>{linkMatch[1]}</span>;
       return (
         <a
           key={index}
-          href={linkMatch[2]}
+          href={safeUrl}
           className="break-words text-emerald-400 underline decoration-emerald-400/40 underline-offset-4 transition-colors hover:text-emerald-300"
-          target={linkMatch[2].startsWith('http') ? '_blank' : '_self'}
+          target={safeUrl.startsWith('/') ? '_self' : '_blank'}
           rel="noopener noreferrer"
         >
           {linkMatch[1]}

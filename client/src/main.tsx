@@ -10,18 +10,6 @@ const GOOGLE_CLIENT_ID = "624396927539-luhujtnrft1igdoug3bim8ac9nmvf3sk.apps.goo
 
 initializeAdvertisingPolicy();
 
-if (!isPublisherCapture()) {
-  const analyticsUrl = import.meta.env.VITE_RYBBIT_SCRIPT_URL;
-  const analyticsSite = import.meta.env.VITE_RYBBIT_SITE_ID;
-  if (analyticsUrl && analyticsSite) {
-    const script = document.createElement('script');
-    script.src = analyticsUrl;
-    script.dataset.siteId = analyticsSite;
-    script.defer = true;
-    document.head.appendChild(script);
-  }
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {isPublisherCapture() ? <App /> : (

@@ -13,6 +13,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { blogService } from '../services/api';
 import AdSenseUnit from '../components/AdSenseUnit';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import { isAxiosError } from 'axios';
 import { setPageEditorialEligibility } from '../advertising';
 import { usePageMetadata } from '../lib/pageMetadata';
@@ -58,13 +59,11 @@ function cleanBorderList(bordersStr?: string | number): string {
 }
 
 
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const [fetchedPost, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const [selectedTriviaOption, setSelectedTriviaOption] = useState<number | null>(null);
-  const [triviaRevealed, setTriviaRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
@@ -75,8 +74,6 @@ export default function BlogPostPage() {
       setLoading(true);
       setPost(null);
       setError(null);
-      setSelectedTriviaOption(null);
-      setTriviaRevealed(false);
       setPageEditorialEligibility(false);
       try {
         if (!slug) throw new Error('Missing recap address.');
@@ -120,27 +117,9 @@ export default function BlogPostPage() {
       puzzleDate: loadedPost.date,
       publishedAt: loadedPost.created_at || undefined,
       updatedAt: loadedPost.updated_at,
-      authorName: loadedPost.reviewer_name || 'Jakub Melzacki',
-      reviewedBy: reviewed ? loadedPost.reviewer_name || undefined : undefined,
     },
   } : null);
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    const title = loadedPost?.title || ('Countrydle solution');
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, url });
-        return;
-      } catch {
-        // Fallback to clipboard
-      }
-    }
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    toast.success('Link copied to clipboard!');
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   if (loading || (!error && loadedSlug !== slug)) {
     return (
@@ -164,7 +143,29 @@ export default function BlogPostPage() {
     );
   }
 
-  const post = loadedPost;
+  return <BlogArticle key={loadedPost.id} post={loadedPost} eligibleForAds={eligibleForAds} />;
+}
+
+export function BlogArticle({ post, eligibleForAds = false, preview = false }: { post: BlogPost; eligibleForAds?: boolean; preview?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const [selectedTriviaOption, setSelectedTriviaOption] = useState<number | null>(null);
+  const [triviaRevealed, setTriviaRevealed] = useState(false);
+  const reviewed = post.editorial_status === 'reviewed' && !!post.reviewed_at && !!post.reviewer_name;
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.title, url });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success('Link copied to clipboard!');
+    setTimeout(() => setCopied(false), 2000);
+  };
   const curiosities = post.fun_facts || [];
   const sourceLinks = post.source_links.map((source) => ({ ...source, safeUrl: safeSourceUrl(source.url) }));
   const facts = post.fast_facts || {};
@@ -182,7 +183,7 @@ export default function BlogPostPage() {
   ];
 
   return (
-    <article data-publisher-ready="true" className="mx-auto min-w-0 max-w-4xl space-y-6 py-4 [overflow-wrap:anywhere] md:space-y-10 md:py-10">
+    <article data-publisher-ready={preview ? undefined : 'true'} className="mx-auto min-w-0 max-w-4xl space-y-6 py-4 [overflow-wrap:anywhere] md:space-y-10 md:py-10">
       {/* Navigation & Header */}
       <nav aria-label={'Recap navigation'} className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-white/10 pb-3 text-sm sm:gap-3">
         <Link to="/blog" className="inline-flex min-h-11 max-w-full items-center gap-1.5 text-zinc-400 hover:text-sand-100 transition-colors">
@@ -193,6 +194,7 @@ export default function BlogPostPage() {
           <time dateTime={post.date} className="min-w-0 break-words text-zinc-500 font-mono">
             {formatBlogDate(post.date)}
           </time>
+          {!preview && (
           <button
             type="button"
             onClick={handleShare}
@@ -201,6 +203,7 @@ export default function BlogPostPage() {
             {copied ? <Check size={12} className="text-emerald-400" /> : <Share2 size={12} />}
             <span>{copied ? ('Copied') : ('Share')}</span>
           </button>
+          )}
         </div>
       </nav>
 
@@ -311,7 +314,7 @@ export default function BlogPostPage() {
             )}
             {facts.languages && (
               <div className="min-w-0 rounded border border-white/10 bg-obsidian-900/60 p-3 flex flex-col justify-center">
-                <span className="text-zinc-400 block text-xs">{'Official languages'}</span>
+                <span className="text-zinc-400 block text-xs">{'Languages in the dataset'}</span>
                 <span className="text-sand-100 font-bold text-sm block mt-0.5 break-words">{facts.languages}</span>
               </div>
             )}
@@ -333,37 +336,14 @@ export default function BlogPostPage() {
           <span>{'Geographic & Deductive Analysis'}</span>
         </h2>
 
-        <div className="space-y-4 text-sm sm:text-base leading-relaxed text-zinc-300">
-          <p>
-            {(
-              <>
-                <strong className="text-sand-100">{post.country_name}</strong> occupies a distinctive position {facts.region || post.continent ? <>in <strong className="text-sand-100">{String(facts.region || post.continent)}</strong></> : 'in global geography'}{facts.capital ? <>, centered administratively around its capital, <strong className="text-sand-100">{String(facts.capital)}</strong></> : null}. {facts.languages ? <>The nation&apos;s linguistic landscape, featuring <strong className="text-sand-100">{String(facts.languages)}</strong>, serves as a defining cultural and regional identifier.</> : <>Its geopolitical profile anchors its identity within the broader continental framework.</>}
-              </>
-            )}
-          </p>
-
-          <p>
-            {(
-              <>
-                From a geographic and demographic perspective, {post.country_name} spans {facts.area ? <>a land area of <strong className="text-sand-100">{String(facts.area)}</strong></> : 'its national territory'}{facts.population ? <> with a population of approximately <strong className="text-sand-100">{String(facts.population)}</strong></> : null}. In terms of maritime connectivity, the country {facts.coastline ? <>features a coastline status of <strong className="text-sand-100">{String(facts.coastline)}</strong></> : 'has unique maritime characteristics'}. Its terrestrial boundary configuration {cleanBorderList(facts.borders) ? <>— including direct borders with <strong className="text-sand-100">{cleanBorderList(facts.borders)}</strong> —</> : facts.borders === 'None' || !facts.borders ? '— with no shared land borders, giving it an insular or isolated territorial profile —' : null} forms a distinct physical signature on the world map.
-              </>
-            )}
-          </p>
-
-          <p>
-            {(
-              <>
-                For players navigating Countrydle&apos;s deductive challenges, <strong className="text-sand-100">{post.country_name}</strong> can be systematically pinpointed using a structured elimination tree. Beginning with macro-geographic queries targeting continent and regional coordinates narrows down hundreds of possibilities to a tight geographic cluster. Next, probing coastline status—determining whether the country has open sea access or is landlocked—instantly bifurcates candidate nations. Finally, analyzing the number and identity of neighboring states alongside linguistic cues allows solvers to rule out adjacent territories and isolate <strong className="text-sand-100">{post.country_name}</strong> with analytical precision.
-              </>
-            )}
-          </p>
-        </div>
+        <MarkdownRenderer content={post.content_markdown} />
 
         {post.deduction_masterclass?.steps && post.deduction_masterclass.steps.length > 0 && (
           <div className="space-y-3 pt-2">
             <h3 className="text-base font-semibold text-sand-100">
-              {'Step-by-Step Deduction Path'}
+              {'Questions recorded across games'}
             </h3>
+            <p className="text-sm text-zinc-400">These questions may come from different players; they are not a single player&apos;s path.</p>
             <ol className="space-y-3">
               {post.deduction_masterclass.steps.map((step, idx) => {
                 const answer = step.answer ? step.answer.trim().toUpperCase() : '';
@@ -508,7 +488,7 @@ export default function BlogPostPage() {
                               isNo ? 'border-rose-500/30 bg-rose-500/20 text-rose-300' :
                               'border-white/15 bg-white/5 text-zinc-400'
                             }`}>
-                              {isYes ? ('YES') : isNo ? ('NO') : ('Answer not recorded')}
+                              {record.answer || 'Answer not recorded'}
                             </span>
                           </div>
                         </div>
@@ -620,7 +600,7 @@ export default function BlogPostPage() {
       })()}
 
       {/* Compliant Ad Placement */}
-      {eligibleForAds && <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />}
+      {!preview && eligibleForAds && <AdSenseUnit slot="countrydle-blog-post-footer" className="max-w-xl mx-auto" />}
 
       {/* Related Country Recaps Carousel */}
       {post.related_posts && post.related_posts.length > 0 && (
@@ -658,11 +638,12 @@ export default function BlogPostPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="font-semibold text-sand-100">
-              {'Author & Editorial: Jakub Melzacki'}
+              {post.ai_assisted ? 'AI-assisted recap' : 'Countrydle recap'}
             </p>
             <p className="text-xs leading-5 text-zinc-400">
-              {'Countrydle creator and geography enthusiast. Geographic analysis compiled from verified CIA World Factbook, Natural Earth, and REST Countries data.'}
+              {reviewed ? `Publication approved by ${post.reviewer_name} on ${post.reviewed_at}.` : 'No publication approval recorded.'}
             </p>
+            {post.editorial_note && <p className="text-xs leading-5 text-zinc-400">{post.editorial_note}</p>}
           </div>
           <Link
             to="/about"

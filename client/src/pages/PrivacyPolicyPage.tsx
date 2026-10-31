@@ -1,7 +1,7 @@
 import LegalDocument from '../components/LegalDocument';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "October 9, 2026";
+  const lastUpdated = "October 31, 2026";
 
   return (
     <LegalDocument title="Privacy Policy" lastUpdated={lastUpdated}>
@@ -110,9 +110,9 @@ export default function PrivacyPolicyPage() {
               <li>
                 <strong>Privacy settings:</strong> The footer and Cookie Policy provide a button to reopen the existing
                 <strong> Google Funding Choices / Privacy &amp; Messaging</strong> consent service when available.
-                You can review, reject or withdraw optional advertising consent through that service. Opening
+                You can review, reject or withdraw optional Google consent through that service. Opening
                 settings while ads are active first takes you to an ad-free Cookie Policy document. Countrydle
-                stops advertising requests and clears active ads by reloading the page when permission is withdrawn.
+                reloads the page to unload active advertising and analytics runtimes when permission is withdrawn.
                 If settings cannot be opened, the button reports that failure and the settings document remains
                 ad-free; it does not save a new choice or treat the failure as consent.
                 Contact us if you cannot access your choices.
@@ -143,9 +143,11 @@ export default function PrivacyPolicyPage() {
                 to valid legal requests.</li>
             </ul>
             <p className="mt-3">
-              Optional Rybbit analytics may be enabled separately to measure visits and navigation. It is separate
-              from gameplay records and advertising inventory; its deployed configuration determines collection
-              and storage behavior.
+              Google Analytics may measure visits after the consent service reports the required Google consent
+              or explicitly reports that GDPR does not apply. Optional Rybbit analytics is separate from gameplay
+              records and advertising inventory and runs only when the service explicitly reports that GDPR does
+              not apply; Google consent does not authorize Rybbit. Unknown or denied permission and unavailable
+              consent services do not start analytics. Provider configuration determines collection and storage.
               Optional analytics and advertising are not loaded during static page capture. Aggregate AI-cost
               measurements record request counts and token usage rather than player identities or question text.
               Do not include sensitive or unnecessary personal information in questions or feedback.
@@ -156,8 +158,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="mb-4">5. Recipients, AI Processing and International Transfers</h2>
             <p className="mb-4">
               Data is processed by the services needed to run Countrydle: hosting and database infrastructure,
-              the configured email service for account messages, Google for sign-in and advertising, and Rybbit
-              analytics when enabled. Authorized administrators can access relevant records for support and review.
+              the configured email service for account messages, Google for sign-in, analytics and advertising, and
+              Rybbit analytics when enabled and permitted. Authorized administrators can access relevant records for support and review.
               Account usernames, scores and public profile statistics can be seen by other visitors; choose a username
               you are comfortable making public. We may disclose information when legally required.
             </p>

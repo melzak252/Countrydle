@@ -21,6 +21,7 @@ declare global {
     adsbygoogle?: { push: (request: Record<string, never>) => unknown };
     googlefc?: GooglePrivacyMessaging;
     __tcfapi?: (command: 'addEventListener', version: 2, callback: (data: TCData, success: boolean) => void) => void;
+    dataLayer?: IArguments[];
   }
 }
 
@@ -59,6 +60,8 @@ let editorialEligible = false;
 let consent: ConsentState = 'unknown';
 let scriptReady = false;
 let adsStarted = false;
+let googleAnalyticsStarted = false;
+let rybbitStarted = false;
 let adsDocument = '';
 let navigationPending = false;
 let initialized = false;
@@ -124,6 +127,31 @@ function consentFromTCData(data: TCData, success: boolean): ConsentState {
   const vendorBasis = vendors?.consents?.[755] === true || vendors?.legitimateInterests?.[755] === true;
   return personalized && supporting && vendorBasis ? 'granted' : 'denied';
 }
+function startAnalytics(nonGdpr: boolean) {
+  if (isPublisherCapture()) return;
+  if (consent === 'granted' && !googleAnalyticsStarted) {
+    googleAnalyticsStarted = true;
+    window.dataLayer = window.dataLayer || [];
+    function gtag(..._args: unknown[]) { window.dataLayer!.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-QQFSC14LRB');
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=G-QQFSC14LRB';
+    document.head.appendChild(script);
+  }
+  // Google vendor consent does not authorize a different analytics provider.
+  const analyticsUrl = import.meta.env.VITE_RYBBIT_SCRIPT_URL;
+  const analyticsSite = import.meta.env.VITE_RYBBIT_SITE_ID;
+  if (nonGdpr && analyticsUrl && analyticsSite && !rybbitStarted) {
+    rybbitStarted = true;
+    const script = document.createElement('script');
+    script.src = analyticsUrl;
+    script.dataset.siteId = analyticsSite;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+}
 function registerConsentListener() {
   if (isPublisherCapture() || typeof window.__tcfapi !== 'function') return false;
   if (listenerRegistered) return true;
@@ -132,8 +160,12 @@ function registerConsentListener() {
     window.__tcfapi('addEventListener', 2, (data, success) => {
       consent = consentFromTCData(data || {}, success);
       publish();
-      if (consent !== 'granted' && adsStarted && !navigationPending) {
+      const nonGdpr = success === true && data?.gdprApplies === false;
+      if (!navigationPending && ((consent !== 'granted' && (adsStarted || googleAnalyticsStarted))
+        || (rybbitStarted && !nonGdpr))) {
         leaveAdDocument(data?.eventStatus === 'cmpuishown' ? '/cookie-policy#privacy-settings' : window.location.href, true);
+      } else if (!navigationPending) {
+        startAnalytics(nonGdpr);
       }
     });
     return true;
@@ -227,6 +259,8 @@ export function usePrivacySettingsState(): PrivacySettingsState {
 export function initializeAdvertisingPolicy() {
   if (initialized || isPublisherCapture()) return;
   initialized = true;
+  // Analytics require a CMP decision even when advertising inventory is disabled.
+  void loadPrivacyMessaging().catch(() => { consent = 'unknown'; publish(); });
   // History interception runs before React Router. Once ads are active, every page change
   // uses a fresh document, including reviewed -> loading/unreviewed blog transitions.
   for (const method of ['pushState', 'replaceState'] as const) {
