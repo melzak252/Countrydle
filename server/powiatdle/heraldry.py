@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import gzip
 import hashlib
 import json
 import logging
@@ -14,7 +15,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from cryptography.fernet import Fernet, InvalidToken
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, Header, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
 from powiat_names import resolve_powiat_name
@@ -179,6 +180,25 @@ def get_heraldry_filename(powiat_id: int) -> Optional[str]:
             _HERALDRY_MAP_CACHE = {}
     return _HERALDRY_MAP_CACHE.get(str(powiat_id))
 
+def heraldry_cache_path(cache_dir: Path, powiat_id: int) -> Path:
+    # Legacy SVGs may have lost their original dimensions.
+    return cache_dir / f"{powiat_id}.v2.json"
+
+
+def _svg_absolute_length(value: str) -> Optional[float]:
+    match = re.fullmatch(
+        r"\s*([+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*(px|in|cm|mm|q|pt|pc)?\s*",
+        value,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    factors = {"": 1, "px": 1, "in": 96, "cm": 96 / 2.54,
+               "mm": 96 / 25.4, "q": 96 / 101.6, "pt": 96 / 72, "pc": 16}
+    length = float(match.group(1)) * factors[(match.group(2) or "").lower()]
+    return length if 0 < length < float("inf") else None
+
+
 def sanitize_svg_bytes(content: bytes) -> bytes:
     """Ensure SVG contains xmlns, valid viewBox, and UTF-8 encoding so browsers render it cleanly."""
     try:
@@ -202,19 +222,20 @@ def sanitize_svg_bytes(content: bytes) -> bytes:
 
     attrs = m.group(1)
 
-    # Extract existing viewBox or build from width/height
-    vb_m = re.search(r'viewBox=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
+    # CSS absolute units must be converted to CSS pixels before creating a
+    # user-space viewBox. Percentages and other relative units are not sizes.
+    vb_m = re.search(r'\bviewBox\s*=\s*["\']([^"\']+)["\']', attrs, re.IGNORECASE)
     if vb_m:
         viewbox = vb_m.group(1)
     else:
-        w_m = re.search(r'width=["\']([0-9.]+)(?:px|pt)?["\']', attrs)
-        h_m = re.search(r'height=["\']([0-9.]+)(?:px|pt)?["\']', attrs)
-        if w_m and h_m:
-            viewbox = f"0 0 {w_m.group(1)} {h_m.group(1)}"
-        else:
-            viewbox = None
+        w_m = re.search(r'(?:^|\s)width\s*=\s*["\']([^"\']+)["\']', attrs)
+        h_m = re.search(r'(?:^|\s)height\s*=\s*["\']([^"\']+)["\']', attrs)
+        width = _svg_absolute_length(w_m.group(1)) if w_m else None
+        height = _svg_absolute_length(h_m.group(1)) if h_m else None
+        viewbox = f"0 0 {width:.15g} {height:.15g}" if width is not None and height is not None else None
 
-    clean_attrs = re.sub(r'\s*(?:width|height|viewBox|viewbox|xmlns)=["\'][^"\']*["\']', '', attrs).strip()
+    stripped_attrs = r'(?:viewBox|xmlns)' if viewbox is None else r'(?:width|height|viewBox|xmlns)'
+    clean_attrs = re.sub(rf'\s+{stripped_attrs}\s*=\s*["\'][^"\']*["\']', '', attrs, flags=re.IGNORECASE).strip()
 
     new_attrs = 'xmlns="http://www.w3.org/2000/svg"'
     if viewbox:
@@ -254,6 +275,20 @@ def atomic_write(path: Path, data: bytes | str) -> None:
                 temp_path.unlink()
             except OSError:
                 pass
+
+def read_heraldry_cache(path: Path) -> tuple[bytes, dict]:
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    svg, metadata = entry["svg"], entry["metadata"]
+    if not isinstance(svg, str) or "<svg" not in svg or not isinstance(metadata, dict):
+        raise ValueError("Invalid heraldry cache entry")
+    if not isinstance(metadata.get("attribution"), dict):
+        raise ValueError("Missing heraldry attribution")
+    return svg.encode("utf-8"), metadata
+
+
+def write_heraldry_cache(path: Path, svg: bytes, metadata: dict) -> None:
+    entry = {"svg": svg.decode("utf-8"), "metadata": metadata}
+    atomic_write(path, json.dumps(entry, ensure_ascii=False))
 
 
 def get_all_counties(db_path: Optional[Path] = None) -> list[dict]:
@@ -496,27 +531,21 @@ def resolve_and_fetch_heraldry(wiki_title: str) -> tuple[bytes, dict]:
 
 
 def get_or_fetch_herb_svg(powiat_id: int, powiat_name: str) -> bytes:
-    cache_dir = get_herb_cache_dir()
-    svg_file = cache_dir / f"{powiat_id}.svg"
-    json_file = cache_dir / f"{powiat_id}.json"
-
-    if svg_file.exists():
-        try:
-            return sanitize_svg_bytes(svg_file.read_bytes())
-        except Exception:
-            pass
+    cache_file = heraldry_cache_path(get_herb_cache_dir(), powiat_id)
+    try:
+        return read_heraldry_cache(cache_file)[0]
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
 
     try:
         svg_bytes, meta = resolve_and_fetch_heraldry(powiat_name)
-        atomic_write(svg_file, svg_bytes)
-        atomic_write(json_file, json.dumps(meta, ensure_ascii=False, indent=2))
+        write_heraldry_cache(cache_file, svg_bytes, meta)
         return svg_bytes
     except Exception as exc:
-        if svg_file.exists():
-            try:
-                return svg_file.read_bytes()
-            except Exception:
-                pass
+        try:
+            return read_heraldry_cache(cache_file)[0]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
         logger.warning(
             f"Failed to fetch coat of arms for powiat {powiat_id} ({powiat_name}): {exc}"
         )
@@ -544,12 +573,11 @@ def get_or_fetch_herb_thumb(
 
     filename = get_heraldry_filename(powiat_id)
     if not filename:
-        json_file = get_herb_cache_dir() / f"{powiat_id}.json"
-        if json_file.exists():
-            try:
-                filename = json.loads(json_file.read_text(encoding="utf-8")).get("filename")
-            except Exception:
-                filename = None
+        try:
+            _, metadata = read_heraldry_cache(heraldry_cache_path(get_herb_cache_dir(), powiat_id))
+            filename = metadata.get("filename")
+        except (OSError, ValueError, KeyError, TypeError):
+            filename = None
 
     if filename:
         thumb_url = (
@@ -573,31 +601,27 @@ def get_or_fetch_herb_thumb(
 def get_source_attribution(
     powiat_id: int, powiat_name: Optional[str] = None
 ) -> Optional[PowiatHeraldrySourceAttribution]:
-    cache_dir = get_herb_cache_dir()
-    json_file = cache_dir / f"{powiat_id}.json"
-
-    if not json_file.exists() and powiat_name:
+    cache_file = heraldry_cache_path(get_herb_cache_dir(), powiat_id)
+    try:
+        _, metadata = read_heraldry_cache(cache_file)
+    except (OSError, ValueError, KeyError, TypeError):
+        if not powiat_name:
+            return None
         try:
             get_or_fetch_herb_svg(powiat_id, powiat_name)
-        except Exception:
-            pass
-
-    if json_file.exists():
-        try:
-            with open(json_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            attr = data.get("attribution", {})
-            return PowiatHeraldrySourceAttribution(
-                title=attr.get("title"),
-                artist=attr.get("artist"),
-                author=attr.get("author"),
-                license=attr.get("license"),
-                source_url=attr.get("source_url"),
-                description=attr.get("description"),
-            )
-        except Exception:
+            _, metadata = read_heraldry_cache(cache_file)
+        except (HTTPException, OSError, ValueError, KeyError, TypeError):
             return None
-    return None
+
+    attr = metadata["attribution"]
+    return PowiatHeraldrySourceAttribution(
+        title=attr.get("title"),
+        artist=attr.get("artist"),
+        author=attr.get("author"),
+        license=attr.get("license"),
+        source_url=attr.get("source_url"),
+        description=attr.get("description"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -803,7 +827,7 @@ async def get_challenge(
 
 
 @router.get("/coat-asset")
-async def get_coat_asset(token: str = Query(...)):
+async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(default="")):
     """Streams the coat of arms SVG for the session target county."""
     payload = decrypt_session_token(token)
     target_id = payload.get("target_id")
@@ -820,7 +844,27 @@ async def get_coat_asset(token: str = Query(...)):
         )
 
     svg_bytes = await asyncio.to_thread(get_or_fetch_herb_svg, target_id, county["name"])
-    return Response(content=svg_bytes, media_type="image/svg+xml")
+    encodings = {}
+    for item in accept_encoding.split(","):
+        name, *params = item.split(";")
+        name = name.strip().lower()
+        if name not in ("gzip", "*"):
+            continue
+        quality = 1.0
+        for param in params:
+            key, sep, value = param.strip().partition("=")
+            if sep and key.strip().lower() == "q":
+                try:
+                    quality = float(value.strip())
+                except ValueError:
+                    quality = 0.0
+        encodings[name] = min(encodings.get(name, 1.0), quality)
+
+    headers = {"Vary": "Accept-Encoding"}
+    if encodings.get("gzip", encodings.get("*", 0)) > 0:
+        svg_bytes = await asyncio.to_thread(gzip.compress, svg_bytes, compresslevel=3, mtime=0)
+        headers["Content-Encoding"] = "gzip"
+    return Response(content=svg_bytes, media_type="image/svg+xml", headers=headers)
 
 
 @router.post("/guess", response_model=PowiatHeraldryGuessResult)

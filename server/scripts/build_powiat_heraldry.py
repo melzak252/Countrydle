@@ -1,13 +1,12 @@
 """Build and verify coats-of-arms SVG and attribution cache for Polish counties.
 
-Resolves coat of arms SVGs via pl.wikipedia.org -> Wikidata P94 -> Wikimedia Commons
-and saves them to data/powiat_herb_cache/{powiat_id}.svg and {powiat_id}.json.
+Resolves coats via Wikipedia, Wikidata and Wikimedia Commons and stores each
+SVG together with its attribution in one versioned cache entry.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sqlite3
 import sys
@@ -20,10 +19,11 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from powiatdle.heraldry import (  # noqa: E402
-    atomic_write,
     get_db_path,
-    get_herb_cache_dir,
+    heraldry_cache_path,
+    read_heraldry_cache,
     resolve_and_fetch_heraldry,
+    write_heraldry_cache,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -95,29 +95,13 @@ def get_counties(db_path: Path) -> list[dict]:
         ]
 
 
-def verify_entry(svg_file: Path, json_file: Path) -> tuple[bool, str]:
-    if not svg_file.exists():
-        return False, "Missing .svg file"
-    if not json_file.exists():
-        return False, "Missing .json file"
-
+def verify_entry(cache_file: Path) -> tuple[bool, str]:
     try:
-        svg_content = svg_file.read_bytes()
+        svg_content, _ = read_heraldry_cache(cache_file)
         if len(svg_content) < 50:
             return False, "SVG file too small"
-        if b"<svg" not in svg_content and b"<?xml" not in svg_content:
-            return False, "File does not contain SVG XML markers"
     except Exception as exc:
-        return False, f"Failed to read SVG: {exc}"
-
-    try:
-        json_content = json.loads(json_file.read_text(encoding="utf-8"))
-        if not isinstance(json_content, dict):
-            return False, "JSON content is not a dict"
-        if "attribution" not in json_content:
-            return False, "JSON missing attribution key"
-    except Exception as exc:
-        return False, f"Failed to parse JSON: {exc}"
+        return False, f"Invalid cache entry: {exc}"
 
     return True, "OK"
 
@@ -153,11 +137,10 @@ def build_heraldry(args: argparse.Namespace) -> int:
     for idx, county in enumerate(counties, 1):
         cid = county["id"]
         cname = county["name"]
-        svg_file = cache_dir / f"{cid}.svg"
-        json_file = cache_dir / f"{cid}.json"
+        cache_file = heraldry_cache_path(cache_dir, cid)
 
         if args.verify:
-            ok, msg = verify_entry(svg_file, json_file)
+            ok, msg = verify_entry(cache_file)
             if ok:
                 verified_count += 1
                 logger.info(f"[{idx}/{len(counties)}] ID {cid}: {cname} -> VALID")
@@ -170,7 +153,7 @@ def build_heraldry(args: argparse.Namespace) -> int:
 
         # Check if already cached
         if not args.force:
-            ok, _ = verify_entry(svg_file, json_file)
+            ok, _ = verify_entry(cache_file)
             if ok:
                 skipped_count += 1
                 logger.debug(f"[{idx}/{len(counties)}] ID {cid}: {cname} -> CACHED")
@@ -179,8 +162,7 @@ def build_heraldry(args: argparse.Namespace) -> int:
         logger.info(f"[{idx}/{len(counties)}] ID {cid}: {cname} -> Fetching...")
         try:
             svg_bytes, meta = resolve_and_fetch_heraldry(cname)
-            atomic_write(svg_file, svg_bytes)
-            atomic_write(json_file, json.dumps(meta, ensure_ascii=False, indent=2))
+            write_heraldry_cache(cache_file, svg_bytes, meta)
             downloaded_count += 1
             logger.info(
                 f"[{idx}/{len(counties)}] ID {cid}: {cname} -> SAVED ({len(svg_bytes)} bytes)"
