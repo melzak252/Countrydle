@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
 import TemplateDivergencesPanel from '../components/admin/TemplateDivergencesPanel';
@@ -78,7 +79,21 @@ function requestError(error: unknown): string {
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = TABS.find((tab) => tab.id === requestedTab)?.id ?? 'overview';
+  const setActiveTab = (tab: AdminTab) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    setSearchParams(next);
+  };
+  const setSessionFilters = (mode: string, date: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'sessions');
+    next.set('mode', mode);
+    next.set('date', date);
+    setSearchParams(next);
+  };
   const [questionTestReport, setQuestionTestReport] = useState<AnswerReport | null>(null);
   const [qaBridgeTarget, setQaBridgeTarget] = useState<QuestionTestBridgeTarget | null>(null);
   const focusQA = useRef(false);
@@ -407,11 +422,11 @@ export default function AdminDashboard() {
         </header>
       {/* TAB CONTENT PANELS */}
       {activeTab === 'overview' && (
-        <AdminOverviewTab overview={overview} isLoading={isOverviewLoading} error={overviewError} onRefresh={fetchOverview} />
+        <AdminOverviewTab overview={overview} isLoading={isOverviewLoading} error={overviewError} onRefresh={fetchOverview} onOpenCosts={() => setActiveTab('aiCosts')} onOpenSessions={(mode) => { if (overview) setSessionFilters(mode, overview.date); }} />
       )}
 
       {activeTab === 'sessions' && (
-        <AdminSessionsTab onTestInQA={handleTestInQA} />
+        <AdminSessionsTab key={`${searchParams.get('mode') || 'countrydle'}:${searchParams.get('date') || ''}`} onTestInQA={handleTestInQA} selectedMode={searchParams.get('mode') || 'countrydle'} selectedDate={searchParams.get('date') || new Date().toISOString().slice(0, 10)} onFiltersChange={setSessionFilters} />
       )}
 
       {activeTab === 'liveFeed' && (

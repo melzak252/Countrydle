@@ -1,5 +1,5 @@
 {
-  "version": "1.38.1",
-  "title": "Daily coat of arms display fixes",
-  "body": "- Fixed clipping of daily coats of arms caused by SVG unit handling.\n- Improved reliability of coat images and their attribution by updating their cache together and handling gzip-compressed images."
+  "version": "1.39.0",
+  "title": "Heraldry rankings and quiz insights",
+  "body": "- Daily coats of arms now have ranked points and leaderboards, with guest progress that can be claimed by an account.\n- The unranked 380-coat quiz now shows community solve rates and active-time statistics.\n- Improved the admin overview and session drilldown across all 11 game modes, including recorded heraldry quiz solves."
 }

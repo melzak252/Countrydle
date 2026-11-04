@@ -24,6 +24,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { powiatHeraldryService } from '../services/api';
+import { useAuthStore } from '../stores/authStore';
 import type {
   PowiatHeraldryChallenge,
   PowiatHeraldryGuessResult,
@@ -95,6 +96,9 @@ function PolishLicensePlateBadge({ plates }: { plates: string[] }) {
 }
 
 export default function PowiatHeraldryPage() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
+  const challengeRequest = useRef(0);
 
   // Mode state
   const [mode, setMode] = useState<GameMode>('daily');
@@ -177,6 +181,7 @@ export default function PowiatHeraldryPage() {
   // Load challenge
   const loadChallenge = useCallback(
     async (targetMode: GameMode, customSeed?: string) => {
+      const request = ++challengeRequest.current;
       setIsLoading(true);
       setInputVal('');
       setSelectedCounty(null);
@@ -185,9 +190,15 @@ export default function PowiatHeraldryPage() {
       try {
         if (targetMode === 'daily') {
           const savedToken = getStoredDailyToken();
-          const ch = await powiatHeraldryService.getChallenge(
+          let ch = await powiatHeraldryService.getChallenge(
             savedToken ? { token: savedToken } : undefined
           );
+          if (request !== challengeRequest.current) return;
+          if (isAuthenticated && ch.ranked) {
+            try { ch = await powiatHeraldryService.sync(); }
+            catch { toast.error('Could not sync your daily result to your account. Try reloading.'); }
+          }
+          if (request !== challengeRequest.current) return;
           setChallenge(ch);
           if (ch.date && ch.token) {
             try {
@@ -208,6 +219,7 @@ export default function PowiatHeraldryPage() {
         } else {
           const seedParam = customSeed || `challenge-${Date.now()}`;
           const ch = await powiatHeraldryService.getChallenge({ seed: seedParam });
+          if (request !== challengeRequest.current) return;
           setChallenge(ch);
           setGuesses([]);
           setIsGameOver(false);
@@ -218,21 +230,23 @@ export default function PowiatHeraldryPage() {
           setShowResultsModal(false);
         }
       } catch (err) {
+        if (request !== challengeRequest.current) return;
         console.error('Failed to load heraldry challenge:', err);
         toast.error(
           'Failed to load coat of arms challenge.'
         );
       } finally {
-        setIsLoading(false);
+        if (request === challengeRequest.current) setIsLoading(false);
       }
     },
-    []
+    [isAuthenticated]
   );
 
   // Initial load
   useEffect(() => {
-    loadChallenge(mode);
-  }, [mode, loadChallenge]);
+    if (!authLoading) void loadChallenge(mode);
+    return () => { challengeRequest.current++; };
+  }, [mode, loadChallenge, authLoading]);
 
   const handleSwitchMode = (nextMode: GameMode) => {
     if (nextMode === mode) return;
@@ -357,6 +371,7 @@ export default function PowiatHeraldryPage() {
         guess: name,
         powiat_id: countyId,
       });
+      setChallenge((prev) => prev ? { ...prev, points: result.points, ranked: result.ranked } : prev);
 
       if (result.token) {
         setChallenge((prev) => (prev ? { ...prev, token: result.token! } : prev));
@@ -875,6 +890,11 @@ export default function PowiatHeraldryPage() {
                     ? `Solved in ${guesses.length} of ${maxGuesses} guesses!`
                     : `Out of guesses. Better luck next time!`}
                 </p>
+                <p className="mt-2 text-sm text-emerald-300">
+                  {challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}
+                </p>
+                {challenge?.ranked && !isAuthenticated && <p className="text-xs text-sand-400">Sign in to add your daily result to the leaderboard.</p>}
+                <Link to="/leaderboard?mode=heraldry" className="text-xs text-emerald-300 underline">View leaderboard</Link>
               </div>
 
               {/* Registration Plates on Victory Card */}
@@ -1084,6 +1104,8 @@ export default function PowiatHeraldryPage() {
                     ? `Identified county coat of arms in ${guesses.length}/${maxGuesses} guesses!`
                     : 'Out of guesses this round.'}
                 </p>
+                <p className="mt-2 text-sm text-emerald-300">{challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}</p>
+                <Link to="/leaderboard?mode=heraldry" className="mt-1 inline-block text-xs text-emerald-300 underline">View leaderboard</Link>
               </div>
               <button
                 type="button"

@@ -23,9 +23,19 @@ import type {
 
 interface AdminSessionsTabProps {
   onTestInQA?: (target: { mode: string; targetName?: string; questionText?: string }) => void;
+  selectedMode: string;
+  selectedDate: string;
+  onFiltersChange: (mode: string, date: string) => void;
 }
 
-const MODES = ['countrydle', 'powiatdle', 'us_statedle', 'wojewodztwodle', 'continental'] as const;
+const MODES = [
+  ['countrydle', 'World countries'], ['powiatdle', 'Polish counties'],
+  ['us_statedle', 'US states'], ['wojewodztwodle', 'Polish voivodeships'],
+  ['flagdle', 'Flags'], ['continental', 'Continental (all)'],
+  ['continental:europe', 'Europe'], ['continental:asia', 'Asia'],
+  ['continental:africa', 'Africa'], ['continental:americas', 'Americas'],
+  ['heraldry', 'County coats of arms'], ['coats_quiz', 'Coats quiz'],
+] as const;
 const PAGE_SIZE = 20;
 
 type SessionResult = {
@@ -108,12 +118,10 @@ function getAnswerLabel(
   return { label: t('adminSessions.noAnswer'), className: '' };
 }
 
-export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }) => {
+export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, selectedMode, selectedDate, onFiltersChange }) => {
   const { t } = useTranslation();
   const locale = 'en-US';
   const idPrefix = useId().replace(/:/g, '');
-  const [selectedMode, setSelectedMode] = useState<string>('countrydle');
-  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [playerTypeFilter, setPlayerTypeFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
@@ -202,8 +210,8 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
 
   const handleDatePreset = (offsetDays: number) => {
     const date = new Date();
-    date.setDate(date.getDate() - offsetDays);
-    setSelectedDate(date.toISOString().slice(0, 10));
+    date.setUTCDate(date.getUTCDate() - offsetDays);
+    onFiltersChange(selectedMode, date.toISOString().slice(0, 10));
     setPage(1);
   };
 
@@ -228,12 +236,12 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
             className="admin-control"
             value={selectedMode}
             onChange={(event) => {
-              setSelectedMode(event.target.value);
+              onFiltersChange(event.target.value, selectedDate);
               setPage(1);
             }}
           >
-            {MODES.map((mode) => (
-              <option key={mode} value={mode}>{t(`adminSessions.modes.${mode}`)}</option>
+            {MODES.map(([mode, label]) => (
+              <option key={mode} value={mode}>{label}</option>
             ))}
           </select>
         </label>
@@ -255,7 +263,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                 type="date"
                 value={selectedDate}
                 onChange={(event) => {
-                  setSelectedDate(event.target.value);
+                  onFiltersChange(selectedMode, event.target.value);
                   setPage(1);
                 }}
               />
@@ -274,11 +282,11 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
         </button>
       </div>
 
-      <section className="admin-panel space-y-4" aria-label={t('adminSessions.targetSummary')}>
+      <section className="admin-panel space-y-4" aria-label={selectedMode === 'coats_quiz' ? 'Quiz scope and summary' : t('adminSessions.targetSummary')}>
         <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-center">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="admin-badge">{t('adminSessions.targetEntity')}</span>
+              <span className="admin-badge">{selectedMode === 'coats_quiz' ? 'Quiz scope' : t('adminSessions.targetEntity')}</span>
               {stats?.target_subtitle && <span className="admin-badge">{stats.target_subtitle}</span>}
             </div>
             {stats ? (
@@ -288,7 +296,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                   {stats.target_name}
                 </h2>
                 <p className="admin-meta mt-1">
-                  {t('adminSessions.challengeDate', {
+                  {selectedMode === 'coats_quiz' ? `Sessions on ${formatGameDate(stats.game_date || selectedDate, locale)}` : t('adminSessions.challengeDate', {
                     date: formatGameDate(stats.game_date || selectedDate, locale),
                   })}
                 </p>
@@ -310,14 +318,10 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                 label: t('adminSessions.solveRate'),
                 value: stats ? formatPercent(stats.win_rate_pct, locale) : '—',
               },
-              {
-                label: t('adminSessions.avgQuestionsWon'),
-                value: stats ? formatNumber(stats.avg_questions_winners, locale, 1) : '—',
-              },
-              {
-                label: t('adminSessions.avgQuestionsLost'),
-                value: stats ? formatNumber(stats.avg_questions_losers, locale, 1) : '—',
-              },
+              ...(['coats_quiz', 'heraldry', 'flagdle'].includes(selectedMode) ? [] : [
+                { label: t('adminSessions.avgQuestionsWon'), value: stats ? formatNumber(stats.avg_questions_winners, locale, 1) : '—' },
+                { label: t('adminSessions.avgQuestionsLost'), value: stats ? formatNumber(stats.avg_questions_losers, locale, 1) : '—' },
+              ]),
             ].map((metric) => (
               <div key={metric.label} className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-3">
                 <div className="admin-meta">{metric.label}</div>
@@ -373,8 +377,8 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                 }}
               >
                 <option value="all">{t('adminSessions.statusAll')}</option>
-                <option value="won">{t('adminSessions.statusWon')}</option>
-                <option value="lost">{t('adminSessions.statusLost')}</option>
+                <option value="won">{selectedMode === 'coats_quiz' ? 'Completed' : t('adminSessions.statusWon')}</option>
+                <option value="lost">{selectedMode === 'coats_quiz' ? 'Stopped' : t('adminSessions.statusLost')}</option>
                 <option value="in_progress">{t('adminSessions.statusInProgress')}</option>
               </select>
             </label>
@@ -426,11 +430,15 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
               const encodedId = encodeURIComponent(session.session_id);
               const buttonId = `${idPrefix}-session-button-${encodedId}`;
               const panelId = `${idPrefix}-session-panel-${encodedId}`;
-              const statusLabel = t(`adminSessions.status.${session.status}`);
+              const isQuiz = session.mode === 'coats_quiz';
+              const hasDetails = session.timeline.length > 0 || session.quiz_solves.length > 0;
+              const statusLabel = isQuiz && session.quiz_status === 'given_up' ? 'Stopped' : isQuiz && session.quiz_status === 'completed' ? 'Completed' : t(`adminSessions.status.${session.status}`);
               const started = formatDateTime(session.started_at, locale);
               const completed = formatDateTime(session.completed_at, locale);
               const duration = formatDuration(session.duration_seconds, locale, t);
-              const accessibleName = t('adminSessions.sessionSummary', {
+              const accessibleName = isQuiz
+                ? `${session.username}, ${statusLabel}, ${session.solved_count == null ? 'solved count unavailable' : `${session.solved_count} of 380 solved`}. ${isExpanded ? 'Hide' : 'Show'} details`
+                : t('adminSessions.sessionSummary', {
                 username: session.username,
                 playerType: session.is_guest ? t('adminSessions.guest') : t('adminSessions.registered'),
                 status: statusLabel,
@@ -447,9 +455,10 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                     id={buttonId}
                     type="button"
                     className="admin-row-button flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-white/5"
-                    aria-expanded={isExpanded}
-                    aria-controls={panelId}
-                    aria-label={accessibleName}
+                    disabled={!hasDetails}
+                    aria-expanded={hasDetails ? isExpanded : undefined}
+                    aria-controls={hasDetails ? panelId : undefined}
+                    aria-label={hasDetails ? accessibleName : undefined}
                     onClick={() => toggleSession(session.session_id)}
                   >
                     <span className="flex min-w-0 items-start gap-3">
@@ -477,9 +486,13 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                         <span className="admin-meta mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span>{t('adminSessions.startedAt', { time: started || t('adminSessions.unknownTime') })}</span>
                           {completed && <span>{t('adminSessions.completedAt', { time: completed })}</span>}
-                          <span>{t('adminSessions.questionCount', { count: session.questions_asked })}</span>
-                          <span>{t('adminSessions.guessCount', { count: session.guesses_made })}</span>
-                          {session.duration_seconds != null && (
+                          {isQuiz ? <span>{session.solved_count == null ? 'Solved count unavailable' : `${session.solved_count}/380 solved`}</span> : <>
+                            <span>{t('adminSessions.questionCount', { count: session.questions_asked })}</span>
+                            <span>{t('adminSessions.guessCount', { count: session.guesses_made })}</span>
+                          </>}
+                          {session.mode === 'heraldry' && session.points != null && <span>{formatNumber(session.points, locale)} points</span>}
+                          {isQuiz && session.active_elapsed_seconds != null && <span>Active time: {formatDuration(session.active_elapsed_seconds, locale, t)} (client-reported)</span>}
+                          {!isQuiz && session.duration_seconds != null && (
                             <span className="inline-flex items-center gap-1">
                               <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                               {t('adminSessions.durationLabel', { duration })}
@@ -488,12 +501,12 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                         </span>
                       </span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-2 text-sand-100">
-                      <span>{isExpanded ? t('adminSessions.hideReplay') : t('adminSessions.showReplay')}</span>
+                    {hasDetails && <span className="flex shrink-0 items-center gap-2 text-sand-100">
+                      <span>{isQuiz ? (isExpanded ? 'Hide solved coats' : 'Show solved coats') : (isExpanded ? t('adminSessions.hideReplay') : t('adminSessions.showReplay'))}</span>
                       {isExpanded
                         ? <ChevronDown className="h-4 w-4" aria-hidden="true" />
                         : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
-                    </span>
+                    </span>}
                   </button>
 
                   <div
@@ -502,6 +515,14 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                     hidden={!isExpanded}
                     className="space-y-4 border-t border-white/10 bg-obsidian-900 p-4"
                   >
+                    {session.quiz_solves.length > 0 && <section aria-label="Solved coats">
+                      <h3 className="font-semibold text-sand-100">Solved coats</h3>
+                      <p className="admin-meta mt-1">Active elapsed time since quiz start, client-reported.</p>
+                      <ul className="mt-3 space-y-1 text-sm">
+                        {session.quiz_solves.map((solve) => <li key={solve.powiat_id} className="flex flex-wrap justify-between gap-2"><span>{solve.name}</span><span>{formatDuration(solve.active_elapsed_seconds, locale, t)}</span></li>)}
+                      </ul>
+                    </section>}
+                    {session.timeline.length > 0 && <>
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
                       <h3>{t('adminSessions.timelineTitle', { count: session.timeline.length })}</h3>
                       <span className="admin-meta">{t('adminSessions.timelineOrder')}</span>
@@ -606,6 +627,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
                         })}
                       </ol>
                     )}
+                    </>}
                   </div>
                 </article>
               );
@@ -650,7 +672,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
         )}
       </section>
 
-      <details className="admin-panel">
+      {selectedMode !== 'coats_quiz' && <details className="admin-panel">
         <summary className="flex list-none items-center justify-between gap-3">
           <span className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-slate-300" aria-hidden="true" />
@@ -661,7 +683,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
 
         {stats && (
           <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-2">
-            <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-questions`}>
+            {selectedMode !== 'heraldry' && selectedMode !== 'flagdle' && <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-questions`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 id={`${idPrefix}-top-questions`} className="flex items-center gap-2">
                   <HelpCircle className="h-4 w-4 text-slate-300" aria-hidden="true" />
@@ -705,7 +727,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
               ) : (
                 <p className="admin-muted py-6 text-center">{t('adminSessions.noQuestions')}</p>
               )}
-            </section>
+            </section>}
 
             <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-guesses`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -756,7 +778,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA }
         {!stats && statsError && (
           <p className="admin-muted mt-4">{t('adminSessions.insightsUnavailable')}</p>
         )}
-      </details>
+      </details>}
     </div>
   );
 };

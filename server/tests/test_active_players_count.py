@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 from db.models.blog import DailyBlogPost
 from db.models.continental import ContinentalDay, ContinentalState, ContinentCode
@@ -14,6 +14,8 @@ from db.models.country import Country
 from db.models.countrydle import CountrydleDay, CountrydleState
 from db.models.flagdle import FlagdleDay, FlagdleState
 from db.models.guest_participation import GuestParticipation
+from db.models.heraldry_daily import HeraldryDailySession
+from db.models.heraldry_quiz import QuizRun
 from db.models.powiat import Powiat
 from db.models.powiatdle import PowiatdleDay, PowiatdleState
 from db.models.us_state import USState
@@ -40,6 +42,10 @@ class ReportingSession:
 @pytest.fixture
 def participation_test_db():
     engine = create_engine("sqlite://")
+    @event.listens_for(engine, "connect")
+    def sqlite_utc(connection, _):
+        connection.create_function("timezone", 2, lambda zone, value: value)
+
     models = (
         User, Country, USState, Powiat, Wojewodztwo, DailyBlogPost,
         CountrydleDay, CountrydleState,
@@ -49,8 +55,12 @@ def participation_test_db():
         FlagdleDay, FlagdleState,
         ContinentalDay, ContinentalState,
         GuestParticipation,
+        HeraldryDailySession, QuizRun,
     )
-    Base.metadata.create_all(engine, tables=[model.__table__ for model in models])
+    from admin.resolver import ADMIN_MODE_CONFIGS
+    event_models = [model for cfg in ADMIN_MODE_CONFIGS.values() for model in (cfg.question_model, cfg.guess_model)]
+    tables = list(dict.fromkeys(model.__table__ for model in (*models, *event_models)))
+    Base.metadata.create_all(engine, tables=tables)
     with Session(engine) as session:
         session.add_all([
             Country(id=1, name="Poland", official_name="Republic of Poland", md_file="poland.md"),

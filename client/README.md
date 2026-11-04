@@ -15,6 +15,27 @@ The `Symbols` category provides deductive visual puzzle game modes:
 - **Flag Shades** (`/flag-shades`): Players identify a mystery national flag rendered entirely in perceptual luminance grayscale within 8 guesses. After 3 guesses, an optional chromatic color hint unlocks that reveals one major color family covering at least 10% of the flag surface. Players receive great-circle distance (km) and compass bearing arrow feedback after each guess.
 - **Herby Powiatów / County Coats of Arms** (`/herby-powiatow`): Players deduce one of Poland's 380 counties (land counties and cities with county rights) from its official heraldic coat of arms in vector SVG format (sourced from Wikimedia Commons and Wikidata). Each guess returns centroid distance in kilometers, compass bearing, and voivodeship matching (`🟩` same voivodeship vs `⬛` different). After the 5th wrong guess, the county's official Polish registration plate prefix codes (e.g. `PO · PZ`, `WA`, `KRA`) are automatically revealed in a prominent Polish license-plate styled badge (`EU / PL`). Daily mode restores authoritative state via server token verification (`powiat_heraldry_daily_token_${date}`), and challenge mode supports on-demand randomized games.
 
+Daily county coats award server-calculated points; signed-in players appear on
+the monthly and average leaderboards. Guest daily progress can be claimed on
+sign-in. Older token-only games and random challenges remain playable but are
+unranked; a missing score is not a zero-point loss.
+
+The 380-coat quiz records completed and given-up runs, not abandoned runs.
+For each coat, community results show the number and percentage of finished
+runs that solved it and the average client-reported
+active elapsed time since quiz start among correct solves. Older untracked
+plays are not included. Matching and the pause timer remain local and instant.
+
+The admin overview links mode cards to date- and mode-filtered sessions using
+the URL, so browser navigation restores the selection. Known players are
+identified accounts and guest browsers; sessions include saved zero-move games
+and recovered histories, including those without a known identity.
+The cost card is the previous completed UTC day's measured Countrydle Gemini
+planner and fallback usage, not total platform spend; coverage and cost details
+remain available from the dashboard.
+Finished quiz sessions expose their recorded solved coats and client-reported
+active elapsed times; they do not invent wrong guesses or replay timestamps.
+
 County SVG normalization preserves existing viewBoxes and converts absolute
 physical dimensions to CSS pixels when a viewBox must be derived. Corrected
 assets and their source metadata are published together in the atomic

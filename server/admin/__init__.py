@@ -18,6 +18,8 @@ from db.models.user import User, UserPoints
 from db.models.powiatdle import PowiatdleQuestion, PowiatdleGuess
 from db.models.us_statedle import USStatedleQuestion, USStatedleGuess
 from db.models.wojewodztwodle import WojewodztwodleQuestion, WojewodztwodleGuess
+from db.models.heraldry_daily import HeraldryDailySession
+from admin.heraldry_sessions import query_heraldry_sessions, query_heraldry_stats
 from db.repositories.participation import ParticipationRepository
 from db.repositories.country import CountryRepository
 from db.repositories.countrydle import CountrydleRepository
@@ -45,12 +47,14 @@ from schemas.admin import (
 )
 from admin.resolver import (
     ADMIN_MODE_CONFIGS,
+    _resolve_day_and_target,
     classify_question_source,
     invalidate_question_fallback,
     query_admin_game_sessions,
     query_admin_questions,
     query_admin_target_stats,
 )
+from admin.participation import admin_counts
 from users.utils import get_admin_user
 from admin.question_tests import router as question_tests_router
 from admin.country_costs import router as country_costs_router
@@ -74,6 +78,7 @@ def _mode_today(stats, mode_key: str, mode_label: str, target_name: str) -> Admi
         mode_label=mode_label,
         target_name=target_name,
         players=stats.get("total_players", 0),
+        sessions=stats.get("total_games", 0),
         winners=stats.get("winners_count", 0),
         win_rate_pct=stats.get("win_rate_pct", 0.0),
         questions=stats.get("total_questions", 0),
@@ -90,30 +95,11 @@ async def get_admin_overview(
 ):
     today = get_today_date()
 
-    # Resolve targets without creating puzzles for additional modes.
-    c_day = await CountrydleRepository(session).get_today_country()
-    c_target = "Unknown"
-    if c_day:
-        country = await CountryRepository(session).get(c_day.country_id)
-        c_target = country.name if country else f"Country #{c_day.country_id}"
-
-    us_day = await USStatedleDayRepository(session).get_today_us_state()
-    us_target = "Unknown"
-    if us_day:
-        state = await USStateRepository(session).get(us_day.us_state_id)
-        us_target = state.name if state else f"State #{us_day.us_state_id}"
-
-    p_day = await PowiatdleDayRepository(session).get_today_powiat()
-    p_target = "Unknown"
-    if p_day:
-        powiat = await PowiatRepository(session).get(p_day.powiat_id)
-        p_target = powiat.nazwa if powiat else f"Powiat #{p_day.powiat_id}"
-
-    w_day = await WojewodztwodleDayRepository(session).get_today_wojewodztwo()
-    w_target = "Unknown"
-    if w_day:
-        woj = await WojewodztwoRepository(session).get(w_day.wojewodztwo_id)
-        w_target = woj.nazwa if woj else f"Voivodeship #{w_day.wojewodztwo_id}"
+    # Use the same UTC date and day resolution as the drilldown endpoints.
+    c_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["countrydle"], today, "countrydle"))[1]
+    us_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["us_statedle"], today, "us_statedle"))[1]
+    p_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["powiatdle"], today, "powiatdle"))[1]
+    w_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["wojewodztwodle"], today, "wojewodztwodle"))[1]
 
     flag_target = (await session.execute(
         select(Country.name).join(FlagdleDay, FlagdleDay.country_id == Country.id)
@@ -124,6 +110,9 @@ async def get_admin_overview(
         .join(Country, Country.id == ContinentalDay.country_id)
         .where(ContinentalDay.date == today)
     )).all())
+    heraldry_target = (await session.execute(
+        select(HeraldryDailySession.target_name).where(HeraldryDailySession.date == today).limit(1)
+    )).scalar()
 
     targets = [
         ("countrydle", "World Countries", c_target),
@@ -131,6 +120,8 @@ async def get_admin_overview(
         ("powiatdle", "Polish Counties", p_target),
         ("wojewodztwodle", "Polish Voivodeships", w_target),
         ("flagdle", "Flags", flag_target or "Unknown"),
+        ("heraldry", "County Coats of Arms", heraldry_target or "Unknown"),
+        ("coats_quiz", "All County Coats Quiz", "380 Polish counties"),
         *[
             (f"continental:{continent.value}", f"Continental: {continent.value.title()}",
              continental_targets.get(continent, "Unknown"))
@@ -139,18 +130,25 @@ async def get_admin_overview(
     ]
     participation = ParticipationRepository(session)
     mode_stats = await participation.get_mode_stats(today)
-    modes_today = [
-        _mode_today(mode_stats.get(key, {}), key, label, target)
-        for key, label, target in targets
-    ]
+    _, admin_days, admin_modes = await admin_counts(session, today - timedelta(days=13), today)
+    modes_today = []
+    for key, label, target in targets:
+        stats = dict(mode_stats.get(key, {}))
+        count = admin_modes.get((today, key))
+        stats["total_players"] = count.players if count else 0
+        stats["total_games"] = count.sessions if count else 0
+        stats["win_rate_pct"] = round(stats.get("winners_count", 0) / count.sessions * 100, 1) if count and count.sessions else 0.0
+        modes_today.append(_mode_today(stats, key, label, target))
 
     # Unique players across challenges; wins and win rate remain per-game metrics.
     daily_stats = await participation.get_daily_stats(today - timedelta(days=13), today)
     current = await participation.get_stats(today)
+    today_count = admin_days.get(today)
     today_overview = AdminOverviewToday(
-        total_players=current.get("total_players", 0),
+        total_players=today_count.players if today_count else 0,
+        total_sessions=today_count.sessions if today_count else 0,
         total_winners=current.get("winners_count", 0),
-        win_rate_pct=current.get("win_rate_pct", 0.0),
+        win_rate_pct=round(current.get("winners_count", 0) / today_count.sessions * 100, 1) if today_count and today_count.sessions else 0.0,
         total_questions=current.get("total_questions", 0),
         total_guesses=current.get("total_guesses", 0),
         avg_questions_won=current.get("avg_questions_won", 0.0),
@@ -161,12 +159,13 @@ async def get_admin_overview(
     for i in range(14):
         hist_date = today - timedelta(days=i)
         stats = daily_stats.get(hist_date, {})
+        count = admin_days.get(hist_date)
         history_14d.append(
             AdminDaySummary(
                 date=hist_date,
-                total_players=stats.get("total_players", 0),
+                total_players=count.players if count else 0,
                 total_winners=stats.get("winners_count", 0),
-                win_rate_pct=stats.get("win_rate_pct", 0.0),
+                win_rate_pct=round(stats.get("winners_count", 0) / count.sessions * 100, 1) if count and count.sessions else 0.0,
                 total_questions=stats.get("total_questions", 0),
                 total_guesses=stats.get("total_guesses", 0),
                 avg_questions_won=stats.get("avg_questions_won", 0.0),
@@ -176,18 +175,20 @@ async def get_admin_overview(
 
     # All-time tracked participation; legacy anonymous guesses are not people.
     platform = await participation.get_stats()
+    admin_all_time, _, _ = await admin_counts(session, include_breakdown=False)
     u_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
     b_total = (await session.execute(select(func.count(DailyBlogPost.id)))).scalar() or 0
 
     totals = AdminPlatformTotals(
         total_users=u_count,
-        total_games=platform["total_games"],
+        total_games=admin_all_time.sessions,
         total_questions=platform["total_questions"],
         total_guesses=platform["total_guesses"],
         total_blog_posts=b_total,
     )
 
     return AdminOverviewResponse(
+        date=today,
         today=today_overview,
         modes_today=modes_today,
         history_14d=history_14d,
@@ -394,6 +395,11 @@ async def list_admin_game_sessions(
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
+    if mode in {"heraldry", "coats_quiz"}:
+        items, total = await query_heraldry_sessions(
+            session, mode, date or get_today_date(), status, player_type, page, limit
+        )
+        return AdminGameSessionsResponse(items=items, total=total, page=page, limit=limit)
     items, total = await query_admin_game_sessions(
         session=session,
         mode=mode,
@@ -413,6 +419,8 @@ async def get_admin_game_session_stats(
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
+    if mode in {"heraldry", "coats_quiz"}:
+        return await query_heraldry_stats(session, mode, date or get_today_date())
     stats = await query_admin_target_stats(
         session=session,
         mode=mode,

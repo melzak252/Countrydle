@@ -353,8 +353,34 @@ export const flagShadesService = {
     return response.data.filter((country: FlagdleCountry) => isCountryAvailable(country.name));
   },
 };
+export interface CoatsQuizSolve {
+  powiat_ids: number[];
+  answer: string;
+  elapsed_seconds: number;
+}
+
+export interface CoatsQuizStats {
+  finished_runs: number;
+  tracking_started_at: string | null;
+  coats: { powiat_id: number; solved_count: number; average_active_seconds: number | null }[];
+}
+
+export const coatsQuizService = {
+  start: async (): Promise<{ run_id: string }> =>
+    (await api.post<{ run_id: string }>('/powiatdle/heraldry/quiz/runs', {})).data,
+  finish: async (runId: string, result: { status: 'completed' | 'given_up'; elapsed_seconds: number; solves: CoatsQuizSolve[] }): Promise<void> => {
+    await api.post(`/powiatdle/heraldry/quiz/runs/${encodeURIComponent(runId)}/finish`, result);
+  },
+  stats: async (): Promise<CoatsQuizStats> =>
+    (await api.get<CoatsQuizStats>('/powiatdle/heraldry/quiz/stats')).data,
+};
+
 
 export const powiatHeraldryService = {
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> =>
+    (await api.get<LeaderboardEntry[]>('/powiatdle/heraldry/leaderboard', { params: { type } })).data,
+  sync: async (): Promise<PowiatHeraldryChallenge> =>
+    (await api.post<PowiatHeraldryChallenge>('/powiatdle/heraldry/sync', {})).data,
   getChallenge: async (params?: { seed?: string; token?: string }): Promise<PowiatHeraldryChallenge> => {
     const response = await api.get<PowiatHeraldryChallenge>('/powiatdle/heraldry/challenge', {
       params,

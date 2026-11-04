@@ -9,6 +9,7 @@ class AdminModeToday(BaseModel):
     mode_label: str
     target_name: str
     players: int
+    sessions: int
     winners: int
     win_rate_pct: float
     questions: int
@@ -32,6 +33,7 @@ class AdminDaySummary(BaseModel):
 
 class AdminOverviewToday(BaseModel):
     total_players: int
+    total_sessions: int
     total_winners: int
     win_rate_pct: float
     total_questions: int
@@ -52,6 +54,7 @@ class AdminPlatformTotals(BaseModel):
 
 
 class AdminOverviewResponse(BaseModel):
+    date: date
     today: AdminOverviewToday
     modes_today: List[AdminModeToday]
     history_14d: List[AdminDaySummary]
@@ -234,10 +237,16 @@ class AdminGameSessionTimelineEvent(BaseModel):
     correct: Optional[bool] = None
 
 
+class AdminQuizSolve(BaseModel):
+    powiat_id: int
+    name: str
+    active_elapsed_seconds: float
+
+
 class AdminGameSessionItem(BaseModel):
     session_id: str
     mode: str
-    day_id: int
+    day_id: Optional[int]
     game_date: str
     target_name: str
     target_subtitle: Optional[str] = None
@@ -250,6 +259,11 @@ class AdminGameSessionItem(BaseModel):
     duration_seconds: Optional[int] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    points: Optional[int] = None
+    solved_count: Optional[int] = None
+    quiz_status: Optional[Literal["started", "completed", "given_up"]] = None
+    active_elapsed_seconds: Optional[float] = None
+    quiz_solves: List[AdminQuizSolve] = Field(default_factory=list)
     timeline: List[AdminGameSessionTimelineEvent] = Field(default_factory=list)
 
 

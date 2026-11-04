@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
+from tests.test_guest_participation import participation_db
 
 from powiatdle.heraldry import (
     PowiatHeraldryChallenge,
@@ -364,9 +365,38 @@ async def test_counties_catalog_endpoint(async_client):
 # 7. Challenge Endpoint
 # ---------------------------------------------------------------------------
 
+@pytest.fixture
+async def ranked_daily_db(participation_db):
+    from app import app
+    from db import get_db
+    from db.models.heraldry_daily import HeraldryDailySession
+    from db.models.user import UserPoints
+
+    async with participation_db() as session:
+        connection = await session.connection()
+        await connection.run_sync(UserPoints.__table__.create)
+        await connection.run_sync(HeraldryDailySession.__table__.create)
+        await session.commit()
+
+    async def override():
+        async with participation_db() as session:
+            yield session
+
+    previous = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = override
+    try:
+        yield
+    finally:
+        if previous is None:
+            app.dependency_overrides.pop(get_db, None)
+        else:
+            app.dependency_overrides[get_db] = previous
+
+
 
 @pytest.mark.anyio
-async def test_challenge_endpoint_daily_and_resume(async_client):
+@pytest.mark.real_database
+async def test_challenge_endpoint_daily_and_resume(async_client, ranked_daily_db):
     """GET /challenge returns seed, token, coat_asset_url and restores state when token provided."""
     # 1. Fresh daily challenge
     res = await async_client.get("/powiatdle/heraldry/challenge")

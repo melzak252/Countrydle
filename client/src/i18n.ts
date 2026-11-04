@@ -384,7 +384,7 @@ const resources = {
         stale: 'Showing the last successful snapshot.',
       },
       adminNavigation: {
-        sections: { gameplay: 'Players', qa: 'Knowledge & QA', system: 'System' },
+        sections: { gameplay: 'Activity', qa: 'Knowledge & QA', system: 'System' },
         pageSelector: 'Admin page',
         pages: {
           overview: { label: 'Overview', description: 'Daily participation, targets, and solve rates.' },

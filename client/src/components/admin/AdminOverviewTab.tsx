@@ -1,12 +1,15 @@
-import React from 'react';
-import { Calendar, HelpCircle, Target, Trophy, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Activity, Calendar, DollarSign, Trophy, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { adminService } from '../../services/api';
+import type { CountryCostDay } from '../../types/countryCostReport';
 
 export interface AdminModeStats {
   mode_key: string;
   mode_label: string;
   target_name: string;
   players: number;
+  sessions: number;
   winners: number;
   win_rate_pct: number;
   questions: number;
@@ -27,8 +30,10 @@ export interface AdminHistoryDay {
 }
 
 export interface AdminOverviewData {
+  date: string;
   today?: {
     total_players: number;
+    total_sessions: number;
     total_questions: number;
     total_guesses: number;
     win_rate_pct: number;
@@ -42,26 +47,43 @@ interface AdminOverviewTabProps {
   overview: AdminOverviewData | null;
   isLoading: boolean;
   error: string | null;
+  onOpenSessions: (mode: string) => void;
+  onOpenCosts: () => void;
   onRefresh: () => void;
 }
 
-export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, isLoading, error, onRefresh }) => {
+export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, isLoading, error, onRefresh, onOpenSessions, onOpenCosts }) => {
   const { t } = useTranslation();
   const hasOverview = overview !== null;
   const locale = 'en-US';
   const numberFormat = new Intl.NumberFormat(locale);
   const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', dateStyle: 'medium' });
+  const [cost, setCost] = useState<CountryCostDay | null>(null);
+  const [costState, setCostState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [costRevision, setCostRevision] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    adminService.getCountrydleCosts(1, controller.signal).then((report) => {
+      if (!controller.signal.aborted) { setCost(report.days[0] ?? null); setCostState('ready'); }
+    }).catch(() => { if (!controller.signal.aborted) setCostState('error'); });
+    return () => controller.abort();
+  }, [costRevision]);
+  const costValue = cost?.cost_lower_usd == null || cost.cost_upper_usd == null
+    ? '—'
+    : cost.cost_lower_usd === cost.cost_upper_usd
+      ? `$${cost.cost_lower_usd.toFixed(4)}`
+      : `$${cost.cost_lower_usd.toFixed(4)}–$${cost.cost_upper_usd.toFixed(4)}`;
   const metrics = [
-    { label: t('adminOverview.metrics.players'), value: overview?.today?.total_players, note: t('adminOverview.metrics.playersNote'), Icon: Users },
-    { label: t('adminOverview.metrics.questions'), value: overview?.today?.total_questions, note: t('adminOverview.metrics.questionsNote'), Icon: HelpCircle },
-    { label: t('adminOverview.metrics.guesses'), value: overview?.today?.total_guesses, note: t('adminOverview.metrics.guessesNote'), Icon: Target },
-    { label: t('adminOverview.metrics.winRate'), value: overview?.today?.win_rate_pct === undefined ? undefined : `${numberFormat.format(overview.today.win_rate_pct)}%`, note: overview?.today ? t('adminOverview.metrics.winners', { count: overview.today.total_winners }) : '—', Icon: Trophy },
+    { label: 'Known players today', value: overview?.today?.total_players, note: 'Accounts + guest browsers', Icon: Users },
+    { label: 'Sessions today', value: overview?.today?.total_sessions, note: 'Saved game sessions', Icon: Activity },
+    { label: 'Countrydle AI cost', value: costState === 'loading' ? 'Loading…' : costState === 'error' || costValue === '—' ? 'Unavailable' : costValue, note: costState === 'error' ? 'Report unavailable · refresh to retry' : cost ? `${cost.day} UTC · ${cost.cost_status.replaceAll('_', ' ')}` : 'No completed-day data', Icon: DollarSign },
+    { label: 'Win rate today', value: overview?.today?.win_rate_pct === undefined ? undefined : `${numberFormat.format(overview.today.win_rate_pct)}%`, note: overview?.today ? t('adminOverview.metrics.winners', { count: overview.today.total_winners }) : '—', Icon: Trophy },
   ];
 
   return (
-    <section className="min-w-0 space-y-6" aria-labelledby="admin-page-title">
-      <div className="flex justify-end">
-        <button type="button" className="admin-button" onClick={onRefresh} disabled={isLoading}>
+    <section className="min-w-0 space-y-4" aria-labelledby="admin-page-title">
+      <div className="flex justify-end -mt-2">
+        <button type="button" className="admin-button" onClick={() => { onRefresh(); setCostState('loading'); setCostRevision((value) => value + 1); }} disabled={isLoading}>
           {isLoading ? t('adminCommon.updating') : t('adminCommon.refresh')}
         </button>
       </div>
@@ -83,54 +105,39 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
           {!overview.today && <p className="admin-panel admin-muted">{t('adminOverview.noDailyStats')}</p>}
           <div className="grid grid-cols-1 gap-4 min-[640px]:grid-cols-2 min-[1280px]:grid-cols-4">
             {metrics.map(({ label, value, note, Icon }) => (
-              <article key={label} className="admin-panel space-y-3">
+              <article key={label} className="admin-panel space-y-1 !p-3">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="admin-meta">{label}</h2>
                   <Icon size={18} aria-hidden="true" className="text-emerald-300" />
                 </div>
-                <p className="admin-metric tabular-nums">{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
-                <p className="text-sm leading-5 text-slate-300">{note}</p>
+                <p className={label === 'Countrydle AI cost' ? 'text-xl font-semibold text-sand-100 tabular-nums sm:text-2xl' : 'admin-metric tabular-nums'}>{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
+                <p className="text-xs leading-4 text-slate-400">{note}</p>
               </article>
             ))}
           </div>
 
           <section className="space-y-3" aria-labelledby="admin-overview-games">
-            <h2 id="admin-overview-games" className="text-lg font-semibold text-sand-100">{t('adminOverview.gamesTitle')}</h2>
+            <h2 id="admin-overview-games" className="text-lg font-semibold text-sand-100">{t('adminOverview.gamesTitle')} <span className="admin-meta">· {overview.date} UTC</span></h2>
             {(overview.modes_today?.length ?? 0) === 0 ? (
               <p className="admin-panel admin-muted">{t('adminOverview.noModes')}</p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 min-[768px]:grid-cols-2 min-[1280px]:grid-cols-3">
-                {overview.modes_today?.map((mode) => {
-                  const difficulty = mode.players === 0
-                    ? t('adminOverview.difficulty.noAttempts')
-                    : mode.win_rate_pct >= 70
-                      ? t('adminOverview.difficulty.high')
-                      : mode.win_rate_pct >= 40
-                        ? t('adminOverview.difficulty.moderate')
-                        : t('adminOverview.difficulty.challenging');
-                  return (
-                    <article key={mode.mode_key} className="admin-panel space-y-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="admin-meta">{mode.mode_label}</p>
-                          <h3 className="mt-1 break-words text-base font-semibold text-sand-100">{mode.target_name}</h3>
-                        </div>
-                        <span className="admin-badge">{difficulty}</span>
-                      </div>
-                      <dl className="space-y-2 border-t border-white/10 pt-3 text-sm">
-                        <div className="flex justify-between gap-4"><dt className="text-slate-300">{t('adminOverview.players')}</dt><dd className="admin-number">{numberFormat.format(mode.players)}</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-slate-300">{t('adminOverview.solved')}</dt><dd className="admin-number text-emerald-300">{numberFormat.format(mode.winners)} ({numberFormat.format(mode.win_rate_pct)}%)</dd></div>
-                        {mode.avg_questions_won !== undefined && mode.avg_questions_won > 0 && <div className="flex justify-between gap-4"><dt className="text-slate-300">{t('adminOverview.averageQuestions')}</dt><dd className="admin-number">{numberFormat.format(mode.avg_questions_won)}</dd></div>}
-                        {mode.avg_guesses_won !== undefined && mode.avg_guesses_won > 0 && <div className="flex justify-between gap-4"><dt className="text-slate-300">{t('adminOverview.averageGuesses')}</dt><dd className="admin-number">{numberFormat.format(mode.avg_guesses_won)}</dd></div>}
-                        <div className="flex justify-between gap-4"><dt className="text-slate-300">{t('adminOverview.questions')}</dt><dd className="admin-number">{numberFormat.format(mode.questions)}</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-slate-300">{t('adminOverview.guesses')}</dt><dd className="admin-number">{numberFormat.format(mode.guesses)}</dd></div>
-                      </dl>
-                    </article>
-                  );
-                })}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {overview.modes_today?.map((mode) => (
+                  <button key={mode.mode_key} type="button" onClick={() => onOpenSessions(mode.mode_key)} className="admin-panel min-w-0 space-y-1 !p-3 text-left hover:border-emerald-400/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300">
+                    <span className="block font-semibold text-sand-100">{mode.mode_label}</span>
+                    <span className="block break-words text-sm text-slate-300">{mode.target_name}</span>
+                    <span className="block text-sm text-slate-300">{numberFormat.format(mode.players)} known players · {numberFormat.format(mode.sessions)} sessions · {numberFormat.format(mode.winners)} solved ({numberFormat.format(mode.win_rate_pct)}%)</span>
+                    <span className="block text-sm text-emerald-300">View sessions →</span>
+                  </button>
+                ))}
               </div>
             )}
           </section>
+          <details className="text-xs text-slate-400">
+            <summary className="cursor-pointer text-emerald-300">Coverage and cost basis</summary>
+            <p className="mt-2">Known players are identified accounts and guest browsers; unidentifiable legacy sessions are excluded from player counts, not sessions. Saved sessions include zero-move games and recovered histories, not general site traffic or human views. AI cost covers measured Countrydle Gemini planner and fallback usage only, not platform spend; incomplete coverage is not total cost. The cost date is the completed UTC day shown, not today.</p>
+            <button type="button" className="mt-2 text-emerald-300 underline" onClick={onOpenCosts}>View cost details</button>
+          </details>
 
           <section className="space-y-3" aria-labelledby="admin-overview-history">
             <div className="flex items-center gap-2">

@@ -1,8 +1,8 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from db.base import Base
@@ -12,6 +12,8 @@ from db.models.country import Country
 from db.models.countrydle import CountrydleDay, CountrydleState, CountrydleQuestion, CountrydleGuess
 from db.models.flagdle import FlagdleDay, FlagdleState
 from db.models.guest_participation import GuestParticipation
+from db.models.heraldry_daily import HeraldryDailySession
+from db.models.heraldry_quiz import QuizRun
 from db.models.powiatdle import PowiatdleDay, PowiatdleState
 from db.models.us_statedle import USStatedleDay, USStatedleState
 from db.models.user import User
@@ -36,14 +38,22 @@ class ReportingSession:
 @pytest.fixture
 def reporting_db():
     engine = create_engine("sqlite://")
+    @event.listens_for(engine, "connect")
+    def sqlite_utc(connection, _):
+        connection.create_function("timezone", 2, lambda zone, value: value)
+
     models = (
         User, Country, DailyBlogPost, CountrydleDay, CountrydleState,
         CountrydleQuestion, CountrydleGuess,
         USStatedleDay, USStatedleState, PowiatdleDay, PowiatdleState,
         WojewodztwodleDay, WojewodztwodleState, FlagdleDay, FlagdleState,
         ContinentalDay, ContinentalState, GuestParticipation,
+        HeraldryDailySession, QuizRun,
     )
-    Base.metadata.create_all(engine, tables=[model.__table__ for model in models])
+    from admin.resolver import ADMIN_MODE_CONFIGS
+    event_models = [model for cfg in ADMIN_MODE_CONFIGS.values() for model in (cfg.question_model, cfg.guess_model)]
+    tables = list(dict.fromkeys(model.__table__ for model in (*models, *event_models)))
+    Base.metadata.create_all(engine, tables=tables)
     with Session(engine) as session:
         session.add_all([
             Country(id=1, name="Poland", official_name="Republic of Poland", md_file="poland.md"),
@@ -171,6 +181,7 @@ async def test_dashboard_deduplicates_people_across_modes_but_win_rate_counts_ga
     assert {mode.mode_key for mode in overview.modes_today} == {
         "countrydle", "us_statedle", "powiatdle", "wojewodztwodle", "flagdle",
         "continental:europe", "continental:asia", "continental:africa", "continental:americas",
+        "heraldry", "coats_quiz",
     }
 
 
@@ -179,10 +190,12 @@ async def test_existing_blog_responses_refresh_stats_without_changing_article(re
     from blog import get_blog_post, get_latest_blog_post
 
     db, session = reporting_db
+    db.add(User(id=99, username="reviewer", email="reviewer@example.com"))
     post = DailyBlogPost(
         date=TODAY, country_id=1, slug="existing-poland", title="Original title",
         subtitle="Original subtitle", summary="Original summary", fun_facts=[],
         content_markdown="Original generated prose: 99 players.",
+        reviewed_by_id=99, reviewed_at=datetime(2026, 9, 24),
     )
     db.add(post)
     db.add(CountrydleState(user_id=1, day_id=1))

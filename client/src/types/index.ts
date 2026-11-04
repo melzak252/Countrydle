@@ -321,6 +321,8 @@ export interface PowiatHeraldryGuessResult {
   remaining_guesses: number;
   is_game_over: boolean;
   won: boolean;
+  points: number | null;
+  ranked: boolean;
   registration_plates?: string[] | null;
   target_powiat?: PowiatHeraldryTarget | null;
   source_attribution?: PowiatHeraldrySourceAttribution | null;
@@ -334,6 +336,8 @@ export interface PowiatHeraldryChallenge {
   max_guesses: number;
   hint_unlock_guesses: number;
   token: string;
+  points: number | null;
+  ranked: boolean;
   coat_asset_url: string;
   source_attribution?: PowiatHeraldrySourceAttribution | null;
   guesses?: PowiatHeraldryGuessResult[];
@@ -435,7 +439,7 @@ export interface AdminGameSessionTimelineEvent {
 export interface AdminGameSessionItem {
   session_id: string;
   mode: string;
-  day_id: number;
+  day_id: number | null;
   game_date: string;
   target_name: string;
   target_subtitle?: string | null;
@@ -446,9 +450,14 @@ export interface AdminGameSessionItem {
   questions_asked: number;
   guesses_made: number;
   duration_seconds?: number | null;
+  points?: number | null;
+  solved_count?: number | null;
+  quiz_status?: 'started' | 'completed' | 'given_up' | null;
+  active_elapsed_seconds?: number | null;
   started_at?: string | null;
   completed_at?: string | null;
   timeline: AdminGameSessionTimelineEvent[];
+  quiz_solves: { powiat_id: number; name: string; active_elapsed_seconds: number }[];
 }
 
 export interface AdminGameSessionsResponse {

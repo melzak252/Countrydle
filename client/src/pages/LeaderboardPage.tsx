@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Search, Users } from 'lucide-react';
 import type { LeaderboardEntry, LeaderboardPeriod } from '../types';
-import { africaService, americasService, asiaService, europeService, flagdleService, gameService, powiatService, usStateService, wojewodztwoService } from '../services/api';
+import { africaService, americasService, asiaService, europeService, flagdleService, gameService, powiatHeraldryService, powiatService, usStateService, wojewodztwoService } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 25;
@@ -18,6 +18,7 @@ const GAME_MODES = [
   { id: 'us_state', label: 'US States', group: 'Regional' },
   { id: 'wojewodztwo', label: 'Polish Voivodeships', group: 'Regional' },
   { id: 'powiat', label: 'Powiatdle', group: 'Regional' },
+  { id: 'heraldry', label: 'County Coats of Arms', group: 'Regional' },
 ] as const;
 
 type GameType = typeof GAME_MODES[number]['id'];
@@ -34,6 +35,7 @@ async function loadLeaderboard(game: GameType, period: LeaderboardPeriod): Promi
     case 'africa': return africaService.getLeaderboard(period);
     case 'americas': return americasService.getLeaderboard(period);
     case 'flagdle': return flagdleService.getLeaderboard(period);
+    case 'heraldry': return powiatHeraldryService.getLeaderboard(period);
     default: {
       const exhaustiveCheck: never = game;
       return exhaustiveCheck;
@@ -53,7 +55,8 @@ function formatAverage(value: number): string {
 }
 
 export default function LeaderboardPage() {
-  const [gameType, setGameType] = useState<GameType>('country');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const gameType = GAME_MODES.find((mode) => mode.id === searchParams.get('mode'))?.id ?? 'country';
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardPeriod>('monthly');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -125,7 +128,9 @@ export default function LeaderboardPage() {
   }, [findMeRequest, pagePlayers]);
 
   const changeGame = (game: GameType) => {
-    setGameType(game);
+    const next = new URLSearchParams(searchParams);
+    next.set('mode', game);
+    setSearchParams(next);
     setPage(1);
     setRequestGeneration((generation) => generation + 1);
     setFindMessage(null);
@@ -167,6 +172,7 @@ export default function LeaderboardPage() {
         <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
           Daily challenges, ranked. Find a player or jump straight to your own row. Friend games are just for fun — no points or rankings.
         </p>
+        {gameType === 'heraldry' && <Link to="/herby-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Coats of Arms</Link>}
       </header>
 
       <div className="mb-6 border-b border-white/10 pb-6">

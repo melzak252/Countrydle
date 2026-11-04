@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from db.models.answer_report import AnswerReport
-from db.models.continental import ContinentalDay, ContinentalGuess, ContinentalQuestion, ContinentalState
+from db.models.continental import ContinentCode, ContinentalDay, ContinentalGuess, ContinentalQuestion, ContinentalState
 from db.models.country import Country
 from db.models.countrydle import CountrydleDay, CountrydleState
 from db.models.guess import CountrydleGuess
@@ -459,6 +459,21 @@ async def _resolve_day_and_target(
     return day, target_name, target_subtitle
 
 
+def _session_mode(mode: str) -> tuple[str, AdminModeConfig]:
+    clean_mode = mode.lower().strip()
+    if clean_mode == "continental":
+        clean_mode = "continental:europe"
+    if clean_mode.startswith("continental:"):
+        region = clean_mode.removeprefix("continental:")
+        if region not in {continent.value for continent in ContinentCode}:
+            raise HTTPException(status_code=400, detail="Invalid mode")
+        return clean_mode, ADMIN_MODE_CONFIGS["continental"]
+    cfg = ADMIN_MODE_CONFIGS.get(clean_mode)
+    if cfg is None:
+        raise HTTPException(status_code=400, detail="Invalid mode")
+    return clean_mode, cfg
+
+
 async def query_admin_game_sessions(
     session: AsyncSession,
     mode: str = "countrydle",
@@ -468,9 +483,7 @@ async def query_admin_game_sessions(
     page: int = 1,
     limit: int = 20,
 ) -> Tuple[List[AdminGameSessionItem], int]:
-    clean_mode = mode.lower().strip()
-    mode_key = clean_mode.split(":", 1)[0]
-    cfg = ADMIN_MODE_CONFIGS.get(mode_key, ADMIN_MODE_CONFIGS["countrydle"])
+    clean_mode, cfg = _session_mode(mode)
 
     if not target_date:
         target_date = datetime.now(timezone.utc).date()
@@ -524,7 +537,8 @@ async def query_admin_game_sessions(
     # 2. Guests from GuestParticipation
     if player_type_filter != "registered":
         gp_stmt = select(GuestParticipation).where(
-            GuestParticipation.mode == cfg.mode_key,
+            GuestParticipation.mode == clean_mode,
+            GuestParticipation.user_id.is_(None),
             GuestParticipation.day_id == day.id,
         )
         gp_rows = (await session.execute(gp_stmt)).scalars().all()
@@ -567,23 +581,6 @@ async def query_admin_game_sessions(
                         "initial_status": "in_progress",
                     })
 
-        # Anonymous legacy rows
-        anon_where = [
-            cfg.question_model.day_id == day.id,
-            cfg.question_model.user_id.is_(None),
-        ]
-        if hasattr(cfg.question_model, "guest_id"):
-            anon_where.append(cfg.question_model.guest_id.is_(None))
-        anon_count = (await session.execute(select(func.count(cfg.question_model.id)).where(and_(*anon_where)))).scalar() or 0
-        if anon_count > 0 and ("guest", "anonymous") not in seen_identities:
-            seen_identities.add(("guest", "anonymous"))
-            candidates.append({
-                "is_guest": True,
-                "user_id": None,
-                "guest_id": "anonymous",
-                "username": "Anonymous Guest",
-                "initial_status": "in_progress",
-            })
 
     # Batch-fetch all questions and guesses for this day to build and sort all sessions accurately
     all_q_stmt = select(cfg.question_model).where(cfg.question_model.day_id == day.id).order_by(cfg.question_model.id.asc())
@@ -613,6 +610,14 @@ async def query_admin_game_sessions(
         else:
             ident = ("guest", "anonymous")
         guesses_by_identity.setdefault(ident, []).append(g)
+
+    if player_type_filter != "registered" and (
+        ("guest", "anonymous") in questions_by_identity or ("guest", "anonymous") in guesses_by_identity
+    ):
+        candidates.append({
+            "is_guest": True, "user_id": None, "guest_id": None,
+            "username": "Guest (unidentified)", "initial_status": "in_progress",
+        })
 
     all_sessions: List[AdminGameSessionItem] = []
     for c in candidates:
@@ -677,7 +682,7 @@ async def query_admin_game_sessions(
         all_sessions.append(
             AdminGameSessionItem(
                 session_id=sess_id,
-                mode=cfg.mode_key,
+                mode=clean_mode,
                 day_id=day.id,
                 game_date=day.date.isoformat(),
                 target_name=target_name,
@@ -722,9 +727,7 @@ async def query_admin_target_stats(
     mode: str = "countrydle",
     target_date: Optional[date] = None,
 ) -> AdminTargetStrategyStats:
-    clean_mode = mode.lower().strip()
-    mode_key = clean_mode.split(":", 1)[0]
-    cfg = ADMIN_MODE_CONFIGS.get(mode_key, ADMIN_MODE_CONFIGS["countrydle"])
+    clean_mode, cfg = _session_mode(mode)
 
     if not target_date:
         target_date = datetime.now(timezone.utc).date()
@@ -765,7 +768,8 @@ async def query_admin_target_stats(
         (
             await session.execute(
                 select(GuestParticipation.guest_id).where(
-                    GuestParticipation.mode == cfg.mode_key,
+                    GuestParticipation.mode == clean_mode,
+                    GuestParticipation.user_id.is_(None),
                     GuestParticipation.day_id == day.id,
                     GuestParticipation.won == True,
                 )
@@ -782,14 +786,18 @@ async def query_admin_target_stats(
             if hasattr(g, "guest_id") and g.guest_id:
                 winning_guests.add(g.guest_id)
 
-    # 4. Total players
-    all_users = set(q.user_id for q in q_rows if q.user_id) | set(g.user_id for g in g_rows if g.user_id)
-    all_guests = set(getattr(q, "guest_id", None) for q in q_rows if getattr(q, "guest_id", None)) | set(
-        getattr(g, "guest_id", None) for g in g_rows if getattr(g, "guest_id", None)
-    )
-    total_players = len(all_users) + len(all_guests)
-    total_winners = len(all_users & winning_users) + len(all_guests & winning_guests)
-    win_rate_pct = round((total_winners / max(1, total_players)) * 100, 1) if total_players > 0 else 0.0
+    # Use the same saved/recovered session identities as overview and drilldown.
+    from admin.participation import admin_mode_identities
+    identities = await admin_mode_identities(session, target_date, clean_mode)
+    winners = {f"user:{user_id}" for user_id in winning_users if user_id is not None}
+    winners.update(f"guest:{guest_id}" for guest_id in winning_guests if guest_id is not None)
+    total_winners = len(identities & winners)
+    if None in identities and any(
+        g.answer and g.user_id is None and not getattr(g, "guest_id", None) for g in g_rows
+    ):
+        total_winners += 1
+    total_players = len(identities - {None})
+    win_rate_pct = round(total_winners / len(identities) * 100, 1) if identities else 0.0
 
     # 5. Top Questions
     q_groups: Dict[str, Dict[str, Any]] = {}

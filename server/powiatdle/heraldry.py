@@ -15,16 +15,23 @@ from pathlib import Path
 from typing import List, Optional
 
 from cryptography.fernet import Fernet, InvalidToken
-from fastapi import APIRouter, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from db import get_db
+from db.models.user import User
 from powiat_names import resolve_powiat_name
 from powiatdle.utils import LOCAL_CONFIG
+from powiatdle import heraldry_daily
+from powiatdle.heraldry_quiz import router as quiz_router
+from users.utils import get_current_or_guest_user, get_current_user
 from utils.geo import calculate_bearing, calculate_distance_km
 
 logger = logging.getLogger("countrydle.powiatdle.heraldry")
 
 router = APIRouter(prefix="/heraldry", tags=["powiat-heraldry"])
+router.include_router(quiz_router)
 
 USER_AGENT = "CountrydleHeraldryBot/1.0 (https://countrydle.com; heraldry@countrydle.com)"
 HERB_CACHE_DIR = LOCAL_CONFIG.db_path.parent / "powiat_herb_cache"
@@ -84,6 +91,8 @@ class PowiatHeraldryGuessResult(BaseModel):
     target_powiat: Optional[PowiatHeraldryTarget] = None
     source_attribution: Optional[PowiatHeraldrySourceAttribution] = None
     token: Optional[str] = None
+    ranked: bool = False
+    points: Optional[int] = None
 
 
 class PowiatHeraldryChallenge(BaseModel):
@@ -100,6 +109,8 @@ class PowiatHeraldryChallenge(BaseModel):
     won: Optional[bool] = False
     registration_plates: Optional[List[str]] = None
     target_powiat: Optional[PowiatHeraldryTarget] = None
+    ranked: bool = False
+    points: Optional[int] = None
 
 
 # ---------------------------------------------------------------------------
@@ -647,8 +658,12 @@ async def get_counties():
 
 @router.get("/challenge", response_model=PowiatHeraldryChallenge)
 async def get_challenge(
+    request: Request,
+    response: Response,
     seed: Optional[str] = Query(None),
     token: Optional[str] = Query(None),
+    user: Optional[User] = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
 ):
     """Retrieves or restores a heraldry challenge (daily or custom seed)."""
     all_counties = get_all_counties()
@@ -659,7 +674,7 @@ async def get_challenge(
         )
 
     today_str = datetime.now(timezone.utc).date().isoformat()
-    if not seed or seed.strip() == "daily":
+    if not seed or seed.strip() in {"daily", f"daily-{today_str}"}:
         is_daily = True
         effective_seed = f"daily-{today_str}"
     else:
@@ -673,6 +688,24 @@ async def get_challenge(
     target_idx = seed_hash_int % len(all_counties)
     target_county = all_counties[target_idx]
     target_id = target_county["id"]
+
+    ranked_row = None
+    parsed_token = None
+    if token:
+        try:
+            parsed_token = decrypt_session_token(token)
+        except HTTPException:
+            token = None
+    if is_daily and parsed_token and parsed_token.get("session_id") and parsed_token.get("seed") == effective_seed:
+        ranked_row = await heraldry_daily.get_owned_daily(
+            session, request, user, parsed_token["session_id"]
+        )
+        token = encrypt_session_token(heraldry_daily.token_payload(ranked_row))
+    elif is_daily and (not parsed_token or parsed_token.get("seed") != effective_seed):
+        ranked_row = await heraldry_daily.get_or_create_daily(
+            session, request, response, user, datetime.now(timezone.utc).date(), target_county
+        )
+        token = encrypt_session_token(heraldry_daily.token_payload(ranked_row))
 
     if token:
         try:
@@ -759,6 +792,8 @@ async def get_challenge(
                             registration_plates=g_plates,
                             target_powiat=g_target_obj,
                             source_attribution=g_attr,
+                            ranked=ranked_row is not None,
+                            points=ranked_row.points if ranked_row is not None and g_over else None,
                             token=partial_token,
                         )
                     )
@@ -795,6 +830,8 @@ async def get_challenge(
                     won=won,
                     registration_plates=registration_plates,
                     target_powiat=target_powiat_obj,
+                    ranked=ranked_row is not None,
+                    points=ranked_row.points if ranked_row is not None else None,
                 )
         except HTTPException:
             pass
@@ -868,7 +905,12 @@ async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(
 
 
 @router.post("/guess", response_model=PowiatHeraldryGuessResult)
-async def make_guess(body: PowiatHeraldryGuessRequest):
+async def make_guess(
+    body: PowiatHeraldryGuessRequest,
+    request: Request,
+    user: Optional[User] = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
+):
     """Evaluates a guess in Powiat Heraldry mode."""
     payload = decrypt_session_token(body.token)
     target_id = payload.get("target_id")
@@ -902,6 +944,10 @@ async def make_guess(body: PowiatHeraldryGuessRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This county has already been checked.",
         )
+    ranked_row = None
+    if payload.get("session_id"):
+        ranked_row = await heraldry_daily.record_guess(session, request, user, payload, guessed_county)
+
 
     guesses.append(guessed_id)
     payload["guesses"] = guesses
@@ -973,5 +1019,27 @@ async def make_guess(body: PowiatHeraldryGuessRequest):
         registration_plates=registration_plates,
         target_powiat=target_powiat_obj,
         source_attribution=source_attr,
+        ranked=ranked_row is not None,
+        points=ranked_row.points if ranked_row is not None else None,
         token=new_token,
     )
+
+
+@router.post("/sync", response_model=PowiatHeraldryChallenge)
+async def sync_daily(
+    request: Request,
+    response: Response,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    row = await heraldry_daily.claim_daily(session, request, user)
+    token = encrypt_session_token(heraldry_daily.token_payload(row))
+    return await get_challenge(request=request, response=response, seed=None, token=token, user=user, session=session)
+
+
+@router.get("/leaderboard")
+async def daily_leaderboard(
+    type: str = Query("monthly"),
+    session: AsyncSession = Depends(get_db),
+):
+    return await heraldry_daily.leaderboard(session, type)

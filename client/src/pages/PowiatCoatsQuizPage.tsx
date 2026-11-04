@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import POWIAT_CATALOG from '../data/powiats_quiz_catalog.json';
+import { coatsQuizService, type CoatsQuizSolve, type CoatsQuizStats } from '../services/api';
 
 interface QuizPowiat {
   id: number;
@@ -125,6 +126,7 @@ interface ShieldCellProps {
   onSelect: (id: number) => void;
   onInspect: (id: number) => void;
   setRef: (id: number, el: HTMLButtonElement | null) => void;
+  community?: string;
 }
 
 const ShieldCell = React.memo(function ShieldCell({
@@ -134,6 +136,7 @@ const ShieldCell = React.memo(function ShieldCell({
   isTargeted,
   onSelect,
   onInspect,
+  community,
   setRef,
 }: ShieldCellProps) {
   const [loaded, setLoaded] = useState(false);
@@ -208,6 +211,7 @@ const ShieldCell = React.memo(function ShieldCell({
             }`}
           />
         )}
+        {community && <p className="mt-1 text-center text-[10px] leading-tight text-zinc-400">{community}</p>}
       </div>
     </div>
   );
@@ -232,6 +236,66 @@ export default function PowiatCoatsQuizPage() {
 
   const headerInputRef = useRef<HTMLInputElement>(null);
   const slotRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const runRef = useRef<{ start: Promise<{ run_id: string }> | null; startFailed: boolean; solves: CoatsQuizSolve[]; result: { status: 'completed' | 'given_up'; elapsed_seconds: number; solves: CoatsQuizSolve[] } | null }>({ start: null, startFailed: false, solves: [], result: null });
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [community, setCommunity] = useState<CoatsQuizStats | null>(null);
+  const [communityState, setCommunityState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const statsRequest = useRef(0);
+  const loadCommunity = useCallback(() => {
+    const request = ++statsRequest.current;
+    setCommunityState('loading');
+    coatsQuizService.stats().then((stats) => {
+      if (request === statsRequest.current) { setCommunity(stats); setCommunityState('ready'); }
+    }).catch(() => {
+      if (request === statsRequest.current) setCommunityState('error');
+    });
+  }, []);
+  useEffect(() => {
+    loadCommunity();
+    return () => { statsRequest.current++; };
+  }, [loadCommunity]);
+  const beginRun = () => {
+    const run = runRef.current;
+    if (!run.start && !run.startFailed) {
+      const start = coatsQuizService.start();
+      run.start = start;
+      start.catch(() => {
+        if (run.start === start) { run.start = null; run.startFailed = true; }
+      });
+    }
+  };
+  const saveRun = (run: typeof runRef.current, retry = false) => {
+    if (!run.result) return;
+    if (run.startFailed && !retry) { setSaveState('error'); return; }
+    if (retry) run.startFailed = false;
+    setSaveState('saving');
+    const start = run.start ?? coatsQuizService.start();
+    run.start = start;
+    start.catch(() => {
+      if (run.start === start) { run.start = null; run.startFailed = true; }
+    });
+    start.then(({ run_id }) => coatsQuizService.finish(run_id, run.result!)).then(() => {
+      if (runRef.current === run) { setSaveState('saved'); loadCommunity(); }
+    }).catch(() => {
+      if (runRef.current === run) setSaveState('error');
+    });
+  };
+  const finishRun = (status: 'completed' | 'given_up') => {
+    const run = runRef.current;
+    run.result = { status, elapsed_seconds: elapsedSeconds, solves: [...run.solves] };
+    saveRun(run);
+  };
+  const recordSolve = (ids: number[], answer: string, completed: boolean) => {
+    runRef.current.solves.push({ powiat_ids: ids, answer, elapsed_seconds: elapsedSeconds });
+    if (completed) finishRun('completed');
+  };
+  const communityLabels = useMemo(() => {
+    if (communityState !== 'ready' || !community || community.finished_runs === 0) return new Map<number, string>();
+    return new Map(community.coats.map((coat) => {
+      const average = coat.average_active_seconds === null ? 'avg —' : `avg ${formatTime(Math.round(coat.average_active_seconds))}`;
+      return [coat.powiat_id, `${Math.round(coat.solved_count * 100 / community.finished_runs)}% · ${coat.solved_count}/${community.finished_runs} · ${average}`];
+    }));
+  }, [community, communityState]);
 
   const guessedCount = guessedIds.size;
   const isCompleted = TOTAL_COUNT > 0 && guessedCount === TOTAL_COUNT;
@@ -338,6 +402,8 @@ export default function PowiatCoatsQuizPage() {
   );
 
   const handleResetQuiz = useCallback(() => {
+    runRef.current = { start: null, startFailed: false, solves: [], result: null };
+    setSaveState('idle');
     setGuessedIds(new Set());
     setInputVal('');
     setIsGivenUp(false);
@@ -358,6 +424,7 @@ export default function PowiatCoatsQuizPage() {
     if (clean.length < 2) return;
 
     if (!isRunning) {
+      beginRun();
       setIsRunning(true);
       setIsPaused(false);
     }
@@ -369,6 +436,7 @@ export default function PowiatCoatsQuizPage() {
         const solved = ACTIVE_POOL.find((p) => p.id === targetedId);
         const next = new Set(guessedIds);
         next.add(targetedId);
+        recordSolve([targetedId], raw, next.size === TOTAL_COUNT);
         setGuessedIds(next);
         setInputVal('');
         setLastSolvedLabel(solved?.name || null);
@@ -384,6 +452,7 @@ export default function PowiatCoatsQuizPage() {
       if (newlyMatched.length > 0) {
         const next = new Set(guessedIds);
         newlyMatched.forEach((id) => next.add(id));
+        recordSolve(newlyMatched, raw, next.size === TOTAL_COUNT);
         setGuessedIds(next);
         setInputVal('');
         const firstSolved = ACTIVE_POOL.find((p) => p.id === newlyMatched[0]);
@@ -533,6 +602,7 @@ export default function PowiatCoatsQuizPage() {
                   type="button"
                   onClick={() => {
                     if (!isRunning) {
+                      beginRun();
                       setIsRunning(true);
                       setIsPaused(false);
                       const first = ACTIVE_POOL.find((p) => !guessedIds.has(p.id));
@@ -572,6 +642,7 @@ export default function PowiatCoatsQuizPage() {
                 <button
                   type="button"
                   onClick={() => {
+                    finishRun('given_up');
                     setIsGivenUp(true);
                     setIsRunning(false);
                     setTargetedId(null);
@@ -638,6 +709,19 @@ export default function PowiatCoatsQuizPage() {
           </button>
         </div>
       )}
+      <section aria-label="Community quiz statistics" className="rounded-lg border border-white/10 bg-obsidian-900 p-3 text-xs text-zinc-300 space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="font-semibold text-sand-100">Community results</h2>
+          {communityState === 'loading' && <span role="status">Loading community results…</span>}
+          {communityState === 'error' && <span role="alert">Community results could not be loaded.</span>}
+          {communityState === 'ready' && community?.finished_runs === 0 && <span>No finished runs tracked yet.</span>}
+          {communityState === 'ready' && community && community.finished_runs > 0 && <span>{community.finished_runs} finished runs</span>}
+          <button type="button" onClick={loadCommunity} className="underline">Refresh</button>
+        </div>
+        <details><summary className="cursor-pointer">About these results</summary><p className="mt-1">Percentages use completed and given-up runs, excluding abandoned runs. Average time is client-reported active elapsed time since quiz start among correct solves, not time spent on that coat. Earlier untracked play is not included.</p></details>
+        {saveState === 'saving' && <p role="status">Saving your finished run…</p>}
+        {saveState === 'error' && <p role="alert">Your run could not be saved. <button type="button" className="underline" onClick={() => saveRun(runRef.current, true)}>Retry saving</button></p>}
+      </section>
 
       {/* COATS OF ARMS ORGANIZED BY 16 VOIVODESHIPS */}
       <div className="space-y-10">
@@ -663,6 +747,7 @@ export default function PowiatCoatsQuizPage() {
                     isTargeted={targetedId === p.id && !guessedIds.has(p.id) && !isGivenUp}
                     onSelect={selectShieldSlot}
                     onInspect={handleInspect}
+                    community={communityLabels.get(p.id)}
                     setRef={setSlotRef}
                   />
                 ))}
@@ -697,6 +782,7 @@ export default function PowiatCoatsQuizPage() {
                 <div className="font-mono text-[10px] sm:text-xs text-zinc-400 leading-tight">
                   woj. {inspectedPowiat.voivodeship}
                 </div>
+                {communityLabels.get(inspectedPowiat.id) && <p className="text-xs text-zinc-300">{communityLabels.get(inspectedPowiat.id)}</p>}
               </div>
             </div>
 

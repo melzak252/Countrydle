@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app import app
 from db import get_db
 from db.base import Base
+from db.models.blog import DailyBlogPost
+import admin
 from db.models import (
     AnswerReport,
     ContinentCode,
@@ -46,6 +48,8 @@ from db.models import (
     WojewodztwodleState,
 )
 from db.models.fallback_answer import FallbackAnswer, FallbackAnswerBlock
+from db.models.heraldry_daily import HeraldryDailySession
+from db.models.heraldry_quiz import QuizRun
 from db.repositories import fallback_answers
 from users.utils import get_admin_user, get_current_user
 
@@ -92,6 +96,7 @@ async def admin_fixture(monkeypatch):
     @event.listens_for(engine, "connect")
     def enable_foreign_keys(connection, _):
         connection.execute("PRAGMA foreign_keys=ON")
+        connection.create_function("timezone", 2, lambda zone, value: value)
 
     tables = [
         User.__table__,
@@ -123,10 +128,13 @@ async def admin_fixture(monkeypatch):
         FlagdleGuess.__table__,
         FlagdleQuestion.__table__,
         FlagdleState.__table__,
+        DailyBlogPost.__table__,
         GuestParticipation.__table__,
         AnswerReport.__table__,
         FallbackAnswer.__table__,
         FallbackAnswerBlock.__table__,
+        HeraldryDailySession.__table__,
+        QuizRun.__table__,
     ]
     Base.metadata.create_all(engine, tables=tables)
 
@@ -550,6 +558,120 @@ async def test_admin_game_sessions_stats(admin_fixture):
     mistake_g = next(g for g in stats["top_guesses"] if g["guess"] == "Germany")
     assert mistake_g["correct_pct"] == 0.0
 
+
+
+async def test_overview_sessions_and_exact_mode_drilldowns(admin_fixture, monkeypatch):
+    db = admin_fixture.session.session
+    today = admin_fixture.test_date
+    monkeypatch.setattr(admin, "get_today_date", lambda: today)
+
+
+    continents = list(ContinentCode)
+    for index, continent in enumerate(continents):
+        day_id = index + 1
+        if index:
+            db.add(ContinentalDay(id=day_id, continent=continent, country_id=1, date=today))
+        key = f"continental:{continent.value}"
+        db.add(GuestParticipation(
+            guest_id="regional-browser", mode=key, day_id=day_id,
+            questions_asked=1, guesses_made=0, won=True,
+        ))
+        db.add(ContinentalState(
+            user_id=admin_fixture.user.id, day_id=day_id, questions_asked=1,
+            guesses_made=0, won=False,
+        ))
+        db.add(ContinentalQuestion(
+            day_id=day_id, guest_id="regional-browser", original_question=f"Question {key}",
+            valid=True, answer=True, asked_at=datetime(2026, 9, 20, 12),
+        ))
+    db.add(FlagdleDay(id=1, country_id=1, date=today))
+    db.add(GuestParticipation(
+        guest_id="regional-browser", mode="flagdle", day_id=1,
+        questions_asked=0, guesses_made=1, won=True,
+    ))
+    db.add(FlagdleState(user_id=admin_fixture.user.id, day_id=1, guesses_made=1))
+    db.add(WojewodztwodleState(user_id=admin_fixture.user.id, day_id=1, questions_asked=1))
+    db.commit()
+
+    response = await admin_fixture.client.get("/admin/overview")
+    assert response.status_code == 200
+    overview = response.json()
+    assert overview["date"] == today.isoformat()
+    assert overview["today"]["total_players"] == 3
+    modes = {entry["mode_key"]: entry for entry in overview["modes_today"]}
+    assert overview["today"]["total_sessions"] == sum(mode["sessions"] for mode in modes.values())
+    country_sessions = await admin_fixture.client.get("/admin/game-sessions", params={
+        "mode": "countrydle", "date": overview["date"],
+    })
+    assert modes["countrydle"]["sessions"] == country_sessions.json()["total"]
+    for key in [f"continental:{continent.value}" for continent in continents] + ["flagdle"]:
+        assert modes[key]["sessions"] == 2
+        params = {"mode": key, "date": overview["date"]}
+        sessions = await admin_fixture.client.get("/admin/game-sessions", params=params)
+        assert sessions.status_code == 200
+        assert modes[key]["sessions"] == sessions.json()["total"]
+        guest = next(item for item in sessions.json()["items"] if item["is_guest"])
+        assert guest["mode"] == key
+        assert guest["game_date"] == overview["date"]
+        assert guest["status"] == "won"
+        account = next(item for item in sessions.json()["items"] if not item["is_guest"])
+        assert account["mode"] == key
+        assert account["game_date"] == overview["date"]
+        stats = await admin_fixture.client.get("/admin/game-sessions/stats", params=params)
+        assert stats.status_code == 200
+        assert stats.json()["target_name"] == modes[key]["target_name"]
+        assert stats.json()["total_players"] == modes[key]["players"]
+        if key.startswith("continental:"):
+            question = next(q for q in stats.json()["top_questions"] if q["text"] == f"Question {key}")
+            assert question["win_correlation"] == 100.0
+
+    for key in ("countrydle", "us_statedle", "powiatdle", "wojewodztwodle"):
+        params = {"mode": key, "date": overview["date"]}
+        sessions = await admin_fixture.client.get("/admin/game-sessions", params=params)
+        stats = await admin_fixture.client.get("/admin/game-sessions/stats", params=params)
+        assert sessions.status_code == stats.status_code == 200
+        assert sessions.json()["total"] == modes[key]["sessions"]
+        assert stats.json()["total_players"] == modes[key]["players"]
+        assert sessions.json()["items"]
+        assert all(item["mode"] == key and item["game_date"] == overview["date"] for item in sessions.json()["items"])
+        assert stats.json()["target_name"] == modes[key]["target_name"]
+
+
+async def test_overview_and_drilldown_include_saved_recovered_and_unidentified_sessions(admin_fixture, monkeypatch):
+    db = admin_fixture.session.session
+    monkeypatch.setattr(admin, 'get_today_date', lambda: admin_fixture.test_date)
+    db.add(User(id=3, username='recovered', email='recovered@example.com'))
+    db.add(CountrydleState(user_id=3, day_id=1, questions_asked=0, guesses_made=0))
+    db.add_all([
+        CountrydleQuestion(user_id=3, day_id=1, original_question='Recovered question',
+                            valid=True, answer=True, explanation='Yes'),
+        CountrydleQuestion(user_id=None, guest_id=None, day_id=1, original_question='Legacy question',
+                            valid=True, answer=False, explanation='No'),
+    ])
+    db.commit()
+    overview = (await admin_fixture.client.get('/admin/overview')).json()
+    summary = next(m for m in overview['modes_today'] if m['mode_key'] == 'countrydle')
+    response = await admin_fixture.client.get('/admin/game-sessions', params={
+        'mode': 'countrydle', 'date': admin_fixture.test_date.isoformat(),
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert summary['sessions'] == data['total']
+    recovered = [item for item in data['items'] if item['user_id'] == 3]
+    assert len(recovered) == 1 and recovered[0]['timeline'][0]['original_question'] == 'Recovered question'
+    assert sum(item['username'] == 'Guest (unidentified)' for item in data['items']) == 1
+    known = [item for item in data['items'] if item['username'] != 'Guest (unidentified)']
+    assert summary['players'] == len(known)
+    stats = await admin_fixture.client.get('/admin/game-sessions/stats', params={
+        'mode': 'countrydle', 'date': admin_fixture.test_date.isoformat(),
+    })
+    assert stats.status_code == 200 and stats.json()['total_players'] == summary['players']
+
+@pytest.mark.parametrize("mode", ["not-a-mode", "countrydle:asia", "continental:invalid"])
+async def test_invalid_exact_session_mode_is_rejected(admin_fixture, mode):
+    for endpoint in ("/admin/game-sessions", "/admin/game-sessions/stats"):
+        response = await admin_fixture.client.get(endpoint, params={"mode": mode, "date": str(admin_fixture.test_date)})
+        assert response.status_code == 400
 
 async def test_admin_invalidate_fallback_answer(admin_fixture):
     """Verify invalidating a question via POST /admin/questions/invalidate-fallback removes cached answer."""

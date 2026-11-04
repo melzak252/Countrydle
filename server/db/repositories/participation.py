@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import String, case, cast, func, literal, or_, select, union_all
+from sqlalchemy import Date, String, case, cast, func, literal, or_, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models.continental import ContinentalDay, ContinentalState
@@ -11,6 +11,8 @@ from db.models.guest_participation import GuestParticipation
 from db.models.powiatdle import PowiatdleDay, PowiatdleState
 from db.models.us_statedle import USStatedleDay, USStatedleState
 from db.models.wojewodztwodle import WojewodztwodleDay, WojewodztwodleState
+from db.models.heraldry_daily import HeraldryDailySession
+from db.models.heraldry_quiz import QuizRun
 
 
 MODE_MODELS = (
@@ -43,7 +45,7 @@ def _participants(start_date=None, end_date=None, mode=None):
 
         branches.append(
             select(
-                day.date.label("date"), mode_value.label("mode"), day.id.label("day_id"),
+                day.date.label("date"), mode_value.label("mode"), cast(day.id, String).label("day_id"),
                 (literal("user:") + cast(state.user_id, String)).label("identity"),
                 state.questions_asked.label("questions"), state.guesses_made.label("guesses"),
                 case((state.won.is_(True), 1), else_=0).label("won"),
@@ -54,7 +56,7 @@ def _participants(start_date=None, end_date=None, mode=None):
         guest = GuestParticipation
         branches.append(
             select(
-                day.date.label("date"), mode_value.label("mode"), day.id.label("day_id"),
+                day.date.label("date"), mode_value.label("mode"), cast(day.id, String).label("day_id"),
                 (literal("guest:") + guest.guest_id).label("identity"),
                 guest.questions_asked.label("questions"), guest.guesses_made.label("guesses"),
                 case((guest.won.is_(True), 1), else_=0).label("won"),
@@ -65,6 +67,32 @@ def _participants(start_date=None, end_date=None, mode=None):
                 or_(guest.questions_asked > 0, guest.guesses_made > 0), *day_filters,
             )
         )
+    for key, model, day_value in (
+        ("heraldry", HeraldryDailySession, HeraldryDailySession.date),
+        ("coats_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date)),
+    ):
+        if mode is not None and mode != key:
+            continue
+        identity = case(
+            (model.user_id.is_not(None), literal("user:") + cast(model.user_id, String)),
+            else_=literal("guest:") + model.guest_id,
+        )
+        filters = []
+        if start_date is not None:
+            filters.append(day_value >= start_date)
+        if end_date is not None:
+            filters.append(day_value <= end_date)
+        if key == "heraldry":
+            guesses = func.json_array_length(model.guesses)
+            won = case((model.won.is_(True), 1), else_=0)
+        else:
+            guesses = literal(0)
+            won = case((model.status == "completed", 1), else_=0)
+        branches.append(select(
+            day_value.label("date"), literal(key).label("mode"), model.id.label("day_id"),
+            identity.label("identity"), literal(0).label("questions"), guesses.label("guesses"),
+            won.label("won"),
+        ).where(*filters))
     if not branches:
         raise ValueError(f"Unsupported participation mode: {mode}")
     rows = union_all(*branches).subquery()

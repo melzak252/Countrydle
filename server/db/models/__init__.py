@@ -29,3 +29,5 @@ from .guest_participation import GuestParticipation
 from .patch_note import PatchNote
 from .template_divergence import TemplateDivergence
 from .fallback_answer import FallbackAnswer, FallbackAnswerBlock
+from .heraldry_daily import HeraldryDailySession
+from .heraldry_quiz import QuizRun, QuizSolve

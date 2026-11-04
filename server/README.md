@@ -610,13 +610,14 @@ Daily-game endpoints accept `type=monthly|average`:
 - `/powiatdle/leaderboard`, `/us_statedle/leaderboard`, `/wojewodztwodle/leaderboard`
 - `/continental/{europe|asia|africa|americas}/leaderboard`
 - `/flagdle/leaderboard`
+- `/powiatdle/heraldry/leaderboard` (daily county coats)
 
 Rows contain `id`, `username`, total `points`, `wins`, `games_played`, and
 `average_points`. Monthly rankings include actual play in the current UTC
 calendar month, including active zero-point players; empty daily states do not
-qualify. Average rankings use completed, active games across all time, with at
-least five games required for the classic modes and Flagdle, or three for each
-continental mode. The selected score determines rank, then wins, then user ID.
+qualify. Average rankings use completed, active games in the current UTC month,
+with at least five games required for the classic modes, Flagdle, and daily
+heraldry, or three for each continental mode. The selected score determines rank, then wins, then user ID.
 Continental totals are isolated by continent.
 
 Friend games are casual: no points awards and no public leaderboard or ranked
@@ -625,6 +626,32 @@ separate from daily-game scoring and rankings.
 
 Rankings remain account-based. Guest participation contributes to statistics,
 not anonymous ranked entries.
+
+Daily heraldry is an eight-guess, question-free challenge. Its ranked daily
+sessions are persisted for guests and accounts; custom-seed practice and
+pre-existing stateless tokens remain playable but unranked. Wins use the same
+base, guess, server-observed speed, and daily streak scoring function as
+Flagdle; losses score zero. Guests see their computed score immediately, and
+`POST /powiatdle/heraldry/sync` claims only the signed browser's persisted daily
+session for an account. Existing account progress takes precedence, and old
+stateless history is never promoted into ranked results.
+
+The 380-coat quiz remains unranked. `POST /powiatdle/heraldry/quiz/runs`
+starts a tracked run; `/quiz/runs/{run_id}/finish` validates the submitted
+answers against the county catalog and records completed or given-up runs once.
+`GET /powiatdle/heraldry/quiz/stats` reports, for each county, the number of
+finished runs that solved it and the mean client-reported active elapsed time
+from quiz start among those solves. The percentage denominator is all finished
+runs; abandoned runs are excluded and no historical quiz runs are inferred.
+
+Admin overview and session drilldowns use UTC dates and the same saved or
+recoverable session universe, including empty saved states and question-only
+sessions. Unidentified legacy events are grouped into one opaque session per
+puzzle but do not count as known players; known-player totals cover account and
+guest-browser identities, not unique people or traffic. Quiz session details
+show persisted successful coats and client-reported active elapsed time, not
+fictional incorrect attempts. Heraldry and quiz have no applicable AI cost; the
+separate Countrydle cost report covers its measured planner and fallback usage.
 
 ### Daily-game scoring and guest sync
 
