@@ -1,5 +1,5 @@
 {
-  "version": "1.38.0",
-  "title": "Publisher content and privacy improvements",
-  "body": "- Added a review-required API workflow for source-derived editorial updates and a private preview for unpublished content.\n- Updated advertising and analytics behavior to respect the configured consent service and available permissions.\n- Added a homepage example to help players understand how Countrydle works."
+  "version": "1.38.1",
+  "title": "Daily coat of arms display fixes",
+  "body": "- Fixed clipping of daily coats of arms caused by SVG unit handling.\n- Improved reliability of coat images and their attribution by updating their cache together and handling gzip-compressed images."
 }
