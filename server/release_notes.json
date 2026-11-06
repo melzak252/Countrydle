@@ -1,5 +1,5 @@
 {
-  "version": "1.39.0",
-  "title": "Heraldry rankings and quiz insights",
-  "body": "- Daily coats of arms now have ranked points and leaderboards, with guest progress that can be claimed by an account.\n- The unranked 380-coat quiz now shows community solve rates and active-time statistics.\n- Improved the admin overview and session drilldown across all 11 game modes, including recorded heraldry quiz solves."
+  "version": "1.40.0",
+  "title": "County flags",
+  "body": "- Discover county flags in daily and random challenges. Daily flags have their own points and leaderboards, including claimable guest progress.\n- Take the 365-flag quiz and explore community solve rates and active-time statistics.\n- View flag sources, artist credits, and licence information in the flag inspector."
 }
