@@ -124,6 +124,18 @@ export default function AboutPage() {
             <li><strong className="font-semibold text-sand-100">AI-assisted extraction</strong>: Some facts, including selected rivers and water-access relationships, are extracted from Wikipedia article text using AI.</li>
             <li><strong className="font-semibold text-sand-100">Maps and globe</strong>: Bundled boundary files and Natural Earth-derived globe data are separate from the tables used to answer questions.</li>
           </ul>
+          <div>
+            <h3 className="font-semibold text-sand-100">Artwork source records (JSON)</h3>
+            <p className="mt-2">These catalogs contain per-image author, source, licence, modification, context and component credit records where recorded. They include quiz answers and do not cover all artwork.</p>
+            <ul className="mt-2 list-disc pl-5 marker:text-emerald-400">
+              <li><a className="text-emerald-300 underline underline-offset-4" href="/api/powiatdle/flags/catalog">Polish county flags</a></li>
+              <li><a className="text-emerald-300 underline underline-offset-4" href="/api/regional-symbols/voivodeships/coat/catalog">Polish voivodeship coats of arms</a></li>
+              <li><a className="text-emerald-300 underline underline-offset-4" href="/api/regional-symbols/voivodeships/flag/catalog">Polish voivodeship flags</a></li>
+              <li><a className="text-emerald-300 underline underline-offset-4" href="/api/regional-symbols/london_boroughs/coat/catalog">London borough coats of arms</a></li>
+              <li><a className="text-emerald-300 underline underline-offset-4" href="/api/regional-symbols/england_counties/coat/catalog">English ceremonial county coats of arms</a></li>
+              <li><a className="text-emerald-300 underline underline-offset-4" href="/api/regional-symbols/england_counties/flag/catalog">English ceremonial county flags</a></li>
+            </ul>
+          </div>
           <p>The playable-country catalog is a game convention, not a list of only UN member states or a judgment about diplomatic recognition. Kosovo is included; Israel is currently excluded from playable targets and guesses while its geography facts remain available. Continental pools use stored physical-continent associations and additional eligibility rules. Map boundaries, factual relationships and playable candidates are separate.</p>
           <p>See the <Link to="/explore/modes/countrydle" className="text-emerald-300 underline underline-offset-4">mode guides and worked examples</Link> for country, water-access and continental conventions, or read <Link to="/how-it-works" className="text-emerald-300 underline underline-offset-4">how the hybrid answer engine works</Link>. To request a correction, <Link to="/contact" className="text-emerald-300 underline underline-offset-4">contact us</Link> with the mode, date, exact question, answer, explanation and supporting source. Avoid posting today&apos;s hidden target publicly.</p>
         </div>

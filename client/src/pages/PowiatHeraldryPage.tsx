@@ -160,6 +160,8 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
+  const fullscreenOpenerRef = useRef<HTMLElement | null>(null);
 
   // Load counties list once
   useEffect(() => {
@@ -297,17 +299,46 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // Close fullscreen modal on Escape
   useEffect(() => {
-    if (!isFullscreenOpen) return;
+    if (!isFullscreenOpen || !resolvedCoatUrl || imageError) return;
+    const dialog = fullscreenRef.current;
+    if (!dialog) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus();
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         setIsFullscreenOpen(false);
+      } else if (e.key === 'Tab') {
+        const items = focusable();
+        if (!items.length) {
+          e.preventDefault();
+          dialog.focus();
+        } else if (e.shiftKey && (document.activeElement === items[0] || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          items[items.length - 1].focus();
+        } else if (!e.shiftKey && (document.activeElement === items[items.length - 1] || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          items[0].focus();
+        }
       }
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [isFullscreenOpen]);
+    const containFocus = (e: FocusEvent) => {
+      if (!dialog.contains(e.target as Node)) (focusable()[0] ?? dialog).focus();
+    };
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('focusin', containFocus);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('focusin', containFocus);
+      document.body.style.overflow = previousOverflow;
+      fullscreenOpenerRef.current?.focus();
+    };
+  }, [isFullscreenOpen, resolvedCoatUrl, imageError]);
 
   const handleCloseInstructions = () => {
     setShowInstructions(false);
@@ -644,8 +675,9 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
           {/* Heraldic Shield Frame */}
           <div
-            onClick={() => {
+            onClick={(e) => {
               if (resolvedCoatUrl && !imageError && !imageLoading) {
+                fullscreenOpenerRef.current = e.currentTarget;
                 setZoomLevel(1);
                 setFullscreenLoaded(false);
                 setFullscreenFailed(false);
@@ -662,6 +694,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                 (e.key === 'Enter' || e.key === ' ')
               ) {
                 e.preventDefault();
+                fullscreenOpenerRef.current = e.currentTarget;
                 setZoomLevel(1);
                 setFullscreenLoaded(false);
                 setFullscreenFailed(false);
@@ -1341,12 +1374,43 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
       {/* Fullscreen Coat of Arms Inspection Lightbox */}
       {isFullscreenOpen && resolvedCoatUrl && !imageError && (
         <div
+          ref={fullscreenRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label={flags ? 'Fullscreen flag inspection' : 'Fullscreen coat of arms inspection'}
-          className="fixed inset-0 z-[2100] flex flex-col bg-obsidian-950/95 backdrop-blur-md animate-fade-in"
+          className="image-inspector fixed inset-0 z-[2100] flex flex-col bg-obsidian-950/95 backdrop-blur-md animate-fade-in"
           onClick={() => setIsFullscreenOpen(false)}
         >
+          <style>{`
+            .heraldry-mobile-inspector { display: none; }
+            .heraldry-desktop-inspector { display: flex; }
+            @media (max-width: 767px), (max-width: 1023px) and (max-height: 500px) {
+              .heraldry-mobile-inspector { display: flex; }
+              .heraldry-desktop-inspector { display: none; }
+            }
+          `}</style>
+          <div className="heraldry-mobile-inspector relative flex-1 min-h-0 items-center justify-center overflow-hidden p-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setIsFullscreenOpen(false); }}
+              className="absolute z-10 top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white"
+              aria-label="Close fullscreen"
+            >
+              <X size={22} aria-hidden="true" />
+            </button>
+            {!fullscreenLoaded && (
+              <img src={resolvedCoatUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-contain p-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]" />
+            )}
+            <img
+              src={`${resolvedCoatUrl}${resolvedCoatUrl.includes('?') ? '&' : '?'}full=true`}
+              onLoad={() => setFullscreenLoaded(true)}
+              onError={() => setFullscreenFailed(true)}
+              alt={`${label} ${flags ? 'flag' : 'coat of arms'}`}
+              className={`max-h-full max-w-full object-contain ${!fullscreenLoaded ? 'opacity-0' : ''}`}
+            />
+          </div>
+          <div className="heraldry-desktop-inspector flex-1 min-h-0 flex-col">
           {/* Top Toolbar */}
           <div
             className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 bg-obsidian-900/90 px-3 py-2 sm:px-6 sm:py-3"
@@ -1457,6 +1521,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                 className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-150 ${!fullscreenLoaded ? 'absolute opacity-0' : ''}`}
               />
             </div>
+          </div>
           </div>
         </div>
       )}

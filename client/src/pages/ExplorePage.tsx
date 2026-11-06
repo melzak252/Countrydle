@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { 
   Search, 
@@ -125,6 +126,8 @@ export default function ExplorePage() {
     subtitle?: string;
   } | null>(null);
   const [inspectZoom, setInspectZoom] = useState<number>(1);
+  const inspectorRef = useRef<HTMLDivElement>(null);
+  const inspectorOpenerRef = useRef<HTMLElement | null>(null);
 
   const setSelectedCountry = (value: typeof selectedCountry) => { if (!value) rememberView('detail', ''); updateSelectedCountry(value); };
   const setSelectedState = (value: typeof selectedState) => { if (!value) rememberView('detail', ''); updateSelectedState(value); };
@@ -274,11 +277,45 @@ export default function ExplorePage() {
 
   useEffect(() => {
     if (!inspectedAsset) return;
+    const dialog = inspectorRef.current;
+    const opener = inspectorOpenerRef.current;
+    const bodyOverflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])') || [])
+      .filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setInspectedAsset(null);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setInspectedAsset(null);
+      } else if (e.key === 'Tab') {
+        const items = focusable();
+        if (!items.length) {
+          e.preventDefault();
+          return;
+        }
+        const index = items.indexOf(document.activeElement as HTMLElement);
+        if (index === -1 || (e.shiftKey && index === 0) || (!e.shiftKey && index === items.length - 1)) {
+          e.preventDefault();
+          items[e.shiftKey ? items.length - 1 : 0].focus();
+        }
+      }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    const onFocusIn = (e: FocusEvent) => {
+      if (dialog && !dialog.contains(e.target as Node)) focusable()[0]?.focus();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('focusin', onFocusIn);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('focusin', onFocusIn);
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = rootOverflow;
+      opener?.focus();
+    };
   }, [inspectedAsset]);
   // Filtered lists
   const filteredCountries = useMemo(() => {
@@ -1047,9 +1084,11 @@ export default function ExplorePage() {
                 >
                   <div className="flex items-start gap-3">
                     {/* Compact Low-Res Coat of Arms Thumbnail with 1-click Fullscreen SVG Icon */}
-                    <div
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        inspectorOpenerRef.current = e.currentTarget;
                         setInspectZoom(1);
                         setInspectedAsset({
                           url: fullCoatUrl,
@@ -1079,7 +1118,7 @@ export default function ExplorePage() {
                       >
                         <Maximize2 size={10} />
                       </span>
-                    </div>
+                    </button>
                     {/* County Identity & License Plates */}
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1">
@@ -1655,7 +1694,8 @@ export default function ExplorePage() {
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => {
+                onClick={(e) => {
+                  inspectorOpenerRef.current = e.currentTarget;
                   setInspectZoom(1);
                   setInspectedAsset({
                     url: resolvePowiatCoatUrl(selectedPowiat.id),
@@ -1666,6 +1706,7 @@ export default function ExplorePage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
+                    inspectorOpenerRef.current = e.currentTarget;
                     setInspectZoom(1);
                     setInspectedAsset({
                       url: resolvePowiatCoatUrl(selectedPowiat.id),
@@ -1945,18 +1986,41 @@ export default function ExplorePage() {
       )}
 
       {/* Fullscreen Coat of Arms Inspector Lightbox */}
-      {inspectedAsset && (
+      {inspectedAsset && typeof document !== 'undefined' && createPortal(
         <div
+          ref={inspectorRef}
           role="dialog"
           aria-modal="true"
           aria-label={inspectedAsset.title}
           onClick={() => setInspectedAsset(null)}
-          className="fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
+          className="image-inspector fixed inset-0 z-[2200] flex h-[100dvh] flex-col overflow-hidden bg-obsidian-950/95 backdrop-blur-md select-none sm:h-auto"
         >
+          <style>{`
+            .explore-inspector-mobile { display: none; }
+            @media (max-width: 767px), (max-width: 1023px) and (max-height: 500px) {
+              .explore-inspector-mobile { display: flex; }
+              .explore-inspector-desktop { display: none; }
+            }
+          `}</style>
+          <button
+            type="button"
+            aria-label="Close image"
+            onClick={(e) => { e.stopPropagation(); setInspectedAsset(null); }}
+            className="explore-inspector-mobile absolute z-10 h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white"
+            style={{ top: 'max(1rem, env(safe-area-inset-top))', right: 'max(1rem, env(safe-area-inset-right))' }}
+          >
+            <X size={22} aria-hidden="true" />
+          </button>
+          <div
+            className="explore-inspector-mobile min-h-0 flex-1 items-center justify-center"
+            style={{ padding: 'max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left))' }}
+          >
+            <img src={inspectedAsset.url} alt={inspectedAsset.title} className="max-h-full max-w-full object-contain" />
+          </div>
           {/* Top Toolbar */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6 shrink-0"
+            className="explore-inspector-desktop flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6 shrink-0"
           >
             <div className="flex items-center gap-2 min-w-0">
               <Shield size={16} className="text-emerald-400 shrink-0" />
@@ -2011,6 +2075,7 @@ export default function ExplorePage() {
               <button
                 type="button"
                 onClick={() => setInspectedAsset(null)}
+                aria-label="Close image"
                 className="inline-flex items-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:border-rose-400/40 hover:text-rose-200 transition-colors cursor-pointer"
               >
                 <X size={15} />
@@ -2021,7 +2086,7 @@ export default function ExplorePage() {
           {/* Centered Canvas */}
           <div
             onClick={() => setInspectedAsset(null)}
-            className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-8"
+            className="explore-inspector-desktop flex flex-1 overflow-auto items-center justify-center p-4 sm:p-8"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -2043,7 +2108,8 @@ export default function ExplorePage() {
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* AdSense Unit */}

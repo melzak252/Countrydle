@@ -1,5 +1,5 @@
 {
-  "version": "1.41.1",
-  "title": "Play with friends from the menu",
-  "body": "- Find the Play with you friend link in the Play menu on desktop and mobile."
+  "version": "1.41.2",
+  "title": "Clearer fullscreen artwork",
+  "body": "- Fullscreen artwork on phones and compact screens now shows the image and a single close button against an opaque background.\n- Quiz image inspectors no longer show image information or credits. Artwork source records are linked from About."
 }

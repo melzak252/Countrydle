@@ -118,13 +118,9 @@ test('regional quiz displays only eligible catalog entries, accepts aliases and 
     expect(container.querySelector('[aria-label="Geography data credit"] a')?.getAttribute('href')).toBe('https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy');
     await act(async () => { (container.querySelector('[aria-label="Fullscreen coat of arms"]') as HTMLElement).click(); });
     const inspector = dom.document.querySelector('[aria-label="Coat of arms preview"]')!;
-    expect(inspector.textContent).toContain('Author: Artist');
-    expect(inspector.textContent).toContain('CC BY-SA 4.0');
-    expect(inspector.textContent).toContain('Modification: Cropped and converted to SVG');
-    expect(inspector.textContent).toContain('Context: Community design selected by local vote');
-    expect(inspector.querySelector('a[href="https://commons.wikimedia.org/wiki/File:Example.svg"]')).not.toBeNull();
-    expect(inspector.querySelector('a[href="https://creativecommons.org/licenses/by-sa/4.0/"]')).not.toBeNull();
-    await act(async () => { (dom.document.querySelector('[aria-label="Close"]') as HTMLElement).click(); });
+    expect(inspector.querySelectorAll('a, details')).toHaveLength(0);
+    expect(container.querySelector('img[alt="Coat of arms"]')?.parentElement?.parentElement?.querySelector('details')).toBeNull();
+    await act(async () => { (dom.document.querySelector('[aria-label="Minimize image"]') as HTMLElement).click(); });
     const input = container.querySelector('input') as HTMLInputElement;
     await act(async () => type(dom, input, 'Lodz'));
     await act(async () => type(dom, input, 'Slaskie'));
@@ -249,16 +245,8 @@ test('English county flags explain community status and distinguish design conte
     expect(container.textContent).toContain('Community flags with historic and cultural associations to present-day ceremonial counties; historic boundaries may differ. These are not flags of modern ceremonial authority.');
     await act(async () => { (container.querySelector('[aria-label="Fullscreen flag"]') as HTMLElement).click(); });
     const preview = dom.document.querySelector('[aria-label="Flag preview"]')!;
-    expect(preview.textContent).toContain('Context: Registered community flag');
-    expect(preview.textContent).toContain('Modification: Colours adjusted');
-    const quizCredits = preview.querySelector('details') as HTMLDetailsElement;
-    await act(async () => { (quizCredits.querySelector('summary') as HTMLElement).click(); });
-    expect(quizCredits.open).toBe(true);
-    expect(quizCredits.querySelectorAll('li')).toHaveLength(2);
-    expect(quizCredits.textContent).toContain('First artist');
-    expect(quizCredits.textContent).toContain('Second artist');
-    expect(quizCredits.querySelector('a[href="https://example.org/first"]')?.textContent).toBe('First emblem');
-    expect(quizCredits.querySelector('a[href="https://creativecommons.org/licenses/by-sa/4.0/"]')?.textContent).toBe('CC BY-SA 4.0');
+    expect(preview.querySelectorAll('a, details')).toHaveLength(0);
+    expect(container.querySelector('img[alt="Flag"]')?.parentElement?.parentElement?.querySelector('details')).toBeNull();
   } finally {
     catalog.mockRestore(); counties.mockRestore(); challenge.mockRestore(); stats.mockRestore();
     useAuthStore.setState(auth); await dispose();

@@ -38,6 +38,12 @@ opaque and private. County, county-flag and regional-symbol quiz grids use
 lazy-loaded, content-versioned WebP renditions; inspectors request originals
 only when opened, and retain the preview if the original fails.
 
+On phones, including landscape, image inspectors show only the fitted image
+and a close button against an opaque background. Quiz inspectors retain zoom
+controls on larger screens; quiz grids and inspectors do not display image
+credits. The About page links to available artwork source records as JSON;
+these may reveal quiz answers. Daily image attribution remains with the result.
+
 **County Flags** (`/flagi-powiatow`) offers a ranked daily puzzle and an
 unranked random challenge with eight guesses, distance and direction feedback,
 and registration plate hints after five wrong guesses. Guest daily results can
@@ -51,9 +57,7 @@ verified flag. Land-county seats are not substituted for land-county flags.
 The quiz groups only eligible IDs from that catalog, supports instant Polish
 name matching, pause and reset, and records completed or given-up runs.
 The overall community summary remains visible without per-image statistics.
-The fullscreen inspector displays
-available author, source, licence, and modification information. Missing
-catalogs and images are reported as unavailable, not replaced with coats.
+Missing catalogs and images are reported as unavailable, not replaced with coats.
 
 ### Unreleased: regional symbols
 
@@ -75,8 +79,9 @@ catalogs and source audits for artwork, attribution and remaining gaps.
 Regional pages use `/regional-symbols/{scope}/{coat|flag}` and append `/quiz`
 for the all-symbol quiz. Availability is driven by the published catalog;
 unavailable or single-target pools are not advertised as playable. Artwork
-credits, including source components and modifications, are shown with results
-and in the quiz inspector; geographic point sources are credited separately.
+credits, including source components and modifications where recorded, are
+shown with daily results and linked as JSON source records from About.
+Geographic point sources are credited separately.
 Voivodeship inclusion reflects this game's identification use, not blanket
 permission for other uses; per-symbol source and restriction notes remain in the
 server catalogs and source audit.

@@ -22,7 +22,6 @@ import { API_URL, coatsQuizService, countyFlagsQuizService, countyFlagsService, 
 import { countyFlagQuizCatalog } from '../lib/countyFlagCatalog';
 import RegionalGeographyCredit from '../components/RegionalGeographyCredit';
 import { isPrerenderCapture } from '../lib/pageMetadata';
-import SymbolComponentCredits from '../components/SymbolComponentCredits';
 import type { PowiatHeraldrySourceAttribution, RegionalSymbolScope } from '../types';
 
 interface QuizPowiat {
@@ -423,7 +422,14 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
 
   // Place keyboard focus in the inspector and keep it there until it closes.
   useEffect(() => {
-    if (inspectedId !== null) inspectorRef.current?.querySelector<HTMLButtonElement>('[aria-label="Close"]')?.focus();
+    if (inspectedId !== null) inspectorRef.current?.querySelector<HTMLButtonElement>('[aria-label="Minimize image"]')?.focus();
+  }, [inspectedId]);
+
+  useEffect(() => {
+    if (inspectedId === null) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflow; };
   }, [inspectedId]);
 
   // Close inspector on Escape and keep Tab within its controls.
@@ -434,7 +440,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
         e.preventDefault();
         handleCloseInspect();
       } else if (e.key === 'Tab' && inspectorRef.current) {
-        const controls = Array.from(inspectorRef.current.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])'));
+        const controls = Array.from(inspectorRef.current.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])')).filter((control) => control.getClientRects().length > 0);
         if (!controls.length) return;
         const first = controls[0];
         const last = controls[controls.length - 1];
@@ -854,41 +860,14 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           aria-modal="true"
           aria-label={flags ? 'Flag preview' : 'Coat of arms preview'}
           onClick={handleCloseInspect}
-          className="fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
+          className="image-inspector quiz-image-inspector fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
         >
           {/* Top Toolbar */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-between gap-2 border-b border-white/10 bg-obsidian-900/90 px-2 sm:px-6 py-2 shrink-0 min-h-[56px]"
+            className="quiz-image-toolbar flex items-center justify-end gap-2 border-b border-white/10 bg-obsidian-900/90 px-2 sm:px-6 py-2 shrink-0 min-h-[56px]"
           >
-            <div className="flex items-center gap-2 min-w-0 flex-1 py-0.5">
-              <Shield size={18} className="text-emerald-400 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="font-serif text-xs sm:text-sm font-bold text-sand-100 leading-snug break-words">
-                  {guessedIds.has(inspectedPowiat.id) || isGivenUp
-                    ? inspectedPowiat.name
-                    : scope ? (flags ? 'Flag' : 'Coat of arms') : flags ? 'County flag' : 'County coat of arms'}
-                </div>
-                {!scope && <div className="font-mono text-[10px] sm:text-xs text-zinc-400 leading-tight">
-                  woj. {inspectedPowiat.voivodeship}
-                </div>}
-                {(flags || scope) && (
-                  <div aria-label={scope ? 'Symbol attribution' : 'Flag attribution'} className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-300">
-                    {(inspectedPowiat.source_attribution?.author || inspectedPowiat.source_attribution?.artist) && <span>Author: {inspectedPowiat.source_attribution.author || inspectedPowiat.source_attribution.artist}</span>}
-                    {inspectedPowiat.source_attribution?.source_url && <a href={inspectedPowiat.source_attribution.source_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">Image source</a>}
-                    {inspectedPowiat.source_attribution?.license && (inspectedPowiat.source_attribution.license_url
-                      ? <a href={inspectedPowiat.source_attribution.license_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">{inspectedPowiat.source_attribution.license}</a>
-                      : <span>{inspectedPowiat.source_attribution.license}</span>)}
-                    {inspectedPowiat.source_attribution?.description && <span>Modification: {inspectedPowiat.source_attribution.description}</span>}
-                    {inspectedPowiat.source_attribution?.context && <span>Context: {inspectedPowiat.source_attribution.context}</span>}
-                    {scope && <SymbolComponentCredits credits={inspectedPowiat.source_attribution?.component_credits} />}
-                    {!inspectedPowiat.source_attribution && <span>Attribution unavailable</span>}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="quiz-image-controls flex items-center gap-1 sm:gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
@@ -921,8 +900,8 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
               <button
                 type="button"
                 onClick={handleCloseInspect}
-                aria-label={'Close'}
-                title={'Close'}
+                aria-label={'Minimize image'}
+                title={'Minimize image'}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:text-rose-200 cursor-pointer"
               >
                 <X size={16} />
@@ -934,11 +913,11 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           {/* Perfectly Centered Shield Canvas */}
           <div
             onClick={handleCloseInspect}
-            className="flex-1 overflow-auto flex items-center justify-center p-3 sm:p-8"
+            className="quiz-image-canvas flex-1 overflow-auto flex items-center justify-center p-3 sm:p-8"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-4 sm:p-10 transition-colors duration-200"
+              className="quiz-image-frame relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-4 sm:p-10 transition-colors duration-200"
             >
               {modalImgError && <p role="alert" className="absolute text-rose-300">Full-resolution image unavailable; showing preview if available.</p>}
               {/* Show the quiz rendition while the original loads. */}
@@ -946,12 +925,8 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 src={thumbnailUrl(inspectedPowiat)}
                 alt=""
                 aria-hidden="true"
-                style={{
-                  height: `${Math.round(68 * inspectZoom)}vh`,
-                  maxHeight: `${Math.round(68 * inspectZoom)}vh`,
-                  width: 'auto',
-                }}
-                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
+                style={{ '--inspect-height': `${Math.round(68 * inspectZoom)}vh` } as React.CSSProperties}
+                className={`quiz-inspected-image max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
                   modalImgLoaded && !modalImgError ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
               />
@@ -966,12 +941,8 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 }
                 onLoad={() => setModalImgLoaded(true)}
                 onError={() => { setModalImgLoaded(true); setModalImgError(true); }}
-                style={{
-                  height: `${Math.round(68 * inspectZoom)}vh`,
-                  maxHeight: `${Math.round(68 * inspectZoom)}vh`,
-                  width: 'auto',
-                }}
-                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
+                style={{ '--inspect-height': `${Math.round(68 * inspectZoom)}vh` } as React.CSSProperties}
+                className={`quiz-inspected-image max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
                   modalImgLoaded && !modalImgError ? 'opacity-100' : 'opacity-0'
                 } absolute`}
               />
