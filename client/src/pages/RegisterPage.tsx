@@ -22,7 +22,7 @@ export default function RegisterPage() {
 
     try {
       await authService.register({ username, email, password });
-      toast.success('Registration successful! Please login.');
+      toast.success('Registration successful. Please login.');
       navigate('/login');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed.');
@@ -51,7 +51,7 @@ export default function RegisterPage() {
     <div className="mx-auto w-full max-w-md py-4 sm:py-8">
       <div className="w-full">
         <header className="mb-8 border-b border-white/10 pb-7">
-          <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">Join the discovery</p>
+          <p className="mb-4 font-mono text-xs text-emerald-400">Join the discovery</p>
           <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">Create Account</h1>
           <p className="mt-4 text-base leading-7 text-zinc-400">Save your progress, build your streak, and join the leaderboard.</p>
         </header>

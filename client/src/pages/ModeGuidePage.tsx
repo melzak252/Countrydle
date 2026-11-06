@@ -392,7 +392,7 @@ export default function ModeGuidePage() {
       </Link>
       
       <header className="border-b border-white/10 pb-8">
-        <p className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">
+        <p className="mb-4 flex items-center gap-2 font-mono text-xs text-emerald-400">
           <BookOpen size={14} aria-hidden="true" />
           Mode deduction guide
         </p>
@@ -478,7 +478,7 @@ export default function ModeGuidePage() {
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {mode.reference.keyFacts.map((fact, idx) => (
             <div key={idx} className="rounded-sm border border-white/10 bg-obsidian-900 p-4">
-              <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 block font-semibold">{fact.label}</span>
+              <span className="font-mono text-xs text-emerald-400 block font-semibold">{fact.label}</span>
               <span className="text-sm text-sand-100 block mt-1">{fact.detail}</span>
             </div>
           ))}

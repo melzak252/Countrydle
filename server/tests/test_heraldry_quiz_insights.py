@@ -14,7 +14,7 @@ from db import get_db
 from db.base import Base
 from db.models.user import User
 from db.models.heraldry_quiz import QuizRun, QuizSolve
-from powiatdle.heraldry_quiz import router, flags_quiz_router
+from powiatdle.heraldry_quiz import router, flags_quiz_router, regional_quiz_router
 
 CATALOG = {id_: f'Powiat Testowy {id_}' for id_ in range(1, 381)}
 CATALOG.update({
@@ -47,6 +47,7 @@ async def quiz_client(tmp_path, monkeypatch):
     app.state.quiz_factory = app_factory
     app.include_router(router, prefix='/powiatdle/heraldry')
     app.include_router(flags_quiz_router, prefix='/powiatdle/flags')
+    app.include_router(regional_quiz_router, prefix='/regional-symbols/{scope}/{mode}')
     monkeypatch.setattr('powiatdle.flag_catalog.load_catalog',
                         lambda: {id_: {'id': id_} for id_ in (1, 3)})
 
@@ -270,3 +271,35 @@ async def test_empty_flag_catalog_returns_unavailable(quiz_client, monkeypatch):
     monkeypatch.setattr('powiatdle.flag_catalog.load_catalog', lambda: {})
     assert (await client.post(FLAGS + '/runs', json={})).status_code == 503
     assert (await client.get(FLAGS + '/stats')).status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_regional_quiz_completion_and_stats_are_isolated_by_scope_and_mode(quiz_client, monkeypatch, tmp_path):
+    from regional_symbols import catalog
+    from tests.test_regional_symbols_api import _write_scope
+
+    client, _ = quiz_client
+    _write_scope(tmp_path, 'voivodeships', [('Alpha', 'Álpha district'), ('Beta', 'Beta'), ('Gamma', 'Gamma')])
+    _write_scope(tmp_path, 'london_boroughs', [('London', 'London'), ('Brent', 'Brent'), ('Camden', 'Camden')])
+    monkeypatch.setattr(catalog, 'DATA_ROOT', tmp_path)
+    catalog.clear_caches()
+    try:
+        base = '/regional-symbols/voivodeships/coat/quiz'
+        other = '/regional-symbols/london_boroughs/coat/quiz'
+        flag = '/regional-symbols/voivodeships/flag/quiz'
+        run = (await client.post(base + '/runs', json={})).json()['run_id']
+        partial = result([solve([1], 'alpha district', 5)], status='completed')
+        body = result([solve([1], 'alpha district', 5), solve([3], 'Gamma', 10)], status='completed')
+        assert (await client.post(other + f'/runs/{run}/finish', json=body)).status_code == 404
+        assert (await client.post(flag + f'/runs/{run}/finish', json=body)).status_code == 404
+        assert (await client.post(base + f'/runs/{run}/finish', json=partial)).status_code == 422
+        assert (await client.post(base + f'/runs/{run}/finish', json=body)).json()['solved_count'] == 2
+        assert (await client.post(base + f'/runs/{run}/finish', json=body)).status_code == 200
+        stats = (await client.get(base + '/stats')).json()
+        assert stats['finished_runs'] == 1
+        assert stats['coats'][0]['solved_count'] == 1
+        assert stats['coats'][0]['average_active_seconds'] == 5
+        assert (await client.get(other + '/stats')).json()['coats'][0]['solved_count'] == 0
+        assert (await client.get(FLAGS + '/stats')).json()['finished_runs'] == 0
+    finally:
+        catalog.clear_caches()

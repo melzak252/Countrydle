@@ -6,7 +6,6 @@ import {
   Check,
   X,
   AlertCircle,
-  Sparkles,
   Trophy,
   HelpCircle,
 } from 'lucide-react';
@@ -25,8 +24,7 @@ export function PrivateAdvice({ guidance, copy }: { guidance?: FriendGuidance; c
   return (
     <aside className="rounded-sm border border-emerald-500/20 bg-emerald-950/20 p-3 sm:p-4" aria-label={copy.ai}>
       <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-300">
-        <Sparkles size={14} className="text-emerald-400" />
-        <h3 className="font-mono uppercase tracking-wider text-[11px]">{copy.ai}</h3>
+        <h3 className="font-mono text-xs">{copy.ai}</h3>
       </div>
       <p className="mt-1 text-xs leading-relaxed text-zinc-400">{copy.aiHelp}</p>
       <div className="mt-2.5 text-xs" aria-live="polite">
@@ -85,7 +83,7 @@ export function AnswerPicker({
             type="button"
             key={answer}
             disabled={disabled}
-            className={`${duelButton} text-center font-mono text-xs uppercase tracking-wider py-2 px-2 transition-all ${badgeColor}`}
+            className={`${duelButton} text-center font-mono text-xs py-2 px-2 transition-colors ${badgeColor}`}
             onClick={() => onAnswer(answer)}
           >
             {copy[answer]}
@@ -203,12 +201,12 @@ function ChatHistoryCard({
   const responderName = snapshot.players.find(p => p.id === item.subject_id)?.name || (!isYou ? copy.you : 'Friend');
 
   return (
-    <article className="space-y-1.5 transition-all">
+    <article className="space-y-1.5">
       {item.type === 'question' ? (
         <div className="space-y-1.5">
           {/* Inquirer's Question Message (Speech bubble on right if you, on left if opponent) */}
           <div className={`flex flex-col max-w-[85%] ${isYou ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
-            <div className="flex items-center gap-1.5 mb-0.5 px-1 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+            <div className="flex items-center gap-1.5 mb-0.5 px-1 font-mono text-xs text-zinc-500">
               <span className={isYou ? 'text-emerald-400 font-semibold' : 'text-blue-400 font-semibold'}>
                 {isYou ? copy.you : authorName} · #{String(item.ordinal).padStart(2, '0')}
               </span>
@@ -230,8 +228,8 @@ function ChatHistoryCard({
 
           {/* Responder's Answer Message (Speech bubble on opposite side, NO nested outer boxes) */}
           <div className={`flex flex-col max-w-[85%] ${isYou ? 'mr-auto items-start' : 'ml-auto items-end'}`}>
-            <div className="flex items-center gap-1 mb-0.5 px-1 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
-              <span>{item.answered_by === 'ai' || (item.timed_out && item.answer) ? '🤖 AI Response' : `${responderName} Response`}</span>
+            <div className="flex items-center gap-1 mb-0.5 px-1 font-mono text-xs text-zinc-500">
+              <span>{item.answered_by === 'ai' || (item.timed_out && item.answer) ? 'AI Response' : `${responderName} Response`}</span>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -287,13 +285,13 @@ function ChatHistoryCard({
               ) : (
                 <Target size={14} className="text-rose-400 shrink-0" />
               )}
-              <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-400 shrink-0">
+              <span className="font-mono text-xs text-zinc-400 shrink-0">
                 {isYou ? copy.you : authorName} guessed:
               </span>
               <strong className="text-sand-100 truncate">{item.entity?.name || 'Location'}</strong>
             </div>
-            <span className="font-mono font-bold text-[10px] uppercase tracking-wider shrink-0">
-              {item.correct ? 'Correct! 🎉' : 'Incorrect'}
+            <span className="font-mono font-semibold text-xs shrink-0">
+              {item.correct ? 'Correct' : 'Incorrect'}
             </span>
           </div>
         </div>
@@ -404,7 +402,7 @@ export default function DuelHistory({
           role="tab"
           aria-selected={chatTab === 'yours'}
           onClick={() => setChatTab('yours')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.16em] transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-sm font-mono text-xs transition-colors cursor-pointer ${
             chatTab === 'yours'
               ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-semibold shadow-sm'
               : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
@@ -420,7 +418,7 @@ export default function DuelHistory({
           role="tab"
           aria-selected={chatTab === 'opponent'}
           onClick={() => setChatTab('opponent')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.16em] transition-all cursor-pointer truncate ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-sm font-mono text-xs transition-colors cursor-pointer truncate ${
             chatTab === 'opponent'
               ? 'bg-blue-950/80 border border-blue-500/40 text-blue-300 font-semibold shadow-sm'
               : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'

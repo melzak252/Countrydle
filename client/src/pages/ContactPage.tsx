@@ -67,7 +67,7 @@ export default function ContactPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 bg-obsidian-950 pb-8">
       <header className="border-b border-white/10 pb-8">
-        <div className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">
+        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-emerald-400">
           <MessageSquare size={15} aria-hidden="true" />
           {t('suggestion.badge')}
         </div>

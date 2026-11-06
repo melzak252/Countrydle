@@ -167,17 +167,6 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         return [px, py, z2];
       };
 
-      // 1. Atmosphere Radial Glow Aura
-      const aura = ctx.createRadialGradient(cx, cy, radius * 0.75, cx, cy, radius * 1.15);
-      aura.addColorStop(0, 'rgba(16, 185, 129, 0)');
-      aura.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
-      aura.addColorStop(0.88, 'rgba(52, 211, 153, 0.22)');
-      aura.addColorStop(1, 'rgba(52, 211, 153, 0)');
-
-      ctx.fillStyle = aura;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius * 1.15, 0, Math.PI * 2);
-      ctx.fill();
 
       // 2. Translucent Sphere Body (Dark Glass Hologram)
       const sphereFill = ctx.createRadialGradient(
@@ -558,11 +547,6 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
       className={`relative mx-auto flex w-full min-w-0 flex-col items-center select-none ${className}`}
     >
       <div className="relative aspect-[10/9] w-full cursor-grab active:cursor-grabbing" style={{ maxWidth: size }}>
-        {/* Subtle background ambient radial bloom */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-emerald-500/10 blur-2xl"
-        />
 
         <canvas
           ref={canvasRef}

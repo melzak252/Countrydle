@@ -222,7 +222,7 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
                       <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 font-mono text-[10px] sm:text-xs font-semibold text-zinc-300 shadow-inner">
                         {tileIdx + 1}
                       </div>
-                      <span className="font-mono text-[8px] sm:text-[9px] uppercase tracking-wider text-zinc-400 font-medium">
+                      <span className="font-mono text-[11px] text-zinc-400 font-medium">
                         Card {tileIdx + 1}
                       </span>
                     </div>
@@ -237,7 +237,7 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
       {/* Status Footer Bar */}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-mono text-zinc-400">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
           <span>
             {effectiveStage} of 12 cards uncovered ({Math.min(100, Math.round((effectiveStage / 12) * 100))}%)
           </span>

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Search, Users } from 'lucide-react';
-import type { LeaderboardEntry, LeaderboardPeriod } from '../types';
-import { africaService, americasService, asiaService, europeService, flagdleService, gameService, countyFlagsService, powiatHeraldryService, powiatService, usStateService, wojewodztwoService } from '../services/api';
+import type { LeaderboardEntry, LeaderboardPeriod, RegionalSymbolScope } from '../types';
+import { africaService, americasService, asiaService, europeService, flagdleService, gameService, countyFlagsService, powiatHeraldryService, powiatService, regionalSymbolLabels, regionalSymbolPath, regionalSymbolsService, usStateService, wojewodztwoService } from '../services/api';
+import { useAvailableRegionalGames } from '../lib/gameCatalog';
 import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 25;
@@ -22,10 +23,14 @@ const GAME_MODES = [
   { id: 'county_flags', label: 'County Flags', group: 'Regional' },
 ] as const;
 
-type GameType = typeof GAME_MODES[number]['id'];
+type GameType = typeof GAME_MODES[number]['id'] | `regional_symbols:${RegionalSymbolScope}:${'coat' | 'flag'}`;
 type RankedPlayer = { entry: LeaderboardEntry; rank: number };
 
 async function loadLeaderboard(game: GameType, period: LeaderboardPeriod): Promise<LeaderboardEntry[]> {
+  if (game.startsWith('regional_symbols:')) {
+    const [, scope, symbol] = game.split(':') as ['regional_symbols', RegionalSymbolScope, 'coat' | 'flag'];
+    return regionalSymbolsService(scope, symbol === 'flag').getLeaderboard(period);
+  }
   switch (game) {
     case 'country': return gameService.getLeaderboard(period);
     case 'powiat': return powiatService.getLeaderboard(period);
@@ -38,10 +43,7 @@ async function loadLeaderboard(game: GameType, period: LeaderboardPeriod): Promi
     case 'flagdle': return flagdleService.getLeaderboard(period);
     case 'heraldry': return powiatHeraldryService.getLeaderboard(period);
     case 'county_flags': return countyFlagsService.getLeaderboard(period);
-    default: {
-      const exhaustiveCheck: never = game;
-      return exhaustiveCheck;
-    }
+    default: throw new Error(`Unknown leaderboard: ${game}`);
   }
 }
 
@@ -58,7 +60,15 @@ function formatAverage(value: number): string {
 
 export default function LeaderboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const gameType = GAME_MODES.find((mode) => mode.id === searchParams.get('mode'))?.id ?? 'country';
+  const available = useAvailableRegionalGames();
+  const regionalModes = available.map(({ scope, flags }) => ({
+    id: `regional_symbols:${scope}:${flags ? 'flag' : 'coat'}` as GameType,
+    label: `${regionalSymbolLabels[scope]} ${flags ? 'Flags' : 'Coats of Arms'}`,
+    group: 'Regional' as const,
+    path: regionalSymbolPath(scope, flags),
+  }));
+  const gameModes = [...GAME_MODES, ...regionalModes];
+  const gameType = gameModes.find((mode) => mode.id === searchParams.get('mode'))?.id ?? 'country';
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardPeriod>('monthly');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -113,7 +123,7 @@ export default function LeaderboardPage() {
     () => rankedPlayers.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE),
     [rankedPlayers, visiblePage],
   );
-  const gameLabel = GAME_MODES.find((mode) => mode.id === gameType)?.label ?? 'Leaderboard';
+  const gameLabel = gameModes.find((mode) => mode.id === gameType)?.label ?? 'Leaderboard';
   const isContinentalGame = gameType === 'europe' || gameType === 'asia' || gameType === 'africa' || gameType === 'americas';
   const averageMinimum = isContinentalGame ? 3 : 5;
   const periodDescription = leaderboardType === 'monthly'
@@ -169,17 +179,18 @@ export default function LeaderboardPage() {
   return (
     <div className="mx-auto max-w-5xl pb-8">
       <header className="mb-8 border-b border-white/10 pb-6 md:pb-8">
-        <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">The standings</p>
+        <p className="mb-3 font-mono text-xs text-emerald-400">The standings</p>
         <h1 className="font-serif text-4xl tracking-tight text-sand-100 md:text-5xl">{t('leaderboard.title')}</h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
           Daily challenges, ranked. Find a player or jump straight to your own row. Friend games are just for fun — no points or rankings.
         </p>
         {gameType === 'heraldry' && <Link to="/herby-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Coats of Arms</Link>}
         {gameType === 'county_flags' && <Link to="/flagi-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Flags</Link>}
+        {regionalModes.filter((mode) => mode.id === gameType).map((mode) => <Link key={mode.id} to={mode.path} className="mt-3 inline-block text-sm text-emerald-300 underline">Play {mode.label}</Link>)}
       </header>
 
       <div className="mb-6 border-b border-white/10 pb-6">
-        <label htmlFor="leaderboard-game" className="mb-2 block text-xs font-medium uppercase tracking-widest text-zinc-500">Choose a game</label>
+        <label htmlFor="leaderboard-game" className="mb-2 block text-xs font-medium text-zinc-500">Choose a game</label>
         <div className="relative w-full sm:max-w-xs">
           <select
             id="leaderboard-game"
@@ -189,7 +200,7 @@ export default function LeaderboardPage() {
           >
             {(['World & flags', 'Continents', 'Regional'] as const).map((group) => (
               <optgroup key={group} label={group}>
-                {GAME_MODES.filter((mode) => mode.group === group).map(({ id, label }) => (
+                {gameModes.filter((mode) => mode.group === group).map(({ id, label }) => (
                   <option key={id} value={id}>{label}</option>
                 ))}
               </optgroup>
@@ -341,7 +352,7 @@ export default function LeaderboardPage() {
                                 <Link to={`/profile/${row.entry.username}`} title={row.entry.username} className="min-w-0 break-words font-medium text-sand-100 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
                                   {row.entry.username}
                                 </Link>
-                                {isMe && <span className="shrink-0 rounded-sm bg-emerald-400/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">You</span>}
+                                {isMe && <span className="shrink-0 rounded-sm bg-emerald-400/10 px-1.5 py-0.5 text-xs font-semibold text-emerald-300">You</span>}
                               </div>
                               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400 md:hidden">
                                 <span>Avg / Game <span className="font-mono tabular-nums text-zinc-200">{formatAverage(row.entry.average_points)}</span></span>

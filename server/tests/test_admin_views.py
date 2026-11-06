@@ -392,6 +392,67 @@ async def test_heraldry_admin_sessions_separate_symbol_modes_and_dates(admin_fix
     assert identities == ["guest:flag"]
 
 
+async def test_regional_admin_sessions_and_stats_keep_scopes_and_symbols_separate(admin_fixture, monkeypatch):
+    import admin.heraldry_sessions as heraldry_admin
+
+    day = admin_fixture.test_date
+    start = datetime(2026, 9, 20, 12, tzinfo=timezone.utc)
+    session = admin_fixture.session
+    session.add_all([
+        HeraldryDailySession(id="county", date=day, guest_id="county", entity_scope="county",
+                             symbol_mode="coat", target_id=1, target_name="County", guesses=[],
+                             started_at=start, won=False),
+        HeraldryDailySession(id="london-coat", date=day, guest_id="london-coat", entity_scope="london_boroughs",
+                             symbol_mode="coat", target_id=1, target_name="London", guesses=[],
+                             started_at=start, won=False),
+        HeraldryDailySession(id="london-flag", date=day, guest_id="london-flag", entity_scope="london_boroughs",
+                             symbol_mode="flag", target_id=1, target_name="London flag", guesses=[],
+                             started_at=start, won=False),
+        HeraldryDailySession(id="england-coat", date=day, guest_id="england", entity_scope="england_counties",
+                             symbol_mode="coat", target_id=1, target_name="England", guesses=[],
+                             started_at=start, won=False),
+        HeraldryDailySession(id="voivodeship-flag", date=day, guest_id="voivodeship", entity_scope="voivodeships",
+                             symbol_mode="flag", target_id=1, target_name="Voivodeship", guesses=[],
+                             started_at=start, won=False),
+        QuizRun(id="london-quiz", guest_id="quiz", entity_scope="london_boroughs",
+                symbol_mode="flag", started_at=start, status="started"),
+        QuizRun(id="county-quiz", guest_id="county-quiz", entity_scope="county",
+                symbol_mode="flag", started_at=start, status="started"),
+    ])
+    await session.flush()
+    session.add(QuizSolve(run_id="london-quiz", powiat_id=1, elapsed_seconds=12))
+    await session.flush()
+    monkeypatch.setattr(heraldry_admin, "load_regional_entities",
+                        lambda scope: {1: {"name": "London borough"}})
+    monkeypatch.setattr(heraldry_admin, "load_regional_catalog",
+                        lambda scope, mode: {1: {}, 2: {}})
+
+    for mode, expected, target in [
+        ("heraldry", "county", "County"),
+        ("regional_symbols:london_boroughs:coat", "london-coat", "London"),
+        ("regional_symbols:london_boroughs:flag", "london-flag", "London flag"),
+        ("regional_symbols:england_counties:coat", "england-coat", "England"),
+        ("regional_symbols:voivodeships:flag", "voivodeship-flag", "Voivodeship"),
+        ("regional_symbols:london_boroughs:flag:quiz", "london-quiz", "2 London boroughs"),
+    ]:
+        response = await admin_fixture.client.get("/admin/game-sessions", params={"mode": mode, "date": day.isoformat()})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["session_id"] == expected
+        assert data["items"][0]["target_name"] == target
+        if mode.endswith(":quiz"):
+            assert data["items"][0]["quiz_solves"][0]["name"] == "London borough"
+        stats = await admin_fixture.client.get("/admin/game-sessions/stats", params={"mode": mode, "date": day.isoformat()})
+        assert stats.status_code == 200
+        assert stats.json()["total_players"] == 1
+        assert stats.json()["target_name"] == target
+    filtered = await admin_fixture.client.get("/admin/game-sessions", params={
+        "mode": "regional_symbols:london_boroughs:flag", "date": day.isoformat(), "status": "won",
+    })
+    assert filtered.json()["total"] == 0
+
+
 async def test_flag_quiz_admin_target_uses_catalog_count(monkeypatch):
     import admin.heraldry_sessions as heraldry_admin
 

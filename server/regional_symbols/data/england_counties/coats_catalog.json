@@ -1,0 +1,1090 @@
+{
+  "build_complete": true,
+  "entities": [
+    {
+      "id": 21,
+      "filename": "coat-21.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Herefordshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent artwork based on blazon)",
+        "sha1": "094ea5960ac58fb235e4f661cac4394b48574951",
+        "asset_sha1": "094ea5960ac58fb235e4f661cac4394b48574951",
+        "revision": "2020-05-03T06:23:37Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Arms_of_Herefordshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/west_midlands.html",
+        "notes": "Herefordshire County Council arms granted 1946 and transferred to the post-1998 Herefordshire Council; associated with current ceremonial Herefordshire, not a claim they belong to a ceremonial county corporation. Civic Heraldry used only as textual historical/blazon source, not its artwork. Commons SVG unchanged."
+      }
+    },
+    {
+      "id": 1,
+      "filename": "coat-1.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Bedfordshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "857f8ba756368a505e7dd394b75bcc996c3ced7d",
+        "asset_sha1": "857f8ba756368a505e7dd394b75bcc996c3ced7d",
+        "revision": "2021-02-16T08:00:53Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/08/Arms_of_Bedfordshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/beds_74to09.html",
+        "notes": "Arms of Bedfordshire County Council (1951–2009); associated with the modern ceremonial county, not an assertion that its council remains current or that historical and current boundaries are identical. Independent Commons artwork; external armorial used as blazon/history text, not imagery."
+      }
+    },
+    {
+      "id": 2,
+      "filename": "coat-2.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Berkshire_County_Council_1974-1998.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "7da295cf94379ac4956b55dd1c953ae3b09c7ef5",
+        "asset_sha1": "7da295cf94379ac4956b55dd1c953ae3b09c7ef5",
+        "revision": "2021-02-15T07:38:04Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/e/e9/Arms_of_Berkshire_County_Council_1974-1998.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Arms of Berkshire County Council (1974–1998); associated with the modern ceremonial county, not an assertion that its council remains current or that historical and current boundaries are identical. Independent Commons artwork; external armorial used as blazon/history text, not imagery."
+      }
+    },
+    {
+      "id": 5,
+      "filename": "coat-5.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Cambridgeshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "11f18250ca7c665a372d38eef6c860b2acf8943a",
+        "asset_sha1": "11f18250ca7c665a372d38eef6c860b2acf8943a",
+        "revision": "2024-03-01T17:05:03Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Arms_of_Cambridgeshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_of_england.html",
+        "notes": "Arms of Cambridgeshire County Council (current council); associated with the modern ceremonial county, not an assertion that its council remains current or that historical and current boundaries are identical. Independent Commons artwork; external armorial used as blazon/history text, not imagery."
+      }
+    },
+    {
+      "id": 38,
+      "filename": "coat-38.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_South_Yorkshire_Metropolitan_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "6e6ff8fe35e705cb46e93637e8263f3f4d4b729a",
+        "asset_sha1": "6e6ff8fe35e705cb46e93637e8263f3f4d4b729a",
+        "revision": "2021-02-16T17:54:16Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Arms_of_South_Yorkshire_Metropolitan_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Arms of South Yorkshire County Council (1978–1986); associated with the modern ceremonial county, not an assertion that its council remains current or that historical and current boundaries are identical. Independent Commons artwork; external armorial used as blazon/history text, not imagery."
+      }
+    },
+    {
+      "id": 44,
+      "filename": "coat-44.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_West_Midlands_Metropolitan_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "8dee114af28a83a4f84f70d50cc6a92a39591a92",
+        "asset_sha1": "8dee114af28a83a4f84f70d50cc6a92a39591a92",
+        "revision": "2021-02-17T13:45:26Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/bc/Arms_of_West_Midlands_Metropolitan_County_Council.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/West_Midlands_County_Council",
+        "notes": "Arms of West Midlands County Council (1974–1986); associated with the modern ceremonial county, not an assertion that its council remains current or that historical and current boundaries are identical. Independent Commons artwork; external armorial used as blazon/history text, not imagery."
+      }
+    },
+    {
+      "id": 46,
+      "filename": "coat-46.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_West_Yorkshire_Metropolitan_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "7351dc6b3fe1b50d18972a698f554d2250a15873",
+        "asset_sha1": "7351dc6b3fe1b50d18972a698f554d2250a15873",
+        "revision": "2021-02-15T15:35:18Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Arms_of_West_Yorkshire_Metropolitan_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Arms of West Yorkshire County Council (1975–1986); associated with the modern ceremonial county, not an assertion that its council remains current or that historical and current boundaries are identical. Independent Commons artwork; external armorial used as blazon/history text, not imagery."
+      }
+    },
+    {
+      "id": 12,
+      "filename": "coat-12.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Dorset_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "9bff48e44165a843e94c4acb800e0f20320016c5",
+        "asset_sha1": "9bff48e44165a843e94c4acb800e0f20320016c5",
+        "revision": "2021-02-28T09:38:22Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Arms_of_Dorset_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of Dorset County Council, 1889–2019; associated with present ceremonial Dorset. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 23,
+      "filename": "coat-23.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Isle_of_Wight_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "c1049e14f9d526c63b212db592a686e8249c0c81",
+        "asset_sha1": "c1049e14f9d526c63b212db592a686e8249c0c81",
+        "revision": "2022-08-09T13:29:16Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/97/Arms_of_Isle_of_Wight_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of Isle of Wight Council; associated with present ceremonial Isle of Wight. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 30,
+      "filename": "coat-30.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_North_Yorkshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "521cd3bcdd8790e98c27daa0065dbcaa1bd5f837",
+        "asset_sha1": "521cd3bcdd8790e98c27daa0065dbcaa1bd5f837",
+        "revision": "2020-05-02T14:49:55Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Arms_of_North_Yorkshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/yorkshire.html",
+        "notes": "Arms of North Yorkshire County Council, abolished 2023; associated with present ceremonial North Yorkshire. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 33,
+      "filename": "coat-33.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Nottinghamshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "6b9a5cac60f11aa04091f77ae4d821883666dad1",
+        "asset_sha1": "6b9a5cac60f11aa04091f77ae4d821883666dad1",
+        "revision": "2020-04-22T14:50:20Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Arms_of_Nottinghamshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_midlands.html",
+        "notes": "Arms of Nottinghamshire County Council; associated with present ceremonial Nottinghamshire. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 36,
+      "filename": "coat-36.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Shropshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "b8f589bfc5cdfd3e2f3c010bba798b04b6d2ea44",
+        "asset_sha1": "b8f589bfc5cdfd3e2f3c010bba798b04b6d2ea44",
+        "revision": "2020-04-20T07:32:11Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Arms_of_Shropshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/west_midlands.html",
+        "notes": "Arms of Shropshire County Council; associated with present ceremonial Shropshire. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 47,
+      "filename": "coat-47.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Wiltshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "a513f92bd93c175f43eb0210728f9767513f340a",
+        "asset_sha1": "a513f92bd93c175f43eb0210728f9767513f340a",
+        "revision": "2024-03-01T17:15:28Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/99/Arms_of_Wiltshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of Wiltshire County Council; associated with present ceremonial Wiltshire. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 48,
+      "filename": "coat-48.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Worcestershire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "6e48fe685be877bc5e2e3e9d26171ce4a55c6f40",
+        "asset_sha1": "6e48fe685be877bc5e2e3e9d26171ce4a55c6f40",
+        "revision": "2021-02-22T10:37:49Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Arms_of_Worcestershire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/west_midlands.html",
+        "notes": "Arms of Worcestershire County Council, 1947–1974 and since 1998; associated with present ceremonial Worcestershire. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 18,
+      "filename": "coat-18.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_the_Greater_London_Council.svg",
+        "license": "public domain",
+        "attribution": "Greentubing (independent illustration)",
+        "sha1": "7c432c4469bee13b1d84230427fce645f63bab8d",
+        "asset_sha1": "7c432c4469bee13b1d84230427fce645f63bab8d",
+        "revision": "2006-06-03T21:24:58Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/72/Arms_of_the_Greater_London_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/great_london.html",
+        "notes": "Arms of Greater London Council, 1965–1986; associated with present ceremonial Greater London. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged."
+      }
+    },
+    {
+      "id": 19,
+      "filename": "coat-19.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_the_Greater_Manchester_Metropolitan_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "IndysNotHere (independent illustration)",
+        "sha1": "c4bcfaf62665288df95430129bbe13e92d1ffded",
+        "asset_sha1": "c4bcfaf62665288df95430129bbe13e92d1ffded",
+        "revision": "2022-06-22T23:24:04Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/5/58/Arms_of_the_Greater_Manchester_Metropolitan_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Arms of Greater Manchester Metropolitan County Council, 1974–1986; associated with present ceremonial Greater Manchester. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 28,
+      "filename": "coat-28.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_the_Merseyside_Metropolitan_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "IndysNotHere (independent illustration)",
+        "sha1": "fa7482021a195d2afa6aac7f4ab12afc5fe5c86e",
+        "asset_sha1": "fa7482021a195d2afa6aac7f4ab12afc5fe5c86e",
+        "revision": "2022-07-16T10:36:21Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Arms_of_the_Merseyside_Metropolitan_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Arms of Merseyside Metropolitan County Council, 1974–1986; associated with present ceremonial Merseyside. No assertion that historical council or boundaries remain current. External armorial is cited only for textual blazon/history, not artwork; Commons illustration unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      }
+    },
+    {
+      "id": 41,
+      "filename": "coat-41.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Surrey_County_Council.svg",
+        "license": "CC0 1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "IndysNotHere (independent artwork)",
+        "sha1": "a2f2ad39f330afeaf8108660913a6a5eb2a2fe0d",
+        "asset_sha1": "a2f2ad39f330afeaf8108660913a6a5eb2a2fe0d",
+        "revision": "2026-07-14T00:01:08Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/25/Arms_of_Surrey_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_east.html",
+        "notes": "Arms granted to Surrey County Council in 1974, associated with present ceremonial Surrey; independent Commons CC0 SVG. Civic Heraldry used for blazon/history text, not artwork."
+      }
+    },
+    {
+      "id": 35,
+      "filename": "coat-35.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Rutland_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "ab067a58463357e04f7b856d940a229442b844dc",
+        "asset_sha1": "ab067a58463357e04f7b856d940a229442b844dc",
+        "revision": "2020-04-20T06:40:47Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Arms_of_Rutland_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_midlands.html",
+        "notes": "Arms of Rutland County Council associated with present ceremonial county; independent Commons artwork, external armorial used only for textual blazon/history. Original SVG unchanged.",
+        "component_credits": [
+          {
+            "title": "Arms of John Martin Robinson.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_John_Martin_Robinson.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "filename": "coat-3.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Bristol_City_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "70741a3d3c9f8376175b2b2e6097b6a0fc5cbaf3",
+        "asset_sha1": "70741a3d3c9f8376175b2b2e6097b6a0fc5cbaf3",
+        "revision": "2021-12-30T15:45:38Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Arms_of_Bristol_City_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of Bristol City Council associated with present ceremonial county; independent Commons artwork, external armorial used only for textual blazon/history. Original SVG unchanged.",
+        "component_credits": [
+          {
+            "title": "Badge of the Unicorn Pursuivant.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Badge_of_the_Unicorn_Pursuivant.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+          }
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "filename": "coat-22.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Hertfordshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "c7692035b527fdf70250f3fa148ce3939951eb25",
+        "asset_sha1": "c7692035b527fdf70250f3fa148ce3939951eb25",
+        "revision": "2020-04-17T13:05:38Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Arms_of_Hertfordshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_of_england.html",
+        "notes": "Arms of Hertfordshire County Council associated with the present ceremonial county; no separate ceremonial corporate grantee asserted. Civic Heraldry is textual blazon/history only. Commons artwork unchanged.",
+        "component_credits": [
+          {
+            "title": "White Hart Badge of Richard II.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:White_Hart_Badge_of_Richard_II.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "filename": "coat-32.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Northumberland_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "eb78b2564ee1ff575bff95ad092b5e981d925160",
+        "asset_sha1": "eb78b2564ee1ff575bff95ad092b5e981d925160",
+        "revision": "2020-04-16T09:43:38Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/d3/Arms_of_Northumberland_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/north_east.html",
+        "notes": "Arms of Northumberland County Council associated with the present ceremonial county; no separate ceremonial corporate grantee asserted. Civic Heraldry is textual blazon/history only. Commons artwork unchanged.",
+        "component_credits": [
+          {
+            "title": "Arms of Philip, Duke of Edinburgh.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Philip%2C_Duke_of_Edinburgh.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "filename": "coat-43.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Warwickshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "015c04ee461e5f3ef01c8af3709e56a9adc5d349",
+        "asset_sha1": "015c04ee461e5f3ef01c8af3709e56a9adc5d349",
+        "revision": "2020-04-20T12:25:22Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Arms_of_Warwickshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/west_midlands.html",
+        "notes": "Arms of Warwickshire County Council associated with the present ceremonial county; no separate ceremonial corporate grantee asserted. Civic Heraldry is textual blazon/history only. Commons artwork unchanged.",
+        "component_credits": [
+          {
+            "title": "Coat of Arms of Henry Lascelles, 6th Earl of Harewood.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Henry_Lascelles%2C_6th_Earl_of_Harewood.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 45,
+      "filename": "coat-45.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_West_Sussex_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "f5cdec3831f845243a84c7daa7edf3b4a0e64fa3",
+        "asset_sha1": "f5cdec3831f845243a84c7daa7edf3b4a0e64fa3",
+        "revision": "2021-02-08T10:42:52Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/72/Arms_of_West_Sussex_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_east.html",
+        "notes": "Arms granted to West Sussex County Council, associated with present ceremonial county. Independent Commons SVG unchanged; Civic Heraldry used for textual history only.",
+        "component_credits": [
+          {
+            "title": "Arms of John Martin Robinson.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_John_Martin_Robinson.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+          },
+          {
+            "title": "Arms of Thomas Tonge.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Thomas_Tonge.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+          }
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "filename": "coat-17.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Gloucestershire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "3828a20d696ea51d903f0fdfe1c33878f906a99d",
+        "asset_sha1": "3828a20d696ea51d903f0fdfe1c33878f906a99d",
+        "revision": "2020-04-18T07:06:24Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Arms_of_Gloucestershire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of Gloucestershire County Council associated with modern ceremonial county; historic boundaries or current grantee not assumed. Independent Commons artwork; Civic Heraldry textual history only.",
+        "component_credits": [
+          {
+            "title": "Coat of Arms of the Realm of Cordoba (Fesses Variant) with Crest.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Realm_of_Cordoba_(Fesses_Variant)_with_Crest.svg",
+            "author": "Heralder",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "filename": "coat-6.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Cheshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "816cf1afdd508785122efeea77829d3bae6fc21e",
+        "asset_sha1": "816cf1afdd508785122efeea77829d3bae6fc21e",
+        "revision": "2021-02-15T17:26:03Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/77/Arms_of_Cheshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/cheshire_74to09.html",
+        "notes": "Arms of Cheshire County Council, abolished in 2009 associated with modern ceremonial county; historic boundaries or current grantee not assumed. Independent Commons artwork; Civic Heraldry textual history only.",
+        "component_credits": [
+          {
+            "title": "Coat of arms of the Duchy of Cornwall.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Duchy_of_Cornwall.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Badge of the Norfolk Herald Extraordinary.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Badge_of_the_Norfolk_Herald_Extraordinary.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "filename": "coat-16.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Essex_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "e97e6dd275d9b653513c5e27dfbbfb74a5742695",
+        "asset_sha1": "e97e6dd275d9b653513c5e27dfbbfb74a5742695",
+        "revision": "2022-03-30T16:00:56Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Arms_of_Essex_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_of_england.html",
+        "notes": "Arms of Essex County Council associated with the modern ceremonial county; historic and current jurisdiction not asserted identical. Commons art unchanged; external armorial used only for text.",
+        "component_credits": [
+          {
+            "title": "Arms of Middlesex County Council.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Middlesex_County_Council.svg",
+            "author": "Fenn-O-maniC",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Middx arms.png",
+            "url": "https://commons.wikimedia.org/wiki/File:Middx_arms.png",
+            "author": "A.C. Fox-Davies publication, 1915; Lozleader (upload)",
+            "license": "public domain"
+          }
+        ]
+      }
+    },
+    {
+      "id": 27,
+      "filename": "coat-27.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Lincolnshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "502c9e963306c68dfe5a5dd7f6f3af8b0f7dd5c9",
+        "asset_sha1": "502c9e963306c68dfe5a5dd7f6f3af8b0f7dd5c9",
+        "revision": "2021-02-10T14:04:18Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Arms_of_Lincolnshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_midlands.html",
+        "notes": "Arms of Lincolnshire County Council associated with the modern ceremonial county; historic and current jurisdiction not asserted identical. Commons art unchanged; external armorial used only for text.",
+        "component_credits": [
+          {
+            "title": "Arms of Birgitte, Duchess of Gloucester.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Birgitte%2C_Duchess_of_Gloucester.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Coat of Arms of Birgitte, Duchess of Gloucester.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Birgitte%2C_Duchess_of_Gloucester.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "filename": "coat-39.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Staffordshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "7343306a35adb49b73247ea8275307fb03cfccb5",
+        "asset_sha1": "7343306a35adb49b73247ea8275307fb03cfccb5",
+        "revision": "2020-04-22T09:22:23Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Arms_of_Staffordshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/west_midlands.html",
+        "notes": "Arms of Staffordshire County Council associated with the modern ceremonial county; historic and current jurisdiction not asserted identical. Commons art unchanged; external armorial used only for text.",
+        "component_credits": [
+          {
+            "title": "Coat of Arms of Edwin, Baron Bramall.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Edwin%2C_Baron_Bramall.svg",
+            "author": "Sodacan, Thommy9, Heralder",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "filename": "coat-8.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Cornwall_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "17fe8c48ac878506e06f0ab8fd13a1d7fd8f1c1c",
+        "asset_sha1": "17fe8c48ac878506e06f0ab8fd13a1d7fd8f1c1c",
+        "revision": "2021-02-14T13:47:42Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Arms_of_Cornwall_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of Cornwall Council associated with the modern ceremonial county; historic and current jurisdiction not asserted identical. Commons art unchanged; external armorial used only for text.",
+        "component_credits": [
+          {
+            "title": "AylmerArms.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:AylmerArms.svg",
+            "author": "Lobsterthermidor",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Blason ville fr Diedendorf (Bas-Rhin).svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Blason_ville_fr_Diedendorf_(Bas-Rhin).svg",
+            "author": "Adalric67",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "filename": "coat-14.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_East_Riding_of_Yorkshire_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "e608d9b801524a6f5bfd1d871ab4c90298035a00",
+        "asset_sha1": "e608d9b801524a6f5bfd1d871ab4c90298035a00",
+        "revision": "2021-01-30T12:35:31Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Arms_of_East_Riding_of_Yorkshire_Council.svg",
+        "identity_source": "https://www.eastriding.gov.uk/council/civic-services/civic-offices/",
+        "notes": "Arms granted to East Riding of Yorkshire Council in 1996 and associated with the modern ceremonial county, not arms of the ceremonial county as a corporation; council and ceremonial boundaries are not asserted identical. Commons illustration based on published blazon and unchanged."
+      }
+    },
+    {
+      "id": 13,
+      "filename": "coat-13.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Durham_County_Council_1961-1974.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "3ec6f7972ee0309501366dcd9b94b26f681f59b4",
+        "asset_sha1": "3ec6f7972ee0309501366dcd9b94b26f681f59b4",
+        "revision": "2021-02-15T12:29:46Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Arms_of_Durham_County_Council_1961-1974.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/durham_pre74.html",
+        "notes": "Historic Durham County Council arms in use 1961–1974, associated with the modern ceremonial county. Not presented as arms of a present county council or a ceremonial corporate authority; historical and current boundaries are not asserted identical. Commons illustration unchanged."
+      }
+    },
+    {
+      "id": 34,
+      "filename": "coat-34.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Oxfordshire_County_Council_1949-1976.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "b6de6e80f798ae9f22955cd3a06e4ad8bbea1159",
+        "asset_sha1": "b6de6e80f798ae9f22955cd3a06e4ad8bbea1159",
+        "revision": "2021-02-21T09:31:34Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Arms_of_Oxfordshire_County_Council_1949-1976.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Historic Oxfordshire County Council arms in use 1949–1976, associated with the modern ceremonial county. Not presented as arms of a present county council or a ceremonial corporate authority; historical and current boundaries are not asserted identical. Commons illustration unchanged."
+      }
+    },
+    {
+      "id": 37,
+      "filename": "coat-37.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Somerset_County_Council_1911.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "b7060e5e3e85dc37a521b0f247c2a0c7d6119804",
+        "asset_sha1": "b7060e5e3e85dc37a521b0f247c2a0c7d6119804",
+        "revision": "2021-02-21T14:53:56Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Arms_of_Somerset_County_Council_1911.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Historic Somerset County Council arms in use 1911–2003, associated with the modern ceremonial county. Not presented as arms of a present county council or a ceremonial corporate authority; historical and current boundaries are not asserted identical. Commons illustration unchanged."
+      }
+    },
+    {
+      "id": 29,
+      "filename": "coat-29.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Norfolk_County_Council_1904.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "bcc693fe74efaf24da59401baf98c926b23dd25d",
+        "asset_sha1": "bcc693fe74efaf24da59401baf98c926b23dd25d",
+        "revision": "2021-02-21T15:59:57Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/76/Arms_of_Norfolk_County_Council_1904.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_of_england.html",
+        "notes": "Historic Norfolk County Council arms in use 1904–1982, associated with the modern ceremonial county. Not presented as arms of a present county council or a ceremonial corporate authority; historical and current boundaries are not asserted identical. Commons illustration unchanged."
+      }
+    },
+    {
+      "id": 15,
+      "filename": "coat-15.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_East_Sussex_County_Council_1937-1974.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "81a9a05a899768023ccc6215ffb70fbb282ad96b",
+        "asset_sha1": "81a9a05a899768023ccc6215ffb70fbb282ad96b",
+        "revision": "2021-02-21T16:43:44Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/1/12/Arms_of_East_Sussex_County_Council_1937-1974.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/obs_county.html",
+        "notes": "Historic East Sussex County Council arms in use 1937–1974, associated with the modern ceremonial county. Not presented as arms of a present county council or a ceremonial corporate authority; historical and current boundaries are not asserted identical. Commons illustration unchanged."
+      }
+    },
+    {
+      "id": 10,
+      "filename": "coat-10.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Derbyshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "4e797e726beec2fd62297d2059223e474efb0a72",
+        "asset_sha1": "4e797e726beec2fd62297d2059223e474efb0a72",
+        "revision": "2020-04-17T06:29:44Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/38/Arms_of_Derbyshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_midlands.html",
+        "notes": "Arms of the county council Derbyshire County Council, associated with the modern ceremonial county, not arms of a ceremonial corporate authority; council and ceremonial boundaries are not asserted identical. The Commons illustration is unchanged.",
+        "component_credits": [
+          {
+            "title": "Arms of William George Hunt.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_William_George_Hunt.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Coat of arms of Guyana.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Guyana.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Coat of Arms of Mary of Teck.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Mary_of_Teck.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Ram (Heraldic Supporter).svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Ram_(Heraldic_Supporter).svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "filename": "coat-26.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Leicestershire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "ae86b1628233746d41b0da913a07890445966f3d",
+        "asset_sha1": "ae86b1628233746d41b0da913a07890445966f3d",
+        "revision": "2020-04-17T10:14:06Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Arms_of_Leicestershire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_midlands.html",
+        "notes": "Arms of the county council Leicestershire County Council, associated with the modern ceremonial county, not arms of a ceremonial corporate authority; council and ceremonial boundaries are not asserted identical. The Commons illustration is unchanged.",
+        "component_credits": [
+          {
+            "title": "Cinquefoil ermine.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Cinquefoil_ermine.svg",
+            "author": "Kaliforniyka / Wikimandia",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Prince of Wales's feathers Badge.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Prince_of_Wales's_feathers_Badge.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Arms of John Stirling.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_John_Stirling.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 31,
+      "filename": "coat-31.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Northamptonshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "5140e2e07dc445360d4591d79f5dc7e9a363aa82",
+        "asset_sha1": "5140e2e07dc445360d4591d79f5dc7e9a363aa82",
+        "revision": "2021-04-27T07:40:32Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Arms_of_Northamptonshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/east_midlands.html",
+        "notes": "Arms of the historical Northamptonshire County Council, associated with the modern ceremonial county, not arms of a ceremonial corporate authority; council and ceremonial boundaries are not asserted identical. The Commons illustration is unchanged.",
+        "component_credits": [
+          {
+            "title": "Arms of Sir Colin Cole.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Sir_Colin_Cole.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Arms of Edward Howard-Gibbon.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Edward_Howard-Gibbon.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "filename": "coat-20.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Hampshire_County_Council,_England.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "546e895352994dbaf75f33dbc6f77f53a84eb8cd",
+        "asset_sha1": "546e895352994dbaf75f33dbc6f77f53a84eb8cd",
+        "revision": "2021-02-17T14:26:26Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Coat_of_arms_of_Hampshire_County_Council%2C_England.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of the county council Hampshire County Council, associated with the modern ceremonial county, not arms of a ceremonial corporate authority; council and ceremonial boundaries are not asserted identical. The Commons illustration is unchanged.",
+        "component_credits": [
+          {
+            "title": "Hampshire badge.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Hampshire_badge.svg",
+            "author": "Hogweard",
+            "license": "Public domain"
+          },
+          {
+            "title": "Arms of George Way of Plean.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_George_Way_of_Plean.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "StagHead svgElement.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:StagHead_svgElement.svg",
+            "author": "Lobsterthermidor ( talk ) 16:03, 8 January 2020 (UTC)",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "filename": "coat-4.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Buckinghamshire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "227f667d76953c246f65077be935769016fb9095",
+        "asset_sha1": "227f667d76953c246f65077be935769016fb9095",
+        "revision": "2020-05-01T07:57:03Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/91/Arms_of_Buckinghamshire_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/south_west.html",
+        "notes": "Arms of the 1948–2020 historic Buckinghamshire County Council, associated with the modern ceremonial county, not arms of a ceremonial corporate authority; council and ceremonial boundaries are not asserted identical. The Commons illustration is unchanged.",
+        "component_credits": [
+          {
+            "title": "Coat of arms of Assens County Municipality.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Assens_County_Municipality.svg",
+            "author": "Regicollis",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Swan Badge of Henry IV & V.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Swan_Badge_of_Henry_IV_%26_V.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "filename": "coat-9.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Cumbria_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC (independent illustration)",
+        "sha1": "4f7a31e06633b9940ed9c7200b6a16cbcd08c121",
+        "asset_sha1": "4f7a31e06633b9940ed9c7200b6a16cbcd08c121",
+        "revision": "2020-04-16T14:32:01Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/09/Arms_of_Cumbria_County_Council.svg",
+        "identity_source": "https://www.civicheraldry.co.uk/north_west.html",
+        "notes": "Arms of the former Cumbria County Council, associated with the modern ceremonial county, not a current council or ceremonial corporate authority. Boundaries not asserted identical. Commons illustration unchanged.",
+        "component_credits": [
+          {
+            "title": "Arms of Henry Pujolas.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Henry_Pujolas.svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          },
+          {
+            "title": "Flag of Cumbria County Council.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Cumbria_County_Council.svg",
+            "author": "Jza84; Jon C; Ipankonin; Odejea",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Flag of Cumbria County Council.png",
+            "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Cumbria_County_Council.png",
+            "author": "Jza84; Ipankonin; Odejea",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Meuble héraldique quintefeuille.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Meuble_h%C3%A9raldique_quintefeuille.svg",
+            "author": "Odejea",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+          },
+          {
+            "title": "Tudor rose.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Tudor_rose.svg",
+            "author": "Ipankonin",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+          },
+          {
+            "title": "Yorkshire rose.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Yorkshire_rose.svg",
+            "author": "Booyabazooka (uploader); Lupin (Shields archive)",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+          },
+          {
+            "title": "Lancashire rose.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Lancashire_rose.svg",
+            "author": "Booyabazooka (uploader); Lupin (Shields archive)",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+          },
+          {
+            "title": "Coat of Arms of the Protectorate in Ireland (1653–1659).svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Protectorate_in_Ireland_(1653%E2%80%931659).svg",
+            "author": "Sodacan",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "filename": "coat-7.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_The_City_of_London.svg",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "attribution": "Sodacan (independent artwork based on blazon)",
+        "sha1": "32d47fb97d2d3319051012af1cf90943f44bf994",
+        "asset_sha1": "32d47fb97d2d3319051012af1cf90943f44bf994",
+        "revision": "2022-10-03T16:05:00Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Coat_of_Arms_of_The_City_of_London.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Coat_of_arms_of_the_City_of_London",
+        "notes": "City of London Corporation arms associated with the City, not Greater London. Commons SVG unchanged. The City Corporation's 2024 report asserts copyright in its arms and describes applications including commercial uses; its application to this independent educational illustration is unresolved. Inclusion is not City permission: https://democracy.cityoflondon.gov.uk/documents/s203757/Coat%20of%20Arms%20Report%20FINAL.pdf"
+      }
+    },
+    {
+      "id": 11,
+      "filename": "coat-11.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Devon_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "SouthHamsian; Fenn-O-maniC, Heralder, Sodacan and Demidow (source illustrations); Devon arms.png author unknown",
+        "sha1": "ca8be7cc0e1958122adb2ae2ef84a802d1adcc02",
+        "asset_sha1": "b5282a1afeb74ae8ff4334983d706434b7c74ec8",
+        "revision": "2020-06-03T14:51:02Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/00/Coat_of_Arms_of_Devon_County_Council.svg",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Coat_of_Arms_of_Devon_County_Council.svg/960px-Coat_of_Arms_of_Devon_County_Council.svg.png",
+        "asset_mime": "image/png",
+        "identity_source": "https://en.wikipedia.org/wiki/Armorial_of_county_councils_of_England",
+        "notes": "Devon County Council arms associated with the county. Commons' 960px PNG rasterization of the cited SVG; original SVG endpoint returned HTTP 429. The cited Devon arms.png has no author given, and the extent of its contribution is unknown; see https://commons.wikimedia.org/wiki/File:Devon_arms.png . No further edits.",
+        "component_credits": [
+          {"title":"Arms of Devon County Council.svg","url":"https://commons.wikimedia.org/wiki/File:Arms_of_Devon_County_Council.svg","author":"Fenn-O-maniC","license":"CC BY-SA 4.0","license_url":"https://creativecommons.org/licenses/by-sa/4.0/"},
+          {"title":"Coat of Arms of the Earldom of Airlie.svg","url":"https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Earldom_of_Airlie.svg","author":"Heralder; elements by Sodacan","license":"CC BY-SA 4.0","license_url":"https://creativecommons.org/licenses/by-sa/4.0/"},
+          {"title":"Coat of arms of the British Indian Ocean Territory.svg","url":"https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_British_Indian_Ocean_Territory.svg","author":"Demidow","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"},
+          {"title":"Arms of Kent County Council.svg","url":"https://commons.wikimedia.org/wiki/File:Arms_of_Kent_County_Council.svg","author":"Fenn-O-maniC","license":"CC BY-SA 4.0","license_url":"https://creativecommons.org/licenses/by-sa/4.0/"},
+          {"title":"Arms of Clan Macdonald of Macdonald.svg","url":"https://commons.wikimedia.org/wiki/File:Arms_of_Clan_Macdonald_of_Macdonald.svg","author":"Sodacan","license":"CC BY-SA 4.0","license_url":"https://creativecommons.org/licenses/by-sa/4.0/"}
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "filename": "coat-24.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Kent_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC; Sodacan, Heralder, GrahamPadruig, Hogweard and Ng556 (components)",
+        "sha1": "e0e358585f8603cef705b87e3f9139087f3552cf",
+        "asset_sha1": "f0004bbd858f7d26030c631a28ed6d307296683c",
+        "revision": "2020-04-15T17:09:47Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Arms_of_Kent_County_Council.svg",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e4/Arms_of_Kent_County_Council.svg/960px-Arms_of_Kent_County_Council.svg.png",
+        "asset_mime": "image/png",
+        "identity_source": "https://en.wikipedia.org/wiki/Armorial_of_county_councils_of_England",
+        "notes": "Kent County Council arms associated with the county. Commons' 960px PNG rasterization of cited SVG; original SVG endpoint returned HTTP 429. Commons cites Arms-kent.jpg, which identifies civicheraldry.co.uk as image source and claims PD-UKGov; its contribution to the SVG is unspecified: https://commons.wikimedia.org/wiki/File:Arms-kent.jpg . No further edits.",
+        "component_credits": [
+          {"title":"Arms of Mark Phillips.svg","url":"https://commons.wikimedia.org/wiki/File:Arms_of_Mark_Phillips.svg","author":"Sodacan","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"},
+          {"title":"Coat of Arms of Michael, Baron Boyce.svg","url":"https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Michael,_Baron_Boyce.svg","author":"Heralder; elements by Sodacan and GrahamPadruig","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"},
+          {"title":"Coat of Arms of Ferdinand II of Aragon (1479-1492).svg","url":"https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Ferdinand_II_of_Aragon_(1479-1492).svg","author":"Heralder","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"},
+          {"title":"Cinque Ports flag.svg","url":"https://commons.wikimedia.org/wiki/File:Cinque_Ports_flag.svg","author":"Hogweard; HapHaxion (revision)","license":"public domain"},
+          {"title":"Coat of Arms of the Anglican Diocese of Canterbury.svg","url":"https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Anglican_Diocese_of_Canterbury.svg","author":"Ng556","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"}
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "filename": "coat-25.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Lancashire_County_Council.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Fenn-O-maniC",
+        "sha1": "3da17777dbc8d684686f68510f7395f772288c9f",
+        "asset_sha1": "b29a3c00c83c2a782a3c439ddffeb809111b28c4",
+        "revision": "2020-04-16T16:02:15Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Arms_of_Lancashire_County_Council.svg",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f4/Arms_of_Lancashire_County_Council.svg/960px-Arms_of_Lancashire_County_Council.svg.png",
+        "asset_mime": "image/png",
+        "identity_source": "https://en.wikipedia.org/wiki/Armorial_of_county_councils_of_England",
+        "notes": "Lancashire County Council arms associated with the county. Commons' 960px PNG rasterization of cited SVG; original SVG endpoint returned HTTP 429. Commons cites the Civic Heraldry blazon and ArmsLancashire.jpg; that JPEG identifies civicheraldry.co.uk and asserts PD-UKGov, but its contribution to the SVG is unspecified: https://commons.wikimedia.org/wiki/File:ArmsLancashire.jpg . No further edits."
+      }
+    },
+    {
+      "id": 40,
+      "filename": "coat-40.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Arms_of_Suffolk.svg",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "attribution": "Fvasconcellos; Dr pda, Bastianow, Rinaldum, Spedona and Orror/Zigeuner (components)",
+        "sha1": "0aee76175ca4a1cd224afea436c45b3a94e0cbf8",
+        "asset_sha1": "65c3425d71d1c5a0579501b2a6185c8788d56372",
+        "revision": "2008-03-03T22:58:44Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Arms_of_Suffolk.svg",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Arms_of_Suffolk.svg/960px-Arms_of_Suffolk.svg.png",
+        "asset_mime": "image/png",
+        "identity_source": "https://en.wikipedia.org/wiki/Armorial_of_county_councils_of_England",
+        "notes": "Suffolk County Council arms associated with the county. Commons' 960px PNG rasterization of cited SVG; original SVG endpoint returned HTTP 429. Commons cites the missing English Wikipedia Suffolk-coa.png and a Civic Heraldry image as additional sources; their contributions are unspecified. Commons names Orror as arrow artist but also Zigeuner in SVG-development text. No further edits.",
+        "component_credits": [
+          {"title":"Gentleman coat of arms template.svg","url":"https://commons.wikimedia.org/wiki/File:Gentleman_coat_of_arms_template.svg","author":"Dr pda; Bastianow and Rinaldum","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"},
+          {"title":"Héraldique meuble Drakkar.svg","url":"https://commons.wikimedia.org/wiki/File:H%C3%A9raldique_meuble_Drakkar.svg","author":"Spedona","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"},
+          {"title":"Héraldique meuble Flèche.svg","url":"https://commons.wikimedia.org/wiki/File:H%C3%A9raldique_meuble_Fl%C3%A8che.svg","author":"Orror; SVG-development text also names Zigeuner","license":"CC BY-SA 3.0","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"}
+        ]
+      }
+    }
+  ]
+}

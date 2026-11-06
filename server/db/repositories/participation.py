@@ -67,19 +67,25 @@ def _participants(start_date=None, end_date=None, mode=None):
                 or_(guest.questions_asked > 0, guest.guesses_made > 0), *day_filters,
             )
         )
-    for key, model, day_value, symbol_mode in (
-        ("heraldry", HeraldryDailySession, HeraldryDailySession.date, "coat"),
-        ("county_flags", HeraldryDailySession, HeraldryDailySession.date, "flag"),
-        ("coats_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "coat"),
-        ("county_flags_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "flag"),
-    ):
+    heraldry_modes = [
+        ("heraldry", HeraldryDailySession, HeraldryDailySession.date, "coat", "county"),
+        ("county_flags", HeraldryDailySession, HeraldryDailySession.date, "flag", "county"),
+        ("coats_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "coat", "county"),
+        ("county_flags_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "flag", "county"),
+    ]
+    for scope in ("voivodeships", "london_boroughs", "england_counties"):
+        for symbol in ("coat", "flag"):
+            key = f"regional_symbols:{scope}:{symbol}"
+            heraldry_modes.append((key, HeraldryDailySession, HeraldryDailySession.date, symbol, scope))
+            heraldry_modes.append((key + ":quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), symbol, scope))
+    for key, model, day_value, symbol_mode, entity_scope in heraldry_modes:
         if mode is not None and mode != key:
             continue
         identity = case(
             (model.user_id.is_not(None), literal("user:") + cast(model.user_id, String)),
             else_=literal("guest:") + model.guest_id,
         )
-        filters = [model.symbol_mode == symbol_mode]
+        filters = [model.symbol_mode == symbol_mode, model.entity_scope == entity_scope]
         if start_date is not None:
             filters.append(day_value >= start_date)
         if end_date is not None:

@@ -17,6 +17,7 @@ from datetime import datetime as _publisher_datetime, timezone
 from utils.app import lifespan
 from countrydle import router as countrydle_router
 from powiatdle import router as powiatdle_router
+from powiatdle.heraldry import regional_router as regional_symbols_router
 from us_statedle import router as us_statedle_router
 from wojewodztwodle import router as wojewodztwodle_router
 from continental import router as continental_router
@@ -185,6 +186,7 @@ app.mount("/static", StaticFiles(directory="templates"), name="static")
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(countrydle_router, tags=["countrydle"])
 app.include_router(powiatdle_router, tags=["powiatdle"])
+app.include_router(regional_symbols_router)
 app.include_router(us_statedle_router, tags=["us_statedle"])
 app.include_router(wojewodztwodle_router, tags=["wojewodztwodle"])
 app.include_router(continental_router, tags=["continental"])

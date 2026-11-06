@@ -1,0 +1,810 @@
+{
+  "build_complete": true,
+  "entities": [
+    {
+      "id": 9,
+      "filename": "flag-cumbria.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Community_flag_of_Cumbria.svg",
+        "license": "CC0 1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "Ben Walker (flag design); Fenn-O-maniC (Commons upload), Community flag of Cumbria",
+        "sha1": "fba9c72c950f15d979005fff0a82bae1e29b32c5",
+        "asset_sha1": "fba9c72c950f15d979005fff0a82bae1e29b32c5",
+        "revision": "2025-09-08T19:53:13Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/31/Community_flag_of_Cumbria.svg",
+        "identity_source": "https://cumbria-lieutenant.org.uk/community-flag-all-cumbria",
+        "notes": "2025 registered community flag, not a flag of authority; uploader identifies Ben Walker as author and asserts CC0; no derivative changes."
+      }
+    },
+    {
+      "id": 12,
+      "filename": "flag-dorset.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Dorset.svg",
+        "license": "public domain",
+        "attribution": "Stephen Coombs & Dave White",
+        "sha1": "c7e086778ccc236759df2a449c58538a1d7e9c6e",
+        "asset_sha1": "c7e086778ccc236759df2a449c58538a1d7e9c6e",
+        "revision": "2022-09-29T15:16:51Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Flag_of_Dorset.svg",
+        "identity_source": "https://dorsetlieutenancy.org.uk/faqs/",
+        "registry": "https://www.flaginstitute.org/wp/flags/dorset-flag/",
+        "notes": "Registered community flag associated with the county; not asserted to be a flag of authority or a precise statement about historic/ceremonial boundary equivalence. SVG unchanged from current Commons revision."
+      }
+    },
+    {
+      "id": 13,
+      "filename": "flag-durham.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_County_Durham.svg",
+        "license": "CC BY-SA 3.0",
+        "attribution": "Martin23230; design: James, Katie and Holly Moffatt; HapHaxion (2022 file revision)",
+        "sha1": "c7c3b5d062d819c1f264ec63ae301fd7c023bb4f",
+        "asset_sha1": "c7c3b5d062d819c1f264ec63ae301fd7c023bb4f",
+        "revision": "2022-08-23T14:22:08Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_County_Durham.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/county-durham-flag/",
+        "registry": "https://www.flaginstitute.org/wp/flags/county-durham-flag/",
+        "notes": "Registered community flag associated with the county; not asserted to be a flag of authority or a precise statement about historic/ceremonial boundary equivalence. SVG unchanged from current Commons revision.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+      }
+    },
+    {
+      "id": 35,
+      "filename": "flag-rutland.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Rutland_County_Flag.svg",
+        "license": "public domain",
+        "attribution": "Hogweard",
+        "sha1": "54cf605f2d245d25e12387ba0b6ad6f0ba6d6710",
+        "asset_sha1": "54cf605f2d245d25e12387ba0b6ad6f0ba6d6710",
+        "revision": "2017-07-26T03:27:56Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Rutland_County_Flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/rutland-flag/",
+        "registry": "https://www.flaginstitute.org/wp/flags/rutland-flag/",
+        "notes": "Registered community flag associated with the county; not asserted to be a flag of authority or a precise statement about historic/ceremonial boundary equivalence. SVG unchanged from current Commons revision."
+      }
+    },
+    {
+      "id": 20,
+      "filename": "flag-hampshire.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Hampshire.svg",
+        "license": "public domain",
+        "attribution": "Hogweard",
+        "sha1": "b2d3c04ffda52477e92f19a39eae4e6659f47a8d",
+        "asset_sha1": "b2d3c04ffda52477e92f19a39eae4e6659f47a8d",
+        "revision": "2022-06-20T15:13:47Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/County_Flag_of_Hampshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/uk-flag-registry-news/hampshire-flag-day-recognised/",
+        "registry": "https://www.flaginstitute.org/wp/flags/hampshire-flag/",
+        "notes": "Registered community flag associated with the county; not asserted to be a flag of authority or a precise statement about historic/ceremonial boundary equivalence. SVG unchanged from current Commons revision."
+      }
+    },
+    {
+      "id": 27,
+      "filename": "flag-lincolnshire.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Lincolnshire_flag.svg",
+        "license": "public domain",
+        "attribution": "Denelson83 (original SVG); Hogweard (derivative); design: Michelle Andrews; HapHaxion (2022 file revision)",
+        "sha1": "8af28bdb7a7b224b5d52dd8ac225af947c8d77dd",
+        "asset_sha1": "8af28bdb7a7b224b5d52dd8ac225af947c8d77dd",
+        "revision": "2022-08-23T14:26:25Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Lincolnshire_flag.svg",
+        "identity_source": "https://www.louthtowncouncil.gov.uk/louth/fly-the-flag-on-lincolnshire-day/",
+        "registry": "https://www.flaginstitute.org/wp/flags/lincolnshire-flag/",
+        "notes": "Registered community flag associated with the county; not asserted to be a flag of authority or a precise statement about historic/ceremonial boundary equivalence. SVG unchanged from current Commons revision.",
+        "derivative_source": "https://commons.wikimedia.org/wiki/File:Flag_of_Lincolnshire.svg"
+      }
+    },
+    {
+      "id": 1,
+      "filename": "flag-1.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Bedfordshire_County_Flag.svg",
+        "license": "public domain",
+        "attribution": "Hogweard; Commons revision contributors: HapHaxion, Hogweard",
+        "sha1": "457928a88dc50fb4577e5a695f8a88c36285394d",
+        "asset_sha1": "457928a88dc50fb4577e5a695f8a88c36285394d",
+        "revision": "2022-07-26T15:30:57Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/83/Bedfordshire_County_Flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged."
+      }
+    },
+    {
+      "id": 6,
+      "filename": "flag-6.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Cheshire.svg",
+        "license": "CC BY-SA 3.0",
+        "attribution": "Vexilo; Commons revision contributors: Nano Miratus, HapHaxion, Vexilo~commonswiki",
+        "sha1": "cb30336f8448c9717cf528cc6cf98c9db48b884e",
+        "asset_sha1": "cb30336f8448c9717cf528cc6cf98c9db48b884e",
+        "revision": "2023-01-09T03:21:04Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/28/Flag_of_Cheshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+      }
+    },
+    {
+      "id": 16,
+      "filename": "flag-16.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Essex.svg",
+        "license": "public domain",
+        "attribution": "Greentubing; Commons revision contributors: Alkari, Greentubing~commonswiki",
+        "sha1": "9a4b3f0a88a3a64815f679a24e95687512fdfdfd",
+        "asset_sha1": "9a4b3f0a88a3a64815f679a24e95687512fdfdfd",
+        "revision": "2015-11-29T04:36:28Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Flag_of_Essex.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/essex-flag/",
+        "notes": "County community flag; this unchanged 2:3 Commons artwork differs in proportions from the Flag Institute's 3:5 registry specification. Historic and current ceremonial boundaries are not asserted identical."
+      }
+    },
+    {
+      "id": 17,
+      "filename": "flag-17.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Severn_Cross.svg",
+        "license": "public domain",
+        "attribution": "Mjpovey; Commons revision contributors: Mjpovey",
+        "sha1": "610a590448b6d07121a1aa0ec719e3a5a8c4e1fb",
+        "asset_sha1": "610a590448b6d07121a1aa0ec719e3a5a8c4e1fb",
+        "revision": "2008-05-19T18:43:25Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Severn_Cross.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/gloucestershire-flag/",
+        "notes": "County community flag; this unchanged 1:2 Commons artwork differs in proportions from the Flag Institute's 3:5 registry specification. Historic and current ceremonial boundaries are not asserted identical."
+      }
+    },
+    {
+      "id": 21,
+      "filename": "flag-21.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_Of_Herefordshire.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Vexilo; Commons revision contributors: Hogweard, Vexilo",
+        "sha1": "5b6636dbd6dcd6556798a8c081bafa3f7a11edcf",
+        "asset_sha1": "5b6636dbd6dcd6556798a8c081bafa3f7a11edcf",
+        "revision": "2019-11-04T22:28:48Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/79/County_Flag_Of_Herefordshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+      }
+    },
+    {
+      "id": 24,
+      "filename": "flag-24.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:FlagOfKent.svg",
+        "license": "public domain",
+        "attribution": "Hogweard; Commons revision contributors: HapHaxion, 8oym8, Hogweard",
+        "sha1": "35f6d8992b0ec8144c45527b8dff2a62153b9543",
+        "asset_sha1": "35f6d8992b0ec8144c45527b8dff2a62153b9543",
+        "revision": "2022-07-26T15:39:06Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/24/FlagOfKent.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged."
+      }
+    },
+    {
+      "id": 26,
+      "filename": "flag-26.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Leicestershire.svg",
+        "license": "public domain",
+        "attribution": "Hogweard; Commons revision contributors: Hogweard",
+        "sha1": "8b95fe0ef2ee7021428210f8f63342fc29183639",
+        "asset_sha1": "8b95fe0ef2ee7021428210f8f63342fc29183639",
+        "revision": "2021-07-16T19:48:34Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Flag_of_Leicestershire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged."
+      }
+    },
+    {
+      "id": 29,
+      "filename": "flag-29.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Norfolk.svg",
+        "license": "public domain",
+        "attribution": "Hogweard; Commons revision contributors: Jarvisa, Hogweard",
+        "sha1": "b98e511a55c54031be24714c1352236bbd35c893",
+        "asset_sha1": "b98e511a55c54031be24714c1352236bbd35c893",
+        "revision": "2021-07-30T20:18:05Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Flag_of_Norfolk.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged."
+      }
+    },
+    {
+      "id": 32,
+      "filename": "flag-32.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Northumberland.svg",
+        "license": "public domain",
+        "attribution": "Greentubing; Commons revision contributors: Cmglee, EclecticArkie, Alkari, Denelson83, Greentubing~commonswiki",
+        "sha1": "59270675cb760a4d4ddb2a24e5c1e5d7899edc84",
+        "asset_sha1": "59270675cb760a4d4ddb2a24e5c1e5d7899edc84",
+        "revision": "2025-09-28T12:14:39Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/6/61/Flag_of_Northumberland.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/northumberland-flag/",
+        "notes": "County community flag; this unchanged 5:8 Commons artwork differs in proportions from the Flag Institute's 3:5 registry specification. The historic county includes Newcastle, unlike modern ceremonial Northumberland."
+      }
+    },
+    {
+      "id": 34,
+      "filename": "flag-34.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Oxfordshire.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Vexilo; Commons revision contributors: John emil hernandez, Vexilo",
+        "sha1": "e42c31d2fc788a385776dd53d93dc9a6ae21998c",
+        "asset_sha1": "e42c31d2fc788a385776dd53d93dc9a6ae21998c",
+        "revision": "2022-12-03T16:28:26Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/39/Flag_of_Oxfordshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+      }
+    },
+    {
+      "id": 36,
+      "filename": "flag-36.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Shropshire.svg",
+        "license": "CC BY-SA 3.0",
+        "attribution": "Hogweard; Commons revision contributors: HapHaxion, GrahamPadruig, Gnesener1900, Hogweard",
+        "sha1": "791b7a867ff44e01d1724b5a6df499590d64163d",
+        "asset_sha1": "791b7a867ff44e01d1724b5a6df499590d64163d",
+        "revision": "2022-08-23T14:30:17Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Flag_of_Shropshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+      }
+    },
+    {
+      "id": 37,
+      "filename": "flag-37.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Somerset_Flag.svg",
+        "license": "public domain",
+        "attribution": "User:Hogweard; Commons revision contributors: Saumondine, Jarvisa, Hogweard",
+        "sha1": "f03d51a8e58b3d051ab00606d72f0ac95254ee46",
+        "asset_sha1": "f03d51a8e58b3d051ab00606d72f0ac95254ee46",
+        "revision": "2023-09-15T09:48:16Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/49/Somerset_Flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged."
+      }
+    },
+    {
+      "id": 39,
+      "filename": "flag-39.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Staffordshire_Flag.svg",
+        "license": "public domain",
+        "attribution": "User:Hogweard; Commons revision contributors: HapHaxion, Hogweard",
+        "sha1": "e2ad078f7de377d6fdc4a3146f94e450b8df8364",
+        "asset_sha1": "e2ad078f7de377d6fdc4a3146f94e450b8df8364",
+        "revision": "2022-07-26T14:08:52Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/48/Staffordshire_Flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged."
+      }
+    },
+    {
+      "id": 40,
+      "filename": "flag-40.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Suffolk.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Vexilo; Commons revision contributors: Geralt Riv, Shyamal, Vexilo",
+        "sha1": "4d73213b18ba4c0372af9b8d4eaa9846e8169d08",
+        "asset_sha1": "4d73213b18ba4c0372af9b8d4eaa9846e8169d08",
+        "revision": "2020-06-11T11:27:34Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/01/County_Flag_of_Suffolk.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+      }
+    },
+    {
+      "id": 43,
+      "filename": "flag-43.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Warwickshire.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Vexilo Hogweard; Commons revision contributors: HapHaxion, Hogweard, Vexilo",
+        "sha1": "02003347a33e40fced4eb82fd6924b6e02e785b6",
+        "asset_sha1": "02003347a33e40fced4eb82fd6924b6e02e785b6",
+        "revision": "2022-08-23T14:32:32Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Warwickshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+      }
+    },
+    {
+      "id": 48,
+      "filename": "flag-48.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Worcestershire_flag.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Wikimandia; Commons revision contributors: CalendulaAsteraceae, Kaliforniyka",
+        "sha1": "4ae037bc40191c328957dbf1db5d3828a31c26c5",
+        "asset_sha1": "4ae037bc40191c328957dbf1db5d3828a31c26c5",
+        "revision": "2023-10-16T04:25:58Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Worcestershire_flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flag-registry/?flagtype=County+Flag",
+        "notes": "Flag Institute named county community flag; historic and current ceremonial boundaries are not asserted identical. Independent Commons artwork is unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+      }
+    },
+    {
+      "id": 2,
+      "filename": "flag-2.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Berkshire.svg",
+        "license": "public domain",
+        "attribution": "The Flag Institute, Vexilo, Hogweard",
+        "sha1": "bdb848b3e9236eab3ba7f0c722542e6233dc96a2",
+        "asset_sha1": "bdb848b3e9236eab3ba7f0c722542e6233dc96a2",
+        "revision": "2017-06-01T22:27:42Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Flag_of_Berkshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/berkshire-flag/",
+        "notes": "Flag Institute registered county community flag, not a ceremonial authority flag; original Commons artwork retained. Historic and modern ceremonial boundaries are not asserted identical."
+      }
+    },
+    {
+      "id": 10,
+      "filename": "flag-10.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Derbyshire_flag.svg",
+        "license": "public domain",
+        "attribution": "Martin Enright (design); Dyfsunctional (illustration); Alkari and Shizhao (Commons revisions)",
+        "sha1": "d977330f5737bba1f469bdb513e9cbf15fd07cb5",
+        "asset_sha1": "d977330f5737bba1f469bdb513e9cbf15fd07cb5",
+        "revision": "2012-05-20T06:43:13Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Derbyshire_flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/derbyshire-flag/",
+        "notes": "Flag Institute registered county community flag, not a ceremonial authority flag; original Commons artwork retained. Historic and modern ceremonial boundaries are not asserted identical. This image is 2:3 rather than the registry 3:5 proportion."
+      }
+    },
+    {
+      "id": 23,
+      "filename": "flag-23.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_the_Isle_of_Wight.svg",
+        "license": "public domain",
+        "attribution": "John Graney (design), The Flag Institute; Alkari, AxG (Commons revisions)",
+        "sha1": "a2aa1b114b496e1d057a24ad73418e8d9a90fea4",
+        "asset_sha1": "a2aa1b114b496e1d057a24ad73418e8d9a90fea4",
+        "revision": "2014-11-23T23:15:49Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/75/Flag_of_the_Isle_of_Wight.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/isle-of-wight-flag/",
+        "notes": "Flag Institute registered county community flag, not a ceremonial authority flag; original Commons artwork retained. Historic and modern ceremonial boundaries are not asserted identical."
+      }
+    },
+    {
+      "id": 31,
+      "filename": "flag-31.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Northamptonshire.svg",
+        "license": "public domain",
+        "attribution": "Brady Ells, Ian Chadwick (design); The Flag Institute; CalendulaAsteraceae, HapHaxion, Hogweard (Commons revisions)",
+        "sha1": "670f3f7ecb5a7e8859d0076f5eb83a3e9a69fef4",
+        "asset_sha1": "670f3f7ecb5a7e8859d0076f5eb83a3e9a69fef4",
+        "revision": "2023-10-08T05:16:22Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/35/Flag_of_Northamptonshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/northamptonshire-flag/",
+        "notes": "Flag Institute registered county community flag, not a ceremonial authority flag; original Commons artwork retained. Historic and modern ceremonial boundaries are not asserted identical."
+      }
+    },
+    {
+      "id": 8,
+      "filename": "flag-8.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Cornwall.svg",
+        "license": "public domain",
+        "attribution": "Jon Harald Søby",
+        "sha1": "013c1beccfadde20546eb86aba7ffa2fd9dcf599",
+        "asset_sha1": "013c1beccfadde20546eb86aba7ffa2fd9dcf599",
+        "revision": "2026-03-20T04:54:51Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Flag_of_Cornwall.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/cornwall-flag/",
+        "notes": "Flag Institute named county community flag; historic and present ceremonial boundaries are not asserted identical. Commons artwork unchanged."
+      }
+    },
+    {
+      "id": 41,
+      "filename": "flag-41.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_the_County_of_Surrey.svg",
+        "license": "CC BY-SA 4.0",
+        "attribution": "Blake-",
+        "sha1": "13a02678ce69b90bd7408acab8cf941678097550",
+        "asset_sha1": "13a02678ce69b90bd7408acab8cf941678097550",
+        "revision": "2017-06-25T05:07:55Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Flag_of_the_County_of_Surrey.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/surrey-flag/",
+        "notes": "Flag Institute named county community flag; historic and present ceremonial boundaries are not asserted identical. Commons artwork unchanged.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+        "component_credits": [
+          {
+            "title": "Chess Board.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Chess_Board.svg",
+            "author": "Nevit Dilmen",
+            "license": "public domain"
+          }
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "filename": "flag-22.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Hertfordshire.svg",
+        "license": "public domain",
+        "attribution": "The Flag Institute; Malyszkz (vectorization)",
+        "sha1": "1ec0ec2597332b50f3ef8cde346aca31941c1664",
+        "asset_sha1": "1ec0ec2597332b50f3ef8cde346aca31941c1664",
+        "revision": "2022-07-26T14:07:48Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/b8/County_Flag_of_Hertfordshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/hertfordshire-flag/",
+        "notes": "Flag Institute named county community flag; historic and present ceremonial boundaries are not asserted identical. Commons artwork unchanged.",
+        "component_credits": [
+          {
+            "title": "FlagOfHertfordshire.PNG",
+            "url": "https://commons.wikimedia.org/wiki/File:FlagOfHertfordshire.PNG",
+            "author": "The College of Arms; Hertfordshire County Council",
+            "license": "public domain"
+          }
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "filename": "flag-25.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Lancashire_County_Flag.svg",
+        "license": "public domain",
+        "attribution": "Hogweard",
+        "sha1": "469553be52133f2793e5735a6afefa6df19fbaa3",
+        "asset_sha1": "469553be52133f2793e5735a6afefa6df19fbaa3",
+        "revision": "2022-06-18T02:23:26Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Lancashire_County_Flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/lancashire-flag/",
+        "notes": "Flag Institute named county community flag; historic and present ceremonial boundaries are not asserted identical. Commons artwork unchanged.",
+        "component_credits": [
+          {
+            "title": "Red Rose of Lancaster.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Red_Rose_of_Lancaster.svg",
+            "author": "Hogweard",
+            "license": "public domain"
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "filename": "flag-5.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Cambridgeshire_Flag.svg",
+        "license": "public domain",
+        "attribution": "Brady Ells (design); Hogweard and HapHaxion (vector and revision)",
+        "sha1": "5e41a7f41f17599be96e2fe6d48a3ce12eb0c5ce",
+        "asset_sha1": "5e41a7f41f17599be96e2fe6d48a3ce12eb0c5ce",
+        "revision": "2022-07-26T15:24:14Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Cambridgeshire_Flag.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/cambridgeshire-flag/",
+        "notes": "Flag Institute registered county community flag, not a ceremonial authority flag; historic and modern ceremonial boundaries are not asserted identical. Commons SVG unchanged."
+      }
+    },
+    {
+      "id": 4,
+      "filename": "flag-4.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Buckinghamshire.svg",
+        "license": "Attribution only",
+        "attribution": "The Flag Institute (design); AxG (vectorization)",
+        "sha1": "39ad94954dda3fcddfabf589994bc263d50f86c8",
+        "asset_sha1": "39ad94954dda3fcddfabf589994bc263d50f86c8",
+        "revision": "2012-09-05T21:29:16Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Flag_of_Buckinghamshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/buckinghamshire-flag/",
+        "notes": "Flag Institute registered county community flag, not a ceremonial authority flag; historic and modern ceremonial boundaries are not asserted identical. Commons SVG unchanged.",
+        "license_url": "https://commons.wikimedia.org/wiki/Template:Attribution_only_license"
+      }
+    },
+    {
+      "id": 11,
+      "filename": "flag-11.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Devon.svg",
+        "license": "public domain",
+        "attribution": "Ryan R. Sealey (design); Greentubing (artwork), Alkari (revision)",
+        "sha1": "957be74eafd121c25c31d3475aed4093e8a97fdd",
+        "asset_sha1": "957be74eafd121c25c31d3475aed4093e8a97fdd",
+        "revision": "2011-11-11T23:16:27Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Flag_of_Devon.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/devon-flag/",
+        "notes": "Registered St Petroc’s Cross community flag of historic Devon, associated with present county; Commons artwork has 25:43 proportions instead of registry 3:5. Boundaries not asserted identical; SVG unchanged."
+      }
+    },
+    {
+      "id": 14,
+      "filename": "flag-14.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_the_East_Riding_of_Yorkshire.svg",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "attribution": "Trevor and Thomas Appleton (design); Vexilo (artwork); HapHaxion (revision)",
+        "sha1": "e25b53c2c88e07cf2f746135c776280ca46a8cac",
+        "asset_sha1": "e25b53c2c88e07cf2f746135c776280ca46a8cac",
+        "revision": "2023-04-02T00:43:46Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Flag_of_the_East_Riding_of_Yorkshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/yorkshire-east-riding-flag/",
+        "notes": "Flag Institute registered community flag of the historic East Riding, associated with the modern ceremonial county but not an authority flag; boundaries are not asserted identical. Commons artwork unchanged."
+      }
+    },
+    {
+      "id": 47,
+      "filename": "flag-47.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Wiltshire.svg",
+        "license": "public domain",
+        "attribution": "Mike Prior (design); Tango22 (original image); NikNaks93 (derivative artwork)",
+        "sha1": "effcb2176bee1768a103bd4d505cd95dd7f6e021",
+        "asset_sha1": "effcb2176bee1768a103bd4d505cd95dd7f6e021",
+        "revision": "2022-08-23T14:33:22Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/81/County_Flag_of_Wiltshire.svg",
+        "identity_source": "https://www.flaginstitute.org/wp/flags/wiltshire-flag/",
+        "notes": "Registered historic Wiltshire community flag, associated with the modern ceremonial county, not an authority flag. Commons original-upload log records original Tango22 artwork as self-made PD-self despite a broken original-page link; NikNaks93 released the derivative into the public domain. SVG unchanged."
+      }
+    },
+    {
+      "id": 7,
+      "filename": "flag-7.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_the_City_of_London.svg",
+        "license": "public domain",
+        "attribution": "Greentubing (artwork); Alkari (code cleanup); Odder (reverted revision)",
+        "sha1": "b9d42862195ce3604553b5d71ac3588f7b051eb9",
+        "asset_sha1": "b9d42862195ce3604553b5d71ac3588f7b051eb9",
+        "revision": "2013-06-11T18:42:12Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Flag_of_the_City_of_London.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Flag_of_the_City_of_London",
+        "notes": "City of London flag, not Greater London's. Commons artwork unchanged. The City Corporation's 2024 arms-usage report asserts rights and describes applications; its application to independent educational flag depictions is unresolved, and no Corporation permission is implied: https://democracy.cityoflondon.gov.uk/documents/s203757/Coat%20of%20Arms%20Report%20FINAL.pdf"
+      }
+    },
+    {
+      "id": 33,
+      "filename": "flag-33.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Nottinghamshire.svg",
+        "license": "public domain",
+        "attribution": "The Flag Institute (design and artwork); Trex2001, MissMJ and CalendulaAsteraceae (Commons revisions); Sarang (shield template)",
+        "sha1": "aa0479461b171c8bbd22567b71a6aa542f36bec0",
+        "asset_sha1": "aa0479461b171c8bbd22567b71a6aa542f36bec0",
+        "revision": "2023-09-14T02:48:47Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/0c/County_Flag_of_Nottinghamshire.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Flag_of_Nottinghamshire",
+        "notes": "Registered community flag. Commons marks the composite public domain and credits a public-domain shield template. Wikipedia and the Flag Institute describe the Robin Hood silhouette as based on James Woodford's statue; independent sculpture rights and reproduction permission have not been established. No endorsement or permission is implied. SVG unchanged.",
+        "component_credits": [
+          {
+            "title": "Bündner 300x350.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:B%C3%BCndner_300x350.svg",
+            "author": "Sarang",
+            "license": "public domain"
+          }
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "filename": "flag-19.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Unofficial_County_Flag_of_Greater_Manchester.svg",
+        "license": "public domain",
+        "attribution": "Jza84 (source image); Orionist, Huntster, Fred the Oyster and Wylve (SVG revisions)",
+        "sha1": "95b823bb2a0f1c7a2099d37e54d8a75d1c347b43",
+        "asset_sha1": "95b823bb2a0f1c7a2099d37e54d8a75d1c347b43",
+        "revision": "2012-07-16T06:07:56Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Unofficial_County_Flag_of_Greater_Manchester.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Flag_of_Greater_Manchester",
+        "notes": "Modified banner associated with former Greater Manchester County Council, abolished 1986. Wikipedia says unregistered and not used by the present combined authority; not asserted a current official community flag. Commons page describes it as official despite its unofficial filename. SVG unchanged."
+      }
+    },
+    {
+      "id": 28,
+      "filename": "flag-28.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Merseyside.svg",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "attribution": "Orionist (artwork, based on photograph linked from Commons)",
+        "sha1": "e02ca1e3213968b3c2c4a5487cf811c0d01c1213",
+        "asset_sha1": "0862a77dec322f79a44e4c73ce40a67b0994838f",
+        "revision": "2011-02-23T12:40:46Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/41/County_Flag_of_Merseyside.svg",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/County_Flag_of_Merseyside.svg/960px-County_Flag_of_Merseyside.svg.png",
+        "asset_mime": "image/png",
+        "identity_source": "https://en.wikipedia.org/wiki/Merseyside",
+        "notes": "Merseyside-associated flag; current official adoption is not claimed. Commons credits Orionist's artwork based on https://www.flickr.com/photos/the_virgo/5124641694/ . Local PNG is Commons' 960px rendering of the SVG; the SVG original declares an external DTD and is not packaged."
+      }
+    },
+    {
+      "id": 46,
+      "filename": "flag-46.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Unofficial_Flag_of_West_Yorkshire.svg",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "attribution": "Ch1902 (artwork); Lupin and Booyabazooka (Yorkshire rose component)",
+        "sha1": "e8d92233c152f62bb222f4f5fb867e684165d21c",
+        "asset_sha1": "e8d92233c152f62bb222f4f5fb867e684165d21c",
+        "revision": "2011-04-16T12:26:04Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Unofficial_Flag_of_West_Yorkshire.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/West_Yorkshire",
+        "notes": "Unofficial modified flag of former West Yorkshire County Council, not the historic West Riding flag or a present authority flag. Commons SVG unchanged; source also cites https://commons.wikimedia.org/wiki/File:Unofficial_County_Flag_of_West_Yorkshire.png .",
+        "component_credits": [
+          {
+            "title": "Yorkshire rose.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Yorkshire_rose.svg",
+            "author": "Lupin; Booyabazooka (uploader)",
+            "license": "CC BY-SA 3.0",
+            "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+          }
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "filename": "flag-18.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Greater_London.svg",
+        "license": "CC0 1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "Jza84 (source PNG); Malyszkz (vector); Alkari (revision)",
+        "sha1": "f90a327bad8a403290570e671b1c819cd8b5f924",
+        "asset_sha1": "f90a327bad8a403290570e671b1c819cd8b5f924",
+        "revision": "2012-06-19T06:59:33Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/2/25/Flag_of_Greater_London.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Symbols_of_Greater_London",
+        "notes": "Banner of former Greater London Council arms, granted to Greater London Authority in 2025. Not the City of London flag; no broader community adoption is asserted. Source PNG is CC0: https://commons.wikimedia.org/wiki/File:Flag_of_Greater_London.png . SVG unchanged."
+      }
+    },
+    {
+      "id": 30,
+      "filename": "flag-30.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:North-Yorkshire-Flag.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Ætoms",
+        "sha1": "57041681fca27164a06f78b794ef1754936a59c9",
+        "asset_sha1": "57041681fca27164a06f78b794ef1754936a59c9",
+        "revision": "2016-06-21T14:25:25Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/North-Yorkshire-Flag.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Template:Subnational_flags_of_the_United_Kingdom",
+        "notes": "North Yorkshire-associated design in Wikipedia's subnational flags template and Commons, not the North Riding flag. Neither source establishes formal adoption or real-world use; no current official status is asserted. Commons SVG unchanged."
+      }
+    },
+    {
+      "id": 44,
+      "filename": "flag-44.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_the_West_Midlands_County.svg",
+        "license": "CC BY-SA 3.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "attribution": "Jpb1301; AnonMoos (revision); Jza84 (reversion)",
+        "sha1": "9c7076d4e36797b2295badf9540b904da83a08ba",
+        "asset_sha1": "9c7076d4e36797b2295badf9540b904da83a08ba",
+        "revision": "2011-05-12T09:58:43Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/1/17/Flag_of_the_West_Midlands_County.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/List_of_English_flags",
+        "notes": "Banner of arms of former West Midlands County Council, abolished 1986, associated with the modern county; not claimed to be an official flag of a current authority. SVG unchanged."
+      }
+    },
+    {
+      "id": 45,
+      "filename": "flag-45.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_West_Sussex.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Sodacan; The Flag Institute (Sussex flag component); Rehua and Alkari (component revisions)",
+        "sha1": "31b0fdaad32a5d62807d11814510640ca61b24b0",
+        "asset_sha1": "31b0fdaad32a5d62807d11814510640ca61b24b0",
+        "revision": "2017-10-24T03:41:42Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/7e/Flag_of_West_Sussex.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/Flag_of_Sussex",
+        "notes": "Distinct banner of the former West Sussex County Council, abolished 1974, not the six-martlet flag of all historic Sussex and not a present county authority flag. Commons SVG unchanged.",
+        "component_credits": [
+          {
+            "title": "Flag of Sussex.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Sussex.svg",
+            "author": "The Flag Institute; Rehua and Alkari (revisions)",
+            "license": "public domain"
+          }
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "filename": "flag-15.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_East_Sussex.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Sodacan; HapHaxion (revision); Jza84 and Greentubing (source component)",
+        "sha1": "4b6edeab6e28793fcce5387c6c003c173788755f",
+        "asset_sha1": "d074ed4ffe56b74a0a73b2981811c02072648a1a",
+        "revision": "2022-07-26T13:30:56Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/1/12/Flag_of_East_Sussex.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/List_of_English_flags",
+        "notes": "Distinct East Sussex County Council banner, not the Sussex-wide community flag. Local PNG is Commons' 960px rasterization of the cited SVG, not the original SVG; original endpoint returned HTTP 429. No additional edits.",
+        "component_credits": [
+          {
+            "title": "County Flag of East Sussex.png",
+            "url": "https://commons.wikimedia.org/wiki/File:County_Flag_of_East_Sussex.png",
+            "author": "Jza84; Greentubing",
+            "license": "public domain"
+          }
+        ],
+        "asset_mime": "image/png",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Flag_of_East_Sussex.svg/960px-Flag_of_East_Sussex.svg.png"
+      }
+    },
+    {
+      "id": 38,
+      "filename": "flag-38.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:FlagOfSouthYorkshire.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "HarJIT; Fenn-O-maniC (recomposition); Presidential Republic of Lanzantonia (source PNG); Yorkshire Ridings Society and Flag Institute (rose component)",
+        "sha1": "69adc04ef11af5ba28ddf922113f58a9f49afab7",
+        "asset_sha1": "50b92e4a943bc24e9e69d6c5c2e05cecfed5d540",
+        "revision": "2021-03-02T09:36:15Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/9f/FlagOfSouthYorkshire.svg",
+        "identity_source": "https://en.wikipedia.org/wiki/South_Yorkshire",
+        "notes": "Banner of former South Yorkshire County Council arms, abolished 1986, not claimed to be a present authority flag. Commons describes it as apparently used for South Yorkshire. Local PNG is Commons' 960px rasterization of the cited SVG; original endpoint returned HTTP 429. No additional edits.",
+        "component_credits": [
+          {
+            "title": "FlagOfYorkshire.svg",
+            "url": "https://commons.wikimedia.org/wiki/File:FlagOfYorkshire.svg",
+            "author": "Yorkshire Ridings Society and The Flag Institute",
+            "license": "public domain"
+          }
+        ],
+        "asset_mime": "image/png",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/FlagOfSouthYorkshire.svg/960px-FlagOfSouthYorkshire.svg.png"
+      }
+    },
+    {
+      "id": 42,
+      "filename": "flag-42.png",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:Flag_of_Tyne_and_Wear.svg",
+        "license": "CC0 1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attribution": "Pete Loeser (source image); RAPTOR7762 (vectorization)",
+        "sha1": "d8066f9fd0015e6d19cc5f258789e55cd935a18a",
+        "asset_sha1": "83f5b6b5406473e394f6bf3ddad4bac29a49f818",
+        "revision": "2026-02-18T16:29:40Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Flag_of_Tyne_and_Wear.svg",
+        "identity_source": "https://www.crwflags.com/fotw/flags/gb-e-tyw.html",
+        "notes": "Unofficial flag associated with the former county council logo; not a coat of arms or a current official flag. Commons marks original design ineligible for copyright and vector CC0. Local PNG is Commons' 960px rasterization of the cited SVG; original endpoint returned HTTP 429. No additional edits.",
+        "asset_mime": "image/png",
+        "asset_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Flag_of_Tyne_and_Wear.svg/960px-Flag_of_Tyne_and_Wear.svg.png"
+      }
+    }
+  ]
+}

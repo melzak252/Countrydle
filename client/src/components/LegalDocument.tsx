@@ -10,7 +10,7 @@ export default function LegalDocument({ title, lastUpdated, children }: LegalDoc
   return (
     <article className="mx-auto min-w-0 max-w-4xl pb-8 text-zinc-300">
       <header className="border-b border-white/10 pb-8 md:pb-10">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">
+        <p className="mb-4 font-mono text-xs text-emerald-400">
           Countrydle / Legal
         </p>
         <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">

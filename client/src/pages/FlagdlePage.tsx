@@ -239,8 +239,8 @@ export default function FlagdlePage() {
       {/* Header Bar */}
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-sand-800/80 pb-2 sm:mb-6 sm:gap-3 sm:pb-4">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
-            <span>🚩 Daily Flag Deduction</span>
+          <div className="mb-1 flex items-center gap-2 text-xs font-mono font-semibold text-sand-400">
+            <span>Daily Flag Deduction</span>
             <span>•</span>
             <span>{dailyDate}</span>
           </div>
@@ -251,7 +251,7 @@ export default function FlagdlePage() {
         <div className="flex items-center gap-3">
           {/* Guesses Remaining Pill */}
           <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2.5 py-1.5 shadow-sm sm:px-3.5 sm:py-2">
-            <span className="text-xs uppercase tracking-wider text-zinc-400 mr-2 font-mono">Guesses:</span>
+            <span className="text-xs text-zinc-400 mr-2 font-mono">Guesses:</span>
             <span
               className={`font-mono text-base font-bold ${
                 guesses.length >= 10 ? 'text-amber-400' : 'text-emerald-400'
@@ -351,7 +351,7 @@ export default function FlagdlePage() {
                   type="button"
                   onClick={handleSubmitGuess}
                   disabled={isLoading || !inputVal.trim()}
-                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-obsidian-950 shadow-md hover:bg-emerald-300 active:scale-95 disabled:pointer-events-none disabled:opacity-50 transition-all cursor-pointer sm:px-5 sm:py-3"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-obsidian-950 shadow-md hover:bg-emerald-300 active:scale-95 disabled:pointer-events-none disabled:opacity-50 transition-colors cursor-pointer sm:px-5 sm:py-3"
                 >
                   {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Guess'}
                 </button>
@@ -364,7 +364,7 @@ export default function FlagdlePage() {
         {guesses.length > 0 && (
           <section aria-label="Previous Guesses" className="mx-auto w-full max-w-xl space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">Your Guesses</span>
+              <span className="text-xs font-mono text-zinc-400">Your Guesses</span>
               <span className="text-xs font-mono text-zinc-500">{guesses.length} / 12</span>
             </div>
             <ul className="space-y-1.5">
@@ -404,7 +404,7 @@ export default function FlagdlePage() {
             className="mx-auto w-full max-w-xl rounded-sm border border-emerald-500/30 bg-obsidian-950 p-4 sm:p-5 flex items-center justify-between gap-4"
           >
             <div>
-              <span className="font-mono text-xs uppercase tracking-wider text-emerald-400">
+              <span className="font-mono text-xs text-emerald-400">
                 {isWon ? 'Puzzle Solved' : 'Game Over'}
               </span>
               <h3 className="text-base sm:text-lg font-bold text-sand-100">
@@ -446,7 +446,7 @@ export default function FlagdlePage() {
               {/* Header Bar */}
               <div className="flex items-center justify-between border-b border-white/10 pb-3.5 -mt-1 text-left">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">
+                  <span className="font-mono text-xs text-emerald-400 font-semibold">
                     Flagdle Result
                   </span>
                   <span className="text-zinc-600">·</span>
@@ -486,7 +486,7 @@ export default function FlagdlePage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-emerald-400 font-semibold">
+                    <span className="font-mono text-xs text-emerald-400 font-semibold">
                       Secret National Flag
                     </span>
                     <h2 className="mt-0.5 break-words font-serif text-3xl sm:text-4xl text-sand-100">
@@ -522,7 +522,7 @@ export default function FlagdlePage() {
               {/* Performance Metrics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-xs font-mono text-zinc-400 block">
                     Guesses Used
                   </span>
                   <div className="mt-1 flex items-baseline gap-1.5">
@@ -532,7 +532,7 @@ export default function FlagdlePage() {
                 </div>
 
                 <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-xs font-mono text-zinc-400 block">
                     Points Earned
                   </span>
                   <div className="mt-1 font-mono text-2xl sm:text-3xl font-bold text-emerald-300">
@@ -541,7 +541,7 @@ export default function FlagdlePage() {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
-                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-xs font-mono text-zinc-400 block">
                     Next Flagdle
                   </span>
                   <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-emerald-400">
@@ -559,7 +559,7 @@ export default function FlagdlePage() {
                     className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
                   >
                     {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-                    <span>{copied ? 'Copied to Clipboard!' : 'Share Flagdle Result'}</span>
+                    <span>{copied ? 'Copied to clipboard' : 'Share Flagdle Result'}</span>
                   </button>
                   <Link
                     to="/friends?mode=countrydle"
@@ -627,8 +627,8 @@ export default function FlagdlePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                    <span>🎴 1. 12-Card Cover Grid</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>1. 12-Card Cover Grid</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     The secret flag is covered by 12 solid tiles in a 3×4 grid. Each guess unmasks 1 tile, progressively revealing more of the national flag design underneath.
@@ -641,8 +641,8 @@ export default function FlagdlePage() {
 
               <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                    <span>🎨 2. Color & Symbol Match</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>2. Color &amp; Symbol Match</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     Each guess compares the colors and symbols of your guessed flag against the secret target. Green chips show matching colors; crossed-out chips indicate absent colors.
@@ -655,8 +655,8 @@ export default function FlagdlePage() {
 
               <div className="rounded-sm border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                    <span>🧭 3. Distance & Direction</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>3. Distance &amp; Direction</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     Distance in kilometers unlocks on guess 3, and compass bearing arrows (e.g. ↗ 3,200 km) point towards the secret target country starting on guess 5.
@@ -669,8 +669,8 @@ export default function FlagdlePage() {
 
               <div className="rounded-sm border border-indigo-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-                    <span>💬 4. Unlimited Free AI Questions</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>4. Unlimited Free AI Questions</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     Stuck on the visual clues? You can ask unlimited yes/no questions about colors, stripes, stars, or symbols without consuming any of your 12 guess turns!
@@ -697,7 +697,7 @@ export default function FlagdlePage() {
                 onClick={handleCloseInstructions}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 shrink-0"
               >
-                <span>Got it, let's play!</span>
+                <span>Got it, let's play</span>
                 <ArrowRight size={16} />
               </button>
             </div>

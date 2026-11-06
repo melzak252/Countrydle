@@ -1,4 +1,5 @@
 import json
+import base64
 import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
@@ -54,11 +55,13 @@ def test_damaged_legacy_cache_is_refetched_once_and_attribution_preserved(tmp_pa
     repaired = sanitize_svg_bytes(source)
     metadata = {'attribution': {'title': 'original attribution'}}
     with patch('powiatdle.heraldry.get_herb_cache_dir', return_value=tmp_path), patch(
+        'powiatdle.heraldry.get_heraldry_filename', return_value=None
+    ), patch(
         'powiatdle.heraldry.resolve_and_fetch_heraldry', return_value=(repaired, metadata)
     ) as fetch:
         first = get_or_fetch_herb_svg(1, 'example')
         second = get_or_fetch_herb_svg(1, 'example')
-    fetch.assert_called_once_with('example')
+    fetch.assert_called_once_with('example', None)
     assert first == second == repaired
     assert json.loads((tmp_path / '1.json').read_text())['attribution']['title'] == 'old'
     entry = json.loads((tmp_path / '1.v2.json').read_text())
@@ -111,8 +114,9 @@ def test_thumbnail_filename_fallback_uses_atomic_entry(tmp_path):
     write_heraldry_cache(tmp_path / '1.v2.json', b'<svg></svg>', {
         'filename': 'new.svg', 'attribution': {'title': 'new'},
     })
+    png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
     with patch('powiatdle.heraldry.get_herb_cache_dir', return_value=tmp_path), patch(
         'powiatdle.heraldry.get_heraldry_filename', return_value=None
-    ), patch('powiatdle.heraldry.fetch_url', return_value=b'x' * 80) as fetch:
-        assert get_or_fetch_herb_thumb(1, 'example') == (b'x' * 80, 'image/png')
+    ), patch('powiatdle.heraldry.fetch_url', return_value=png) as fetch:
+        assert get_or_fetch_herb_thumb(1, 'example') == (png, 'image/png')
     assert 'new.svg' in fetch.call_args.args[0]

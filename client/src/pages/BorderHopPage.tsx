@@ -260,7 +260,7 @@ export default function BorderHopPage() {
             <h1 className="font-mono text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
               {'Border Hop'}
             </h1>
-            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 shrink-0">
+            <span className="px-2 py-0.5 font-mono text-xs font-semibold text-emerald-400 shrink-0">
               {'Mini-Game'}
             </span>
           </div>
@@ -340,7 +340,7 @@ export default function BorderHopPage() {
           {/* Mission Banner */}
           <div className="rounded-sm border border-white/10 bg-obsidian-900/60 p-3 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
             <div className="space-y-1 sm:space-y-1.5 min-w-0">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">
+              <span className="font-mono text-xs font-semibold text-emerald-400 block">
                 {'Route Objective'}
               </span>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-xs sm:text-base md:text-xl font-bold font-mono text-sand-100 min-w-0">
@@ -360,14 +360,14 @@ export default function BorderHopPage() {
             {/* Score & Hop Benchmark Badges */}
             <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 shrink-0">
               <div className="rounded-sm bg-obsidian-950/60 border border-white/10 px-2.5 sm:px-3 py-1.5 sm:py-2 text-center sm:min-w-24">
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                <span className="block text-xs font-mono text-zinc-400">
                   {'Your Hops'}
                 </span>
                 <span className="font-mono text-base sm:text-lg font-bold text-sand-100">{currentHops}</span>
               </div>
 
               <div className="rounded-sm bg-obsidian-950/60 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 sm:py-2 text-center sm:min-w-24">
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-emerald-400">
+                <span className="block text-xs font-mono text-emerald-400">
                   {'Optimal'}
                 </span>
                 <span className="font-mono text-base sm:text-lg font-bold text-emerald-300">{optimalHops}</span>
@@ -614,7 +614,7 @@ export default function BorderHopPage() {
                         type="button"
                         onClick={() => handleSelectNeighbor(neighbor)}
                         title={neighbor}
-                        className={`group relative flex items-center justify-between p-2 sm:p-2.5 rounded-sm border text-left transition-all cursor-pointer min-w-0 ${
+                        className={`group relative flex items-center justify-between p-2 sm:p-2.5 rounded-sm border text-left transition-colors cursor-pointer min-w-0 ${
                           isTarget
                             ? 'bg-emerald-500/20 border-emerald-400/80 hover:bg-emerald-500/30 text-emerald-200'
                             : alreadyVisited
@@ -630,7 +630,7 @@ export default function BorderHopPage() {
                         ) : (
                           <ArrowRight
                             size={12}
-                            className="text-zinc-600 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all shrink-0"
+                            className="text-zinc-600 group-hover:text-emerald-400 transition-colors shrink-0"
                           />
                         )}
                       </button>

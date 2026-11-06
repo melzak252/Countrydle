@@ -645,6 +645,34 @@ finished runs that solved it and the mean client-reported active elapsed time
 from quiz start among those solves. The percentage denominator is all finished
 runs; abandoned runs are excluded and no historical quiz runs are inferred.
 
+County coat display images use the opaque token-bound `/coat-asset` URL with
+`private, no-store`; no county identifier or source hash is present in that
+URL. On the first rendition cache miss the server fetches a thumbnail for the
+packaged county-to-Commons filename, bounds both dimensions to 512 pixels and
+stores a WebP alongside the existing local image cache. Subsequent requests
+read that rendition locally. A first miss still depends on Commons; if it fails,
+the server uses a cached original when available or reports the upstream
+failure. Full SVG and its attribution use the same filename and are fetched on
+inspection or after the result. Existing cached originals retain their recorded
+source identity. Pillow is required for this one-time raster encoding.
+While an original cache file is unchanged, its source filename is memoized by
+file identity, size and modification/change timestamps, so a warm preview does
+not repeatedly parse the full SVG. Replacing that file invalidates the memo.
+
+Quiz catalogs expose `thumbnail_asset_url` alongside the original
+`flag_asset_url`. Public rendition URLs are versioned by the SHA-256 of their
+actual bytes and served immutable; original images remain available for
+inspection. Generate the packaged regional and county-flag WebP renditions and
+the county-coat grid assets using `python3 scripts/build_symbol_thumbnails.py`
+with system GI Rsvg/cairo and Pillow (WebP support); the build is offline and
+rejects external SVG resources. Renditions retain the catalog's original and
+component credits and disclose rasterization/resizing. Rebuild them whenever
+an audited source asset changes; their source hashes must match the catalog.
+County-flag and regional daily display images use separately packaged
+512-pixel renditions behind their existing private token URLs; `full=true`
+retrieves the original when the player opens the inspector. Missing preview
+files fall back to the corresponding original, never to a different entity.
+
 County flags use the same eight-guess daily and custom-seed rules at
 `/powiatdle/flags/challenge`, `/guess` and `/sync`. Daily guess options include
 all 380 canonical counties, but targets and the all-flags quiz are limited to
@@ -683,6 +711,56 @@ will mix flags with coats even if they can read the new schema. The migration
 refuses downgrade before changing the schema if either table has non-coat
 history; coat-only databases can downgrade. Keep a symbol-aware application
 during rollback planning; do not delete game data as an implicit rollback.
+
+### Unreleased: scoped regional symbols
+
+Regional symbol APIs use `/regional-symbols/{scope}/{mode}`, where `scope` is
+`voivodeships`, `london_boroughs`, or `england_counties`, and `mode` is `coat`
+or `flag`. The England universe is the 48 modern ceremonial counties, including
+the City of London; London boroughs are the 32 boroughs, excluding the City.
+The full entity list is available for guesses, while `/catalog` and the quiz
+contain only audited eligible targets. A missing, unpublished, or single-target
+pool is unavailable rather than replaced by a different symbol. Each game shows
+the actual eligible target count.
+Both voivodeship catalogs and their daily pools now include all 16 regions.
+Inclusion is specific to this game's identification use: artwork licensing does
+not itself waive regional symbol restrictions, and the per-symbol catalogs and
+source audit retain applicable restrictions and unresolved use-rights notes.
+The English county pools contain 47 flags and 47 coats for 48 ceremonial
+counties. The London borough coat pool contains 31 coats for 32 boroughs.
+Borough flags are out of scope and are not a playable pool.
+Wikipedia was used first for identification and Commons file records for
+artwork, licences and attribution, with source-specific
+historical notes and component credits in the catalogs. Where Commons raster
+renditions are packaged, the original and packaged asset hashes are recorded
+separately. Redbridge's Wikipedia coat image is non-free and is not packaged;
+unlisted flags are not evidence of absence. Inclusion does not imply official
+permission or endorsement.
+
+
+
+The scoped challenge, guess, sync, leaderboard, asset, and quiz endpoints share
+the county engine. Eight guesses, daily points, UTC dates, account claims, and
+finished-run quiz statistics follow the county rules. Regional games do not
+offer Polish county registration-plate hints. Distance and bearing use the
+representative points documented in each geography's `entities.json`; those
+points are not necessarily centroids. Image source, author, licence,
+modifications and component-artwork credits are recorded per asset and exposed
+with results and the quiz catalog; `source_audit.json` records inclusion and
+unresolved use-rights decisions. English community flags are not presented as
+flags of ceremonial authority. Verify asset use rights and geographic data
+terms before release.
+
+The geographically scoped, symbol-specific daily pools under
+`regional_symbols/data/` are versioned. Expanding the voivodeship, English
+county and London borough v1 pools changes the answers selected for past UTC
+dates; existing saved sessions and histories retain their recorded targets.
+Further changes to an existing pool also change its historic selection.
+Migration `h4f5a6b7c8d9` defaults existing rows to
+`county`, isolates daily uniqueness and quiz statistics by scope, and refuses
+downgrade if regional history exists. Older binaries do not understand the
+scope column and must not run against a database containing regional history.
+Legacy county token namespaces and selection are unchanged.
 
 Admin overview and session drilldowns use UTC dates and the same saved or
 recoverable session universe, including empty saved states and question-only

@@ -302,7 +302,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
             className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5 touch-pan-x overscroll-x-contain scroll-smooth"
             aria-label={t('inputs.quickQuestions')}
           >
-            {quickQuestions.map(({ icon, label, question: suggestedQuestion }) => (
+            {quickQuestions.map(({ label, question: suggestedQuestion }) => (
               <button
                 key={label}
                 type="button"
@@ -310,7 +310,7 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
                 onClick={() => setQuestion(suggestedQuestion)}
                 className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-300 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-40"
               >
-                <span aria-hidden="true">{icon}</span>{label}
+                {label}
               </button>
             ))}
           </div>

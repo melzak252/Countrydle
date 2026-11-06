@@ -1,0 +1,1045 @@
+{
+  "as_of": "2026-11-06",
+  "method": "Wikipedia borough pages and Commons file descriptions identify candidate artwork; Commons file licences and attribution apply to the particular illustration. Original search leads and earlier assessments are retained. Borough flags are out of scope and not published; flag research below is historical, not a selection of playable targets. Some flags are historically reported council-associated designs, not claims of formal current adoption. Unverified does not mean no symbol, and inclusion does not imply official permission.",
+  "flag_research_status": "out_of_scope",
+  "entities": [
+    {
+      "id": 9000002,
+      "name": "Barking and Dagenham",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Barking_and_Dagenham",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Barking and Dagenham flag returned File:Coat of arms of the London Borough of Barking and Dagenham.svg; File:London Road flats, Barking - geograph.org.uk - 343119.jpg; File:Barking and Dagenham logo.svg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Barking and Dagenham flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Barking%20and%20Dagenham%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Barking_and_Dagenham.svg",
+            "https://commons.wikimedia.org/wiki/File:London_Road_flats%2C_Barking_-_geograph.org.uk_-_343119.jpg",
+            "https://commons.wikimedia.org/wiki/File:Barking_and_Dagenham_logo.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Barking_and_Dagenham.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Barking and Dagenham coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Barking%20and%20Dagenham%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Barking_and_Dagenham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Municipal_Borough_of_Dagenham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Municipal_Borough_of_Barking.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000003,
+      "name": "Barnet",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Barnet",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Barnet flag returned File:EU flag Barnet.png; File:Barnet Museum 08.JPG; File:Coat of arms of the London Borough of Lewisham.svg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Barnet flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Barnet%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:EU_flag_Barnet.png",
+            "https://commons.wikimedia.org/wiki/File:Barnet_Museum_08.JPG",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Lewisham.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Barnet.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Barnet coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Barnet%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Barnet.svg",
+            "https://commons.wikimedia.org/wiki/File:Finchley_Borough_Council_Coat_of_Arms_-_geograph.org.uk_-_618994.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Wandsworth.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000004,
+      "name": "Bexley",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "previous_status": "unverified",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Flag_of_the_Borough_of_Bexley.gif",
+          "historical_evidence": "Commons identifies the artwork as Bexley's flag and asserts CC BY-SA 4.0. FOTW reports a council flag in 2006 but does not independently describe the design; current adoption is not asserted.",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Bexley",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Bexley flag returned File:Flag of the Borough of Bexley.gif; File:The Kings Head pub Bexley High Street (geograph 2028036).jpg; File:Flag Pole in Riverside Gardens - geograph.org.uk - 2549010.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Bexley flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Bexley%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Borough_of_Bexley.gif",
+            "https://commons.wikimedia.org/wiki/File:The_Kings_Head_pub_Bexley_High_Street_(geograph_2028036).jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_Pole_in_Riverside_Gardens_-_geograph.org.uk_-_2549010.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "restricted",
+          "previous_reason": "Council says reproduction of its arms requires council permission; licensed illustration does not establish the outcome for informational depiction. No permission obtained.",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Ldn_Borough_of_Bexley.svg",
+          "selection_evidence": "Wikipedia uses this Commons illustration. Council reproduction permission has not been obtained; inclusion reflects the selected use and is not official permission or endorsement. Packaged as Commons-rendered PNG.",
+          "search_query": "London Borough of Bexley coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Bexley%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Ldn_Borough_of_Bexley.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Southwark.svg",
+            "https://commons.wikimedia.org/wiki/File:Bexley%2C_the_Charter_Oak_-_geograph.org.uk_-_972257.jpg"
+          ],
+          "primary_source": "https://www.bexley.gov.uk/about-the-council/mayor/role-mayor"
+        }
+      }
+    },
+    {
+      "id": 9000005,
+      "name": "Brent",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Brent",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Brent flag returned File:Coat of arms of the London Borough of Brent.svg; File:Yellow flag in the Brent Reservoir - geograph.org.uk - 4538833.jpg; File:London , Wembley - England Flag - geograph.org.uk - 2112472.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Brent flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Brent%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Brent.svg",
+            "https://commons.wikimedia.org/wiki/File:Yellow_flag_in_the_Brent_Reservoir_-_geograph.org.uk_-_4538833.jpg",
+            "https://commons.wikimedia.org/wiki/File:London_%2C_Wembley_-_England_Flag_-_geograph.org.uk_-_2112472.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Brent.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Brent coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Brent%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Brent.svg",
+            "https://commons.wikimedia.org/wiki/File:Brent_Town_Hall_(detail)%2C_Wembley_-_geograph.org.uk_-_865099.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_Municipal_Borough_of_Wembley.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000006,
+      "name": "Bromley",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Bromley",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Bromley flag returned File:Christmas market, Bromley High Street - geograph.org.uk - 2738450.jpg; File:Coat of arms of the London Borough of Lewisham.svg; File:Coat of arms of the London Borough of Hammersmith and Fulham.svg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Bromley flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Bromley%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Christmas_market%2C_Bromley_High_Street_-_geograph.org.uk_-_2738450.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Lewisham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hammersmith_and_Fulham.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Bromley Council specifies nine acorns; Commons categorises this candidate as having fifteen, so reconcile actual artwork with the grant before release. The council describes official use as restricted to the mayor and executive councillors, not a blanket determination of independent educational depiction.",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Bromley.svg",
+          "selection_evidence": "Wikipedia uses this artwork; Civic Heraldry describes an orle of acorns without specifying number, while the council explicitly describes nine and this rendition has fifteen. Packaged as Commons-rendered PNG; official permission is not implied.",
+          "primary_source": "https://www.bromley.gov.uk/local-history-heritage/coat-arms-london-borough-bromley",
+          "search_query": "London Borough of Bromley coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Bromley%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Bromley.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Greenwich.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Lewisham.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000007,
+      "name": "Camden",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Camden",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Camden flag returned File:City of London flag - geograph.org.uk - 2871529.jpg; File:Coat of arms of the London Borough of Brent.svg; File:Plender Street, Camden Town - geograph.org.uk - 178659.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Camden flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Camden%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:City_of_London_flag_-_geograph.org.uk_-_2871529.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Brent.svg",
+            "https://commons.wikimedia.org/wiki/File:Plender_Street%2C_Camden_Town_-_geograph.org.uk_-_178659.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Camden.svg",
+          "reason": "Current borough arms match the Civic Heraldry blazon; independently drawn Commons work is CC BY-SA 4.0 and Chromium decoded, unchanged.",
+          "identity_source": "https://www.civicheraldry.co.uk/great_london.html",
+          "search_query": "London Borough of Camden coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Camden%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Camden.svg",
+            "https://commons.wikimedia.org/wiki/File:CoatOfArms_LondonBoroughOfCamden.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Hillingdon.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000008,
+      "name": "Croydon",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Croydon",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Croydon flag returned File:Croydon FC Flags.jpg; File:Croydon Minster, west end - geograph.org.uk - 2955060.jpg; File:Salvation Army, Croydon - geograph.org.uk - 1216818.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Croydon flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Croydon%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Croydon_FC_Flags.jpg",
+            "https://commons.wikimedia.org/wiki/File:Croydon_Minster%2C_west_end_-_geograph.org.uk_-_2955060.jpg",
+            "https://commons.wikimedia.org/wiki/File:Salvation_Army%2C_Croydon_-_geograph.org.uk_-_1216818.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Croydon.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Croydon coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Croydon%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Croydon.svg",
+            "https://commons.wikimedia.org/wiki/File:Croham_Arms%2C_Pub_Sign%2C_South_Croydon_-_geograph.org.uk_-_2662392.jpg",
+            "https://commons.wikimedia.org/wiki/File:Croydon%2C_commemorative_plaque_-_geograph.org.uk_-_4508468.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000009,
+      "name": "Ealing",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "previous_status": "unverified",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Ealing_Flag.png",
+          "historical_evidence": "Commons identifies an Ealing flag and marks it fictitious, proposed or unofficial; the oak and three crowns match the arms. The Commons uploader identifies use of free Wikipedia images but does not identify their sources. No official adoption or actual use is established.",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Ealing",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "previous_assessment": "Commons marks Ealing Flag.png fictitious, proposed or unofficial; no evidence of actual use was found, so it is not included.",
+          "reason": "Commons MediaSearch for Ealing flag returned File:Ealing Flag.png; File:All Saints, Ealing - War Memorial WWI - geograph.org.uk - 5014336.jpg; File:All Saints, Ealing - War Memorial WWI - geograph.org.uk - 5014333.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Ealing flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Ealing%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Ealing_Flag.png",
+            "https://commons.wikimedia.org/wiki/File:All_Saints%2C_Ealing_-_War_Memorial_WWI_-_geograph.org.uk_-_5014336.jpg",
+            "https://commons.wikimedia.org/wiki/File:All_Saints%2C_Ealing_-_War_Memorial_WWI_-_geograph.org.uk_-_5014333.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "selection_evidence": "Wikipedia uses this Commons illustration. The recorded blazon specifies an oak fructed Or but does not state a number; the illustrative difference in acorns does not by itself establish a blazon mismatch. The council's twenty-acorn account is retained below; inclusion does not imply council permission.",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Ealing_coat_of_arms.svg",
+          "previous_reason": "Council describes its illustration as having 20 golden acorns; the Commons candidate visually has two. Its blazon does not specify a number; resolve whether the difference is acceptable before publishing.",
+          "primary_source": "https://www.ealing.gov.uk/info/201033/council_and_local_decisions/346/mayors_office/5",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Ealing_coat_of_arms.svg",
+          "search_query": "London Borough of Ealing coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Ealing%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Newham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Waltham_Forest.svg",
+            "https://commons.wikimedia.org/wiki/File:Acton_Borough_coat_of_arms_-_geograph.org.uk_-_2767369.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000010,
+      "name": "Enfield",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Enfield",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Enfield flag returned File:Flying the Flag in Southgate, London N14 - geograph.org.uk - 3059641.jpg; File:Flying the Flag through Southgate, London N14 - geograph.org.uk - 3059647.jpg; File:Flying the Flag through Southgate, London N14 - geograph.org.uk - 3059651.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Enfield flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Enfield%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flying_the_Flag_in_Southgate%2C_London_N14_-_geograph.org.uk_-_3059641.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flying_the_Flag_through_Southgate%2C_London_N14_-_geograph.org.uk_-_3059647.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flying_the_Flag_through_Southgate%2C_London_N14_-_geograph.org.uk_-_3059651.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Enfield.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Enfield coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Enfield%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Enfield.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_for_Borough_of_Southgate_-_geograph.org.uk_-_1049018.jpg",
+            "https://commons.wikimedia.org/wiki/File:Royal_coat_of_arms%2C_Enfield_Post_Office_-_geograph.org.uk_-_5611861.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000011,
+      "name": "Greenwich",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/Royal_Borough_of_Greenwich",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Greenwich flag returned File:View of flags on the roof of Greenwich Market - geograph.org.uk - 5522371.jpg; File:View of flags on the roof of Greenwich Market ^2 - geograph.org.uk - 5523219.jpg; File:Greenwich Market - geograph.org.uk - 1835318.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Greenwich flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Greenwich%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:View_of_flags_on_the_roof_of_Greenwich_Market_-_geograph.org.uk_-_5522371.jpg",
+            "https://commons.wikimedia.org/wiki/File:View_of_flags_on_the_roof_of_Greenwich_Market_%5E2_-_geograph.org.uk_-_5523219.jpg",
+            "https://commons.wikimedia.org/wiki/File:Greenwich_Market_-_geograph.org.uk_-_1835318.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Greenwich.svg",
+          "reason": "Council confirms 2012 royal arms, not the 1965 design. Commons illustration decoded in Chromium despite W3C notation; recursive declared component credits and licences are recorded in the catalog.",
+          "search_query": "London Borough of Greenwich coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Greenwich%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Greenwich.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Greenwich_(1965-2012).svg",
+            "https://commons.wikimedia.org/wiki/File:Royal_Borough_of_Greenwich_-_geograph.org.uk_-_2990381.jpg"
+          ],
+          "primary_source": "https://www.royalgreenwich.gov.uk/info/200164/about_the_royal_borough/1053/greenwichs_royal_coat_of_arms",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Greenwich.svg"
+        }
+      }
+    },
+    {
+      "id": 9000012,
+      "name": "Hackney",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "previous_status": "unverified",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Hackney.svg",
+          "historical_evidence": "Wikipedia uses this Commons illustration; FOTW reports the arms on a white flag at Hackney Town Hall. Commons identifies Nick.perry.uk's coat as the source of Burjkh's flag illustration; its unspecified Wikipedia heraldic elements remain an attribution gap.",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Hackney",
+          "wikipedia_flag_check": "Wikipedia borough page identifies Flag_of_the_London_Borough_of_Hackney.svg as a flag.",
+          "reason": "Commons MediaSearch for Hackney flag returned File:Flag of the London Borough of Hackney.svg; File:Flag of the Borough of Hackney.gif; File:Hackney town hall 1.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Hackney flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hackney%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Hackney.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Borough_of_Hackney.gif",
+            "https://commons.wikimedia.org/wiki/File:Hackney_town_hall_1.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons candidate states it uses Wikipedia heraldic elements but does not identify those elements. Trace their authors, licences and attribution before publishing.",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:LB_Hackney_Coat_of_Arms.svg",
+          "selection_evidence": "Wikipedia uses Nick.perry.uk's current-borough illustration; Commons asserts CC BY-SA 4.0 and says it uses Wikipedia heraldic elements, but does not identify them. Those element-level credits remain unresolved and are not fabricated; the identified artist is credited.",
+          "search_query": "London Borough of Hackney coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hackney%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:LB_Hackney_Coat_of_Arms.svg",
+            "https://commons.wikimedia.org/wiki/File:London_Borough_of_Hackney_Coat_of_Arms.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Hackney.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000013,
+      "name": "Hammersmith and Fulham",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Hammersmith_and_Fulham",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Hammersmith and Fulham flag returned File:London , Hammersmith - Hammersmith Grove - geograph.org.uk - 2408906.jpg; File:Coat of arms of the London Borough of Hammersmith and Fulham.svg; File:Hammersmith - London 2012.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Hammersmith and Fulham flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hammersmith%20and%20Fulham%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:London_%2C_Hammersmith_-_Hammersmith_Grove_-_geograph.org.uk_-_2408906.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hammersmith_and_Fulham.svg",
+            "https://commons.wikimedia.org/wiki/File:Hammersmith_-_London_2012.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hammersmith_and_Fulham.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Hammersmith and Fulham coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hammersmith%20and%20Fulham%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hammersmith_and_Fulham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Newham.svg",
+            "https://commons.wikimedia.org/wiki/File:Wilton_Arms_Pub_sign%2C_Fulham_-_geograph.org.uk_-_3423914.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000014,
+      "name": "Haringey",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Haringey",
+          "wikipedia_flag_check": "Wikipedia borough page identifies Flag_of_the_London_Borough_of_Haringey.svg as a flag.",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Haringey.svg",
+          "historical_evidence": "Wikipedia borough infobox uses this file; FOTW reports the yellow and black flag observed at Crouch End Town Hall in 2006. Current adoption is not established; Commons author Burjkh licenses the illustration CC BY-SA 4.0.",
+          "previous_status": "unverified",
+          "reason": "Commons MediaSearch for Haringey flag returned File:Flag of the London Borough of Haringey.svg; File:A pavement on Philip Lane, Haringey, London 01.jpg; File:North London Cricket Club boundary rope and flag Crouch End London England.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Haringey flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Haringey%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Haringey.svg",
+            "https://commons.wikimedia.org/wiki/File:A_pavement_on_Philip_Lane%2C_Haringey%2C_London_01.jpg",
+            "https://commons.wikimedia.org/wiki/File:North_London_Cricket_Club_boundary_rope_and_flag_Crouch_End_London_England.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Haringey.svg",
+          "reason": "2005 council minutes confirm 1965 grant. Independently drawn Commons artwork matches secondary blazon of eight gold lightning rays and rising sun behind cogwheel, is CC BY-SA 4.0, and decoded in Chromium; no changes.",
+          "primary_source": "https://www.minutes.haringey.gov.uk/documents/s437/Council_2005.10.03_Item%204_Minutes%20of%2018%20Jul%2005.pdf",
+          "blazon_source": "https://www.civicheraldry.co.uk/great_london.html",
+          "search_query": "London Borough of Haringey coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Haringey%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Haringey.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Newham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Havering.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000015,
+      "name": "Harrow",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Harrow",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Harrow flag returned File:Royal Oak, Harrow - geograph.org.uk - 1936449.jpg; File:Royal Oak, Harrow - geograph.org.uk - 1936323.jpg; File:Harrow, St George's Shopping and Leisure - geograph.org.uk - 528187.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Harrow flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Harrow%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Royal_Oak%2C_Harrow_-_geograph.org.uk_-_1936449.jpg",
+            "https://commons.wikimedia.org/wiki/File:Royal_Oak%2C_Harrow_-_geograph.org.uk_-_1936323.jpg",
+            "https://commons.wikimedia.org/wiki/File:Harrow%2C_St_George%27s_Shopping_and_Leisure_-_geograph.org.uk_-_528187.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Harrow.svg",
+          "reason": "Longstanding arms of the modern borough; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Harrow coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Harrow%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Harrow.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Epsom_College.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Uxbridge%2C_Canada.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000016,
+      "name": "Havering",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Havering",
+          "wikipedia_flag_check": "Wikipedia borough page identifies Flag_of_the_London_Borough_of_Havering.svg as a flag.",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Havering.svg",
+          "historical_evidence": "Wikipedia borough infobox uses this file; FOTW describes a white flag bearing the borough arms. Current adoption is not established; Commons credits Burjkh and the derived arms.",
+          "previous_status": "unverified",
+          "reason": "Commons MediaSearch for Havering flag returned File:Flag of the London Borough of Havering.svg; File:Flag of the Borough of Havering.jpg; File:Havering-atte-Bower church - geograph.org.uk - 5525910.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Havering flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Havering%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Havering.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Borough_of_Havering.jpg",
+            "https://commons.wikimedia.org/wiki/File:Havering-atte-Bower_church_-_geograph.org.uk_-_5525910.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Havering.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Havering coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Havering%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Havering.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Havering.svg",
+            "https://commons.wikimedia.org/wiki/File:St_Thomas%2C_Church_Lane%2C_Noak_Hill%2C_Havering_-_Stained_glass_window_-_geograph.org.uk_-_4174680.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000017,
+      "name": "Hillingdon",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Hillingdon",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Hillingdon flag returned File:Coat of Arms of the London Borough of Hillingdon.svg; File:Flag Walk, Eastcote - geograph.org.uk - 100345.jpg; File:The American Flag is lowered for the final time at RAF West Ruislip, United Kingdom.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Hillingdon flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hillingdon%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Hillingdon.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_Walk%2C_Eastcote_-_geograph.org.uk_-_100345.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_American_Flag_is_lowered_for_the_final_time_at_RAF_West_Ruislip%2C_United_Kingdom.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Hillingdon.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Hillingdon coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hillingdon%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:London_Borough_of_Hillingdon_coat_of_arms_-_geograph.org.uk_-_3155433.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Hillingdon.svg",
+            "https://commons.wikimedia.org/wiki/File:London_Borough_of_Hillingdon_%2C_Church_Road_A312_-_geograph.org.uk_-_6268315.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000018,
+      "name": "Hounslow",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Hounslow",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Hounslow flag returned File:Coat of arms of the London Borough of Hounslow.svg; File:Hounslow police station 2.jpg; File:Windsor Castle, Hounslow, TW3 (7929402536).jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Hounslow flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hounslow%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hounslow.svg",
+            "https://commons.wikimedia.org/wiki/File:Hounslow_police_station_2.jpg",
+            "https://commons.wikimedia.org/wiki/File:Windsor_Castle%2C_Hounslow%2C_TW3_(7929402536).jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hounslow.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Hounslow coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Hounslow%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Hounslow.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Kensington_and_Chelsea.svg",
+            "https://commons.wikimedia.org/wiki/File:Metropolitan_Water_board_coat_of_arms_-_geograph.org.uk_-_7316625.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000019,
+      "name": "Islington",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Islington",
+          "wikipedia_flag_check": "Wikipedia borough page identifies Flag_of_the_London_Borough_of_Islington.svg as a flag.",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Islington.svg",
+          "historical_evidence": "Wikipedia borough infobox uses this file; FOTW describes the banner of arms and links a town hall photograph. Current adoption is not established; Commons credits Burjkh and the derived arms.",
+          "previous_status": "unverified",
+          "reason": "Commons MediaSearch for Islington flag returned File:Flag of the London Borough of Islington.svg; File:Islington Town Hall - geograph.org.uk - 1272410.jpg; File:Corner Flag - geograph.org.uk - 7328925.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Islington flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Islington%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Islington.svg",
+            "https://commons.wikimedia.org/wiki/File:Islington_Town_Hall_-_geograph.org.uk_-_1272410.jpg",
+            "https://commons.wikimedia.org/wiki/File:Corner_Flag_-_geograph.org.uk_-_7328925.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Islington.svg",
+          "reason": "Current council page describes the arms. Commons CC BY-SA artwork and declared dependencies are credited recursively; Wareham file's upload history identifies ET72 as self-licensed author, and its nested crescent, fleur and fleur source have separate credits. SVG hash checked and Chromium decoded. https://www.islington.gov.uk/about-the-council/who-we-are/how-the-council-works/the-mayor/the-coat-of-arms",
+          "search_query": "London Borough of Islington coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Islington%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Islington.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Islington.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_on_the_gates_to_the_HAC_Sports_Ground%2C_Bunhill_Row%2C_EC1_-_geograph.org.uk_-_1174629.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000020,
+      "name": "Kensington and Chelsea",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/Royal_Borough_of_Kensington_and_Chelsea",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Kensington and Chelsea flag returned File:Flag of Belarus, Embassy of Belarus, Kensington Court, London (25th September 2014).JPG; File:Flag of Azerbaijan, Embassy of Azerbaijan, Kensington Court, London (25th September 2014).JPG; File:Consulate of Ukraine, 78 Kensington Park Rd, London W11 2PL, London UK- 26Feb2022 (2).jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Kensington and Chelsea flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Kensington%20and%20Chelsea%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Belarus%2C_Embassy_of_Belarus%2C_Kensington_Court%2C_London_(25th_September_2014).JPG",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Azerbaijan%2C_Embassy_of_Azerbaijan%2C_Kensington_Court%2C_London_(25th_September_2014).JPG",
+            "https://commons.wikimedia.org/wiki/File:Consulate_of_Ukraine%2C_78_Kensington_Park_Rd%2C_London_W11_2PL%2C_London_UK-_26Feb2022_(2).jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Kensington_and_Chelsea.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Kensington and Chelsea coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Kensington%20and%20Chelsea%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Royal_Borough_of_Kensington_and_Chelsea.svg",
+            "https://commons.wikimedia.org/wiki/File:St_Luke%2C_Sidney_Street%2C_Chelsea%2C_London_SW3_-_Royal_Arms_-_geograph.org.uk_-_1875637.jpg",
+            "https://commons.wikimedia.org/wiki/File:Mongolian_Embassy%2C_Kensington_Court%2C_London_(25th_September_2014)_001.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000021,
+      "name": "Kingston upon Thames",
+      "symbols": {
+        "flag": {
+          "status": "out_of_scope",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/Royal_Borough_of_Kingston_upon_Thames",
+          "wikipedia_flag_check": "Wikipedia borough page identifies Flag_of_the_London_Borough_of_Kingston-upon-Thames.svg as a flag.",
+          "candidate_file": "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Kingston-upon-Thames.svg",
+          "historical_evidence": "Wikipedia borough infobox uses this file; FOTW describes the light-blue flag and links a photograph. Current adoption is not established; Commons credits Burjkh and the derived arms.",
+          "previous_status": "unverified",
+          "reason": "Commons MediaSearch for Kingston upon Thames flag returned File:Flag of the London Borough of Kingston-upon-Thames.svg; File:Bentalls in Kingston Upon Thames - geograph.org.uk - 2591226.jpg; File:Inside Surrey County Hall, Kingston upon Thames-6238168056.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Kingston upon Thames flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Kingston%20upon%20Thames%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Kingston-upon-Thames.svg",
+            "https://commons.wikimedia.org/wiki/File:Bentalls_in_Kingston_Upon_Thames_-_geograph.org.uk_-_2591226.jpg",
+            "https://commons.wikimedia.org/wiki/File:Inside_Surrey_County_Hall%2C_Kingston_upon_Thames-6238168056.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Royal_Borough_of_Kingston_upon_Thames.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Kingston upon Thames coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Kingston%20upon%20Thames%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Royal_Borough_of_Kingston_upon_Thames.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_London_Borough_of_Kingston-upon-Thames.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Sutton.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000022,
+      "name": "Lambeth",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Lambeth",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Lambeth flag returned File:Corner Cafe, Lambeth, London. )2012).jpg; File:Flags flying on Lambeth Bridge - geograph.org.uk - 2973905.jpg; File:Tibetan prayer flags, samye dzong London.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Lambeth flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Lambeth%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Corner_Cafe%2C_Lambeth%2C_London._)2012).jpg",
+            "https://commons.wikimedia.org/wiki/File:Flags_flying_on_Lambeth_Bridge_-_geograph.org.uk_-_2973905.jpg",
+            "https://commons.wikimedia.org/wiki/File:Tibetan_prayer_flags%2C_samye_dzong_London.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Lambeth.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Lambeth coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Lambeth%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Lambeth.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Metropolitan_Borough_of_Lambeth.svg",
+            "https://commons.wikimedia.org/wiki/File:GLC_coat_of_arms_on_fire_station_on_Albert_Embankment_in_2022.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000023,
+      "name": "Lewisham",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Lewisham",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Lewisham flag returned File:Coat of arms of the London Borough of Lewisham.svg; File:Green Flag on display in Manor Park.jpg; File:Lee Green - Green Flag at Manor House Gardens (geograph 1781493).jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Lewisham flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Lewisham%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Lewisham.svg",
+            "https://commons.wikimedia.org/wiki/File:Green_Flag_on_display_in_Manor_Park.jpg",
+            "https://commons.wikimedia.org/wiki/File:Lee_Green_-_Green_Flag_at_Manor_House_Gardens_(geograph_1781493).jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Lewisham.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Lewisham coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Lewisham%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Lewisham.svg",
+            "https://commons.wikimedia.org/wiki/File:North_Face_of_the_Lewisham_Clock_Tower_(02).jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Walsingham_Rural_District.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000024,
+      "name": "Merton",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Merton",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Merton flag returned File:Colliers Wood London 2011 04.jpg; File:Upside down Union Flag ^37 - geograph.org.uk - 2983779.jpg; File:Flag Fail.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Merton flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Merton%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Colliers_Wood_London_2011_04.jpg",
+            "https://commons.wikimedia.org/wiki/File:Upside_down_Union_Flag_%5E37_-_geograph.org.uk_-_2983779.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_Fail.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Merton.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Merton coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Merton%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Merton.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Wandsworth.svg",
+            "https://commons.wikimedia.org/wiki/File:Inside_St_Mary%2C_Merton_(v)_-_geograph.org.uk_-_5674965.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000025,
+      "name": "Newham",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "remaining_gap": "FOTW reports a Newham logo flag, but the inspected Commons and Wikipedia results did not identify suitable licensed flag artwork; no absence is inferred.",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Newham",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Newham flag returned File:Coat of arms of the London Borough of Newham.svg; File:POSTCARD LONDON - STRATFORD - BOROUGH THEATRE - ANIMATED SCENE - RP (50272728991).jpg; File:Greek flag London 2012.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Newham flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Newham%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Newham.svg",
+            "https://commons.wikimedia.org/wiki/File:POSTCARD_LONDON_-_STRATFORD_-_BOROUGH_THEATRE_-_ANIMATED_SCENE_-_RP_(50272728991).jpg",
+            "https://commons.wikimedia.org/wiki/File:Greek_flag_London_2012.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Newham.svg",
+          "reason": "Current borough inherited West Ham's arms; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Newham coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Newham%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Newham.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_London_Borough_of_Islington.svg",
+            "https://commons.wikimedia.org/wiki/File:City_of_London_Cemetery_Main_Gate_coat_of_arms_1.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000026,
+      "name": "Redbridge",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Redbridge",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Redbridge flag returned File:Green Flag Award, Seven Kings Park - geograph.org.uk - 7936409.jpg; File:All Saints, Goodmayes - geograph.org.uk - 3700094.jpg; File:All Saints, Goodmayes - geograph.org.uk - 3700095.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Redbridge flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Redbridge%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Green_Flag_Award%2C_Seven_Kings_Park_-_geograph.org.uk_-_7936409.jpg",
+            "https://commons.wikimedia.org/wiki/File:All_Saints%2C_Goodmayes_-_geograph.org.uk_-_3700094.jpg",
+            "https://commons.wikimedia.org/wiki/File:All_Saints%2C_Goodmayes_-_geograph.org.uk_-_3700095.jpg"
+          ]
+        },
+        "coat": {
+          "status": "unverified",
+          "remaining_gap": "Wikipedia uses https://en.wikipedia.org/wiki/File:Arms-redbridge.jpg, a non-free image, which is not packaged. No suitable freely licensed present-borough illustration was identified; predecessor arms are not substituted.",
+          "reason": "Commons search for the present borough coat returned photographs and unrelated subjects, not a verified freely licensed rendition. This does not imply the borough has no arms.",
+          "search_query": "London Borough of Redbridge coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Redbridge%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Epping_Forest_-_geograph.org.uk_-_3748040.jpg",
+            "https://commons.wikimedia.org/wiki/File:St_Mary%2C_High_Road%2C_South_Woodford_-_Wall_monument_-_geograph.org.uk_-_2975179.jpg",
+            "https://commons.wikimedia.org/wiki/File:St_Luke%2C_Baxter_Road%2C_Great_Ilford_-_Label_head_-_geograph.org.uk_-_1724104.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000027,
+      "name": "Richmond upon Thames",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Richmond_upon_Thames",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Richmond upon Thames flag returned File:Union Flag of UK Hampton Court Palace.jpg; File:Flying the winning flag - geograph.org.uk - 1591410.jpg; File:The Poppy Factory's headquarters in Richmond, London.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Richmond upon Thames flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Richmond%20upon%20Thames%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Union_Flag_of_UK_Hampton_Court_Palace.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flying_the_winning_flag_-_geograph.org.uk_-_1591410.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_Poppy_Factory%27s_headquarters_in_Richmond%2C_London.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Richmond_upon_Thames.svg",
+          "reason": "Current Richmond upon Thames borough arms, not the former Richmond borough; Commons CC BY-SA illustration and recursive declared component credits are recorded. SVG decoded in Chromium.",
+          "search_query": "London Borough of Richmond upon Thames coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Richmond%20upon%20Thames%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Richmond_upon_Thames.svg",
+            "https://commons.wikimedia.org/wiki/File:Kew_Gardens%2C_London_Borough_of_Richmond_upon_Thames%2C_TW9_(3039724552).jpg",
+            "https://commons.wikimedia.org/wiki/File:Richmond_Palace_Gatehouse_coat_of_arms_(cropped).jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000028,
+      "name": "Southwark",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Southwark",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Southwark flag returned File:Southwark Police Station, Borough High Street SE1 - geograph.org.uk - 1296227.jpg; File:Southwark Cathedral from Borough High Street SE1 - geograph.org.uk - 1296219.jpg; File:The Tower of Southwark Cathedral - geograph.org.uk - 8007978.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Southwark flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Southwark%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Southwark_Police_Station%2C_Borough_High_Street_SE1_-_geograph.org.uk_-_1296227.jpg",
+            "https://commons.wikimedia.org/wiki/File:Southwark_Cathedral_from_Borough_High_Street_SE1_-_geograph.org.uk_-_1296219.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_Tower_of_Southwark_Cathedral_-_geograph.org.uk_-_8007978.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Southwark.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Southwark coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Southwark%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Southwark.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_within_Southwark_Cathedral_-_geograph.org.uk_-_1258135.jpg",
+            "https://commons.wikimedia.org/wiki/File:London%2C_Tower_Bridge_-_coat_of_arms_and_flags_-_geograph.org.uk_-_560793.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000029,
+      "name": "Sutton",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "remaining_gap": "Commons attributes its Sutton photo to Valentin Poposki, but the linked FOTW source says he located the image and credits Flying Colours as its source. Locator and photographer are not necessarily the same; the conflicting provenance remains unresolved.",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Sutton",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Sutton flag returned File:Cheam War Memorial, Cheam, London Borough of Sutton.jpg; File:Flag of the Borough of Sutton.jpg; File:Ukrainian Flag in Sutton, London.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Sutton flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Sutton%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Cheam_War_Memorial%2C_Cheam%2C_London_Borough_of_Sutton.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Borough_of_Sutton.jpg",
+            "https://commons.wikimedia.org/wiki/File:Ukrainian_Flag_in_Sutton%2C_London.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Sutton.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Sutton coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Sutton%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Sutton.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Enfield.svg",
+            "https://commons.wikimedia.org/wiki/File:Sutton_Grammar_School_anniversary_coat_of_arms.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000030,
+      "name": "Tower Hamlets",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Tower_Hamlets",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Tower Hamlets flag returned File:London, Tower Bridge - coat of arms and flags - geograph.org.uk - 560793.jpg; File:Coat of arms of the London Borough of Tower Hamlets.svg; File:London Borough of Tower Hamlets - Wapping Old Stairs (Stairs And Flagged Passage From Wapping High Street) - 20190704112110.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Tower Hamlets flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Tower%20Hamlets%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:London%2C_Tower_Bridge_-_coat_of_arms_and_flags_-_geograph.org.uk_-_560793.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Tower_Hamlets.svg",
+            "https://commons.wikimedia.org/wiki/File:London_Borough_of_Tower_Hamlets_-_Wapping_Old_Stairs_(Stairs_And_Flagged_Passage_From_Wapping_High_Street)_-_20190704112110.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Tower_Hamlets.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Tower Hamlets coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Tower%20Hamlets%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Tower_Hamlets.svg",
+            "https://commons.wikimedia.org/wiki/File:London%2C_Tower_Bridge_-_coat_of_arms_and_flags_-_geograph.org.uk_-_560793.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Southwark.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000031,
+      "name": "Waltham Forest",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Waltham_Forest",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Waltham Forest flag returned File:The Flowerpot, 128 Wood Street, Walthamstow, London, E17 3HX, 16 June 2008 (1).jpg; File:The Flowerpot, 128 Wood Street, Walthamstow, London, E17 3HX, 16 June 2008 (2).jpg; File:Bulgarian flag and satellite dish, E10.jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Waltham Forest flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Waltham%20Forest%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:The_Flowerpot%2C_128_Wood_Street%2C_Walthamstow%2C_London%2C_E17_3HX%2C_16_June_2008_(1).jpg",
+            "https://commons.wikimedia.org/wiki/File:The_Flowerpot%2C_128_Wood_Street%2C_Walthamstow%2C_London%2C_E17_3HX%2C_16_June_2008_(2).jpg",
+            "https://commons.wikimedia.org/wiki/File:Bulgarian_flag_and_satellite_dish%2C_E10.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Waltham_Forest.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Waltham Forest coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Waltham%20Forest%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:London_Borough_of_Waltham_Forest_Sign_-_geograph.org.uk_-_3042138.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Waltham_Forest.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Ldn_Borough_of_Bexley.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000032,
+      "name": "Wandsworth",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/London_Borough_of_Wandsworth",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Wandsworth flag returned File:Palestine flag on the bank of the River Thames, London, November 2025.jpg; File:Wandsworth , \"The Alma\" public house - geograph.org.uk - 7028191.jpg; File:RARE REAL PHOTO POSTCARD WANDSWORTH SEWER AQUEDUCT-KING GEORGE`S PARK-EARLSFIELD LONDON (50272896397).jpg. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Wandsworth flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Wandsworth%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Palestine_flag_on_the_bank_of_the_River_Thames%2C_London%2C_November_2025.jpg",
+            "https://commons.wikimedia.org/wiki/File:Wandsworth_%2C_%22The_Alma%22_public_house_-_geograph.org.uk_-_7028191.jpg",
+            "https://commons.wikimedia.org/wiki/File:RARE_REAL_PHOTO_POSTCARD_WANDSWORTH_SEWER_AQUEDUCT-KING_GEORGE%60S_PARK-EARLSFIELD_LONDON_(50272896397).jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Wandsworth.svg",
+          "reason": "Current borough arms matched by Commons and civic armorial; Commons CC BY-SA illustration and recursive declared component credits are recorded in the catalog. SVG decoded in Chromium.",
+          "search_query": "London Borough of Wandsworth coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Wandsworth%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_London_Borough_of_Wandsworth.svg",
+            "https://commons.wikimedia.org/wiki/File:Unwanted_City_of_London_Coat_of_Arms_in_Osiers_Road%2C_Wandsworth_-_geograph.org.uk_-_1573238.jpg",
+            "https://commons.wikimedia.org/wiki/File:Wandsworth_Town_Library_-_geograph.org.uk_-_1554668.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9000033,
+      "name": "Westminster",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "previous_assessment": "Commons labels its Westminster PNG a fictitious, proposed or unofficial arms banner and the file description calls it unofficial; no evidence of use was established, so it is not packaged.",
+          "remaining_gap": "Commons labels the candidate an unofficial arms banner, but its blue field bears a gold portcullis. The current City of Westminster shield instead bears the Virgin and Child between leopard heads above waves; its portcullis appears in the crest. Wikipedia says the pre-1965 Metropolitan Borough of Westminster used portcullis and rose emblems, but this check did not establish that the candidate exactly reproduces its shield. A correctly identified modern borough flag rendition remains unconfirmed; the candidate is retained as a lead, not excluded merely for unofficial status.",
+          "historical_source": "https://en.wikipedia.org/wiki/Metropolitan_Borough_of_Westminster",
+          "wikipedia_source": "https://en.wikipedia.org/wiki/City_of_Westminster",
+          "wikipedia_flag_check": "No flag image was identified in the inspected Wikipedia borough-page images; this does not establish absence.",
+          "reason": "Commons MediaSearch for Westminster flag returned File:Flag of Westminster.png; File:Flags flying on Westminster Bridge - geograph.org.uk - 2973906.jpg; File:Walks through London including Westminster and the borough of Southwark with the surrounding suburbs (IA b29326564 0001).pdf. These are search leads, not independently verified current, licensed target artwork; no symbol absence is inferred.",
+          "search_query": "London Borough of Westminster flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Westminster%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Westminster.png",
+            "https://commons.wikimedia.org/wiki/File:Flags_flying_on_Westminster_Bridge_-_geograph.org.uk_-_2973906.jpg",
+            "https://commons.wikimedia.org/wiki/File:Walks_through_London_including_Westminster_and_the_borough_of_Southwark_with_the_surrounding_suburbs_(IA_b29326564_0001).pdf"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "selected_file": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_City_of_Westminster.svg",
+          "reason": "Current 1964 arms for Westminster City Council match the secondary civic blazon; independently drawn Commons CC BY-SA 4.0 work decoded in Chromium and is unchanged.",
+          "identity_source": "https://www.civicheraldry.co.uk/great_london.html",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_City_of_Westminster.svg",
+          "search_query": "London Borough of Westminster coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=London%20Borough%20of%20Westminster%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Grosvenor_Duke_of_Westminster_Coat_of_Arms.svg",
+            "https://commons.wikimedia.org/wiki/File:Borough_of_Paddington_coat-of-arms_(1900).jpg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_the_former_Metropolitan_Borough_of_Westminster_on_the_drinking_fountain%2C_Violet_Hill_Gardens_-_geograph.org.uk_-_2456963.jpg"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -95,7 +95,7 @@ export default function HowItWorksPage() {
   return (
     <div className="mx-auto min-w-0 max-w-5xl space-y-8 break-words bg-obsidian-950 pb-8 text-zinc-300">
       <header className="border-b border-white/10 pb-6">
-        <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">Templates, local facts and AI fallback</p>
+        <p className="mb-3 font-mono text-xs text-emerald-400">Templates, local facts and AI fallback</p>
         <h1 className="font-serif text-3xl leading-tight tracking-tight text-sand-100 sm:text-4xl">How Countrydle Answers Questions</h1>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-400">Countrydle uses a hybrid answer engine, not an infallible geography oracle. Some questions use deterministic templates and local facts; others need AI interpretation or fallback. Both paths can produce incorrect answers.</p>
       </header>
@@ -127,7 +127,7 @@ export default function HowItWorksPage() {
                   )}
                 >
                   <span className="flex w-full items-center justify-between gap-2">
-                    <span className="font-mono text-[10px] uppercase tracking-wider">Stage {index + 1}</span>
+                    <span className="font-mono text-xs">Stage {index + 1}</span>
                     <Icon size={16} className="shrink-0 text-emerald-400" aria-hidden="true" />
                   </span>
                   <span className="mt-2.5 font-serif text-sm font-semibold leading-snug text-sand-100">{step.title}</span>
@@ -162,11 +162,11 @@ export default function HowItWorksPage() {
                 <h3 id={`pipeline-stage-title-${index}`} className="font-serif text-xl text-sand-100">{step.title}</h3>
                 <div className="mt-3 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
                   <div className="min-w-0">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">What happens at this stage?</p>
+                    <p className="font-mono text-xs text-zinc-500">What happens at this stage?</p>
                     <p className="mt-1.5 text-sm leading-relaxed">{step.description}</p>
                   </div>
                   <div className="min-w-0 rounded-sm border border-emerald-500/20 bg-emerald-500/[0.03] p-3.5">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-emerald-400">Limit</p>
+                    <p className="font-mono text-xs text-emerald-400">Limit</p>
                     <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{step.limitation}</p>
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default function HowItWorksPage() {
         {EXAMPLES.map(item => (
           <div key={item.id} id={`worked-example-${item.id}`} hidden={item.id !== exampleId} aria-labelledby={`worked-example-title-${item.id}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-900">
             <div className="min-w-0 border-b border-white/10 bg-obsidian-950/60 p-4 sm:p-5">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">Illustrative target: {item.target}</p>
+              <p className="font-mono text-xs text-zinc-400">Illustrative target: {item.target}</p>
               <h3 id={`worked-example-title-${item.id}`} className="mt-2 font-serif text-xl text-sand-100">{item.question}</h3>
             </div>
             <div className="min-w-0 p-4 sm:p-5">
@@ -240,6 +240,12 @@ export default function HowItWorksPage() {
         <h2 id="county-flags" className="font-serif text-2xl text-sand-100">Polish county flags</h2>
         <p className="text-base leading-7">In the <Link to="/flagi-powiatow" className="text-emerald-300 underline">daily county flag puzzle</Link>, identify the county in eight guesses. Distance and direction guide you; registration plates appear after five wrong guesses. Daily results can earn points, while random challenges are unranked.</p>
         <p className="text-base leading-7">The <Link to="/quiz-flag-powiatow" className="text-emerald-300 underline">county flags quiz</Link> contains only counties with verified flags. Type Polish county names to solve the available grid; pause or reset whenever needed. Community percentages use finished runs, and average solve times are client-reported active time from the start of each run.</p>
+      </section>
+
+      <section aria-labelledby="regional-symbols" className="space-y-3 border-t border-white/10 pt-8">
+        <h2 id="regional-symbols" className="font-serif text-2xl text-sand-100">Regional symbols</h2>
+        <p className="text-base leading-7">Identify the voivodeship, London borough or English ceremonial county from its verified flag or coat of arms. Daily and random puzzles allow eight guesses, with distance and direction after a miss. Daily games can earn points; random games are unranked.</p>
+        <p className="text-base leading-7">Every place can be guessed, but only independently verified symbols are eligible as targets. The all-symbols quiz uses that eligible catalog and shows its actual size. Available games and target counts appear in the games menu and on the home page.</p>
       </section>
 
       <section aria-labelledby="report-answer" className="space-y-4 border-t border-white/10 pt-8">

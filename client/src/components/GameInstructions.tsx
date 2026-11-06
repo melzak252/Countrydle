@@ -78,7 +78,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
         <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
-              <span>🗺️ {`How to play ${gameName}`}</span>
+              <span>{`How to play ${gameName}`}</span>
             </h2>
             <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
               {'Ask strategic Yes/No questions, narrow down possibilities on the map, and deduce the secret location in limited attempts.'}
@@ -100,12 +100,12 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
           {/* Step 1: Ask in Chat */}
           <div className="rounded-sm border border-emerald-500/25 bg-obsidian-900/60 p-4 space-y-2 flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <div className="flex items-center gap-2 font-mono text-xs font-semibold text-zinc-300">
                 <MessageSquare size={15} className="shrink-0" />
                 <span>{'1. Ask in Chat'}</span>
               </div>
               <p className="text-xs text-zinc-300 leading-relaxed">
-                {'Open Questions (Ask on phones) to ask in English or Polish about borders, seas, population, or capitals. Typos never cost a turn!'}
+                {'Open Questions (Ask on phones) to ask in English or Polish about borders, seas, population, or capitals. Typos never cost a turn.'}
               </p>
             </div>
             <span className="font-mono text-[10px] text-emerald-300/80 pt-1 block">
@@ -116,7 +116,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
           {/* Step 2: Mark the Map */}
           <div className="rounded-sm border border-cyan-500/25 bg-obsidian-900/60 p-4 space-y-2 flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-cyan-400">
+              <div className="flex items-center gap-2 font-mono text-xs font-semibold text-zinc-300">
                 <MousePointerClick size={15} className="shrink-0" />
                 <span>{'2. Mark the Map'}</span>
               </div>
@@ -132,7 +132,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
           {/* Step 3: Guess & Compass */}
           <div className="rounded-sm border border-amber-500/25 bg-obsidian-900/60 p-4 space-y-2 flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-amber-400">
+              <div className="flex items-center gap-2 font-mono text-xs font-semibold text-zinc-300">
                 <Compass size={15} className="shrink-0" />
                 <span>{'3. Guess & Compass'}</span>
               </div>
@@ -208,7 +208,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
             onClick={handleClose}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-2.5 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 shrink-0"
           >
-            <span>{"Got it, let's play!"}</span>
+            <span>{"Got it, let's play"}</span>
             <ArrowRight size={16} />
           </button>
         </div>

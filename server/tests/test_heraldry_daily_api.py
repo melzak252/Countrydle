@@ -436,3 +436,55 @@ async def test_flag_challenge_asset_url_is_opaque_private_and_mode_bound(daily_c
     assert "etag" not in response.headers and "content-disposition" not in response.headers
     assert all("secret-name" not in value and "secret-hash" not in value for value in response.headers.values())
     assert (await client.get("/powiatdle/flags/flag-asset", params={"token": coat["token"]})).status_code == 403
+
+
+async def test_daily_scope_isolates_sessions_tokens_and_claims(daily_client, participation_db):
+    from fastapi import HTTPException, Request, Response
+    from powiatdle import heraldry_daily as daily
+
+    _, _, counties = daily_client
+    request = Request({'type': 'http', 'headers': [], 'path_params': {}})
+    user = SimpleNamespace(id=1)
+    day = daily.utcnow().date()
+    async with participation_db() as session:
+        county = await daily.get_or_create_daily(session, request, Response(), user, day, counties[0])
+        regional = await daily.get_or_create_daily(
+            session, request, Response(), user, day, counties[1], entity_scope='voivodeships')
+        assert county.id != regional.id
+        assert 'entity_scope' not in daily.token_payload(county)
+        assert daily.token_payload(regional)['entity_scope'] == 'voivodeships'
+        assert (await daily.claim_daily(session, request, user)).id == county.id
+        assert (await daily.claim_daily(session, request, user, entity_scope='voivodeships')).id == regional.id
+        with pytest.raises(HTTPException):
+            await daily.get_owned_daily(session, request, user, regional.id)
+        with pytest.raises(HTTPException):
+            await daily.get_owned_daily(session, request, user, county.id, entity_scope='voivodeships')
+
+
+async def test_scoped_streak_leaderboard_and_participation_do_not_mix(daily_client, participation_db):
+    from db.repositories.participation import ParticipationRepository
+    from powiatdle import heraldry_daily as daily
+
+    now = daily.utcnow()
+    async with participation_db() as session:
+        county = HeraldryDailySession(
+            id='old-county', date=now.date() - timedelta(days=1), user_id=1,
+            target_id=1, target_name='County', guesses=[{'id': 1, 'name': 'County'}],
+            started_at=now, completed_at=now, won=True, points=900)
+        regional = HeraldryDailySession(
+            id='regional-today', date=now.date(), user_id=1, entity_scope='voivodeships',
+            target_id=1, target_name='Region', guesses=[{'id': 1, 'name': 'Region'}],
+            started_at=now, completed_at=now, won=True, points=100)
+        session.add_all([county, regional, QuizRun(
+            id='regional-quiz', user_id=1, entity_scope='voivodeships', status='completed',
+            started_at=now, finished_at=now, solved_count=1)])
+        await session.commit()
+        assert await daily.streak_for(session, regional) == 1
+        assert (await daily.leaderboard(session, 'monthly', entity_scope='voivodeships'))[0].points == 100
+        county_board = await daily.leaderboard(session, 'monthly')
+        assert [entry.points for entry in county_board] == ([900] if county.date.month == now.month else [])
+        repo = ParticipationRepository(session)
+        assert (await repo.get_stats(now.date(), 'regional_symbols:voivodeships:coat'))['total_games'] == 1
+        assert (await repo.get_stats(now.date(), 'regional_symbols:voivodeships:coat:quiz'))['total_games'] == 1
+        assert (await repo.get_stats(now.date(), 'heraldry'))['total_games'] == 0
+        assert (await repo.get_stats(now.date(), 'coats_quiz'))['total_games'] == 0

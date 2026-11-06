@@ -23,7 +23,7 @@ function UsageTable({ title, usage }: { title: string; usage: Record<string, Cou
     <div className="overflow-x-auto rounded-sm border border-white/10">
       <table className="w-full min-w-[900px] text-left text-xs">
         <caption className="sr-only">{title} token and operation usage by model</caption>
-        <thead className="bg-obsidian-850 text-[10px] uppercase tracking-wider text-sand-100/60"><tr>
+        <thead className="bg-obsidian-850 text-xs text-sand-100/60"><tr>
           <th scope="col" className="p-2">Model</th>{tokenFields.map(([label]) => <th scope="col" key={label} className="p-2">{label}</th>)}
         </tr></thead>
         <tbody className="divide-y divide-white/5 font-mono">{models.map(([model, values]) => <tr key={model}>
@@ -115,7 +115,7 @@ export default function AdminCountrydleCostsTab() {
       {report.days.length > 0 && <div className="overflow-x-auto rounded-sm border border-white/10">
         <table className="w-full min-w-[1100px] text-left text-xs">
           <caption className="sr-only">Daily Countrydle AI usage and cost bounds in UTC</caption>
-          <thead className="bg-obsidian-850 text-[10px] uppercase tracking-wider text-sand-100/60"><tr>
+          <thead className="bg-obsidian-850 text-xs text-sand-100/60"><tr>
             {['UTC day', 'Requests', 'Completed games', 'Template answers', 'Planner cache hits', 'Paid planner calls', 'Known cost bounds (USD)', 'Coverage / cost status'].map((heading) => <th key={heading} scope="col" className="px-3 py-3">{heading}</th>)}
           </tr></thead><tbody className="divide-y divide-white/5">{report.days.map((day) => <DailyRow key={day.day} day={day} />)}</tbody>
         </table>

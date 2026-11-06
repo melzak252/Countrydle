@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowDown, ArrowRight, BookOpen, ChevronDown } from 'lucide-react';
 import GuestProgress from '../components/GuestProgress';
 import SpinningGlobe from '../components/SpinningGlobe';
@@ -7,9 +7,19 @@ import { useDailyDate } from '../hooks/useDailyClock';
 import { useAuthStore } from '../stores/authStore';
 import { useCountryGameStore } from '../stores/gameStore';
 import { isPrerenderCapture } from '../lib/pageMetadata'
-import { gameCatalog } from '../lib/gameCatalog';
+import { useGameCatalog, type CatalogGeography } from '../lib/gameCatalog';
+
+const geographies: { id: CatalogGeography; title: string; note?: string }[] = [
+  { id: 'worldwide', title: 'Worldwide' },
+  { id: 'continents', title: 'Continents' },
+  { id: 'poland', title: 'Poland' },
+  { id: 'united-states', title: 'United States' },
+  { id: 'uk', title: 'UK', note: 'England and London' },
+];
 
 export default function HomePage() {
+  const gameCatalog = useGameCatalog();
+  const location = useLocation();
   
   const today = useDailyDate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -20,6 +30,13 @@ export default function HomePage() {
   useEffect(() => {
     if (!capture && !authLoading && !isAuthenticated) void fetchGameState();
   }, [capture, authLoading, isAuthenticated, today, fetchGameState]);
+
+  useEffect(() => {
+    if (location.hash === '#maps') {
+      document.getElementById('maps')?.scrollIntoView();
+      document.getElementById('maps-heading')?.focus({ preventScroll: true });
+    }
+  }, [location.hash, location.key]);
 
   const guest = !capture && !authLoading && !isAuthenticated;
   const currentGuestState = guest && isGuest && dailyDate === today && !isLoading && !error
@@ -52,7 +69,6 @@ export default function HomePage() {
     intro: 'Find it with yes-or-no questions. 10 questions, 3 guesses. No sign-in needed.',
     choose: 'Explore other games',
     modes: 'What will you discover next?',
-    modeNote: 'Choose another game to explore.',
     progress: 'Your progress on this device',
     how: 'How to play the country puzzle',
     reset: 'A new puzzle every day at 00:00 UTC.',
@@ -72,7 +88,7 @@ export default function HomePage() {
       <section aria-labelledby="home-heading" className="grid min-w-0 items-center gap-5 border-b border-white/10 pb-6 md:grid-cols-[1.2fr_1fr] md:gap-12 md:pb-10">
         <div className="min-w-0">
           <p className="mb-2 text-sm font-medium text-emerald-400">{copy.daily}</p>
-          <h1 id="home-heading" className="text-[1.75rem] font-extrabold leading-tight tracking-tight text-sand-50 sm:text-4xl lg:text-5xl">
+          <h1 id="home-heading" className="text-[1.75rem] font-semibold leading-tight tracking-tight text-sand-50 sm:text-4xl lg:text-5xl">
             {copy.title}
             <span className="mt-1 block text-emerald-300">{copy.titleEnd}</span>
           </h1>
@@ -107,22 +123,37 @@ export default function HomePage() {
       </section>
 
       <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 py-6 md:py-10">
-        <h2 id="maps-heading" className="text-2xl font-bold tracking-tight text-sand-50">{copy.modes}</h2>
-        <p className="mb-4 mt-2 text-sm leading-relaxed text-slate-400">{copy.modeNote}</p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {gameCatalog.map((group) => (
-            <section key={group.title} aria-labelledby={`games-${group.title.replaceAll(' ', '-').toLowerCase()}`} className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4">
-              <h3 id={`games-${group.title.replaceAll(' ', '-').toLowerCase()}`} className="font-semibold text-sand-50">{group.title}</h3>
-              <ul className="mt-2 space-y-1">
-                {group.games.map((game) => (
-                  <li key={game.path}>
-                    <Link to={game.path} className="flex min-h-10 items-center justify-between gap-2 rounded-md px-2 py-2 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400">
-                      <span>{game.name}</span>
-                      <ArrowRight size={15} className="shrink-0 text-emerald-400" aria-hidden="true" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+        <h2 id="maps-heading" tabIndex={-1} className="text-2xl font-bold tracking-tight text-sand-50">{copy.modes}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">Choose how you want to play, then find a place to explore.</p>
+        <div className="mt-7 space-y-10">
+          {gameCatalog.map((group, index) => (
+            <section key={group.id} aria-labelledby={`games-${group.id}`} className="min-w-0">
+              <div className="flex items-baseline gap-3 border-b border-white/10 pb-3">
+                <span aria-hidden="true" className="text-xs font-semibold text-emerald-400">{String(index + 1).padStart(2, '0')}</span>
+                <h3 id={`games-${group.id}`} className="text-xl font-semibold tracking-tight text-sand-50">{group.title}</h3>
+              </div>
+              <div className={`mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3 ${group.id === 'more' ? 'max-w-md' : ''}`}>
+                {geographies.map((geography) => {
+                  const games = group.games.filter((game) => game.geography === geography.id);
+                  if (!games.length) return null;
+                  return (
+                    <section key={geography.id} aria-labelledby={`${group.id}-${geography.id}`} className="min-w-0 rounded-xl border border-white/10 bg-obsidian-900/60 p-4">
+                      <h4 id={`${group.id}-${geography.id}`} className="text-sm font-semibold text-emerald-300">{geography.title}</h4>
+                      {geography.note && <p className="mt-1 text-xs text-slate-400">{geography.note}</p>}
+                      <ul className="mt-3 space-y-1">
+                        {games.map((game) => (
+                          <li key={game.path}>
+                            <Link to={game.path} className="flex min-h-11 items-center justify-between gap-3 rounded-md px-2 py-2 text-sm leading-relaxed text-sand-100 transition-colors hover:bg-white/5 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400">
+                              <span>{game.name}</span>
+                              <ArrowRight size={15} className="shrink-0 text-emerald-400" aria-hidden="true" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                })}
+              </div>
             </section>
           ))}
         </div>

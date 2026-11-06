@@ -43,7 +43,7 @@ export default function PatchNotesPage() {
   return (
     <div className="mx-auto max-w-5xl pb-8 text-zinc-300">
       <header className="border-b border-white/10 pb-8 md:pb-10">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">
+        <p className="mb-4 font-mono text-xs text-emerald-400">
           {t('patchNotes.badge')}
         </p>
         <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">

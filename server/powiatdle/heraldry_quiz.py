@@ -14,15 +14,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
 from db.models.heraldry_quiz import QuizRun, QuizSolve
+from powiatdle.heraldry_daily import scope_for
 from users.utils import get_current_or_guest_user
 from utils.guest_session import get_guest_identity, read_guest_identity
 
 router = APIRouter(prefix='/quiz', tags=['heraldry-quiz'])
 flags_quiz_router = APIRouter(prefix='/quiz', tags=['flags-quiz'])
+regional_quiz_router = APIRouter(prefix='/quiz', tags=['regional-symbols-quiz'])
 
 
 def symbol_mode(request: Request) -> str:
-    return 'flag' if '/flags/quiz/' in request.url.path else 'coat'
+    mode = request.path_params.get('mode', 'flag' if '/flags/quiz/' in request.url.path else 'coat')
+    if mode not in {'coat', 'flag'}:
+        raise HTTPException(status_code=404, detail='Unknown symbol mode')
+    return mode
 
 
 _TRANSLATION = str.maketrans('ąćęłńóśźż', 'acelnoszz')
@@ -76,10 +81,15 @@ class FinishRequest(BaseModel):
     _finite_elapsed = field_validator('elapsed_seconds', mode='before')(finite_input)
 
 
-def validated_solves(body: FinishRequest, catalog: dict[int, str]) -> list[tuple[int, float]]:
+def validated_solves(body: FinishRequest, catalog: dict[int, str | list[str]], scope: str = 'county') -> list[tuple[int, float]]:
     if not math.isfinite(body.elapsed_seconds) or body.elapsed_seconds < 0 or len(body.solves) > 380:
         raise HTTPException(status_code=422, detail='Invalid quiz duration or solve count')
-    forms = {id_: accepted_forms(name) for id_, name in catalog.items()}
+    if scope == 'county':
+        normalize_answer = normalize
+        forms = {id_: accepted_forms(name) for id_, name in catalog.items()}
+    else:
+        from regional_symbols.catalog import normalize as normalize_answer
+        forms = {id_: {normalize_answer(name) for name in names} for id_, names in catalog.items()}
     seen = set()
     flattened = []
     previous = 0.0
@@ -87,7 +97,7 @@ def validated_solves(body: FinishRequest, catalog: dict[int, str]) -> list[tuple
         if (not event.powiat_ids or not math.isfinite(event.elapsed_seconds)
                 or event.elapsed_seconds < previous or event.elapsed_seconds > body.elapsed_seconds):
             raise HTTPException(status_code=422, detail='Invalid solve time or IDs')
-        answer = normalize(event.answer)
+        answer = normalize_answer(event.answer)
         for id_ in event.powiat_ids:
             if id_ in seen or id_ not in forms or answer not in forms[id_]:
                 raise HTTPException(status_code=422, detail='Invalid or repeated quiz answer')
@@ -135,17 +145,33 @@ async def load_mode_catalog(mode: str) -> dict[int, str]:
     return eligible
 
 
+async def request_catalog(scope: str, mode: str):
+    if scope == 'county':
+        return await load_mode_catalog(mode)
+    from regional_symbols.catalog import load_catalog as load_regional_catalog, load_entities
+
+    assets = load_regional_catalog(scope, mode)
+    entities = load_entities(scope)
+    catalog = {id_: [entities[id_]['name'], *entities[id_].get('aliases', [])]
+               for id_ in assets if id_ in entities}
+    if not catalog or len(catalog) != len(assets):
+        raise HTTPException(status_code=503, detail='Quiz catalog is unavailable')
+    return catalog
+
+
 
 @router.post('/runs')
 @flags_quiz_router.post('/runs')
+@regional_quiz_router.post('/runs')
 async def start_run(body: StartRequest, request: Request, response: Response,
                     user=Depends(get_current_or_guest_user), session: AsyncSession = Depends(get_db)):
     mode = symbol_mode(request)
-    if mode == 'flag':
-        await load_mode_catalog(mode)
+    scope = scope_for(request)
+    if mode == 'flag' or scope != 'county':
+        await request_catalog(scope, mode)
     run = QuizRun(user_id=user.id if user else None,
                   guest_id=None if user else get_guest_identity(request, response), status='started', solved_count=0,
-                  symbol_mode=mode)
+                  symbol_mode=mode, entity_scope=scope)
     session.add(run)
     await session.commit()
     return {'run_id': run.id}
@@ -153,6 +179,7 @@ async def start_run(body: StartRequest, request: Request, response: Response,
 
 @router.post('/runs/{run_id}/finish')
 @flags_quiz_router.post('/runs/{run_id}/finish')
+@regional_quiz_router.post('/runs/{run_id}/finish')
 async def finish_run(run_id: str, body: FinishRequest, request: Request,
                      user=Depends(get_current_or_guest_user), session: AsyncSession = Depends(get_db)):
     guest = read_guest_identity(request)
@@ -163,7 +190,8 @@ async def finish_run(run_id: str, body: FinishRequest, request: Request,
         owner = or_(owner, (QuizRun.user_id.is_(None)) & (QuizRun.guest_id == guest))
     mode = symbol_mode(request)
     run = await session.scalar(select(QuizRun).where(
-        QuizRun.id == run_id, QuizRun.symbol_mode == mode, owner).with_for_update())
+        QuizRun.id == run_id, QuizRun.symbol_mode == mode, QuizRun.entity_scope == scope_for(request),
+        owner).with_for_update())
     if run is None:
         raise HTTPException(status_code=404, detail='Run not found')
     try:
@@ -177,7 +205,7 @@ async def finish_run(run_id: str, body: FinishRequest, request: Request,
             run.user_id, run.guest_id = user.id, None
             await session.commit()
         return {'run_id': run.id, 'status': run.status, 'solved_count': run.solved_count}
-    solves = validated_solves(body, await load_mode_catalog(mode))
+    solves = validated_solves(body, await request_catalog(scope_for(request), mode), scope_for(request))
     if user and run.user_id is None:
         run.user_id, run.guest_id = user.id, None
     session.add_all([QuizSolve(run_id=run.id, powiat_id=id_, elapsed_seconds=seconds) for id_, seconds in solves])
@@ -192,17 +220,20 @@ async def finish_run(run_id: str, body: FinishRequest, request: Request,
 
 @router.get('/stats')
 @flags_quiz_router.get('/stats')
+@regional_quiz_router.get('/stats')
 async def stats(request: Request, session: AsyncSession = Depends(get_db)):
     mode = symbol_mode(request)
-    catalog = await load_mode_catalog(mode)
+    scope = scope_for(request)
+    catalog = await request_catalog(scope, mode)
     finished = QuizRun.status.in_(('completed', 'given_up'))
     finished_runs, tracking_started_at = (await session.execute(
         select(func.count(QuizRun.id).filter(finished), func.min(QuizRun.started_at))
-        .where(QuizRun.symbol_mode == mode)
+        .where(QuizRun.symbol_mode == mode, QuizRun.entity_scope == scope)
     )).one()
     rows = (await session.execute(
         select(QuizSolve.powiat_id, func.count(QuizSolve.run_id), func.avg(QuizSolve.elapsed_seconds))
-        .join(QuizRun, QuizRun.id == QuizSolve.run_id).where(finished, QuizRun.symbol_mode == mode)
+        .join(QuizRun, QuizRun.id == QuizSolve.run_id).where(
+            finished, QuizRun.symbol_mode == mode, QuizRun.entity_scope == scope)
         .group_by(QuizSolve.powiat_id).order_by(QuizSolve.powiat_id)
     )).all()
     aggregates = {id_: (count, average) for id_, count, average in rows}

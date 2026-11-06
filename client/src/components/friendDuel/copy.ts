@@ -28,7 +28,7 @@ export const duelCopy = {
   question: 'Your question', ask: 'Ask and spend this turn', guess: 'Guess a location', submitGuess: 'Submit selected guess', pass: 'Pass this turn',
   unlimited: 'Unlimited questions and guesses. One action per turn.', questions: 'Questions', guesses: 'Guesses',
   yes: 'Yes', mostly_yes: 'Mostly Yes', mostly_no: 'Mostly No', no: 'No', unknown: 'I don’t know',
-  aiAnswered: '🤖 AI Answer (Time expired)',
+  aiAnswered: 'AI Answer (Time expired)',
   aiAnsweredDesc: 'The player did not respond in time, so an automated AI answer was submitted.',
   ai: 'Private AI advice', aiHelp: 'Only you see this advice for your own secret. Choose any answer now; you never need to wait.',
   aiPending: 'AI is checking independently…', aiFailed: 'AI advice is unavailable. You can still answer immediately.',

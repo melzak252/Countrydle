@@ -31,7 +31,7 @@ export default function GameActionComposer({
   return (
     <section
       aria-label={'Game action composer'}
-      className="game-action-composer flex min-h-0 shrink-0 flex-col border-t border-white/10 bg-obsidian-950/90 backdrop-blur-sm px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] max-md:[@media(max-height:560px)]:pt-1 max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:bg-obsidian-900/80 md:backdrop-blur-md md:pt-2.5 md:pb-3"
+      className="game-action-composer flex min-h-0 shrink-0 flex-col border-t border-white/10 bg-obsidian-950 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] max-md:[@media(max-height:560px)]:pt-1 max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:bg-obsidian-900 md:pt-2.5 md:pb-3"
     >
       {(showActionTabs || trailingActions) && (
         <div className="mb-2 flex items-center justify-between gap-2 max-md:[@media(max-height:560px)]:mb-1">
@@ -42,7 +42,7 @@ export default function GameActionComposer({
                 aria-pressed={activeAction === 'question'}
                 disabled={questionDisabled}
                 onClick={() => onActionChange('question')}
-                className={`flex min-h-11 items-center gap-1.5 rounded-sm px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 ${
+                className={`flex min-h-11 items-center gap-1.5 rounded-sm px-3 py-2 font-mono text-xs transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 ${
                   activeAction === 'question'
                     ? 'border-b-2 border-emerald-400 bg-white/5 font-semibold text-sand-100'
                     : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
@@ -55,7 +55,7 @@ export default function GameActionComposer({
                 type="button"
                 aria-pressed={activeAction === 'guess'}
                 onClick={() => onActionChange('guess')}
-                className={`flex min-h-11 items-center gap-1.5 rounded-sm px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors cursor-pointer max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 ${
+                className={`flex min-h-11 items-center gap-1.5 rounded-sm px-3 py-2 font-mono text-xs transition-colors cursor-pointer max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 ${
                   activeAction === 'guess'
                     ? 'border-b-2 border-emerald-400 bg-white/5 font-semibold text-sand-100'
                     : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'

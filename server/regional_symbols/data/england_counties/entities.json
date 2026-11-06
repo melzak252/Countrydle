@@ -1,0 +1,399 @@
+{
+  "entities": [
+    {
+      "id": 1,
+      "name": "Bedfordshire",
+      "aliases": [],
+      "latitude": 52.073094204622194,
+      "longitude": -0.45158273490134115,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 2,
+      "name": "Berkshire",
+      "aliases": [],
+      "latitude": 51.45076291834576,
+      "longitude": -1.0722914691890515,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 3,
+      "name": "Bristol",
+      "aliases": [],
+      "latitude": 51.45280038463648,
+      "longitude": -2.770784153052303,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 4,
+      "name": "Buckinghamshire",
+      "aliases": [],
+      "latitude": 51.834203258302026,
+      "longitude": -0.7987674740459525,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 5,
+      "name": "Cambridgeshire",
+      "aliases": [],
+      "latitude": 52.36675469229014,
+      "longitude": 0.004881325454455186,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 6,
+      "name": "Cheshire",
+      "aliases": [],
+      "latitude": 53.21124105610141,
+      "longitude": -2.532833650365984,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 7,
+      "name": "City of London",
+      "aliases": [
+        "London City"
+      ],
+      "latitude": 51.51441561180364,
+      "longitude": -0.09241188057241756,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 8,
+      "name": "Cornwall",
+      "aliases": [],
+      "latitude": 50.40267914407541,
+      "longitude": -4.836867650841089,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 9,
+      "name": "Cumbria",
+      "aliases": [],
+      "latitude": 54.57565080081514,
+      "longitude": -2.911868115670722,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 10,
+      "name": "Derbyshire",
+      "aliases": [],
+      "latitude": 53.134769678445586,
+      "longitude": -1.6105583389846847,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 11,
+      "name": "Devon",
+      "aliases": [],
+      "latitude": 50.75059758527429,
+      "longitude": -3.810177708723715,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 12,
+      "name": "Dorset",
+      "aliases": [],
+      "latitude": 50.80258932533608,
+      "longitude": -2.3045102332065173,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 13,
+      "name": "Durham",
+      "aliases": [
+        "County Durham"
+      ],
+      "latitude": 54.67673083522183,
+      "longitude": -1.766555475059683,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 14,
+      "name": "East Riding of Yorkshire",
+      "aliases": [
+        "East Riding",
+        "Yorkshire East Riding"
+      ],
+      "latitude": 53.86444809147329,
+      "longitude": -0.4778943894350831,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 15,
+      "name": "East Sussex",
+      "aliases": [],
+      "latitude": 50.93684359374893,
+      "longitude": 0.25700275146905166,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 16,
+      "name": "Essex",
+      "aliases": [],
+      "latitude": 51.78433631975995,
+      "longitude": 0.5745032065177743,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 17,
+      "name": "Gloucestershire",
+      "aliases": [],
+      "latitude": 51.779439288621866,
+      "longitude": -2.1840605239816298,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 18,
+      "name": "Greater London",
+      "aliases": [],
+      "latitude": 51.5004743990946,
+      "longitude": -0.109327395705852,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 19,
+      "name": "Greater Manchester",
+      "aliases": [],
+      "latitude": 53.515189208646916,
+      "longitude": -2.284177739099633,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 20,
+      "name": "Hampshire",
+      "aliases": [],
+      "latitude": 51.05787911851696,
+      "longitude": -1.2860943733286163,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 21,
+      "name": "Herefordshire",
+      "aliases": [
+        "County of Herefordshire"
+      ],
+      "latitude": 52.10348766772628,
+      "longitude": -2.7449604935837657,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 22,
+      "name": "Hertfordshire",
+      "aliases": [],
+      "latitude": 51.82967093165348,
+      "longitude": -0.21736214961538022,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 23,
+      "name": "Isle of Wight",
+      "aliases": [],
+      "latitude": 50.67596463884606,
+      "longitude": -1.2961928543610988,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 24,
+      "name": "Kent",
+      "aliases": [],
+      "latitude": 51.23685969026286,
+      "longitude": 0.7243361672613599,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 25,
+      "name": "Lancashire",
+      "aliases": [],
+      "latitude": 53.842974370826134,
+      "longitude": -2.6301037974844568,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 26,
+      "name": "Leicestershire",
+      "aliases": [],
+      "latitude": 52.666586683074065,
+      "longitude": -1.1142812607139307,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 27,
+      "name": "Lincolnshire",
+      "aliases": [],
+      "latitude": 53.183013835142965,
+      "longitude": -0.2777170333601094,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 28,
+      "name": "Merseyside",
+      "aliases": [],
+      "latitude": 53.44367593139694,
+      "longitude": -2.955843333531205,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 29,
+      "name": "Norfolk",
+      "aliases": [],
+      "latitude": 52.67557149003991,
+      "longitude": 0.9461304701954725,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 30,
+      "name": "North Yorkshire",
+      "aliases": [],
+      "latitude": 54.1979342910666,
+      "longitude": -1.3942246284127802,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 31,
+      "name": "Northamptonshire",
+      "aliases": [],
+      "latitude": 52.3074874196457,
+      "longitude": -0.8657697411579588,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 32,
+      "name": "Northumberland",
+      "aliases": [],
+      "latitude": 55.24136995549272,
+      "longitude": -2.0663876606389557,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 33,
+      "name": "Nottinghamshire",
+      "aliases": [],
+      "latitude": 53.127203536565304,
+      "longitude": -1.0126531109150216,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 34,
+      "name": "Oxfordshire",
+      "aliases": [],
+      "latitude": 51.76541306167226,
+      "longitude": -1.3219561963381692,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 35,
+      "name": "Rutland",
+      "aliases": [],
+      "latitude": 52.660741963584826,
+      "longitude": -0.6546789626442042,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 36,
+      "name": "Shropshire",
+      "aliases": [],
+      "latitude": 52.6428679264936,
+      "longitude": -2.713676407374441,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 37,
+      "name": "Somerset",
+      "aliases": [],
+      "latitude": 51.149078816607805,
+      "longitude": -2.890645521318276,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 38,
+      "name": "South Yorkshire",
+      "aliases": [],
+      "latitude": 53.48449534583843,
+      "longitude": -1.3314470842705883,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 39,
+      "name": "Staffordshire",
+      "aliases": [],
+      "latitude": 52.85719846422847,
+      "longitude": -2.0367845768846906,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 40,
+      "name": "Suffolk",
+      "aliases": [],
+      "latitude": 52.21912910282531,
+      "longitude": 1.0628947117443455,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 41,
+      "name": "Surrey",
+      "aliases": [],
+      "latitude": 51.247923659453356,
+      "longitude": -0.420555516171529,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 42,
+      "name": "Tyne and Wear",
+      "aliases": [
+        "Tyne & Wear"
+      ],
+      "latitude": 54.95436250060144,
+      "longitude": -1.564409162660462,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 43,
+      "name": "Warwickshire",
+      "aliases": [],
+      "latitude": 52.300248478356146,
+      "longitude": -1.5597121281217552,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 44,
+      "name": "West Midlands",
+      "aliases": [],
+      "latitude": 52.48838702962532,
+      "longitude": -1.8742212374587106,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 45,
+      "name": "West Sussex",
+      "aliases": [],
+      "latitude": 50.955927007849795,
+      "longitude": -0.4950893615935023,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 46,
+      "name": "West Yorkshire",
+      "aliases": [],
+      "latitude": 53.74311510543653,
+      "longitude": -1.6888886341034668,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 47,
+      "name": "Wiltshire",
+      "aliases": [],
+      "latitude": 51.315237643203744,
+      "longitude": -1.9314183231642164,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    },
+    {
+      "id": 48,
+      "name": "Worcestershire",
+      "aliases": [],
+      "latitude": 52.22356000030266,
+      "longitude": -2.169034732890968,
+      "point_source": "Esri UK OS Boundary-Line ceremonial counties, October 2026 currency; ArcGIS returnCentroid=true polygon centroid transformed by service to WGS84; © Crown copyright and database right 2026; https://www.arcgis.com/home/item.html?id=9dc28220fa9a43cb869af77c0ac484c8"
+    }
+  ]
+}

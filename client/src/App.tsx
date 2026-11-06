@@ -35,7 +35,7 @@ import PatchNotesPage from './pages/PatchNotesPage';
 import ExplorePage from './pages/ExplorePage';
 import ModeGuidePage from './pages/ModeGuidePage';
 import { useAuthStore } from './stores/authStore';
-import { countyFlagsService } from './services/api';
+import { countyFlagsService, regionalSymbolGames, regionalSymbolPath, regionalSymbolsService } from './services/api';
 import {
   useCountryGameStore,
   usePowiatyGameStore,
@@ -84,6 +84,14 @@ function App() {
             void countyFlagsService.sync().then((challenge) => {
               if (challenge.date && challenge.token) localStorage.setItem(`county_flags_daily_token_${challenge.date}`, challenge.token);
             }).catch((error) => console.error('Failed to claim county flag guest progress:', error));
+          }
+          for (const { scope, flags } of regionalSymbolGames) {
+            const prefix = `regional_symbols_${scope}_${flags ? 'flag' : 'coat'}_daily_token_`;
+            if (localStorage.getItem(`${prefix}${today}`)) {
+              void regionalSymbolsService(scope, flags).sync().then((challenge) => {
+                if (challenge.date && challenge.token) localStorage.setItem(`${prefix}${challenge.date}`, challenge.token);
+              }).catch((error) => console.error('Failed to claim regional symbol guest progress:', error));
+            }
           }
         } catch {
           // Storage may be unavailable; the game page can still use its cookie.
@@ -156,6 +164,13 @@ function App() {
           <Route path="coats-of-arms-quiz" element={<PowiatCoatsQuizPage />} />
           <Route path="flagi-powiatow" element={<PowiatHeraldryPage key="flags" flags />} />
           <Route path="quiz-flag-powiatow" element={<PowiatCoatsQuizPage key="flags" flags />} />
+          {regionalSymbolGames.flatMap(({ scope, flags }) => {
+            const path = regionalSymbolPath(scope, flags).slice(1);
+            return [
+              <Route key={path} path={path} element={<PowiatHeraldryPage scope={scope} flags={flags} />} />,
+              <Route key={`${path}/quiz`} path={`${path}/quiz`} element={<PowiatCoatsQuizPage scope={scope} flags={flags} />} />,
+            ];
+          })}
           <Route path="border-hop" element={<BorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />

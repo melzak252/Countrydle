@@ -1,7 +1,7 @@
 import LegalDocument from '../components/LegalDocument';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "October 31, 2026";
+  const lastUpdated = "November 6, 2026";
 
   return (
     <LegalDocument title="Privacy Policy" lastUpdated={lastUpdated}>
@@ -42,6 +42,15 @@ export default function PrivacyPolicyPage() {
                   server using a short-lived pseudonymous identifier. Signing in can sync guest progress and link
                   associated participation to your account. Authorized administrators can review gameplay and answer
                   reports to investigate errors and improve the game.
+                </p>
+                <p className="mt-2">
+                  Regional symbol quizzes store a started run under your account or a pseudonymous guest identifier.
+                  When you complete or give up a run, we retain its status, solved locations, and client-reported
+                  elapsed time for the run and each correct solve. Submitted answer text is validated but is not
+                  stored as a solve; a hash of the submitted result, including answers, is retained to detect conflicting
+                  resubmissions. A guest run can be linked to your account if you finish it after signing in.
+                  Community statistics include completed and given-up runs, not abandoned runs. Authorized administrators
+                  can review relevant quiz records.
                 </p>
               </div>
 
@@ -196,8 +205,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="mb-4">6. Data Retention and Rights</h2>
             <p className="mb-4">
               Browser-cookie expiry is not a server-deletion schedule. Account data, daily game history and
-              participation, daily answer reports, suggestions and the persistent planner cache currently have
-              no general automatic time-based deletion. They can remain after inactivity or after you clear
+              participation, regional symbol quiz runs and solves, daily answer reports, suggestions and the persistent
+              planner cache currently have no general automatic time-based deletion. They can remain after inactivity or after you clear
               browser storage. Requests for access or deletion are handled through the contact address below,
               not a self-service account-deletion control.
             </p>

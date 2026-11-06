@@ -1,0 +1,254 @@
+{
+  "build_complete": true,
+  "entities": [
+    {
+      "id": 8,
+      "filename": "flag-8.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubuskie_flag.svg",
+        "license": "public domain",
+        "attribution": "JDavid (vectorization); Wojciech Strzyżewski (design)",
+        "sha1": "132b624bd46f86ae520d4a79e6cc9fea9d010e77",
+        "asset_sha1": "132b624bd46f86ae520d4a79e6cc9fea9d010e77",
+        "revision": "2024-03-13T01:59:30Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/01/POL_wojew%C3%B3dztwo_lubuskie_flag.svg",
+        "identity_source": "https://files.lubuskie.pl/sites/1/cms/szablony/230/pliki/uchwala_swl_w_sprawie_ustanowienia_herbu_barw__i_flagi_wojewodztwa_lubuskiego.pdf",
+        "notes": "Regional flag, not arms-bearing official variant; Commons asserts PD Polish symbol; educational identification, no implied endorsement; SVG unchanged."
+      }
+    },
+    {
+      "id": 16,
+      "filename": "flag-16.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_opolskie_flag.svg",
+        "license": "public domain",
+        "attribution": "Michał Marciniak-Kożuchowski (design); JDavid (vectorization)",
+        "sha1": "60e03907b96dd313e1d57140ea4eead20312b7f3",
+        "asset_sha1": "60e03907b96dd313e1d57140ea4eead20312b7f3",
+        "revision": "2011-01-18T15:07:46Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a0/POL_wojew%C3%B3dztwo_opolskie_flag.svg",
+        "identity_source": "https://bip.opolskie.pl/wp-content/uploads/revisions/12910/uchwala254.pdf",
+        "notes": "Regional flag, not arms-bearing official variant; Commons asserts PD Polish symbol; educational identification, no implied endorsement; SVG unchanged."
+      }
+    },
+    {
+      "id": 10,
+      "filename": "flag-10.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%82%C3%B3dzkie_1_flag.svg",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Marek Adamczewski (original design); Bastianow (vector artwork); HapHaxion and Colohisto (SVG revisions)",
+        "sha1": "52c7218ce52fe8ed07b9bd66b45c20973c3942d3",
+        "asset_sha1": "52c7218ce52fe8ed07b9bd66b45c20973c3942d3",
+        "revision": "2024-02-17T02:09:37Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/POL_wojew%C3%B3dztwo_%C5%82%C3%B3dzkie_1_flag.svg",
+        "identity_source": "https://www.lodzkie.pl/wojewodztwo/herb",
+        "notes": "Regional flag, not the arms-bearing office flag; unchanged Commons revision."
+      }
+    },
+    {
+      "id": 28,
+      "filename": "flag-28.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_warmi%C5%84sko-mazurskie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/",
+        "attribution": "Poznaniak (vector illustration)",
+        "sha1": "eaecb359998396fd3c8d72779e0b02abdee5b2c3",
+        "asset_sha1": "eaecb359998396fd3c8d72779e0b02abdee5b2c3",
+        "revision": "2011-02-21T17:53:58Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/de/POL_wojew%C3%B3dztwo_warmi%C5%84sko-mazurskie_flag.svg",
+        "identity_source": "https://warmia.mazury.pl/2016-06-21-09-08-08/znaki-i-symbole-regionu",
+        "notes": "Official distinctive flag with eagle head, not the full arms. Current source rules for arms separately identified; SVG unchanged."
+      }
+    },
+    {
+      "id": 20,
+      "filename": "flag-20.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podlaskie_flag.svg",
+        "license": "public domain",
+        "attribution": "JDavid (vectorization)",
+        "sha1": "22267b92da77533d6d1485146b378b73b0f257de",
+        "asset_sha1": "22267b92da77533d6d1485146b378b73b0f257de",
+        "revision": "2012-12-31T17:05:01Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/41/POL_wojew%C3%B3dztwo_podlaskie_flag.svg",
+        "identity_source": "https://www.towarzystwoamicus.pl/images/publikacje/PUBLIKACJA_PIE_ED_2018.pdf",
+        "notes": "Four plain horizontal stripes, white-red-yellow-blue, 5:8, matching the text of resolution LIV/448/02 §1(2) quoted in 2018 regional legal study, pp. 42–43. Original authority page did not respond. Distinct from restricted arms; no permission or ban inferred; unchanged Commons simple-geometry public-domain SVG."
+      }
+    },
+    {
+      "id": 2,
+      "filename": "flag-2.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "Poznaniak",
+        "sha1": "ec94ce19cb2f1eeb50168a6758dd3917fab32b20",
+        "asset_sha1": "ec94ce19cb2f1eeb50168a6758dd3917fab32b20",
+        "revision": "2009-12-22T19:56:26Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_flag.svg",
+        "identity_source": "https://umwd.dolnyslask.pl/urzad/herb-i-flaga-wojewodztwa/",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    },
+    {
+      "id": 4,
+      "filename": "flag-4.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko-pomorskie_flag.svg",
+        "license": "public domain",
+        "attribution": "Lech Tadeusz Karczewski (2000), then changed ratio (2009)",
+        "sha1": "13b8385354ef3d832840a9b8d0a55a51ef3e827a",
+        "asset_sha1": "13b8385354ef3d832840a9b8d0a55a51ef3e827a",
+        "revision": "2013-02-18T14:33:19Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/a/a2/POL_wojew%C3%B3dztwo_kujawsko-pomorskie_flag.svg",
+        "identity_source": "https://bip.kujawsko-pomorskie.pl/download/attachment/507/uchwala-444.pdf",
+        "notes": "Unchanged Commons SVG. Commons identifies this file as public domain under its Polish official-symbol or simple-shape rationale; independent artwork status is not presumed beyond that source claim. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission. The 2009 amendment changed stripe proportions; this is the updated 1:2:1 stripe design, not the older construction sheet."
+      }
+    },
+    {
+      "id": 6,
+      "filename": "flag-6.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubelskie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "Poznaniak",
+        "sha1": "f39c1502aaf55ff1c985421a6c0a0b9d67be712e",
+        "asset_sha1": "f39c1502aaf55ff1c985421a6c0a0b9d67be712e",
+        "revision": "2023-01-08T11:13:37Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/POL_wojew%C3%B3dztwo_lubelskie_flag.svg",
+        "identity_source": "https://edziennik.lublin.uw.gov.pl/WDU_L/2019/5691/akt.pdf",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    },
+    {
+      "id": 12,
+      "filename": "flag-12.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_ma%C5%82opolskie_flag.svg",
+        "license": "public domain",
+        "attribution": "vector version Bastian",
+        "sha1": "f9c5a256c891e1c61eaf60363d24288abac08953",
+        "asset_sha1": "f9c5a256c891e1c61eaf60363d24288abac08953",
+        "revision": "2024-02-17T02:18:19Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/8/80/POL_wojew%C3%B3dztwo_ma%C5%82opolskie_flag.svg",
+        "identity_source": "https://www.malopolska.pl/samorzad/o-samorzadzie/symbole",
+        "notes": "Unchanged Commons SVG. Commons identifies this file as public domain under its Polish official-symbol or simple-shape rationale; independent artwork status is not presumed beyond that source claim. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission."
+      }
+    },
+    {
+      "id": 14,
+      "filename": "flag-14.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_mazowieckie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "Poznaniak",
+        "sha1": "bc822b9b28904b192c5fe2dfaa395b9b256ba0fe",
+        "asset_sha1": "bc822b9b28904b192c5fe2dfaa395b9b256ba0fe",
+        "revision": "2011-02-16T17:59:24Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/33/POL_wojew%C3%B3dztwo_mazowieckie_flag.svg",
+        "identity_source": "https://bip.mazovia.pl/pl/samorzad/sejmik/aktualnosci-sejmik/herb-i-flaga-mazowsza.html",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission. Authority identifies the 2006 eagle; the 2021 flag amendment is not asserted to have changed the design.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    },
+    {
+      "id": 18,
+      "filename": "flag-18.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podkarpackie_flag.svg",
+        "license": "public domain",
+        "attribution": "Mirosław Toton ( mir @ )",
+        "sha1": "48b76d067981008d5037fd109ad3035ad47b3a3a",
+        "asset_sha1": "48b76d067981008d5037fd109ad3035ad47b3a3a",
+        "revision": "2010-12-28T17:44:24Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/94/POL_wojew%C3%B3dztwo_podkarpackie_flag.svg",
+        "identity_source": "https://sejmik.podkarpackie.pl/o-sejmiku/barwy-wojewodztwa",
+        "notes": "Unchanged Commons SVG. Commons identifies this file as public domain under its Polish official-symbol or simple-shape rationale; independent artwork status is not presumed beyond that source claim. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission."
+      }
+    },
+    {
+      "id": 22,
+      "filename": "flag-22.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_pomorskie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "Bastianow (vector artwork; Commons upload history)",
+        "sha1": "38100a7185b93c547a94da66701efe945acd4bb2",
+        "asset_sha1": "38100a7185b93c547a94da66701efe945acd4bb2",
+        "revision": "2013-04-09T15:55:34Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/5/5c/POL_wojew%C3%B3dztwo_pomorskie_flag.svg",
+        "identity_source": "https://ipomorze.pl/flagi/flaga_wojewodztwa_pomorskiego.html",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    },
+    {
+      "id": 24,
+      "filename": "flag-24.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_flag.svg",
+        "license": "public domain",
+        "attribution": "Barbara Widłak, vectorization JDavid",
+        "sha1": "6f8ad916dbcd641c879280ec0265818d7c544192",
+        "asset_sha1": "6f8ad916dbcd641c879280ec0265818d7c544192",
+        "revision": "2024-03-14T05:29:55Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_flag.svg",
+        "identity_source": "https://bip.slaskie.pl/sejmik_wojewodztwa/sesje_sejmiku/uchwaly/uchwala-sejmiku-nr-i49162002-z-dnia-2002-04-15.html",
+        "notes": "Unchanged Commons SVG. Commons identifies this file as public domain under its Polish official-symbol or simple-shape rationale; independent artwork status is not presumed beyond that source claim. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission."
+      }
+    },
+    {
+      "id": 26,
+      "filename": "flag-26.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "Poznaniak",
+        "sha1": "a38ddc684b9871734a3b79a850af02c98ed83054",
+        "asset_sha1": "a38ddc684b9871734a3b79a850af02c98ed83054",
+        "revision": "2013-02-04T17:23:00Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/6/69/POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_flag.svg",
+        "identity_source": "https://edziennik.kielce.uw.gov.pl/WDU_T/2013/713/oryginal/akt.pdf",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission. Current design under 2012 resolution published 2013; not the 1999–2013 arms or 2001–2013 flag.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    },
+    {
+      "id": 30,
+      "filename": "flag-30.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_wielkopolskie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "Bastianow (original vector); SpinnerLaserzthe2nd (current revision; Commons upload history)",
+        "sha1": "56c3cbaa3e7f0fba34b08194fbf59df1e8860d37",
+        "asset_sha1": "56c3cbaa3e7f0fba34b08194fbf59df1e8860d37",
+        "revision": "2025-08-12T20:54:39Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/POL_wojew%C3%B3dztwo_wielkopolskie_flag.svg",
+        "identity_source": "https://www.umww.pl/herb-i-flaga-wojewodztwa-wielkopolskiego",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    },
+    {
+      "id": 32,
+      "filename": "flag-32.svg",
+      "source": {
+        "url": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_zachodniopomorskie_flag.svg",
+        "license": "CC BY-SA 2.5",
+        "attribution": "flag: Hanna Dąbrowska, then added CoA by Urząd Marszałkowski, vectorization Bastianow",
+        "sha1": "7d802c4a929382b95f8a11c513750a5fb430345c",
+        "asset_sha1": "7d802c4a929382b95f8a11c513750a5fb430345c",
+        "revision": "2011-02-05T16:59:44Z",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/37/POL_wojew%C3%B3dztwo_zachodniopomorskie_flag.svg",
+        "identity_source": "https://e-dziennik.szczecin.uw.gov.pl/WDU_Z/2015/1039/oryginal/akt.pdf",
+        "notes": "Unchanged Commons SVG. Commons additionally licenses this rendition CC BY-SA 2.5. Regional-use rules and their applicability to this game remain as described in the source audit; inclusion reflects the user’s accepted use-specific risk, not permission.",
+        "license_url": "https://creativecommons.org/licenses/by-sa/2.5/"
+      }
+    }
+  ]
+}

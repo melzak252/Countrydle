@@ -163,7 +163,7 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
     }
     await navigator.clipboard.writeText(url);
     setCopied(true);
-    toast.success('Link copied to clipboard!');
+    toast.success('Link copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
   const curiosities = post.fun_facts || [];
@@ -577,7 +577,7 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
                     key={idx}
                     type="button"
                     onClick={() => { setSelectedTriviaOption(idx); setTriviaRevealed(true); }}
-                    className={`min-h-11 w-full min-w-0 break-words text-left p-3 rounded border transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ${btnClass}`}
+                    className={`min-h-11 w-full min-w-0 break-words text-left p-3 rounded border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ${btnClass}`}
                   >
                     {idx === 0 ? 'A) ' : 'B) '}{optText}
                   </button>
@@ -614,7 +614,7 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
               <Link
                 key={rp.id}
                 to={`/blog/${rp.slug}`}
-                className="group min-w-0 rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                className="group min-w-0 rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
               >
                 <div className="min-w-0">
                   <span className="block min-w-0 break-words text-xs text-emerald-400 mb-2">

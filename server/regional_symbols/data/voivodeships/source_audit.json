@@ -1,0 +1,574 @@
+{
+  "as_of": "2026-11-06",
+  "method": "Commons candidates are retained as historical search results. Selected artwork and licences are recorded in each catalog. Eligible means included for this identification use under the user’s accepted use-specific risk; it does not mean regional consent was obtained or that historical regional-use restrictions disappeared. Previous assessments are preserved per symbol.",
+  "entities": [
+    {
+      "id": 2,
+      "name": "Dolnośląskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Dolnośląskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Dolno%C5%9Bl%C4%85skie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_powiat_%C5%9Bredzki_(wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie)_flag.gif",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_flag_2001_-_2008.svg"
+          ],
+          "primary_source": "https://umwd.dolnyslask.pl/urzad/herb-i-flaga-wojewodztwa/",
+          "previous_status": "restricted",
+          "previous_reason": "Regional authority requires board consent for commercial use of the symbol; applicability to informational game depiction needs use-specific review. Artwork copyright licence does not waive symbol restrictions. No permission has been obtained.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Dolnośląskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Dolno%C5%9Bl%C4%85skie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_Czernina_(wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie)_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Boles%C5%82aw%C3%B3w_(wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie)_COA.svg"
+          ],
+          "primary_source": "https://umwd.dolnyslask.pl/urzad/herb-i-flaga-wojewodztwa/",
+          "previous_status": "restricted",
+          "previous_reason": "Regional authority requires board consent for commercial use of the symbol; applicability to informational game depiction needs use-specific review. Artwork copyright licence does not waive symbol restrictions. No permission has been obtained.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_dolno%C5%9Bl%C4%85skie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Kujawsko-pomorskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.kujawsko-pomorskie.pl/download/attachment/507/uchwala-444.pdf",
+          "search_query": "Kujawsko-pomorskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Kujawsko-pomorskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko_pomorskie_flag_1.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko-pomorskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Lipno_(wojew%C3%B3dztwo_kujawsko-pomorskie)_flag.png"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "2000 resolution §4 requires consent for use of flag, colours or arms including commercial and promotional uses; 2009 amendment changes stripe proportions. Educational identification applicability requires review; no consent obtained.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko-pomorskie_flag.svg",
+          "artwork_license": "public domain"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.kujawsko-pomorskie.pl/download/attachment/507/uchwala-444.pdf",
+          "search_query": "Kujawsko-pomorskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Kujawsko-pomorskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko-pomorskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko-pomorskie_COA_alt.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Lipno_(wojew%C3%B3dztwo_kujawsko-pomorskie)_COA.png"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "2000 resolution §4 requires consent for use of arms including commercial and promotional uses. Educational identification applicability requires review; no consent obtained.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_kujawsko-pomorskie_COA.svg",
+          "artwork_license": "public domain"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Lubelskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Lubelskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lubelskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubelskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Jab%C5%82onna_(wojew%C3%B3dztwo_lubelskie)_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_St%C4%99%C5%BCyca_(wojew%C3%B3dztwo_lubelskie)_flag.png"
+          ],
+          "previous_status": "unverified",
+          "previous_reason": "The 2019 consolidated statute §4b confirms a regional flag but assigns its design and use rules to a separate resolution. That resolution's accessible current text was not located, so the Commons candidate cannot yet be verified for current design and applicable usage rules. https://edziennik.lublin.uw.gov.pl/WDU_L/2019/5691/akt.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubelskie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Lubelskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lubelskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_Orch%C3%B3wek_(wojew%C3%B3dztwo_lubelskie)_COA.jpg",
+            "https://commons.wikimedia.org/wiki/File:POL_Opole_Lubelskie_COA_1.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubelskie_COA.svg"
+          ],
+          "previous_status": "unverified",
+          "previous_reason": "Consolidated 2019 statute §4a identifies current coat and refers to separate use rules; 2011 funding-program guidance §2.3(3) says use of the graphical sign for other purposes without board consent violates law, but scope/current applicability to independent educational depiction is unresolved. Full 2002 resolution XLVI/615/02 not found. Commons PD-symbol candidate is not released pending this specific conflict; no blanket ban or permission inferred. https://edziennik.lublin.uw.gov.pl/WDU_L/2019/5691/akt.pdf https://lawp.lubelskie.pl/wp-content/uploads/pdf/wytyczne_promocja_20111004.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubelskie_COA.svg",
+          "artwork_license": "public domain"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Lubuskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Primary 2000 resolution establishes plain regional flag separately from the arms-bearing official variant; Commons PD-symbol SVG matches and decoded in Chromium.",
+          "primary_source": "https://files.lubuskie.pl/sites/1/cms/szablony/230/pliki/uchwala_swl_w_sprawie_ustanowienia_herbu_barw__i_flagi_wojewodztwa_lubuskiego.pdf",
+          "search_query": "Lubuskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lubuskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_O%C5%9Bno_Lubuskie_flag_(2007-2019).svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubuskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_O%C5%9Bno_Lubuskie_flag.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://lubuskie.pl/cms/94/logo_i_herb_wojewodztwa",
+          "search_query": "Lubuskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lubuskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_O%C5%9Bno_Lubuskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_O%C5%9Bno_Lubuskie_COA_1945_-_2007.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_O%C5%9Bno_Lubuskie_COA_(2007-2019).svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Authority states each use of arms and logo should be approved; application to an independent informational depiction requires review.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_lubuskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Łódzkie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Official regional site identifies five-striped regional flag separately from the official-office flag; Commons CC BY-SA vector revision and credits documented in catalog; Chromium-decoded. https://www.lodzkie.pl/wojewodztwo/herb",
+          "search_query": "Łódzkie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=%C5%81%C3%B3dzkie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%82%C3%B3dzkie_1_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_%C5%81ubnice_(wojew%C3%B3dztwo_%C5%82%C3%B3dzkie)_flag.png",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_%C5%81ubnice_(wojew%C3%B3dztwo_%C5%82%C3%B3dzkie)_flag.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Official regional site identifies current coat and designer; Commons attributes the vector drawing to Bastianow and licenses it CC BY-SA 2.5; documented in catalog and Chromium-decoded. https://www.lodzkie.pl/wojewodztwo/herb",
+          "search_query": "Łódzkie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=%C5%81%C3%B3dzkie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%82%C3%B3dzkie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Sobota_(wojew%C3%B3dztwo_%C5%82%C3%B3dzkie)_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_P%C5%82awno_(woj_%C5%82%C3%B3dzkie)_COA.gif"
+          ]
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Małopolskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://www.malopolska.pl/samorzad/o-samorzadzie/symbole",
+          "search_query": "Małopolskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Ma%C5%82opolskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_ma%C5%82opolskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Lesser_Poland_Voivodeship_Flag_Map.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Zagacie_voivodeship.png"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Regional authority requires other entities to apply for consent to use flag; applicability to educational identification requires review. No consent obtained.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_ma%C5%82opolskie_flag.svg",
+          "artwork_license": "public domain"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://www.malopolska.pl/samorzad/o-samorzadzie/symbole",
+          "search_query": "Małopolskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Ma%C5%82opolskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Koszyce_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Wieprz_(woj_ma%C5%82opolskie)_COA.gif",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_ma%C5%82opolskie_COA.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Regional authority requires other entities to apply for consent to use arms; applicability to educational identification requires review. No consent obtained.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_ma%C5%82opolskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Mazowieckie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.mazovia.pl/pl/samorzad/sejmik/aktualnosci-sejmik/herb-i-flaga-mazowsza.html",
+          "search_query": "Mazowieckie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Mazowieckie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_mazowieckie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Wysokie_Mazowieckie_flag.png",
+            "https://commons.wikimedia.org/wiki/File:POL_Wysokie_Mazowieckie_flag.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Authority requires consent for flag images on goods for trade; determine application to this educational game before release.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_mazowieckie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.mazovia.pl/pl/samorzad/sejmik/aktualnosci-sejmik/herb-i-flaga-mazowsza.html",
+          "search_query": "Mazowieckie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Mazowieckie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Wysokie_Mazowieckie_COA.png",
+            "https://commons.wikimedia.org/wiki/File:POL_Wysokie_Mazowieckie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_mazowieckie_COA.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Authority says other entities may use arms for identification or regional promotion with board consent. No consent obtained; educational depiction context requires review.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_mazowieckie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "Opolskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "2004 regional resolution separately establishes regional flag and arms-bearing official flag; Commons PD-symbol artwork corresponds to the plain flag and decoded in Chromium.",
+          "primary_source": "https://bip.opolskie.pl/wp-content/uploads/revisions/12910/uchwala254.pdf",
+          "search_query": "Opolskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Opolskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_opolskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_opolskie_flag_formal.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_powiat_brzeski_(wojew%C3%B3dztwo_opolskie)_flag.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Opolskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Opolskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_Ujazd_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:Ujest_Wappen.png",
+            "https://commons.wikimedia.org/wiki/File:Arms_Biskupice_(woj._opolskie).png"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Regional visual-identity manual requires board agreement for uses other than enumerated applications of the coat; applicability to quiz identification is unresolved. No approval assumed. https://bip.opolskie.pl/wp-content/uploads/2019/03/zal.-402.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_opolskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "name": "Podkarpackie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Podkarpackie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Podkarpackie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podkarpackie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:FlagWaver_-_Podkarpackie_Voivodeship_(Subcarpathia).webm",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Kamie%C5%84_(wojew%C3%B3dztwo_podkarpackie)_flag.png"
+          ],
+          "previous_status": "unverified",
+          "previous_reason": "Regional BIP identifies resolution XXI/213/2000 as the flag rules; indexed results quote §3(2) requiring board consent for flags on goods for trade or trademarks, but direct retrieval of its PDF returned no text. The exact operative wording and its applicability to educational digital depiction require the accessible original or authority clarification. https://bip.podkarpackie.pl/res/bip/uchwaly/umwp/sejmik/xxi_213_2000_uchw_flaga_woj_podk.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podkarpackie_flag.svg",
+          "artwork_license": "public domain"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Podkarpackie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Podkarpackie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podkarpackie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podkarpackie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Tarnobrzeg_coat_of_arms.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Resolution XXI/212/2000 requires board consent for placing the arms on goods for commercial trade or in a trademark; applicability to a commercial quiz is unresolved, no consent inferred. https://bip.podkarpackie.pl/res/bip/uchwaly/umwp/sejmik/xxi_212_2000_uchw_herb_woj_podk.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podkarpackie_COA.svg",
+          "artwork_license": "public domain"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "Podlaskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Plain white-red-yellow-blue 5:8 flag matches resolution LIV/448/02 §1(2) as quoted in 2018 regional legal study pp. 42–43; original BIP page unavailable. Commons PD simple geometry artwork by JDavid, SHA1 checked and Chromium decoded. The coat is separately restricted; no flag restriction or permission inferred. https://www.towarzystwoamicus.pl/images/publikacje/PUBLIKACJA_PIE_ED_2018.pdf",
+          "search_query": "Podlaskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Podlaskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podlaskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Banner_of_Podlaskie_Voivodeship_(1609-1618).svg",
+            "https://commons.wikimedia.org/wiki/File:Banner_of_Podlaskie_Voivodeship_(1609-1618)-1.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.podlaskie.eu/resource/3633/101879/Uchwala_Herb_Wojewodztwa_Podlaskiego.pdf",
+          "search_query": "Podlaskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Podlaskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podlaskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Podlachia_(1586).svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Podlaskie_Voivodeship_1764_2.png"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "2016 board resolution §2 requires consent for image use outside listed official or promotional cases; educational identification applicability requires review.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_podlaskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "name": "Pomorskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Pomorskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Pomorskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_pomorskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Kowalewo_Pomorskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Jab%C5%82onowo_Pomorskie_flag.svg"
+          ],
+          "previous_status": "unverified",
+          "previous_reason": "Commons identifies the flag with resolution 542/XL/02, but council records identify separate use-rules resolution 543/XL/02 and later changes; the current consolidated text was not located. The regional authority's coat-specific consent page does not establish the separate flag rule. https://bip.pomorskie.eu/e%2Cpobierz%2Cget.html?id=11227",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_pomorskie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://pomorskie.eu/zasady-uzywania-herbu/",
+          "search_query": "Pomorskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Pomorskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_pomorskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Jab%C5%82onowo_Pomorskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Miko%C5%82ajki_Pomorskie_COA.jpg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Regional authority states that use of the coat requires consent from the marshal; applicability to educational depiction requires review.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_pomorskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "name": "Śląskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.slaskie.pl/sejmik_wojewodztwa/sesje_sejmiku/uchwaly/uchwala-sejmiku-nr-i49162002-z-dnia-2002-04-15.html",
+          "candidate": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_flag.svg",
+          "search_query": "Śląskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=%C5%9Al%C4%85skie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_flag_vertical.png",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_flag_formal_vertical.png",
+            "https://commons.wikimedia.org/wiki/File:POL_Piekary_%C5%9Al%C4%85skie_flag_1.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "2002 usage rules reserve uses outside the prescribed purposes to the regional assembly's consent; application to educational depiction requires review. Plain regional flag is blue-yellow-blue, distinct from the official arms flag.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_flag.svg",
+          "artwork_license": "public domain"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "primary_source": "https://bip.slaskie.pl/sejmik_wojewodztwa/sesje_sejmiku/uchwaly/uchwala-sejmiku-nr-i49162002-z-dnia-2002-04-15.html",
+          "search_query": "Śląskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=%C5%9Al%C4%85skie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Siemianowice_coat_of_arms_mosaic_W_2020.jpg",
+            "https://commons.wikimedia.org/wiki/File:Siemianowice_coat_of_arms_mosaic_S_2020.jpg",
+            "https://commons.wikimedia.org/wiki/File:POL_Rac%C5%82awice_%C5%9Al%C4%85skie_COA.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "2002 usage rules require consent for non-governmental institutions, with a possible education exemption plus notice; determine applicability before release.",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bl%C4%85skie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "name": "Świętokrzyskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Świętokrzyskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=%C5%9Awi%C4%99tokrzyskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Komorowski_with_Swietokrzyskie_Voivodeship_flag_2010.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Skar%C5%BCysko-Kamienna_town.jpg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Resolution XXVI/474/12 annex 7 §1.6 requires board permission for commercial use of the image of the flag and colours; no consent inferred. https://edziennik.kielce.uw.gov.pl/WDU_T/2013/713/oryginal/akt.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Świętokrzyskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=%C5%9Awi%C4%99tokrzyskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_COA_1999_-_2013.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Ole%C5%9Bnica_(%C5%9Bwi%C4%99tokrzyskie)_COA.svg"
+          ],
+          "previous_status": "unverified",
+          "previous_reason": "2012 resolution XXVI/472/12 establishes the current arms and delegates use rules to the board; the 1999–2013 Commons image is historical. Board resolution 1702/13 is cited in later board decisions, but its complete operative text and educational-use exceptions were not located. https://edziennik.kielce.uw.gov.pl/WDU_T/2013/711/akt.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_%C5%9Bwi%C4%99tokrzyskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 28,
+      "name": "Warmińsko-mazurskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Official regional portal describes the distinctive eagle-head flag as separate from the full coat; Commons Poznaniak artwork is CC BY-SA 2.5 and Chromium-decoded. https://warmia.mazury.pl/2016-06-21-09-08-08/znaki-i-symbole-regionu",
+          "search_query": "Warmińsko-mazurskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Warmi%C5%84sko-mazurskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_warmi%C5%84sko-mazurskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_warmi%C5%84sko-mazurskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Dzia%C5%82dowo_flag.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Warmińsko-mazurskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Warmi%C5%84sko-mazurskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_warmi%C5%84sko-mazurskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_Kolno_gmina_CoA.png",
+            "https://commons.wikimedia.org/wiki/File:POL_Jedwabno_COA.jpg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Regional coat rules say external bodies and social organisations require Marshal consent, especially for trade and advertising; no consent inferred. https://warmia.mazury.pl/images/Departamenty/Gabinet-Marszalka/znaki_symbole_regionu/regulamin_herb.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_warmi%C5%84sko-mazurskie_COA.svg",
+          "artwork_license": "public domain"
+        }
+      }
+    },
+    {
+      "id": 30,
+      "name": "Wielkopolskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Wielkopolskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Wielkopolskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_wielkopolskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Szyd%C5%82owo_(wojew%C3%B3dztwo_wielkopolskie)_flag.png",
+            "https://commons.wikimedia.org/wiki/File:POL_Kamionna_(wojew%C3%B3dztwo_wielkopolskie)_COA.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "The official flag incorporates the eagle of the regional coat. The regional office requires approval for the coat on goods for trade; application to a commercial quiz is unresolved, no consent inferred. https://www.umww.pl/herb-i-flaga-wojewodztwa-wielkopolskiego",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_wielkopolskie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Wielkopolskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Wielkopolskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_wielkopolskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Brodnica_(wojew%C3%B3dztwo_wielkopolskie)_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_gmina_Baran%C3%B3w_(wojew%C3%B3dztwo_wielkopolskie)_COA.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Regional office requires board approval to place the arms on goods intended for trade; application to a commercial quiz is unresolved, no consent inferred. https://www.umww.pl/herb-i-flaga-wojewodztwa-wielkopolskiego",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_wielkopolskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "Zachodniopomorskie",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Zachodniopomorskie voivodeship flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Zachodniopomorskie%20voivodeship%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_zachodniopomorskie_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Zachodniopomorskie_choragiew.png",
+            "https://commons.wikimedia.org/wiki/File:Wierzbno_(woj_zachodniopomorskie)_kosciol_24.JPG"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Resolution IV/75/15 §2 requires board permission for commercial or advertising/promotional use of flag; application to this game unresolved, no consent inferred. https://e-dziennik.szczecin.uw.gov.pl/WDU_Z/2015/1039/oryginal/akt.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_zachodniopomorskie_flag.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Included for this identification use under the user’s explicit acceptance of the identified use-specific risk; this is not official consent. Earlier assessment is preserved in previous_status and previous_reason; source and artwork license are recorded in the catalog.",
+          "search_query": "Zachodniopomorskie voivodeship coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Zachodniopomorskie%20voivodeship%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Zachodniopomorskie_herb.png",
+            "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_zachodniopomorskie_COA.svg",
+            "https://commons.wikimedia.org/wiki/File:POL_D%C4%99bno_COA_1.svg"
+          ],
+          "previous_status": "restricted",
+          "previous_reason": "Resolution IV/75/15 §2 requires board permission for commercial or advertising/promotional use of arms; application to this game unresolved, no consent inferred. https://e-dziennik.szczecin.uw.gov.pl/WDU_Z/2015/1039/oryginal/akt.pdf",
+          "selected_source": "https://commons.wikimedia.org/wiki/File:POL_wojew%C3%B3dztwo_zachodniopomorskie_COA.svg",
+          "artwork_license": "CC BY-SA 2.5"
+        }
+      }
+    }
+  ]
+}

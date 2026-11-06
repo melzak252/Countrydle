@@ -156,7 +156,7 @@ export default function GamePage() {
       {/* 2. Top Status HUD Bar */}
       <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
         <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono max-md:[@media(max-height:560px)]:h-8 md:h-8 md:w-auto md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:shadow-lg md:backdrop-blur-md">
-          <div className="hidden md:flex items-center gap-2 px-3 text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+          <div className="hidden md:flex items-center gap-2 px-3 text-xs text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span className="hidden sm:inline">Daily fieldwork</span>
             <span className="font-semibold text-sand-100 hidden sm:inline">{dailyDate}</span>
@@ -164,7 +164,7 @@ export default function GamePage() {
           </div>
 
           <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">Q:</span>
+            <span className="text-xs text-zinc-400">Q:</span>
             <span className="font-semibold text-sand-100">
               {gameState.remaining_questions}
               <span className="text-[10px] text-zinc-500">/10</span>
@@ -172,7 +172,7 @@ export default function GamePage() {
           </div>
 
           <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-400">G:</span>
+            <span className="text-xs text-zinc-400">G:</span>
             <span className="font-semibold text-emerald-400">
               {gameState.remaining_guesses}
               <span className="text-[10px] text-zinc-500">/3</span>
@@ -184,14 +184,14 @@ export default function GamePage() {
             examples={t('gamePage.examples', { returnObjects: true }) as string[]}
             scoring={{ maxPoints: 3300, details: t('gamePage.scoringDetails', { returnObjects: true }) as string[] }}
             compact={true}
-            triggerClassName="max-md:min-h-11 max-md:min-w-11 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:min-w-8 flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-[10px] uppercase tracking-[0.16em] cursor-pointer whitespace-nowrap"
+            triggerClassName="max-md:min-h-11 max-md:min-w-11 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:min-w-8 flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-xs cursor-pointer whitespace-nowrap"
           />
 
           {isGameOver && (
             <button
               type="button"
               onClick={() => setIsResultDismissed(false)}
-              className="max-md:min-h-11 max-md:[@media(max-height:560px)]:min-h-8 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+              className="max-md:min-h-11 max-md:[@media(max-height:560px)]:min-h-8 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
             >
               <Trophy size={13} />
               <span>{'Result'}</span>
@@ -226,7 +226,7 @@ export default function GamePage() {
             <button
               type="button"
               onClick={() => setIsChatOpen(true)}
-              className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-sand-100 md:flex"
+              className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-xs text-sand-100 md:flex"
               aria-label={'Open notebook'}
             >
               <MessageSquare size={13} className="text-emerald-400" />
@@ -238,7 +238,7 @@ export default function GamePage() {
             </button>
           </div>
         ) : (
-          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950/90 backdrop-blur-sm shadow-2xl transition-all md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900/80 md:backdrop-blur-md md:pb-0">
+          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950 shadow-lg md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900 md:pb-0">
 
             {/* Notebook Tabbed Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-2 py-1 shrink-0 max-md:[@media(max-height:560px)]:py-0.5 md:px-4 md:py-3 md:bg-obsidian-900/70 md:backdrop-blur-md">
@@ -303,7 +303,7 @@ export default function GamePage() {
                       </p>
                     </div>
                     <div className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left space-y-1.5 max-md:[@media(max-height:560px)]:hidden">
-                      <p className="font-mono text-[10px] uppercase tracking-wider text-emerald-400/90 font-semibold">
+                      <p className="font-mono text-xs text-emerald-400/90 font-semibold">
                         {'Example questions:'}
                       </p>
                       <ul className="text-xs text-zinc-300 space-y-1">
@@ -345,7 +345,7 @@ export default function GamePage() {
                       <Compass size={22} className="text-emerald-400 max-md:[@media(max-height:560px)]:h-4 max-md:[@media(max-height:560px)]:w-4" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
+                      <p className="font-mono text-xs font-semibold text-sand-100">
                         {'No attempts logged'}
                       </p>
                       <p className="mt-1 text-xs text-zinc-400 max-md:[@media(max-height:560px)]:hidden">
@@ -363,7 +363,7 @@ export default function GamePage() {
 
                     return (
                       <div key={g.id} className="space-y-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                        <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-400">
+                        <div className="flex items-center justify-between font-mono text-xs text-zinc-400">
                           <span>#{String(index + 1).padStart(2, '0')} · Location Attempt</span>
                         </div>
                         <div
@@ -383,7 +383,7 @@ export default function GamePage() {
                           </div>
 
                           {g.answer ? (
-                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                            <span className="font-mono text-xs font-semibold text-emerald-400">
                               Correct
                             </span>
                           ) : hasDistance ? (
@@ -442,7 +442,7 @@ export default function GamePage() {
               <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-obsidian-950/80 px-4 py-3 max-md:[@media(max-height:560px)]:py-1.5 max-md:[@media(max-height:560px)]:px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:pb-3">
                 <div className="flex items-center gap-3">
                   <Trophy size={16} className="text-amber-400" />
-                  <span className="font-mono text-xs uppercase tracking-wider font-semibold text-sand-100">
+                  <span className="font-mono text-xs font-semibold text-sand-100">
                     {gameState.won ? ('Fieldwork solved') : ('Investigation concluded')}
                   </span>
                   <span className="font-mono text-xs text-emerald-400">{gameState.points} pts</span>
@@ -450,7 +450,7 @@ export default function GamePage() {
                 <button
                   type="button"
                   onClick={() => setIsResultDismissed(false)}
-                  className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
+                  className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-xs font-semibold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
                 >
                   {'View Result Card'}
                 </button>

@@ -55,7 +55,7 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
                       <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 font-mono text-[10px] sm:text-xs font-semibold text-zinc-300 shadow-inner">
                         {tileIdx + 1}
                       </div>
-                      <span className="font-mono text-[8px] sm:text-[9px] uppercase tracking-wider text-zinc-400 font-medium">
+                      <span className="font-mono text-[11px] text-zinc-400 font-medium">
                         Card {tileIdx + 1}
                       </span>
                     </div>
@@ -68,7 +68,7 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
       </div>
       <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-zinc-400">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
           <span>{effectiveStage} of 12 cards uncovered</span>
         </div>
         <span className="font-mono text-sand-100 font-semibold">

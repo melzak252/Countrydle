@@ -32,7 +32,7 @@ const AdSenseUnit = ({
   return (
     <div data-countrydle-ad="unit" className={`my-6 text-center ${className}`}>
       {label && (
-        <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-600 font-mono">
+        <div className="mb-1 text-xs text-zinc-400 font-mono">
           Advertisement
         </div>
       )}

@@ -446,7 +446,7 @@ export default function FlagShadesPage() {
       <header className="mb-2.5 border-b border-sand-800/80 pb-2.5 sm:mb-6 sm:pb-4 space-y-2 sm:space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
-            <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono font-semibold uppercase tracking-wider text-sand-400 sm:mb-1">
+            <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono font-semibold text-sand-400 sm:mb-1">
               <span className="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                 <Palette size={14} className="text-emerald-400 shrink-0" />
                 <span>{'Grayscale Deduction'}</span>
@@ -467,7 +467,7 @@ export default function FlagShadesPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Guesses Remaining Pill */}
             <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
-              <span className="mr-1.5 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-zinc-400 sm:mr-2">
+              <span className="mr-1.5 font-mono text-xs text-zinc-400 sm:mr-2">
                 {'Guesses:'}
               </span>
               <span
@@ -585,13 +585,12 @@ export default function FlagShadesPage() {
             <button
               type="button"
               onClick={handleRevealColorHint}
-              className="group relative flex min-h-[44px] w-full items-center justify-center gap-2 rounded-sm border border-amber-500/50 bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all cursor-pointer animate-pulse"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-sm border border-amber-500/50 bg-amber-950 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-amber-200 transition-colors hover:border-amber-400 hover:bg-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 cursor-pointer"
             >
-              <Palette size={16} className="text-amber-300 transition-transform group-hover:scale-110 shrink-0 sm:h-[18px] sm:w-[18px]" />
+              <Palette size={16} className="shrink-0 sm:h-[18px] sm:w-[18px]" />
               <span className="text-center leading-snug sm:leading-normal">
                 {'Reveal 1 Color Hint (≥10% of flag)'}
               </span>
-              <Sparkles size={15} className="text-yellow-300 shrink-0 sm:h-4 sm:w-4" />
             </button>
           )}
 
@@ -693,7 +692,7 @@ export default function FlagShadesPage() {
         {guesses.length > 0 && (
           <section aria-label={'Guess History'} className="mx-auto w-full max-w-xl space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
+              <span className="text-xs font-mono text-zinc-400">
                 {'Your Guesses'}
               </span>
               <span className="text-xs font-mono text-zinc-500">
@@ -779,8 +778,8 @@ export default function FlagShadesPage() {
           >
             <div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold whitespace-nowrap">
-                  {won ? ('Flag Identified!') : ('Game Over')}
+                <span className="font-mono text-xs text-emerald-400 font-semibold whitespace-nowrap">
+                  {won ? ('Flag Identified') : ('Game Over')}
                 </span>
                 <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
                 <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">
@@ -842,7 +841,7 @@ export default function FlagShadesPage() {
               {/* Header Bar */}
               <div className="flex items-center justify-between border-b border-white/10 pb-3 text-left">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold whitespace-nowrap">
+                  <span className="font-mono text-xs text-emerald-400 font-semibold whitespace-nowrap">
                     {'Flag Shades Result'}
                   </span>
                   <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
@@ -873,7 +872,7 @@ export default function FlagShadesPage() {
                     ) : null}
                   </div>
                   <div className="min-w-0">
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-emerald-400 font-semibold">
+                    <span className="font-mono text-xs text-emerald-400 font-semibold">
                       {'Secret National Flag'}
                     </span>
                     <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
@@ -910,7 +909,7 @@ export default function FlagShadesPage() {
               {/* Performance Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-xs font-mono text-zinc-400 block">
                     {'Guesses Used'}
                   </span>
                   <div className="mt-1 flex items-baseline gap-1.5">
@@ -920,7 +919,7 @@ export default function FlagShadesPage() {
                 </div>
 
                 <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-xs font-mono text-zinc-400 block">
                     {'Solve Mode'}
                   </span>
                   <div className="mt-1 font-mono text-sm font-semibold text-emerald-300 flex items-center gap-1.5">
@@ -939,7 +938,7 @@ export default function FlagShadesPage() {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
-                  <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-xs font-mono text-zinc-400 block">
                     {'Next Daily'}
                   </span>
                   <div className="mt-1 font-mono text-lg font-semibold text-emerald-400">
@@ -957,7 +956,7 @@ export default function FlagShadesPage() {
                     className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
                   >
                     {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-                    <span>{copied ? ('Copied to Clipboard!') : ('Share Results')}</span>
+                    <span>{copied ? ('Copied to clipboard') : ('Share Results')}</span>
                   </button>
 
                   <button
@@ -1027,8 +1026,8 @@ export default function FlagShadesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                    <span>🖤 1. {'Luminance Grayscale'}</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>1. {'Luminance Grayscale'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     {'All flag colors are transformed into perceptual luminance grayscale. Yellow renders light grey, navy renders dark grey, and white/black stay true.'}
@@ -1041,8 +1040,8 @@ export default function FlagShadesPage() {
 
               <div className="rounded-sm border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                    <span>🎨 2. {'Color Hint after 3 Guesses'}</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>2. {'Color Hint after 3 Guesses'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     {'After 3 guesses, unlock a color hint button that restores exactly 1 major chromatic color family (covering ≥10% of the flag image).'}
@@ -1055,8 +1054,8 @@ export default function FlagShadesPage() {
 
               <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                    <span>🧭 3. {'Distance & Compass Bearing'}</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>3. {'Distance & Compass Bearing'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     {'Each missed guess provides great-circle distance in kilometers and a compass bearing arrow pointing toward the secret target country.'}
@@ -1069,8 +1068,8 @@ export default function FlagShadesPage() {
 
               <div className="rounded-sm border border-indigo-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-                    <span>✦ 4. {'Shared Flag Symbols'}</span>
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <span>4. {'Shared Flag Symbols'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
                     {'If your guessed flag shares national symbols with the target (e.g. stars, stripes, sun, eagle), they appear in your guess trail as clues!'}
@@ -1091,7 +1090,7 @@ export default function FlagShadesPage() {
                 onClick={handleCloseInstructions}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer"
               >
-                <span>{"Got it, let's play!"}</span>
+                <span>{"Got it, let's play"}</span>
                 <ArrowRight size={16} />
               </button>
             </div>

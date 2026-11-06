@@ -25,6 +25,8 @@ import type {
   PowiatHeraldryChallenge,
   PowiatHeraldryGuessResult,
   PowiatHeraldryItem,
+  RegionalSymbolScope,
+  RegionalSymbolCatalogEntry,
   Question,
   QuestionTestEntity,
   QuestionTestMode,
@@ -428,6 +430,69 @@ export const countyFlagsQuizService = {
     return { ...stats, coats: flags };
   },
 };
+
+export const regionalSymbolLabels: Record<RegionalSymbolScope, string> = {
+  voivodeships: 'Voivodeship',
+  london_boroughs: 'London Borough',
+  england_counties: 'English Ceremonial County',
+};
+
+export const regionalSymbolNouns: Record<RegionalSymbolScope, string> = {
+  voivodeships: 'voivodeship',
+  london_boroughs: 'London borough',
+  england_counties: 'English ceremonial county',
+};
+
+export const regionalSymbolGames: ReadonlyArray<{ scope: RegionalSymbolScope; flags: boolean }> = [
+  { scope: 'voivodeships', flags: false },
+  { scope: 'voivodeships', flags: true },
+  { scope: 'london_boroughs', flags: false },
+  { scope: 'england_counties', flags: false },
+  { scope: 'england_counties', flags: true },
+];
+
+export function regionalSymbolPath(scope: RegionalSymbolScope, flags: boolean) {
+  return `/regional-symbols/${scope}/${flags ? 'flag' : 'coat'}`;
+}
+
+function createRegionalSymbolsService(scope: RegionalSymbolScope, flags: boolean) {
+  const base = `/regional-symbols/${scope}/${flags ? 'flag' : 'coat'}`;
+  return {
+    getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> =>
+      (await api.get<LeaderboardEntry[]>(`${base}/leaderboard`, { params: { type } })).data,
+    sync: async (): Promise<PowiatHeraldryChallenge> =>
+      (await api.post<PowiatHeraldryChallenge>(`${base}/sync`, {})).data,
+    getChallenge: async (params?: { seed?: string; token?: string }): Promise<PowiatHeraldryChallenge> =>
+      (await api.get<PowiatHeraldryChallenge>(`${base}/challenge`, { params })).data,
+    submitGuess: async (data: { token: string; guess: string; powiat_id?: number }): Promise<PowiatHeraldryGuessResult> =>
+      (await api.post<PowiatHeraldryGuessResult>(`${base}/guess`, data)).data,
+    getCounties: async (): Promise<PowiatHeraldryItem[]> =>
+      (await api.get<PowiatHeraldryItem[]>(`${base}/counties`)).data,
+    getCatalog: async (): Promise<RegionalSymbolCatalogEntry[]> =>
+      (await api.get<RegionalSymbolCatalogEntry[]>(`${base}/catalog`)).data,
+    quiz: {
+      start: async (): Promise<{ run_id: string }> =>
+        (await api.post<{ run_id: string }>(`${base}/quiz/runs`, {})).data,
+      finish: async (runId: string, result: { status: 'completed' | 'given_up'; elapsed_seconds: number; solves: CoatsQuizSolve[] }): Promise<void> => {
+        await api.post(`${base}/quiz/runs/${encodeURIComponent(runId)}/finish`, result);
+      },
+      stats: async (): Promise<CoatsQuizStats> => {
+        const data = (await api.get<CoatsQuizStats & { flags?: CoatsQuizStats['coats'] }>(`${base}/quiz/stats`)).data;
+        return { ...data, coats: data.coats ?? data.flags ?? [] };
+      },
+    },
+  };
+}
+
+const regionalServices = {
+  voivodeships: { coat: createRegionalSymbolsService('voivodeships', false), flag: createRegionalSymbolsService('voivodeships', true) },
+  london_boroughs: { coat: createRegionalSymbolsService('london_boroughs', false), flag: createRegionalSymbolsService('london_boroughs', true) },
+  england_counties: { coat: createRegionalSymbolsService('england_counties', false), flag: createRegionalSymbolsService('england_counties', true) },
+};
+
+export function regionalSymbolsService(scope: RegionalSymbolScope, flags: boolean) {
+  return regionalServices[scope][flags ? 'flag' : 'coat'];
+}
 
 export interface BlogSourceLink {
   label: string;

@@ -6,6 +6,7 @@ export interface CountyFlagCatalogEntry {
   voivodeship: string;
   is_city_county: boolean;
   flag_asset_url: string;
+  thumbnail_asset_url?: string;
   source_attribution?: PowiatHeraldrySourceAttribution | null;
 }
 

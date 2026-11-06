@@ -129,7 +129,7 @@ export default function ArchivePage() {
   return (
     <div className="mx-auto min-w-0 max-w-4xl space-y-8 bg-obsidian-950 pb-8">
       <header className="border-b border-white/10 pb-8">
-        <div className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">
+        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-emerald-400">
           <Calendar size={15} aria-hidden="true" />
           Past discoveries
         </div>
@@ -140,7 +140,7 @@ export default function ArchivePage() {
       </header>
 
       <label className="block md:hidden">
-        <span className="mb-2 block text-xs font-medium uppercase tracking-widest text-zinc-500">
+        <span className="mb-2 block text-xs font-medium text-zinc-500">
           {t('archive.selectMode', 'Choose a game')}
         </span>
         <select
@@ -161,7 +161,7 @@ export default function ArchivePage() {
       <div className="hidden space-y-4 md:block">
         {groups.map((group) => (
           <div key={group.name} className="space-y-1.5">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            <span className="text-xs font-mono text-zinc-500">
               {group.name}
             </span>
             <div role="group" aria-label={group.name} className="flex flex-wrap gap-2">
@@ -196,7 +196,7 @@ export default function ArchivePage() {
           <div role="region" aria-label="Past answers" tabIndex={0} className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
             <table className="w-full table-fixed text-left text-sm">
               <caption className="sr-only">Past answers — {allTabs.find((tab) => tab.id === gameType)?.label}</caption>
-              <thead className="border-b border-white/10 text-xs uppercase tracking-[0.12em] text-zinc-400">
+              <thead className="border-b border-white/10 text-xs text-zinc-400">
                 <tr>
                   <th scope="col" className="w-24 px-2 py-4 font-medium sm:w-44 sm:px-6 md:w-32">{t('archive.date')}</th>
                   <th scope="col" className="px-2 py-4 text-left font-medium sm:px-6 md:text-right">{t('archive.answer')}</th>

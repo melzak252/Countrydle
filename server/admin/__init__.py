@@ -19,7 +19,10 @@ from db.models.powiatdle import PowiatdleQuestion, PowiatdleGuess
 from db.models.us_statedle import USStatedleQuestion, USStatedleGuess
 from db.models.wojewodztwodle import WojewodztwodleQuestion, WojewodztwodleGuess
 from db.models.heraldry_daily import HeraldryDailySession
-from admin.heraldry_sessions import flag_quiz_target, query_heraldry_sessions, query_heraldry_stats
+from admin.heraldry_sessions import (
+    REGIONAL_SCOPES, flag_quiz_target, heraldry_mode, query_heraldry_sessions,
+    query_heraldry_stats, quiz_target,
+)
 from powiatdle.heraldry import get_all_counties, select_target
 from db.repositories.participation import ParticipationRepository
 from db.repositories.country import CountryRepository
@@ -111,11 +114,11 @@ async def get_admin_overview(
         .join(Country, Country.id == ContinentalDay.country_id)
         .where(ContinentalDay.date == today)
     )).all())
-    heraldry_targets = dict((await session.execute(
-        select(HeraldryDailySession.symbol_mode, HeraldryDailySession.target_name)
+    heraldry_targets = {(scope, symbol): name for scope, symbol, name in (await session.execute(
+        select(HeraldryDailySession.entity_scope, HeraldryDailySession.symbol_mode, HeraldryDailySession.target_name)
         .where(HeraldryDailySession.date == today)
-    )).all())
-    flag_target_name = heraldry_targets.get("flag")
+    )).all()}
+    flag_target_name = heraldry_targets.get(("county", "flag"))
     if not flag_target_name:
         try:
             flag_target_name = select_target(get_all_counties(), f"daily-{today.isoformat()}", "flag")["name"]
@@ -129,10 +132,19 @@ async def get_admin_overview(
         ("powiatdle", "Polish Counties", p_target),
         ("wojewodztwodle", "Polish Voivodeships", w_target),
         ("flagdle", "Flags", flag_target or "Unknown"),
-        ("heraldry", "County Coats of Arms", heraldry_targets.get("coat") or "Unknown"),
+        ("heraldry", "County Coats of Arms", heraldry_targets.get(("county", "coat")) or "Unknown"),
         ("coats_quiz", "All County Coats Quiz", "380 Polish counties"),
         ("county_flags", "County Flags", flag_target_name or "Unknown"),
         ("county_flags_quiz", "All County Flags Quiz", flag_quiz_target()),
+        *[
+            (f"regional_symbols:{scope}:{symbol}{':quiz' if is_quiz else ''}",
+             f"{label.title()} {'Flags' if symbol == 'flag' else 'Coats of Arms'}{' Quiz' if is_quiz else ''}",
+             quiz_target(f"regional_symbols:{scope}:{symbol}:quiz") if is_quiz
+             else heraldry_targets.get((scope, symbol), "Unknown"))
+            for scope, label in REGIONAL_SCOPES.items()
+            for symbol in ("coat", "flag")
+            for is_quiz in (False, True)
+        ],
         *[
             (f"continental:{continent.value}", f"Continental: {continent.value.title()}",
              continental_targets.get(continent, "Unknown"))
@@ -406,7 +418,7 @@ async def list_admin_game_sessions(
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    if mode in {"heraldry", "coats_quiz", "county_flags", "county_flags_quiz"}:
+    if heraldry_mode(mode):
         items, total = await query_heraldry_sessions(
             session, mode, date or get_today_date(), status, player_type, page, limit
         )
@@ -430,7 +442,7 @@ async def get_admin_game_session_stats(
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
-    if mode in {"heraldry", "coats_quiz", "county_flags", "county_flags_quiz"}:
+    if heraldry_mode(mode):
         return await query_heraldry_stats(session, mode, date or get_today_date())
     stats = await query_admin_target_stats(
         session=session,

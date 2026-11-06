@@ -6,7 +6,6 @@ import {
   Share2,
   Check,
   X,
-  Sparkles,
   AlertCircle,
   Trophy,
   ArrowRight,
@@ -23,8 +22,10 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { API_URL, countyFlagsService, powiatHeraldryService } from '../services/api';
+import { API_URL, countyFlagsService, powiatHeraldryService, regionalSymbolsService, regionalSymbolLabels, regionalSymbolNouns } from '../services/api';
 import { isPrerenderCapture } from '../lib/pageMetadata';
+import RegionalGeographyCredit from '../components/RegionalGeographyCredit';
+import SymbolComponentCredits from '../components/SymbolComponentCredits';
 import { useAuthStore } from '../stores/authStore';
 import type {
   PowiatHeraldryChallenge,
@@ -32,6 +33,7 @@ import type {
   PowiatHeraldryItem,
   PowiatHeraldrySourceAttribution,
   PowiatHeraldryTarget,
+  RegionalSymbolScope,
 } from '../types';
 
 type GameMode = 'daily' | 'challenge';
@@ -96,14 +98,20 @@ function PolishLicensePlateBadge({ plates }: { plates: string[] }) {
   );
 }
 
-export default function PowiatHeraldryPage({ flags = false }: { flags?: boolean }) {
-  return <CountyHeraldryGame key={flags ? 'flags' : 'coats'} flags={flags} />;
+export default function PowiatHeraldryPage({ flags = false, scope }: { flags?: boolean; scope?: RegionalSymbolScope }) {
+  if (scope && isPrerenderCapture()) return <h1>{regionalSymbolLabels[scope]} {flags ? 'Flags' : 'Coats of Arms'}</h1>;
+  return <CountyHeraldryGame key={`${scope ?? 'counties'}-${flags}`} flags={flags} scope={scope} />;
 }
 
-function CountyHeraldryGame({ flags }: { flags: boolean }) {
-  const service = flags ? countyFlagsService : powiatHeraldryService;
-  const tokenPrefix = flags ? 'county_flags_daily_token_' : 'powiat_heraldry_daily_token_';
-  const guideKey = flags ? 'county_flags_guide_seen' : POWIAT_HERALDRY_GUIDE_KEY;
+function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: RegionalSymbolScope }) {
+  const service = useMemo(() => scope ? regionalSymbolsService(scope, flags) : flags ? countyFlagsService : powiatHeraldryService, [scope, flags]);
+  const label = scope ? regionalSymbolLabels[scope] : 'County';
+  const noun = scope ? regionalSymbolNouns[scope] : 'county';
+  const regionalPath = scope ? `/regional-symbols/${scope}/${flags ? 'flag' : 'coat'}` : null;
+  const tokenPrefix = scope ? `regional_symbols_${scope}_${flags ? 'flag' : 'coat'}_daily_token_` : flags ? 'county_flags_daily_token_' : 'powiat_heraldry_daily_token_';
+  const guideKey = scope ? `regional_symbols_${scope}_${flags ? 'flag' : 'coat'}_guide_seen` : flags ? 'county_flags_guide_seen' : POWIAT_HERALDRY_GUIDE_KEY;
+  const leaderboardMode = scope ? `regional_symbols:${scope}:${flags ? 'flag' : 'coat'}` : flags ? 'county_flags' : 'heraldry';
+  const [targetCount, setTargetCount] = useState<number | null>(null);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
   const challengeRequest = useRef(0);
@@ -138,6 +146,8 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
   const [copied, setCopied] = useState<boolean>(false);
   const [showResultsModal, setShowResultsModal] = useState<boolean>(false);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState<boolean>(false);
+  const [fullscreenLoaded, setFullscreenLoaded] = useState(false);
+  const [fullscreenFailed, setFullscreenFailed] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [lightBackdrop, setLightBackdrop] = useState<boolean>(false);
   const [showInstructions, setShowInstructions] = useState<boolean>(() => {
@@ -153,6 +163,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
 
   // Load counties list once
   useEffect(() => {
+    if (isPrerenderCapture()) return;
     let mounted = true;
     service
       .getCounties()
@@ -166,6 +177,15 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
       mounted = false;
     };
   }, [service]);
+  useEffect(() => {
+    if (!scope || isPrerenderCapture()) return;
+    let active = true;
+    regionalSymbolsService(scope, flags).getCatalog().then((catalog) => {
+      if (active) setTargetCount(catalog.length);
+    }).catch(() => { if (active) setTargetCount(null); });
+    return () => { active = false; };
+  }, [scope, flags]);
+
 
   // Resolve coat URL
   const resolvedCoatUrl = useMemo(() => {
@@ -174,9 +194,9 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    if (flags) return `${API_URL.replace(/\/$/, '')}${url.replace(/^\/api(?=\/)/, '')}`;
+    if (flags || scope) return `${API_URL.replace(/\/$/, '')}${url.replace(/^\/api(?=\/)/, '')}`;
     return url.startsWith('/api') ? url : `/api${url}`;
-  }, [challenge?.coat_asset_url, flags]);
+  }, [challenge?.coat_asset_url, flags, scope]);
 
   // Reset image state when coat URL changes
   useEffect(() => {
@@ -242,12 +262,12 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
         if (request !== challengeRequest.current) return;
         console.error('Failed to load county challenge:', err);
         setChallenge(null);
-        toast.error(`Failed to load county ${flags ? 'flag' : 'coat of arms'} challenge.`);
+        toast.error(`Failed to load ${noun} ${flags ? 'flag' : 'coat of arms'} challenge.`);
       } finally {
         if (request === challengeRequest.current) setIsLoading(false);
       }
     },
-    [isAuthenticated, service, tokenPrefix, flags]
+    [isAuthenticated, service, tokenPrefix, flags, noun]
   );
 
   // Initial load
@@ -312,11 +332,11 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
           return false;
         }
         const matchName = normalizePolishText(c.name).includes(normalizedQuery);
-        const matchVoivodeship = normalizePolishText(c.voivodeship).includes(normalizedQuery);
-        return matchName || matchVoivodeship;
+        const matchVoivodeship = !scope && normalizePolishText(c.voivodeship).includes(normalizedQuery);
+        return matchName || matchVoivodeship || (c.aliases || []).some((alias) => normalizePolishText(alias).includes(normalizedQuery));
       })
       .slice(0, 8);
-  }, [counties, inputVal, guesses]);
+  }, [counties, inputVal, guesses, scope]);
 
   const handleSelectCounty = (item: PowiatHeraldryItem) => {
     setSelectedCounty(item);
@@ -356,7 +376,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
 
     const guessedNames = new Set(guesses.map((g) => g.guess.toLowerCase()));
     if (guessedNames.has(name.toLowerCase())) {
-      toast.error('You already guessed this county!');
+      toast.error(`You already guessed this ${noun}!`);
       return;
     }
 
@@ -365,7 +385,8 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
       const match = counties.find(
         (c) =>
           c.name.toLowerCase() === name.toLowerCase() ||
-          normalizePolishText(c.name) === normalizePolishText(name)
+          normalizePolishText(c.name) === normalizePolishText(name) ||
+          (c.aliases || []).some((alias) => normalizePolishText(alias) === normalizePolishText(name))
       );
       if (match) {
         countyId = match.id;
@@ -434,12 +455,12 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
   const handleShare = () => {
     if (!challenge) return;
     const scoreText = won ? `${guesses.length}/${maxGuesses}` : `X/${maxGuesses}`;
-    const headerTitle = `County ${flags ? 'Flags' : 'Coats of Arms'} · ${mode === 'daily' ? challenge.date : 'Challenge'}`;
+    const headerTitle = `${label} ${flags ? 'Flags' : 'Coats of Arms'} · ${mode === 'daily' ? challenge.date : 'Challenge'}`;
 
     const lines: string[] = [];
     lines.push(headerTitle);
     lines.push(`${scoreText} guesses`);
-    if (registrationPlates && registrationPlates.length > 0) {
+    if (!scope && registrationPlates && registrationPlates.length > 0) {
       lines.push(`🚗 [${registrationPlates.join(' · ')}]`);
     }
     lines.push('');
@@ -448,7 +469,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
       if (g.answer) {
         lines.push('🟩 🎯');
       } else {
-        const vTile = g.same_voivodeship ? '🟩' : '⬛';
+        const vTile = scope ? '' : g.same_voivodeship ? '🟩' : '⬛';
         const arrow = g.bearing_arrow ? `${g.bearing_arrow} ` : '';
         const dist = g.distance_km !== null && g.distance_km !== undefined ? `${g.distance_km} km` : '';
         lines.push(`${vTile} ${arrow}${dist}`.trim());
@@ -458,8 +479,8 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
     lines.push('');
     lines.push(
       typeof window !== 'undefined'
-        ? `${window.location.origin}${flags ? '/flagi-powiatow' : '/herby-powiatow'}`
-        : `https://countrydle.com${flags ? '/flagi-powiatow' : '/herby-powiatow'}`
+        ? `${window.location.origin}${regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}`
+        : `https://countrydle.com${regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}`
     );
 
     const fullShareText = lines.join('\n');
@@ -478,13 +499,13 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
       <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
         <span className="text-sm font-medium text-sand-300">
-          {`Loading County ${flags ? 'Flags' : 'Coats of Arms'}...`}
+          {`Loading ${label} ${flags ? 'Flags' : 'Coats of Arms'}...`}
         </span>
       </div>
     );
   }
   if (!challenge && !isPrerenderCapture()) {
-    return <div role="alert" className="p-8 text-rose-300">This county {flags ? 'flag' : 'coat of arms'} challenge is unavailable. <button type="button" className="underline" onClick={() => void loadChallenge(mode)}>Retry</button></div>;
+    return <div role="alert" className="p-8 text-rose-300">This {noun} {flags ? 'flag' : 'coat of arms'} challenge is unavailable. <button type="button" className="underline" onClick={() => void loadChallenge(mode)}>Retry</button></div>;
   }
 
   return (
@@ -493,26 +514,28 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
       <header className="mb-2 sm:mb-6 border-b border-sand-800/80 pb-2 sm:pb-4 space-y-2 sm:space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div>
-            <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
+            <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-xs font-mono font-semibold text-sand-400">
               <span className="flex items-center gap-1.5">
                 <Shield size={14} className="text-emerald-400" />
-                {flags ? 'County Flags' : 'County Heraldry'}
+                {`${label} ${flags ? 'Flags' : 'Heraldry'}`}
               </span>
               <span>•</span>
               <span>{mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}</span>
             </div>
             <h1 className="text-lg font-bold tracking-tight text-sand-100 sm:text-3xl">
-              {flags ? 'County Flags' : 'County Coats of Arms'}
+              {`${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
             </h1>
             <p className="mt-0.5 text-[11px] leading-tight text-sand-400 sm:text-sm sm:leading-normal">
-              {`Identify the Polish county by its official ${flags ? 'flag' : 'coat of arms'}. Registration plates reveal after 5 wrong guesses.`}
+              {scope ? `Identify the ${noun} by its ${flags ? 'flag' : 'coat of arms'}.` : `Identify the Polish county by its official ${flags ? 'flag' : 'coat of arms'}. Registration plates reveal after 5 wrong guesses.`}
             </p>
+            {scope === 'england_counties' && <p className="mt-1 text-xs text-sand-400">{flags ? 'Community flags with historic and cultural associations to present-day ceremonial counties; historic boundaries may differ. These are not flags of modern ceremonial authority.' : 'Council arms associated with these counties; not necessarily arms of the ceremonial county or a current authority.'}</p>}
+            {scope && targetCount !== null && <p className="mt-1 text-xs text-sand-400">{targetCount} eligible targets{counties.length > 0 && `; all ${counties.length} places can be guessed`}.</p>}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Guesses Remaining Pill */}
             <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
-              <span className="mr-1.5 sm:mr-2 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-zinc-400">
+              <span className="mr-1.5 sm:mr-2 font-mono text-xs text-zinc-400">
                 {'Guesses:'}
               </span>
               <span
@@ -530,7 +553,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
               type="button"
               onClick={() => setShowInstructions(true)}
               className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors cursor-pointer"
-              title={`How to play County ${flags ? 'Flags' : 'Coats of Arms'}`}
+              title={`How to play ${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
               aria-label={'Instructions'}
             >
               <HelpCircle size={17} />
@@ -577,10 +600,10 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
               ⚡ {'Random Challenge'}
             </button>
             <Link
-              to={flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
+              to={regionalPath ? `${regionalPath}/quiz` : flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
               className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
             >
-              🏆 {flags ? 'County Flags Grid Quiz' : '380 Coats Grid Quiz'}
+              {scope ? 'All Symbols Quiz' : flags ? 'County Flags Grid Quiz' : '380 Coats Grid Quiz'}
             </Link>
           </div>
 
@@ -597,10 +620,10 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
               </button>
             )}
             <Link
-              to={flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
+              to={regionalPath ? `${regionalPath}/quiz` : flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
               className="sm:hidden flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded-sm border border-white/10 bg-obsidian-950 text-zinc-400 hover:text-emerald-300 text-xs font-medium transition-colors text-center"
             >
-              <span className="truncate">🏆 {flags ? 'Flags Quiz' : '380 Coats Quiz'}</span>
+              <span className="truncate">{scope ? 'All Symbols Quiz' : flags ? 'Flags Quiz' : '380 Coats Quiz'}</span>
             </Link>
           </div>
         </div>
@@ -610,7 +633,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
       <main className="space-y-2.5 sm:space-y-6">
         {/* 1. Coat of Arms Shield Display */}
         <section
-          aria-label={flags ? 'County Flag' : 'County Coat of Arms Shield'}
+          aria-label={`${label} ${flags ? 'Flag' : 'Coat of Arms Shield'}`}
           className="relative flex flex-col items-center justify-center rounded-xl border border-sand-800/80 bg-obsidian-950/60 p-2 sm:p-6 shadow-inner"
         >
           {/* Decorative heraldic background glow */}
@@ -624,6 +647,8 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
             onClick={() => {
               if (resolvedCoatUrl && !imageError && !imageLoading) {
                 setZoomLevel(1);
+                setFullscreenLoaded(false);
+                setFullscreenFailed(false);
                 setIsFullscreenOpen(true);
               }
             }}
@@ -638,15 +663,17 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
               ) {
                 e.preventDefault();
                 setZoomLevel(1);
+                setFullscreenLoaded(false);
+                setFullscreenFailed(false);
                 setIsFullscreenOpen(true);
               }
             }}
             aria-label={
               `Click to inspect ${flags ? 'flag' : 'coat of arms'} in fullscreen`
             }
-            className={`group relative h-48 sm:h-80 ${flags ? 'w-full max-w-xl' : 'aspect-[4/5]'} flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
+            className={`group relative h-48 sm:h-80 ${flags ? 'w-full max-w-xl' : 'aspect-[4/5]'} flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-lg transition-colors ${
               resolvedCoatUrl && !imageError && !imageLoading
-                ? 'cursor-zoom-in hover:border-emerald-500/50 hover:shadow-emerald-950/30'
+                ? 'cursor-zoom-in hover:border-emerald-500/50'
                 : ''
             }`}
           >
@@ -660,7 +687,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                 alt={
                   targetPowiat
                     ? `${flags ? 'Flag' : 'Coat of arms'} of ${targetPowiat.name}`
-                    : `Polish county ${flags ? 'flag' : 'coat of arms'}`
+                    : `${label} ${flags ? 'flag' : 'coat of arms'}`
                 }
                 className={`h-full w-full object-contain filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.02] ${
                   imageLoading ? 'opacity-0' : 'opacity-100'
@@ -675,7 +702,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
             {resolvedCoatUrl && !imageError && !imageLoading && (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-85 group-hover:opacity-100 group-hover:border-emerald-400/50 group-hover:text-emerald-300 transition-all shadow"
+                className="pointer-events-none absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-85 group-hover:opacity-100 group-hover:border-emerald-400/50 group-hover:text-emerald-300 transition-colors shadow"
               >
                 <Maximize2 size={13} />
               </span>
@@ -727,7 +754,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
         </section>
 
         {/* 2. Automatic Full Registration Plate Hint After 5th Wrong Guess */}
-        <section aria-label={'Registration plate hint'}>
+        {!scope && <section aria-label={'Registration plate hint'}>
           {isPlatesUnlocked ? (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 rounded-lg border border-blue-500/30 bg-blue-950/30 p-2.5 sm:px-5 sm:py-4 shadow-sm">
               <div className="flex items-center gap-2 text-blue-300 text-xs sm:text-sm font-medium">
@@ -757,7 +784,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
               </div>
             </div>
           )}
-        </section>
+        </section>}
 
         {/* 3. County Autocomplete & Guess Input Form */}
         {!isGameOver ? (
@@ -780,7 +807,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder={
-                      'Type county name (e.g. Poznań)...'
+                      scope ? `Type ${noun} name...` : 'Type county name (e.g. Poznań)...'
                     }
                     disabled={isSubmitting}
                     autoComplete="off"
@@ -840,7 +867,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{item.name}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          {!scope && <div className="flex items-center gap-1.5">
                             <span className="rounded-xs border border-white/10 bg-sand-900/80 px-1.5 py-0.5 text-[11px] font-mono text-sand-400">
                               woj. {item.voivodeship}
                             </span>
@@ -849,7 +876,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                                 ? 'City county'
                                 : 'Land county'}
                             </span>
-                          </div>
+                          </div>}
                         </li>
                       );
                     })}
@@ -885,9 +912,9 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                   {targetPowiat ? (
                     <>
                       {targetPowiat.name}{' '}
-                      <span className="font-normal text-sand-400 text-sm sm:text-base">
+                      {!scope && <span className="font-normal text-sand-400 text-sm sm:text-base">
                         (woj. {targetPowiat.voivodeship})
-                      </span>
+                      </span>}
                     </>
                   ) : (
                     'Game Over'
@@ -902,11 +929,11 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                   {challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}
                 </p>
                 {challenge?.ranked && !isAuthenticated && <p className="text-xs text-sand-400">Sign in to add your daily result to the leaderboard.</p>}
-                <Link to={`/leaderboard?mode=${flags ? 'county_flags' : 'heraldry'}`} className="text-xs text-emerald-300 underline">View leaderboard</Link>
+                <Link to={`/leaderboard?mode=${encodeURIComponent(leaderboardMode)}`} className="text-xs text-emerald-300 underline">View leaderboard</Link>
               </div>
 
               {/* Registration Plates on Victory Card */}
-              {registrationPlates && registrationPlates.length > 0 && (
+              {!scope && registrationPlates && registrationPlates.length > 0 && (
                 <div className="flex flex-col sm:items-end gap-1">
                   <span className="text-[11px] font-mono text-sand-400 uppercase tracking-wider">
                     {'Registration plates:'}
@@ -952,7 +979,9 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                     </a>
                   )}
                   {attribution.description && <span>Modification: {attribution.description}</span>}
+                  {attribution.context && <span>Context: {attribution.context}</span>}
                 </div>
+                {scope && <SymbolComponentCredits credits={attribution.component_credits} />}
               </div>
             )}
 
@@ -997,7 +1026,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
 
           {guesses.length === 0 ? (
             <div className="rounded-lg border border-dashed border-sand-800 p-6 text-center text-xs sm:text-sm text-sand-500">
-              {'Enter a county name above to submit your first guess.'}
+              {`Enter ${scope === 'england_counties' ? 'an' : 'a'} ${noun} name above to submit your first guess.`}
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -1029,7 +1058,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                     {/* Right: Voivodeship badge, Distance & Bearing */}
                     <div className="flex items-center gap-2 sm:gap-3">
                       {/* Voivodeship Badge */}
-                      <span
+                      {!scope && <span
                         className={`rounded-xs px-2 py-0.5 text-[11px] font-mono border ${
                           g.same_voivodeship
                             ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300'
@@ -1042,7 +1071,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                         }
                       >
                         {g.same_voivodeship ? '🟩' : '⬛'} woj. {g.voivodeship}
-                      </span>
+                      </span>}
 
                       {/* Distance */}
                       <span
@@ -1075,6 +1104,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
             </div>
           )}
         </section>
+        {scope && <RegionalGeographyCredit scope={scope} />}
       </main>
 
       {/* 6. Results Modal */}
@@ -1110,11 +1140,11 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                 </h2>
                 <p className="mt-1 text-xs text-sand-400">
                   {won
-                    ? `Identified county ${flags ? 'flag' : 'coat of arms'} in ${guesses.length}/${maxGuesses} guesses!`
+                    ? `Identified ${noun} ${flags ? 'flag' : 'coat of arms'} in ${guesses.length}/${maxGuesses} guesses!`
                     : 'Out of guesses this round.'}
                 </p>
                 <p className="mt-2 text-sm text-emerald-300">{challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}</p>
-                <Link to={`/leaderboard?mode=${flags ? 'county_flags' : 'heraldry'}`} className="mt-1 inline-block text-xs text-emerald-300 underline">View leaderboard</Link>
+                <Link to={`/leaderboard?mode=${encodeURIComponent(leaderboardMode)}`} className="mt-1 inline-block text-xs text-emerald-300 underline">View leaderboard</Link>
               </div>
               <button
                 type="button"
@@ -1130,17 +1160,17 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
             {targetPowiat && (
               <div className="rounded-lg border border-sand-800 bg-obsidian-900/80 p-4 space-y-2">
                 <div className="text-xs font-mono uppercase text-sand-400">
-                  {'Target county:'}
+                  {`Target ${noun}:`}
                 </div>
                 <div className="text-lg font-bold text-sand-100">{targetPowiat.name}</div>
-                <div className="text-xs text-emerald-400 font-mono">
+                {!scope && <div className="text-xs text-emerald-400 font-mono">
                   Voivodeship {targetPowiat.voivodeship}
-                </div>
+                </div>}
               </div>
             )}
 
             {/* Registration plates badge */}
-            {registrationPlates && registrationPlates.length > 0 && (
+            {!scope && registrationPlates && registrationPlates.length > 0 && (
               <div className="rounded-lg border border-blue-500/20 bg-blue-950/20 p-3 flex items-center justify-between">
                 <span className="text-xs text-blue-300 font-medium">
                   {'Registration plates:'}
@@ -1159,6 +1189,8 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                     {attribution.artist || attribution.author} {attribution.license ? `(${attribution.license})` : ''}
                   </div>
                 )}
+                {attribution.context && <div>Context: {attribution.context}</div>}
+                {scope && <SymbolComponentCredits credits={attribution.component_credits} />}
               </div>
             )}
 
@@ -1207,7 +1239,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={`How to Play County ${flags ? 'Flags' : 'Coats of Arms'}`}
+            aria-label={`How to Play ${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
             className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-xl border border-white/15 bg-obsidian-950 p-4 md:max-h-[92vh] sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1215,10 +1247,10 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
               <div>
                 <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
                   <Shield className="text-emerald-400" size={26} />
-                  <span>{`How to Play County ${flags ? 'Flags' : 'Coats of Arms'}`}</span>
+                  <span>{`How to Play ${label} ${flags ? 'Flags' : 'Coats of Arms'}`}</span>
                 </h2>
                 <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
-                  {`Deduce the Polish county from its official ${flags ? 'flag' : 'coat of arms'} in 8 guesses or fewer.`}
+                  {`Deduce the ${scope ? noun : 'Polish county'} from its ${flags ? 'flag' : 'coat of arms'} in 8 guesses or fewer.`}
                 </p>
               </div>
               <button
@@ -1234,12 +1266,12 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-lg border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
                     <Shield size={16} />
-                    <span>1. {flags ? 'Official County Flag' : 'Official Heraldic Shield'}</span>
+                    <span>1. {scope ? `Verified ${flags ? 'Flag' : 'Coat of Arms'}` : flags ? 'Official County Flag' : 'Official Heraldic Shield'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {flags ? 'Each puzzle displays a verified official flag of a Polish land or city county. Only counties with verified flags are included.' : 'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
+                    {scope ? `Each puzzle displays a verified ${flags ? 'flag' : 'coat of arms'} from the eligible ${noun} catalog.` : flags ? 'Each puzzle displays a verified official flag of a Polish land or city county. Only counties with verified flags are included.' : 'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
@@ -1247,9 +1279,9 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-blue-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              {!scope && <div className="rounded-lg border border-blue-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
                     <Car size={16} />
                     <span>2. {'Plate Code Reveal after 5 Guesses'}</span>
                   </div>
@@ -1260,16 +1292,16 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
                   {'Automatic unlock'}
                 </div>
-              </div>
+              </div>}
 
               <div className="rounded-lg border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
                     <Compass size={16} />
                     <span>3. {'Distance & Direction'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {'Every missed attempt shows distance in kilometers between county centroids along with a compass direction arrow.'}
+                    {`Every missed attempt shows distance in kilometers between ${scope ? 'places' : 'county centroids'} along with a compass direction arrow.`}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
@@ -1277,10 +1309,10 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-purple-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              {!scope && <div className="rounded-lg border border-purple-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
-                    <Sparkles size={16} />
+                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                    <Shield size={16} />
                     <span>4. {'Voivodeship Match'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
@@ -1290,7 +1322,7 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
                   {'16 Polish provinces'}
                 </div>
-              </div>
+              </div>}
             </div>
 
             <div className="pt-3 border-t border-white/10 flex justify-end">
@@ -1396,23 +1428,33 @@ function CountyHeraldryGame({ flags }: { flags: boolean }) {
                   : 'border-white/15 bg-obsidian-900/95 shadow-black/80'
               }`}
             >
+              {!fullscreenLoaded && (
+                <img
+                  src={resolvedCoatUrl}
+                  alt=""
+                  aria-hidden="true"
+                  style={{ height: `${Math.round(68 * zoomLevel)}vh`, maxHeight: `${Math.round(68 * zoomLevel)}vh`, width: 'auto' }}
+                  className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl"
+                />
+              )}
+              {fullscreenFailed && <p role="alert" className="absolute bottom-1 text-xs text-amber-300">
+                Full-resolution image unavailable; showing preview.
+              </p>}
               <img
-                src={
-                  retryNonce > 0
-                    ? `${resolvedCoatUrl}${resolvedCoatUrl.includes('?') ? '&' : '?'}retry=${retryNonce}`
-                    : resolvedCoatUrl
-                }
+                src={`${resolvedCoatUrl}${resolvedCoatUrl.includes('?') ? '&' : '?'}full=true`}
+                onLoad={() => setFullscreenLoaded(true)}
+                onError={() => setFullscreenFailed(true)}
                 alt={
                   targetPowiat
                     ? `${flags ? 'Flag' : 'Coat of arms'} of ${targetPowiat.name}`
-                    : `Polish county ${flags ? 'flag' : 'coat of arms'} (fullscreen)`
+                    : `${label} ${flags ? 'flag' : 'coat of arms'} (fullscreen)`
                 }
                 style={{
                   height: `${Math.round(68 * zoomLevel)}vh`,
                   maxHeight: `${Math.round(68 * zoomLevel)}vh`,
                   width: 'auto',
                 }}
-                className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-all duration-150"
+                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-150 ${!fullscreenLoaded ? 'absolute opacity-0' : ''}`}
               />
             </div>
           </div>

@@ -6,8 +6,9 @@ import axios from 'axios';
 import { adminService, timeService } from '../src/services/api';
 import { useAuthStore } from '../src/stores/authStore';
 
-test('restoring an administrator keeps the county flag session deep link', async () => {
-  const dom = new TestWindow({ url: 'http://localhost/admin?tab=sessions&mode=county_flags_quiz&date=2026-11-06' });
+test.each(['county_flags_quiz', 'regional_symbols:london_boroughs:flag:quiz'])('restoring an administrator keeps the %s session deep link', async (gameMode) => {
+  const query = `?tab=sessions&mode=${encodeURIComponent(gameMode)}&date=2026-11-06`;
+  const dom = new TestWindow({ url: `http://localhost/admin${query}` });
   const globals: Record<string, unknown> = { window: dom, document: dom.document, navigator: dom.navigator, localStorage: dom.localStorage, history: dom.history, location: dom.location, HTMLElement: dom.HTMLElement, Element: dom.Element, Node: dom.Node, __APP_VERSION__: 'test', IS_REACT_ACT_ENVIRONMENT: true };
   const previous = new Map<string, PropertyDescriptor | undefined>();
   for (const [name, value] of Object.entries(globals)) {
@@ -28,9 +29,11 @@ test('restoring an administrator keeps the county flag session deep link', async
   try {
     await act(async () => { root.render(<App />); });
     expect(dom.location.pathname).toBe('/admin');
-    expect(dom.location.search).toBe('?tab=sessions&mode=county_flags_quiz&date=2026-11-06');
-    const mode = Array.from(container.querySelectorAll('select')).find(select => Array.from(select.options).some(option => option.value === 'county_flags_quiz'));
-    expect(mode?.value).toBe('county_flags_quiz');
+    expect(dom.location.search).toBe(query);
+    const mode = Array.from(container.querySelectorAll('select')).find(select => Array.from(select.options).some(option => option.value === gameMode));
+    expect(mode?.value).toBe(gameMode);
+    expect(sessions).toHaveBeenCalledWith(expect.objectContaining({ mode: gameMode }));
+    expect(stats).toHaveBeenCalledWith(expect.objectContaining({ mode: gameMode }));
     expect(container.querySelector('input[type="date"]')?.getAttribute('value')).toBe('2026-11-06');
   } finally {
     await act(async () => root.unmount());

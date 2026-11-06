@@ -147,7 +147,7 @@ export default function ProfilePage() {
       </Link>
 
       <header className="border-b border-white/10 pb-8 sm:pb-10">
-        <p className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">{t('profile.playerProfile')}</p>
+        <p className="mb-6 font-mono text-xs text-emerald-400">{t('profile.playerProfile')}</p>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
           <div aria-hidden="true" className="flex h-20 w-20 shrink-0 items-center justify-center rounded-sm border border-emerald-400/25 bg-emerald-400/[0.06] font-serif text-3xl text-emerald-300 sm:h-24 sm:w-24 sm:text-4xl">
             {stats.user.username.substring(0, 2).toUpperCase()}
@@ -173,7 +173,7 @@ export default function ProfilePage() {
             )}
             {stats.user.created_at && <p className="mt-3 flex items-center gap-2 text-sm text-zinc-400"><CalendarDays size={14} className="shrink-0 text-zinc-500" aria-hidden="true" />{t('profile.memberSince', { date: new Date(stats.user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) })}</p>}
           </div>
-          {isOwnProfile && <span className="self-start rounded-sm border border-emerald-400/20 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-emerald-300 sm:self-center">{t('profile.yourProfile')}</span>}
+          {isOwnProfile && <span className="self-start rounded-sm border border-emerald-400/20 px-2.5 py-1 font-mono text-xs text-emerald-300 sm:self-center">{t('profile.yourProfile')}</span>}
         </div>
       </header>
 

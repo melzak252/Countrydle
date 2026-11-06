@@ -1,0 +1,1399 @@
+{
+  "as_of": "2026-11-06",
+  "method": "Wikipedia-first identification with per-file Commons licensing and attribution; candidates may refer to historical or other entities. Historical audit reasons are retained; inclusion is not official consent. Unverified does not mean no symbol.",
+  "entities": [
+    {
+      "id": 1,
+      "name": "Bedfordshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Bedfordshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Bedfordshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Bedfordshire_County_Flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Former_Bedfordshire_County_Council_Flag.gif",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Bedfordshire.gif"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1951–2009 Bedfordshire County Council arms, associated with the present ceremonial county but not attributed to a current council; independent Commons CC BY-SA illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/beds_74to09.html",
+          "search_query": "Bedfordshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Bedfordshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Former_Bedfordshire_County_Council_Coat_of_Arms.jpg",
+            "https://commons.wikimedia.org/wiki/File:Bedfordshire_coat_of_arms_at_Dunstable_Library.JPG",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Bedfordshire_County_Council.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Berkshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies the registered community flag and Lord-Lieutenant's support; Commons artwork credits the Institute and revision contributors and is marked public domain; Chromium-decoded. https://www.flaginstitute.org/wp/flags/berkshire-flag/",
+          "search_query": "Berkshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Berkshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Berkshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Berkshire_(David_Nash_Ford_proposal).svg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_flag_of_Berkshire.gif"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1974–1998 Berkshire County Council arms, associated with the present ceremonial county but not attributed to a current council; independent Commons CC BY-SA illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/obs_county.html",
+          "search_query": "Berkshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Berkshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Newbury%27s_coat_of_arms_-_geograph.org.uk_-_3296357.jpg",
+            "https://commons.wikimedia.org/wiki/File:St_Mary%2C_Chieveley%2C_coat_of_arms_-_geograph.org.uk_-_3988010.jpg",
+            "https://commons.wikimedia.org/wiki/File:All_Saints%2C_Reading%2C_coat_of_arms_-_geograph.org.uk_-_4385704.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Bristol",
+      "symbols": {
+        "flag": {
+          "status": "unverified",
+          "previous_status": "unverified",
+          "previous_reason": "Commons search found shipping-line flags and a St George flag photograph, not a confirmed Bristol county/community design; Flag Institute registry search found no named Bristol entry. A verified adoption and independently licensed artwork are needed. https://www.flaginstitute.org/wp/uk-flags/uk-flag-registry/",
+          "reason": "Flags of the World reports the council flew a banner of arms. Commons captions Paul Callan's Flickr-reviewed CC BY 2.0 Bristol Flag.jpg as a council arms banner, but flags it generically as fictitious/proposed/unofficial; its illustration shows three visible masts with sails set while Wikipedia's blazon specifies two visible masts with the main sail furled. An authentic matching banner depiction or clarification of this identity conflict is needed. Commons 960px JPEG was downloaded and visually inspected but not included. https://commons.wikimedia.org/wiki/File:Bristol_Flag.jpg https://www.crwflags.com/fotw/flags/gb-e-brs.html https://en.wikipedia.org/wiki/Coat_of_arms_of_Bristol",
+          "search_query": "Bristol flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Bristol%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:House_flag_of_Bristol_City_Line.svg",
+            "https://commons.wikimedia.org/wiki/File:House_flag_of_Bristol_Steam_Navigation_Company.svg",
+            "https://commons.wikimedia.org/wiki/File:Bristol_%2C_St_Peter%27s_Church_and_St_George%27s_Flag_-_geograph.org.uk_-_1360791.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Bristol City Council arms associated with the ceremonial city/county; independent Commons CC BY-SA 4.0 artwork credits the Sodacan CC BY-SA 3.0 unicorn component, Chromium-decoded and visually inspected. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Bristol coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Bristol%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Relief_of_coat_of_arms_of_Bristol_-_The_Courts%2C_Bristol_-_DSC_7654.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_University_of_Bristol_(geograph_5697433).jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_University_of_Bristol%2C_School_of_Anatomy_-_PXL_20250219_163810327.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Buckinghamshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies the registered Buckinghamshire community flag; Commons artwork credits the Flag Institute under its attribution-only licence and AxG vectorization, Chromium-decoded. https://www.flaginstitute.org/wp/flags/buckinghamshire-flag/",
+          "search_query": "Buckinghamshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Buckinghamshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Buckinghamshire.svg",
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Buckinghamshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Waddesdon_Manor_in_Buckinghamshire_-_geograph.org.uk_-_42600.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Historic Buckinghamshire County Council arms, 1948–2020, associated with the modern ceremonial county; independent CC BY-SA 4.0 illustration credits both declared source components. Not presented as arms of the current council. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Buckinghamshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Buckinghamshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Buckinghamshire_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Buckinghamshire_New_University.svg",
+            "https://commons.wikimedia.org/wiki/File:Holy_Trinity%2C_Penn%2C_coat_of_arms_-_geograph.org.uk_-_7914617.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Cambridgeshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies Brady Ells' registered Cambridgeshire community flag, distinct from the county council banner. Commons Hogweard PD-self SVG and HapHaxion revision credit recorded; Chromium-decoded. https://www.flaginstitute.org/wp/flags/cambridgeshire-flag/",
+          "search_query": "Cambridgeshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cambridgeshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cambridgeshire_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_fen_roundhouse.jpg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_flag_of_Cambridgeshire_(2014)_-_Design_A.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Cambridgeshire County Council arms associated with the named ceremonial county, not asserted a separate ceremonial-grantee achievement; independent Commons CC BY-SA illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/east_of_england.html",
+          "search_query": "Cambridgeshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cambridgeshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:The_Carpenters_Arms%2C_Coates%2C_Cambridgeshire%2C_May_2014.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_on_the_Guildhall_-_geograph.org.uk_-_5009467.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_on_Clayhithe_bridge_-_geograph.org.uk_-_673370.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Cheshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Cheshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cheshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cheshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cheshire_County%2C_New_Hampshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_flag_of_Cheshire.png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1938–2009 Cheshire County Council arms associated with current ceremonial Cheshire; independent Commons CC BY-SA illustration credits both Sodacan feather sources and decoded in Chromium. https://www.civicheraldry.co.uk/cheshire_74to09.html",
+          "search_query": "Cheshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cheshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Cheshire_County_Council%27s_Coat_of_Arms_-_geograph.org.uk_-_675782.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Cheshire_East_Borough_Council.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Cheshire_Police_Authority.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "City of London",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Flag Institute registers the City flag and Commons has a public-domain illustration, but its design reproduces the shield described in the Corporation’s 2024 arms-usage review. Whether that specific review applies to independent educational flag depictions is unresolved; no blanket ban or permission is claimed. https://democracy.cityoflondon.gov.uk/documents/s203757/Coat%20of%20Arms%20Report%20FINAL.pdf",
+          "reason": "Wikipedia identifies the City flag, distinct from Greater London; Commons identifies Greentubing's public-domain illustration. Inclusion is not Corporation permission; the prior usage concern remains recorded. https://en.wikipedia.org/wiki/Flag_of_the_City_of_London",
+          "search_query": "City of London flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=City%20of%20London%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_City_of_London_(2x1).svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_City_of_London_(5x3).svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_City_of_London.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "restricted",
+          "previous_reason": "2024 City Corporation report asserts copyright in its arms and describes applications for their use including commercial uses; whether independent educational depiction is covered is unresolved. Commons artwork claims CC BY-SA; no City approval inferred. https://democracy.cityoflondon.gov.uk/documents/s203757/Coat%20of%20Arms%20Report%20FINAL.pdf",
+          "reason": "Wikipedia identifies the City Corporation arms and Commons attributes the independent CC BY-SA 3.0 illustration to Sodacan. Inclusion is not City permission; the prior usage concern remains recorded. https://en.wikipedia.org/wiki/Coat_of_arms_of_the_City_of_London",
+          "search_query": "City of London coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=City%20of%20London%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_The_City_of_London.svg",
+            "https://commons.wikimedia.org/wiki/File:City_of_London_coat_of_arms%2C_Barbican_-_geograph.org.uk_-_4028335.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_City_of_London_School%2C_London_EC4_-_geograph.org.uk_-_1094948.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Cornwall",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute registers St Piran's flag for Cornwall; independent Commons simple-geometry PD SVG, native 3:5, Chromium decoded. https://www.flaginstitute.org/wp/flags/cornwall-flag/",
+          "search_query": "Cornwall flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cornwall%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cornwall%2C_Ontario_(granted).svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cornwall.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Cornwall_Rugby_Football_Union.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Cornwall Council arms associated with ceremonial Cornwall, which also includes Isles of Scilly; do not present council jurisdiction as coterminous. Commons CC BY-SA illustration credits Lobsterthermidor and Adalric67 chough sources, Chromium-decoded. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Cornwall coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cornwall%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_the_Duchy_of_Cornwall.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Camilla%2C_Duchess_of_Cornwall.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Camilla%2C_Duchess_of_Cornwall_(2012-2022).svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Cumbria",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "2025 registered community flag, not a flag of authority; Commons CC0 artwork packaged unchanged.",
+          "search_query": "Cumbria flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cumbria%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cumbria_(Proposal_C).png",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cumbria_(Proposal_B).png",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Cumbria_County_Council.jpg"
+          ],
+          "primary_source": "https://cumbria-lieutenant.org.uk/community-flag-all-cumbria",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Community_flag_of_Cumbria.svg"
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Arms of the former Cumbria County Council associated with the modern ceremonial county; Fenn-O-maniC's CC BY-SA 4.0 illustration credits its declared components, including the historical council-banner artwork and its rose and cinquefoil source chain. Not the 2025 community flag or a current council grant. https://commons.wikimedia.org/wiki/File:Arms_of_Cumbria_County_Council.svg",
+          "search_query": "Cumbria coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Cumbria%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Old_Carlisle_coat_of_arms_-_geograph.org.uk_-_1650407.jpg",
+            "https://commons.wikimedia.org/wiki/File:Carlisle_city_coat_of_arms_-_geograph.org.uk_-_1650401.jpg",
+            "https://commons.wikimedia.org/wiki/File:Graythwaite_coat_of_arms%2C_Cunsey_Lodge_gate_-_geograph.org.uk_-_2998354.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Derbyshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies the community flag and its designer; independent Commons PD-user artwork decoded in Chromium. The 2:3 illustration differs from the registry's 3:5 proportion. https://www.flaginstitute.org/wp/flags/derbyshire-flag/",
+          "search_query": "Derbyshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Derbyshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Derbyshire_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Derbyshire_flag_(Design_2).svg",
+            "https://commons.wikimedia.org/wiki/File:Derbyshire_flag_(Design_3).svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Derbyshire County Council arms associated with the modern ceremonial county; independent CC BY-SA 4.0 illustration credits all four declared Commons components. https://www.civicheraldry.co.uk/east_midlands.html",
+          "search_query": "Derbyshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Derbyshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_South_Derbyshire_District.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_The_Crescent%2C_Buxton_-_geograph.org.uk_-_556852.jpg",
+            "https://commons.wikimedia.org/wiki/File:Woolsthorpe_Manor_coat_of_arms_-_geograph.org.uk_-_720153.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Devon",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies St Petroc's Cross community flag of historic Devon, associated with current county but not asserted coterminous. Commons PD-self SVG retains 25:43 instead of registry 3:5 proportions; this variant distinction is disclosed, and artwork was Chromium-decoded. https://www.flaginstitute.org/wp/flags/devon-flag/",
+          "search_query": "Devon flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Devon%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Devon.svg",
+            "https://commons.wikimedia.org/wiki/File:Flags_Devon_Teignmouth.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Newton_Abbot.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons Devon County Council SVG declares File:Devon arms.png as a source; that PNG describes a transfer from English Wikipedia but gives no author or date despite its self-licensed CC BY-SA claim. Both Devon SVG versions cite this unattributed image, so its creator and derivative chain remain a specific prerequisite. https://commons.wikimedia.org/wiki/File:Devon_arms.png",
+          "reason": "Wikipedia identifies the county council arms; Commons asserts CC BY-SA 4.0 for SouthHamsian's illustration and identifies its components. The prior source-chain caveat remains recorded. SVG original returned HTTP 429; local asset is Commons' 960px PNG rendering. https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Devon_County_Council.svg",
+          "search_query": "Devon coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Devon%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Mid_Devon_District_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Devon_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Kingsbridge_(Devon).svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Dorset",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Registered community flag, not a claim to exclusive ceremonial authority; Dorset Lieutenancy explicitly connects the county flag with events and describes the current ceremonial area. Commons artwork public domain.",
+          "identity_source": "https://dorsetlieutenancy.org.uk/faqs/",
+          "registry": "https://www.flaginstitute.org/wp/flags/dorset-flag/",
+          "search_query": "Dorset flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Dorset%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Dorset.svg",
+            "https://commons.wikimedia.org/wiki/File:Swanage%2C_two_Dorset_flags_fly_-_geograph.org.uk_-_4426703.jpg",
+            "https://commons.wikimedia.org/wiki/File:Dorset_flag_proposal_-3.gif"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Former Dorset County Council arms, associated with present ceremonial Dorset, not claimed current council arms; independent CC BY-SA Commons illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Dorset coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Dorset%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:James_Thornhill_(1675-1676-1734)_-_Coach_Panel_with_the_Royal_Coat_of_Arms_-_ART2351_-_Dorset_Museum_%5E_Art_Gallery.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_Dorset_coat_of_arms.gif",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Thomas_Grey%2C_1st_Marquess_of_Dorset%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Durham",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "2013 registered community flag associated with County Durham; Lord-Lieutenant and Darlington mayor attended launch. Do not confuse the earlier Durham city flag with this design. Commons artwork CC BY-SA 3.0.",
+          "identity_source": "https://www.flaginstitute.org/wp/flags/county-durham-flag/",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Flag_of_County_Durham.svg",
+          "search_query": "Durham flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Durham%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Durham%2C_North_Carolina.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Durham_County%2C_North_Carolina_(2002-2020).svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_County_Durham.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Durham County Council arms used 1961–1974, associated historically with the modern ceremonial county; Fenn-O-maniC's independent CC BY-SA 4.0 illustration is based on the published historical blazon. Not asserted to be the current council's arms. https://www.civicheraldry.co.uk/durham_pre74.html",
+          "search_query": "Durham coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Durham%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Durham_Castle_-_external_Coat_of_Arms_-_geograph.org.uk_-_1007792.jpg",
+            "https://commons.wikimedia.org/wiki/File:Durham_Castle_-_external_Coat_of_Arms_-_geograph.org.uk_-_1007809.jpg",
+            "https://commons.wikimedia.org/wiki/File:Durham_Castle_-_external_Coat_of_Arms_-_geograph.org.uk_-_1007814.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "East Riding of Yorkshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute registry identifies the 2013 winning public-vote design as the historic East Riding community flag; Commons Vexilo independently licenses this matching SVG CC BY-SA 3.0. The historic riding is associated with, not identical to, the modern ceremonial county.",
+          "search_query": "East Riding of Yorkshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=East%20Riding%20of%20Yorkshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_East_Riding_of_Yorkshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_flag_of_the_East_Riding_of_Yorkshire_(2013)_-_Design_E.svg",
+            "https://commons.wikimedia.org/wiki/File:East_Riding_of_Yorkshire_opt-1200x720.png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "East Riding of Yorkshire Council identifies its 1996 grant and 1996 adoption; Fenn-O-maniC's Commons illustration gives the matching blazon and is independently licensed CC BY-SA 4.0. The grantee is the council, not the ceremonial county; boundaries not asserted identical.",
+          "search_query": "East Riding of Yorkshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=East%20Riding%20of%20Yorkshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Arms_of_East_Riding_of_Yorkshire_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_Withernsea_(geograph_3732332).jpg",
+            "https://commons.wikimedia.org/wiki/File:Beverley_Minster%2C_coat_of_arms_-_geograph.org.uk_-_5597240.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "East Sussex",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Flag Institute registers a Sussex-wide historic community flag, not a distinct East Sussex flag; assigning the same design exclusively to East Sussex would conflict with West Sussex as another answer. A separately verified design is needed. https://www.flaginstitute.org/wp/flags/sussex-flag/",
+          "reason": "Wikipedia identifies the distinct East Sussex County Council banner. Commons SVG original returned HTTP 429; its 960px PNG rendering was downloaded with separate original and asset hashes. https://en.wikipedia.org/wiki/List_of_English_flags",
+          "search_query": "East Sussex flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=East%20Sussex%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_Court%2C_Courtenay_Terrace%2C_Hove%2C_East_Sussex_-_July_2025.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_on_Seaford_Martello_Tower_Museum%2C_Seaford%2C_East_Sussex_-_geograph.org.uk_-_7779392.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_Pier%2C_Brighton%2C_East_Sussex_-_geograph.org.uk_-_4729867.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "East Sussex County Council arms used 1937–1974, associated historically with the modern ceremonial county; Fenn-O-maniC identifies this as independent CC BY-SA 4.0 artwork. Not asserted to be the current council's arms. https://commons.wikimedia.org/wiki/File:Arms_of_East_Sussex_County_Council_1937-1974.svg",
+          "search_query": "East Sussex coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=East%20Sussex%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:The_Coat_of_Arms_of_Sidney_Sussex_College%2C_Cambridge_-_geograph.org.uk_-_2533016.jpg",
+            "https://commons.wikimedia.org/wiki/File:St_Mary%2C_East_Guldeford%2C_coat_of_arms_-_geograph.org.uk_-_3931905.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_within_St_Mary%2C_East_Lavant_-_geograph.org.uk_-_1637901.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "Essex",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Essex flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Essex%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Essex.svg",
+            "https://commons.wikimedia.org/wiki/File:Essex_County%2C_Ontario_Flag_(pre-2014).svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Essex_County%2C_New_Jersey.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Essex County Council arms associated with ceremonial Essex, which also includes Southend and Thurrock. Commons CC BY-SA illustration credits the Middlesex source and 1915 public-domain reference, Chromium-decoded. https://www.civicheraldry.co.uk/east_of_england.html",
+          "search_query": "Essex coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Essex%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Essex_College%2C_Essex_Hall%2C_University_of_Windsor%2C_Windsor%2C_Ontario%2C_2026-04-26.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_former_Essex_and_Suffolk_Fire_Office%2C_High_Street%2C_CO1_-_Essex_coat_of_arms_-_geograph.org.uk_-_4047807.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Thomas_Cromwell%2C_1st_Earl_of_Essex%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "Gloucestershire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Gloucestershire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Gloucestershire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Severn_Cross.svg",
+            "https://commons.wikimedia.org/wiki/File:Ukrainian_flag%2C_Harescombe%2C_Gloucestershire_(geograph_7123639).jpg",
+            "https://commons.wikimedia.org/wiki/File:Gloucestershire_Flag.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Gloucestershire County Council arms associated with current ceremonial county; independent Commons CC BY-SA illustration credits Heralder component and decoded in Chromium. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Gloucestershire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Gloucestershire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Gloucestershire%2C_Shire_Hall%2C_Gloucester_-_geograph.org.uk_-_6092832.jpg",
+            "https://commons.wikimedia.org/wiki/File:Gloucestershire_Coat_of_Arms_-_geograph.org.uk_-_7339913.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_Berkeley_coat_of_arms_in_stained_glass%2C_Frampton_church.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 18,
+      "name": "Greater London",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons candidates depict former Greater London Council or Greater London Authority marks; no evidence was found that these represent a current Greater London ceremonial-community flag. A distinct verified design and licence are needed. https://commons.wikimedia.org/wiki/File:Flag_of_the_Greater_London_Council.png",
+          "reason": "Wikipedia identifies the former council arms banner with the Greater London Authority, which received the arms in 2025; current community adoption is not claimed. https://en.wikipedia.org/wiki/Symbols_of_Greater_London",
+          "search_query": "Greater London flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Greater%20London%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Greater_London_Council.png",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Greater_London_Authority_(2016).png",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Greater_London_Authority_(2020).png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1965–1986 Greater London Council arms associated with present ceremonial Greater London excluding the City; independent Commons PD-self artwork, Chromium-decoded. https://www.civicheraldry.co.uk/great_london.html",
+          "search_query": "Greater London coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Greater%20London%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Greater_London.svg",
+            "https://commons.wikimedia.org/wiki/File:London_Borough_of_Hillingdon_coat_of_arms_-_geograph.org.uk_-_3155433.jpg",
+            "https://commons.wikimedia.org/wiki/File:Temple_Church_Organ%2C_London%2C_UK_-_Diliff.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 19,
+      "name": "Greater Manchester",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons describes its candidate both as unofficial in the filename and as the former council flag in its text, but no independent current community adoption was established. A verified design provenance is needed. https://commons.wikimedia.org/wiki/File:Unofficial_County_Flag_of_Greater_Manchester.svg",
+          "reason": "Wikipedia associates the design with the former county council, not the current combined authority; Commons PD artwork identifies its PNG source and revisions. https://en.wikipedia.org/wiki/Flag_of_Greater_Manchester",
+          "search_query": "Greater Manchester flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Greater%20Manchester%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Unofficial_County_Flag_of_Greater_Manchester.svg",
+            "https://commons.wikimedia.org/wiki/File:Bunting_with_flag_of_Greater_Manchester_-_geograph.org.uk_-_2298312.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Greater_Manchester_flying_at_Manchester_Piccadilly.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1974–1986 Greater Manchester Metropolitan County Council arms associated with present ceremonial county, not claimed current council arms; Commons CC BY-SA independent artwork, Chromium-decoded. https://www.civicheraldry.co.uk/obs_county.html",
+          "search_query": "Greater Manchester coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Greater%20Manchester%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Greater_Manchester_County_Council_Arms.png",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_the_Greater_Manchester_Metropolitan_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Manchester_under_Town_Hall_tower_-_geograph.org.uk_-_1128074.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "Hampshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "2019 registered community flag represents the whole Hampshire community; distinct from county council arms banner. Commons artwork public domain.",
+          "identity_source": "https://www.flaginstitute.org/wp/uk-flag-registry-news/hampshire-flag-day-recognised/",
+          "candidate": "https://commons.wikimedia.org/wiki/File:County_Flag_of_Hampshire.svg",
+          "search_query": "Hampshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Hampshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_New_Hampshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_New_Hampshire_(1916).jpg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_New_Hampshire_State_flag_(1909).png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Hampshire County Council arms associated with the modern ceremonial county; independent CC BY-SA 4.0 illustration credits its three declared Commons components. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Hampshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Hampshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:New_Hampshire_state_coat_of_arms_(illustrated%2C_1876).jpg",
+            "https://commons.wikimedia.org/wiki/File:Kentucky_state_coat_of_arms_(illustrated%2C_1876).jpg",
+            "https://commons.wikimedia.org/wiki/File:Montana_territory_coat_of_arms_(illustrated%2C_1876).jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 21,
+      "name": "Herefordshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Herefordshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Herefordshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:County_Flag_Of_Herefordshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Banner_of_arms_of_Herefordshire_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Herefordshire_Flag.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "County council arms granted 1946, transferred to post-1998 Herefordshire Council; named association to current ceremonial Herefordshire rather than an assertion of a separate ceremonial grantee. Independent Commons CC BY-SA 4.0 artwork based on the blazon, not Civic Heraldry imagery; Chromium-decoded. https://www.civicheraldry.co.uk/west_midlands.html",
+          "search_query": "Herefordshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Herefordshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Herefordshire_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_-_Bromwiche%2C_of_Hereford%2C_Herefordshire%2C_England.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_-_Mynors%2C_of_Treago%2C_Herefordshire.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 22,
+      "name": "Hertfordshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute states the county council permitted its shield banner as community flag in 2008 while reserving the full achievement; Commons vector and its PD-source credits recorded, Chromium decoded. https://www.flaginstitute.org/wp/flags/hertfordshire-flag/",
+          "search_query": "Hertfordshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Hertfordshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Hertfordshire.svg",
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Hertfordshire_(version).svg",
+            "https://commons.wikimedia.org/wiki/File:Hockerill_Cricket_Club_ground_boundary_marker_flag_Hertfordshire_England.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Hertfordshire County Council arms associated with the present ceremonial county; independent Commons CC BY-SA 4.0 artwork credits Sodacan CC BY-SA 3.0 hart component, Chromium-decoded. https://www.civicheraldry.co.uk/east_of_england.html",
+          "search_query": "Hertfordshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Hertfordshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Hertfordshire_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_William_H._Prescott.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_St_Clements_Danes_School.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 23,
+      "name": "Isle of Wight",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies the Isle of Wight community flag and designer; Commons credits designer and Institute and marks artwork public domain; Chromium-decoded. https://www.flaginstitute.org/wp/flags/isle-of-wight-flag/",
+          "search_query": "Isle of Wight flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Isle%20of%20Wight%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Isle_of_Wight.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Germany%2C_Island_Harbour%2C_Isle_of_Wight%2C_England.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_Isle_of_Wight%2C_Island_Harbour%2C_Isle_of_Wight%2C_England.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Isle of Wight Council arms associated with present ceremonial island; independent Commons CC BY-SA illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Isle of Wight coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Isle%20of%20Wight%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Isle_of_Wight_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Newport%2C_Isle_of_Wight_sign.JPG",
+            "https://commons.wikimedia.org/wiki/File:Isle_of_Wight_Council_Flag.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 24,
+      "name": "Kent",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Kent flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Kent%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:FlagOfKent.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Kent%2C_Ohio.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_New_Kent_County%2C_Virginia.png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons Kent County Council SVG cites File:Arms-kent.jpg, which credits civicheraldry.co.uk as the image source while asserting PD-UKGov; the actual source illustration's rights and relationship to the independent SVG remain unverified. Its other named Commons elements were identified but cannot cure that source gap. https://commons.wikimedia.org/wiki/File:Arms-kent.jpg",
+          "reason": "Wikipedia identifies the county council arms; Commons asserts CC BY-SA 4.0 and identifies components. The prior source-chain caveat remains recorded. SVG original returned HTTP 429; local asset is Commons' 960px PNG rendering. https://commons.wikimedia.org/wiki/File:Arms_of_Kent_County_Council.svg",
+          "search_query": "Kent coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Kent%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:British_(English)_School_-_Philip_Chute_of_Appledore%2C_Kent%2C_Standard-Bearer_to_Henry_VIII%2C_with_the_Royal_Augmentation_to_His_Coat_of_Arms_-_719456_-_National_Trust.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_William_Neville%2C_Earl_of_Kent%2C_KG.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Sir_Richard_Grey%2C_3rd_Earl_of_Kent%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 25,
+      "name": "Lancashire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute registers Lancashire's red rose community flag; Commons PD-self illustration credits the independently created red-rose source and decoded in Chromium. https://www.flaginstitute.org/wp/flags/lancashire-flag/",
+          "search_query": "Lancashire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lancashire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Lancashire_County_Flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Lancashire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Lancashire_County_Council.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons Lancashire County Council SVG cites File:ArmsLancashire.jpg, which identifies civicheraldry.co.uk as its source and asserts PD-UKGov for the College of Arms image. The underlying illustration's rights and relationship to the SVG remain unverified; an independent licensed rendering or rights clarification is needed. https://commons.wikimedia.org/wiki/File:ArmsLancashire.jpg",
+          "reason": "Wikipedia identifies the county council arms; Commons asserts CC BY-SA 4.0 for Fenn-O-maniC's illustration. The prior source-chain caveat remains recorded. SVG original returned HTTP 429; local asset is Commons' 960px PNG rendering. https://commons.wikimedia.org/wiki/File:Arms_of_Lancashire_County_Council.svg",
+          "search_query": "Lancashire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lancashire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Lancashire_1610_Speed_Hondius_-_Restoration.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_Lancashire_and_Yorkshire_Railway_-_geograph.org.uk_-_3735718.jpg",
+            "https://commons.wikimedia.org/wiki/File:Williamson_coat_of_arms_-_geograph.org.uk_-_2223034.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 26,
+      "name": "Leicestershire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Leicestershire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Leicestershire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Leicestershire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Leicestershire_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Leicestershire_(incomplete).svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Leicestershire County Council arms associated with the modern ceremonial county; independent CC BY-SA 4.0 illustration credits its three declared Commons components. https://www.civicheraldry.co.uk/east_midlands.html",
+          "search_query": "Leicestershire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Leicestershire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Leicestershire_Police_Coat_of_Arms_-_geograph.org.uk_-_3885492.jpg",
+            "https://commons.wikimedia.org/wiki/File:Royal_Coat_of_Arms_in_St_Andrew%27s_Church_-_geograph.org.uk_-_2241212.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_at_Bosworth_Battlefield_Visitors_Centre_-_geograph.org.uk_-_1172215.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 27,
+      "name": "Lincolnshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Community flag associated with Lincolnshire and flown across the county; corrected 3:5 Commons derivative records both contributors and public-domain release.",
+          "identity_source": "https://www.louthtowncouncil.gov.uk/louth/fly-the-flag-on-lincolnshire-day/",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Lincolnshire_flag.svg",
+          "search_query": "Lincolnshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lincolnshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Lincolnshire_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Lincolnshire%2C_White_Hart_Hotel%2C_Boston.jpg",
+            "https://commons.wikimedia.org/wiki/File:Lincolnshire_flag_proposal_Design_4.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Lincolnshire County Council arms associated with the ceremonial county; Commons CC BY-SA illustration credits both Sodacan Birgitte source and original, Chromium-decoded. https://www.civicheraldry.co.uk/east_midlands.html",
+          "search_query": "Lincolnshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Lincolnshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Woolsthorpe_Manor_coat_of_arms_-_geograph.org.uk_-_720153.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_Church_of_St_Peter_and_St_Paul_-_geograph.org.uk_-_2376051.jpg",
+            "https://commons.wikimedia.org/wiki/File:Church_of_the_Holy_Cross_Great_Ponton_Lincolnshire_England_-_tower_coat_of_arms.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 28,
+      "name": "Merseyside",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons search returned photographs of the Exchange Flags location rather than a county design; no independent named Merseyside entry was found in the Flag Institute registry search. Verified adoption and licensed artwork remain necessary. https://www.flaginstitute.org/wp/uk-flags/uk-flag-registry/",
+          "reason": "Wikipedia's county article uses Orionist's CC BY-SA 3.0 Merseyside-associated flag, based on a linked photograph; no current official adoption is claimed. https://en.wikipedia.org/wiki/Merseyside",
+          "search_query": "Merseyside flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Merseyside%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Exchange_Flags_2021.jpg",
+            "https://commons.wikimedia.org/wiki/File:Spider_-_Exchange_Flags_-_geograph.org.uk_-_3323550.jpg",
+            "https://commons.wikimedia.org/wiki/File:Spider_-_Exchange_Flags_-_geograph.org.uk_-_3323557.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1974–1986 Merseyside Metropolitan County Council arms associated with present ceremonial county, not claimed current council arms; Commons CC BY-SA independent artwork, Chromium-decoded. https://www.civicheraldry.co.uk/obs_county.html",
+          "search_query": "Merseyside coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Merseyside%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Liverpool_City_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_the_Merseyside_Metropolitan_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_above_the_door_of_No8_Vicarage_Place%2C_Prescot_-_geograph.org.uk_-_2329499.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 29,
+      "name": "Norfolk",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Norfolk flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Norfolk%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Norfolk.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_orb_Norfolk_Island.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Norfolk_Island.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Norfolk County Council arms used 1904–1982 before supporters were added, associated historically with the modern ceremonial county; Fenn-O-maniC's independent CC BY-SA 4.0 illustration follows the historical blazon. Not asserted to be the full current arms. https://www.civicheraldry.co.uk/east_of_england.html",
+          "search_query": "Norfolk coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Norfolk%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Norfolk_Island.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Thomas_Howard%2C_4th_Duke_of_Norfolk%2C_KG.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Sir_Thomas_Howard%2C_3rd_Duke_of_Norfolk%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 30,
+      "name": "North Yorkshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "The Flag Institute North Riding flag represents the historic North Riding, not the present North Yorkshire ceremonial area; the Commons search also returns explicitly unofficial designs. A verifiable North Yorkshire-specific flag is needed. https://www.flaginstitute.org/wp/flags/yorkshire-north-riding-flag/",
+          "reason": "Wikipedia's subnational-flags template pairs this separate design with North Yorkshire; Commons calls it the county flag. Neither establishes formal adoption or use; it is not the North Riding flag. https://en.wikipedia.org/wiki/Template:Subnational_flags_of_the_United_Kingdom",
+          "search_query": "North Yorkshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=North%20Yorkshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_North_Riding_of_Yorkshire.svg",
+            "https://commons.wikimedia.org/wiki/File:House_flag_of_the_North_Yorkshire_Shipping_Company.svg",
+            "https://commons.wikimedia.org/wiki/File:Unofficial_county_flag_of_North_Yorkshire_(variant).png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "North Yorkshire County Council arms of the former council abolished 2023, associated with named ceremonial county; independent Commons CC BY-SA artwork based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/yorkshire.html",
+          "search_query": "North Yorkshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=North%20Yorkshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_Lancashire_and_Yorkshire_Railway_-_geograph.org.uk_-_3735718.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Aton_(of_Ayton_Castle%2C_North_Yorkshire%2C_Baron_Aton).svg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_North_Yorkshire_County_Council.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 31,
+      "name": "Northamptonshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute identifies the community flag and two designers; Commons marks their artwork public domain and credits revision contributors; Chromium-decoded. https://www.flaginstitute.org/wp/flags/northamptonshire-flag/",
+          "search_query": "Northamptonshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Northamptonshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Northamptonshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Northamptonshire_flag_proposal_(2014)_-_Design_3.svg",
+            "https://commons.wikimedia.org/wiki/File:Northamptonshire_flag_proposal_(2014)_-_Design_2.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Historic Northamptonshire County Council arms associated with the modern ceremonial county, not presented as a current council grant; independent CC BY-SA 4.0 illustration credits its two declared Commons components. https://www.civicheraldry.co.uk/east_midlands.html",
+          "search_query": "Northamptonshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Northamptonshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Ralph_Lane.svg",
+            "https://commons.wikimedia.org/wiki/File:St_Mary%2C_Higham_Ferrers%2C_Northamptonshire_-_Royal_Arms_-_geograph.org.uk_-_826476.jpg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Northamptonshire_County_Council.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "Northumberland",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Northumberland flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Northumberland%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Northumberland.svg",
+            "https://commons.wikimedia.org/wiki/File:Northumberland_flag_-_geograph.org.uk_-_6076823.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Northumberland_County%2C_Ontario.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Northumberland County Council arms associated with the present ceremonial county; independent Commons CC BY-SA 4.0 artwork credits Sodacan CC BY-SA 3.0 castle component, Chromium-decoded. https://www.civicheraldry.co.uk/north_east.html",
+          "search_query": "Northumberland coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Northumberland%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_George_FitzRoy%2C_Duke_of_Northumberland.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Eleanor_Neville%2C_Countess_of_Northumberland.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Hugh_Percy%2C_1st_Duke_of_Northumberland%2C_KG%2C_PC.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 33,
+      "name": "Nottinghamshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Flag Institute identifies a silhouette of James Woodford's bronze Robin Hood statue in the registered flag; Commons marks the composite flag PD-author but the underlying sculpture rights and reproduction permission are not resolved. The Commons drawing is not released pending that specific trace. https://www.flaginstitute.org/wp/flags/nottinghamshire-flag/",
+          "reason": "Wikipedia identifies the registered flag and statue-based silhouette; Commons marks the artwork public domain and identifies a public-domain shield component. Sculpture rights and reproduction permission remain unresolved; inclusion implies no permission. https://en.wikipedia.org/wiki/Flag_of_Nottinghamshire",
+          "search_query": "Nottinghamshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Nottinghamshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Nottinghamshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Nottinghamshire_Pride_2011_MMB_21.jpg",
+            "https://commons.wikimedia.org/wiki/File:Nottinghamshire_flag_proposal_(2011)_-_Design_1.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Nottinghamshire County Council arms associated with present ceremonial county; independent Commons CC BY-SA artwork based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/east_midlands.html",
+          "search_query": "Nottinghamshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Nottinghamshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_Mansfield.jpg",
+            "https://commons.wikimedia.org/wiki/File:Newark_Coat_of_Arms_-_geograph.org.uk_-_4284737.jpg",
+            "https://commons.wikimedia.org/wiki/File:Corporation_coat_of_arms_-_geograph.org.uk_-_1231664.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 34,
+      "name": "Oxfordshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and named revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Oxfordshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Oxfordshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Oxfordshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Oxfordshire_Flag%2C_Murcott_-_geograph.org.uk_-_6481868.jpg",
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Oxfordshire_(modern_version).svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Oxfordshire County Council arms used 1949–1976, associated historically with the modern ceremonial county; Fenn-O-maniC's independent CC BY-SA 4.0 illustration follows the historical blazon. Not asserted to be the current council's arms. https://www.civicheraldry.co.uk/obs_county.html",
+          "search_query": "Oxfordshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Oxfordshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Arms_of_South_Oxfordshire_District.svg",
+            "https://commons.wikimedia.org/wiki/File:Kencot_St_George%27s_Church_William_IV_Royal_Arms_West_Oxfordshire_England.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_-_geograph.org.uk_-_1371121.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 35,
+      "name": "Rutland",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Community flag based on Rutland County Council banner; council released design for public use in 2015. Commons artwork is public domain.",
+          "identity_source": "https://www.flaginstitute.org/wp/flags/rutland-flag/",
+          "candidate": "https://commons.wikimedia.org/wiki/File:Rutland_County_Flag.svg",
+          "search_query": "Rutland flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Rutland%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Rutland_County_Flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Rutland%2C_Massachusetts.svg",
+            "https://commons.wikimedia.org/wiki/File:Rutland%2C_Illinois_flag.png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Rutland County Council arms associated with the present ceremonial county; independent Commons CC BY-SA 4.0 artwork credits Sodacan CC BY-SA 4.0 acorn component, Chromium-decoded. https://www.civicheraldry.co.uk/east_midlands.html",
+          "search_query": "Rutland coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Rutland%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Duke_of_Rutland.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_John_Manners%2C_2nd_Duke_of_Rutland%2C_KG.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Sir_Henry_Manners%2C_2nd_Earl_of_Rutland%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 36,
+      "name": "Shropshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Shropshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Shropshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Shropshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Shropshire_flag.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Telford_and_Wrekin.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Shropshire County Council arms associated with present ceremonial county; independent Commons CC BY-SA artwork based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/west_midlands.html",
+          "search_query": "Shropshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Shropshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Blair_castle_-_coat_of_arms.jpg",
+            "https://commons.wikimedia.org/wiki/File:1054578_Clive_Coat_of_Arms_in_aedicule_on_site_of_demolished_Old_Market_Hall%2C_Market_Square_Bishop%27s_Castle_20240531_0056.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Wem.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 37,
+      "name": "Somerset",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Somerset flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Somerset%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Somerset_Flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Somerset_County%2C_Pennsylvania.gif",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Somerset_County%2C_New_Jersey.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Somerset County Council arms used 1911–2003 before crest and supporters were added, associated historically with the modern ceremonial county; Fenn-O-maniC identifies independent CC BY-SA 4.0 artwork. Not asserted to be the full current arms. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Somerset coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Somerset%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms%2C_Doulting%2C_Somerset_-_geograph.org.uk_-_1358166.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Charles_Seymour%2C_6th_Duke_of_Somerset%2C_KG.png",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Robert_Carr%2C_1st_Earl_of_Somerset%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 38,
+      "name": "South Yorkshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons search returned a photograph titled South Yorkshire flag, not verified independently adopted vector artwork; no named South Yorkshire entry was found in the Flag Institute search. Adoption and artwork rights remain unverified. https://commons.wikimedia.org/wiki/File:South_Yorkshire_flag_001.jpg",
+          "reason": "Wikipedia associates the former South Yorkshire council arms banner with the county. Commons SVG original returned HTTP 429; its 960px PNG rendering was downloaded with separate original and asset hashes. https://en.wikipedia.org/wiki/South_Yorkshire",
+          "search_query": "South Yorkshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=South%20Yorkshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:The_George_Hotel%2C_Huddersfield._-_geograph.org.uk_-_24255.jpg",
+            "https://commons.wikimedia.org/wiki/File:South_Yorkshire_flag_001.jpg",
+            "https://commons.wikimedia.org/wiki/File:George_Hotel_-_geograph.org.uk_-_2263797.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1978–1986 South Yorkshire Metropolitan County Council arms associated with the present ceremonial county, not claimed current council arms; independent Commons CC BY-SA illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/obs_county.html",
+          "search_query": "South Yorkshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=South%20Yorkshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_Yorkshire_South.png",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_South_Yorkshire_Metropolitan_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_England_(-1340).svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 39,
+      "name": "Staffordshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons PD-self SVG and revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Staffordshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Staffordshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Staffordshire_Flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_flag_of_Staffordshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flags_display%2C_Staffordshire_-_geograph.org.uk_-_8175590.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Staffordshire County Council arms associated with the ceremonial county; Commons CC BY-SA illustration credits the Bramall source and its Sodacan, Thommy9 and Heralder creators, Chromium-decoded. https://www.civicheraldry.co.uk/west_midlands.html",
+          "search_query": "Staffordshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Staffordshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Fenton_coat_of_arms_at_Fenton_Town_Hall_-_geograph.org.uk_-_333055.jpg",
+            "https://commons.wikimedia.org/wiki/File:Newcastle-under-Lyme%2C_coat_of_arms_on_the_Civic_Offices_-_geograph.org.uk_-_2518300.jpg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_Staffordshire_County_Council.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 40,
+      "name": "Suffolk",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Suffolk flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Suffolk%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Suffolk.svg",
+            "https://commons.wikimedia.org/wiki/File:Suffolk_County_Regiment_flag_Colonel.png",
+            "https://commons.wikimedia.org/wiki/File:Flag_map_of_Suffolk_County_(NY).png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons Arms of Suffolk.svg declares an English Wikipedia source Suffolk-coa.png as well as a civicheraldry.co.uk image, alongside three licensed Commons components. The English Wikipedia API reports Suffolk-coa.png missing, so the rights and actual contribution of those two source images need resolution before release. https://commons.wikimedia.org/wiki/File:Arms_of_Suffolk.svg",
+          "reason": "Wikipedia identifies the county council arms; Commons asserts CC BY-SA 3.0 and identifies components. The prior source-chain caveat remains recorded. SVG original returned HTTP 429; local asset is Commons' 960px PNG rendering. https://commons.wikimedia.org/wiki/File:Arms_of_Suffolk.svg",
+          "search_query": "Suffolk coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Suffolk%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_William_d%27Ufford%2C_2nd_Earl_of_Suffolk%2C_KG.png",
+            "https://commons.wikimedia.org/wiki/File:The_former_Essex_and_Suffolk_Fire_Office%2C_High_Street%2C_CO1_-_Essex_coat_of_arms_-_geograph.org.uk_-_4047807.jpg",
+            "https://commons.wikimedia.org/wiki/File:The_former_Essex_and_Suffolk_Fire_Office%2C_High_Street%2C_CO1_-_Colchester_coat_of_arms_-_geograph.org.uk_-_4047801.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 41,
+      "name": "Surrey",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute registers the historic county's Warenne checks as a Surrey community flag; independent Commons CC BY-SA artwork credits its PD geometry source and decoded in Chromium. https://www.flaginstitute.org/wp/flags/surrey-flag/",
+          "search_query": "Surrey flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Surrey%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Surrey_in_Guildford.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_County_of_Surrey.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Surrey.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Arms of Surrey County Council granted 1974, associated with present ceremonial Surrey; independent Commons CC0 artwork based on blazon, Chromium-decoded. https://www.civicheraldry.co.uk/south_east.html",
+          "search_query": "Surrey coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Surrey%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:University_of_Surrey_Coat_of_Arms.png",
+            "https://commons.wikimedia.org/wiki/File:Surrey_County_Hall%2C_Kingston%2C_coat_of_arms_of_1st_Earl_of_Lovelace_over_facade.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Henry_Howard%2C_Earl_of_Surrey_(died_1547).xcf"
+          ]
+        }
+      }
+    },
+    {
+      "id": 42,
+      "name": "Tyne and Wear",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons 2026 SVG traces to Flags of the World, which describes the former council logo flag as unofficial and commercially used; independent evidence that this exact artwork is a recognised community flag rather than merely an old logo is needed. https://www.crwflags.com/fotw/flags/gb-e-tyw.html",
+          "reason": "Unofficial flag associated with former county council logo, not a current official flag. Commons SVG original returned HTTP 429; its 960px PNG rendering was downloaded with separate original and asset hashes. https://www.crwflags.com/fotw/flags/gb-e-tyw.html",
+          "search_query": "Tyne and Wear flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Tyne%20and%20Wear%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Tyne_and_Wear.svg",
+            "https://commons.wikimedia.org/wiki/File:Tyne-%26-Wear.gif",
+            "https://commons.wikimedia.org/wiki/File:Industry_on_the_Tyne_(7029091197).jpg"
+          ]
+        },
+        "coat": {
+          "status": "unverified",
+          "reason": "Commons search returns South Tyneside borough arms and the former Tyne and Wear council logo flag, neither a confirmed county council arms grant. Evidence of a distinct granted county-associated coat and independently licensed artwork remains necessary. https://commons.wikimedia.org/wiki/File:Flag_of_Tyne_and_Wear.svg",
+          "completion_attempt": "Wikipedia's county-council armorial states 'No Arms Granted' for Tyne and Wear; the former council logo is not a coat of arms. https://en.wikipedia.org/wiki/Armorial_of_county_councils_of_England",
+          "search_query": "Tyne and Wear coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Tyne%20and%20Wear%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_on_the_first_Tynemouth_station_-_geograph.org.uk_-_4186398.jpg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Tyne_and_Wear.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_South_Tyneside_Metropolitan_Borough_Council.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 43,
+      "name": "Warwickshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Warwickshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Warwickshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Warwickshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Proposed_flag_of_Warwickshire.png",
+            "https://commons.wikimedia.org/wiki/File:Warwickshire_English_Deface.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Warwickshire County Council arms associated with the present ceremonial county; independent Commons CC BY-SA 4.0 artwork credits Sodacan CC BY-SA 4.0 bear component, Chromium-decoded. https://www.civicheraldry.co.uk/west_midlands.html",
+          "search_query": "Warwickshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Warwickshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Warwickshire_coat_of_arms%2C_Shire_Hall%2C_Warwick_-_geograph.org.uk_-_3372902.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_Grindlay_(Warwickshire).svg",
+            "https://commons.wikimedia.org/wiki/File:Neville_Coat_of_Arms_-_geograph.org.uk_-_568756.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 44,
+      "name": "West Midlands",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Commons SVG claims a West Midlands county flag, but no independent evidence of current adoption or recognised community use was established; the registered Black Country regional flag does not represent the entire county. https://www.flaginstitute.org/wp/flags/blackcountry-flag/",
+          "reason": "Wikipedia lists this as the former West Midlands Council flag, not a current authority flag. https://en.wikipedia.org/wiki/List_of_English_flags",
+          "search_query": "West Midlands flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=West%20Midlands%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_West_Midlands_County.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_map_of_the_West_Midlands_(County).png",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Bradley%2C_West_Midlands.png"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1974–1986 West Midlands Metropolitan County Council arms associated with the present ceremonial county, not claimed current council arms; independent Commons CC BY-SA illustration, Chromium-decoded. https://en.wikipedia.org/wiki/West_Midlands_County_Council",
+          "search_query": "West Midlands coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=West%20Midlands%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coventry_Council_House_coat_of_arms_over_entrance.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_West_Midlands_Police.svg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_Bridge%2C_Coventry_-_geograph.org.uk_-_31882.jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 45,
+      "name": "West Sussex",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "Flag Institute registers a Sussex-wide historic community flag, not a distinct West Sussex flag; assigning the same design exclusively to West Sussex would conflict with East Sussex as another answer. A separately verified design is needed. https://www.flaginstitute.org/wp/flags/sussex-flag/",
+          "reason": "Distinct banner of former West Sussex County Council, not the shared Sussex flag; no current authority status is claimed. https://en.wikipedia.org/wiki/Flag_of_Sussex",
+          "search_query": "West Sussex flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=West%20Sussex%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Cornish_flag%2C_Worthing_Pier%2C_West_Sussex_-_July_2025.jpg",
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_West_Sussex_(variant).png",
+            "https://commons.wikimedia.org/wiki/File:The_flag_of_West_Sussex_-_geograph.org.uk_-_7788294.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "West Sussex County Council arms granted to the reconstituted council in 1975, associated with the present ceremonial county. Commons CC BY-SA independent illustration credits both Sodacan CC BY-SA component files; Chromium-decoded. https://www.civicheraldry.co.uk/south_east.html",
+          "search_query": "West Sussex coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=West%20Sussex%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_on_Walled_Garden_wall_at_Parham_House%2C_West_Sussex%2C_England.jpg",
+            "https://commons.wikimedia.org/wiki/File:3_Arched_Summer_House_coat_of_arms_at_Parham_Park%2C_West_Sussex%2C_England.jpg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_West_Sussex_County_Council.svg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 46,
+      "name": "West Yorkshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "previous_status": "unverified",
+          "previous_reason": "The Flag Institute West Riding flag represents the historic West Riding, not the present West Yorkshire ceremonial area; Commons also labels its separate West Yorkshire candidate unofficial. A verifiable West Yorkshire-specific flag is needed. https://www.flaginstitute.org/wp/flags/yorkshire-west-riding-flag/",
+          "reason": "Wikipedia associates this distinct unofficial modified former county council flag with West Yorkshire; it is not the historic West Riding flag. https://en.wikipedia.org/wiki/West_Yorkshire",
+          "search_query": "West Yorkshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=West%20Yorkshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Flag_of_the_West_Riding_of_Yorkshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Unofficial_Flag_of_West_Yorkshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Yorkshire_(Flag_Institute).svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "1975–1986 West Yorkshire Metropolitan County Council arms associated with the present ceremonial county, not claimed current council arms; independent Commons CC BY-SA illustration based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/obs_county.html",
+          "search_query": "West Yorkshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=West%20Yorkshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_West_Yorkshire_Police.svg",
+            "https://commons.wikimedia.org/wiki/File:Arms_of_West_Yorkshire_Metropolitan_County_Council.svg",
+            "https://commons.wikimedia.org/wiki/File:West_Riding_of_Yorkshire_coat_of_arms%2C_Wetherby_(Taken_by_Flickr_user_6th_July_2014).jpg"
+          ]
+        }
+      }
+    },
+    {
+      "id": 47,
+      "name": "Wiltshire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Flag Institute registers Mike Prior's bustard design. Commons records NikNaks93's derivative PD-self and, in its original upload log, Tango22's self-made source as PD-self; the original source page itself no longer resolves. https://commons.wikimedia.org/wiki/File:County_Flag_of_Wiltshire.svg",
+          "search_query": "Wiltshire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Wiltshire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:County_Flag_of_Wiltshire.svg",
+            "https://commons.wikimedia.org/wiki/File:Wiltshire_Barnstar.jpg",
+            "https://commons.wikimedia.org/wiki/File:Wiltshire_Crescent_and_Flags_-_geograph.org.uk_-_796901.jpg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Wiltshire County Council arms associated with present ceremonial county; independent Commons CC BY-SA artwork based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/south_west.html",
+          "search_query": "Wiltshire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Wiltshire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Sir_Thomas_Boleyn%2C_1st_Earl_of_Wiltshire_and_Ormond%2C_KG.png",
+            "https://commons.wikimedia.org/wiki/File:Gorst_coat_of_arms%2C_Castle_Combe.jpg",
+            "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Sir_John_Stafford%2C_1st_Earl_of_Wiltshire%2C_KG.png"
+          ]
+        }
+      }
+    },
+    {
+      "id": 48,
+      "name": "Worcestershire",
+      "symbols": {
+        "flag": {
+          "status": "eligible",
+          "reason": "Named county community flag on Flag Institute registry; independent Commons CC BY-SA SVG and revision contributors in catalog, Chromium-decoded. Historic and modern ceremonial boundaries are not asserted identical.",
+          "search_query": "Worcestershire flag",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Worcestershire%20flag&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Worcestershire_flag.svg",
+            "https://commons.wikimedia.org/wiki/File:Flag_of_Worcestershire_County_Council.png",
+            "https://commons.wikimedia.org/wiki/File:Worcestershire_flag_proposal_(2013)_-_Design_4.svg"
+          ]
+        },
+        "coat": {
+          "status": "eligible",
+          "reason": "Worcestershire County Council arms of 1947–1974 and again since 1998 associated with present ceremonial county; independent Commons CC BY-SA artwork based on textual blazon, Chromium-decoded. https://www.civicheraldry.co.uk/west_midlands.html",
+          "search_query": "Worcestershire coat of arms",
+          "search_source": "https://commons.wikimedia.org/w/index.php?search=Worcestershire%20coat%20of%20arms&title=Special:MediaSearch&type=image",
+          "candidates": [
+            "https://commons.wikimedia.org/wiki/File:Worcestershire_coat_of_arms_-_geograph.org.uk_-_6093461.jpg",
+            "https://commons.wikimedia.org/wiki/File:Worcester_lithograph.jpg",
+            "https://commons.wikimedia.org/wiki/File:Lowesmoor_Wharf%2C_Worcester_-_geograph.org.uk_-_3676806.jpg"
+          ]
+        }
+      }
+    }
+  ]
+}

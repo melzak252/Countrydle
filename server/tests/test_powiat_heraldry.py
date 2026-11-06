@@ -321,7 +321,7 @@ async def test_coat_asset_invalid_token_and_missing_upstream_503(async_client, t
         patch("powiatdle.heraldry.get_herb_cache_dir", return_value=dummy_cache),
         patch("powiatdle.heraldry.resolve_and_fetch_heraldry", side_effect=RuntimeError("Wikipedia timeout")),
     ):
-        res_503 = await async_client.get(f"/powiatdle/heraldry/coat-asset?token={valid_token}")
+        res_503 = await async_client.get(f"/powiatdle/heraldry/coat-asset?token={valid_token}&full=true")
         assert res_503.status_code == 503
         assert res_503.json()["detail"] == "Coat of arms asset temporarily unavailable."
 
@@ -330,7 +330,7 @@ async def test_coat_asset_invalid_token_and_missing_upstream_503(async_client, t
     (dummy_cache / "1.v2.json").write_text(json.dumps({"svg": sample_svg.decode(), "metadata": {"attribution": {}}}))
 
     with patch("powiatdle.heraldry.get_herb_cache_dir", return_value=dummy_cache):
-        res_200 = await async_client.get(f"/powiatdle/heraldry/coat-asset?token={valid_token}")
+        res_200 = await async_client.get(f"/powiatdle/heraldry/coat-asset?token={valid_token}&full=true")
         assert res_200.status_code == 200
         assert "image/svg+xml" in res_200.headers["content-type"]
         assert res_200.content == sample_svg

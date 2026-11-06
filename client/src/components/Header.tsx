@@ -22,7 +22,7 @@ import CountdownTimer from './CountdownTimer';
 import CountrydleLogo from './CountrydleLogo';
 import { PrivacySettingsButton } from './PrivacySettingsButton';
 import { isPrerenderCapture } from '../lib/pageMetadata'
-import { gameCatalog } from '../lib/gameCatalog';
+import { primaryGames } from '../lib/gameCatalog';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -33,10 +33,13 @@ export default function Header() {
   const [menuLocation, setMenuLocation] = useState<typeof location | null>(null);
   const isMenuOpen = menuLocation === location;
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const desktopNavRef = useRef<HTMLElement>(null);
+  const mobileGamesRef = useRef<HTMLDetailsElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const homeLinkRef = useRef<HTMLAnchorElement>(null);
   const restoreMenuFocusRef = useRef(true);
+  const skipMenuFocusRef = useRef(false);
 
   const exploreItems = [
     { path: '/archive', name: t('header.archive', 'Archive'), icon: Archive },
@@ -67,10 +70,12 @@ export default function Header() {
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target?.closest('details')) {
-        document.querySelectorAll('header details[open]').forEach((el) => {
-          el.removeAttribute('open');
-        });
+      const desktopMenu = target?.closest('details');
+      desktopNavRef.current?.querySelectorAll('details[open]').forEach((details) => {
+        if (details !== desktopMenu) details.removeAttribute('open');
+      });
+      if (mobileGamesRef.current && !mobileGamesRef.current.contains(target)) {
+        mobileGamesRef.current.open = false;
       }
     };
     document.addEventListener('click', handleDocumentClick);
@@ -83,6 +88,11 @@ export default function Header() {
       if (event.matches) {
         restoreMenuFocusRef.current = false;
         setMenuLocation(null);
+      } else {
+        const nav = desktopNavRef.current;
+        const hadFocus = nav?.contains(document.activeElement);
+        nav?.querySelectorAll('details[open]').forEach((details) => details.removeAttribute('open'));
+        if (hadFocus) menuButtonRef.current?.focus();
       }
     };
     desktop.addEventListener('change', handleDesktop);
@@ -111,14 +121,11 @@ export default function Header() {
       dialog.querySelectorAll('details[open]').forEach((details) => details.removeAttribute('open'));
       document.body.style.overflow = previousOverflow;
       const focusTarget = restoreMenuFocusRef.current ? menuButton : homeLink;
-      if (focusTarget?.isConnected) focusTarget.focus();
+      if (!skipMenuFocusRef.current && focusTarget?.isConnected) focusTarget.focus();
+      skipMenuFocusRef.current = false;
     };
   }, [isMenuOpen]);
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 text-sm transition-colors ${
-      isActive ? 'text-emerald-300 font-medium' : 'text-zinc-300 hover:text-white'
-    }`;
 
   const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex min-h-11 w-full min-w-0 items-center rounded-lg px-3 py-2.5 text-left text-sm leading-relaxed [overflow-wrap:anywhere] transition-colors ${
@@ -137,176 +144,90 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav aria-label={'Main navigation'} className="hidden items-center gap-1 xl:flex">
-          <NavLink to="/game" className={navLinkClass}>
-            Play
-          </NavLink>
-
-          {/* Games Dropdown */}
-          <details
-            className="group relative"
-            onMouseLeave={(event) => {
-              event.currentTarget.open = false;
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.currentTarget.open = false;
-                event.currentTarget.querySelector('summary')?.focus();
-              }
-            }}
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              <span>{t('header.games', 'Games')}</span>
-              <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
-            </summary>
-            <div
-              className="absolute left-0 top-full z-50 max-h-[calc(100dvh-6rem)] w-80 overflow-y-auto rounded-md border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl"
-              onClick={(event) => {
-                if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
+        {/* Desktop navigation */}
+        <nav ref={desktopNavRef} aria-label="Main navigation" className="hidden items-center gap-3 xl:flex">
+          <div className="flex items-stretch rounded-md bg-emerald-400 text-obsidian-950">
+            <NavLink to="/game" className="rounded-l-md px-5 py-2 text-sm font-semibold transition-colors hover:bg-emerald-300">Play</NavLink>
+            <details
+              name="desktop-navigation"
+              className="group relative"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && event.currentTarget.open) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }
               }}
             >
-              {gameCatalog.map((group) => (
-                <div key={group.title} className="border-b border-white/10 p-2 last:border-b-0">
-                  <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                    {group.title}
-                  </span>
-                  <div className={group.games.length > 2 ? 'grid grid-cols-2 gap-1' : 'flex flex-col gap-1'}>
-                    {group.games.map((item) => (
-                      <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) =>
-                          `flex items-center justify-between gap-1.5 rounded px-2.5 py-1.5 text-xs transition-colors ${
-                            isActive
-                              ? 'bg-emerald-500/10 text-emerald-300 font-medium'
-                              : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                          }`
-                        }
-                      >
-                        <span className="truncate">{item.name}</span>
-                      </NavLink>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
-
-          {/* Explore Dropdown */}
-          <details
-            className="group relative"
-            onMouseLeave={(event) => {
-              event.currentTarget.open = false;
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.currentTarget.open = false;
-                event.currentTarget.querySelector('summary')?.focus();
-              }
-            }}
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              <span>{t('header.explore', 'Explore')}</span>
-              <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
-            </summary>
-            <div
-              className="absolute left-0 top-full mt-1 w-52 border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl z-50 rounded-md before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
-              onClick={(event) => {
-                if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
+              <summary aria-label="Choose a game" className="flex h-full cursor-pointer list-none items-center rounded-r-md border-l border-emerald-900/20 px-3 hover:bg-emerald-300 [&::-webkit-details-marker]:hidden">
+                <ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <div
+                className="absolute left-0 top-full z-50 max-h-[calc(100dvh-6rem)] w-56 overflow-y-auto rounded-md border border-sand-700/60 bg-obsidian-900 p-1.5 text-sand-100 shadow-2xl"
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest('a')) event.currentTarget.closest('details')?.removeAttribute('open');
+                }}
+              >
+                {primaryGames.map((game) => (
+                  <NavLink key={game.path} to={game.path} className={({ isActive }) =>
+                    `block rounded px-3 py-2 text-sm ${isActive ? 'bg-emerald-500/10 text-emerald-300' : 'text-sand-100 hover:bg-white/5'}`
+                  }>{game.name}</NavLink>
+                ))}
+                <Link to="/#maps" className="mt-1 block border-t border-white/10 px-3 py-2.5 text-sm font-medium text-emerald-300 hover:text-emerald-200">Explore more…</Link>
+              </div>
+            </details>
+          </div>
+          {([
+            { id: 'explore', label: 'Explore', items: exploreItems },
+            { id: 'about', label: 'About', items: aboutItems },
+          ]).map(({ id, label, items }) => (
+            <details
+              key={id}
+              name="desktop-navigation"
+              className="group relative"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && event.currentTarget.open) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }
               }}
             >
-              <div className="flex flex-col gap-0.5">
-                {exploreItems.map((item) => {
+              <summary className="flex cursor-pointer list-none items-center gap-1 px-2 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
+                {label} <ChevronDown size={13} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <div
+                className="absolute right-0 top-full z-50 max-h-[calc(100dvh-6rem)] w-56 overflow-y-auto rounded-md border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl"
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
+                }}
+              >
+                {id === 'explore' && <NavLink to="/leaderboard" className={({ isActive }) => `block rounded px-2 py-2 text-sm ${isActive ? 'bg-emerald-500/10 text-emerald-300' : 'text-sand-100 hover:bg-white/5'}`}>{t('header.leaderboard', 'Leaderboard')}</NavLink>}
+                {items.map((item) => {
                   const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2 rounded px-2.5 py-2 text-xs transition-colors ${
-                          isActive
-                            ? 'bg-emerald-500/10 text-emerald-300 font-medium'
-                            : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                        }`
-                      }
-                    >
-                      <Icon size={14} className="text-zinc-400 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{item.name}</span>
-                    </NavLink>
-                  );
+                  return <NavLink key={item.path} to={item.path} className={({ isActive }) =>
+                    `flex items-center gap-2 rounded px-2 py-2 text-sm ${isActive ? 'bg-emerald-500/10 text-emerald-300' : 'text-sand-100 hover:bg-white/5'}`
+                  }><Icon size={14} className="shrink-0 text-zinc-400" aria-hidden="true" />{item.name}</NavLink>;
                 })}
+                {id === 'about' && <div className="border-t border-white/10 pt-1">
+                  <PrivacySettingsButton className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-sm text-zinc-400 hover:bg-white/5 hover:text-sand-50" />
+                </div>}
               </div>
-            </div>
-          </details>
-
-          <NavLink to="/leaderboard" className={navLinkClass}>
-            {t('header.leaderboard', 'Leaderboard')}
-          </NavLink>
-          
-          <NavLink to="/blog" className={navLinkClass}>
-            {t('header.blog', 'Blog')}
-          </NavLink>
-
-          {/* About Dropdown */}
-          <details
-            className="group relative"
-            onMouseLeave={(event) => {
-              event.currentTarget.open = false;
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.currentTarget.open = false;
-                event.currentTarget.querySelector('summary')?.focus();
-              }
-            }}
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm text-zinc-300 hover:text-white [&::-webkit-details-marker]:hidden">
-              <span>{t('header.about', 'About')}</span>
-              <ChevronDown size={13} className="text-zinc-400 group-open:rotate-180 transition-transform duration-150" aria-hidden="true" />
-            </summary>
-            <div
-              className="absolute left-0 top-full mt-1 w-52 divide-y divide-white/10 border border-white/15 bg-obsidian-900 shadow-2xl z-50 rounded-md p-1.5 before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']"
-              onClick={(event) => {
-                if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
-              }}
-            >
-              <div className="flex flex-col gap-0.5 pb-1">
-                {aboutItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2 rounded px-2.5 py-2 text-xs transition-colors ${
-                          isActive
-                            ? 'bg-emerald-500/10 text-emerald-300 font-medium'
-                            : 'text-sand-100 hover:bg-white/5 hover:text-white'
-                        }`
-                      }
-                    >
-                      <Icon size={14} className="text-zinc-400 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{item.name}</span>
-                    </NavLink>
-                  );
-                })}
-              </div>
-              <div className="pt-1 bg-white/[0.02]">
-                <PrivacySettingsButton className="flex items-center gap-2 w-full px-2.5 py-1.5 text-left text-xs text-zinc-400 hover:text-sand-50 hover:bg-white/5 transition-colors rounded" />
-              </div>
-            </div>
-          </details>
+            </details>
+          ))}
+          <NavLink to="/blog" className={({ isActive }) => `px-2 py-2 text-sm ${isActive ? 'text-emerald-300' : 'text-zinc-300 hover:text-white'}`}>{t('header.blog', 'Blog')}</NavLink>
         </nav>
 
         {/* Right Section: Bigger Clock & Auth Controls (Desktop) */}
-        <div className="hidden items-center gap-4 xl:flex">
+        <div className="hidden shrink-0 items-center gap-2 xl:flex">
           {/* Prominent Next Puzzle / Country Countdown Clock */}
           <CountdownTimer />
 
           {/* User Profile or Login/Register CTAs */}
           {showAccount ? (
-            <div className="flex items-center gap-2 border-l border-white/15 pl-4">
+            <div className="flex items-center gap-2 border-l border-white/15 pl-2">
               <Link
                 to={`/profile/${user?.username}`}
                 className="max-w-28 truncate text-sm text-sand-100 hover:text-emerald-300 transition-colors"
@@ -325,7 +246,7 @@ export default function Header() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-3 border-l border-white/15 pl-4">
+            <div className="flex items-center gap-2 border-l border-white/15 pl-2">
               <Link
                 to="/login"
                 className="text-sm text-zinc-300 hover:text-white transition-colors"
@@ -405,13 +326,33 @@ export default function Header() {
               if ((event.target as HTMLElement).closest('a')) closeMenu();
             }}
           >
-            <div className="space-y-1">
-              <NavLink
-                to="/game"
-                className="flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-4 py-3 text-center text-base font-semibold leading-snug text-obsidian-950 transition-colors hover:bg-emerald-300"
+            <div className="flex rounded-lg bg-emerald-400 text-obsidian-950">
+              <NavLink to="/game" className="flex min-h-12 flex-1 items-center justify-center rounded-l-lg px-4 py-3 text-base font-semibold hover:bg-emerald-300">Play</NavLink>
+              <details
+                ref={mobileGamesRef}
+                className="group relative"
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape' && event.currentTarget.open) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.currentTarget.open = false;
+                    event.currentTarget.querySelector('summary')?.focus();
+                  }
+                }}
               >
-                {'Play today'}
-              </NavLink>
+                <summary aria-label="Choose a game" className="flex h-12 w-12 cursor-pointer list-none items-center justify-center rounded-r-lg border-l border-emerald-900/20 hover:bg-emerald-300 [&::-webkit-details-marker]:hidden">
+                  <ChevronDown size={18} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <div className="absolute right-0 top-full z-10 max-h-[calc(100dvh-12rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-[min(18rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-2 text-sand-100 shadow-2xl">
+                  {primaryGames.map((game) => <NavLink key={game.path} to={game.path} className={mobileLinkClass}>{game.name}</NavLink>)}
+                  <Link to="/#maps" onClick={() => {
+                    skipMenuFocusRef.current = true;
+                    dialogRef.current?.close();
+                  }} className="mt-1 flex min-h-11 items-center border-t border-white/10 px-3 py-2 text-sm font-medium text-emerald-300">Explore more…</Link>
+                </div>
+              </details>
+            </div>
+            <div className="space-y-1">
               <NavLink to="/blog" className={mobileLinkClass}>
                 {t('header.blog', 'Blog')}
               </NavLink>
@@ -421,24 +362,6 @@ export default function Header() {
             </div>
 
             <div className="divide-y divide-white/10 border-y border-white/10">
-              <details className="group">
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium leading-relaxed [&::-webkit-details-marker]:hidden">
-                  <span>Games</span>
-                  <ChevronDown size={18} className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden="true" />
-                </summary>
-                <div className="space-y-3 pb-3">
-                  {gameCatalog.map((group) => (
-                    <section key={group.title}>
-                      <h3 className="px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-400">{group.title}</h3>
-                      {group.games.map((item) => (
-                        <NavLink key={item.path} to={item.path} className={mobileLinkClass}>
-                          {item.name}
-                        </NavLink>
-                      ))}
-                    </section>
-                  ))}
-                </div>
-              </details>
               <details className="group">
                 <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-medium leading-relaxed [&::-webkit-details-marker]:hidden">
                   <span>{'Guides & archive'}</span>

@@ -69,7 +69,7 @@ export default function LoginPage() {
     <div className="mx-auto w-full max-w-md py-4 sm:py-8">
       <div className="w-full">
         <header className="mb-8 border-b border-white/10 pb-7">
-          <p className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-emerald-400">Welcome back</p>
+          <p className="mb-4 font-mono text-xs text-emerald-400">Welcome back</p>
           <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">Login to Countrydle</h1>
           <p className="mt-4 text-base leading-7 text-zinc-400">Continue your daily discoveries and keep your streak going.</p>
         </header>

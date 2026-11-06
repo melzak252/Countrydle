@@ -404,7 +404,7 @@ export default function ExplorePage() {
     <div data-publisher-ready={publisherReady ? 'true' : undefined} data-publisher-error={publisherError ? 'true' : undefined} className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 md:py-12">
       {/* Header & Interactive Atlas Switcher */}
       <header className="border-b border-white/10 pb-6 text-center sm:text-left">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-emerald-400">
+        <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 font-mono text-xs text-emerald-400">
           <Globe size={13} />
           <span>{'Geographic & Heraldic Knowledge Base'}</span>
         </div>
@@ -420,9 +420,9 @@ export default function ExplorePage() {
           <button
             type="button"
             onClick={() => { setActiveTab('powiats'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
               activeTab === 'powiats'
-                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
                 : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
@@ -445,9 +445,9 @@ export default function ExplorePage() {
           <button
             type="button"
             onClick={() => { setActiveTab('voivodeships'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
               activeTab === 'voivodeships'
-                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
                 : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
@@ -470,9 +470,9 @@ export default function ExplorePage() {
           <button
             type="button"
             onClick={() => { setActiveTab('countries'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
               activeTab === 'countries'
-                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
                 : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
@@ -495,9 +495,9 @@ export default function ExplorePage() {
           <button
             type="button"
             onClick={() => { setActiveTab('us_states'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
               activeTab === 'us_states'
-                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
                 : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
@@ -520,9 +520,9 @@ export default function ExplorePage() {
           <button
             type="button"
             onClick={() => { setActiveTab('modes'); setSearch(''); }}
-            className={`col-span-2 sm:col-span-1 group flex flex-col items-start justify-between rounded-md border p-3.5 text-left transition-all cursor-pointer ${
+            className={`col-span-2 sm:col-span-1 group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
               activeTab === 'modes'
-                ? 'border-emerald-400 bg-emerald-500/15 text-sand-100 shadow-lg shadow-emerald-950/30'
+                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
                 : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
             }`}
           >
@@ -559,7 +559,7 @@ export default function ExplorePage() {
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-bold">
+                    <span className="font-mono text-xs text-emerald-400 font-semibold">
                       {mode.entity_count} Entities
                     </span>
                     <span className="font-mono text-[11px] text-zinc-500">
@@ -597,7 +597,7 @@ export default function ExplorePage() {
           {/* Section A — Comparative Overview of All 9 Daily Geography Modes */}
           <article aria-labelledby="modes-comparative-overview" className="mt-12 space-y-6 rounded-lg border border-white/10 bg-obsidian-900/40 p-6 md:p-8">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-400">
+              <div className="inline-flex items-center gap-2 font-mono text-xs text-emerald-400">
                 <Compass size={14} aria-hidden="true" />
                 <span>{'Daily Game Mechanics'}</span>
               </div>
@@ -611,7 +611,7 @@ export default function ExplorePage() {
 
             <div className="overflow-x-auto rounded-md border border-white/10 bg-obsidian-950/80">
               <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="border-b border-white/10 bg-white/5 font-mono text-xs uppercase tracking-wider text-sand-100">
+                <thead className="border-b border-white/10 bg-white/5 font-mono text-xs text-sand-100">
                   <tr>
                     <th scope="col" className="px-4 py-3.5">Mode & Guide</th>
                     <th scope="col" className="px-4 py-3.5">Pool Size</th>
@@ -755,7 +755,7 @@ export default function ExplorePage() {
           {/* Section B — Core Geographic Taxonomies & Deductive Principles */}
           <article aria-labelledby="modes-deductive-taxonomies" className="mt-12 space-y-10 rounded-lg border border-white/10 bg-obsidian-900/40 p-6 md:p-8">
             <div className="space-y-2 border-b border-white/10 pb-6">
-              <div className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-400">
+              <div className="inline-flex items-center gap-2 font-mono text-xs text-emerald-400">
                 <BookOpen size={14} aria-hidden="true" />
                 <span>{'Geographic Methodology & Theory'}</span>
               </div>
@@ -785,7 +785,7 @@ export default function ExplorePage() {
                   Sovereign states whose territorial boundaries cross 0° latitude belong physically to <em>both the Northern and Southern Hemispheres simultaneously</em>. When querying territorial attributes in Countrydle, a country straddling the Equator will return an affirmative response for Northern Hemisphere inclusion as well as Southern Hemisphere inclusion. In South America, <strong>Ecuador</strong> (eponymously named after the line), <strong>Colombia</strong>, and <strong>Brazil</strong> have land in both hemispheres, with Brazil extending from +5°N down to −33°S. In Africa, seven sovereign states cross the Equator: <strong>Gabon</strong>, the <strong>Republic of the Congo</strong>, the <strong>Democratic Republic of the Congo</strong>, <strong>Uganda</strong>, <strong>Kenya</strong>, <strong>Somalia</strong>, and the island nation of <strong>São Tomé and Príncipe</strong>. In Southeast Asia, <strong>Indonesia</strong> spans the Equator across major islands including Sumatra, Borneo (Kalimantan), Sulawesi, and Halmahera, while the Pacific island nation of <strong>Kiribati</strong> uniquely straddles both the Equator and the 180° meridian.
                 </p>
                 <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold mb-2">Prime Meridian (0° Longitude) Crossings</h4>
+                  <h4 className="font-mono text-xs text-emerald-400 font-semibold mb-2">Prime Meridian (0° Longitude) Crossings</h4>
                   <p className="text-sm leading-relaxed text-zinc-300">
                     The Prime Meridian, standardized at the Royal Observatory in Greenwich, London, bisects both Europe and Africa. Three European states cross 0° longitude: the <strong>United Kingdom</strong>, <strong>France</strong>, and <strong>Spain</strong>. In Africa, the Prime Meridian passes through five countries: <strong>Algeria</strong>, <strong>Mali</strong>, <strong>Burkina Faso</strong>, <strong>Ghana</strong>, and <strong>Togo</strong>. Consequently, questions such as <em>"Is it in the Western Hemisphere?"</em> or <em>"Is it in the Eastern Hemisphere?"</em> will both evaluate to true for these trans-meridian countries.
                   </p>
@@ -814,7 +814,7 @@ export default function ExplorePage() {
                   <strong>Open Marine Access:</strong> A sovereign country or subnational entity is classified as having marine coastal access if its coastline borders the contiguous World Ocean (Pacific, Atlantic, Indian, Arctic, or Southern Oceans) or marginal and mediterranean seas connected to the global ocean via natural navigable straits. Examples include the <em>Baltic Sea</em> (connected to the Atlantic via the Danish Straits / Kattegat and Skagerrak), the <em>Mediterranean Sea</em> (connected via the Strait of Gibraltar), the <em>Black Sea</em> (connected through the Bosporus, Sea of Marmara, and Dardanelles), the <em>Red Sea</em> (connected via the Bab-el-Mandeb), and the <em>Gulf of Mexico</em> (connected via the Straits of Florida). These marginal water bodies participate in global oceanic circulation, tidal regimes, and saline interchange.
                 </p>
                 <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4 space-y-2">
-                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">The Caspian Sea Endorheic Anomaly</h4>
+                  <h4 className="font-mono text-xs text-emerald-400 font-semibold">The Caspian Sea Endorheic Anomaly</h4>
                   <p className="text-sm leading-relaxed text-zinc-300">
                     Covering roughly 371,000 $km^2$, the <strong>Caspian Sea</strong> is the largest enclosed inland body of water on Earth. Despite its historical name and brackish salinity, it possesses no natural hydrological outlet to the World Ocean; it sits in a continental depression with its surface approximately 28 meters below global sea level. Consequently, the Caspian is an <em>endorheic lake basin</em>.
                   </p>
@@ -847,7 +847,7 @@ export default function ExplorePage() {
                 </p>
                 
                 <div className="space-y-3 rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">US Census Bureau Regional Taxonomy (50 States)</h4>
+                  <h4 className="font-mono text-xs text-emerald-400 font-semibold">US Census Bureau Regional Taxonomy (50 States)</h4>
                   <p className="text-sm leading-relaxed text-zinc-300">
                     The US Census Bureau partitions the 50 states into four official regions, which further subdivide into nine geographic divisions:
                   </p>
@@ -863,7 +863,7 @@ export default function ExplorePage() {
                 </div>
 
                 <div className="space-y-3 rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold">Poland’s Three-Tier Administrative Structure (16 Voivodeships & 380 Powiaty)</h4>
+                  <h4 className="font-mono text-xs text-emerald-400 font-semibold">Poland’s Three-Tier Administrative Structure (16 Voivodeships &amp; 380 Powiaty)</h4>
                   <p className="text-sm leading-relaxed text-zinc-300">
                     Poland’s territorial division, enacted on January 1, 1999 (<em>zasadniczy trójstopniowy podział terytorialny państwa</em>), establishes three hierarchical tiers:
                   </p>
@@ -885,7 +885,7 @@ export default function ExplorePage() {
                 </div>
 
                 <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs uppercase tracking-wider text-emerald-400 font-semibold mb-2">Polish Vehicle Registration Codes (Wyróżniki Tablic Rejestracyjnych)</h4>
+                  <h4 className="font-mono text-xs text-emerald-400 font-semibold mb-2">Polish Vehicle Registration Codes (Wyróżniki Tablic Rejestracyjnych)</h4>
                   <p className="text-sm leading-relaxed text-zinc-300">
                     In Powiatdle, vehicle registration plate prefixes provide an authoritative deductive axis. The initial letter designates the parent voivodeship (e.g., <strong>W</strong> for Mazowieckie, <strong>K</strong> for Małopolskie, <strong>D</strong> for Dolnośląskie, <strong>P</strong> for Wielkopolskie, <strong>G</strong> for Pomorskie, <strong>Z</strong> for Zachodniopomorskie, <strong>S</strong> for Śląskie, <strong>E</strong> for Łódzkie, <strong>B</strong> for Podlaskie, <strong>L</strong> for Lubelskie, <strong>R</strong> for Podkarpackie, <strong>T</strong> for Świętokrzyskie, <strong>O</strong> for Opolskie, <strong>C</strong> for Kujawsko-Pomorskie, <strong>F</strong> for Lubuskie, <strong>N</strong> for Warmińsko-Mazurskie). Furthermore, <strong>two-letter prefixes</strong> almost universally denote cities with county rights (e.g., <em>KR</em> for Kraków, <em>PO</em> for Poznań, <em>DW</em> for Wrocław, <em>GD</em> for Gdańsk), whereas <strong>three-letter prefixes</strong> denote land counties (e.g., <em>KRA</em> for powiat krakowski, <em>PZ</em> for powiat poznański, <em>DWR</em> for powiat wrocławski).
                   </p>
@@ -912,8 +912,8 @@ export default function ExplorePage() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={
                   activeTab === 'powiats'
-                    ? 'Search county name, seat, or license plate prefix (e.g. KRA, PO, BI, krakowski)...'
-                    : 'Search by name, capital, or code...'
+                    ? 'Search county, seat or plate prefix'
+                    : 'Search name, capital or code'
                 }
                 className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-2.5 pl-10 pr-9 text-sm text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
               />
@@ -985,7 +985,7 @@ export default function ExplorePage() {
 
           {regions.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-zinc-500 mr-1 font-mono uppercase">
+              <span className="text-xs text-zinc-500 mr-1 font-mono">
                 {activeTab === 'powiats' ? ('Voivodeship:') : 'Region:'}
               </span>
               {regions.map((reg) => (
@@ -1043,7 +1043,7 @@ export default function ExplorePage() {
                 <div
                   key={p.id}
                   onClick={() => openPowiatModal(p.id)}
-                  className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-3.5 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between gap-3"
+                  className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between gap-3"
                 >
                   <div className="flex items-start gap-3">
                     {/* Compact Low-Res Coat of Arms Thumbnail with 1-click Fullscreen SVG Icon */}
@@ -1058,7 +1058,7 @@ export default function ExplorePage() {
                         });
                       }}
                       title={'Inspect coat of arms (full SVG)'}
-                      className={`relative h-15 w-13.5 shrink-0 rounded-md border p-1.5 flex items-center justify-center transition-all ${
+                      className={`relative h-15 w-13.5 shrink-0 rounded-md border p-1.5 flex items-center justify-center transition-colors ${
                         lightCoatsBackdrop
                           ? 'bg-sand-100 border-sand-300 shadow-inner'
                           : 'bg-obsidian-950/90 border-white/10 group-hover:border-emerald-500/30'
@@ -1071,7 +1071,7 @@ export default function ExplorePage() {
                         height={48}
                         loading="lazy"
                         decoding="async"
-                        className="max-h-11 max-w-10 w-auto h-auto object-contain select-none drop-shadow-xs transition-transform duration-150 group-hover:scale-105"
+                        className="max-h-11 max-w-10 w-auto h-auto object-contain select-none drop-shadow-xs"
                       />
                       <span
                         aria-hidden="true"
@@ -1083,11 +1083,11 @@ export default function ExplorePage() {
                     {/* County Identity & License Plates */}
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1">
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
+                        <span className="font-mono text-xs text-emerald-400 font-semibold">
                           Voivodeship {p.voivodeship}
                         </span>
                         <span
-                          className={`rounded px-1.5 py-0.5 font-mono text-[9px] uppercase ${
+                          className={`rounded px-1.5 py-0.5 font-mono text-xs ${
                             p.is_city_county
                               ? 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
                               : 'bg-white/5 text-zinc-400 border border-white/10'
@@ -1175,7 +1175,7 @@ export default function ExplorePage() {
               <div
                 key={c.id}
                 onClick={() => openCountryModal(c.cca3 || c.app_country_name)}
-                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1.5 min-w-0 flex-1">
@@ -1230,7 +1230,7 @@ export default function ExplorePage() {
               <div
                 key={s.id}
                 onClick={() => openStateModal(s.name)}
-                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -1242,7 +1242,7 @@ export default function ExplorePage() {
                   <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
                     {s.name}
                   </h4>
-                  <p className="text-xs text-zinc-400 italic break-words">
+                  <p className="text-xs text-zinc-400 break-words">
                     {s.nickname || 'The State of ' + s.name}
                   </p>
                 </div>
@@ -1276,7 +1276,7 @@ export default function ExplorePage() {
               <div
                 key={v.id}
                 onClick={() => openVoivodeshipModal(v.name)}
-                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-all hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -1331,7 +1331,7 @@ export default function ExplorePage() {
             </button>
 
             <header className="border-b border-white/10 pb-4">
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
+              <span className="font-mono text-xs text-emerald-400">
                 {selectedCountry.cca3} &bull; {selectedCountry.region}
               </span>
               <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
@@ -1364,7 +1364,7 @@ export default function ExplorePage() {
             <div className="space-y-4 text-xs">
               {selectedCountry.borders && selectedCountry.borders.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Neighboring Borders ({selectedCountry.borders.length}):</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Neighboring Borders ({selectedCountry.borders.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCountry.borders.map((b: string) => (
                       <span key={b} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
@@ -1377,7 +1377,7 @@ export default function ExplorePage() {
 
               {selectedCountry.water_access && selectedCountry.water_access.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Water & Coastline Access:</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Water &amp; Coastline Access:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCountry.water_access.map((w: string) => (
                       <span key={w} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
@@ -1390,14 +1390,14 @@ export default function ExplorePage() {
 
               {selectedCountry.languages && selectedCountry.languages.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Recorded Languages:</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Recorded Languages:</span>
                   <span className="text-zinc-400">{selectedCountry.languages.join(', ')}</span>
                 </div>
               )}
 
               {selectedCountry.flag_colors && selectedCountry.flag_colors.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">National Flag Colors:</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">National Flag Colors:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCountry.flag_colors.map((fc: string) => (
                       <span key={fc} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded capitalize">
@@ -1451,13 +1451,13 @@ export default function ExplorePage() {
             </button>
 
             <header className="border-b border-white/10 pb-4">
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
+              <span className="font-mono text-xs text-emerald-400">
                 #{selectedState.admission_order} Admitted &bull; {selectedState.region}
               </span>
               <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
                 {selectedState.name}
               </h2>
-              <p className="text-xs text-zinc-400 mt-1 italic">
+              <p className="text-xs text-zinc-400 mt-1">
                 {selectedState.nickname}
               </p>
             </header>
@@ -1484,7 +1484,7 @@ export default function ExplorePage() {
             <div className="space-y-4 text-xs">
               {selectedState.neighboring_states && selectedState.neighboring_states.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Neighboring US States ({selectedState.neighboring_states.length}):</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Neighboring US States ({selectedState.neighboring_states.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedState.neighboring_states.map((st: string) => (
                       <span key={st} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
@@ -1497,7 +1497,7 @@ export default function ExplorePage() {
 
               {selectedState.water_access && selectedState.water_access.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Water Bodies & Ocean Access:</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Water Bodies &amp; Ocean Access:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedState.water_access.map((w: string) => (
                       <span key={w} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
@@ -1551,7 +1551,7 @@ export default function ExplorePage() {
             </button>
 
             <header className="border-b border-white/10 pb-4">
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-400">
+              <span className="font-mono text-xs text-emerald-400">
                 TERYT {selectedVoivodeship.teryt} &bull; Macroregion {regionalDisplay[selectedVoivodeship.macroregion] ?? selectedVoivodeship.macroregion}
               </span>
               <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
@@ -1584,7 +1584,7 @@ export default function ExplorePage() {
             <div className="space-y-4 text-xs">
               {selectedVoivodeship.neighboring_voivodeships && selectedVoivodeship.neighboring_voivodeships.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Neighboring voivodeships ({selectedVoivodeship.neighboring_voivodeships.length}):</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Neighboring voivodeships ({selectedVoivodeship.neighboring_voivodeships.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedVoivodeship.neighboring_voivodeships.map((v: string) => (
                       <span key={v} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
@@ -1597,7 +1597,7 @@ export default function ExplorePage() {
 
               {selectedVoivodeship.neighboring_countries && selectedVoivodeship.neighboring_countries.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">Bordering countries:</span>
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Bordering countries:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedVoivodeship.neighboring_countries.map((c: string) => (
                       <span key={c} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded">
@@ -1675,7 +1675,7 @@ export default function ExplorePage() {
                   }
                 }}
                 aria-label={'Inspect county coat of arms'}
-                className={`group relative h-32 w-28 shrink-0 rounded-lg border p-3 flex items-center justify-center cursor-zoom-in transition-all ${
+                className={`group relative h-32 w-28 shrink-0 rounded-lg border p-3 flex items-center justify-center cursor-zoom-in transition-colors ${
                   lightCoatsBackdrop
                     ? 'bg-sand-100 border-sand-300 shadow-md'
                     : 'bg-obsidian-950 border-white/15 hover:border-emerald-400/50 shadow-inner'
@@ -1684,7 +1684,7 @@ export default function ExplorePage() {
                 <img
                   src={resolvePowiatCoatUrl(selectedPowiat.id)}
                   alt={`Herb: ${selectedPowiat.name}`}
-                  className="max-h-26 max-w-22 w-auto h-auto object-contain select-none drop-shadow-md transition-transform group-hover:scale-105"
+                  className="max-h-26 max-w-22 w-auto h-auto object-contain select-none drop-shadow-md"
                 />
                 <span
                   aria-hidden="true"
@@ -1696,7 +1696,7 @@ export default function ExplorePage() {
 
               <div className="flex-1 text-center sm:text-left space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <span className="font-mono text-xs uppercase tracking-widest text-emerald-400 font-bold">
+                  <span className="font-mono text-xs text-emerald-400 font-semibold">
                     {selectedPowiat.voivodeship} Voivodeship
                   </span>
                   {selectedPowiat.terc && (
@@ -1775,7 +1775,7 @@ export default function ExplorePage() {
             <div className="space-y-4 text-xs">
               {selectedPowiat.neighboring_powiats && selectedPowiat.neighboring_powiats.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {`Neighboring Counties (${selectedPowiat.neighboring_powiats.length}) — click to inspect:`}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1795,7 +1795,7 @@ export default function ExplorePage() {
 
               {selectedPowiat.neighboring_voivodeships && selectedPowiat.neighboring_voivodeships.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {'Borders with other Voivodeships:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1810,7 +1810,7 @@ export default function ExplorePage() {
 
               {selectedPowiat.neighboring_countries && selectedPowiat.neighboring_countries.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {'International Border:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1827,7 +1827,7 @@ export default function ExplorePage() {
                 (selectedPowiat.water_access && selectedPowiat.water_access.length > 0) ||
                 (selectedPowiat.lakes && selectedPowiat.lakes.length > 0)) && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {'Rivers, Lakes & Water Bodies:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1852,7 +1852,7 @@ export default function ExplorePage() {
 
               {selectedPowiat.major_roads && selectedPowiat.major_roads.length > 0 && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {'Major Highways & National Roads:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1868,7 +1868,7 @@ export default function ExplorePage() {
               {((selectedPowiat.landform_regions && selectedPowiat.landform_regions.length > 0) ||
                 (selectedPowiat.historical_regions && selectedPowiat.historical_regions.length > 0)) && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {'Geographic & Historical Regions:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1890,7 +1890,7 @@ export default function ExplorePage() {
                 (selectedPowiat.health_resorts && selectedPowiat.health_resorts.length > 0) ||
                 (selectedPowiat.unesco_sites && selectedPowiat.unesco_sites.length > 0)) && (
                 <div>
-                  <span className="font-bold text-zinc-300 block mb-1.5 uppercase font-mono">
+                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
                     {'National Parks, Health Resorts & UNESCO:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -2039,7 +2039,7 @@ export default function ExplorePage() {
                   maxHeight: `${Math.round(68 * inspectZoom)}vh`,
                   width: 'auto',
                 }}
-                className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-all duration-150"
+                className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl"
               />
             </div>
           </div>

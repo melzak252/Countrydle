@@ -11,6 +11,43 @@ from powiatdle.heraldry_quiz import load_catalog
 from schemas.admin import AdminGameSessionItem, AdminGameSessionTimelineEvent, AdminQuizSolve, AdminTargetStrategyStats, AdminTopGuessStat
 from fastapi import HTTPException
 from powiatdle.flag_catalog import load_catalog as load_flag_catalog
+from regional_symbols.catalog import load_catalog as load_regional_catalog, load_entities as load_regional_entities
+
+
+REGIONAL_SCOPES = {
+    "voivodeships": "Polish voivodeships",
+    "london_boroughs": "London boroughs",
+    "england_counties": "English counties",
+}
+
+
+def heraldry_mode(mode):
+    legacy = {
+        "heraldry": ("county", "coat", False),
+        "county_flags": ("county", "flag", False),
+        "coats_quiz": ("county", "coat", True),
+        "county_flags_quiz": ("county", "flag", True),
+    }
+    if mode in legacy:
+        return legacy[mode]
+    parts = mode.split(":")
+    if (len(parts) in (3, 4) and parts[0] == "regional_symbols"
+            and parts[1] in REGIONAL_SCOPES and parts[2] in {"coat", "flag"}
+            and (len(parts) == 3 or parts[3] == "quiz")):
+        return parts[1], parts[2], len(parts) == 4
+    return None
+
+
+def quiz_target(mode):
+    scope, symbol, _ = heraldry_mode(mode)
+    if scope == "county":
+        return flag_quiz_target() if symbol == "flag" else "380 Polish counties"
+    try:
+        return f"{len(load_regional_catalog(scope, symbol))} {REGIONAL_SCOPES[scope]}"
+    except HTTPException as exc:
+        if exc.status_code != 503:
+            raise
+        return "Catalog unavailable"
 
 
 def flag_quiz_target():
@@ -24,17 +61,18 @@ def flag_quiz_target():
 
 
 def _scope(mode, day):
-    if mode in {"heraldry", "county_flags"}:
-        symbol_mode = "flag" if mode == "county_flags" else "coat"
-        return HeraldryDailySession, [HeraldryDailySession.date == day, HeraldryDailySession.symbol_mode == symbol_mode]
+    entity_scope, symbol_mode, is_quiz = heraldry_mode(mode)
+    if not is_quiz:
+        return HeraldryDailySession, [HeraldryDailySession.date == day,
+                                     HeraldryDailySession.symbol_mode == symbol_mode,
+                                     HeraldryDailySession.entity_scope == entity_scope]
     start = datetime.combine(day, time.min, tzinfo=timezone.utc)
-    symbol_mode = "flag" if mode == "county_flags_quiz" else "coat"
     return QuizRun, [QuizRun.started_at >= start, QuizRun.started_at < start + timedelta(days=1),
-                     QuizRun.symbol_mode == symbol_mode]
+                     QuizRun.symbol_mode == symbol_mode, QuizRun.entity_scope == entity_scope]
 
 
 def _status_filter(mode, status):
-    if mode in {"heraldry", "county_flags"}:
+    if not heraldry_mode(mode)[2]:
         return {
             "won": HeraldryDailySession.won.is_(True),
             "lost": (HeraldryDailySession.won.is_(False)) & HeraldryDailySession.completed_at.is_not(None),
@@ -46,7 +84,7 @@ def _status_filter(mode, status):
 
 def _item(row, username, mode, day, quiz_target=None):
     is_guest = row.user_id is None
-    if mode in {"heraldry", "county_flags"}:
+    if not heraldry_mode(mode)[2]:
         completed_at = row.completed_at
         status = "won" if row.won else "lost" if completed_at else "in_progress"
         timeline = [AdminGameSessionTimelineEvent(
@@ -95,21 +133,23 @@ async def query_heraldry_sessions(session, mode, day, status_filter, player_type
                  .where(*filters).order_by(model.started_at.desc(), model.id)
                  .offset((page - 1) * limit).limit(limit))
     rows = (await session.execute(statement)).all()
-    quiz_target = (flag_quiz_target() if mode == "county_flags_quiz" else
-                   "380 Polish counties" if mode == "coats_quiz" else None)
-    items = [_item(row, username, mode, day, quiz_target) for row, username in rows]
-    if mode in {"coats_quiz", "county_flags_quiz"} and items:
+    entity_scope, _, is_quiz = heraldry_mode(mode)
+    target = quiz_target(mode) if is_quiz else None
+    items = [_item(row, username, mode, day, target) for row, username in rows]
+    if is_quiz and items:
         solves = (await session.execute(
             select(QuizSolve.run_id, QuizSolve.powiat_id, QuizSolve.elapsed_seconds)
             .where(QuizSolve.run_id.in_([item.session_id for item in items]))
             .order_by(QuizSolve.elapsed_seconds, QuizSolve.powiat_id)
         )).all()
         if solves:
-            catalog = await load_catalog()
+            catalog = await load_catalog() if entity_scope == "county" else {
+                entity_id: entity["name"] for entity_id, entity in load_regional_entities(entity_scope).items()
+            }
             by_id = {item.session_id: item for item in items}
             for run_id, powiat_id, elapsed in solves:
                 by_id[run_id].quiz_solves.append(AdminQuizSolve(
-                    powiat_id=powiat_id, name=catalog.get(powiat_id, f"County #{powiat_id}"),
+                    powiat_id=powiat_id, name=catalog.get(powiat_id, f"{'County' if entity_scope == 'county' else 'Entity'} #{powiat_id}"),
                     active_elapsed_seconds=elapsed,
                 ))
     return items, total
@@ -121,15 +161,15 @@ async def query_heraldry_stats(session, mode, day):
         (model.user_id.is_not(None), 'user:' + cast(model.user_id, String)),
         else_='guest:' + model.guest_id,
     )
-    won = model.won if mode in {"heraldry", "county_flags"} else model.status == "completed"
+    is_quiz = heraldry_mode(mode)[2]
+    won = model.status == "completed" if is_quiz else model.won
     total, players, wins = (await session.execute(select(
         func.count(), func.count(func.distinct(identity)),
         func.coalesce(func.sum(cast(won, Integer)), 0),
     ).select_from(model).where(*filters))).one()
-    target_name = (flag_quiz_target() if mode == "county_flags_quiz" else
-                   "380 Polish counties" if mode == "coats_quiz" else "Unknown")
+    target_name = quiz_target(mode) if is_quiz else "Unknown"
     top_guesses = []
-    if mode in {"heraldry", "county_flags"}:
+    if not is_quiz:
         target = (await session.execute(select(model.target_name).where(*filters).limit(1))).scalar_one_or_none()
         target_name = target or "Unknown"
         rows = (await session.execute(select(model.guesses, model.target_id).where(*filters))).all()

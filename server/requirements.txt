@@ -22,3 +22,4 @@ aiosqlite
 httpx
 psycopg2-binary
 shapely>=2.0,<3
+Pillow>=10,<12

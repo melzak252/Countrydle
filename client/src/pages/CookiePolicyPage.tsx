@@ -2,7 +2,7 @@ import LegalDocument from '../components/LegalDocument';
 import { PrivacySettingsButton } from '../components/PrivacySettingsButton';
 
 export default function CookiePolicyPage() {
-  const lastUpdated = "October 31, 2026";
+  const lastUpdated = "November 6, 2026";
 
   return (
     <LegalDocument title="Cookie Policy" lastUpdated={lastUpdated}>
@@ -43,6 +43,17 @@ export default function CookiePolicyPage() {
             <strong>Daily guest progress — <code>guess_game_*</code> in localStorage:</strong> saves progress,
             questions and guesses by game mode and date. Supported guest progress is sent to your account when
             you sign in, and successfully synced snapshots are removed. Failed syncs retain the local snapshot.
+          </li>
+          <li>
+            <strong>Regional symbol games — <code>regional_symbols_&#123;scope&#125;_&#123;coat|flag&#125;_daily_token_&#123;date&#125;</code> in localStorage:</strong>{' '}
+            stores the date-keyed daily game token separately for each geography and symbol, so your browser can
+            resume that game and its progress. These date-keyed values do not automatically expire or get deleted;
+            they remain until you or your browser remove them.
+          </li>
+          <li>
+            <strong>Regional symbol instructions — <code>regional_symbols_&#123;scope&#125;_&#123;coat|flag&#125;_guide_seen</code> in localStorage:</strong>{' '}
+            remembers that you dismissed that game's instructions. This preference persists until you or your
+            browser remove it; it has no automatic expiry.
           </li>
           <li>
             <strong>Guest result history — <code>countrydle_guest_result_v1_*</code> in localStorage:</strong> saves

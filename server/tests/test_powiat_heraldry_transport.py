@@ -24,10 +24,11 @@ async def test_coat_asset_negotiates_gzip(async_client, monkeypatch, accept_enco
     monkeypatch.setattr('powiatdle.heraldry.get_county_by_id', lambda _: {'name': 'test'})
     monkeypatch.setattr('powiatdle.heraldry.get_or_fetch_herb_svg', lambda *_: svg)
     token = encrypt_session_token({'target_id': 1})
-    async with async_client.stream('GET', '/powiatdle/heraldry/coat-asset', params={'token': token}, headers={'Accept-Encoding': accept_encoding}) as response:
+    async with async_client.stream('GET', '/powiatdle/heraldry/coat-asset', params={'token': token, 'full': 'true'}, headers={'Accept-Encoding': accept_encoding}) as response:
         wire = b''.join([part async for part in response.aiter_raw()])
         assert response.status_code == 200
         assert response.headers['content-type'].startswith('image/svg+xml')
+        assert response.headers['cache-control'] == 'private, no-store'
         assert 'accept-encoding' in response.headers['vary'].lower()
         assert response.headers.get('content-encoding') == ('gzip' if compressed else None)
         assert (gzip.decompress(wire) if compressed else wire) == svg
@@ -47,7 +48,7 @@ async def test_coat_asset_errors_are_not_cached_or_compressed(async_client, monk
         raise HTTPException(status_code=503, detail='Coat of arms asset temporarily unavailable.')
     monkeypatch.setattr('powiatdle.heraldry.get_or_fetch_herb_svg', unavailable)
     token = encrypt_session_token({'target_id': 1})
-    failure = await async_client.get('/powiatdle/heraldry/coat-asset', params={'token': token}, headers={'Accept-Encoding': 'gzip'})
+    failure = await async_client.get('/powiatdle/heraldry/coat-asset', params={'token': token, 'full': 'true'}, headers={'Accept-Encoding': 'gzip'})
     assert failure.status_code == 503
     assert failure.json()['detail'] == 'Coat of arms asset temporarily unavailable.'
     assert 'cache-control' not in failure.headers

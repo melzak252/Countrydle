@@ -61,15 +61,13 @@ export const FlagClueTimeline: React.FC<FlagClueTimelineProps> = ({ guesses }) =
           return (
             <div
               key={g.id || idx}
-              className={`rounded-xl border bg-sand-950 p-3 sm:p-4 shadow-lg transition-all ${
-                g.answer
-                  ? 'border-emerald-500/80 shadow-emerald-950/40'
-                  : 'border-sand-800/80 shadow-sand-950/60'
+              className={`rounded-xl border bg-sand-950 p-3 sm:p-4 ${
+                g.answer ? 'border-emerald-500/80' : 'border-sand-800/80'
               }`}
             >
               {/* Top Row: Attempt #, Country Name, and Result Badge */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sand-800/50 pb-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sand-800/50 pb-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sand-900 text-xs font-mono font-bold text-sand-400">
                     #{attemptNum}
                   </span>

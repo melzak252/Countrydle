@@ -1,6 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { gameCatalog } from '../lib/gameCatalog';
+import { regionalSymbolGames, regionalSymbolLabels, regionalSymbolNouns, regionalSymbolPath } from '../services/api';
 import { usePageMetadataOverride, type PageMetadataInput } from '../lib/pageMetadata';
 
 const ORIGIN = 'https://countrydle.online';
@@ -117,6 +118,17 @@ function normalizePath(path: string): string {
 
 function routeMetadata(path: string): RouteMetadata {
   if (publicPages[path]) return publicPages[path];
+  for (const { scope, flags } of regionalSymbolGames) {
+    const base = regionalSymbolPath(scope, flags);
+    if (path === base || path === `${base}/quiz`) {
+      const name = `${regionalSymbolLabels[scope]} ${flags ? 'Flags' : 'Coats of Arms'}`;
+      return {
+        title: `${name}${path.endsWith('/quiz') ? ' Quiz' : ''} | Countrydle`,
+        description: `Identify verified ${regionalSymbolNouns[scope]} ${flags ? 'flags' : 'coats of arms'} in ${path.endsWith('/quiz') ? 'a visual grid quiz' : 'daily and random eight-guess puzzles'}.`,
+        noindex: true,
+      };
+    }
+  }
   if (path.startsWith('/explore/modes/')) {
     const modeId = path.slice('/explore/modes/'.length);
     const normalizedId = modeId === 'us_statedle' ? 'us-states' : modeId;

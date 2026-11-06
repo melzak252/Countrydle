@@ -708,7 +708,7 @@ const resources = {
         gameOverTitle: 'Challenge Ended',
         copied: 'Result copied to clipboard!',
         shareBtn: 'Share Result',
-        copiedBtn: 'Copied!',
+        copiedBtn: 'Copied',
         copyBtn: 'Copy Card',
         resultTitle: '{{gameName}} Result',
         closeModal: 'Close result modal',

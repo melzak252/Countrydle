@@ -182,7 +182,7 @@ export default function ShareResultCard({
     >
       <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-mono text-[10px] sm:text-xs uppercase tracking-wider text-emerald-400 font-semibold">
+          <span className="font-mono text-xs text-emerald-400 font-semibold">
             {t('share.resultTitle', '{{gameName}} Result', { gameName })}
           </span>
           <time dateTime={displayDate} className="font-mono text-[10px] sm:text-xs text-zinc-400">
@@ -212,7 +212,7 @@ export default function ShareResultCard({
             />
           )}
           <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 font-semibold">
+            <span className="font-mono text-xs text-emerald-400 font-semibold">
               {t('share.mysteryLocation', 'The Mystery Location')}
             </span>
             <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
@@ -244,7 +244,7 @@ export default function ShareResultCard({
 
       <dl className="grid grid-cols-3 divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900/60">
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wide text-zinc-400">
+          <dt className="text-xs font-mono text-zinc-400">
             {t('share.questionsUsed', 'Questions Used')}
           </dt>
           <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-sand-100">
@@ -252,7 +252,7 @@ export default function ShareResultCard({
           </dd>
         </div>
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wide text-zinc-400">
+          <dt className="text-xs font-mono text-zinc-400">
             {t('share.guessesMade', 'Guesses Made')}
           </dt>
           <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-sand-100">
@@ -260,7 +260,7 @@ export default function ShareResultCard({
           </dd>
         </div>
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wide text-zinc-400">
+          <dt className="text-xs font-mono text-zinc-400">
             {t('share.nextPuzzle', 'Next Puzzle')}
           </dt>
           <dd className="mt-0.5 font-mono text-sm sm:text-base font-semibold text-emerald-400">
@@ -277,7 +277,7 @@ export default function ShareResultCard({
             className="col-span-3 sm:col-span-1 flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-4 py-2.5 text-sm font-bold text-obsidian-950 transition-colors hover:bg-emerald-300 cursor-pointer"
           >
             {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-            <span>{copied ? t('share.copiedBtn', 'Copied to Clipboard!') : t('share.shareBtn', 'Share Result')}</span>
+            <span>{copied ? t('share.copiedBtn', 'Copied to clipboard') : t('share.shareBtn', 'Share Result')}</span>
           </button>
 
           <button

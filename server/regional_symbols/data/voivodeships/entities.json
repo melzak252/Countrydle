@@ -1,0 +1,194 @@
+{
+  "entities": [
+    {
+      "id": 2,
+      "name": "Dolnośląskie",
+      "aliases": [
+        "Lower Silesian Voivodeship",
+        "Lower Silesian"
+      ],
+      "latitude": 51.089533,
+      "longitude": 16.410735,
+      "terc": "02",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 4,
+      "name": "Kujawsko-pomorskie",
+      "aliases": [
+        "Kuyavian-Pomeranian Voivodeship",
+        "Kuyavian-Pomeranian"
+      ],
+      "latitude": 53.072714,
+      "longitude": 18.488186,
+      "terc": "04",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 6,
+      "name": "Lubelskie",
+      "aliases": [
+        "Lublin Voivodeship",
+        "Lublin"
+      ],
+      "latitude": 51.220734,
+      "longitude": 22.900296,
+      "terc": "06",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 8,
+      "name": "Lubuskie",
+      "aliases": [
+        "Lubusz Voivodeship",
+        "Lubusz"
+      ],
+      "latitude": 52.196193,
+      "longitude": 15.342759,
+      "terc": "08",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 10,
+      "name": "Łódzkie",
+      "aliases": [
+        "Łódź Voivodeship",
+        "Łódź"
+      ],
+      "latitude": 51.604847,
+      "longitude": 19.417579,
+      "terc": "10",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 12,
+      "name": "Małopolskie",
+      "aliases": [
+        "Lesser Poland Voivodeship",
+        "Lesser Poland"
+      ],
+      "latitude": 49.858964,
+      "longitude": 20.269294,
+      "terc": "12",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 14,
+      "name": "Mazowieckie",
+      "aliases": [
+        "Masovian Voivodeship",
+        "Masovian"
+      ],
+      "latitude": 52.345782,
+      "longitude": 21.09646,
+      "terc": "14",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 16,
+      "name": "Opolskie",
+      "aliases": [
+        "Opole Voivodeship",
+        "Opole"
+      ],
+      "latitude": 50.647075,
+      "longitude": 17.899891,
+      "terc": "16",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 18,
+      "name": "Podkarpackie",
+      "aliases": [
+        "Subcarpathian Voivodeship",
+        "Subcarpathian"
+      ],
+      "latitude": 49.953663,
+      "longitude": 22.169103,
+      "terc": "18",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 20,
+      "name": "Podlaskie",
+      "aliases": [
+        "Podlaskie Voivodeship"
+      ],
+      "latitude": 53.26451,
+      "longitude": 22.929345,
+      "terc": "20",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 22,
+      "name": "Pomorskie",
+      "aliases": [
+        "Pomeranian Voivodeship",
+        "Pomeranian"
+      ],
+      "latitude": 54.177346,
+      "longitude": 18.03792,
+      "terc": "22",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 24,
+      "name": "Śląskie",
+      "aliases": [
+        "Silesian Voivodeship",
+        "Silesian"
+      ],
+      "latitude": 50.331014,
+      "longitude": 18.994044,
+      "terc": "24",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 26,
+      "name": "Świętokrzyskie",
+      "aliases": [
+        "Świętokrzyskie Voivodeship"
+      ],
+      "latitude": 50.763382,
+      "longitude": 20.768969,
+      "terc": "26",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 28,
+      "name": "Warmińsko-mazurskie",
+      "aliases": [
+        "Warmian-Masurian Voivodeship",
+        "Warmian-Masurian"
+      ],
+      "latitude": 53.857245,
+      "longitude": 20.824992,
+      "terc": "28",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 30,
+      "name": "Wielkopolskie",
+      "aliases": [
+        "Greater Poland Voivodeship",
+        "Greater Poland"
+      ],
+      "latitude": 52.330816,
+      "longitude": 17.243128,
+      "terc": "30",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    },
+    {
+      "id": 32,
+      "name": "Zachodniopomorskie",
+      "aliases": [
+        "West Pomeranian Voivodeship",
+        "West Pomeranian"
+      ],
+      "latitude": 53.585273,
+      "longitude": 15.543063,
+      "terc": "32",
+      "point_source": "Planar longitude/latitude shoelace centroid of largest exterior ring (ignores holes and smaller components), simplified WGS84 GeoJSON derived from GUGiK Geoportal August 2025; https://github.com/waszkiewiczja/GeoJSON-Polska-Wojewodztwa-Powiaty-Gminy"
+    }
+  ]
+}

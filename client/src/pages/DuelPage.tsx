@@ -158,12 +158,12 @@ function ResultsModal({
           <X size={15} />
         </button>
 
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400">{copy.results}</p>
+        <p className="font-mono text-xs text-zinc-400">{copy.results}</p>
         <h2 className={`mt-1.5 text-2xl font-bold sm:text-3xl ${isWinner ? 'text-emerald-300' : 'text-sand-100'}`}>
           {outcome}
         </h2>
 
-        <h3 className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400">{copy.reveals}</h3>
+        <h3 className="mb-2 mt-5 font-mono text-xs text-zinc-400">{copy.reveals}</h3>
         <ul className="space-y-2 rounded-sm border border-white/10 bg-black/30 p-3">
           {snapshot.reveals?.map(reveal => {
             const playerName = snapshot.players.find(p => p.id === reveal.player_id)?.name || 'Player';
@@ -191,7 +191,7 @@ function ResultsModal({
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {snapshot.rematch_code ? (
-            <Link className="max-md:min-h-11 inline-flex items-center rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors" to={`/duel/${encodeURIComponent(snapshot.rematch_code)}`}>
+            <Link className="max-md:min-h-11 inline-flex items-center rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-semibold text-obsidian-950 transition-colors" to={`/duel/${encodeURIComponent(snapshot.rematch_code)}`}>
               {copy.rematchOpen}
             </Link>
           ) : snapshot.players.length < 2 ? null : self?.rematch_ready ? (
@@ -199,16 +199,16 @@ function ResultsModal({
           ) : (
             <>
               {opponent?.rematch_ready && <p className="w-full text-sm font-medium text-emerald-300 font-mono">{copy.rematchReceived}</p>}
-              <button type="button" className="max-md:min-h-11 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-obsidian-950 transition-colors cursor-pointer" disabled={busy} onClick={rematch}>
+              <button type="button" className="max-md:min-h-11 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 font-mono text-xs font-semibold text-obsidian-950 transition-colors cursor-pointer" disabled={busy} onClick={rematch}>
                 {copy.rematch}
               </button>
             </>
           )}
-          <Link className="max-md:min-h-11 inline-flex items-center rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 font-mono text-xs uppercase tracking-wider text-sand-100 transition-colors" to="/friends">{copy.newDuel}</Link>
+          <Link className="max-md:min-h-11 inline-flex items-center rounded-sm border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 font-mono text-xs text-sand-100 transition-colors" to="/friends">{copy.newDuel}</Link>
 
           <button
             type="button"
-            className="ml-auto flex max-md:min-h-11 items-center gap-1.5 px-4 py-2 font-mono text-xs uppercase tracking-wider text-zinc-300 hover:text-white rounded-sm border border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
+            className="ml-auto flex max-md:min-h-11 items-center gap-1.5 px-4 py-2 font-mono text-xs text-zinc-300 hover:text-white rounded-sm border border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
             onClick={onClose}
           >
             <Eye size={13} />
@@ -342,23 +342,12 @@ function DuelRoom({ code }: { code?: string }) {
 
   const turnBorderPhase: 'red' | 'yellow' | 'green' =
     turnSecondsLeft <= 10 ? 'red' : turnSecondsLeft <= 30 ? 'yellow' : 'green';
-  const topGradient =
+  const turnBorderColor =
     turnBorderPhase === 'red'
-      ? 'from-rose-500/35 via-rose-600/12 to-transparent'
+      ? 'border-rose-500/70'
       : turnBorderPhase === 'yellow'
-      ? 'from-amber-400/30 via-amber-500/10 to-transparent'
-      : 'from-emerald-400/25 via-emerald-500/08 to-transparent';
-
-  const bottomGradient = topGradient;
-  const leftGradient = topGradient;
-  const rightGradient = topGradient;
-
-  const borderGlow =
-    turnBorderPhase === 'red'
-      ? 'shadow-[inset_0_0_50px_rgba(244,63,94,0.45),inset_0_0_15px_rgba(239,68,68,0.5)] animate-pulse'
-      : turnBorderPhase === 'yellow'
-      ? 'shadow-[inset_0_0_40px_rgba(245,158,11,0.35),inset_0_0_12px_rgba(251,191,36,0.4)]'
-      : 'shadow-[inset_0_0_35px_rgba(16,185,129,0.3),inset_0_0_10px_rgba(52,211,153,0.35)]';
+      ? 'border-amber-400/60'
+      : 'border-emerald-400/50';
   // Auto-switch action tab if reply phase requires guessing
   useEffect(() => {
     if (snapshot?.phase === 'reply') {
@@ -577,17 +566,9 @@ function DuelRoom({ code }: { code?: string }) {
         />
       </div>
 
-      {/* 1b. Map Question Turn Ambient Shadow Indicator (Pure Vignette & Rich Alpha, No Hard Border) */}
+      {/* Question turn status border */}
       {isMyQuestionTurn && (
-        <div className={`pointer-events-none absolute inset-0 z-[500] transition-all duration-500 ${turnBorderPhase === 'red' ? 'animate-pulse' : ''}`}>
-          <div className={`absolute inset-0 pointer-events-none transition-all duration-500 ${borderGlow}`} />
-
-          {/* 4-Sided Inward Alpha Gradients (Subtle, non-distracting rim glow) */}
-          <div className={`absolute inset-x-0 top-0 h-7 sm:h-10 bg-gradient-to-b ${topGradient} transition-all duration-500 pointer-events-none`} />
-          <div className={`absolute inset-x-0 bottom-0 h-7 sm:h-10 bg-gradient-to-t ${bottomGradient} transition-all duration-500 pointer-events-none`} />
-          <div className={`absolute inset-y-0 left-0 w-7 sm:w-10 bg-gradient-to-r ${leftGradient} transition-all duration-500 pointer-events-none`} />
-          <div className={`absolute inset-y-0 right-0 w-7 sm:w-10 bg-gradient-to-l ${rightGradient} transition-all duration-500 pointer-events-none`} />
-        </div>
+        <div className={`pointer-events-none absolute inset-0 z-[500] border-2 ${turnBorderColor}`} />
       )}
       {/* 2. Top Unified Status HUD Strip */}
       <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
@@ -746,7 +727,7 @@ function DuelRoom({ code }: { code?: string }) {
             <div
               onWheel={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="pointer-events-auto flex h-full flex-col overflow-hidden bg-obsidian-950/90 backdrop-blur-sm shadow-2xl transition-all max-md:absolute max-md:inset-0 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/80 md:backdrop-blur-md"
+              className="pointer-events-auto flex h-full flex-col overflow-hidden bg-obsidian-950 shadow-lg max-md:absolute max-md:inset-0 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900"
             >
               {/* Header */}
               <div className="duel-notebook-heading flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-3 md:py-2 shrink-0">

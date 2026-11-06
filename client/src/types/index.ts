@@ -285,6 +285,14 @@ export interface FlagShadesGuessResult {
   target_country?: { id: number; name: string } | null;
 }
 
+export interface RegionalSymbolComponentCredit {
+  title: string;
+  url: string;
+  author: string;
+  license: string;
+  license_url: string;
+}
+
 export interface PowiatHeraldrySourceAttribution {
   title?: string | null;
   artist?: string | null;
@@ -293,7 +301,21 @@ export interface PowiatHeraldrySourceAttribution {
   license_url?: string | null;
   source_url?: string | null;
   description?: string | null;
+  context?: string | null;
+  component_credits?: RegionalSymbolComponentCredit[];
 }
+export type RegionalSymbolScope = 'voivodeships' | 'london_boroughs' | 'england_counties';
+
+export interface RegionalSymbolCatalogEntry {
+  id: number;
+  name: string;
+  voivodeship: string;
+  flag_asset_url: string;
+  thumbnail_asset_url?: string;
+  aliases?: string[];
+  source_attribution?: PowiatHeraldrySourceAttribution | null;
+}
+
 
 export interface PowiatHeraldryTarget {
   id: number;
@@ -306,6 +328,7 @@ export interface PowiatHeraldryItem {
   name: string;
   voivodeship: string;
   is_city_county: boolean;
+  aliases?: string[];
 }
 
 export interface PowiatHeraldryGuessResult {

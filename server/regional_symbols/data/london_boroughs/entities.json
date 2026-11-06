@@ -1,0 +1,304 @@
+{
+  "entities": [
+    {
+      "id": 9000002,
+      "name": "Barking and Dagenham",
+      "aliases": [
+        "Barking & Dagenham"
+      ],
+      "latitude": 51.54556,
+      "longitude": 0.129479,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000002"
+    },
+    {
+      "id": 9000003,
+      "name": "Barnet",
+      "aliases": [],
+      "latitude": 51.61107,
+      "longitude": -0.218197,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000003"
+    },
+    {
+      "id": 9000004,
+      "name": "Bexley",
+      "aliases": [],
+      "latitude": 51.45823,
+      "longitude": 0.146212,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000004"
+    },
+    {
+      "id": 9000005,
+      "name": "Brent",
+      "aliases": [],
+      "latitude": 51.56439,
+      "longitude": -0.275687,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000005"
+    },
+    {
+      "id": 9000006,
+      "name": "Bromley",
+      "aliases": [],
+      "latitude": 51.37266,
+      "longitude": 0.039246,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000006"
+    },
+    {
+      "id": 9000007,
+      "name": "Camden",
+      "aliases": [],
+      "latitude": 51.54306,
+      "longitude": -0.16291,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000007"
+    },
+    {
+      "id": 9000008,
+      "name": "Croydon",
+      "aliases": [],
+      "latitude": 51.36599,
+      "longitude": -0.077617,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000008"
+    },
+    {
+      "id": 9000009,
+      "name": "Ealing",
+      "aliases": [],
+      "latitude": 51.52443,
+      "longitude": -0.314101,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000009"
+    },
+    {
+      "id": 9000010,
+      "name": "Enfield",
+      "aliases": [],
+      "latitude": 51.6489,
+      "longitude": -0.081442,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000010"
+    },
+    {
+      "id": 9000011,
+      "name": "Greenwich",
+      "aliases": [],
+      "latitude": 51.46394,
+      "longitude": 0.050093,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000011"
+    },
+    {
+      "id": 9000012,
+      "name": "Hackney",
+      "aliases": [],
+      "latitude": 51.55493,
+      "longitude": -0.060458,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000012"
+    },
+    {
+      "id": 9000013,
+      "name": "Hammersmith and Fulham",
+      "aliases": [
+        "Hammersmith & Fulham"
+      ],
+      "latitude": 51.48733,
+      "longitude": -0.217351,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000013"
+    },
+    {
+      "id": 9000014,
+      "name": "Haringey",
+      "aliases": [],
+      "latitude": 51.58772,
+      "longitude": -0.106701,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000014"
+    },
+    {
+      "id": 9000015,
+      "name": "Harrow",
+      "aliases": [],
+      "latitude": 51.59467,
+      "longitude": -0.335988,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000015"
+    },
+    {
+      "id": 9000016,
+      "name": "Havering",
+      "aliases": [],
+      "latitude": 51.5652,
+      "longitude": 0.235368,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000016"
+    },
+    {
+      "id": 9000017,
+      "name": "Hillingdon",
+      "aliases": [],
+      "latitude": 51.53664,
+      "longitude": -0.441794,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000017"
+    },
+    {
+      "id": 9000018,
+      "name": "Hounslow",
+      "aliases": [],
+      "latitude": 51.46239,
+      "longitude": -0.37855,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000018"
+    },
+    {
+      "id": 9000019,
+      "name": "Islington",
+      "aliases": [],
+      "latitude": 51.54547,
+      "longitude": -0.109896,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000019"
+    },
+    {
+      "id": 9000020,
+      "name": "Kensington and Chelsea",
+      "aliases": [
+        "Kensington & Chelsea"
+      ],
+      "latitude": 51.49645,
+      "longitude": -0.189781,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000020"
+    },
+    {
+      "id": 9000021,
+      "name": "Kingston upon Thames",
+      "aliases": [
+        "Kingston",
+        "Kingston-upon-Thames"
+      ],
+      "latitude": 51.39296,
+      "longitude": -0.283679,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000021"
+    },
+    {
+      "id": 9000022,
+      "name": "Lambeth",
+      "aliases": [],
+      "latitude": 51.46445,
+      "longitude": -0.113851,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000022"
+    },
+    {
+      "id": 9000023,
+      "name": "Lewisham",
+      "aliases": [],
+      "latitude": 51.4423,
+      "longitude": -0.017344,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000023"
+    },
+    {
+      "id": 9000024,
+      "name": "Merton",
+      "aliases": [],
+      "latitude": 51.41059,
+      "longitude": -0.188687,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000024"
+    },
+    {
+      "id": 9000025,
+      "name": "Newham",
+      "aliases": [],
+      "latitude": 51.53149,
+      "longitude": 0.027261,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000025"
+    },
+    {
+      "id": 9000026,
+      "name": "Redbridge",
+      "aliases": [],
+      "latitude": 51.58588,
+      "longitude": 0.070085,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000026"
+    },
+    {
+      "id": 9000027,
+      "name": "Richmond upon Thames",
+      "aliases": [
+        "Richmond",
+        "Richmond-upon-Thames"
+      ],
+      "latitude": 51.44035,
+      "longitude": -0.28914,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000027"
+    },
+    {
+      "id": 9000028,
+      "name": "Southwark",
+      "aliases": [],
+      "latitude": 51.46595,
+      "longitude": -0.073088,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000028"
+    },
+    {
+      "id": 9000029,
+      "name": "Sutton",
+      "aliases": [],
+      "latitude": 51.35756,
+      "longitude": -0.172265,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000029"
+    },
+    {
+      "id": 9000030,
+      "name": "Tower Hamlets",
+      "aliases": [],
+      "latitude": 51.51555,
+      "longitude": -0.036476,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000030"
+    },
+    {
+      "id": 9000031,
+      "name": "Waltham Forest",
+      "aliases": [],
+      "latitude": 51.59462,
+      "longitude": -0.018803,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000031"
+    },
+    {
+      "id": 9000032,
+      "name": "Wandsworth",
+      "aliases": [],
+      "latitude": 51.4524,
+      "longitude": -0.200217,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000032"
+    },
+    {
+      "id": 9000033,
+      "name": "Westminster",
+      "aliases": [],
+      "latitude": 51.51221,
+      "longitude": -0.152953,
+      "point_source": "ONS Local Authority Districts (May 2026) Boundaries UK BSC, LAT/LONG attributes; representative coordinates, derivation not specified; https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BSC/FeatureServer/0",
+      "ons_code": "E09000033"
+    }
+  ]
+}

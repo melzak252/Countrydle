@@ -8,6 +8,13 @@ private routes retain the SPA shell. Image builds need no backend credentials or
 content service. Existing Bun tests cover gameplay, publisher metadata, content
 parsing, editorial conflicts and advertising/consent decisions.
 
+The interface keeps the atlas-inspired ink, sand and emerald palette, the
+existing serif headings and geographic imagery while using quieter labels,
+controls and motion. Game outcome, urgency and loading cues remain meaningful.
+This polish adapts unslop by Damir Sokolovsky
+([@heydamir](https://x.com/heydamir)), licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
 ## Symbols category modes
 
 The `Symbols` category provides deductive visual puzzle game modes:
@@ -21,10 +28,15 @@ sign-in. Older token-only games and random challenges remain playable but are
 unranked; a missing score is not a zero-point loss.
 
 The 380-coat quiz records completed and given-up runs, not abandoned runs.
-For each coat, community results show the number and percentage of finished
-runs that solved it and the average client-reported
-active elapsed time since quiz start among correct solves. Older untracked
-plays are not included. Matching and the pause timer remain local and instant.
+The quiz shows the overall community run count, but not per-image statistics.
+The backend continues to track per-coat solves and active elapsed time; older
+untracked plays are not included. Matching and the pause timer remain local and instant.
+
+The county daily first displays a bounded raster preview when available; opening
+the inspector requests the credited original SVG. The active image URL remains
+opaque and private. County, county-flag and regional-symbol quiz grids use
+lazy-loaded, content-versioned WebP renditions; inspectors request originals
+only when opened, and retain the preview if the original fails.
 
 **County Flags** (`/flagi-powiatow`) offers a ranked daily puzzle and an
 unranked random challenge with eight guesses, distance and direction feedback,
@@ -38,10 +50,39 @@ The **County Flags Quiz** (`/quiz-flag-powiatow`) loads its available pool from
 verified flag. Land-county seats are not substituted for land-county flags.
 The quiz groups only eligible IDs from that catalog, supports instant Polish
 name matching, pause and reset, and records completed or given-up runs.
-Community percentages use finished runs; average solve time is client-reported
-active time since the start of the run. The fullscreen inspector displays
+The overall community summary remains visible without per-image statistics.
+The fullscreen inspector displays
 available author, source, licence, and modification information. Missing
 catalogs and images are reported as unavailable, not replaced with coats.
+
+### Unreleased: regional symbols
+
+The regional symbol pages reuse the county daily, random challenge and quiz
+interfaces for Polish voivodeships, London boroughs and modern English
+ceremonial counties. Eight guesses are allowed; regional games do not show
+Polish county registration-plate hints. Local daily tokens and leaderboards
+are separated by geography and symbol type, and guest daily results can be
+claimed on sign-in. Each page reports its actual audited target count and the
+full set of places accepted as guesses. Quiz completion and community results
+cover only the eligible symbols, not every guessable place.
+The voivodeship flag and coat catalogs and daily pools each cover all 16
+voivodeships. The London borough pool contains 31 of 32 coats; borough flags
+are out of scope. The English county-associated pools contain 47 flags and
+47 coats among 48 ceremonial counties.
+Coverage is not evidence that an unlisted flag does not exist. Consult the
+catalogs and source audits for artwork, attribution and remaining gaps.
+
+Regional pages use `/regional-symbols/{scope}/{coat|flag}` and append `/quiz`
+for the all-symbol quiz. Availability is driven by the published catalog;
+unavailable or single-target pools are not advertised as playable. Artwork
+credits, including source components and modifications, are shown with results
+and in the quiz inspector; geographic point sources are credited separately.
+Voivodeship inclusion reflects this game's identification use, not blanket
+permission for other uses; per-symbol source and restriction notes remain in the
+server catalogs and source audit.
+English community flags are not flags of ceremonial authority. Other UK nations
+and the historic 39 English counties are not part of these games; the City of
+London is not a borough.
 
 The admin overview links mode cards to date- and mode-filtered sessions using
 the URL, so browser navigation restores the selection. Known players are
@@ -65,15 +106,26 @@ The daily coat endpoint negotiates gzip for clients that accept it and varies
 responses by `Accept-Encoding`. One measured daily SVG used about 91% fewer wire
 bytes with gzip; actual savings vary by image and do not guarantee lower latency.
 
+## Unreleased: focused game navigation
+
+The header's green Play button opens Countrydle; the adjacent disclosure offers
+Countrydle, Flagdle, Flag Shades and US Statedle, plus a link to the homepage
+directory of all modes. The directory link scrolls to and focuses its heading
+for keyboard navigation. Desktop utilities are split between Explore and About
+disclosures, with Blog as a standalone link. Independent desktop controls are
+spaced while Play and its adjacent disclosure stay joined. Regional symbols
+appear only when their published catalogs are playable.
+
 ## Public mobile layout
 
 Below 1280px, navigation uses a compact header and a native modal dialog instead
-of expanding the page header. Play, Blog, Leaderboard and account actions remain
-direct links; game categories, guides, help and privacy use disclosures. The
-dialog scrolls independently, restores focus on dismissal, and closes on route
-changes, Escape, backdrop clicks and desktop resize. The technical version badge
-is desktop-only. The compact footer contains Privacy, Cookies, Terms of Use,
-Contact and Privacy settings; games, blog, guides and help remain in the header.
+of expanding the page header. The Play control, Blog, Leaderboard and account
+actions remain accessible; guides, help and privacy use disclosures. The
+dialog scrolls independently, restores focus on dismissal, and
+closes on route changes, Escape, backdrop clicks and desktop resize. The
+technical version badge is desktop-only. The compact footer contains Privacy,
+Cookies, Terms of Use, Contact and Privacy settings; games, blog, guides and help
+remain in the header.
 
 Phone map controls use 36px buttons and a compact vertical stack for zoom, reset,
 clear, reference lines and the revealed-target action. Desktop sizing is unchanged.
@@ -86,9 +138,10 @@ The homepage leads with Countrydle's daily country puzzle, its 10-question and
 3-guess limits, and the spinning globe on phones and desktop. Guest progress
 controls the play/continue/result label only when its date and loading state are
 current. An always-visible directory shares `src/lib/gameCatalog.ts` with the
-header's Games menu and groups the other modes into flags and coats, continents,
-states and regions, and more ways to play. Rules and device progress remain in
-disclosures; the page also links to the blog and explains the 00:00 UTC reset.
+header and organizes games by gameplay category, then geography: Worldwide,
+Continents, Poland, United States and UK (England and London). Empty geography
+sections are omitted. Rules and device progress remain in disclosures; the page
+also links to the blog and explains the 00:00 UTC reset.
 The globe supports horizontal drag, tap and keyboard-operable pause/resume;
 vertical touch gestures can scroll the page, and reduced-motion mode starts paused.
 

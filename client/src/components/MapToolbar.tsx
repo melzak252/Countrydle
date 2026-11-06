@@ -50,10 +50,10 @@ export default function MapToolbar({
               aria-pressed={isActive}
             >
               <span
-                className={`h-3 w-3 rounded-full transition-transform ${dotClass} ${
+                className={`h-3 w-3 rounded-full transition-opacity ${dotClass} ${
                   isActive
-                    ? 'ring-2 ring-white ring-offset-1 ring-offset-obsidian-950 scale-125'
-                    : 'opacity-70 hover:opacity-100 hover:scale-110'
+                    ? 'ring-2 ring-white ring-offset-1 ring-offset-obsidian-950'
+                    : 'opacity-70 hover:opacity-100'
                 }`}
                 aria-hidden="true"
               />

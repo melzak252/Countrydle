@@ -2,15 +2,19 @@ import asyncio
 import base64
 import gzip
 import hashlib
+import io
 import json
 import logging
 import os
 import mimetypes
+import math
 import re
 import sqlite3
+import threading
 import urllib.parse
 import urllib.request
 import uuid
+from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
@@ -18,6 +22,7 @@ from typing import List, Optional
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
+from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
@@ -26,6 +31,7 @@ from powiat_names import resolve_powiat_name
 from powiatdle.utils import LOCAL_CONFIG
 from powiatdle import heraldry_daily
 from powiatdle import flag_catalog
+from regional_symbols import catalog as regional_catalog
 from powiatdle.heraldry_quiz import router as quiz_router
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.geo import calculate_bearing, calculate_distance_km
@@ -35,6 +41,7 @@ logger = logging.getLogger("countrydle.powiatdle.heraldry")
 router = APIRouter(prefix="/heraldry", tags=["powiat-heraldry"])
 router.include_router(quiz_router)
 flag_router = APIRouter(prefix="/flags", tags=["powiat-flags"])
+regional_router = APIRouter(prefix="/regional-symbols/{scope}/{mode}", tags=["regional-symbols"])
 
 USER_AGENT = "CountrydleHeraldryBot/1.0 (https://countrydle.com; heraldry@countrydle.com)"
 HERB_CACHE_DIR = LOCAL_CONFIG.db_path.parent / "powiat_herb_cache"
@@ -58,6 +65,19 @@ class PowiatHeraldrySourceAttribution(BaseModel):
     description: Optional[str] = None
 
 
+class RegionalComponentCredit(BaseModel):
+    title: str
+    url: str
+    author: str
+    license: str
+    license_url: Optional[str] = None
+
+
+class RegionalSourceAttribution(PowiatHeraldrySourceAttribution):
+    context: Optional[str] = None
+    component_credits: List[RegionalComponentCredit] = Field(default_factory=list)
+
+
 class PowiatHeraldryTarget(BaseModel):
     id: int
     name: str
@@ -71,6 +91,10 @@ class PowiatHeraldryItem(BaseModel):
     is_city_county: bool
 
 
+class RegionalSymbolItem(PowiatHeraldryItem):
+    aliases: List[str] = Field(default_factory=list)
+
+
 class PowiatHeraldryGuessRequest(BaseModel):
     token: str
     guess: str
@@ -82,7 +106,7 @@ class PowiatHeraldryGuessResult(BaseModel):
     guess: str
     powiat_id: int
     voivodeship: str
-    distance_km: Optional[int] = None
+    distance_km: Optional[int | float] = None
     bearing_degrees: Optional[int] = None
     bearing_direction: Optional[str] = None
     bearing_arrow: Optional[str] = None
@@ -93,7 +117,7 @@ class PowiatHeraldryGuessResult(BaseModel):
     won: bool
     registration_plates: Optional[List[str]] = None
     target_powiat: Optional[PowiatHeraldryTarget] = None
-    source_attribution: Optional[PowiatHeraldrySourceAttribution] = None
+    source_attribution: Optional[RegionalSourceAttribution | PowiatHeraldrySourceAttribution] = None
     token: Optional[str] = None
     ranked: bool = False
     points: Optional[int] = None
@@ -107,7 +131,7 @@ class PowiatHeraldryChallenge(BaseModel):
     hint_unlock_guesses: int = 5
     token: str
     coat_asset_url: str
-    source_attribution: Optional[PowiatHeraldrySourceAttribution] = None
+    source_attribution: Optional[RegionalSourceAttribution | PowiatHeraldrySourceAttribution] = None
     guesses: Optional[List[PowiatHeraldryGuessResult]] = None
     is_game_over: Optional[bool] = False
     won: Optional[bool] = False
@@ -186,6 +210,8 @@ def get_heraldry_filename(powiat_id: int) -> Optional[str]:
     global _HERALDRY_MAP_CACHE
     if _HERALDRY_MAP_CACHE is None:
         map_path = get_db_path().parent / "powiat_heraldry_map.json"
+        if not map_path.exists():
+            map_path = Path(__file__).with_name("heraldry_map.json")
         if map_path.exists():
             try:
                 _HERALDRY_MAP_CACHE = json.loads(map_path.read_text(encoding="utf-8"))
@@ -472,35 +498,29 @@ def _extract_wiki_fallback_coat_filename(wiki_title: str, page: dict) -> Optiona
     return svg_coa[0]
 
 
-def resolve_and_fetch_heraldry(wiki_title: str) -> tuple[bytes, dict]:
-    # 1. pl.wikipedia.org -> wikibase_item (QID) + page images fallback
-    wiki_url = (
-        f"https://pl.wikipedia.org/w/api.php?action=query"
-        f"&titles={urllib.parse.quote(wiki_title)}&prop=pageprops|images&imlimit=50&redirects=1&format=json"
-    )
-    wiki_bytes = fetch_url(wiki_url)
-    wiki_data = json.loads(wiki_bytes.decode("utf-8"))
-    pages = wiki_data.get("query", {}).get("pages", {})
-    if not pages:
-        raise ValueError(f"No Wikipedia page found for '{wiki_title}'")
-    page = next(iter(pages.values()))
-    qid = page.get("pageprops", {}).get("wikibase_item")
-
-    filename: Optional[str] = None
-    if qid:
-        # 2. wikidata -> P94 (coat of arms filename)
-        wd_url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={qid}&props=claims&format=json"
-        wd_bytes = fetch_url(wd_url)
-        wd_data = json.loads(wd_bytes.decode("utf-8"))
-        claims = wd_data.get("entities", {}).get(qid, {}).get("claims", {})
-        p94 = claims.get("P94")
-        if p94:
-            filename = p94[0].get("mainsnak", {}).get("datavalue", {}).get("value")
-
+def resolve_and_fetch_heraldry(wiki_title: str, filename: Optional[str] = None) -> tuple[bytes, dict]:
     if not filename:
-        filename = _extract_wiki_fallback_coat_filename(wiki_title, page)
-    if not filename:
-        raise ValueError(f"No coat of arms filename found on Wikidata ({qid}) or Wikipedia for '{wiki_title}'")
+        wiki_url = (
+            f"https://pl.wikipedia.org/w/api.php?action=query"
+            f"&titles={urllib.parse.quote(wiki_title)}&prop=pageprops|images&imlimit=50&redirects=1&format=json"
+        )
+        wiki_data = json.loads(fetch_url(wiki_url).decode("utf-8"))
+        pages = wiki_data.get("query", {}).get("pages", {})
+        if not pages:
+            raise ValueError(f"No Wikipedia page found for '{wiki_title}'")
+        page = next(iter(pages.values()))
+        qid = page.get("pageprops", {}).get("wikibase_item")
+        if qid:
+            wd_url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={qid}&props=claims&format=json"
+            wd_data = json.loads(fetch_url(wd_url).decode("utf-8"))
+            claims = wd_data.get("entities", {}).get(qid, {}).get("claims", {})
+            p94 = claims.get("P94")
+            if p94:
+                filename = p94[0].get("mainsnak", {}).get("datavalue", {}).get("value")
+        if not filename:
+            filename = _extract_wiki_fallback_coat_filename(wiki_title, page)
+        if not filename:
+            raise ValueError(f"No coat of arms filename found on Wikidata ({qid}) or Wikipedia for '{wiki_title}'")
     # 3. commons metadata
     commons_title = f"File:{filename}"
     commons_url = (
@@ -553,7 +573,7 @@ def get_or_fetch_herb_svg(powiat_id: int, powiat_name: str) -> bytes:
         pass
 
     try:
-        svg_bytes, meta = resolve_and_fetch_heraldry(powiat_name)
+        svg_bytes, meta = resolve_and_fetch_heraldry(powiat_name, get_heraldry_filename(powiat_id))
         write_heraldry_cache(cache_file, svg_bytes, meta)
         return svg_bytes
     except Exception as exc:
@@ -573,44 +593,87 @@ def get_or_fetch_herb_svg(powiat_id: int, powiat_name: str) -> bytes:
 def get_or_fetch_herb_thumb(
     powiat_id: int, powiat_name: str, width: int = 80
 ) -> tuple[bytes, str]:
-    """Return a lightweight low-resolution PNG thumbnail for list views."""
-    cache_dir = get_herb_cache_dir() / "thumbs"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    thumb_file = cache_dir / f"thumb_{width}_{powiat_id}.png"
-
-    if thumb_file.exists():
+    """Return a source-bound PNG thumbnail or the original SVG."""
+    root = get_herb_cache_dir()
+    cached_svg = None
+    try:
+        cached_svg, metadata = read_heraldry_cache(heraldry_cache_path(root, powiat_id))
+        filename = metadata.get("filename")
+    except (OSError, ValueError, KeyError, TypeError):
+        filename = None
+    filename = filename or get_heraldry_filename(powiat_id)
+    if filename:
+        cache_dir = root / "thumbs"
+        source_key = hashlib.sha256(filename.encode("utf-8")).hexdigest()[:16]
+        thumb_file = cache_dir / f"thumb_{width}_{powiat_id}_{source_key}.png"
         try:
             data = thumb_file.read_bytes()
-            if len(data) > 64:
+            if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 64:
                 return data, "image/png"
-        except Exception:
+        except OSError:
             pass
-
-    filename = get_heraldry_filename(powiat_id)
-    if not filename:
-        try:
-            _, metadata = read_heraldry_cache(heraldry_cache_path(get_herb_cache_dir(), powiat_id))
-            filename = metadata.get("filename")
-        except (OSError, ValueError, KeyError, TypeError):
-            filename = None
-
-    if filename:
         thumb_url = (
             f"https://commons.wikimedia.org/wiki/Special:FilePath/"
             f"{urllib.parse.quote(filename)}?width={width}"
         )
         try:
             png_bytes = fetch_url(thumb_url)
-            if png_bytes and len(png_bytes) > 64:
+            if png_bytes.startswith(b"\x89PNG\r\n\x1a\n") and len(png_bytes) >= 64:
                 atomic_write(thumb_file, png_bytes)
                 return png_bytes, "image/png"
         except Exception as exc:
-            logger.warning(
-                f"Thumbnail fetch failed for powiat {powiat_id} ({filename}), falling back to SVG: {exc}"
-            )
+            logger.warning("Thumbnail fetch failed for powiat %s (%s): %s", powiat_id, filename, exc)
+    if cached_svg is not None:
+        return cached_svg, "image/svg+xml"
+    return get_or_fetch_herb_svg(powiat_id, powiat_name), "image/svg+xml"
 
-    svg_bytes = get_or_fetch_herb_svg(powiat_id, powiat_name)
-    return svg_bytes, "image/svg+xml"
+@lru_cache(maxsize=512)
+def daily_preview_lock(powiat_id: int):
+    return threading.Lock()
+
+@lru_cache(maxsize=512)
+def cached_heraldry_source(path: Path, identity: tuple[int, int, int, int, int]) -> Optional[str]:
+    # The fingerprint invalidates the parsed metadata whenever the atomic cache changes.
+    _, metadata = read_heraldry_cache(path)
+    return metadata.get("filename")
+
+
+def get_daily_herb_preview(powiat_id: int, powiat_name: str) -> tuple[bytes, str]:
+    """Cache a bounded rendition from the same source as the original and its credit."""
+    with daily_preview_lock(powiat_id):
+        root = get_herb_cache_dir()
+        cache_file = heraldry_cache_path(root, powiat_id)
+        try:
+            stat = cache_file.stat()
+            identity = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+            filename = cached_heraldry_source(cache_file, identity)
+        except (OSError, ValueError, KeyError, TypeError):
+            filename = None
+        filename = filename or get_heraldry_filename(powiat_id)
+        if isinstance(filename, str) and filename:
+            source_key = hashlib.sha256(filename.encode("utf-8")).hexdigest()[:16]
+            path = root / "thumbs" / f"daily_512_{powiat_id}_{source_key}.webp"
+            try:
+                data = path.read_bytes()
+                if len(data) >= 20 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+                    return data, "image/webp"
+            except OSError:
+                pass
+            url = f"https://commons.wikimedia.org/wiki/Special:FilePath/{urllib.parse.quote(filename)}?width=512"
+            try:
+                source = fetch_url(url)
+                with Image.open(io.BytesIO(source)) as image:
+                    if image.format != "PNG":
+                        raise ValueError("Thumbnail source is not PNG")
+                    image.thumbnail((512, 512), Image.Resampling.LANCZOS)
+                    output = io.BytesIO()
+                    image.save(output, format="WEBP", quality=85, method=4, exact=True)
+                data = output.getvalue()
+                atomic_write(path, data)
+                return data, "image/webp"
+            except (OSError, ValueError, RuntimeError) as exc:
+                logger.warning("Daily thumbnail unavailable for powiat %s: %s", powiat_id, exc)
+        return get_or_fetch_herb_svg(powiat_id, powiat_name), "image/svg+xml"
 
 
 def get_source_attribution(
@@ -635,7 +698,8 @@ def get_source_attribution(
         author=attr.get("author"),
         license=attr.get("license"),
         source_url=attr.get("source_url"),
-        description=attr.get("description"),
+        description=" ".join(filter(None, [attr.get("description"),
+            "The display preview, when available, is rasterized and resized from the credited image."])),
     )
 
 
@@ -644,7 +708,71 @@ def get_source_attribution(
 # ---------------------------------------------------------------------------
 
 def symbol_mode(request: Request) -> str:
-    return "flag" if "/flags/" in request.url.path else "coat"
+    return request.path_params.get("mode") or ("flag" if "/flags/" in request.url.path else "coat")
+
+
+def entity_scope(request: Request) -> str:
+    scope = request.path_params.get("scope", "county")
+    if scope != "county" and scope not in regional_catalog.SCOPES:
+        raise HTTPException(status_code=404, detail="Unknown geography.")
+    if scope == "county" and "scope" in request.path_params:
+        raise HTTPException(status_code=404, detail="Unknown geography.")
+    return scope
+
+
+def entities_for(scope: str) -> list[dict]:
+    if scope == "county":
+        return get_all_counties()
+    return [dict(entity, voivodeship="", is_city_county=False)
+            for entity in regional_catalog.load_entities(scope).values()]
+
+
+def entity_by_id(scope: str, entity_id: int) -> Optional[dict]:
+    if scope == "county":
+        return get_county_by_id(entity_id)
+    entity = regional_catalog.load_entities(scope).get(entity_id)
+    return dict(entity, voivodeship="", is_city_county=False) if entity else None
+
+
+def resolve_entity(scope: str, guess: str, entity_id: Optional[int]) -> Optional[dict]:
+    if scope == "county":
+        return resolve_guessed_county(guess, entity_id)
+    if entity_id is not None:
+        return entity_by_id(scope, entity_id)
+    key = regional_catalog.normalize(guess)
+    for entity in entities_for(scope):
+        if key and key in {regional_catalog.normalize(form) for form in [entity["name"], *entity["aliases"]]}:
+            return entity
+    return None
+
+
+def regional_target(scope: str, mode: str, seed: str) -> dict:
+    records = regional_catalog.load_catalog(scope, mode)
+    ids = regional_catalog.load_daily_ids(scope, mode) if seed.startswith("daily-") else sorted(records)
+    value = int(hashlib.sha256(f"regional-symbols:{scope}:{mode}:{seed}".encode()).hexdigest(), 16)
+    return entity_by_id(scope, ids[value % len(ids)])
+
+
+def distance_between(scope: str, source: dict, target: dict) -> float:
+    if scope == "county":
+        return calculate_distance_km(source["latitude"], source["longitude"], target["latitude"], target["longitude"])
+    lat1, lat2 = math.radians(source["latitude"]), math.radians(target["latitude"])
+    dlat = lat2 - lat1
+    dlon = math.radians(target["longitude"] - source["longitude"])
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    return round(12742 * math.asin(min(1, math.sqrt(a))), 2)
+
+
+def bearing_between(scope: str, source: dict, target: dict):
+    if (scope != "county" and source["latitude"] == target["latitude"]
+            and source["longitude"] == target["longitude"]):
+        return None, None, None
+    return calculate_bearing(source["latitude"], source["longitude"], target["latitude"], target["longitude"])
+
+
+def require_token_scope(payload: dict, scope: str):
+    if payload.get("entity_scope", "county") != scope:
+        raise HTTPException(status_code=403, detail="Token belongs to another geography.")
 
 
 def select_target(counties: list[dict], seed: str, symbol_mode: str = "coat") -> dict:
@@ -665,7 +793,9 @@ def select_target(counties: list[dict], seed: str, symbol_mode: str = "coat") ->
     return counties[value % len(counties)]
 
 
-def asset_url(mode: str, target_id: int, token: str) -> str:
+def asset_url(mode: str, target_id: int, token: str, scope: str = "county") -> str:
+    if scope != "county":
+        return f"/regional-symbols/{scope}/{mode}/session-asset?token={token}"
     if mode == "flag":
         return f"/powiatdle/flags/flag-asset?token={token}"
     return f"/powiatdle/heraldry/coat-asset?token={token}"
@@ -676,14 +806,67 @@ def flag_asset_url(county_id: int, record: dict) -> str:
     version = record["source"].get("asset_sha1") or record["source"].get("sha1")
     return f"{url}?v={urllib.parse.quote(str(version), safe='')}" if version else url
 
+@lru_cache(maxsize=16)
+def thumbnail_manifest(directory: Path, mode: str) -> dict:
+    try:
+        data = json.loads((directory / f"{mode}-manifest.json").read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
 
-def source_attribution(mode: str, target: dict):
-    if mode == "flag":
-        source = flag_catalog.load_catalog()[target["id"]]["source"]
-        return PowiatHeraldrySourceAttribution(
-            title=source.get("filename"), author=source.get("attribution"),
-            license=source.get("license"), license_url=source.get("license_url"),
-            source_url=source.get("url"), description=source.get("modification"))
+
+def thumbnail_entry(directory: Path, mode: str, entity_id: int, record: dict) -> Optional[dict]:
+    entry = thumbnail_manifest(directory, mode).get(str(entity_id))
+    version = record["source"].get("asset_sha1") or record["source"].get("sha1")
+    if (not isinstance(entry, dict) or entry.get("source_sha1") != version
+            or not re.fullmatch(r"[0-9a-f]{64}", str(entry.get("sha256", "")))
+            or entry.get("filename") != f"{mode}-{entity_id}.webp"):
+        return None
+    return entry
+
+
+def thumbnail_url(directory: Path, mode: str, entity_id: int, record: dict, base: str, fallback: str) -> str:
+    entry = thumbnail_entry(directory, mode, entity_id, record)
+    return f"{base}/thumbnails/{entity_id}?v={entry['sha256']}" if entry else fallback
+
+
+async def thumbnail_response(directory: Path, mode: str, entity_id: int, record: dict, version: str) -> Response:
+    entry = thumbnail_entry(directory, mode, entity_id, record)
+    if not entry or version != entry["sha256"]:
+        raise HTTPException(status_code=404, detail="Thumbnail version not found.")
+    try:
+        data = await asyncio.to_thread((directory / entry["filename"]).read_bytes)
+    except OSError:
+        raise HTTPException(status_code=503, detail="Thumbnail unavailable.")
+    return Response(content=data, media_type="image/webp",
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
+def thumbnail_credit(source, has_thumbnail: bool):
+    if not has_thumbnail:
+        return source
+    note = "Quiz thumbnail rasterized and resized from the credited image."
+    return source.model_copy(update={"description": " ".join(filter(None, [source.description, note]))})
+
+
+def source_attribution(mode: str, target: dict, scope: str = "county"):
+    if scope != "county" or mode == "flag":
+        record = (regional_catalog.load_catalog(scope, mode)[target["id"]]
+                  if scope != "county" else flag_catalog.load_catalog()[target["id"]])
+        source = record["source"]
+        directory = (regional_catalog.DATA_ROOT / scope / "previews" if scope != "county"
+                     else flag_catalog.ASSET_DIR.parent / "flag_previews")
+        modification = source.get("modification")
+        if thumbnail_entry(directory, mode, target["id"], record):
+            modification = " ".join(filter(None, [modification,
+                "Display preview rasterized and resized from the credited image."]))
+        fields = dict(title=source.get("filename"), author=source.get("attribution"),
+                      license=source.get("license"), license_url=source.get("license_url"),
+                      source_url=source.get("url"), description=modification)
+        if scope != "county":
+            return RegionalSourceAttribution(**fields, context=source.get("notes"),
+                                             component_credits=source.get("component_credits", []))
+        return PowiatHeraldrySourceAttribution(**fields)
     return get_source_attribution(target["id"], target["name"])
 
 
@@ -709,6 +892,15 @@ async def get_counties():
     ]
 
 
+@regional_router.get("/counties", response_model=List[RegionalSymbolItem])
+async def regional_entities(request: Request):
+    scope, mode = entity_scope(request), symbol_mode(request)
+    regional_catalog.load_catalog(scope, mode)
+    return [RegionalSymbolItem(id=e["id"], name=e["name"], aliases=e["aliases"],
+                              voivodeship="", is_city_county=False)
+            for e in sorted(entities_for(scope), key=lambda entity: entity["name"].casefold())]
+
+
 @router.get("/challenge", response_model=PowiatHeraldryChallenge)
 async def get_challenge(
     request: Request,
@@ -719,8 +911,8 @@ async def get_challenge(
     session: AsyncSession = Depends(get_db),
 ):
     """Retrieves or restores a heraldry challenge (daily or custom seed)."""
-    mode = symbol_mode(request)
-    all_counties = get_all_counties()
+    mode, scope = symbol_mode(request), entity_scope(request)
+    all_counties = entities_for(scope)
     if not all_counties:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -735,7 +927,8 @@ async def get_challenge(
         is_daily = False
         effective_seed = seed.strip()[:64]
 
-    target_county = select_target(all_counties, effective_seed, mode)
+    target_county = (select_target(all_counties, effective_seed, mode) if scope == "county"
+                     else regional_target(scope, mode, effective_seed))
     target_id = target_county["id"]
 
     ranked_row = None
@@ -747,14 +940,16 @@ async def get_challenge(
             token = None
     if parsed_token:
         require_token_mode(parsed_token, mode)
+        require_token_scope(parsed_token, scope)
     if is_daily and parsed_token and parsed_token.get("session_id") and parsed_token.get("seed") == effective_seed:
         ranked_row = await heraldry_daily.get_owned_daily(
-            session, request, user, parsed_token["session_id"], symbol_mode=mode
+            session, request, user, parsed_token["session_id"], symbol_mode=mode, entity_scope=scope
         )
         token = encrypt_session_token(heraldry_daily.token_payload(ranked_row))
     elif is_daily and (not parsed_token or parsed_token.get("seed") != effective_seed):
         ranked_row = await heraldry_daily.get_or_create_daily(
-            session, request, response, user, datetime.now(timezone.utc).date(), target_county, symbol_mode=mode
+            session, request, response, user, datetime.now(timezone.utc).date(), target_county,
+            symbol_mode=mode, entity_scope=scope
         )
         token = encrypt_session_token(heraldry_daily.token_payload(ranked_row))
 
@@ -763,12 +958,12 @@ async def get_challenge(
             payload = decrypt_session_token(token)
             if payload.get("seed") == effective_seed:
                 payload_target_id = payload.get("target_id", target_id)
-                target = get_county_by_id(payload_target_id) or target_county
+                target = entity_by_id(scope, payload_target_id) or target_county
                 guesses_ids = payload.get("guesses", [])
 
                 reconstructed_guesses: list[PowiatHeraldryGuessResult] = []
                 for idx, gid in enumerate(guesses_ids):
-                    g_county = get_county_by_id(gid)
+                    g_county = entity_by_id(scope, gid)
                     if not g_county:
                         continue
                     g_made = idx + 1
@@ -776,10 +971,8 @@ async def get_challenge(
                     g_correct = gid == target["id"]
                     g_won = g_correct
                     g_over = g_won or (g_made >= 8)
-                    g_same_voivodeship = (
-                        g_county["voivodeship"].strip().lower()
-                        == target["voivodeship"].strip().lower()
-                    )
+                    g_same_voivodeship = (scope == "county" and
+                        g_county["voivodeship"].strip().lower() == target["voivodeship"].strip().lower())
 
                     if g_correct:
                         g_dist = 0
@@ -787,22 +980,12 @@ async def get_challenge(
                         g_dir = None
                         g_arr = None
                     else:
-                        g_dist = calculate_distance_km(
-                            g_county["latitude"],
-                            g_county["longitude"],
-                            target["latitude"],
-                            target["longitude"],
-                        )
-                        g_deg, g_dir, g_arr = calculate_bearing(
-                            g_county["latitude"],
-                            g_county["longitude"],
-                            target["latitude"],
-                            target["longitude"],
-                        )
+                        g_dist = distance_between(scope, g_county, target)
+                        g_deg, g_dir, g_arr = bearing_between(scope, g_county, target)
 
                     wrong_so_far = [x for x in guesses_ids[:g_made] if x != target["id"]]
                     g_plates = None
-                    if (not g_correct and len(wrong_so_far) >= 5) or g_over:
+                    if scope == "county" and ((not g_correct and len(wrong_so_far) >= 5) or g_over):
                         g_plates = get_registration_plates(target["id"])
 
                     g_target_obj = None
@@ -813,7 +996,7 @@ async def get_challenge(
                             name=target["name"],
                             voivodeship=target["voivodeship"],
                         )
-                        g_attr = source_attribution(mode, target)
+                        g_attr = source_attribution(mode, target, scope)
 
                     partial_token = encrypt_session_token(
                         {
@@ -822,6 +1005,7 @@ async def get_challenge(
                             "date": payload["date"],
                             "target_id": target["id"],
                             "symbol_mode": mode,
+                            **({"entity_scope": scope} if scope != "county" else {}),
                             "guesses": guesses_ids[:g_made],
                         }
                     )
@@ -855,7 +1039,7 @@ async def get_challenge(
                 wrong_guesses = [gid for gid in guesses_ids if gid != target["id"]]
 
                 registration_plates = None
-                if len(wrong_guesses) >= 5 or is_game_over:
+                if scope == "county" and (len(wrong_guesses) >= 5 or is_game_over):
                     registration_plates = get_registration_plates(target["id"])
 
                 target_powiat_obj = None
@@ -866,7 +1050,7 @@ async def get_challenge(
                         name=target["name"],
                         voivodeship=target["voivodeship"],
                     )
-                    source_attr = source_attribution(mode, target)
+                    source_attr = source_attribution(mode, target, scope)
 
                 return PowiatHeraldryChallenge(
                     seed=effective_seed,
@@ -875,7 +1059,7 @@ async def get_challenge(
                     max_guesses=8,
                     hint_unlock_guesses=5,
                     token=token,
-                    coat_asset_url=asset_url(mode, target["id"], token),
+                    coat_asset_url=asset_url(mode, target["id"], token, scope),
                     source_attribution=source_attr,
                     guesses=reconstructed_guesses,
                     is_game_over=is_game_over,
@@ -895,6 +1079,7 @@ async def get_challenge(
         "date": today_str,
         "target_id": target_id,
         "symbol_mode": mode,
+        **({"entity_scope": scope} if scope != "county" else {}),
         "guesses": [],
     }
     fresh_token = encrypt_session_token(fresh_payload)
@@ -906,7 +1091,7 @@ async def get_challenge(
         max_guesses=8,
         hint_unlock_guesses=5,
         token=fresh_token,
-        coat_asset_url=asset_url(mode, target_id, fresh_token),
+        coat_asset_url=asset_url(mode, target_id, fresh_token, scope),
         source_attribution=None,
         guesses=[],
         is_game_over=False,
@@ -936,10 +1121,12 @@ def accepts_gzip(accept_encoding: str) -> bool:
 
 
 @router.get("/coat-asset")
-async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(default="")):
-    """Streams the coat of arms SVG for the session target county."""
+async def get_coat_asset(token: str = Query(...), full: bool = Query(False),
+                         accept_encoding: str = Header(default="")):
+    """Serve an opaque daily preview, or the original on inspection."""
     payload = decrypt_session_token(token)
     require_token_mode(payload, "coat")
+    require_token_scope(payload, "county")
     target_id = payload.get("target_id")
     if not target_id:
         raise HTTPException(
@@ -953,12 +1140,18 @@ async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(
             detail="Target county not found.",
         )
 
-    svg_bytes = await asyncio.to_thread(get_or_fetch_herb_svg, target_id, county["name"])
-    headers = {"Vary": "Accept-Encoding"}
-    if accepts_gzip(accept_encoding):
-        svg_bytes = await asyncio.to_thread(gzip.compress, svg_bytes, compresslevel=3, mtime=0)
-        headers["Content-Encoding"] = "gzip"
-    return Response(content=svg_bytes, media_type="image/svg+xml", headers=headers)
+    if full:
+        data = await asyncio.to_thread(get_or_fetch_herb_svg, target_id, county["name"])
+        media_type = "image/svg+xml"
+    else:
+        data, media_type = await asyncio.to_thread(get_daily_herb_preview, target_id, county["name"])
+    headers = {"Cache-Control": "private, no-store"}
+    if media_type == "image/svg+xml":
+        headers["Vary"] = "Accept-Encoding"
+        if accepts_gzip(accept_encoding):
+            data = await asyncio.to_thread(gzip.compress, data, compresslevel=3, mtime=0)
+            headers["Content-Encoding"] = "gzip"
+    return Response(content=data, media_type=media_type, headers=headers)
 
 
 @router.post("/guess", response_model=PowiatHeraldryGuessResult)
@@ -970,12 +1163,15 @@ async def make_guess(
 ):
     """Evaluates a guess in Powiat Heraldry mode."""
     payload = decrypt_session_token(body.token)
-    mode = symbol_mode(request)
+    mode, scope = symbol_mode(request), entity_scope(request)
     require_token_mode(payload, mode)
-    if mode == "flag" and payload.get("target_id") not in flag_catalog.load_catalog():
-        raise HTTPException(status_code=403, detail="Flag target is not in the catalog.")
+    require_token_scope(payload, scope)
     target_id = payload.get("target_id")
-    target_county = get_county_by_id(target_id)
+    if scope != "county" and target_id not in regional_catalog.load_catalog(scope, mode):
+        raise HTTPException(status_code=403, detail="Symbol target is not in the catalog.")
+    if scope == "county" and mode == "flag" and target_id not in flag_catalog.load_catalog():
+        raise HTTPException(status_code=403, detail="Flag target is not in the catalog.")
+    target_county = entity_by_id(scope, target_id)
     if not target_county:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -992,7 +1188,7 @@ async def make_guess(
             detail="The game is already over.",
         )
 
-    guessed_county = resolve_guessed_county(body.guess, body.powiat_id)
+    guessed_county = resolve_entity(scope, body.guess, body.powiat_id)
     if not guessed_county:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1007,7 +1203,8 @@ async def make_guess(
         )
     ranked_row = None
     if payload.get("session_id"):
-        ranked_row = await heraldry_daily.record_guess(session, request, user, payload, guessed_county, symbol_mode=mode)
+        ranked_row = await heraldry_daily.record_guess(session, request, user, payload, guessed_county,
+                                                        symbol_mode=mode, entity_scope=scope)
 
 
     guesses.append(guessed_id)
@@ -1019,10 +1216,8 @@ async def make_guess(
     won = is_correct
     is_game_over = won or (guesses_made >= 8)
 
-    same_voivodeship = (
-        guessed_county["voivodeship"].strip().lower()
-        == target_county["voivodeship"].strip().lower()
-    )
+    same_voivodeship = (scope == "county" and
+        guessed_county["voivodeship"].strip().lower() == target_county["voivodeship"].strip().lower())
 
     if is_correct:
         distance_km = 0
@@ -1030,23 +1225,13 @@ async def make_guess(
         bearing_direction = None
         bearing_arrow = None
     else:
-        distance_km = calculate_distance_km(
-            guessed_county["latitude"],
-            guessed_county["longitude"],
-            target_county["latitude"],
-            target_county["longitude"],
-        )
-        deg, direction, arrow = calculate_bearing(
-            guessed_county["latitude"],
-            guessed_county["longitude"],
-            target_county["latitude"],
-            target_county["longitude"],
-        )
+        distance_km = distance_between(scope, guessed_county, target_county)
+        deg, direction, arrow = bearing_between(scope, guessed_county, target_county)
         bearing_degrees = deg
         bearing_direction = direction
         bearing_arrow = arrow
 
-    if (not is_correct and guesses_made >= 5) or is_game_over:
+    if scope == "county" and ((not is_correct and guesses_made >= 5) or is_game_over):
         registration_plates = get_registration_plates(target_id)
     else:
         registration_plates = None
@@ -1059,7 +1244,7 @@ async def make_guess(
             name=target_county["name"],
             voivodeship=target_county["voivodeship"],
         )
-        source_attr = source_attribution(mode, target_county)
+        source_attr = source_attribution(mode, target_county, scope)
 
     new_token = encrypt_session_token(payload)
 
@@ -1093,10 +1278,12 @@ async def sync_daily(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
-    mode = symbol_mode(request)
-    if mode == "flag":
+    mode, scope = symbol_mode(request), entity_scope(request)
+    if scope != "county":
+        regional_catalog.load_catalog(scope, mode)
+    elif mode == "flag":
         flag_catalog.load_catalog()
-    row = await heraldry_daily.claim_daily(session, request, user, symbol_mode=mode)
+    row = await heraldry_daily.claim_daily(session, request, user, symbol_mode=mode, entity_scope=scope)
     token = encrypt_session_token(heraldry_daily.token_payload(row))
     return await get_challenge(request=request, response=response, seed=None, token=token, user=user, session=session)
 
@@ -1107,10 +1294,12 @@ async def daily_leaderboard(
     type: str = Query("monthly"),
     session: AsyncSession = Depends(get_db),
 ):
-    mode = symbol_mode(request)
-    if mode == "flag":
+    mode, scope = symbol_mode(request), entity_scope(request)
+    if scope != "county":
+        regional_catalog.load_catalog(scope, mode)
+    elif mode == "flag":
         flag_catalog.load_catalog()
-    return await heraldry_daily.leaderboard(session, type, symbol_mode=mode)
+    return await heraldry_daily.leaderboard(session, type, symbol_mode=mode, entity_scope=scope)
 
 
 @flag_router.get("/counties", response_model=List[PowiatHeraldryItem])
@@ -1132,9 +1321,22 @@ async def flag_county_catalog():
         {"id": c["id"], "name": c["name"], "voivodeship": c["voivodeship"],
          "is_city_county": c["is_city_county"],
          "flag_asset_url": flag_asset_url(c["id"], catalog[c["id"]]),
-         "source_attribution": source_attribution("flag", c)}
+         "thumbnail_asset_url": thumbnail_url(flag_catalog.ASSET_DIR.parent / "flag_thumbnails", "flag",
+                                              c["id"], catalog[c["id"]], "/powiatdle/flags",
+                                              flag_asset_url(c["id"], catalog[c["id"]])),
+         "source_attribution": thumbnail_credit(source_attribution("flag", c), bool(thumbnail_entry(
+             flag_catalog.ASSET_DIR.parent / "flag_thumbnails", "flag", c["id"], catalog[c["id"]])))}
         for c in counties
     ]
+
+
+@flag_router.get("/thumbnails/{county_id}")
+async def flag_thumbnail(county_id: int, v: str = Query(...)):
+    record = flag_catalog.load_catalog().get(county_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Flag not found.")
+    return await thumbnail_response(flag_catalog.ASSET_DIR.parent / "flag_thumbnails",
+                                    "flag", county_id, record, v)
 
 
 @flag_router.get("/assets/{county_id}")
@@ -1162,15 +1364,130 @@ async def flag_asset(county_id: int, v: Optional[str] = Query(None), accept_enco
 
 
 @flag_router.get("/flag-asset")
-async def flag_session_asset(token: str = Query(...), accept_encoding: str = Header(default="")):
+async def flag_session_asset(token: str = Query(...), full: bool = Query(False),
+                             accept_encoding: str = Header(default="")):
     payload = decrypt_session_token(token)
     require_token_mode(payload, "flag")
+    require_token_scope(payload, "county")
     target_id = payload.get("target_id")
     if type(target_id) is not int or target_id not in flag_catalog.load_catalog():
         raise HTTPException(status_code=403, detail="Flag target is not in the catalog.")
-    response = await flag_asset(target_id, v=None, accept_encoding=accept_encoding)
+    directory = flag_catalog.ASSET_DIR.parent / "flag_previews"
+    entry = thumbnail_entry(directory, "flag", target_id, flag_catalog.load_catalog()[target_id])
+    if entry and not full:
+        try:
+            response = await thumbnail_response(directory, "flag", target_id,
+                                                flag_catalog.load_catalog()[target_id], entry["sha256"])
+        except HTTPException as exc:
+            if exc.status_code != 503:
+                raise
+            response = await flag_asset(target_id, v=None, accept_encoding=accept_encoding)
+    else:
+        response = await flag_asset(target_id, v=None, accept_encoding=accept_encoding)
     response.headers["Cache-Control"] = "private, no-store"
     return response
+
+
+def regional_asset_url(scope: str, mode: str, entity_id: int, record: dict) -> str:
+    url = f"/regional-symbols/{scope}/{mode}/assets/{entity_id}"
+    version = record["source"].get("asset_sha1") or record["source"].get("sha1")
+    return f"{url}?v={urllib.parse.quote(str(version), safe='')}" if version else url
+
+
+@regional_router.get("/catalog")
+async def regional_symbol_catalog(request: Request):
+    scope, mode = entity_scope(request), symbol_mode(request)
+    records = regional_catalog.load_catalog(scope, mode)
+    entities = regional_catalog.load_entities(scope)
+    return [
+        {"id": entity["id"], "name": entity["name"], "aliases": entity["aliases"],
+         "voivodeship": "", "is_city_county": False,
+         "flag_asset_url": regional_asset_url(scope, mode, entity["id"], records[entity["id"]]),
+         "thumbnail_asset_url": thumbnail_url(regional_catalog.DATA_ROOT / scope / "thumbnails", mode,
+                                              entity["id"], records[entity["id"]],
+                                              f"/regional-symbols/{scope}/{mode}",
+                                              regional_asset_url(scope, mode, entity["id"], records[entity["id"]])),
+         "source_attribution": thumbnail_credit(source_attribution(mode, entity, scope), bool(thumbnail_entry(
+             regional_catalog.DATA_ROOT / scope / "thumbnails", mode, entity["id"], records[entity["id"]])))}
+        for entity in sorted((entities[id_] for id_ in records), key=lambda e: e["name"].casefold())
+    ]
+
+
+@regional_router.get("/thumbnails/{entity_id}")
+async def regional_thumbnail(request: Request, entity_id: int, v: str = Query(...)):
+    scope, mode = entity_scope(request), symbol_mode(request)
+    record = regional_catalog.load_catalog(scope, mode).get(entity_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Symbol not found.")
+    return await thumbnail_response(regional_catalog.DATA_ROOT / scope / "thumbnails",
+                                    mode, entity_id, record, v)
+
+
+@lru_cache(maxsize=32)
+def compressed_regional_asset(path: Path, version: str) -> bytes:
+    return gzip.compress(path.read_bytes(), compresslevel=3, mtime=0)
+
+
+@regional_router.get("/assets/{entity_id}")
+async def regional_asset(request: Request, entity_id: int, v: Optional[str] = Query(None),
+                         accept_encoding: str = Header(default="")):
+    scope, mode = entity_scope(request), symbol_mode(request)
+    record = regional_catalog.load_catalog(scope, mode).get(entity_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Symbol not found.")
+    version = record["source"].get("asset_sha1") or record["source"].get("sha1")
+    if v is not None and v != version:
+        raise HTTPException(status_code=404, detail="Symbol version not found.")
+    path = regional_catalog.DATA_ROOT / scope / "assets" / record["filename"]
+    media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    headers = {"Cache-Control": "public, max-age=31536000, immutable" if version and v == version else "no-cache"}
+    compress = media_type == "image/svg+xml" and accepts_gzip(accept_encoding)
+    try:
+        if compress and version:
+            data = await asyncio.to_thread(compressed_regional_asset, path, str(version))
+        else:
+            data = await asyncio.to_thread(path.read_bytes)
+            if compress:
+                data = await asyncio.to_thread(gzip.compress, data, compresslevel=3, mtime=0)
+    except OSError:
+        raise HTTPException(status_code=503, detail="Symbol asset unavailable.")
+    if media_type == "image/svg+xml":
+        headers["Vary"] = "Accept-Encoding"
+        if compress:
+            headers["Content-Encoding"] = "gzip"
+    return Response(content=data, media_type=media_type, headers=headers)
+
+
+@regional_router.get("/session-asset")
+async def regional_session_asset(request: Request, token: str = Query(...), full: bool = Query(False),
+                                 accept_encoding: str = Header(default="")):
+    scope, mode = entity_scope(request), symbol_mode(request)
+    payload = decrypt_session_token(token)
+    require_token_scope(payload, scope)
+    require_token_mode(payload, mode)
+    target_id = payload.get("target_id")
+    if type(target_id) is not int or target_id not in regional_catalog.load_catalog(scope, mode):
+        raise HTTPException(status_code=403, detail="Symbol target is not in the catalog.")
+    record = regional_catalog.load_catalog(scope, mode)[target_id]
+    directory = regional_catalog.DATA_ROOT / scope / "previews"
+    entry = thumbnail_entry(directory, mode, target_id, record)
+    if entry and not full:
+        try:
+            response = await thumbnail_response(directory, mode, target_id, record, entry["sha256"])
+        except HTTPException as exc:
+            if exc.status_code != 503:
+                raise
+            response = await regional_asset(request, target_id, v=None, accept_encoding=accept_encoding)
+    else:
+        response = await regional_asset(request, target_id, v=None, accept_encoding=accept_encoding)
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+regional_router.add_api_route("/challenge", get_challenge, methods=["GET"], response_model=PowiatHeraldryChallenge)
+regional_router.add_api_route("/guess", make_guess, methods=["POST"], response_model=PowiatHeraldryGuessResult)
+regional_router.add_api_route("/sync", sync_daily, methods=["POST"], response_model=PowiatHeraldryChallenge)
+regional_router.add_api_route("/leaderboard", daily_leaderboard, methods=["GET"])
 
 
 flag_router.add_api_route("/challenge", get_challenge, methods=["GET"], response_model=PowiatHeraldryChallenge)
@@ -1178,6 +1495,7 @@ flag_router.add_api_route("/guess", make_guess, methods=["POST"], response_model
 flag_router.add_api_route("/sync", sync_daily, methods=["POST"], response_model=PowiatHeraldryChallenge)
 flag_router.add_api_route("/leaderboard", daily_leaderboard, methods=["GET"])
 
-from powiatdle.heraldry_quiz import flags_quiz_router
+from powiatdle.heraldry_quiz import flags_quiz_router, regional_quiz_router
 
 flag_router.include_router(flags_quiz_router)
+regional_router.include_router(regional_quiz_router)
