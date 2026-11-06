@@ -23,7 +23,8 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { powiatHeraldryService } from '../services/api';
+import { API_URL, countyFlagsService, powiatHeraldryService } from '../services/api';
+import { isPrerenderCapture } from '../lib/pageMetadata';
 import { useAuthStore } from '../stores/authStore';
 import type {
   PowiatHeraldryChallenge,
@@ -51,18 +52,18 @@ function normalizePolishText(str: string): string {
     .replace(/ż/g, 'z');
 }
 
-function getStoredDailyToken(dateStr?: string): string | null {
+function getStoredDailyToken(prefix: string, dateStr?: string): string | null {
   try {
     if (dateStr) {
-      const direct = localStorage.getItem(`powiat_heraldry_daily_token_${dateStr}`);
+      const direct = localStorage.getItem(`${prefix}${dateStr}`);
       if (direct) return direct;
     }
     const today = new Date().toISOString().slice(0, 10);
-    const todayToken = localStorage.getItem(`powiat_heraldry_daily_token_${today}`);
+    const todayToken = localStorage.getItem(`${prefix}${today}`);
     if (todayToken) return todayToken;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('powiat_heraldry_daily_token_')) {
+      if (key && key.startsWith(prefix)) {
         return localStorage.getItem(key);
       }
     }
@@ -95,7 +96,14 @@ function PolishLicensePlateBadge({ plates }: { plates: string[] }) {
   );
 }
 
-export default function PowiatHeraldryPage() {
+export default function PowiatHeraldryPage({ flags = false }: { flags?: boolean }) {
+  return <CountyHeraldryGame key={flags ? 'flags' : 'coats'} flags={flags} />;
+}
+
+function CountyHeraldryGame({ flags }: { flags: boolean }) {
+  const service = flags ? countyFlagsService : powiatHeraldryService;
+  const tokenPrefix = flags ? 'county_flags_daily_token_' : 'powiat_heraldry_daily_token_';
+  const guideKey = flags ? 'county_flags_guide_seen' : POWIAT_HERALDRY_GUIDE_KEY;
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
   const challengeRequest = useRef(0);
@@ -134,7 +142,7 @@ export default function PowiatHeraldryPage() {
   const [lightBackdrop, setLightBackdrop] = useState<boolean>(false);
   const [showInstructions, setShowInstructions] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(POWIAT_HERALDRY_GUIDE_KEY) !== 'true';
+      return localStorage.getItem(guideKey) !== 'true';
     } catch {
       return false;
     }
@@ -146,7 +154,7 @@ export default function PowiatHeraldryPage() {
   // Load counties list once
   useEffect(() => {
     let mounted = true;
-    powiatHeraldryService
+    service
       .getCounties()
       .then((data) => {
         if (mounted) setCounties(data);
@@ -157,7 +165,7 @@ export default function PowiatHeraldryPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [service]);
 
   // Resolve coat URL
   const resolvedCoatUrl = useMemo(() => {
@@ -166,8 +174,9 @@ export default function PowiatHeraldryPage() {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
+    if (flags) return `${API_URL.replace(/\/$/, '')}${url.replace(/^\/api(?=\/)/, '')}`;
     return url.startsWith('/api') ? url : `/api${url}`;
-  }, [challenge?.coat_asset_url]);
+  }, [challenge?.coat_asset_url, flags]);
 
   // Reset image state when coat URL changes
   useEffect(() => {
@@ -189,20 +198,20 @@ export default function PowiatHeraldryPage() {
 
       try {
         if (targetMode === 'daily') {
-          const savedToken = getStoredDailyToken();
-          let ch = await powiatHeraldryService.getChallenge(
+          const savedToken = getStoredDailyToken(tokenPrefix);
+          let ch = await service.getChallenge(
             savedToken ? { token: savedToken } : undefined
           );
           if (request !== challengeRequest.current) return;
           if (isAuthenticated && ch.ranked) {
-            try { ch = await powiatHeraldryService.sync(); }
+            try { ch = await service.sync(); }
             catch { toast.error('Could not sync your daily result to your account. Try reloading.'); }
           }
           if (request !== challengeRequest.current) return;
           setChallenge(ch);
           if (ch.date && ch.token) {
             try {
-              localStorage.setItem(`powiat_heraldry_daily_token_${ch.date}`, ch.token);
+              localStorage.setItem(`${tokenPrefix}${ch.date}`, ch.token);
             } catch {
               // ignore
             }
@@ -218,7 +227,7 @@ export default function PowiatHeraldryPage() {
           }
         } else {
           const seedParam = customSeed || `challenge-${Date.now()}`;
-          const ch = await powiatHeraldryService.getChallenge({ seed: seedParam });
+          const ch = await service.getChallenge({ seed: seedParam });
           if (request !== challengeRequest.current) return;
           setChallenge(ch);
           setGuesses([]);
@@ -231,20 +240,19 @@ export default function PowiatHeraldryPage() {
         }
       } catch (err) {
         if (request !== challengeRequest.current) return;
-        console.error('Failed to load heraldry challenge:', err);
-        toast.error(
-          'Failed to load coat of arms challenge.'
-        );
+        console.error('Failed to load county challenge:', err);
+        setChallenge(null);
+        toast.error(`Failed to load county ${flags ? 'flag' : 'coat of arms'} challenge.`);
       } finally {
         if (request === challengeRequest.current) setIsLoading(false);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, service, tokenPrefix, flags]
   );
 
   // Initial load
   useEffect(() => {
-    if (!authLoading) void loadChallenge(mode);
+    if (!authLoading && !isPrerenderCapture()) void loadChallenge(mode);
     return () => { challengeRequest.current++; };
   }, [mode, loadChallenge, authLoading]);
 
@@ -284,7 +292,7 @@ export default function PowiatHeraldryPage() {
   const handleCloseInstructions = () => {
     setShowInstructions(false);
     try {
-      localStorage.setItem(POWIAT_HERALDRY_GUIDE_KEY, 'true');
+      localStorage.setItem(guideKey, 'true');
     } catch {
       // ignore
     }
@@ -366,7 +374,7 @@ export default function PowiatHeraldryPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await powiatHeraldryService.submitGuess({
+      const result = await service.submitGuess({
         token: challenge.token,
         guess: name,
         powiat_id: countyId,
@@ -377,7 +385,7 @@ export default function PowiatHeraldryPage() {
         setChallenge((prev) => (prev ? { ...prev, token: result.token! } : prev));
         if (mode === 'daily' && challenge.date) {
           try {
-            localStorage.setItem(`powiat_heraldry_daily_token_${challenge.date}`, result.token);
+            localStorage.setItem(`${tokenPrefix}${challenge.date}`, result.token);
           } catch {
             // ignore
           }
@@ -405,7 +413,7 @@ export default function PowiatHeraldryPage() {
         setShowResultsModal(true);
         if (result.won) {
           toast.success(
-            'Congratulations! You solved the coat of arms!'
+            `Congratulations! You solved the ${flags ? 'flag' : 'coat of arms'}!`
           );
         } else {
           toast.error('All 8 guesses exhausted!');
@@ -426,10 +434,7 @@ export default function PowiatHeraldryPage() {
   const handleShare = () => {
     if (!challenge) return;
     const scoreText = won ? `${guesses.length}/${maxGuesses}` : `X/${maxGuesses}`;
-    const headerTitle =
-      mode === 'daily'
-        ? (`County Coats of Arms · ${challenge.date}`)
-        : ('County Coats of Arms · Challenge');
+    const headerTitle = `County ${flags ? 'Flags' : 'Coats of Arms'} · ${mode === 'daily' ? challenge.date : 'Challenge'}`;
 
     const lines: string[] = [];
     lines.push(headerTitle);
@@ -453,8 +458,8 @@ export default function PowiatHeraldryPage() {
     lines.push('');
     lines.push(
       typeof window !== 'undefined'
-        ? `${window.location.origin}/herby-powiatow`
-        : 'https://countrydle.com/herby-powiatow'
+        ? `${window.location.origin}${flags ? '/flagi-powiatow' : '/herby-powiatow'}`
+        : `https://countrydle.com${flags ? '/flagi-powiatow' : '/herby-powiatow'}`
     );
 
     const fullShareText = lines.join('\n');
@@ -473,10 +478,13 @@ export default function PowiatHeraldryPage() {
       <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
         <span className="text-sm font-medium text-sand-300">
-          {'Loading County Coats of Arms...'}
+          {`Loading County ${flags ? 'Flags' : 'Coats of Arms'}...`}
         </span>
       </div>
     );
+  }
+  if (!challenge && !isPrerenderCapture()) {
+    return <div role="alert" className="p-8 text-rose-300">This county {flags ? 'flag' : 'coat of arms'} challenge is unavailable. <button type="button" className="underline" onClick={() => void loadChallenge(mode)}>Retry</button></div>;
   }
 
   return (
@@ -488,16 +496,16 @@ export default function PowiatHeraldryPage() {
             <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-wider text-sand-400">
               <span className="flex items-center gap-1.5">
                 <Shield size={14} className="text-emerald-400" />
-                {'County Heraldry'}
+                {flags ? 'County Flags' : 'County Heraldry'}
               </span>
               <span>•</span>
               <span>{mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}</span>
             </div>
             <h1 className="text-lg font-bold tracking-tight text-sand-100 sm:text-3xl">
-              {'County Coats of Arms'}
+              {flags ? 'County Flags' : 'County Coats of Arms'}
             </h1>
             <p className="mt-0.5 text-[11px] leading-tight text-sand-400 sm:text-sm sm:leading-normal">
-              {'Identify the Polish county by its official coat of arms. Registration plates reveal after 5 wrong guesses.'}
+              {`Identify the Polish county by its official ${flags ? 'flag' : 'coat of arms'}. Registration plates reveal after 5 wrong guesses.`}
             </p>
           </div>
 
@@ -522,7 +530,7 @@ export default function PowiatHeraldryPage() {
               type="button"
               onClick={() => setShowInstructions(true)}
               className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors cursor-pointer"
-              title={'How to play County Coats of Arms'}
+              title={`How to play County ${flags ? 'Flags' : 'Coats of Arms'}`}
               aria-label={'Instructions'}
             >
               <HelpCircle size={17} />
@@ -555,7 +563,7 @@ export default function PowiatHeraldryPage() {
                   : 'text-zinc-400 hover:text-sand-200'
               }`}
             >
-              📅 {'Daily Shield'}
+              📅 {flags ? 'Daily Flag' : 'Daily Shield'}
             </button>
             <button
               type="button"
@@ -569,10 +577,10 @@ export default function PowiatHeraldryPage() {
               ⚡ {'Random Challenge'}
             </button>
             <Link
-              to="/quiz-herbow"
+              to={flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
               className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
             >
-              🏆 {'380 Coats Grid Quiz'}
+              🏆 {flags ? 'County Flags Grid Quiz' : '380 Coats Grid Quiz'}
             </Link>
           </div>
 
@@ -589,10 +597,10 @@ export default function PowiatHeraldryPage() {
               </button>
             )}
             <Link
-              to="/quiz-herbow"
+              to={flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
               className="sm:hidden flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded-sm border border-white/10 bg-obsidian-950 text-zinc-400 hover:text-emerald-300 text-xs font-medium transition-colors text-center"
             >
-              <span className="truncate">🏆 {'380 Coats Quiz'}</span>
+              <span className="truncate">🏆 {flags ? 'Flags Quiz' : '380 Coats Quiz'}</span>
             </Link>
           </div>
         </div>
@@ -602,7 +610,7 @@ export default function PowiatHeraldryPage() {
       <main className="space-y-2.5 sm:space-y-6">
         {/* 1. Coat of Arms Shield Display */}
         <section
-          aria-label={'County Coat of Arms Shield'}
+          aria-label={flags ? 'County Flag' : 'County Coat of Arms Shield'}
           className="relative flex flex-col items-center justify-center rounded-xl border border-sand-800/80 bg-obsidian-950/60 p-2 sm:p-6 shadow-inner"
         >
           {/* Decorative heraldic background glow */}
@@ -634,9 +642,9 @@ export default function PowiatHeraldryPage() {
               }
             }}
             aria-label={
-              'Click to inspect coat of arms in fullscreen'
+              `Click to inspect ${flags ? 'flag' : 'coat of arms'} in fullscreen`
             }
-            className={`group relative h-48 sm:h-80 aspect-[4/5] flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
+            className={`group relative h-48 sm:h-80 ${flags ? 'w-full max-w-xl' : 'aspect-[4/5]'} flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-2xl transition-all shadow-black/80 ${
               resolvedCoatUrl && !imageError && !imageLoading
                 ? 'cursor-zoom-in hover:border-emerald-500/50 hover:shadow-emerald-950/30'
                 : ''
@@ -651,8 +659,8 @@ export default function PowiatHeraldryPage() {
                 }
                 alt={
                   targetPowiat
-                    ? `Coat of arms of ${targetPowiat.name}`
-                    : 'Polish county coat of arms'
+                    ? `${flags ? 'Flag' : 'Coat of arms'} of ${targetPowiat.name}`
+                    : `Polish county ${flags ? 'flag' : 'coat of arms'}`
                 }
                 className={`h-full w-full object-contain filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.02] ${
                   imageLoading ? 'opacity-0' : 'opacity-100'
@@ -681,7 +689,7 @@ export default function PowiatHeraldryPage() {
               >
                 <Loader2 className="animate-spin" size={28} aria-hidden="true" />
                 <span className="text-[11px] sm:text-xs font-mono text-sand-300">
-                  {'Loading heraldic shield...'}
+                  {flags ? 'Loading flag...' : 'Loading heraldic shield...'}
                 </span>
               </div>
             )}
@@ -695,10 +703,10 @@ export default function PowiatHeraldryPage() {
                 <AlertCircle size={30} className="text-amber-400" />
                 <div className="space-y-1">
                   <p className="text-xs sm:text-sm font-semibold text-sand-100">
-                    {'Failed to load coat of arms'}
+                    {`Failed to load ${flags ? 'flag' : 'coat of arms'}`}
                   </p>
                   <p className="text-[11px] sm:text-xs text-sand-400 leading-snug">
-                    {'Network error or Wikimedia/cache service returned status 503.'}
+                    {'The image service is unavailable or the network request failed.'}
                   </p>
                 </div>
                 <button
@@ -894,7 +902,7 @@ export default function PowiatHeraldryPage() {
                   {challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}
                 </p>
                 {challenge?.ranked && !isAuthenticated && <p className="text-xs text-sand-400">Sign in to add your daily result to the leaderboard.</p>}
-                <Link to="/leaderboard?mode=heraldry" className="text-xs text-emerald-300 underline">View leaderboard</Link>
+                <Link to={`/leaderboard?mode=${flags ? 'county_flags' : 'heraldry'}`} className="text-xs text-emerald-300 underline">View leaderboard</Link>
               </div>
 
               {/* Registration Plates on Victory Card */}
@@ -913,7 +921,7 @@ export default function PowiatHeraldryPage() {
               <div className="rounded-lg border border-white/5 bg-obsidian-950/60 p-3 text-xs text-sand-400 space-y-1">
                 <div className="font-semibold text-sand-300 flex items-center gap-1.5">
                   <Shield size={13} className="text-emerald-400" />
-                  <span>{'Heraldic Source & Attribution:'}</span>
+                  <span>{flags ? 'Flag Source & Attribution:' : 'Heraldic Source & Attribution:'}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-zinc-400">
                   {attribution.title && (
@@ -928,9 +936,9 @@ export default function PowiatHeraldryPage() {
                     </span>
                   )}
                   {attribution.license && (
-                    <span className="rounded-xs border border-white/10 bg-sand-900/60 px-1.5 py-0.5 text-[10px] font-mono">
-                      {attribution.license}
-                    </span>
+                    attribution.license_url
+                      ? <a href={attribution.license_url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline underline-offset-2">{attribution.license}</a>
+                      : <span className="rounded-xs border border-white/10 bg-sand-900/60 px-1.5 py-0.5 text-[10px] font-mono">{attribution.license}</span>
                   )}
                   {attribution.source_url && (
                     <a
@@ -943,6 +951,7 @@ export default function PowiatHeraldryPage() {
                       <ExternalLink size={11} />
                     </a>
                   )}
+                  {attribution.description && <span>Modification: {attribution.description}</span>}
                 </div>
               </div>
             )}
@@ -1101,11 +1110,11 @@ export default function PowiatHeraldryPage() {
                 </h2>
                 <p className="mt-1 text-xs text-sand-400">
                   {won
-                    ? `Identified county coat of arms in ${guesses.length}/${maxGuesses} guesses!`
+                    ? `Identified county ${flags ? 'flag' : 'coat of arms'} in ${guesses.length}/${maxGuesses} guesses!`
                     : 'Out of guesses this round.'}
                 </p>
                 <p className="mt-2 text-sm text-emerald-300">{challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}</p>
-                <Link to="/leaderboard?mode=heraldry" className="mt-1 inline-block text-xs text-emerald-300 underline">View leaderboard</Link>
+                <Link to={`/leaderboard?mode=${flags ? 'county_flags' : 'heraldry'}`} className="mt-1 inline-block text-xs text-emerald-300 underline">View leaderboard</Link>
               </div>
               <button
                 type="button"
@@ -1198,7 +1207,7 @@ export default function PowiatHeraldryPage() {
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={'How to Play County Coats of Arms'}
+            aria-label={`How to Play County ${flags ? 'Flags' : 'Coats of Arms'}`}
             className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-xl border border-white/15 bg-obsidian-950 p-4 md:max-h-[92vh] sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1206,10 +1215,10 @@ export default function PowiatHeraldryPage() {
               <div>
                 <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
                   <Shield className="text-emerald-400" size={26} />
-                  <span>{'How to Play County Coats of Arms'}</span>
+                  <span>{`How to Play County ${flags ? 'Flags' : 'Coats of Arms'}`}</span>
                 </h2>
                 <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
-                  {'Deduce the Polish county from its official coat of arms in 8 guesses or fewer.'}
+                  {`Deduce the Polish county from its official ${flags ? 'flag' : 'coat of arms'} in 8 guesses or fewer.`}
                 </p>
               </div>
               <button
@@ -1227,10 +1236,10 @@ export default function PowiatHeraldryPage() {
                 <div>
                   <div className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
                     <Shield size={16} />
-                    <span>1. {'Official Heraldic Shield'}</span>
+                    <span>1. {flags ? 'Official County Flag' : 'Official Heraldic Shield'}</span>
                   </div>
                   <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                    {'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
+                    {flags ? 'Each puzzle displays a verified official flag of a Polish land or city county. Only counties with verified flags are included.' : 'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
@@ -1302,7 +1311,7 @@ export default function PowiatHeraldryPage() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={'Fullscreen coat of arms inspection'}
+          aria-label={flags ? 'Fullscreen flag inspection' : 'Fullscreen coat of arms inspection'}
           className="fixed inset-0 z-[2100] flex flex-col bg-obsidian-950/95 backdrop-blur-md animate-fade-in"
           onClick={() => setIsFullscreenOpen(false)}
         >
@@ -1316,7 +1325,7 @@ export default function PowiatHeraldryPage() {
               <span className="truncate">
                 {targetPowiat
                   ? targetPowiat.name
-                  : 'Coat of Arms Detail Inspector'}
+                  : flags ? 'Flag Detail Inspector' : 'Coat of Arms Detail Inspector'}
               </span>
             </div>
 
@@ -1395,8 +1404,8 @@ export default function PowiatHeraldryPage() {
                 }
                 alt={
                   targetPowiat
-                    ? `Coat of arms of ${targetPowiat.name}`
-                    : 'Polish county coat of arms (fullscreen)'
+                    ? `${flags ? 'Flag' : 'Coat of arms'} of ${targetPowiat.name}`
+                    : `Polish county ${flags ? 'flag' : 'coat of arms'} (fullscreen)`
                 }
                 style={{
                   height: `${Math.round(68 * zoomLevel)}vh`,

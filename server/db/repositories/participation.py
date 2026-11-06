@@ -67,9 +67,11 @@ def _participants(start_date=None, end_date=None, mode=None):
                 or_(guest.questions_asked > 0, guest.guesses_made > 0), *day_filters,
             )
         )
-    for key, model, day_value in (
-        ("heraldry", HeraldryDailySession, HeraldryDailySession.date),
-        ("coats_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date)),
+    for key, model, day_value, symbol_mode in (
+        ("heraldry", HeraldryDailySession, HeraldryDailySession.date, "coat"),
+        ("county_flags", HeraldryDailySession, HeraldryDailySession.date, "flag"),
+        ("coats_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "coat"),
+        ("county_flags_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "flag"),
     ):
         if mode is not None and mode != key:
             continue
@@ -77,12 +79,12 @@ def _participants(start_date=None, end_date=None, mode=None):
             (model.user_id.is_not(None), literal("user:") + cast(model.user_id, String)),
             else_=literal("guest:") + model.guest_id,
         )
-        filters = []
+        filters = [model.symbol_mode == symbol_mode]
         if start_date is not None:
             filters.append(day_value >= start_date)
         if end_date is not None:
             filters.append(day_value <= end_date)
-        if key == "heraldry":
+        if model is HeraldryDailySession:
             guesses = func.json_array_length(model.guesses)
             won = case((model.won.is_(True), 1), else_=0)
         else:

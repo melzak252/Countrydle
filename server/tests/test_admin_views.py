@@ -49,7 +49,7 @@ from db.models import (
 )
 from db.models.fallback_answer import FallbackAnswer, FallbackAnswerBlock
 from db.models.heraldry_daily import HeraldryDailySession
-from db.models.heraldry_quiz import QuizRun
+from db.models.heraldry_quiz import QuizRun, QuizSolve
 from db.repositories import fallback_answers
 from users.utils import get_admin_user, get_current_user
 
@@ -135,6 +135,7 @@ async def admin_fixture(monkeypatch):
         FallbackAnswerBlock.__table__,
         HeraldryDailySession.__table__,
         QuizRun.__table__,
+        QuizSolve.__table__,
     ]
     Base.metadata.create_all(engine, tables=tables)
 
@@ -347,6 +348,61 @@ async def admin_fixture(monkeypatch):
 
         app.dependency_overrides.clear()
     engine.dispose()
+
+
+async def test_heraldry_admin_sessions_separate_symbol_modes_and_dates(admin_fixture):
+    from admin.heraldry_sessions import query_heraldry_sessions, query_heraldry_stats
+
+    day = admin_fixture.test_date
+    start = datetime(2026, 9, 20, 12, tzinfo=timezone.utc)
+    session = admin_fixture.session
+    session.add_all([
+        HeraldryDailySession(id="coat", date=day, guest_id="coat", symbol_mode="coat",
+                             target_id=1, target_name="Coat target", guesses=[], started_at=start, won=False),
+        HeraldryDailySession(id="flag", date=day, guest_id="flag", symbol_mode="flag",
+                             target_id=1, target_name="Flag target", guesses=[], started_at=start, won=False),
+        HeraldryDailySession(id="other", date=day - timedelta(days=1), guest_id="other", symbol_mode="flag",
+                             target_id=1, target_name="Old target", guesses=[], started_at=start, won=False),
+        QuizRun(id="coat-quiz", guest_id="coat", symbol_mode="coat", started_at=start, status="started"),
+        QuizRun(id="flag-quiz", guest_id="flag", symbol_mode="flag", started_at=start, status="started"),
+        QuizRun(id="old-quiz", guest_id="other", symbol_mode="flag",
+                started_at=start - timedelta(days=1), status="started"),
+    ])
+    await session.flush()
+
+    for mode, expected in (("heraldry", "coat"), ("county_flags", "flag"),
+                           ("coats_quiz", "coat-quiz"), ("county_flags_quiz", "flag-quiz")):
+        items, total = await query_heraldry_sessions(session, mode, day, None, None, 1, 20)
+        assert total == 1
+        assert items[0].session_id == expected
+        stats = await query_heraldry_stats(session, mode, day)
+        assert stats.total_players == 1
+    assert (await query_heraldry_stats(session, "county_flags", day)).target_name == "Flag target"
+
+    from db.repositories.participation import _participants
+
+    for mode, identity in (("heraldry", "coat"), ("county_flags", "flag"),
+                           ("coats_quiz", "coat"), ("county_flags_quiz", "flag")):
+        participants = _participants(mode=mode)
+        identities = (await session.execute(select(participants.c.identity))).scalars().all()
+        assert f"guest:{identity}" in identities
+        assert f"guest:{'flag' if identity == 'coat' else 'coat'}" not in identities
+    participants = _participants(day, day, mode="county_flags")
+    identities = (await session.execute(select(participants.c.identity))).scalars().all()
+    assert identities == ["guest:flag"]
+
+
+async def test_flag_quiz_admin_target_uses_catalog_count(monkeypatch):
+    import admin.heraldry_sessions as heraldry_admin
+
+    monkeypatch.setattr(heraldry_admin, "load_flag_catalog", lambda: {1: {}, 2: {}})
+    assert heraldry_admin.flag_quiz_target() == "2 Polish counties"
+
+    def unavailable():
+        raise heraldry_admin.HTTPException(status_code=503)
+
+    monkeypatch.setattr(heraldry_admin, "load_flag_catalog", unavailable)
+    assert heraldry_admin.flag_quiz_target() == "Catalog unavailable"
 
 
 async def test_admin_live_feed_target_and_source(admin_fixture):

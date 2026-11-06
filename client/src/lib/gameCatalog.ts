@@ -4,6 +4,8 @@ export const gameCatalog = [
     { path: '/flag-shades', name: 'Flag Shades' },
     { path: '/herby-powiatow', name: 'County Coats of Arms' },
     { path: '/quiz-herbow', name: 'Coats of Arms Quiz' },
+    { path: '/flagi-powiatow', name: 'County Flags' },
+    { path: '/quiz-flag-powiatow', name: 'County Flags Quiz' },
   ] },
   { title: 'Continents', games: [
     { path: '/europe', name: 'Europedle' },

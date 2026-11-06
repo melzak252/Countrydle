@@ -35,6 +35,7 @@ const MODES = [
   ['continental:europe', 'Europe'], ['continental:asia', 'Asia'],
   ['continental:africa', 'Africa'], ['continental:americas', 'Americas'],
   ['heraldry', 'County coats of arms'], ['coats_quiz', 'Coats quiz'],
+  ['county_flags', 'County flags'], ['county_flags_quiz', 'County flags quiz'],
 ] as const;
 const PAGE_SIZE = 20;
 
@@ -282,11 +283,11 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         </button>
       </div>
 
-      <section className="admin-panel space-y-4" aria-label={selectedMode === 'coats_quiz' ? 'Quiz scope and summary' : t('adminSessions.targetSummary')}>
+      <section className="admin-panel space-y-4" aria-label={['coats_quiz', 'county_flags_quiz'].includes(selectedMode) ? 'Quiz scope and summary' : t('adminSessions.targetSummary')}>
         <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-center">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="admin-badge">{selectedMode === 'coats_quiz' ? 'Quiz scope' : t('adminSessions.targetEntity')}</span>
+              <span className="admin-badge">{['coats_quiz', 'county_flags_quiz'].includes(selectedMode) ? 'Quiz scope' : t('adminSessions.targetEntity')}</span>
               {stats?.target_subtitle && <span className="admin-badge">{stats.target_subtitle}</span>}
             </div>
             {stats ? (
@@ -296,7 +297,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                   {stats.target_name}
                 </h2>
                 <p className="admin-meta mt-1">
-                  {selectedMode === 'coats_quiz' ? `Sessions on ${formatGameDate(stats.game_date || selectedDate, locale)}` : t('adminSessions.challengeDate', {
+                  {['coats_quiz', 'county_flags_quiz'].includes(selectedMode) ? `Sessions on ${formatGameDate(stats.game_date || selectedDate, locale)}` : t('adminSessions.challengeDate', {
                     date: formatGameDate(stats.game_date || selectedDate, locale),
                   })}
                 </p>
@@ -318,7 +319,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 label: t('adminSessions.solveRate'),
                 value: stats ? formatPercent(stats.win_rate_pct, locale) : '—',
               },
-              ...(['coats_quiz', 'heraldry', 'flagdle'].includes(selectedMode) ? [] : [
+              ...(['coats_quiz', 'county_flags_quiz', 'heraldry', 'county_flags', 'flagdle'].includes(selectedMode) ? [] : [
                 { label: t('adminSessions.avgQuestionsWon'), value: stats ? formatNumber(stats.avg_questions_winners, locale, 1) : '—' },
                 { label: t('adminSessions.avgQuestionsLost'), value: stats ? formatNumber(stats.avg_questions_losers, locale, 1) : '—' },
               ]),
@@ -377,8 +378,8 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 }}
               >
                 <option value="all">{t('adminSessions.statusAll')}</option>
-                <option value="won">{selectedMode === 'coats_quiz' ? 'Completed' : t('adminSessions.statusWon')}</option>
-                <option value="lost">{selectedMode === 'coats_quiz' ? 'Stopped' : t('adminSessions.statusLost')}</option>
+                <option value="won">{['coats_quiz', 'county_flags_quiz'].includes(selectedMode) ? 'Completed' : t('adminSessions.statusWon')}</option>
+                <option value="lost">{['coats_quiz', 'county_flags_quiz'].includes(selectedMode) ? 'Stopped' : t('adminSessions.statusLost')}</option>
                 <option value="in_progress">{t('adminSessions.statusInProgress')}</option>
               </select>
             </label>
@@ -430,14 +431,14 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               const encodedId = encodeURIComponent(session.session_id);
               const buttonId = `${idPrefix}-session-button-${encodedId}`;
               const panelId = `${idPrefix}-session-panel-${encodedId}`;
-              const isQuiz = session.mode === 'coats_quiz';
+              const isQuiz = session.mode === 'coats_quiz' || session.mode === 'county_flags_quiz';
               const hasDetails = session.timeline.length > 0 || session.quiz_solves.length > 0;
               const statusLabel = isQuiz && session.quiz_status === 'given_up' ? 'Stopped' : isQuiz && session.quiz_status === 'completed' ? 'Completed' : t(`adminSessions.status.${session.status}`);
               const started = formatDateTime(session.started_at, locale);
               const completed = formatDateTime(session.completed_at, locale);
               const duration = formatDuration(session.duration_seconds, locale, t);
               const accessibleName = isQuiz
-                ? `${session.username}, ${statusLabel}, ${session.solved_count == null ? 'solved count unavailable' : `${session.solved_count} of 380 solved`}. ${isExpanded ? 'Hide' : 'Show'} details`
+                ? `${session.username}, ${statusLabel}, ${session.solved_count == null ? 'solved count unavailable' : session.mode === 'coats_quiz' ? `${session.solved_count} of 380 solved` : `${session.solved_count} solved`}. ${isExpanded ? 'Hide' : 'Show'} details`
                 : t('adminSessions.sessionSummary', {
                 username: session.username,
                 playerType: session.is_guest ? t('adminSessions.guest') : t('adminSessions.registered'),
@@ -486,11 +487,11 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                         <span className="admin-meta mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span>{t('adminSessions.startedAt', { time: started || t('adminSessions.unknownTime') })}</span>
                           {completed && <span>{t('adminSessions.completedAt', { time: completed })}</span>}
-                          {isQuiz ? <span>{session.solved_count == null ? 'Solved count unavailable' : `${session.solved_count}/380 solved`}</span> : <>
+                          {isQuiz ? <span>{session.solved_count == null ? 'Solved count unavailable' : session.mode === 'coats_quiz' ? `${session.solved_count}/380 solved` : `${session.solved_count} solved`}</span> : <>
                             <span>{t('adminSessions.questionCount', { count: session.questions_asked })}</span>
                             <span>{t('adminSessions.guessCount', { count: session.guesses_made })}</span>
                           </>}
-                          {session.mode === 'heraldry' && session.points != null && <span>{formatNumber(session.points, locale)} points</span>}
+                          {['heraldry', 'county_flags'].includes(session.mode) && session.points != null && <span>{formatNumber(session.points, locale)} points</span>}
                           {isQuiz && session.active_elapsed_seconds != null && <span>Active time: {formatDuration(session.active_elapsed_seconds, locale, t)} (client-reported)</span>}
                           {!isQuiz && session.duration_seconds != null && (
                             <span className="inline-flex items-center gap-1">
@@ -502,7 +503,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                       </span>
                     </span>
                     {hasDetails && <span className="flex shrink-0 items-center gap-2 text-sand-100">
-                      <span>{isQuiz ? (isExpanded ? 'Hide solved coats' : 'Show solved coats') : (isExpanded ? t('adminSessions.hideReplay') : t('adminSessions.showReplay'))}</span>
+                      <span>{isQuiz ? `${isExpanded ? 'Hide' : 'Show'} solved ${session.mode === 'county_flags_quiz' ? 'flags' : 'coats'}` : (isExpanded ? t('adminSessions.hideReplay') : t('adminSessions.showReplay'))}</span>
                       {isExpanded
                         ? <ChevronDown className="h-4 w-4" aria-hidden="true" />
                         : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
@@ -515,8 +516,8 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                     hidden={!isExpanded}
                     className="space-y-4 border-t border-white/10 bg-obsidian-900 p-4"
                   >
-                    {session.quiz_solves.length > 0 && <section aria-label="Solved coats">
-                      <h3 className="font-semibold text-sand-100">Solved coats</h3>
+                    {session.quiz_solves.length > 0 && <section aria-label={session.mode === 'county_flags_quiz' ? 'Solved flags' : 'Solved coats'}>
+                      <h3 className="font-semibold text-sand-100">{session.mode === 'county_flags_quiz' ? 'Solved flags' : 'Solved coats'}</h3>
                       <p className="admin-meta mt-1">Active elapsed time since quiz start, client-reported.</p>
                       <ul className="mt-3 space-y-1 text-sm">
                         {session.quiz_solves.map((solve) => <li key={solve.powiat_id} className="flex flex-wrap justify-between gap-2"><span>{solve.name}</span><span>{formatDuration(solve.active_elapsed_seconds, locale, t)}</span></li>)}
@@ -672,7 +673,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         )}
       </section>
 
-      {selectedMode !== 'coats_quiz' && <details className="admin-panel">
+      {!['coats_quiz', 'county_flags_quiz'].includes(selectedMode) && <details className="admin-panel">
         <summary className="flex list-none items-center justify-between gap-3">
           <span className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-slate-300" aria-hidden="true" />
@@ -683,7 +684,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
 
         {stats && (
           <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-2">
-            {selectedMode !== 'heraldry' && selectedMode !== 'flagdle' && <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-questions`}>
+            {!['heraldry', 'county_flags', 'flagdle'].includes(selectedMode) && <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-questions`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 id={`${idPrefix}-top-questions`} className="flex items-center gap-2">
                   <HelpCircle className="h-4 w-4 text-slate-300" aria-hidden="true" />

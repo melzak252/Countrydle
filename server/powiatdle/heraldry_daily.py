@@ -20,8 +20,8 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
-async def lock_identity(session, identity, day):
-    key = f"heraldry-daily:{identity}:{day.isoformat()}"
+async def lock_identity(session, identity, day, symbol_mode="coat"):
+    key = f"heraldry-daily:{symbol_mode}:{identity}:{day.isoformat()}"
     lock_id = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], "big", signed=True)
     await session.execute(select(func.pg_advisory_xact_lock(lock_id)))
 
@@ -32,23 +32,23 @@ def owner_filter(user, guest_id):
     return (HeraldryDailySession.user_id.is_(None)) & (HeraldryDailySession.guest_id == guest_id)
 
 
-async def get_or_create_daily(session, request, response, user, day, target):
+async def get_or_create_daily(session, request, response, user, day, target, symbol_mode="coat"):
     guest = None if user else get_guest_identity(request, response)
     identity = f"user:{user.id}" if user else f"guest:{guest}"
-    await lock_identity(session, identity, day)
+    await lock_identity(session, identity, day, symbol_mode)
     row = await session.scalar(select(HeraldryDailySession).where(
-        HeraldryDailySession.date == day, owner_filter(user, guest)
+        HeraldryDailySession.date == day, HeraldryDailySession.symbol_mode == symbol_mode, owner_filter(user, guest)
     ).with_for_update())
     if row is None and user is not None:
         guest = read_guest_identity(request)
         if guest:
-            await lock_identity(session, f"guest:{guest}", day)
+            await lock_identity(session, f"guest:{guest}", day, symbol_mode)
             row = await session.scalar(select(HeraldryDailySession).where(
-                HeraldryDailySession.date == day, owner_filter(None, guest)
+                HeraldryDailySession.date == day, HeraldryDailySession.symbol_mode == symbol_mode, owner_filter(None, guest)
             ).with_for_update())
     if row is None:
         row = HeraldryDailySession(
-            id=str(uuid4()), date=day, user_id=user.id if user else None, guest_id=guest,
+            id=str(uuid4()), date=day, symbol_mode=symbol_mode, user_id=user.id if user else None, guest_id=guest,
             target_id=target["id"], target_name=target["name"], guesses=[], started_at=utcnow(), won=False,
         )
         session.add(row)
@@ -57,7 +57,7 @@ async def get_or_create_daily(session, request, response, user, day, target):
     return row
 
 
-async def get_owned_daily(session, request, user, session_id, *, lock=False):
+async def get_owned_daily(session, request, user, session_id, *, lock=False, symbol_mode="coat"):
     guest = read_guest_identity(request)
     if user is None and guest is None:
         raise HTTPException(status_code=403, detail="Daily session does not belong to this player.")
@@ -66,6 +66,7 @@ async def get_owned_daily(session, request, user, session_id, *, lock=False):
         ownership = or_(ownership, owner_filter(None, guest))
     stmt = select(HeraldryDailySession).where(
         or_(HeraldryDailySession.id == session_id, HeraldryDailySession.replaced_session_id == session_id),
+        HeraldryDailySession.symbol_mode == symbol_mode,
         ownership,
     )
     if lock:
@@ -78,7 +79,7 @@ async def get_owned_daily(session, request, user, session_id, *, lock=False):
 
 def token_payload(row):
     return {"session_id": row.id, "seed": f"daily-{row.date.isoformat()}", "is_daily": True,
-            "date": row.date.isoformat(), "target_id": row.target_id,
+            "date": row.date.isoformat(), "target_id": row.target_id, "symbol_mode": row.symbol_mode,
             "guesses": [guess["id"] for guess in row.guesses]}
 
 
@@ -86,7 +87,7 @@ async def streak_for(session, row):
     owner = (HeraldryDailySession.user_id == row.user_id if row.user_id is not None else
              (HeraldryDailySession.user_id.is_(None)) & (HeraldryDailySession.guest_id == row.guest_id))
     previous = (await session.execute(select(HeraldryDailySession.date, HeraldryDailySession.won).where(
-        owner, HeraldryDailySession.date < row.date, HeraldryDailySession.completed_at.is_not(None)
+        owner, HeraldryDailySession.symbol_mode == row.symbol_mode, HeraldryDailySession.date < row.date, HeraldryDailySession.completed_at.is_not(None)
     ).order_by(HeraldryDailySession.date.desc()))).all()
     return count_consecutive_daily_wins(previous, row.date) + 1
 
@@ -107,8 +108,8 @@ async def add_account_points(session, user_id, points):
     ))
 
 
-async def record_guess(session, request, user, payload, county):
-    row = await get_owned_daily(session, request, user, payload["session_id"], lock=True)
+async def record_guess(session, request, user, payload, county, symbol_mode="coat"):
+    row = await get_owned_daily(session, request, user, payload["session_id"], lock=True, symbol_mode=symbol_mode)
     if row.date != utcnow().date():
         raise HTTPException(status_code=400, detail="This daily challenge has expired.")
     current_ids = [g["id"] for g in row.guesses]
@@ -130,12 +131,12 @@ async def record_guess(session, request, user, payload, county):
     return row
 
 
-async def claim_daily(session, request, user):
+async def claim_daily(session, request, user, symbol_mode="coat"):
     day = utcnow().date()
     guest = read_guest_identity(request)
-    await lock_identity(session, f"user:{user.id}", day)
+    await lock_identity(session, f"user:{user.id}", day, symbol_mode)
     existing = await session.scalar(select(HeraldryDailySession).where(
-        HeraldryDailySession.user_id == user.id, HeraldryDailySession.date == day
+        HeraldryDailySession.user_id == user.id, HeraldryDailySession.date == day, HeraldryDailySession.symbol_mode == symbol_mode
     ).with_for_update())
     if existing is not None and existing.guesses:
         return existing
@@ -143,10 +144,10 @@ async def claim_daily(session, request, user):
         if existing is not None:
             return existing
         raise HTTPException(status_code=404, detail="No guest daily session to claim.")
-    await lock_identity(session, f"guest:{guest}", day)
+    await lock_identity(session, f"guest:{guest}", day, symbol_mode)
     row = await session.scalar(select(HeraldryDailySession).where(
         HeraldryDailySession.guest_id == guest, HeraldryDailySession.user_id.is_(None),
-        HeraldryDailySession.date == day,
+        HeraldryDailySession.date == day, HeraldryDailySession.symbol_mode == symbol_mode,
     ).with_for_update())
     if row is None or not row.guesses:
         if existing is not None:
@@ -167,7 +168,7 @@ async def claim_daily(session, request, user):
     return row
 
 
-async def leaderboard(session, kind):
+async def leaderboard(session, kind, symbol_mode="coat"):
     if kind not in {"monthly", "average"}:
         return []
     first, next_month = utc_month_bounds()
@@ -178,6 +179,7 @@ async def leaderboard(session, kind):
         HeraldryDailySession, User.id == HeraldryDailySession.user_id
     ).where(
         HeraldryDailySession.date >= first, HeraldryDailySession.date < next_month,
+        HeraldryDailySession.symbol_mode == symbol_mode,
         func.json_array_length(HeraldryDailySession.guesses) > 0,
         User.username.not_like("test_%"), User.username.not_like("pytest_%"),
         User.username.not_like("guess_c_%"), User.username.not_like("ask_q_%"),

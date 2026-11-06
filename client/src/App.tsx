@@ -35,6 +35,7 @@ import PatchNotesPage from './pages/PatchNotesPage';
 import ExplorePage from './pages/ExplorePage';
 import ModeGuidePage from './pages/ModeGuidePage';
 import { useAuthStore } from './stores/authStore';
+import { countyFlagsService } from './services/api';
 import {
   useCountryGameStore,
   usePowiatyGameStore,
@@ -49,7 +50,7 @@ import {
 import { useEffect } from 'react';
 
 function App() {
-  const { user, setUser, isAuthenticated } = useAuthStore();
+  const { user, setUser, isAuthenticated, isLoading: authLoading } = useAuthStore();
 
   useEffect(() => {
     if (isPrerenderCapture()) {
@@ -77,6 +78,16 @@ function App() {
         useAfricaGameStore.getState().syncGuestData();
         useAmericasGameStore.getState().syncGuestData();
         useFlagdleGameStore.getState().syncGuestData();
+        try {
+          const today = new Date().toISOString().slice(0, 10);
+          if (localStorage.getItem(`county_flags_daily_token_${today}`)) {
+            void countyFlagsService.sync().then((challenge) => {
+              if (challenge.date && challenge.token) localStorage.setItem(`county_flags_daily_token_${challenge.date}`, challenge.token);
+            }).catch((error) => console.error('Failed to claim county flag guest progress:', error));
+          }
+        } catch {
+          // Storage may be unavailable; the game page can still use its cookie.
+        }
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -143,6 +154,8 @@ function App() {
           <Route path="herby-powiatow" element={<PowiatHeraldryPage />} />
           <Route path="quiz-herbow" element={<PowiatCoatsQuizPage />} />
           <Route path="coats-of-arms-quiz" element={<PowiatCoatsQuizPage />} />
+          <Route path="flagi-powiatow" element={<PowiatHeraldryPage key="flags" flags />} />
+          <Route path="quiz-flag-powiatow" element={<PowiatCoatsQuizPage key="flags" flags />} />
           <Route path="border-hop" element={<BorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />
@@ -157,7 +170,7 @@ function App() {
           <Route path="explore/modes/:modeId" element={<ModeGuidePage />} />
           <Route path="blog" element={<BlogListPage />} />
           <Route path="blog/:slug" element={<BlogPostPage />} />
-          <Route path="admin" element={user?.is_admin ? <AdminDashboard /> : <Navigate to="/" replace />} />
+          <Route path="admin" element={authLoading ? <p role="status">Loading account…</p> : user?.is_admin ? <AdminDashboard /> : <Navigate to="/" replace />} />
           
           {/* Fallback */}
           <Route path="*" element={

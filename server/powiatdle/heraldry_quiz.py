@@ -18,6 +18,11 @@ from users.utils import get_current_or_guest_user
 from utils.guest_session import get_guest_identity, read_guest_identity
 
 router = APIRouter(prefix='/quiz', tags=['heraldry-quiz'])
+flags_quiz_router = APIRouter(prefix='/quiz', tags=['flags-quiz'])
+
+
+def symbol_mode(request: Request) -> str:
+    return 'flag' if '/flags/quiz/' in request.url.path else 'coat'
 
 
 _TRANSLATION = str.maketrans('ąćęłńóśźż', 'acelnoszz')
@@ -117,18 +122,37 @@ async def load_catalog() -> dict[int, str]:
     return catalog
 
 
+async def load_mode_catalog(mode: str) -> dict[int, str]:
+    catalog = await load_catalog()
+    if mode == 'coat':
+        return catalog
+    from powiatdle.flag_catalog import load_catalog as load_flags
+
+    flags = load_flags()
+    eligible = {id_: catalog[id_] for id_ in flags if id_ in catalog}
+    if not eligible:
+        raise HTTPException(status_code=503, detail='Flag quiz catalog is unavailable')
+    return eligible
+
+
 
 @router.post('/runs')
+@flags_quiz_router.post('/runs')
 async def start_run(body: StartRequest, request: Request, response: Response,
                     user=Depends(get_current_or_guest_user), session: AsyncSession = Depends(get_db)):
+    mode = symbol_mode(request)
+    if mode == 'flag':
+        await load_mode_catalog(mode)
     run = QuizRun(user_id=user.id if user else None,
-                  guest_id=None if user else get_guest_identity(request, response), status='started', solved_count=0)
+                  guest_id=None if user else get_guest_identity(request, response), status='started', solved_count=0,
+                  symbol_mode=mode)
     session.add(run)
     await session.commit()
     return {'run_id': run.id}
 
 
 @router.post('/runs/{run_id}/finish')
+@flags_quiz_router.post('/runs/{run_id}/finish')
 async def finish_run(run_id: str, body: FinishRequest, request: Request,
                      user=Depends(get_current_or_guest_user), session: AsyncSession = Depends(get_db)):
     guest = read_guest_identity(request)
@@ -137,7 +161,9 @@ async def finish_run(run_id: str, body: FinishRequest, request: Request,
     owner = QuizRun.user_id == user.id if user else QuizRun.guest_id == guest
     if user and guest:
         owner = or_(owner, (QuizRun.user_id.is_(None)) & (QuizRun.guest_id == guest))
-    run = await session.scalar(select(QuizRun).where(QuizRun.id == run_id, owner).with_for_update())
+    mode = symbol_mode(request)
+    run = await session.scalar(select(QuizRun).where(
+        QuizRun.id == run_id, QuizRun.symbol_mode == mode, owner).with_for_update())
     if run is None:
         raise HTTPException(status_code=404, detail='Run not found')
     try:
@@ -151,7 +177,7 @@ async def finish_run(run_id: str, body: FinishRequest, request: Request,
             run.user_id, run.guest_id = user.id, None
             await session.commit()
         return {'run_id': run.id, 'status': run.status, 'solved_count': run.solved_count}
-    solves = validated_solves(body, await load_catalog())
+    solves = validated_solves(body, await load_mode_catalog(mode))
     if user and run.user_id is None:
         run.user_id, run.guest_id = user.id, None
     session.add_all([QuizSolve(run_id=run.id, powiat_id=id_, elapsed_seconds=seconds) for id_, seconds in solves])
@@ -165,19 +191,22 @@ async def finish_run(run_id: str, body: FinishRequest, request: Request,
 
 
 @router.get('/stats')
-async def stats(session: AsyncSession = Depends(get_db)):
-    catalog = await load_catalog()
+@flags_quiz_router.get('/stats')
+async def stats(request: Request, session: AsyncSession = Depends(get_db)):
+    mode = symbol_mode(request)
+    catalog = await load_mode_catalog(mode)
     finished = QuizRun.status.in_(('completed', 'given_up'))
     finished_runs, tracking_started_at = (await session.execute(
         select(func.count(QuizRun.id).filter(finished), func.min(QuizRun.started_at))
+        .where(QuizRun.symbol_mode == mode)
     )).one()
     rows = (await session.execute(
         select(QuizSolve.powiat_id, func.count(QuizSolve.run_id), func.avg(QuizSolve.elapsed_seconds))
-        .join(QuizRun, QuizRun.id == QuizSolve.run_id).where(finished)
+        .join(QuizRun, QuizRun.id == QuizSolve.run_id).where(finished, QuizRun.symbol_mode == mode)
         .group_by(QuizSolve.powiat_id).order_by(QuizSolve.powiat_id)
     )).all()
     aggregates = {id_: (count, average) for id_, count, average in rows}
     return {'finished_runs': finished_runs, 'tracking_started_at': tracking_started_at,
-            'coats': [{'powiat_id': id_, 'solved_count': aggregates.get(id_, (0, None))[0],
+            ('flags' if mode == 'flag' else 'coats'): [{'powiat_id': id_, 'solved_count': aggregates.get(id_, (0, None))[0],
                        'average_active_seconds': aggregates.get(id_, (0, None))[1]}
                       for id_ in sorted(catalog)]}

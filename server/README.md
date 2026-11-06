@@ -611,6 +611,7 @@ Daily-game endpoints accept `type=monthly|average`:
 - `/continental/{europe|asia|africa|americas}/leaderboard`
 - `/flagdle/leaderboard`
 - `/powiatdle/heraldry/leaderboard` (daily county coats)
+- `/powiatdle/flags/leaderboard` (daily county flags)
 
 Rows contain `id`, `username`, total `points`, `wins`, `games_played`, and
 `average_points`. Monthly rankings include actual play in the current UTC
@@ -643,6 +644,45 @@ answers against the county catalog and records completed or given-up runs once.
 finished runs that solved it and the mean client-reported active elapsed time
 from quiz start among those solves. The percentage denominator is all finished
 runs; abandoned runs are excluded and no historical quiz runs are inferred.
+
+County flags use the same eight-guess daily and custom-seed rules at
+`/powiatdle/flags/challenge`, `/guess` and `/sync`. Daily guess options include
+all 380 canonical counties, but targets and the all-flags quiz are limited to
+the packaged eligible flags. Flag and coat sessions, tokens, claims, streaks,
+leaderboards, quiz runs and statistics are separate. A legacy stateless coat
+token remains unranked and cannot be used in the flag game.
+
+`GET /powiatdle/flags/catalog` lists eligible IDs, versioned public image URLs
+and source attribution, license links and any recorded modification for the
+quiz. `/flags/counties` lists all canonical guess options. The
+daily challenge uses a private token-bound `/flags/flag-asset` URL so its
+active target is not disclosed through the asset URL. Quiz runs use
+`/powiatdle/flags/quiz/runs`, `/runs/{id}/finish` and `/stats`; completion
+requires the complete eligible ID set, not a fixed count. Statistics use all
+finished runs as the denominator and the mean client-reported active elapsed
+time since start among correct solves.
+
+`powiatdle/flags_catalog.json` and `flag_assets/` are immutable packaged build
+data; `flags_source_audit.json` records the source outcome for each canonical
+county. The initial published catalog contains 365 verified assets; the 15
+unverified counties are not assertions that they lack official flags. Each
+included file has Commons source, licensing and checksum metadata. Four SVGs
+have an added root namespace for browser compatibility; their original source
+and delivered byte checksums and the modification are recorded separately. Missing,
+unpublished or invalid catalog data returns 503 rather than falling back to
+coats or silently changing eligibility. Updating the catalog requires
+verifying all included assets and provenance before publishing it atomically;
+asset hashes version the public URLs. `flags_daily_v1.json` is the frozen daily
+target pool: do not modify it when adding future catalog entries, or existing
+date-to-target determinism changes.
+
+Alembic revision `h3e4a5b6c7d8` adds the symbol mode with a `coat` default and
+preserves existing coat rows. **Rollback constraint:** after flag rows exist in
+the shared tables, older application binaries that do not filter symbol mode
+will mix flags with coats even if they can read the new schema. The migration
+refuses downgrade before changing the schema if either table has non-coat
+history; coat-only databases can downgrade. Keep a symbol-aware application
+during rollback planning; do not delete game data as an implicit rollback.
 
 Admin overview and session drilldowns use UTC dates and the same saved or
 recoverable session universe, including empty saved states and question-only

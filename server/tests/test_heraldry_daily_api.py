@@ -44,6 +44,7 @@ async def daily_client(participation_db, monkeypatch):
 
     app = FastAPI()
     app.include_router(heraldry.router, prefix='/powiatdle')
+    app.include_router(heraldry.flag_router, prefix='/powiatdle')
     app.include_router(admin_router)
     async def db_override():
         async with participation_db() as session:
@@ -221,3 +222,217 @@ async def test_admin_heraldry_and_quiz_filters_paginate_real_results(daily_clien
     assert stats.json()['win_rate_pct'] == 33.3
     no_results = await client.get(base, params={'mode': 'heraldry', 'date': str(day - timedelta(days=1))})
     assert no_results.json()['total'] == 0
+
+
+async def test_flag_daily_is_separate_and_rejects_cross_mode_tokens(daily_client, participation_db, monkeypatch):
+    from powiatdle import flag_catalog
+    from powiatdle.heraldry import decrypt_session_token
+
+    client, app, counties = daily_client
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: {
+        1: {"id": 1, "filename": "1.svg", "source": {
+            "filename": "original.svg", "attribution": "Artist", "license": "CC BY 4.0",
+            "license_url": "https://example.com/license", "url": "https://example.com/source",
+            "modification": "Added SVG namespace",
+        }}
+    })
+    monkeypatch.setattr(flag_catalog, "load_daily_ids", lambda: [1])
+    coat = (await client.get("/powiatdle/heraldry/challenge")).json()
+    flag = (await client.get("/powiatdle/flags/challenge")).json()
+    coat_payload = decrypt_session_token(coat["token"])
+    flag_payload = decrypt_session_token(flag["token"])
+    assert flag_payload["target_id"] == 1
+    assert flag_payload["session_id"] != coat_payload["session_id"]
+    assert flag_payload["symbol_mode"] == "flag"
+    assert flag["coat_asset_url"] == f"/powiatdle/flags/flag-asset?token={flag['token']}"
+    for route, token in (("flags", coat["token"]), ("heraldry", flag["token"])):
+        assert (await client.get(f"/powiatdle/{route}/challenge", params={"token": token})).status_code == 403
+        assert (await client.post(f"/powiatdle/{route}/guess", json={"token": token, "guess": counties[0]["name"], "powiat_id": 1})).status_code == 403
+
+    wrong = await client.post("/powiatdle/flags/guess", json={"token": flag["token"], "guess": counties[1]["name"], "powiat_id": 2})
+    assert wrong.status_code == 200 and not wrong.json()["answer"]
+    win = await client.post("/powiatdle/flags/guess", json={"token": wrong.json()["token"], "guess": counties[0]["name"], "powiat_id": 1})
+    assert win.status_code == 200 and win.json()["ranked"] and win.json()["won"]
+    assert win.json()["source_attribution"]["description"] == "Added SVG namespace"
+    assert win.json()["source_attribution"]["license_url"] == "https://example.com/license"
+    replay = await client.post("/powiatdle/flags/guess", json={"token": wrong.json()["token"], "guess": counties[0]["name"], "powiat_id": 1})
+    assert replay.status_code == 409
+    sign_in(app)
+    assert (await client.post("/powiatdle/heraldry/sync")).status_code == 200
+    claimed = await client.post("/powiatdle/flags/sync")
+    assert claimed.status_code == 200 and claimed.json()["won"]
+    assert (await client.get("/powiatdle/heraldry/leaderboard")).json() == []
+    leaders = (await client.get("/powiatdle/flags/leaderboard")).json()
+    assert len(leaders) == 1 and leaders[0]["points"] == claimed.json()["points"]
+    async with participation_db() as session:
+        rows = (await session.execute(select(HeraldryDailySession))).scalars().all()
+        assert {row.symbol_mode for row in rows} == {"coat", "flag"}
+
+
+async def test_flag_catalog_unavailable_and_all_counties_guessable(daily_client, monkeypatch):
+    from fastapi import HTTPException
+    from powiatdle import flag_catalog
+
+    client, _, counties = daily_client
+    def unavailable():
+        raise HTTPException(status_code=503, detail="Flag catalog unavailable.")
+    monkeypatch.setattr(flag_catalog, "load_catalog", unavailable)
+    for path in ("challenge", "counties", "catalog", "leaderboard", "assets/1"):
+        assert (await client.get(f"/powiatdle/flags/{path}")).status_code == 503
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: {1: {"id": 1, "filename": "1.svg", "source": {}}})
+    catalog = (await client.get("/powiatdle/flags/catalog")).json()
+    assert [item["id"] for item in catalog] == [1]
+    assert len((await client.get("/powiatdle/flags/counties")).json()) == len(counties)
+    challenge = (await client.get("/powiatdle/flags/challenge", params={"seed": "random-example"})).json()
+    result = await client.post("/powiatdle/flags/guess", json={"token": challenge["token"], "guess": counties[1]["name"], "powiat_id": 2})
+    assert result.status_code == 200 and not result.json()["answer"]
+
+
+async def test_flag_assets_are_catalog_backed_with_original_media_type(daily_client, monkeypatch, tmp_path):
+    import json
+    from powiatdle import flag_catalog, heraldry
+
+    client, _, counties = daily_client
+    (tmp_path / "flag.png").write_bytes(b"verified png bytes")
+    catalog_path = tmp_path / "catalog.json"
+    catalog = {"build_complete": False, "counties": [
+        {"id": 1, "filename": "flag.png", "source": {"url": "https://example.com/source", "license": "Public domain"}}
+    ]}
+    catalog_path.write_text(json.dumps(catalog))
+    monkeypatch.setattr(flag_catalog, "CATALOG_PATH", catalog_path)
+    monkeypatch.setattr(flag_catalog, "ASSET_DIR", tmp_path)
+    assert (await client.get("/powiatdle/flags/assets/1")).status_code == 503
+    catalog["build_complete"] = True
+    catalog_path.write_text(json.dumps(catalog))
+    asset = await client.get("/powiatdle/flags/assets/1")
+    assert asset.status_code == 200 and asset.content == b"verified png bytes"
+    assert asset.headers["content-type"] == "image/png"
+    assert (await client.get("/powiatdle/flags/assets/2")).status_code == 404
+    from pathlib import Path
+    original_is_file = Path.is_file
+    def reject_catalog_restat(path):
+        if path == tmp_path / "flag.png":
+            raise AssertionError("cached catalog was revalidated")
+        return original_is_file(path)
+    monkeypatch.setattr(Path, "is_file", reject_catalog_restat)
+    assert (await client.get("/powiatdle/flags/assets/1")).status_code == 200
+    monkeypatch.setattr(flag_catalog, "load_daily_ids", lambda: [1])
+    target = heraldry.select_target(counties, "daily-2026-11-06", "flag")
+    # Immutable catalogs are cached; a vanished asset is still an eligible ID,
+    # but serving it fails explicitly rather than changing the target pool.
+    (tmp_path / "flag.png").unlink()
+    assert (await client.get("/powiatdle/flags/assets/1")).status_code == 503
+    assert 1 in flag_catalog.load_catalog()
+    assert heraldry.select_target(counties, "daily-2026-11-06", "flag") == target
+    empty_path = tmp_path / "empty.json"
+    empty_path.write_text('{"build_complete": true, "counties": []}')
+    monkeypatch.setattr(flag_catalog, "CATALOG_PATH", empty_path)
+    assert (await client.get("/powiatdle/flags/assets/1")).status_code == 503
+    unlicensed_path = tmp_path / "unlicensed.json"
+    (tmp_path / "unlicensed.png").write_bytes(b"image")
+    unlicensed_path.write_text(json.dumps({"build_complete": True, "counties": [
+        {"id": 1, "filename": "unlicensed.png", "source": {"url": "https://example.com/source"}}
+    ]}))
+    monkeypatch.setattr(flag_catalog, "CATALOG_PATH", unlicensed_path)
+    assert (await client.get("/powiatdle/flags/catalog")).status_code == 503
+
+
+def test_daily_flag_selection_uses_frozen_pool_and_coat_seed_is_unchanged(monkeypatch):
+    import hashlib
+    from powiatdle import flag_catalog, heraldry
+
+    counties = [{"id": 1}, {"id": 2}, {"id": 3}]
+    seed = "daily-2026-11-06"
+    monkeypatch.setattr(flag_catalog, "load_daily_ids", lambda: [1, 2])
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: {1: {}, 2: {}})
+    first = heraldry.select_target(counties, seed, "flag")
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: {1: {}, 2: {}, 3: {}})
+    assert heraldry.select_target(counties, seed, "flag") == first
+    expected = int(hashlib.sha256(f"powiat-heraldry:{seed}".encode()).hexdigest(), 16) % len(counties)
+    assert heraldry.select_target(counties, seed, "coat") == counties[expected]
+
+
+async def test_legacy_coat_token_remains_unranked_and_cannot_enter_flag_mode(daily_client, monkeypatch):
+    from powiatdle import flag_catalog
+    from powiatdle.heraldry import encrypt_session_token
+
+    client, _, counties = daily_client
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: {1: {}})
+    monkeypatch.setattr(flag_catalog, "load_daily_ids", lambda: [1])
+    today = datetime.now(timezone.utc).date().isoformat()
+    token = encrypt_session_token({
+        "seed": f"daily-{today}", "is_daily": True, "date": today,
+        "target_id": 1, "guesses": [],
+    })
+    restored = await client.get("/powiatdle/heraldry/challenge", params={"token": token})
+    assert restored.status_code == 200 and not restored.json()["ranked"]
+    assert (await client.get("/powiatdle/flags/challenge", params={"token": token})).status_code == 403
+    assert (await client.post("/powiatdle/flags/guess", json={"token": token, "guess": counties[0]["name"], "powiat_id": 1})).status_code == 403
+
+
+async def test_flag_asset_version_and_encoding_preserve_original_bytes(daily_client, monkeypatch, tmp_path):
+    import gzip
+    from powiatdle import flag_catalog
+
+    client, _, _ = daily_client
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 2"/>'
+    png = b"\x89PNG\r\n\x1a\nraster"
+    gif = b"GIF89araster"
+    entries = {}
+    for county_id, name, data in ((1, "flag.svg", svg), (2, "flag.png", png), (3, "flag.gif", gif)):
+        (tmp_path / name).write_bytes(data)
+        entries[county_id] = {"filename": name, "source": {"sha1": f"hash{county_id}"}}
+    entries[1]["source"]["asset_sha1"] = "delivered1"
+    entries[1]["source"].update({
+        "filename": "Original.svg", "attribution": "Artist", "license": "CC BY 4.0",
+        "license_url": "https://example.com/license", "url": "https://example.com/source",
+        "modification": "Added SVG namespace",
+    })
+    monkeypatch.setattr(flag_catalog, "ASSET_DIR", tmp_path)
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: entries)
+
+    catalog = (await client.get("/powiatdle/flags/catalog")).json()
+    assert catalog[0]["flag_asset_url"].endswith("?v=delivered1")
+    assert catalog[0]["source_attribution"] == {
+        "title": "Original.svg", "artist": None, "author": "Artist", "license": "CC BY 4.0",
+        "license_url": "https://example.com/license", "source_url": "https://example.com/source",
+        "description": "Added SVG namespace",
+    }
+    assert catalog[1]["source_attribution"]["license_url"] is None
+    async with client.stream("GET", "/powiatdle/flags/assets/1?v=delivered1", headers={"Accept-Encoding": "gzip"}) as response:
+        compressed = b"".join([chunk async for chunk in response.aiter_raw()])
+        assert response.headers["content-encoding"] == "gzip"
+        assert response.headers["vary"] == "Accept-Encoding"
+        assert "immutable" in response.headers["cache-control"]
+    assert gzip.decompress(compressed) == svg
+    identity = await client.get("/powiatdle/flags/assets/1?v=delivered1", headers={"Accept-Encoding": "gzip;q=0"})
+    assert identity.content == svg and "content-encoding" not in identity.headers
+    assert (await client.get("/powiatdle/flags/assets/1?v=hash1")).status_code == 404
+    for county_id, data, media_type in ((2, png, "image/png"), (3, gif, "image/gif")):
+        response = await client.get(f"/powiatdle/flags/assets/{county_id}?v=hash{county_id}", headers={"Accept-Encoding": "gzip"})
+        assert response.content == data and response.headers["content-type"] == media_type
+        assert "content-encoding" not in response.headers
+
+
+async def test_flag_challenge_asset_url_is_opaque_private_and_mode_bound(daily_client, monkeypatch, tmp_path):
+    from powiatdle import flag_catalog
+
+    client, _, _ = daily_client
+    data = b'<svg xmlns="http://www.w3.org/2000/svg"/>'
+    (tmp_path / "secret-name.svg").write_bytes(data)
+    monkeypatch.setattr(flag_catalog, "ASSET_DIR", tmp_path)
+    monkeypatch.setattr(flag_catalog, "load_catalog", lambda: {
+        1: {"id": 1, "filename": "secret-name.svg", "source": {"sha1": "secret-hash"}}
+    })
+    flag = (await client.get("/powiatdle/flags/challenge", params={"seed": "random"})).json()
+    coat = (await client.get("/powiatdle/heraldry/challenge", params={"seed": "random"})).json()
+    url = flag["coat_asset_url"]
+    assert url == f"/powiatdle/flags/flag-asset?token={flag['token']}"
+    assert "secret-name" not in url and "secret-hash" not in url
+    assert flag["target_powiat"] is None and flag["source_attribution"] is None
+    response = await client.get(url, headers={"Accept-Encoding": "identity"})
+    assert response.status_code == 200 and response.content == data
+    assert response.headers["cache-control"] == "private, no-store"
+    assert "etag" not in response.headers and "content-disposition" not in response.headers
+    assert all("secret-name" not in value and "secret-hash" not in value for value in response.headers.values())
+    assert (await client.get("/powiatdle/flags/flag-asset", params={"token": coat["token"]})).status_code == 403

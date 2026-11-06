@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import os
+import mimetypes
 import re
 import sqlite3
 import urllib.parse
@@ -24,6 +25,7 @@ from db.models.user import User
 from powiat_names import resolve_powiat_name
 from powiatdle.utils import LOCAL_CONFIG
 from powiatdle import heraldry_daily
+from powiatdle import flag_catalog
 from powiatdle.heraldry_quiz import router as quiz_router
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.geo import calculate_bearing, calculate_distance_km
@@ -32,6 +34,7 @@ logger = logging.getLogger("countrydle.powiatdle.heraldry")
 
 router = APIRouter(prefix="/heraldry", tags=["powiat-heraldry"])
 router.include_router(quiz_router)
+flag_router = APIRouter(prefix="/flags", tags=["powiat-flags"])
 
 USER_AGENT = "CountrydleHeraldryBot/1.0 (https://countrydle.com; heraldry@countrydle.com)"
 HERB_CACHE_DIR = LOCAL_CONFIG.db_path.parent / "powiat_herb_cache"
@@ -50,6 +53,7 @@ class PowiatHeraldrySourceAttribution(BaseModel):
     artist: Optional[str] = None
     author: Optional[str] = None
     license: Optional[str] = None
+    license_url: Optional[str] = None
     source_url: Optional[str] = None
     description: Optional[str] = None
 
@@ -639,6 +643,55 @@ def get_source_attribution(
 # API Endpoints
 # ---------------------------------------------------------------------------
 
+def symbol_mode(request: Request) -> str:
+    return "flag" if "/flags/" in request.url.path else "coat"
+
+
+def select_target(counties: list[dict], seed: str, symbol_mode: str = "coat") -> dict:
+    if symbol_mode == "flag":
+        catalog = flag_catalog.load_catalog()
+        if seed.startswith("daily-"):
+            ids = flag_catalog.load_daily_ids()
+            by_id = {county["id"]: county for county in counties}
+            if any(county_id not in catalog or county_id not in by_id for county_id in ids):
+                raise HTTPException(status_code=503, detail="Flag daily pool unavailable.")
+            counties = [by_id[county_id] for county_id in ids]
+        else:
+            counties = [county for county in counties if county["id"] in catalog]
+    if not counties:
+        raise HTTPException(status_code=503, detail="No counties catalog available.")
+    namespace = "powiat-flags" if symbol_mode == "flag" else "powiat-heraldry"
+    value = int(hashlib.sha256(f"{namespace}:{seed}".encode("utf-8")).hexdigest(), 16)
+    return counties[value % len(counties)]
+
+
+def asset_url(mode: str, target_id: int, token: str) -> str:
+    if mode == "flag":
+        return f"/powiatdle/flags/flag-asset?token={token}"
+    return f"/powiatdle/heraldry/coat-asset?token={token}"
+
+
+def flag_asset_url(county_id: int, record: dict) -> str:
+    url = f"/powiatdle/flags/assets/{county_id}"
+    version = record["source"].get("asset_sha1") or record["source"].get("sha1")
+    return f"{url}?v={urllib.parse.quote(str(version), safe='')}" if version else url
+
+
+def source_attribution(mode: str, target: dict):
+    if mode == "flag":
+        source = flag_catalog.load_catalog()[target["id"]]["source"]
+        return PowiatHeraldrySourceAttribution(
+            title=source.get("filename"), author=source.get("attribution"),
+            license=source.get("license"), license_url=source.get("license_url"),
+            source_url=source.get("url"), description=source.get("modification"))
+    return get_source_attribution(target["id"], target["name"])
+
+
+def require_token_mode(payload: dict, mode: str):
+    if payload.get("symbol_mode", "coat") != mode:
+        raise HTTPException(status_code=403, detail="Token belongs to another symbol mode.")
+
+
 
 @router.get("/counties", response_model=List[PowiatHeraldryItem])
 async def get_counties():
@@ -666,6 +719,7 @@ async def get_challenge(
     session: AsyncSession = Depends(get_db),
 ):
     """Retrieves or restores a heraldry challenge (daily or custom seed)."""
+    mode = symbol_mode(request)
     all_counties = get_all_counties()
     if not all_counties:
         raise HTTPException(
@@ -681,12 +735,7 @@ async def get_challenge(
         is_daily = False
         effective_seed = seed.strip()[:64]
 
-    seed_hash_int = int(
-        hashlib.sha256(f"powiat-heraldry:{effective_seed}".encode("utf-8")).hexdigest(),
-        16,
-    )
-    target_idx = seed_hash_int % len(all_counties)
-    target_county = all_counties[target_idx]
+    target_county = select_target(all_counties, effective_seed, mode)
     target_id = target_county["id"]
 
     ranked_row = None
@@ -696,14 +745,16 @@ async def get_challenge(
             parsed_token = decrypt_session_token(token)
         except HTTPException:
             token = None
+    if parsed_token:
+        require_token_mode(parsed_token, mode)
     if is_daily and parsed_token and parsed_token.get("session_id") and parsed_token.get("seed") == effective_seed:
         ranked_row = await heraldry_daily.get_owned_daily(
-            session, request, user, parsed_token["session_id"]
+            session, request, user, parsed_token["session_id"], symbol_mode=mode
         )
         token = encrypt_session_token(heraldry_daily.token_payload(ranked_row))
     elif is_daily and (not parsed_token or parsed_token.get("seed") != effective_seed):
         ranked_row = await heraldry_daily.get_or_create_daily(
-            session, request, response, user, datetime.now(timezone.utc).date(), target_county
+            session, request, response, user, datetime.now(timezone.utc).date(), target_county, symbol_mode=mode
         )
         token = encrypt_session_token(heraldry_daily.token_payload(ranked_row))
 
@@ -762,7 +813,7 @@ async def get_challenge(
                             name=target["name"],
                             voivodeship=target["voivodeship"],
                         )
-                        g_attr = get_source_attribution(target["id"], target["name"])
+                        g_attr = source_attribution(mode, target)
 
                     partial_token = encrypt_session_token(
                         {
@@ -770,6 +821,7 @@ async def get_challenge(
                             "is_daily": payload["is_daily"],
                             "date": payload["date"],
                             "target_id": target["id"],
+                            "symbol_mode": mode,
                             "guesses": guesses_ids[:g_made],
                         }
                     )
@@ -814,7 +866,7 @@ async def get_challenge(
                         name=target["name"],
                         voivodeship=target["voivodeship"],
                     )
-                    source_attr = get_source_attribution(target["id"], target["name"])
+                    source_attr = source_attribution(mode, target)
 
                 return PowiatHeraldryChallenge(
                     seed=effective_seed,
@@ -823,7 +875,7 @@ async def get_challenge(
                     max_guesses=8,
                     hint_unlock_guesses=5,
                     token=token,
-                    coat_asset_url=f"/powiatdle/heraldry/coat-asset?token={token}",
+                    coat_asset_url=asset_url(mode, target["id"], token),
                     source_attribution=source_attr,
                     guesses=reconstructed_guesses,
                     is_game_over=is_game_over,
@@ -842,6 +894,7 @@ async def get_challenge(
         "is_daily": is_daily,
         "date": today_str,
         "target_id": target_id,
+        "symbol_mode": mode,
         "guesses": [],
     }
     fresh_token = encrypt_session_token(fresh_payload)
@@ -853,7 +906,7 @@ async def get_challenge(
         max_guesses=8,
         hint_unlock_guesses=5,
         token=fresh_token,
-        coat_asset_url=f"/powiatdle/heraldry/coat-asset?token={fresh_token}",
+        coat_asset_url=asset_url(mode, target_id, fresh_token),
         source_attribution=None,
         guesses=[],
         is_game_over=False,
@@ -863,24 +916,7 @@ async def get_challenge(
     )
 
 
-@router.get("/coat-asset")
-async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(default="")):
-    """Streams the coat of arms SVG for the session target county."""
-    payload = decrypt_session_token(token)
-    target_id = payload.get("target_id")
-    if not target_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing target in token.",
-        )
-    county = get_county_by_id(target_id)
-    if not county:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Target county not found.",
-        )
-
-    svg_bytes = await asyncio.to_thread(get_or_fetch_herb_svg, target_id, county["name"])
+def accepts_gzip(accept_encoding: str) -> bool:
     encodings = {}
     for item in accept_encoding.split(","):
         name, *params = item.split(";")
@@ -896,9 +932,30 @@ async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(
                 except ValueError:
                     quality = 0.0
         encodings[name] = min(encodings.get(name, 1.0), quality)
+    return encodings.get("gzip", encodings.get("*", 0)) > 0
 
+
+@router.get("/coat-asset")
+async def get_coat_asset(token: str = Query(...), accept_encoding: str = Header(default="")):
+    """Streams the coat of arms SVG for the session target county."""
+    payload = decrypt_session_token(token)
+    require_token_mode(payload, "coat")
+    target_id = payload.get("target_id")
+    if not target_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing target in token.",
+        )
+    county = get_county_by_id(target_id)
+    if not county:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target county not found.",
+        )
+
+    svg_bytes = await asyncio.to_thread(get_or_fetch_herb_svg, target_id, county["name"])
     headers = {"Vary": "Accept-Encoding"}
-    if encodings.get("gzip", encodings.get("*", 0)) > 0:
+    if accepts_gzip(accept_encoding):
         svg_bytes = await asyncio.to_thread(gzip.compress, svg_bytes, compresslevel=3, mtime=0)
         headers["Content-Encoding"] = "gzip"
     return Response(content=svg_bytes, media_type="image/svg+xml", headers=headers)
@@ -913,6 +970,10 @@ async def make_guess(
 ):
     """Evaluates a guess in Powiat Heraldry mode."""
     payload = decrypt_session_token(body.token)
+    mode = symbol_mode(request)
+    require_token_mode(payload, mode)
+    if mode == "flag" and payload.get("target_id") not in flag_catalog.load_catalog():
+        raise HTTPException(status_code=403, detail="Flag target is not in the catalog.")
     target_id = payload.get("target_id")
     target_county = get_county_by_id(target_id)
     if not target_county:
@@ -946,7 +1007,7 @@ async def make_guess(
         )
     ranked_row = None
     if payload.get("session_id"):
-        ranked_row = await heraldry_daily.record_guess(session, request, user, payload, guessed_county)
+        ranked_row = await heraldry_daily.record_guess(session, request, user, payload, guessed_county, symbol_mode=mode)
 
 
     guesses.append(guessed_id)
@@ -998,7 +1059,7 @@ async def make_guess(
             name=target_county["name"],
             voivodeship=target_county["voivodeship"],
         )
-        source_attr = get_source_attribution(target_id, target_county["name"])
+        source_attr = source_attribution(mode, target_county)
 
     new_token = encrypt_session_token(payload)
 
@@ -1032,14 +1093,91 @@ async def sync_daily(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
-    row = await heraldry_daily.claim_daily(session, request, user)
+    mode = symbol_mode(request)
+    if mode == "flag":
+        flag_catalog.load_catalog()
+    row = await heraldry_daily.claim_daily(session, request, user, symbol_mode=mode)
     token = encrypt_session_token(heraldry_daily.token_payload(row))
     return await get_challenge(request=request, response=response, seed=None, token=token, user=user, session=session)
 
 
 @router.get("/leaderboard")
 async def daily_leaderboard(
+    request: Request,
     type: str = Query("monthly"),
     session: AsyncSession = Depends(get_db),
 ):
-    return await heraldry_daily.leaderboard(session, type)
+    mode = symbol_mode(request)
+    if mode == "flag":
+        flag_catalog.load_catalog()
+    return await heraldry_daily.leaderboard(session, type, symbol_mode=mode)
+
+
+@flag_router.get("/counties", response_model=List[PowiatHeraldryItem])
+async def flag_counties():
+    flag_catalog.load_catalog()
+    return await get_counties()
+
+
+
+
+@flag_router.get("/catalog")
+async def flag_county_catalog():
+    catalog = flag_catalog.load_catalog()
+    counties = [c for c in get_all_counties() if c["id"] in catalog]
+    if not counties:
+        raise HTTPException(status_code=503, detail="Flag catalog unavailable.")
+    counties.sort(key=lambda c: polish_sort_key(c["name"]))
+    return [
+        {"id": c["id"], "name": c["name"], "voivodeship": c["voivodeship"],
+         "is_city_county": c["is_city_county"],
+         "flag_asset_url": flag_asset_url(c["id"], catalog[c["id"]]),
+         "source_attribution": source_attribution("flag", c)}
+        for c in counties
+    ]
+
+
+@flag_router.get("/assets/{county_id}")
+async def flag_asset(county_id: int, v: Optional[str] = Query(None), accept_encoding: str = Header(default="")):
+    catalog = flag_catalog.load_catalog()
+    record = catalog.get(county_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Flag not found.")
+    version = record["source"].get("asset_sha1") or record["source"].get("sha1")
+    if v is not None and v != version:
+        raise HTTPException(status_code=404, detail="Flag version not found.")
+    path = flag_catalog.ASSET_DIR / record["filename"]
+    try:
+        data = await asyncio.to_thread(path.read_bytes)
+    except OSError:
+        raise HTTPException(status_code=503, detail="Flag asset unavailable.")
+    media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    headers = {"Cache-Control": "public, max-age=31536000, immutable" if version and v == version else "no-cache"}
+    if media_type == "image/svg+xml":
+        headers["Vary"] = "Accept-Encoding"
+        if accepts_gzip(accept_encoding):
+            data = await asyncio.to_thread(gzip.compress, data, compresslevel=3, mtime=0)
+            headers["Content-Encoding"] = "gzip"
+    return Response(content=data, media_type=media_type, headers=headers)
+
+
+@flag_router.get("/flag-asset")
+async def flag_session_asset(token: str = Query(...), accept_encoding: str = Header(default="")):
+    payload = decrypt_session_token(token)
+    require_token_mode(payload, "flag")
+    target_id = payload.get("target_id")
+    if type(target_id) is not int or target_id not in flag_catalog.load_catalog():
+        raise HTTPException(status_code=403, detail="Flag target is not in the catalog.")
+    response = await flag_asset(target_id, v=None, accept_encoding=accept_encoding)
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+flag_router.add_api_route("/challenge", get_challenge, methods=["GET"], response_model=PowiatHeraldryChallenge)
+flag_router.add_api_route("/guess", make_guess, methods=["POST"], response_model=PowiatHeraldryGuessResult)
+flag_router.add_api_route("/sync", sync_daily, methods=["POST"], response_model=PowiatHeraldryChallenge)
+flag_router.add_api_route("/leaderboard", daily_leaderboard, methods=["GET"])
+
+from powiatdle.heraldry_quiz import flags_quiz_router
+
+flag_router.include_router(flags_quiz_router)

@@ -181,7 +181,7 @@ async def test_dashboard_deduplicates_people_across_modes_but_win_rate_counts_ga
     assert {mode.mode_key for mode in overview.modes_today} == {
         "countrydle", "us_statedle", "powiatdle", "wojewodztwodle", "flagdle",
         "continental:europe", "continental:asia", "continental:africa", "continental:americas",
-        "heraldry", "coats_quiz",
+        "heraldry", "coats_quiz", "county_flags", "county_flags_quiz",
     }
 
 

@@ -26,6 +26,23 @@ runs that solved it and the average client-reported
 active elapsed time since quiz start among correct solves. Older untracked
 plays are not included. Matching and the pause timer remain local and instant.
 
+**County Flags** (`/flagi-powiatow`) offers a ranked daily puzzle and an
+unranked random challenge with eight guesses, distance and direction feedback,
+and registration plate hints after five wrong guesses. Guest daily results can
+be claimed on sign-in; the monthly and average flag leaderboards, local tokens,
+and scores are separate from county coats and world flags. The active daily
+image uses an opaque session asset URL; attribution appears after the result.
+
+The **County Flags Quiz** (`/quiz-flag-powiatow`) loads its available pool from
+`/powiatdle/flags/catalog`, rather than assuming all 380 counties have a
+verified flag. Land-county seats are not substituted for land-county flags.
+The quiz groups only eligible IDs from that catalog, supports instant Polish
+name matching, pause and reset, and records completed or given-up runs.
+Community percentages use finished runs; average solve time is client-reported
+active time since the start of the run. The fullscreen inspector displays
+available author, source, licence, and modification information. Missing
+catalogs and images are reported as unavailable, not replaced with coats.
+
 The admin overview links mode cards to date- and mode-filtered sessions using
 the URL, so browser navigation restores the selection. Known players are
 identified accounts and guest browsers; sessions include saved zero-move games

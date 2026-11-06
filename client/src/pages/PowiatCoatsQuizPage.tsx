@@ -17,7 +17,9 @@ import {
   Loader2,
 } from 'lucide-react';
 import POWIAT_CATALOG from '../data/powiats_quiz_catalog.json';
-import { coatsQuizService, type CoatsQuizSolve, type CoatsQuizStats } from '../services/api';
+import { API_URL, coatsQuizService, countyFlagsQuizService, countyFlagsService, type CoatsQuizSolve, type CoatsQuizStats } from '../services/api';
+import { countyFlagQuizCatalog } from '../lib/countyFlagCatalog';
+import type { PowiatHeraldrySourceAttribution } from '../types';
 
 interface QuizPowiat {
   id: number;
@@ -28,6 +30,8 @@ interface QuizPowiat {
   population: number | null;
   area_km2: number | null;
   registration_plates: string[];
+  flag_asset_url?: string;
+  source_attribution?: PowiatHeraldrySourceAttribution | null;
 }
 
 function normalizeQuizText(str: string): string {
@@ -93,29 +97,25 @@ const VOIVODESHIP_LIST = [
   'zachodniopomorskie',
 ];
 
-// Pre-calculate canonical voivodeship groups and dictionary lookup statically outside component
-const VOIVODESHIP_GROUPS: Array<[string, QuizPowiat[]]> = VOIVODESHIP_LIST.map((v) => [
-  v,
-  (POWIAT_CATALOG as QuizPowiat[]).filter((p) => p.voivodeship.toLowerCase() === v),
-]);
+function makeQuizIndex(catalog: QuizPowiat[]) {
+  const groups: Array<[string, QuizPowiat[]]> = VOIVODESHIP_LIST.map((v) => [
+    v, catalog.filter((p) => p.voivodeship.toLowerCase() === v),
+  ]);
+  const pool = groups.flatMap(([, items]) => items);
+  const forms = new Map<number, string[]>();
+  const names = new Map<string, number[]>();
+  pool.forEach((p) => {
+    const accepted = getAcceptedForms(p);
+    forms.set(p.id, accepted);
+    for (const form of accepted) names.set(form, [...(names.get(form) || []), p.id]);
+  });
+  return { groups, pool, forms, names };
+}
 
-const ACTIVE_POOL: QuizPowiat[] = VOIVODESHIP_GROUPS.flatMap(([, items]) => items);
-const TOTAL_COUNT = ACTIVE_POOL.length;
-
-const ID_TO_INDEX = new Map<number, number>();
-ACTIVE_POOL.forEach((p, idx) => ID_TO_INDEX.set(p.id, idx + 1));
-
-const ACCEPTED_FORMS_BY_ID = new Map<number, string[]>();
-ACTIVE_POOL.forEach((p) => ACCEPTED_FORMS_BY_ID.set(p.id, getAcceptedForms(p)));
-
-const NAME_TO_IDS = new Map<string, number[]>();
-ACTIVE_POOL.forEach((p) => {
-  for (const form of getAcceptedForms(p)) {
-    const list = NAME_TO_IDS.get(form) || [];
-    list.push(p.id);
-    NAME_TO_IDS.set(form, list);
-  }
-});
+function flagUrl(powiat: QuizPowiat): string {
+  const url = powiat.flag_asset_url || '';
+  return url.startsWith('/') ? `${API_URL.replace(/\/$/, '')}${url.replace(/^\/api(?=\/)/, '')}` : url;
+}
 
 // Memoized Shield Cell Component — only re-renders when its own targeted/guessed state changes!
 interface ShieldCellProps {
@@ -127,6 +127,7 @@ interface ShieldCellProps {
   onInspect: (id: number) => void;
   setRef: (id: number, el: HTMLButtonElement | null) => void;
   community?: string;
+  flags: boolean;
 }
 
 const ShieldCell = React.memo(function ShieldCell({
@@ -137,20 +138,27 @@ const ShieldCell = React.memo(function ShieldCell({
   onSelect,
   onInspect,
   community,
+  flags,
   setRef,
 }: ShieldCellProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const thumbUrl = `/coats/${powiat.id}.png`;
+  const thumbUrl = flags ? flagUrl(powiat) : `/coats/${powiat.id}.png`;
 
   return (
     <div className="group flex flex-col items-center select-none">
       {/* Click the coat of arms itself to open fullscreen inspection */}
       <div
         role="button"
-        tabIndex={-1}
+        tabIndex={0}
         onClick={() => onInspect(powiat.id)}
-        aria-label={'Fullscreen coat of arms'}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onInspect(powiat.id);
+          }
+        }}
+        aria-label={flags ? 'Fullscreen flag' : 'Fullscreen coat of arms'}
         className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-lg p-1.5 sm:p-2 cursor-zoom-in transition-transform duration-100 group-hover:scale-[1.03]"
       >
         {!loaded && !error && (
@@ -159,11 +167,10 @@ const ShieldCell = React.memo(function ShieldCell({
             <span>{'Loading...'}</span>
           </div>
         )}
+        {error && <span role="alert" className="text-xs text-rose-300">Image unavailable</span>}
         <img
           src={thumbUrl}
-          alt={isGuessed || isRevealedMissed ? powiat.name : 'Coat of arms'}
-          width={128}
-          height={140}
+          alt={isGuessed || isRevealedMissed ? powiat.name : flags ? 'County flag' : 'Coat of arms'}
           loading="lazy"
           decoding="async"
           onLoad={() => setLoaded(true)}
@@ -172,7 +179,7 @@ const ShieldCell = React.memo(function ShieldCell({
             setLoaded(true);
           }}
           className={`max-h-24 max-w-24 sm:max-h-32 sm:max-w-32 w-auto h-auto object-contain pointer-events-none select-none drop-shadow-md transition-opacity duration-200 ${
-            loaded ? 'opacity-100' : 'opacity-0'
+            loaded && !error ? 'opacity-100' : 'opacity-0'
           }`}
         />
 
@@ -203,7 +210,7 @@ const ShieldCell = React.memo(function ShieldCell({
             ref={(el) => setRef(powiat.id, el)}
             type="button"
             onClick={() => onSelect(powiat.id)}
-            aria-label={'Select coat of arms'}
+            aria-label={flags ? 'Select flag' : 'Select coat of arms'}
             className={`flex min-h-[44px] w-full items-center justify-center rounded border px-1.5 sm:px-2 text-center font-mono text-xs transition-colors cursor-pointer ${
               isTargeted
                 ? 'border-emerald-400 bg-emerald-500/15 ring-2 ring-emerald-400/40 shadow-md'
@@ -217,7 +224,34 @@ const ShieldCell = React.memo(function ShieldCell({
   );
 });
 
-export default function PowiatCoatsQuizPage() {
+export default function PowiatCoatsQuizPage({ flags = false }: { flags?: boolean }) {
+  return <CountyQuizLoader key={flags ? 'flags' : 'coats'} flags={flags} />;
+}
+
+function CountyQuizLoader({ flags }: { flags: boolean }) {
+  const [catalog, setCatalog] = useState<QuizPowiat[] | null>(flags ? null : POWIAT_CATALOG as QuizPowiat[]);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!flags) return;
+    let active = true;
+    countyFlagsService.getCatalog().then((entries) => {
+      if (!active) return;
+      const joined = countyFlagQuizCatalog(entries, POWIAT_CATALOG as QuizPowiat[]);
+      if (!joined.length || joined.length !== entries.length) setError(true);
+      else setCatalog(joined);
+    }).catch(() => { if (active) setError(true); });
+    return () => { active = false; };
+  }, [flags, attempt]);
+  if (error) return <p role="alert" className="p-8 text-rose-300">The verified county flag catalog is unavailable. <button type="button" className="underline" onClick={() => { setError(false); setAttempt((n) => n + 1); }}>Retry</button></p>;
+  if (!catalog) return <p role="status" className="p-8">Loading verified county flags…</p>;
+  return <CountyQuiz key={flags ? 'flags' : 'coats'} flags={flags} catalog={catalog} />;
+}
+
+function CountyQuiz({ flags, catalog }: { flags: boolean; catalog: QuizPowiat[] }) {
+  const { groups: VOIVODESHIP_GROUPS, pool: ACTIVE_POOL, forms: ACCEPTED_FORMS_BY_ID, names: NAME_TO_IDS } = useMemo(() => makeQuizIndex(catalog), [catalog]);
+  const TOTAL_COUNT = ACTIVE_POOL.length;
+  const quizService = flags ? countyFlagsQuizService : coatsQuizService;
 
   // Gameplay state
   const [guessedIds, setGuessedIds] = useState<Set<number>>(() => new Set());
@@ -232,6 +266,7 @@ export default function PowiatCoatsQuizPage() {
   // Fullscreen inspector state
   const [inspectedId, setInspectedId] = useState<number | null>(null);
   const [modalImgLoaded, setModalImgLoaded] = useState<boolean>(false);
+  const [modalImgError, setModalImgError] = useState(false);
   const [inspectZoom, setInspectZoom] = useState<number>(1);
 
   const headerInputRef = useRef<HTMLInputElement>(null);
@@ -244,12 +279,12 @@ export default function PowiatCoatsQuizPage() {
   const loadCommunity = useCallback(() => {
     const request = ++statsRequest.current;
     setCommunityState('loading');
-    coatsQuizService.stats().then((stats) => {
+    quizService.stats().then((stats) => {
       if (request === statsRequest.current) { setCommunity(stats); setCommunityState('ready'); }
     }).catch(() => {
       if (request === statsRequest.current) setCommunityState('error');
     });
-  }, []);
+  }, [quizService]);
   useEffect(() => {
     loadCommunity();
     return () => { statsRequest.current++; };
@@ -257,7 +292,7 @@ export default function PowiatCoatsQuizPage() {
   const beginRun = () => {
     const run = runRef.current;
     if (!run.start && !run.startFailed) {
-      const start = coatsQuizService.start();
+      const start = quizService.start();
       run.start = start;
       start.catch(() => {
         if (run.start === start) { run.start = null; run.startFailed = true; }
@@ -269,12 +304,12 @@ export default function PowiatCoatsQuizPage() {
     if (run.startFailed && !retry) { setSaveState('error'); return; }
     if (retry) run.startFailed = false;
     setSaveState('saving');
-    const start = run.start ?? coatsQuizService.start();
+    const start = run.start ?? quizService.start();
     run.start = start;
     start.catch(() => {
       if (run.start === start) { run.start = null; run.startFailed = true; }
     });
-    start.then(({ run_id }) => coatsQuizService.finish(run_id, run.result!)).then(() => {
+    start.then(({ run_id }) => quizService.finish(run_id, run.result!)).then(() => {
       if (runRef.current === run) { setSaveState('saved'); loadCommunity(); }
     }).catch(() => {
       if (runRef.current === run) setSaveState('error');
@@ -398,7 +433,7 @@ export default function PowiatCoatsQuizPage() {
         }
       }
     },
-    [guessedIds, selectShieldSlot]
+    [guessedIds, selectShieldSlot, ACTIVE_POOL, TOTAL_COUNT]
   );
 
   const handleResetQuiz = useCallback(() => {
@@ -413,7 +448,7 @@ export default function PowiatCoatsQuizPage() {
     setTargetedId(ACTIVE_POOL[0]?.id ?? null);
     setLastSolvedLabel(null);
     headerInputRef.current?.focus();
-  }, []);
+  }, [ACTIVE_POOL]);
 
   // 100% Client-side evaluation — instant O(1) hash map lookup
   const handleHeaderInputChange = (raw: string) => {
@@ -477,17 +512,18 @@ export default function PowiatCoatsQuizPage() {
   const handleInspect = useCallback((id: number) => {
     setInspectZoom(1);
     setModalImgLoaded(false);
+    setModalImgError(false);
     setInspectedId(id);
   }, []);
 
   const targetedPowiat = useMemo(
     () => (targetedId !== null ? ACTIVE_POOL.find((p) => p.id === targetedId) || null : null),
-    [targetedId]
+    [targetedId, ACTIVE_POOL]
   );
 
   const inspectedPowiat = useMemo(
     () => (inspectedId !== null ? ACTIVE_POOL.find((p) => p.id === inspectedId) || null : null),
-    [inspectedId]
+    [inspectedId, ACTIVE_POOL]
   );
 
   const pct = TOTAL_COUNT > 0 ? Math.round((guessedCount / TOTAL_COUNT) * 100) : 0;
@@ -498,16 +534,16 @@ export default function PowiatCoatsQuizPage() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-white/10 pb-4">
         <div>
           <h1 className="font-serif text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
-            {'Polish County Coats of Arms Quiz'}
+            {flags ? 'Polish County Flags Quiz' : 'Polish County Coats of Arms Quiz'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">
-            {'Type county names in the top input. Click any coat of arms for fullscreen inspection. Click a box below to select (Tab = next, Shift+Tab = previous).'}
+            {`Type county names in the top input. Click any ${flags ? 'flag' : 'coat of arms'} for fullscreen inspection. Click a box below to select (Tab = next, Shift+Tab = previous).`}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
-            to="/herby-powiatow"
+            to={flags ? '/flagi-powiatow' : '/herby-powiatow'}
             className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-xs font-medium text-sand-200 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors"
           >
             <Shield size={13} />
@@ -692,11 +728,11 @@ export default function PowiatCoatsQuizPage() {
           <div className="space-y-1">
             <h2 className="font-serif text-lg font-bold">
               {isCompleted
-                ? `Congratulations! You solved all ${TOTAL_COUNT} coats of arms in ${formatTime(elapsedSeconds)}!`
-                : `Quiz ended — you solved ${guessedCount} of ${TOTAL_COUNT} coats of arms (${pct}%) in ${formatTime(elapsedSeconds)}.`}
+                ? `Congratulations! You solved all ${TOTAL_COUNT} ${flags ? 'flags' : 'coats of arms'} in ${formatTime(elapsedSeconds)}!`
+                : `Quiz ended — you solved ${guessedCount} of ${TOTAL_COUNT} ${flags ? 'flags' : 'coats of arms'} (${pct}%) in ${formatTime(elapsedSeconds)}.`}
             </h2>
             <p className="text-xs text-zinc-300">
-              {'All missed county names are now revealed below. Click any coat of arms for fullscreen inspection.'}
+              {`All missed county names are now revealed below. Click any ${flags ? 'flag' : 'coat of arms'} for fullscreen inspection.`}
             </p>
           </div>
           <button
@@ -718,7 +754,7 @@ export default function PowiatCoatsQuizPage() {
           {communityState === 'ready' && community && community.finished_runs > 0 && <span>{community.finished_runs} finished runs</span>}
           <button type="button" onClick={loadCommunity} className="underline">Refresh</button>
         </div>
-        <details><summary className="cursor-pointer">About these results</summary><p className="mt-1">Percentages use completed and given-up runs, excluding abandoned runs. Average time is client-reported active elapsed time since quiz start among correct solves, not time spent on that coat. Earlier untracked play is not included.</p></details>
+        <details><summary className="cursor-pointer">About these results</summary><p className="mt-1">Percentages use completed and given-up runs, excluding abandoned runs. Average time is client-reported active elapsed time since quiz start among correct solves, not time spent on that {flags ? 'flag' : 'coat'}. Earlier untracked play is not included.</p></details>
         {saveState === 'saving' && <p role="status">Saving your finished run…</p>}
         {saveState === 'error' && <p role="alert">Your run could not be saved. <button type="button" className="underline" onClick={() => saveRun(runRef.current, true)}>Retry saving</button></p>}
       </section>
@@ -741,6 +777,7 @@ export default function PowiatCoatsQuizPage() {
                 {items.map((p) => (
                   <ShieldCell
                     key={p.id}
+                    flags={flags}
                     powiat={p}
                     isGuessed={guessedIds.has(p.id)}
                     isRevealedMissed={!guessedIds.has(p.id) && isGivenUp}
@@ -762,7 +799,7 @@ export default function PowiatCoatsQuizPage() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={'Coat of arms preview'}
+          aria-label={flags ? 'Flag preview' : 'Coat of arms preview'}
           onClick={handleCloseInspect}
           className="fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
         >
@@ -777,12 +814,23 @@ export default function PowiatCoatsQuizPage() {
                 <div className="font-serif text-xs sm:text-sm font-bold text-sand-100 leading-snug break-words">
                   {guessedIds.has(inspectedPowiat.id) || isGivenUp
                     ? inspectedPowiat.name
-                    : 'County coat of arms'}
+                    : flags ? 'County flag' : 'County coat of arms'}
                 </div>
                 <div className="font-mono text-[10px] sm:text-xs text-zinc-400 leading-tight">
                   woj. {inspectedPowiat.voivodeship}
                 </div>
                 {communityLabels.get(inspectedPowiat.id) && <p className="text-xs text-zinc-300">{communityLabels.get(inspectedPowiat.id)}</p>}
+                {flags && (
+                  <div aria-label="Flag attribution" className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-300">
+                    {inspectedPowiat.source_attribution?.author && <span>Author: {inspectedPowiat.source_attribution.author}</span>}
+                    {inspectedPowiat.source_attribution?.source_url && <a href={inspectedPowiat.source_attribution.source_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">Image source</a>}
+                    {inspectedPowiat.source_attribution?.license && (inspectedPowiat.source_attribution.license_url
+                      ? <a href={inspectedPowiat.source_attribution.license_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">{inspectedPowiat.source_attribution.license}</a>
+                      : <span>{inspectedPowiat.source_attribution.license}</span>)}
+                    {inspectedPowiat.source_attribution?.description && <span>Modification: {inspectedPowiat.source_attribution.description}</span>}
+                    {!inspectedPowiat.source_attribution && <span>Attribution unavailable</span>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -838,9 +886,10 @@ export default function PowiatCoatsQuizPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-4 sm:p-10 transition-colors duration-200"
             >
+              {flags && modalImgError && <p role="alert" className="absolute text-rose-300">Flag image unavailable.</p>}
               {/* Instant Cached Preview Image (Displays immediately with 0ms wait!) */}
               <img
-                src={`/coats/${inspectedPowiat.id}.png`}
+                src={flags ? flagUrl(inspectedPowiat) : `/coats/${inspectedPowiat.id}.png`}
                 alt=""
                 aria-hidden="true"
                 style={{
@@ -849,27 +898,27 @@ export default function PowiatCoatsQuizPage() {
                   width: 'auto',
                 }}
                 className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
-                  modalImgLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  modalImgLoaded || modalImgError ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
               />
 
               {/* High-Resolution Vector SVG (Fades in over preview once loaded in background) */}
               <img
-                src={`/api/explore/powiats/${inspectedPowiat.id}/coat?v=2`}
+                src={flags ? flagUrl(inspectedPowiat) : `/api/explore/powiats/${inspectedPowiat.id}/coat?v=2`}
                 alt={
                   guessedIds.has(inspectedPowiat.id) || isGivenUp
                     ? inspectedPowiat.name
-                    : 'Coat of arms'
+                    : flags ? 'County flag' : 'Coat of arms'
                 }
                 onLoad={() => setModalImgLoaded(true)}
-                onError={() => setModalImgLoaded(true)}
+                onError={() => { setModalImgLoaded(true); if (flags) setModalImgError(true); }}
                 style={{
                   height: `${Math.round(68 * inspectZoom)}vh`,
                   maxHeight: `${Math.round(68 * inspectZoom)}vh`,
                   width: 'auto',
                 }}
                 className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
-                  modalImgLoaded ? 'opacity-100' : 'opacity-0'
+                  modalImgLoaded && !modalImgError ? 'opacity-100' : 'opacity-0'
                 } absolute`}
               />
             </div>

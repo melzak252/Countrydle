@@ -290,6 +290,7 @@ export interface PowiatHeraldrySourceAttribution {
   artist?: string | null;
   author?: string | null;
   license?: string | null;
+  license_url?: string | null;
   source_url?: string | null;
   description?: string | null;
 }

@@ -236,6 +236,12 @@ export default function HowItWorksPage() {
         <p className="text-base leading-7">In question-budget games, running out of questions still leaves your remaining guesses. A yes to an identity question is not a win until you submit the guess. Flagdle’s helper questions do not spend guesses, and request-rate limits still apply. Friend duels have no total question or guess cap; each action spends a turn, with timers and a final-guess reply rule.</p>
       </section>
 
+      <section aria-labelledby="county-flags" className="space-y-3 border-t border-white/10 pt-8">
+        <h2 id="county-flags" className="font-serif text-2xl text-sand-100">Polish county flags</h2>
+        <p className="text-base leading-7">In the <Link to="/flagi-powiatow" className="text-emerald-300 underline">daily county flag puzzle</Link>, identify the county in eight guesses. Distance and direction guide you; registration plates appear after five wrong guesses. Daily results can earn points, while random challenges are unranked.</p>
+        <p className="text-base leading-7">The <Link to="/quiz-flag-powiatow" className="text-emerald-300 underline">county flags quiz</Link> contains only counties with verified flags. Type Polish county names to solve the available grid; pause or reset whenever needed. Community percentages use finished runs, and average solve times are client-reported active time from the start of each run.</p>
+      </section>
+
       <section aria-labelledby="report-answer" className="space-y-4 border-t border-white/10 pt-8">
         <h2 id="report-answer" className="font-serif text-2xl text-sand-100">Help correct a questionable answer</h2>
         <p className="text-base leading-7">Include the mode, puzzle date, exact question, returned answer and explanation, and a source supporting the correction. Use the question-report control where available or <Link to="/contact" className="text-emerald-300 underline underline-offset-4">contact us</Link>. Avoid sharing today’s hidden target publicly. Reports request a review; they do not mean a fact was already checked or changed.</p>

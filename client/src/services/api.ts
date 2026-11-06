@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { CountyFlagCatalogEntry } from '../lib/countyFlagCatalog';
 import type {
   AdminGameSessionsResponse,
   AdminInvalidateFallbackResponse,
@@ -398,6 +399,33 @@ export const powiatHeraldryService = {
   getCounties: async (): Promise<PowiatHeraldryItem[]> => {
     const response = await api.get<PowiatHeraldryItem[]>('/powiatdle/heraldry/counties');
     return response.data;
+  },
+};
+
+export const countyFlagsService = {
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> =>
+    (await api.get<LeaderboardEntry[]>('/powiatdle/flags/leaderboard', { params: { type } })).data,
+  sync: async (): Promise<PowiatHeraldryChallenge> =>
+    (await api.post<PowiatHeraldryChallenge>('/powiatdle/flags/sync', {})).data,
+  getChallenge: async (params?: { seed?: string; token?: string }): Promise<PowiatHeraldryChallenge> =>
+    (await api.get<PowiatHeraldryChallenge>('/powiatdle/flags/challenge', { params })).data,
+  submitGuess: async (data: { token: string; guess: string; powiat_id?: number }): Promise<PowiatHeraldryGuessResult> =>
+    (await api.post<PowiatHeraldryGuessResult>('/powiatdle/flags/guess', data)).data,
+  getCounties: async (): Promise<PowiatHeraldryItem[]> =>
+    (await api.get<PowiatHeraldryItem[]>('/powiatdle/flags/counties')).data,
+  getCatalog: async (): Promise<CountyFlagCatalogEntry[]> =>
+    (await api.get<CountyFlagCatalogEntry[]>('/powiatdle/flags/catalog')).data,
+};
+
+export const countyFlagsQuizService = {
+  start: async (): Promise<{ run_id: string }> =>
+    (await api.post<{ run_id: string }>('/powiatdle/flags/quiz/runs', {})).data,
+  finish: async (runId: string, result: { status: 'completed' | 'given_up'; elapsed_seconds: number; solves: CoatsQuizSolve[] }): Promise<void> => {
+    await api.post(`/powiatdle/flags/quiz/runs/${encodeURIComponent(runId)}/finish`, result);
+  },
+  stats: async (): Promise<CoatsQuizStats> => {
+    const { flags, ...stats } = (await api.get<Omit<CoatsQuizStats, 'coats'> & { flags: CoatsQuizStats['coats'] }>('/powiatdle/flags/quiz/stats')).data;
+    return { ...stats, coats: flags };
   },
 };
 

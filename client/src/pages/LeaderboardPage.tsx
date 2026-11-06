@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Search, Users } from 'lucide-react';
 import type { LeaderboardEntry, LeaderboardPeriod } from '../types';
-import { africaService, americasService, asiaService, europeService, flagdleService, gameService, powiatHeraldryService, powiatService, usStateService, wojewodztwoService } from '../services/api';
+import { africaService, americasService, asiaService, europeService, flagdleService, gameService, countyFlagsService, powiatHeraldryService, powiatService, usStateService, wojewodztwoService } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 25;
@@ -19,6 +19,7 @@ const GAME_MODES = [
   { id: 'wojewodztwo', label: 'Polish Voivodeships', group: 'Regional' },
   { id: 'powiat', label: 'Powiatdle', group: 'Regional' },
   { id: 'heraldry', label: 'County Coats of Arms', group: 'Regional' },
+  { id: 'county_flags', label: 'County Flags', group: 'Regional' },
 ] as const;
 
 type GameType = typeof GAME_MODES[number]['id'];
@@ -36,6 +37,7 @@ async function loadLeaderboard(game: GameType, period: LeaderboardPeriod): Promi
     case 'americas': return americasService.getLeaderboard(period);
     case 'flagdle': return flagdleService.getLeaderboard(period);
     case 'heraldry': return powiatHeraldryService.getLeaderboard(period);
+    case 'county_flags': return countyFlagsService.getLeaderboard(period);
     default: {
       const exhaustiveCheck: never = game;
       return exhaustiveCheck;
@@ -173,6 +175,7 @@ export default function LeaderboardPage() {
           Daily challenges, ranked. Find a player or jump straight to your own row. Friend games are just for fun — no points or rankings.
         </p>
         {gameType === 'heraldry' && <Link to="/herby-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Coats of Arms</Link>}
+        {gameType === 'county_flags' && <Link to="/flagi-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Flags</Link>}
       </header>
 
       <div className="mb-6 border-b border-white/10 pb-6">

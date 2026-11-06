@@ -93,6 +93,8 @@ const utilityPages: Record<string, [string, string]> = {
   '/herby-powiatow': ['County Coats of Arms — Herby Powiatów', 'Deduce the Polish county by its coat of arms with distance feedback and registration plate hints.'],
   '/quiz-herbow': ['All 380 Polish Coats of Arms Quiz — Quiz Herbów Powiatów', 'JetPunk-style visual grid quiz: identify all 380 Polish county coats of arms.'],
   '/coats-of-arms-quiz': ['All 380 Polish Coats of Arms Quiz — Quiz Herbów Powiatów', 'JetPunk-style visual grid quiz: identify all 380 Polish county coats of arms.'],
+  '/flagi-powiatow': ['County Flags — Flagi Powiatów', 'Identify Polish counties from verified county flags in daily and random challenges.'],
+  '/quiz-flag-powiatow': ['Polish County Flags Quiz', 'Identify the available verified Polish county flags in a visual grid quiz.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
 const modeGuidePaths: Record<string, string> = {

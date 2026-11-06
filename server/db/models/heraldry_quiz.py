@@ -18,6 +18,7 @@ class QuizRun(Base):
     started_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     finished_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String(16), nullable=False, server_default='started')
+    symbol_mode = Column(String(16), nullable=False, server_default='coat')
     elapsed_seconds = Column(Float, nullable=True)
     solved_count = Column(Integer, nullable=False, server_default='0')
     result_hash = Column(String(64), nullable=True)

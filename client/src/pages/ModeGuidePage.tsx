@@ -485,6 +485,13 @@ export default function ModeGuidePage() {
         </div>
       </section>
 
+      {normalizedId === 'powiaty' && (
+        <section aria-labelledby="county-flag-games" className="space-y-3 border-t border-white/10 pt-8">
+          <h2 id="county-flag-games" className="font-serif text-2xl text-sand-100">Explore county flags</h2>
+          <p className="text-base leading-7">The <Link to="/flagi-powiatow" className="text-emerald-300 underline">county flag challenge</Link> uses verified flags of land and city counties, with eight guesses and registration plate hints after five wrong guesses. The <Link to="/quiz-flag-powiatow" className="text-emerald-300 underline">flag grid quiz</Link> includes the available verified flags, not necessarily every county. A city’s flag is not automatically the flag of its surrounding land county.</p>
+        </section>
+      )}
+
       {/* Conventions for Country Modes */}
       {isCountryMode && (
         <section aria-labelledby="country-conventions" className="space-y-5 border-t border-white/10 pt-8">
@@ -516,7 +523,7 @@ export default function ModeGuidePage() {
             : 'Question-based daily wins use +500 base points, up to +1,500 for question efficiency, up to +500 for guess efficiency, up to +300 for speed over 5 minutes, and +50 per consecutive day solved in that mode up to +500. US Statedle adds +200 and Powiatdle adds +500. Guest scores are previews; saved account results determine streak bonuses. Running out of questions does not end the game while guesses remain.'}
         </p>
         <p className="text-base leading-7">
-          Friend duels are separate from these nine daily modes. Players answer each other’s questions; there is no total question or guess cap, but each action takes a turn, timers apply, and the final reply after a starting-player solve permits a guess or pass, not another question.
+          Friend duels use a separate turn-based format. Players answer each other’s questions; there is no total question or guess cap, but each action takes a turn, timers apply, and the final reply after a starting-player solve permits a guess or pass, not another question.
         </p>
       </section>
 

@@ -14,7 +14,7 @@ from db import get_db
 from db.base import Base
 from db.models.user import User
 from db.models.heraldry_quiz import QuizRun, QuizSolve
-from powiatdle.heraldry_quiz import router
+from powiatdle.heraldry_quiz import router, flags_quiz_router
 
 CATALOG = {id_: f'Powiat Testowy {id_}' for id_ in range(1, 381)}
 CATALOG.update({
@@ -46,6 +46,9 @@ async def quiz_client(tmp_path, monkeypatch):
     app = FastAPI()
     app.state.quiz_factory = app_factory
     app.include_router(router, prefix='/powiatdle/heraldry')
+    app.include_router(flags_quiz_router, prefix='/powiatdle/flags')
+    monkeypatch.setattr('powiatdle.flag_catalog.load_catalog',
+                        lambda: {id_: {'id': id_} for id_ in (1, 3)})
 
     async def session_override():
         async with factory() as session:
@@ -66,6 +69,7 @@ async def quiz_client(tmp_path, monkeypatch):
 
 
 BASE = '/powiatdle/heraldry/quiz'
+FLAGS = '/powiatdle/flags/quiz'
 
 
 async def start(client):
@@ -213,3 +217,56 @@ async def test_guest_run_can_finish_after_owner_logs_in(quiz_client):
     async with app.state.quiz_factory() as session:
         saved = await session.get(QuizRun, run)
         assert saved.user_id == user_id and saved.guest_id is None
+
+
+@pytest.mark.asyncio
+async def test_flag_subset_validation_completion_and_mode_isolation(quiz_client):
+    client, app = quiz_client
+    flag_run = (await client.post(FLAGS + '/runs', json={})).json()['run_id']
+    coat_run = await start(client)
+    assert (await client.post(f'{BASE}/runs/{flag_run}/finish', json=result([]))).status_code == 404
+    assert (await client.post(f'{FLAGS}/runs/{coat_run}/finish', json=result([]))).status_code == 404
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as stranger:
+        assert (await stranger.post(f'{FLAGS}/runs/{flag_run}/finish', json=result([]))).status_code == 404
+    for invalid in (
+        result([solve([2], 'Białystok', 1)]),
+        result([solve([1], 'Białystok', 1)]),
+        result([solve([1], 'Biała Podlaska', 1)], status='completed'),
+    ):
+        assert (await client.post(f'{FLAGS}/runs/{flag_run}/finish', json=invalid)).status_code == 422
+    body = result([solve([1], 'm biala podlaska', 5), solve([3], 'pow dabrowski', 10)], 'completed')
+    first = await client.post(f'{FLAGS}/runs/{flag_run}/finish', json=body)
+    assert first.status_code == 200 and first.json()['solved_count'] == 2
+    assert (await client.post(f'{FLAGS}/runs/{flag_run}/finish', json=body)).json() == first.json()
+    assert (await client.post(f'{FLAGS}/runs/{flag_run}/finish', json=result([]))).status_code == 409
+    assert (await client.post(f'{BASE}/runs/{coat_run}/finish', json=result([solve([1], 'Biała Podlaska', 15)]))).status_code == 200
+    flags = (await client.get(FLAGS + '/stats')).json()
+    coats = (await client.get(BASE + '/stats')).json()
+    assert flags['finished_runs'] == coats['finished_runs'] == 1
+    assert {item['powiat_id'] for item in flags['flags']} == {1, 3}
+    assert flags['flags'][0]['average_active_seconds'] == 5
+    assert coats['coats'][0]['average_active_seconds'] == 15
+    async with app.state.quiz_factory() as session:
+        saved = await session.get(QuizRun, flag_run)
+        assert saved.symbol_mode == 'flag' and saved.elapsed_seconds == 20
+
+
+@pytest.mark.asyncio
+async def test_flag_stats_exclude_started_runs_and_average_only_solves(quiz_client):
+    client, _ = quiz_client
+    await client.post(FLAGS + '/runs', json={})
+    for solves in ([solve([1], 'Biała Podlaska', 5)], [], [solve([1], 'Biała Podlaska', 15)]):
+        run = (await client.post(FLAGS + '/runs', json={})).json()['run_id']
+        assert (await client.post(f'{FLAGS}/runs/{run}/finish', json=result(solves))).status_code == 200
+    stats = (await client.get(FLAGS + '/stats')).json()
+    assert stats['finished_runs'] == 3
+    assert stats['flags'][0]['solved_count'] == 2
+    assert stats['flags'][0]['average_active_seconds'] == 10
+
+
+@pytest.mark.asyncio
+async def test_empty_flag_catalog_returns_unavailable(quiz_client, monkeypatch):
+    client, _ = quiz_client
+    monkeypatch.setattr('powiatdle.flag_catalog.load_catalog', lambda: {})
+    assert (await client.post(FLAGS + '/runs', json={})).status_code == 503
+    assert (await client.get(FLAGS + '/stats')).status_code == 503

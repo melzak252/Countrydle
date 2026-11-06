@@ -9,17 +9,32 @@ from db.models.heraldry_quiz import QuizRun, QuizSolve
 from db.models.user import User
 from powiatdle.heraldry_quiz import load_catalog
 from schemas.admin import AdminGameSessionItem, AdminGameSessionTimelineEvent, AdminQuizSolve, AdminTargetStrategyStats, AdminTopGuessStat
+from fastapi import HTTPException
+from powiatdle.flag_catalog import load_catalog as load_flag_catalog
+
+
+def flag_quiz_target():
+    try:
+        count = len(load_flag_catalog())
+    except HTTPException as exc:
+        if exc.status_code != 503:
+            raise
+        return "Catalog unavailable"
+    return f"{count} Polish counties"
 
 
 def _scope(mode, day):
-    if mode == "heraldry":
-        return HeraldryDailySession, [HeraldryDailySession.date == day]
+    if mode in {"heraldry", "county_flags"}:
+        symbol_mode = "flag" if mode == "county_flags" else "coat"
+        return HeraldryDailySession, [HeraldryDailySession.date == day, HeraldryDailySession.symbol_mode == symbol_mode]
     start = datetime.combine(day, time.min, tzinfo=timezone.utc)
-    return QuizRun, [QuizRun.started_at >= start, QuizRun.started_at < start + timedelta(days=1)]
+    symbol_mode = "flag" if mode == "county_flags_quiz" else "coat"
+    return QuizRun, [QuizRun.started_at >= start, QuizRun.started_at < start + timedelta(days=1),
+                     QuizRun.symbol_mode == symbol_mode]
 
 
 def _status_filter(mode, status):
-    if mode == "heraldry":
+    if mode in {"heraldry", "county_flags"}:
         return {
             "won": HeraldryDailySession.won.is_(True),
             "lost": (HeraldryDailySession.won.is_(False)) & HeraldryDailySession.completed_at.is_not(None),
@@ -29,9 +44,9 @@ def _status_filter(mode, status):
             "in_progress": QuizRun.status == "started"}.get(status)
 
 
-def _item(row, username, mode, day):
+def _item(row, username, mode, day, quiz_target=None):
     is_guest = row.user_id is None
-    if mode == "heraldry":
+    if mode in {"heraldry", "county_flags"}:
         completed_at = row.completed_at
         status = "won" if row.won else "lost" if completed_at else "in_progress"
         timeline = [AdminGameSessionTimelineEvent(
@@ -46,7 +61,7 @@ def _item(row, username, mode, day):
         completed_at = row.finished_at
         status = {"completed": "won", "given_up": "lost", "started": "in_progress"}[row.status]
         timeline = []
-        target_name = "380 Polish counties"
+        target_name = quiz_target
         guesses_made = 0  # Only successful solves are recorded, not failed attempts.
         points = None
         solved_count = row.solved_count if completed_at else None
@@ -80,8 +95,10 @@ async def query_heraldry_sessions(session, mode, day, status_filter, player_type
                  .where(*filters).order_by(model.started_at.desc(), model.id)
                  .offset((page - 1) * limit).limit(limit))
     rows = (await session.execute(statement)).all()
-    items = [_item(row, username, mode, day) for row, username in rows]
-    if mode == "coats_quiz" and items:
+    quiz_target = (flag_quiz_target() if mode == "county_flags_quiz" else
+                   "380 Polish counties" if mode == "coats_quiz" else None)
+    items = [_item(row, username, mode, day, quiz_target) for row, username in rows]
+    if mode in {"coats_quiz", "county_flags_quiz"} and items:
         solves = (await session.execute(
             select(QuizSolve.run_id, QuizSolve.powiat_id, QuizSolve.elapsed_seconds)
             .where(QuizSolve.run_id.in_([item.session_id for item in items]))
@@ -104,14 +121,15 @@ async def query_heraldry_stats(session, mode, day):
         (model.user_id.is_not(None), 'user:' + cast(model.user_id, String)),
         else_='guest:' + model.guest_id,
     )
-    won = model.won if mode == "heraldry" else model.status == "completed"
+    won = model.won if mode in {"heraldry", "county_flags"} else model.status == "completed"
     total, players, wins = (await session.execute(select(
         func.count(), func.count(func.distinct(identity)),
         func.coalesce(func.sum(cast(won, Integer)), 0),
     ).select_from(model).where(*filters))).one()
-    target_name = "380 Polish counties" if mode == "coats_quiz" else "Unknown"
+    target_name = (flag_quiz_target() if mode == "county_flags_quiz" else
+                   "380 Polish counties" if mode == "coats_quiz" else "Unknown")
     top_guesses = []
-    if mode == "heraldry":
+    if mode in {"heraldry", "county_flags"}:
         target = (await session.execute(select(model.target_name).where(*filters).limit(1))).scalar_one_or_none()
         target_name = target or "Unknown"
         rows = (await session.execute(select(model.guesses, model.target_id).where(*filters))).all()

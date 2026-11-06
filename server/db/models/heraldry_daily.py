@@ -6,15 +6,16 @@ from db.base import Base
 class HeraldryDailySession(Base):
     __tablename__ = "heraldry_daily_sessions"
     __table_args__ = (
-        Index("uq_heraldry_daily_user_date", "user_id", "date", unique=True,
+        Index("uq_heraldry_daily_user_date", "user_id", "date", "symbol_mode", unique=True,
               postgresql_where=text("user_id IS NOT NULL")),
-        Index("uq_heraldry_daily_guest_date", "guest_id", "date", unique=True,
+        Index("uq_heraldry_daily_guest_date", "guest_id", "date", "symbol_mode", unique=True,
               postgresql_where=text("user_id IS NULL AND guest_id IS NOT NULL")),
     )
 
     id = Column(String(36), primary_key=True)
     replaced_session_id = Column(String(36), unique=True, nullable=True)
     date = Column(Date, nullable=False, index=True)
+    symbol_mode = Column(String(16), nullable=False, default="coat", server_default="coat")
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     guest_id = Column(String(36), nullable=True)
     target_id = Column(Integer, nullable=False)

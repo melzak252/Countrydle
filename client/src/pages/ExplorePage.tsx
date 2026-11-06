@@ -1014,7 +1014,7 @@ export default function ExplorePage() {
             <span>
               {`Showing ${filteredPowiats.length} of ${powiats.length || 380} Polish counties`}
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span>{'Click shield to zoom • Click card for full facts'}</span>
               <Link
                 to="/herby-powiatow"
@@ -1030,6 +1030,8 @@ export default function ExplorePage() {
                 <Shield size={11} />
                 <span>{'380 Coats Quiz (JetPunk)'}</span>
               </Link>
+              <Link to="/flagi-powiatow" className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2.5 py-1 text-emerald-300 font-sans font-semibold">County Flags</Link>
+              <Link to="/quiz-flag-powiatow" className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2.5 py-1 text-emerald-300 font-sans font-semibold">County Flags Quiz</Link>
             </div>
           </div>
 
@@ -1921,6 +1923,7 @@ export default function ExplorePage() {
                   <Shield size={13} />
                   <span>{'Play County Coats of Arms'}</span>
                 </Link>
+                <Link to="/flagi-powiatow" className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors">Play County Flags</Link>
                 <Link
                   to="/powiaty"
                   className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors"
