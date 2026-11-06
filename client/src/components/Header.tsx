@@ -174,6 +174,7 @@ export default function Header() {
                     `block rounded px-3 py-2 text-sm ${isActive ? 'bg-emerald-500/10 text-emerald-300' : 'text-sand-100 hover:bg-white/5'}`
                   }>{game.name}</NavLink>
                 ))}
+                <NavLink to="/friends" className="block rounded px-3 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-white/5 hover:text-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">Play with you friend</NavLink>
                 <Link to="/#maps" className="mt-1 block border-t border-white/10 px-3 py-2.5 text-sm font-medium text-emerald-300 hover:text-emerald-200">Explore more…</Link>
               </div>
             </details>
@@ -345,6 +346,7 @@ export default function Header() {
                 </summary>
                 <div className="absolute right-0 top-full z-10 max-h-[calc(100dvh-12rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-[min(18rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-2 text-sand-100 shadow-2xl">
                   {primaryGames.map((game) => <NavLink key={game.path} to={game.path} className={mobileLinkClass}>{game.name}</NavLink>)}
+                  <NavLink to="/friends" className="flex min-h-11 w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-amber-300 transition-colors hover:bg-white/5 hover:text-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">Play with you friend</NavLink>
                   <Link to="/#maps" onClick={() => {
                     skipMenuFocusRef.current = true;
                     dialogRef.current?.close();

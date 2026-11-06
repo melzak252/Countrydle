@@ -109,9 +109,10 @@ bytes with gzip; actual savings vary by image and do not guarantee lower latency
 ## Unreleased: focused game navigation
 
 The header's green Play button opens Countrydle; the adjacent disclosure offers
-Countrydle, Flagdle, Flag Shades and US Statedle, plus a link to the homepage
-directory of all modes. The directory link scrolls to and focuses its heading
-for keyboard navigation. Desktop utilities are split between Explore and About
+Countrydle, Flagdle, Flag Shades, US Statedle and an amber Play with you friend
+link to `/friends`, plus a link to the homepage directory of all modes. The
+directory link scrolls to and focuses its heading for keyboard navigation.
+Desktop utilities are split between Explore and About
 disclosures, with Blog as a standalone link. Independent desktop controls are
 spaced while Play and its adjacent disclosure stay joined. Regional symbols
 appear only when their published catalogs are playable.
