@@ -1,5 +1,5 @@
 """Preserve legacy session totals and count only identified active participants."""
-from sqlalchemy import String, case, cast, func, literal, null, or_, select, union_all
+from sqlalchemy import String, case, cast, func, literal, null, or_, select, union, union_all
 
 from admin.resolver import ADMIN_MODE_CONFIGS
 from db.models.guest_participation import GuestParticipation
@@ -157,10 +157,13 @@ async def admin_counts(session, start=None, end=None, *, include_breakdown=True)
     player_days = select(
         players.c.date, func.count(func.distinct(players.c.identity)).label('players')
     ).group_by(players.c.date).subquery()
+    dates = union(select(session_days.c.date), select(player_days.c.date)).subquery()
     by_date = (await session.execute(select(
-        session_days.c.date, session_days.c.sessions,
+        dates.c.date, func.coalesce(session_days.c.sessions, 0).label('sessions'),
         func.coalesce(player_days.c.players, 0).label('players'),
-    ).outerjoin(player_days, player_days.c.date == session_days.c.date))).all()
+    ).select_from(dates)
+      .outerjoin(session_days, session_days.c.date == dates.c.date)
+      .outerjoin(player_days, player_days.c.date == dates.c.date))).all()
     session_modes = select(
         sessions.c.date, sessions.c.mode, func.count().label('sessions')
     ).group_by(sessions.c.date, sessions.c.mode).subquery()
@@ -168,12 +171,20 @@ async def admin_counts(session, start=None, end=None, *, include_breakdown=True)
         players.c.date, players.c.mode,
         func.count(func.distinct(players.c.identity)).label('players'),
     ).group_by(players.c.date, players.c.mode).subquery()
+    mode_keys = union(
+        select(session_modes.c.date, session_modes.c.mode),
+        select(player_modes.c.date, player_modes.c.mode),
+    ).subquery()
     by_mode_date = (await session.execute(select(
-        session_modes.c.date, session_modes.c.mode, session_modes.c.sessions,
+        mode_keys.c.date, mode_keys.c.mode,
+        func.coalesce(session_modes.c.sessions, 0).label('sessions'),
         func.coalesce(player_modes.c.players, 0).label('players'),
+    ).select_from(mode_keys).outerjoin(
+        session_modes,
+        (session_modes.c.date == mode_keys.c.date) & (session_modes.c.mode == mode_keys.c.mode),
     ).outerjoin(
         player_modes,
-        (player_modes.c.date == session_modes.c.date) & (player_modes.c.mode == session_modes.c.mode),
+        (player_modes.c.date == mode_keys.c.date) & (player_modes.c.mode == mode_keys.c.mode),
     ))).all()
     return totals, {row.date: row for row in by_date}, {
         (row.date, row.mode): row for row in by_mode_date

@@ -7,6 +7,7 @@ from datetime import date, datetime
 from typing import List, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import countrydle.utils as gutils
@@ -54,7 +55,7 @@ from users.utils import get_admin_user, get_current_or_guest_user, get_current_u
 from utils.geo import enhance_guess_with_hint
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
-    get_guest_identity, get_guest_question_history,
+    get_guest_identity, read_guest_identity, get_guest_question_history,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -147,16 +148,62 @@ async def sync_guest_data(
         if not is_eligible_candidate(guess.guess, continent):
             raise HTTPException(status_code=400, detail="Country is not eligible for this game.")
 
+    guess_repo = ContinentalGuessRepository(session)
+    guest_identity = read_guest_identity(request)
+    guest_question_ids = set()
+    guest_guesses = []
+    if guest_identity is not None:
+        guest_guesses = list((await session.scalars(
+            select(ContinentalGuess)
+            .where(
+                ContinentalGuess.day_id == day.id,
+                ContinentalGuess.user_id.is_(None),
+                ContinentalGuess.guest_id == guest_identity,
+            )
+            .order_by(ContinentalGuess.id.asc())
+        )).all())
+        guest_question_ids = set((await session.scalars(
+            select(ContinentalQuestion.id).where(
+                ContinentalQuestion.day_id == day.id,
+                ContinentalQuestion.user_id.is_(None),
+                ContinentalQuestion.guest_id == guest_identity,
+                ContinentalQuestion.valid.is_(True),
+                ContinentalQuestion.answer.is_not(None),
+            )
+        )).all())
+
+    matched_by_sync_index = {}
+    unmatched_guest_guesses = list(guest_guesses)
+    for sync_index, g in enumerate(sync_data.guesses):
+        matching_index = next((
+            index for index, existing in enumerate(unmatched_guest_guesses)
+            if existing.guess == g.guess
+            and existing.country_id == g.country_id
+            and existing.elapsed_seconds == g.elapsed_seconds
+        ), None)
+        if matching_index is not None:
+            matched_by_sync_index[sync_index] = unmatched_guest_guesses.pop(matching_index)
+
+    # Never associate a browser's history with a different or incomplete sync.
+    # The ownership-checked link and row claims share the transaction.
+    complete_guest_history = not unmatched_guest_guesses and guest_question_ids.issubset(sync_data.questions)
+    participation_linked = False
+    if complete_guest_history and (sync_data.state.questions_asked > 0 or sync_data.state.guesses_made > 0):
+        participation_linked = await link_guest_participation(
+            session, request, f"continental:{continent.value}", day.id, user.id
+        ) is not None
+
     await claim_guest_questions(
         session, ContinentalQuestion, state, sync_data.questions, CONTINENTAL_CONFIG.max_questions,
     )
 
-    # Add guesses
-    guess_repo = ContinentalGuessRepository(session)
-    for g in sync_data.guesses:
-        is_correct = False
-        if g.country_id is not None:
-            is_correct = (g.country_id == day.country_id)
+    for sync_index, g in enumerate(sync_data.guesses):
+        is_correct = g.country_id is not None and g.country_id == day.country_id
+        existing = matched_by_sync_index.get(sync_index)
+        if existing is not None and participation_linked:
+            existing.user_id = user.id
+            existing.answer = is_correct
+            continue
 
         guess_create = ContinentalGuessCreate(
             guess=g.guess,
@@ -167,7 +214,6 @@ async def sync_guest_data(
             elapsed_seconds=g.elapsed_seconds,
         )
         await guess_repo.add_guess(guess_create, commit=False)
-
     state.remaining_guesses = sync_data.state.remaining_guesses
     state.guesses_made = sync_data.state.guesses_made
     state.is_game_over = sync_data.state.is_game_over
@@ -183,8 +229,6 @@ async def sync_guest_data(
     if state.is_game_over:
         await UserRepository(session).update_points(user.id, state)
 
-    if state.questions_asked > 0 or state.guesses_made > 0:
-        await link_guest_participation(session, request, f"continental:{continent.value}", day.id, user.id)
     await state_repo.update_state(state)
     return await get_state(continent, user, session)
 

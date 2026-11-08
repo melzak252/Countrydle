@@ -66,6 +66,21 @@ def reporting_db():
 
 
 @pytest.mark.anyio
+async def test_recovered_guess_only_player_appears_in_daily_and_mode_counts(reporting_db):
+    from admin.participation import admin_counts
+
+    db, session = reporting_db
+    db.add(CountrydleGuess(user_id=99, day_id=1, guess="Germany", answer=False))
+    db.flush()
+
+    totals, days, modes = await admin_counts(session, TODAY, TODAY)
+
+    assert (totals.players, totals.sessions) == (1, 0)
+    assert (days[TODAY].players, days[TODAY].sessions) == (1, 0)
+    assert (modes[(TODAY, "countrydle")].players, modes[(TODAY, "countrydle")].sessions) == (1, 0)
+
+
+@pytest.mark.anyio
 async def test_blog_stats_only_count_actual_actions_on_requested_puzzle_date(reporting_db):
     db, session = reporting_db
     db.add_all([

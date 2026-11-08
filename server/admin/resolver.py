@@ -534,6 +534,29 @@ async def query_admin_game_sessions(
                     "initial_status": "in_progress",
                 })
 
+    # Keep the guest-to-account link scoped to this game and day. Linked
+    # participations identify which guest guesses belong to an account after sync.
+    linked_guest_stmt = select(GuestParticipation.guest_id, GuestParticipation.user_id).where(
+        GuestParticipation.mode == clean_mode,
+        GuestParticipation.user_id.isnot(None),
+        GuestParticipation.day_id == day.id,
+    )
+    linked_guest_users = {
+        guest_id: user_id
+        for guest_id, user_id in (await session.execute(linked_guest_stmt)).all()
+    }
+    if player_type_filter != "guest" and linked_guest_users:
+        linked_users = (await session.execute(
+            select(User.id, User.username).where(User.id.in_(set(linked_guest_users.values())))
+        )).all()
+        for user_id, username in linked_users:
+            if ("user", user_id) not in seen_identities:
+                seen_identities.add(("user", user_id))
+                candidates.append({
+                    "is_guest": False, "user_id": user_id, "guest_id": None,
+                    "username": username or f"User #{user_id}", "initial_status": "in_progress",
+                })
+
     # 2. Guests from GuestParticipation
     if player_type_filter != "registered":
         gp_stmt = select(GuestParticipation).where(
@@ -571,7 +594,7 @@ async def query_admin_game_sessions(
             )
             extra_guests = (await session.execute(extra_g_stmt)).scalars().all()
             for g_id in extra_guests:
-                if g_id and ("guest", g_id) not in seen_identities:
+                if g_id and g_id not in linked_guest_users and ("guest", g_id) not in seen_identities:
                     seen_identities.add(("guest", g_id))
                     candidates.append({
                         "is_guest": True,
@@ -595,7 +618,8 @@ async def query_admin_game_sessions(
         if q.user_id is not None:
             ident = ("user", q.user_id)
         elif has_q_guest_id and getattr(q, "guest_id", None):
-            ident = ("guest", q.guest_id)
+            linked_user_id = linked_guest_users.get(q.guest_id)
+            ident = ("user", linked_user_id) if linked_user_id is not None else ("guest", q.guest_id)
         else:
             ident = ("guest", "anonymous")
         questions_by_identity.setdefault(ident, []).append(q)
@@ -606,7 +630,8 @@ async def query_admin_game_sessions(
         if g.user_id is not None:
             ident = ("user", g.user_id)
         elif has_g_guest_id and getattr(g, "guest_id", None):
-            ident = ("guest", g.guest_id)
+            linked_user_id = linked_guest_users.get(g.guest_id)
+            ident = ("user", linked_user_id) if linked_user_id is not None else ("guest", g.guest_id)
         else:
             ident = ("guest", "anonymous")
         guesses_by_identity.setdefault(ident, []).append(g)
