@@ -73,9 +73,11 @@ class ContinentalState(Base):
 
 class ContinentalGuess(Base):
     __tablename__ = "continental_guesses"
+    __table_args__ = (Index("ix_continental_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("continental_days.id", ondelete="CASCADE"), nullable=False, index=True)
     guess = Column(String, nullable=False)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="SET NULL"), nullable=True)

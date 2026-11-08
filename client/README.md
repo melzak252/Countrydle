@@ -95,15 +95,14 @@ English community flags are not flags of ceremonial authority. Other UK nations
 and the historic 39 English counties are not part of these games; the City of
 London is not a borough.
 
-The admin overview links mode cards to date- and mode-filtered sessions using
-the URL, so browser navigation restores the selection. Verified audience sources:
-`server/utils/guest_session.py` (lines 16–58) implements a fixed 48-hour signed
-JWT cookie identity (`guest_identity`) without sliding renewal;
-`ParticipationRepository` (lines 28–68, 117–167) measures active accepted-action
-identities (`questions_asked > 0` or `guesses_made > 0`) and game win rate
-(`winners / games * 100`), not raw page visits, unique daily visitors, or
-completion rates. `GET /admin/overview` aggregates today and a 14-day time series
-of daily active players/games/wins, not cohort retention or user lifecycle tracking.
+The admin overview lists modes in searchable rows, with prominent participant
+counts and links to date- and mode-filtered sessions. Browser navigation restores
+the selection. Participants are active accounts and guest browsers, not unique
+people: one person may use several browsers, cookies expire after 48 hours, and
+guest play may not be linked to a later login. Solo play counts accepted actions;
+symbol and quiz sessions have their own participation records. Saved session
+counts may include zero-move states and unidentified legacy histories.
+The 14-day history is not a cohort-retention or visitor report.
 Real production traffic, Google Search Console crawl errors, AdSense crawler/WAF
 access logs, and live analytics dashboards are not accessible in the local
 repository environment. Operators must perform precise checks directly in live
@@ -665,6 +664,8 @@ with `X-Robots-Tag: noindex, follow; Cache-Control: no-cache`. If missing, it re
 503, never falling back to an empty SPA. `spa-shell.html` contains an empty `<div id="root"></div>`
 with zero game markup residue, serving private and admin routes with `X-Robots-Tag: noindex, follow`.
 React 19 `createRoot` cleanly mounts over and replaces the initial static content in the `#root` container.
+With JavaScript enabled, the initial game shell is replaced visually by a
+loading message until React mounts; without JavaScript, the rules remain visible.
 Serving and capture are separate. The serving container runs Nginx plus the
 stdlib-only reader on `127.0.0.1:8765`, with the snapshot host directory mounted
 read-only. It never launches Chrome or captures on production startup. The

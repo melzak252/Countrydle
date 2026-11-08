@@ -222,7 +222,7 @@ class FlagdleQuestionRepository:
 
     async def create_question(self, question_create):
         data = question_create.model_dump()
-        for field in ("intent", "required_info", "server_version"):
+        for field in ("intent", "required_info", "server_version", "clarification"):
             data.pop(field, None)
         question = FlagdleQuestion(**data)
         self.session.add(question)

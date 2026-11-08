@@ -266,6 +266,7 @@ class ContinentalGuessRepository:
     async def add_guess(self, guess_create: ContinentalGuessCreate, *, commit: bool = True) -> ContinentalGuess:
         new_guess = ContinentalGuess(
             user_id=guess_create.user_id,
+            guest_id=guess_create.guest_id,
             day_id=guess_create.day_id,
             guess=guess_create.guess,
             country_id=guess_create.country_id,

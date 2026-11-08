@@ -454,7 +454,9 @@ async def make_guess(
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )
+        guest_id = get_guest_identity(request, response)
         await record_guest_action(session, request, response, f"continental:{continent.value}", day.id, won=is_correct)
+        guess_create.guest_id = guest_id
         saved_guess = await ContinentalGuessRepository(session).add_guess(guess_create)
 
         hint = enhance_guess_with_hint(

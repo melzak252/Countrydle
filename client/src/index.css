@@ -268,6 +268,25 @@ body {
 .admin-workspace .admin-page-header { margin-bottom: 16px; }
 .admin-workspace .admin-page-header h1 { margin: 4px 0; }
 .admin-workspace .admin-mobile-navigation { margin-bottom: 16px; }
+.admin-workspace .admin-overview-metric { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; gap: 8px; padding: 16px; }
+.admin-workspace .admin-overview-search { display: flex; width: min(100%, 360px); min-height: 44px; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid #64748b; border-radius: 6px; background: #101622; color: #cbd5e1; }
+.admin-workspace .admin-overview-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #f7f2e8; font: inherit; }
+.admin-workspace .admin-overview-search input::placeholder { color: #94a3b8; }
+.admin-workspace .admin-overview-caveat { max-width: none; border-left: 2px solid #6ee7b7; padding: 8px 12px; color: #cbd5e1; font-size: 14px; line-height: 22px; }
+.admin-workspace .admin-overview-mode-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.admin-workspace .admin-overview-mode { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
+.admin-workspace .admin-overview-mode-title { min-width: 0; }
+.admin-workspace .admin-overview-mode-stats { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.admin-workspace .admin-overview-mode-stats > div { min-width: 0; }
+.admin-workspace .admin-overview-mode-stats dt { color: #94a3b8; font-size: 12px; line-height: 18px; }
+.admin-workspace .admin-overview-mode-stats dd { overflow-wrap: anywhere; color: #f7f2e8; font-size: 18px; font-weight: 600; line-height: 24px; font-variant-numeric: tabular-nums; }
+.admin-workspace .admin-overview-mode-stats dd span { color: #cbd5e1; font-size: 14px; font-weight: 400; }
+.admin-workspace .admin-overview-session-link { justify-self: start; color: #a7f3d0; }
+.admin-workspace .admin-overview-coverage { padding: 0 4px; }
+@media (min-width: 768px) {
+  .admin-workspace .admin-overview-mode { grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr) auto; align-items: center; gap: 20px; }
+  .admin-workspace .admin-overview-mode-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (min-width: 1024px) {
   .admin-workspace { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 24px; }
   .admin-workspace .admin-sidebar { display: block; position: sticky; top: 96px; align-self: start; max-height: calc(100dvh - 112px); overflow: auto; }

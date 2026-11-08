@@ -93,10 +93,16 @@ export default function HomePage() {
             <span className="mt-1 block text-emerald-300">{copy.titleEnd}</span>
           </h1>
           <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-300 md:mt-4 md:text-lg">{copy.intro}</p>
-          <Link to="/game" className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-400 px-4 py-3 text-center text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 sm:w-auto sm:px-6">
-            <span className="min-w-0">{playLabel}</span>
-            <ArrowRight size={17} className="shrink-0" aria-hidden="true" />
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link to="/game" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-400 px-4 py-3 text-center text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 sm:w-auto sm:px-6">
+              <span className="min-w-0">{playLabel}</span>
+              <ArrowRight size={17} className="shrink-0" aria-hidden="true" />
+            </Link>
+            <Link to="/friends" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-obsidian-950 transition-colors hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300 sm:w-auto sm:px-6">
+              <span>Play with friend</span>
+              <ArrowRight size={17} className="shrink-0" aria-hidden="true" />
+            </Link>
+          </div>
           {progressNote && <p role="status" className="mt-3 max-w-lg text-sm leading-relaxed text-slate-400">{progressNote}</p>}
           <a href="#maps" className="mt-4 flex w-fit min-h-11 items-center gap-2 py-2 text-sm text-slate-300 underline decoration-white/20 underline-offset-4 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
             {copy.choose}<ArrowDown size={15} className="shrink-0" aria-hidden="true" />

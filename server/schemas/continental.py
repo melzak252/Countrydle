@@ -32,9 +32,9 @@ class ContinentalGuessBase(BaseModel):
 
 class ContinentalGuessCreate(ContinentalGuessBase):
     user_id: Optional[int] = None
+    guest_id: Optional[str] = None
     day_id: int
     answer: bool
-
 
 class ContinentalGuessDisplay(BaseModel):
     id: int

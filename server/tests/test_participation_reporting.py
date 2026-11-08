@@ -191,6 +191,59 @@ async def test_dashboard_deduplicates_people_across_modes_but_win_rate_counts_ga
 
 
 @pytest.mark.anyio
+async def test_admin_player_counts_require_identified_actions_and_recover_saved_events(reporting_db):
+    from admin.participation import admin_counts, admin_mode_identities
+
+    db, session = reporting_db
+    db.add_all([
+        CountrydleState(user_id=10, day_id=1),
+        GuestParticipation(guest_id="inactive", mode="countrydle", day_id=1),
+        GuestParticipation(
+            guest_id="linked", user_id=30, mode="countrydle", day_id=1,
+            questions_asked=1,
+        ),
+        CountrydleQuestion(
+            user_id=20, day_id=1, original_question="Accepted question?",
+            question="Accepted question?", valid=True, answer=False,
+            explanation="Saved answer", asked_at=datetime(2026, 9, 23, 12),
+        ),
+        CountrydleQuestion(
+            guest_id="linked", day_id=1, original_question="Synced question?",
+            question="Synced question?", valid=True, answer=True,
+            explanation="Saved answer", asked_at=datetime(2026, 9, 23, 12),
+        ),
+        CountrydleQuestion(
+            user_id=21, day_id=1, original_question="Unresolved question?",
+            question="Unresolved question?", valid=False, answer=None,
+            explanation="Not saved as an accepted move", asked_at=datetime(2026, 9, 23, 12),
+        ),
+        CountrydleGuess(
+            user_id=22, day_id=1, guess="Example", answer=False,
+            guessed_at=datetime(2026, 9, 23, 12),
+        ),
+        CountrydleGuess(
+            user_id=None, guest_id=None, day_id=1, guess="Unattributed",
+            answer=False, guessed_at=datetime(2026, 9, 23, 12),
+        ),
+    ])
+    db.flush()
+
+    totals, days, modes = await admin_counts(session, TODAY, TODAY)
+
+    # Inactive state/guest rows and anonymous guesses remain legacy sessions,
+    # while only attributed accepted actions appear in the player totals.
+    assert totals.sessions == 6
+    assert totals.players == 3
+    assert days[TODAY].sessions == 6
+    assert days[TODAY].players == 3
+    assert modes[(TODAY, "countrydle")].sessions == 6
+    assert modes[(TODAY, "countrydle")].players == 3
+    assert await admin_mode_identities(session, TODAY, "countrydle") == {
+        "user:20", "user:22", "user:30",
+    }
+
+
+@pytest.mark.anyio
 async def test_existing_blog_responses_refresh_stats_without_changing_article(reporting_db):
     from blog import get_blog_post, get_latest_blog_post
 
@@ -242,6 +295,54 @@ async def test_game_debrief_counts_unique_guests_and_users(reporting_db):
     assert debrief.total_solvers == 2
     assert debrief.win_rate_pct == 66.7
     assert debrief.high_score == 1000
+
+
+@pytest.mark.anyio
+async def test_admin_continental_sessions_group_guest_questions_and_guesses_by_identity(reporting_db):
+    from admin.resolver import query_admin_game_sessions
+    from db.models.continental import ContinentalGuess, ContinentalQuestion
+
+    db, session = reporting_db
+    db.add(ContinentalDay(id=10, country_id=1, continent="europe", date=TODAY))
+    db.flush()
+
+    for guest_id, question_text, guess_text in (
+        ("guest-a", "Q for A", "Guess A"),
+        ("guest-b", "Q for B", "Guess B"),
+    ):
+        db.add(ContinentalQuestion(
+            user_id=None, guest_id=guest_id, day_id=10, original_question=question_text,
+            question=question_text, valid=True, answer=True, context=None,
+        ))
+        db.add(ContinentalGuess(
+            user_id=None, guest_id=guest_id, day_id=10, guess=guess_text,
+            country_id=1, answer=False,
+        ))
+    # Historical rows remain unidentified and must not be attributed to either browser.
+    db.add(ContinentalGuess(
+        user_id=None, guest_id=None, day_id=10, guess="Legacy guess",
+        country_id=1, answer=False,
+    ))
+    db.flush()
+
+    sessions, total = await query_admin_game_sessions(
+        session, mode="continental:europe", target_date=TODAY, limit=20,
+    )
+
+    assert total == 3
+    by_id = {item.session_id: item for item in sessions}
+    guest_a = by_id["guest-guest-a-day-10"]
+    guest_b = by_id["guest-guest-b-day-10"]
+    anonymous = by_id["guest-None-day-10"]
+    assert [(event.event_type, event.question or event.guess) for event in guest_a.timeline] == [
+        ("question", "Q for A"), ("guess", "Guess A"),
+    ]
+    assert [(event.event_type, event.question or event.guess) for event in guest_b.timeline] == [
+        ("question", "Q for B"), ("guess", "Guess B"),
+    ]
+    assert [(event.event_type, event.guess) for event in anonymous.timeline] == [
+        ("guess", "Legacy guess"),
+    ]
 
 
 @pytest.mark.anyio

@@ -331,6 +331,41 @@ async def test_countrydle_guest_events_are_reconstructible_by_browser_identity(
     }
 
 
+
+async def test_continental_guest_events_share_browser_identity(
+    solo_client, participation_db, monkeypatch,
+):
+    from db.models import ContinentalGuess, ContinentalQuestion
+
+    async def answer_locally(original_question, day_country, user, session, *, evidence=None):
+        from schemas.countrydle import QuestionCreate
+        return (
+            QuestionCreate(
+                original_question=original_question, question=original_question,
+                valid=True, answer=True, explanation="Yes", user_id=None,
+                day_id=day_country.id, context=None,
+            ),
+            None,
+        )
+
+    monkeypatch.setattr(
+        "countrydle.utils.analyze_and_answer_locally",
+        AsyncMock(side_effect=answer_locally),
+    )
+    asked = await solo_client.post(
+        "/continental/europe/question", json={"question": "Is it in Europe?"}
+    )
+    guessed = await solo_client.post(
+        "/continental/europe/guess", json={"guess": "Germany", "country_id": 2}
+    )
+    assert asked.status_code == 200, asked.text
+    assert guessed.status_code == 200, guessed.text
+    async with participation_db() as session:
+        question = (await session.scalars(select(ContinentalQuestion))).one()
+        guess = (await session.scalars(select(ContinentalGuess))).one()
+        participation = (await session.scalars(select(GuestParticipation))).one()
+    assert question.guest_id == guess.guest_id == participation.guest_id
+
 @pytest.mark.parametrize("mode", ["countrydle", "continental/europe"])
 @pytest.mark.parametrize("authenticated", [False, True])
 @pytest.mark.parametrize("invalid_guess", [

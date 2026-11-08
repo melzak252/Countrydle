@@ -547,37 +547,37 @@ The public **More → Patch notes** page at `/patch-notes` shows English release
 
 ## Active participation counts
 
-Blog player statistics and the admin overview use `db/repositories/participation.py`.
-
-A player must have an accepted question or guess for that puzzle; merely opening
-the game or having a daily state created by the streak job does not count.
-Blog statistics are scoped to the article's Countrydle puzzle date and are
-recomputed when an existing article is fetched, without rewriting its text.
+Blog player statistics use `db/repositories/participation.py`. Solo-game
+participants have an accepted question or guess; merely opening the game or
+having a daily state created by the streak job does not count as participation.
+Quiz and symbol-game sessions have their own session records. Blog statistics
+are scoped to the article's Countrydle puzzle date and are recomputed when an
+existing article is fetched, without rewriting its text.
 
 Guests are identified by a signed, HttpOnly, SameSite=Lax `guest_identity` cookie
 with a two-day lifetime (Secure on HTTPS). Opening a solo game's state endpoint
 establishes the cookie but creates no participation row. Accepted actions update
 `guest_participations` in the same database transaction as the saved action.
-Countrydle question and guess rows also store that browser identity, allowing
-each guest's daily sequence to be reconstructed by joining on `guest_id` and
-`day_id`. Other modes currently retain aggregate guest participation only.
-Guest-to-account sync links that browser's puzzle so it is not counted twice.
+Countrydle and Continental question and guess rows also store that browser
+identity, allowing each guest's daily sequence to be reconstructed by joining
+on `guest_id` and `day_id`. Older anonymous guesses remain unidentified.
+Guest-to-account sync links that browser's puzzle when possible.
 Participation records do not use IP addresses or browser fingerprints.
 Question-abuse throttling separately uses a short-lived keyed hash of the source
 network.
 
-The admin overview covers all nine daily challenges. Its player total counts
-distinct accounts and guest browser identities across modes; games won and the
-win rate are calculated per puzzle played, not per unique person. These are
-browser/account counts, not a claim to identify real people: clearing or expiring
-cookies, using multiple browsers, or sharing a browser affects uniqueness.
+The admin overview covers the daily challenges and symbol games. Its participant
+total counts distinct participating accounts and guest browser identities across
+modes; wins and win rates are calculated per puzzle played, not per unique person.
+These are browser/account counts, not a claim to identify real people: clearing
+or expiring cookies, using multiple browsers, or sharing a browser affects uniqueness.
 Historical anonymous gameplay events have no usable player identity and are
 **not** backfilled. Older guest participation counts remain, but those daily
 question and guess sequences cannot be reconstructed.
 
 Alembic revision `d9e0f1a2b3c4` adds guest participation tracking;
-`c3d4e5f6a7b8` adds guest IDs to Countrydle question and guess events. Apply
-the migrations through the normal startup process before running this code.
+`c3d4e5f6a7b8` adds guest IDs to Countrydle events, and `1a2b3c4d5e6f`
+adds guest IDs to Continental guesses. Apply migrations through normal startup.
 The PostgreSQL regression tests require an explicitly disposable
 `PARTICIPATION_TEST_DATABASE_URL`; they create and remove isolated schemas:
 
