@@ -56,6 +56,27 @@ const topQuestionStatSchema = z.object({
   question: z.string(), answer: z.string(), count: z.number(),
   pct: z.number().nullable().optional(), explanation: z.string().nullable().optional(),
 });
+export const candidateFunnelStepSchema = z.object({
+  criterion: z.string(),
+  explanation: z.string(),
+  remaining_count: z.number().int().nonnegative(),
+  sample_candidates: z.array(z.string()).default([]),
+});
+export const wrongGuessComparisonSchema = z.object({
+  guess: z.string(),
+  count: z.number().int().nonnegative(),
+  shared_traits: z.array(z.string()).default([]),
+  differences: z.array(z.string()).default([]),
+  guess_facts: z.record(z.string(), z.string().nullable().optional()).default({}),
+  target_facts: z.record(z.string(), z.string().nullable().optional()).default({}),
+});
+export const deductionAnalysisSchema = z.object({
+  has_analysis: z.boolean(),
+  catalog_provenance: z.string(),
+  disclaimer: z.string(),
+  candidate_funnel: z.array(candidateFunnelStepSchema).default([]),
+  wrong_guess_comparisons: z.array(wrongGuessComparisonSchema).default([]),
+});
 export const blogPostSchema = blogSummarySchema.extend({
   fast_facts: blogFactsSchema.transform((facts) => facts === null ? null : Object.fromEntries(
     Object.entries(facts).flatMap(([key, value]) => value === null ? [] : [[key, typeof value === 'boolean' ? String(value) : value]]),
@@ -72,9 +93,13 @@ export const blogPostSchema = blogSummarySchema.extend({
     top_winner_questions: z.array(topQuestionStatSchema),
     common_pitfalls: z.array(z.object({ guess: z.string(), count: z.number() })),
   }).nullable().optional(),
+  deduction_analysis: deductionAnalysisSchema.nullable().optional(),
 });
 export type BlogSummary = z.infer<typeof blogSummarySchema>;
 export type BlogPost = z.infer<typeof blogPostSchema>;
+export type CandidateFunnelStep = z.infer<typeof candidateFunnelStepSchema>;
+export type WrongGuessComparison = z.infer<typeof wrongGuessComparisonSchema>;
+export type DeductionAnalysis = z.infer<typeof deductionAnalysisSchema>;
 
 export function cleanDisplayText(text?: string): string {
   if (!text) return '';

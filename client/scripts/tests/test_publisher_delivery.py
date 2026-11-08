@@ -264,6 +264,49 @@ class ArtifactFixture(ArtifactSetup, unittest.TestCase):
             self.assertEqual(request("/")[0], 200)
             self.assertEqual(request("/healthz")[0], 200)
 
+    def test_game_crawl_accessibility_serves_meaningful_game_shell_when_present(self):
+        game_html = (
+            '<!doctype html><html><head><title>Countrydle - Daily Geography Deduction Game</title></head>'
+            '<body><div id="root"><div id="game-shell"><h1>Play Countrydle — Daily World Country Deduction</h1>'
+            '<p>Deduce the daily mystery world country using natural-language questions.</p>'
+            '<p>10 Questions allowance, 3 Guesses allowance, 195 world countries.</p>'
+            '<p>Daily reset at 00:00 UTC.</p>'
+            '<a href="/explore/modes/countrydle">World Countries Deduction Guide</a>'
+            '</div></div></body></html>'
+        )
+        (self.assets / "game-shell.html").write_text(game_html)
+        self.release()
+        self.refresh()
+        with self.http() as request:
+            status, headers, body = request("/game")
+            self.assertEqual(status, 200)
+            self.assertEqual(headers.get("X-Robots-Tag"), "noindex, follow")
+            self.assertIn(b"Play Countrydle", body)
+            self.assertIn(b"10 Questions", body)
+            self.assertIn(b"3 Guesses", body)
+            self.assertIn(b"00:00 UTC", body)
+            self.assertIn(b"/explore/modes/countrydle", body)
+
+    def test_missing_game_artifact_produces_honest_unavailable_response(self):
+        # Do not create game-shell.html in assets; requesting /game must NOT silently fallback to spa-shell.html
+        self.release()
+        self.refresh()
+        with self.http() as request:
+            status, _headers, _body = request("/game")
+            self.assertEqual(status, 503)
+    def test_admin_and_login_preserve_bare_spa_shell_semantics(self):
+        game_html = '<!doctype html><html><body><div id="root"><div id="game-shell"><h1>Play Countrydle</h1></div></div></body></html>'
+        (self.assets / "game-shell.html").write_text(game_html)
+        self.release()
+        self.refresh()
+        with self.http() as request:
+            status, _headers, body = request("/admin")
+            self.assertEqual(status, 200)
+            self.assertNotIn(b"Play Countrydle", body)
+            status, _headers, body = request("/login")
+            self.assertEqual(status, 200)
+            self.assertNotIn(b"Play Countrydle", body)
+
 
 class CaptureFixture(ArtifactSetup, unittest.TestCase):
     @contextlib.contextmanager

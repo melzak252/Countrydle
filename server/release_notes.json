@@ -1,5 +1,5 @@
 {
-  "version": "1.41.2",
-  "title": "Clearer fullscreen artwork",
-  "body": "- Fullscreen artwork on phones and compact screens now shows the image and a single close button against an opaque background.\n- Quiz image inspectors no longer show image information or credits. Artwork source records are linked from About."
+  "version": "1.42.0",
+  "title": "More useful geography recaps and guides",
+  "body": "- Past country recaps now include catalog-backed candidate narrowing, comparisons with recorded wrong guesses, and a read-only map highlighting the target and mapped wrong guesses.\n- Recap articles avoid repeating their introductions and distinguish recorded game answers from verified geographical facts.\n- Corrected geography guidance and county elimination percentages.\n- The daily country game now provides readable rules, question and guess limits, and help links before JavaScript loads."
 }

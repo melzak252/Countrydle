@@ -1,12 +1,18 @@
 ## Client runtime and verification
 
-The Vite development server and `npm run build` use the existing TypeScript/Vite
-pipeline. The production serving image contains Nginx and a Python standard-library
-read-only artifact reader, not Chromium or websocket-client. An explicit off-host
-one-shot capture image produces matching immutable publisher HTML; gameplay and
-private routes retain the SPA shell. Image builds need no backend credentials or
-content service. Existing Bun tests cover gameplay, publisher metadata, content
-parsing, editorial conflicts and advertising/consent decisions.
+The Vite development server and `npm run build` use the TypeScript/Vite pipeline,
+generating both `game-shell.html` and `spa-shell.html` through `scripts/prepare-shells.mjs`.
+The production serving image contains Nginx and a Python standard-library read-only
+artifact reader, not Chromium or websocket-client. Gameplay route `/game` serves
+`game-shell.html` (`X-Robots-Tag: noindex, follow; Cache-Control: no-cache`), delivering
+an accessible, truthful initial shell with complete gameplay rules (10 questions,
+3 guesses, 195-country playable catalog per game conventions, questions exhausted does not end game,
+noJS banner, mode guide links, 00:00 UTC reset) without secret targets or user data,
+returning 503 if missing rather than serving a blank SPA fallback. An explicit off-host
+one-shot capture image produces matching immutable publisher HTML; private and admin
+routes retain `spa-shell.html` with an empty `#root` container. Image builds need no backend
+credentials or content service. Bun tests cover gameplay, publisher metadata, content
+parsing, editorial conflicts, shell boundary isolation and advertising/consent decisions.
 
 The interface keeps the atlas-inspired ink, sand and emerald palette, the
 existing serif headings and geographic imagery while using quieter labels,
@@ -90,15 +96,23 @@ and the historic 39 English counties are not part of these games; the City of
 London is not a borough.
 
 The admin overview links mode cards to date- and mode-filtered sessions using
-the URL, so browser navigation restores the selection. Known players are
-identified accounts and guest browsers; sessions include saved zero-move games
-and recovered histories, including those without a known identity.
+the URL, so browser navigation restores the selection. Verified audience sources:
+`server/utils/guest_session.py` (lines 16–58) implements a fixed 48-hour signed
+JWT cookie identity (`guest_identity`) without sliding renewal;
+`ParticipationRepository` (lines 28–68, 117–167) measures active accepted-action
+identities (`questions_asked > 0` or `guesses_made > 0`) and game win rate
+(`winners / games * 100`), not raw page visits, unique daily visitors, or
+completion rates. `GET /admin/overview` aggregates today and a 14-day time series
+of daily active players/games/wins, not cohort retention or user lifecycle tracking.
+Real production traffic, Google Search Console crawl errors, AdSense crawler/WAF
+access logs, and live analytics dashboards are not accessible in the local
+repository environment. Operators must perform precise checks directly in live
+account consoles and server logs rather than expecting local traffic telemetry.
 The cost card is the previous completed UTC day's measured Countrydle Gemini
 planner and fallback usage, not total platform spend; coverage and cost details
 remain available from the dashboard.
 Finished quiz sessions expose their recorded solved coats and client-reported
 active elapsed times; they do not invent wrong guesses or replay timestamps.
-
 County SVG normalization preserves existing viewBoxes and converts absolute
 physical dimensions to CSS pixels when a viewBox must be derived. Corrected
 assets and their source metadata are published together in the atomic
@@ -157,16 +171,34 @@ history are preserved verbatim. New model-generated explanations and clarificati
 are requested in English, although model responses can vary.
 
 The country journal keeps search visible and groups continent, difficulty and
-sorting controls in one disclosure. Articles use the country-name hero, compact
-dark facts cards and the earlier two-curiosity treatment. Facts and curiosities
-precede optional daily statistics and two independently ranked question lists:
-most common overall and most common among recorded winners. Sharing, source
-links and related articles remain available. Rankings display real recorded
-questions, submission counts and YES/NO answer badges; unknown recorded answers
-use a neutral badge. Counts are submissions, not unique players, and percentages
-are not displayed. Empty lists say that recorded data is unavailable; generated
-deduction steps, explanations, pro tips and long summary/analysis panels are not
-used as fallbacks. Stored article content is not rewritten by this presentation.
+sorting controls in one disclosure.
+Articles use the country-name hero card and treat stored editorial Markdown
+as the canonical narrative: when Markdown body is present, no separate summary
+or subtitle lead is rendered in the hero, eliminating repeated introductory
+sentences or paragraphs when historical metadata duplicates the body text.
+When the Markdown body is empty, cleaned summary or subtitle copy serves as the
+visible hero fallback. Fast facts cards precede a neutral "Country context"
+section (replacing the hardcoded "Two things worth knowing" heading to accurately
+accommodate two or three curated curiosities). Facts and curiosities precede optional
+daily statistics and two independently ranked question lists: "Recorded in-game
+questions (all players)" and "Recorded in-game questions (winning runs)", explicitly
+labelled as gameplay match logs from active games on that date rather than verified
+catalog facts, using `Game log: YES/NO` badges. Counts are submissions, not unique
+players, and percentages are not displayed. Empty lists report that recorded log data
+is unavailable.
+Geographic & Deductive Analysis includes dynamic deterministic analysis (`deduction_analysis`)
+computed from the read-only country catalog (`country_facts.sqlite`). Its provenance is stated
+explicitly with a disclaimer that the candidate funnel is an illustrative deduction model based
+on present catalog facts, not a recorded single-player walkthrough or human-reviewed proof.
+Candidate filtering retains unknown or unrecorded relations (continent, subregion, marine/inland
+coastline, borders) at every step rather than silently dropping them. Caspian-littoral states
+are categorized as inland endorheic water rather than marine coastline. Identical candidates
+remain ambiguous without forced unique=1 claims. Playable eligibility reflects 195 countries
+per Countrydle game conventions. For past public recaps, an annotated read-only comparison map
+highlights the past target and matched common misguesses with reference locations, tooltips,
+legend, and fit-to-selected geometry, handling absent geometry honestly without game-store
+mutation; it is never rendered for current or future preview. Stored article content is not
+silently rewritten by this presentation, and review gates remain unchanged without mass regeneration.
 Trivia appears only when a real quiz was recorded; no distractors are invented.
 Public and editor response contracts share `src/blogContent.ts` Zod schemas.
 When `game_debrief` is present, the native API payload must contain both
@@ -613,12 +645,26 @@ AdinPlay recipients or cookie entries until an integration actually exists.
 ### Readable initial HTML and operational readiness
 
 Readable initial HTML covers the homepage, help and policy pages, Explore, all
-nine mode guides, the journal index and published past-day recaps. Responses
-contain route-specific titles, descriptions, production canonical URLs and
-structured data. Capture suppresses authentication, guest synchronization,
-advertising, CMP and analytics; it omits decorative globe interaction and states
-the reset time as 00:00 UTC. Browser gameplay and globe interaction are unchanged.
+nine mode guides, the journal index, published past-day recaps, and the initial
+gameplay shell for `/game`. Responses contain route-specific titles, descriptions,
+production canonical URLs and structured data. Capture suppresses authentication,
+guest synchronization, advertising, CMP and analytics; it omits decorative globe
+interaction and states the reset time as 00:00 UTC. Browser gameplay and globe
+interaction are unchanged.
 
+The build process (`client/scripts/prepare-shells.mjs`) parses built `index.html` via
+bounded comment markers (`<!-- GAME_SHELL_START -->` / `<!-- GAME_SHELL_END -->`
+and head styles) to generate `game-shell.html` and `spa-shell.html`.
+`game-shell.html` delivers an accessible, responsive initial shell for `/game`
+containing complete gameplay rules (10 questions, 3 guesses, 195-country playable
+catalog per game conventions, questions exhausted does not end game if guesses
+remain), noJS banner, mode guide links, and 00:00 UTC reset notice without leaking
+secret targets or user data. Nginx (`client/nginx.conf`) and the Python runtime
+(`client/scripts/publisher-runtime.py`) serve `/game` via `try_files /game-shell.html =503;`
+with `X-Robots-Tag: noindex, follow; Cache-Control: no-cache`. If missing, it returns
+503, never falling back to an empty SPA. `spa-shell.html` contains an empty `<div id="root"></div>`
+with zero game markup residue, serving private and admin routes with `X-Robots-Tag: noindex, follow`.
+React 19 `createRoot` cleanly mounts over and replaces the initial static content in the `#root` container.
 Serving and capture are separate. The serving container runs Nginx plus the
 stdlib-only reader on `127.0.0.1:8765`, with the snapshot host directory mounted
 read-only. It never launches Chrome or captures on production startup. The
@@ -752,6 +798,9 @@ explicit revocation clears reviewer attribution and advertising eligibility.
 Review requires a substantive sourced past-day article and deliberate
 confirmation after personally checking the claims. These are internal safety
 checks, not a claimed Google word-count threshold or approval.
+There is no automated bulk-fix or mass regeneration of production articles:
+each article requires deliberate administrative review and verification before
+becoming publicly visible or advertising-eligible.
 
 The server records the signed-in reviewer's public username and UTC review time.
 Both PATCH saves and reviews require `expected_updated_at`: send the exact raw
@@ -774,7 +823,11 @@ Real `updated_at` remains available in metadata and the admin workflow.
 Quiz nonblank validation uses the client's display-whitespace set: U+FEFF-only
 fields cannot be saved or approved from historical storage. Heading annotations
 retain their whole qualified section, including repeated facts; ordinary
-unannotated duplicate claims are still removed.
+unannotated duplicate claims are still removed. Generated fallback drafts
+avoid geographic contradictions (such as asserting coastal access along landlocked
+territory). Dynamic deductive analysis retains unknown and unrecorded relations
+across all filtering criteria rather than silently discarding them; identical
+candidates stay ambiguous without forced unique=1 claims.
 Public recaps display recorded source links, article Markdown, editorial notes,
 AI assistance and actual review attribution. Publication requires both reviewer
 attribution and a review timestamp for a past UTC puzzle date; draft records
@@ -831,6 +884,21 @@ message. Repository code does not publish a CMP message, validate account
 eligibility, submit review or guarantee approval. The private rejection details,
 real inventory and account settings must be checked by the operator.
 
+Operational checks required before requesting review:
+1. Google Search Console: Verify URL Inspection and index coverage for `/game`,
+   `/explore`, mode guides, and reviewed journal articles; verify no unexpected 404/503 crawl errors.
+2. Google AdSense Policy Center & Crawlers: Inspect server access logs for Mediapartners-Google
+   and Googlebot to ensure 200 responses on substantive public articles, verify no crawler
+   blocks in WAF/reverse proxy, and ensure `https://countrydle.online/ads.txt` is served
+   with authorized publisher ID `ca-pub-3937273134876300`.
+3. CMP Consent & Message: Verify live European regulations message behavior (acceptance, refusal,
+   and revocation via footer Privacy settings) from a verified EEA IP.
+4. Telemetry and Analytics: Real production traffic, Google Search Console data, AdSense crawler /
+   WAF logs, and analytics dashboards are not accessible in the local repository environment.
+   Do not fabricate claims of nonexistent traffic growth or phantom log verification. Account
+   owners must inspect live Google Search Console, Google AdSense Policy Center, and server access
+   logs directly.
+
 ### Verification evidence and remaining limits
 
 The initial integration's offline backend run passed **11,363 tests**, with
@@ -845,66 +913,64 @@ compilation passed. These are local checks, not evidence of GitHub Action runs.
 Full-repository lint still reports 80 errors and 14 warnings in inherited code;
 it is not a fully green repository-wide lint gate.
 
-The four follow-up review corrections passed 116 focused backend tests, 152
-frontend tests, changed-file lint and paired Node 20 production image builds.
-Actual native HTTP rejected display-blank fields with PATCH 422 and historical
-review 400 for all four quiz fields; a meaningful repair and deliberate review
-returned 200. Native Chromium observed the ten-second privacy failure with zero
-subscriptions/ad requests, then eleven-second readiness established one
-subscription and one authorized fixture ad request without retry or reopening
-the expired dialog. The visible error cleared. A 390-pixel article retained its
-warning-bearing population heading beside the repeated claim without overflow.
-The exact migrated development frontend/worker configuration, against an
-isolated native API, captured 20 routes with no unavailable routes; checked
-home/help/policy/Explore/journal/health responses were 200. An unchanged capture
-reused its release, and the serving snapshot mount was read-only with no Chromium.
-These disposable CMP/SDK fixtures make no real Google requests or impressions.
+The content-quality and AdSense remediation suite verified the following durable behaviors:
+1. **Deterministic Backend Regressions (`pytest server/tests/test_recap_deduction.py server/tests/test_blog.py`)**:
+   - 195-playable country eligibility (excluding non-playable catalog entries).
+   - Monotonic candidate funnel narrowing using present catalog relations from `country_facts.sqlite`.
+   - Caspian Sea categorized as inland endorheic water rather than marine open sea.
+   - Retention of unknown/unrecorded relations (continents, subregions, marine status, borders)
+     at every filter step rather than silently dropping candidate countries.
+   - Wrong-guess comparison generation with shared traits, distinctions, and attribute tables.
+   - Explicit error propagation on malformed catalog schemas without silent suppression.
+   - Date privacy boundaries: current/future preview suppresses deduction analysis; past-day recaps expose it.
+2. **Client Components & Shell Isolation (`bun test client/tests/blogDeductionRecap.test.tsx client/tests/gameCrawlAccessibility.test.ts client/tests/blogArticlePreview.test.tsx`)**:
+   - Single canonical narrative: stored editorial Markdown renders without intro duplication
+     (when Markdown body is present, hero renders no separate summary or subtitle lead, yielding
+     a visible sentence count of 1 for Namibia-shaped data; summary/subtitle acts as hero lead fallback
+     only when body Markdown is empty).
+   - Neutral "Country context" curiosities heading replacing the hardcoded two-curiosity title.
+   - Match log provenance: "Recorded in-game questions (all players)" and "Recorded in-game questions
+     (winning runs)" with explicit disclaimer and `Game log: YES/NO` badges.
+   - Bounded shell extraction: `client/scripts/prepare-shells.mjs` cleanly partitions built output
+     into `game-shell.html` (accessible initial shell with complete rules: 10 questions, 3 guesses,
+     195-country playable catalog, questions exhausted does not end game if guesses remain, noJS banner,
+     mode guide links, 00:00 UTC reset) and `spa-shell.html` (bare `<div id="root"></div>`, zero leaked
+     game markup or shell tags).
+   - Crawler readiness: `robots.txt` and `index.html` robot access declarations for `Mediapartners-Google`
+     and `Googlebot`.
+3. **Isolated Runtime & Browser Scenario Verification**:
+   - Real isolated recap API (`GET /blog/{slug}`) → `BlogPostPage` rendered in real browser viewports
+     at desktop (1280×800) and mobile (375×667).
+   - Observed one canonical editorial narrative; no separate lead when body exists, curiosity count, gameplay log badges, candidate funnel
+     narrowing, target vs common wrong-guess comparison table, and read-only `RecapComparisonMap`
+     annotating target and matched common misguesses with reference locations, tooltips built with DOM
+     `textContent`, legend, fit-to-selected geometry, visible error/retry state on map loading failures,
+     absent target warning, keying by article slug to prevent stale tooltips across navigation, and Esri
+     tile attribution, without game-store mutation.
+   - Initial game shell GET `/game` returning `game-shell.html`: verified truthful rules (10 questions,
+     3 guesses, 195-country playable catalog, questions exhausted does not end game), noJS banner,
+     mode guide links, 00:00 UTC reset, zero secret targets or user data, and React 19 `createRoot`
+     cleanly mounting over and replacing `#root`.
+   - Advertising exclusion: verified zero ad units or ad SDK tags on `/game` and private/admin routes.
+   - Educational content corrections verified: `ExplorePage.tsx` Powiatdle 66/314 split (yes eliminates
+     314 = 82.6%; no eliminates 66 = 17.4%), removed unsupported global landmass fractions/averages;
+     `ModeGuidePage.tsx` Asia 8,000m peaks (Himalayas and Karakoram), Africa coastal access (separates
+     16 inland nations from 38 coastal states), Brazil borders (9 of 11 South American sovereign nations
+     plus France via French Guiana), and US Statedle river boundaries (divide, not bisect).
+   - ExplorePage and mode guides (including continental modes, US Statedle, and Powiatdle) browsed
+     at 1280×800 desktop and 375×667 mobile with zero horizontal overflow or runtime console errors.
 
-Actual owned FastAPI/PostgreSQL/HTTP checks exercised source CAS and null
-creation reads. Independent Chromium editor tabs exercised save 200/409 with
-all ten draft fields retained, reload cancellation, explicit reload/fresh save,
-and stale/fresh review 409/200. Native Chromium with disposable intercepted
-SDK/CMP fixtures exercised a four-field successful `gdprApplies=false` response,
-same-document hash Back preserving the unit, fragment revocation crossing a
-document boundary with no SDK in the denied new document, and a visible
-pre-mount privacy failure with failed/successful retry. These fixtures make no
-Google requests or real impressions and do not verify real account consent.
+### Operational limitations and required deployment steps
 
-Actual UID-1000 capture produced 22 readable initial-HTML routes; standalone
-reader/Nginx served all 22 with 200. Checks covered partial-quiz notice/raw
-preservation, honest null-creation metadata, known-to-null SPA metadata removal,
-unknown/private 404, date-alias 308, API and sitemap 200. Real strict-key SSH/rsync
-promotion and identical-artifact retry succeeded, including execution of the
-validator inside the serving container. Actual Docker DNS `127.0.0.11` carried
-API traffic; an injected `10.89.3.1` plus IPv6 nameserver configuration generated
-valid Nginx resolver syntax. This does **not** verify an actual Podman engine.
-
-Real wrong-bundle publication was rejected by the deployed container's validator;
-an interrupted native rsync transfer left the prior current release unchanged.
-Restarting serving still delivered the complete valid artifact. Malformed mandatory
-article content returned 503 only for that article; home, help, the journal and
-other articles remained 200. Deletion returned 404 before recapture. An authoritative
-empty journal delivered useful initial HTML, noindex and no ads. During an actual
-API outage, dynamic pages returned 503 after the configured metadata freshness
-deadline while static pages and health remained 200; publishing retained 17 static
-routes, then recovery restored all 22. Real SSH retirement retained current plus
-two compatible archives. Killing either reader or Nginx exited the paired container
-with status 1, and both restart checks recovered HTTP 200. Native 390-pixel mobile
-and 1440-pixel desktop home checks preserved navigation/globe controls without
-horizontal overflow; the mobile quiz repair disclosure retained its raw evidence.
-
-The serving image measured 106,937,330 bytes, contained no Chrome/websocket
-dependency, used a read-only artifact mount and observed 46.62 MiB idle memory.
-The capture image measured 864,971,144 bytes; observed capture memory was
-325.2 MiB at a sample, **not a measured peak**. A 22-route first capture took
-35.26 seconds, four changed routes 10.14 seconds and unchanged metadata/UUID
-reuse 1.29 seconds without Chrome. These local observations are not production
-measurements or capacity guarantees.
-
-Earlier main-branch 1.26.0 mobile/design evidence elsewhere in this README is
-historical and separate from this integration. Actual Podman execution,
-production deployment, physical devices, live provider credentials, real Google
-account/CMP flow and Google's review decision are not verified.
+- **Local Fixtures Only**: Synthetic local telemetry fixtures were used for the local smoke test and
+  are never represented as production evidence or real player traffic.
+- **AdSense & CMP Mocking**: Disposable CMP/SDK fixtures make no real Google network calls or ad impressions.
+- **Unavailable Production Data**: Real production traffic, Google Search Console data, AdSense crawler /
+  WAF access logs, and live analytics dashboards are not accessible in the local repository environment.
+  No claims of nonexistent traffic growth or phantom log verification are made.
+- **Deployment Prerequisites**: Live Google credentials, Google account CMP approval, and human editorial
+  review cannot be validated locally. Deploy, manual editorial review of historical articles, and AdSense
+  account setup are still required before launch.
 No push, merge or deployment authorization is implied. Operators must configure
 the workflow and host prerequisites, curate historical recaps and inspect the
 real production surface before requesting review; repository checks cannot

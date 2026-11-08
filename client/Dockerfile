@@ -21,7 +21,7 @@ ENV VITE_GOOGLE_ADSENSE_ID=$VITE_GOOGLE_ADSENSE_ID
 ENV VITE_ADSENSE_ENABLED=$VITE_ADSENSE_ENABLED
 ENV VITE_ADSENSE_SLOTS=$VITE_ADSENSE_SLOTS
 
-RUN npm run build && cp dist/index.html dist/spa-shell.html
+RUN npm run build
 
 # Explicit worker target: never part of the default serving image or its startup.
 # Build this target with the same VITE_* arguments as the deployed frontend.

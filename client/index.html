@@ -30,9 +30,138 @@
     <meta name="twitter:title" content="Countrydle - Daily Geography Deduction Game" />
     <meta name="twitter:description" content="Test your geography skills with Countrydle! Ask yes/no questions and use deductive reasoning to find the daily secret location." />
 
+    <!-- GAME_SHELL_STYLES_START -->
+    <style>
+      #game-shell { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #09090b; color: #f4f4f5; min-height: 100vh; padding: 0; margin: 0; box-sizing: border-box; width: 100%; max-width: 100%; overflow-x: hidden; }
+      #game-shell * { box-sizing: border-box; max-width: 100%; }
+      .shell-nav-container { max-width: 56rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; gap: 0.5rem; }
+      .shell-brand { font-weight: 700; font-size: 1.25rem; color: #f4f4f5; text-decoration: none; }
+      .shell-nav-links { display: flex; gap: 1rem; font-size: 0.875rem; flex-wrap: wrap; }
+      .shell-nav-links a { color: #a1a1aa; text-decoration: none; }
+      .shell-nav-links a:hover { color: #34d399; }
+      .shell-main { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1rem; }
+      .shell-headline-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.25rem; }
+      .shell-badge { display: inline-block; background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.6rem; border-radius: 0.25rem; }
+      .shell-headline-row h1 { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0 0; color: #f4f4f5; line-height: 1.3; }
+      .shell-reset-box { border: 1px solid rgba(255,255,255,0.15); background: #18181b; padding: 0.35rem 0.65rem; border-radius: 0.25rem; font-size: 0.75rem; font-family: monospace; color: #a1a1aa; white-space: nowrap; }
+      .shell-reset-time { font-weight: 600; color: #34d399; }
+      .shell-panel { background: rgba(24,24,27,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.25rem; }
+      .shell-status-panel { background: rgba(6,78,59,0.2); border-color: rgba(16,185,129,0.3); }
+      .shell-status-panel h2 { color: #6ee7b7; margin-top: 0; font-size: 1rem; }
+      .shell-panel h2 { font-size: 1.05rem; font-weight: 600; margin-top: 0; margin-bottom: 0.5rem; }
+      .shell-panel p, .shell-panel li { color: #d4d4d8; font-size: 0.875rem; line-height: 1.5; }
+      .shell-noscript-banner { margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(120,53,15,0.3); border: 1px solid rgba(245,158,11,0.3); border-radius: 0.25rem; color: #fde68a; font-size: 0.75rem; }
+      .shell-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+      .shell-card { background: rgba(24,24,27,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 0.375rem; padding: 0.75rem; }
+      .shell-card-label { font-size: 0.7rem; font-family: monospace; text-transform: uppercase; color: #a1a1aa; }
+      .shell-card-value { font-size: 1.25rem; font-weight: 700; color: #f4f4f5; margin: 0.2rem 0; }
+      .shell-card-value.accent { color: #34d399; }
+      .shell-card p { font-size: 0.75rem; color: #a1a1aa; margin: 0; }
+      .shell-guide-links { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem; }
+      .guide-link { color: #34d399; font-weight: 600; text-decoration: none; }
+      .guide-link:hover { text-decoration: underline; }
+      .guide-secondary-link { color: #a1a1aa; text-decoration: none; }
+      .guide-secondary-link:hover { color: #f4f4f5; text-decoration: underline; }
+      .shell-footer { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; font-size: 0.75rem; color: #71717a; line-height: 1.5; }
+      .shell-footer a { color: #34d399; text-decoration: none; }
+      .shell-footer a:hover { text-decoration: underline; }
+    </style>
+    <!-- GAME_SHELL_STYLES_END -->
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!-- GAME_SHELL_START -->
+      <div id="game-shell" class="game-initial-shell">
+        <header class="game-shell-header">
+          <div class="shell-nav-container">
+            <a href="/" class="shell-brand">Countrydle</a>
+            <nav aria-label="Game navigation" class="shell-nav-links">
+              <a href="/explore/modes/countrydle">Mode Guide</a>
+              <a href="/how-it-works">How It Works</a>
+              <a href="/faq">FAQ</a>
+              <a href="/explore">All Modes</a>
+            </nav>
+          </div>
+        </header>
+
+        <section role="main" class="shell-main">
+          <div class="shell-headline-row">
+            <div>
+              <span class="shell-badge">Daily Geography Puzzle</span>
+              <h1>Play Countrydle — Daily Country Deduction</h1>
+            </div>
+            <div class="shell-reset-box">
+              Daily Reset: <span class="shell-reset-time">00:00 UTC</span>
+            </div>
+          </div>
+
+          <section aria-label="Interactive Playable App Status" class="shell-panel shell-status-panel">
+            <h2>Interactive Playable Map &amp; Deduction Console</h2>
+            <p>
+              Countrydle’s interactive map canvas, live yes/no question deduction engine, and distance feedback are loading. When JavaScript is enabled, the playable fieldwork console initializes directly in this view.
+            </p>
+            <noscript>
+              <div class="shell-noscript-banner">
+                <strong>JavaScript Notice:</strong> Interactive map selection, real-time question verification, and guess submissions require JavaScript. The complete rules, limits, educational deduction guidance, and reset schedule remain fully readable below.
+              </div>
+            </noscript>
+          </section>
+
+          <section aria-label="Game Purpose and How to Play" class="shell-panel">
+            <h2>Game Purpose &amp; Gameplay Rules</h2>
+            <p>
+              Countrydle is a daily geography deduction puzzle inspired by 20 Questions and Wordle. Each day at <strong>00:00 UTC</strong>, a new mystery country is selected from Countrydle's playable catalog following standard game conventions. Your goal is to deduce the mystery country using yes/no questions and strategic guesses.
+            </p>
+          </section>
+
+          <section aria-label="Game Limits and Budgets" class="shell-panel">
+            <h2>Daily Rules &amp; Limits</h2>
+            <div class="shell-grid">
+              <div class="shell-card">
+                <div class="shell-card-label">Question Allowance</div>
+                <div class="shell-card-value">10 Questions</div>
+                <p>Ask up to 10 natural-language yes/no questions. Running out of questions does not end the game if guesses remain.</p>
+              </div>
+              <div class="shell-card">
+                <div class="shell-card-label">Guess Allowance</div>
+                <div class="shell-card-value accent">3 Guesses</div>
+                <p>Submit up to 3 country guesses. Incorrect guesses reveal distance and directional bearing to the secret country.</p>
+              </div>
+              <div class="shell-card">
+                <div class="shell-card-label">Country Catalog</div>
+                <div class="shell-card-value">195 Countries</div>
+                <p>Standard playable country pool per Countrydle's game conventions (see mode guide).</p>
+              </div>
+            </div>
+          </section>
+
+          <section aria-label="Deduction Strategy" class="shell-panel">
+            <h2>Deduction Strategy &amp; Detailed Guide</h2>
+            <p>
+              Effective deduction starts with broad geographic partitions before narrowing down to specific subregions:
+            </p>
+            <ul>
+              <li><strong>Hemisphere &amp; Continent:</strong> Ask whether the country is in the Northern Hemisphere or within a specific continent.</li>
+              <li><strong>Coastlines &amp; Water:</strong> Determine whether the country is landlocked, island-bound, or adjacent to major oceans or seas.</li>
+              <li><strong>Borders &amp; Neighbors:</strong> Check whether the target shares a land boundary with pivotal regional neighbors.</li>
+            </ul>
+            <div class="shell-guide-links">
+              <a href="/explore/modes/countrydle" class="guide-link">
+                World Countries Deduction Guide &rarr;
+              </a>
+              <a href="/how-it-works" class="guide-secondary-link">
+                How Question Verification Works &rarr;
+              </a>
+            </div>
+          </section>
+
+          <footer class="shell-footer">
+            <p>
+              Puzzles reset daily at 00:00 UTC. To learn more about deduction strategies, visit the <a href="/explore/modes/countrydle">mode guide</a>, browse available game modes in the <a href="/explore">Explore directory</a>, or learn how question scoring works in <a href="/how-it-works">How It Works</a>.
+            </p>
+          </footer>
+        </section>
+      </div>
+    <!-- GAME_SHELL_END --></div>
 
     <noscript><p>JavaScript is required to play Countrydle’s interactive geography puzzles.</p></noscript>
 

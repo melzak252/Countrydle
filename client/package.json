@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prepare-shells.mjs",
     "publisher:build": "python3 scripts/prerender.py",
     "lint": "eslint .",
     "preview": "vite preview"

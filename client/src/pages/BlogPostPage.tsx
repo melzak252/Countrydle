@@ -18,6 +18,7 @@ import { isAxiosError } from 'axios';
 import { setPageEditorialEligibility } from '../advertising';
 import { usePageMetadata } from '../lib/pageMetadata';
 import { blogPostSchema, cleanDisplayText, safeSourceUrl, type BlogPost } from '../blogContent';
+import RecapComparisonMap from '../components/RecapComparisonMap';
 
 
 function formatBlogDate(dateStr: string): string {
@@ -169,19 +170,24 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
   const curiosities = post.fun_facts || [];
   const sourceLinks = post.source_links.map((source) => ({ ...source, safeUrl: safeSourceUrl(source.url) }));
   const facts = post.fast_facts || {};
+  const hasMarkdownBody = Boolean(post.content_markdown && post.content_markdown.trim());
+  const heroLead = hasMarkdownBody
+    ? ''
+    : (cleanDisplayText(post.summary) || cleanDisplayText(post.subtitle));
   const questionLists = [
     {
-      title: 'Most common questions overall',
+      title: 'Recorded in-game questions (all players)',
+      description: `Player questions and automated feedback logged during active matches on ${formatBlogDate(post.date)}. In-game responses reflect match logs, not verified catalog facts.`,
       questions: post.game_debrief?.top_questions ?? [],
-      empty: 'No recorded questions are available for this daily puzzle.',
+      empty: 'No recorded questions in gameplay logs for this daily puzzle.',
     },
     {
-      title: 'Most common questions asked by winners',
+      title: 'Recorded in-game questions (winning runs)',
+      description: `Player questions asked by solvers who completed the puzzle on ${formatBlogDate(post.date)}.`,
       questions: post.game_debrief?.top_winner_questions ?? [],
-      empty: 'No recorded questions linked to winners are available for this daily puzzle.',
+      empty: 'No recorded questions linked to winners in gameplay logs for this daily puzzle.',
     },
   ];
-
   return (
     <article data-publisher-ready={preview ? undefined : 'true'} className="mx-auto min-w-0 max-w-4xl space-y-6 py-4 [overflow-wrap:anywhere] md:space-y-10 md:py-10">
       {/* Navigation & Header */}
@@ -250,15 +256,9 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
               {post.title}
             </h1>
 
-            {post.subtitle && (
-              <p className="max-w-xl break-words text-sm leading-6 text-zinc-400 md:text-base">
-                {post.subtitle}
-              </p>
-            )}
-
-            {cleanDisplayText(post.summary) && cleanDisplayText(post.summary) !== cleanDisplayText(post.subtitle) && (
+            {heroLead && (
               <p className="max-w-2xl break-words text-sm leading-relaxed text-zinc-300 md:text-base">
-                {cleanDisplayText(post.summary)}
+                {heroLead}
               </p>
             )}
 
@@ -336,7 +336,9 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
           <span>{'Geographic & Deductive Analysis'}</span>
         </h2>
 
-        <MarkdownRenderer content={post.content_markdown} />
+        {post.content_markdown && post.content_markdown.trim() && (
+          <MarkdownRenderer content={post.content_markdown} />
+        )}
 
         {post.deduction_masterclass?.steps && post.deduction_masterclass.steps.length > 0 && (
           <div className="space-y-3 pt-2">
@@ -404,6 +406,160 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
             </p>
           </div>
         )}
+
+        {post.deduction_analysis?.has_analysis && (
+          <div className="space-y-6 pt-4 border-t border-white/10">
+            {/* Catalog Provenance & Non-Single-Player Walkthrough Disclaimer */}
+            <div className="rounded-md border border-white/10 bg-obsidian-950 p-3 sm:p-4 text-xs space-y-1.5">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-emerald-300 flex items-center gap-1.5">
+                  <Globe size={14} className="shrink-0 text-emerald-400" />
+                  {'Deterministic Catalog Deduction Analysis'}
+                </span>
+                <span className="font-mono text-[11px] text-zinc-500 break-words">
+                  {post.deduction_analysis.catalog_provenance}
+                </span>
+              </div>
+              <p className="leading-5 text-zinc-400">
+                {post.deduction_analysis.disclaimer}
+              </p>
+            </div>
+
+            {/* Candidate Funnel */}
+            {post.deduction_analysis.candidate_funnel.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-base font-semibold text-sand-100">
+                  {'Illustrative Candidate Funnel'}
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  {'How candidate country pools narrow using verifiable geographic attributes in our present catalog:'}
+                </p>
+                <ol className="space-y-2">
+                  {post.deduction_analysis.candidate_funnel.map((step, idx) => (
+                    <li
+                      key={idx}
+                      className="flex min-w-0 items-start gap-3 rounded-md border border-white/10 bg-obsidian-950 p-3"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 font-mono text-xs font-bold text-emerald-300"
+                      >
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-sand-100 break-words">
+                            {step.criterion}
+                          </span>
+                          <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs font-bold text-emerald-300">
+                            {step.remaining_count} {step.remaining_count === 1 ? 'candidate' : 'candidates'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-400 break-words">{step.explanation}</p>
+                        {step.sample_candidates.length > 0 && step.remaining_count > 1 && (
+                          <p className="text-[11px] text-zinc-500 font-mono break-words">
+                            {'Sample pool: '}
+                            {step.sample_candidates.join(', ')}
+                            {step.remaining_count > step.sample_candidates.length ? '…' : ''}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Catalog Comparison: Target vs Common Misguesses */}
+            {post.deduction_analysis.wrong_guess_comparisons.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h3 className="text-base font-semibold text-sand-100">
+                  {'Catalog Comparison: Target vs. Common Misguesses'}
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  {`Comparing catalog facts between ${post.country_name} and recorded common incorrect guesses:`}
+                </p>
+                {!preview && (
+                  <RecapComparisonMap
+                    key={`recap-map-${post.slug || post.date}`}
+                    targetName={post.country_name}
+                    wrongGuesses={post.deduction_analysis.wrong_guess_comparisons}
+                  />
+                )}
+                <div className="space-y-3">
+                  {post.deduction_analysis.wrong_guess_comparisons.map((cmp, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-white/10 bg-obsidian-950 p-4 space-y-3"
+                    >
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+                        <span className="text-sm font-semibold text-rose-300 break-words">
+                          ❌ {cmp.guess}
+                        </span>
+                        <span className="text-xs text-zinc-400">
+                          {cmp.count} {cmp.count === 1 ? 'recorded guess' : 'recorded guesses'}
+                        </span>
+                      </div>
+
+                      {cmp.shared_traits.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">
+                            {'Shared traits'}
+                          </span>
+                          <ul className="text-xs text-zinc-300 space-y-0.5 list-disc list-inside">
+                            {cmp.shared_traits.map((t, tIdx) => (
+                              <li key={tIdx} className="break-words">{t}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {cmp.differences.length > 0 && cmp.differences.some((d) => d.includes('unknown') || d.includes('not found')) && (
+                        <div className="space-y-1">
+                          <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider block">
+                            {'Catalog notes'}
+                          </span>
+                          <ul className="text-xs text-zinc-300 space-y-0.5 list-disc list-inside">
+                            {cmp.differences.map((d, dIdx) => (
+                              <li key={dIdx} className="break-words">{d}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {cmp.target_facts && cmp.guess_facts && (
+                        <div className="overflow-x-auto pt-1">
+                          <table className="w-full text-left text-xs border border-white/10">
+                            <thead>
+                              <tr className="border-b border-white/10 bg-white/[0.03]">
+                                <th className="p-2 text-zinc-400 font-normal">{'Catalog Attribute'}</th>
+                                <th className="p-2 text-emerald-300 font-semibold">{post.country_name}</th>
+                                <th className="p-2 text-rose-300 font-semibold">{cmp.guess}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 text-zinc-300">
+                              {['Capital', 'Continent', 'Region', 'Coastline', 'Borders'].map((attr) => {
+                                const key = attr.toLowerCase();
+                                const tVal = cmp.target_facts[key] || 'N/A';
+                                const gVal = cmp.guess_facts[key] || 'N/A';
+                                return (
+                                  <tr key={attr}>
+                                    <td className="p-2 text-zinc-500 font-mono text-[11px]">{attr}</td>
+                                    <td className="p-2 break-words">{tVal}</td>
+                                    <td className="p-2 break-words">{gVal}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Country Curiosities */}
@@ -411,7 +567,7 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
         <section className="space-y-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-amber-300">
             <Sparkles size={18} className="shrink-0" />
-            <span>{'Two things worth knowing'}</span>
+            <span>{'Country context'}</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {curiosities.map((c, i) => (
@@ -468,10 +624,13 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
             )}
           </div>
           {questionLists.map((list) => (
-            <section key={list.title} className="min-w-0 space-y-3">
+            <section key={list.title} className="min-w-0 space-y-2">
               <h2 className="text-lg font-semibold leading-snug text-sand-100">{list.title}</h2>
+              {list.description && (
+                <p className="text-xs text-zinc-400">{list.description}</p>
+              )}
               {list.questions.length > 0 ? (
-                <ol className="space-y-3">
+                <ol className="space-y-3 pt-1">
                   {list.questions.map((record, index) => {
                     const answer = record.answer.trim().toUpperCase();
                     const isYes = answer === 'YES';
@@ -483,12 +642,16 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
                           <span className="min-w-0 break-words text-sm font-semibold leading-6 text-sand-100">{record.question}</span>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-zinc-400">{'Asked'} {record.count}×</span>
-                            <span className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${
-                              isYes ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300' :
-                              isNo ? 'border-rose-500/30 bg-rose-500/20 text-rose-300' :
-                              'border-white/15 bg-white/5 text-zinc-400'
-                            }`}>
-                              {record.answer || 'Answer not recorded'}
+                            <span
+                              className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${
+                                isYes ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300' :
+                                isNo ? 'border-rose-500/30 bg-rose-500/20 text-rose-300' :
+                                'border-white/15 bg-white/5 text-zinc-400'
+                              }`}
+                              title="In-game match response from gameplay logs, not verified catalog facts"
+                            >
+                              <span className="text-[9px] font-normal opacity-75 mr-1">Game log:</span>
+                              {record.answer || 'Not recorded'}
                             </span>
                           </div>
                         </div>

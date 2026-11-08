@@ -16,6 +16,7 @@ from pydantic import ValidationError
 from users.utils import get_admin_user
 from sqlalchemy import func, desc, select, and_, or_
 from utils.blog_generator import create_daily_blog_post
+from blog.deduction import get_deduction_analysis
 from utils.country_codes import get_country_code
 from functools import lru_cache
 from pathlib import Path
@@ -240,6 +241,17 @@ async def _post_display(
     stats = await BlogRepository(session).get_day_player_stats(post.date)
     reviewed = post.editorial_status == "reviewed"
     past_day = post.date < datetime.now(timezone.utc).date()
+    debrief = (
+        await get_day_community_telemetry(session, post.date)
+        if past_day else CommunityGameDebrief(has_telemetry=False)
+    )
+    country_name = post.country.name if post.country else "Unknown"
+    analysis = get_deduction_analysis(
+        None,
+        country_name,
+        debrief.common_pitfalls if debrief else [],
+        is_past_day=past_day,
+    )
     return BlogPostDisplay(
         **_post_summary(post, stats).model_dump(),
         country_id=post.country_id,
@@ -249,10 +261,8 @@ async def _post_display(
         content_markdown=post.content_markdown,
         country=post.country,
         player_stats=stats,
-        game_debrief=(
-            await get_day_community_telemetry(session, post.date)
-            if past_day else CommunityGameDebrief(has_telemetry=False)
-        ),
+        game_debrief=debrief,
+        deduction_analysis=analysis,
         related_posts=related_posts,
         source_links=post.source_links,
         editorial_note=post.editorial_note,
@@ -260,7 +270,6 @@ async def _post_display(
         reviewer_name=post.reviewer.username if reviewed else None,
         ai_assisted=post.ai_assisted,
     )
-
 
 async def _list_posts(
     session: AsyncSession, page: int, limit: int, search: Optional[str],

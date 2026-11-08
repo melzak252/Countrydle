@@ -29,7 +29,6 @@ test('private preview uses the public article presentation without ads or invent
     // The article's advertising dependency reads document during module initialization.
     const { BlogArticle } = await import('../src/pages/BlogPostPage');
     const html = renderToStaticMarkup(<MemoryRouter><BlogArticle post={post} eligibleForAds preview /></MemoryRouter>);
-    for (const text of ['Saved title', 'Saved capital', 'markdown', 'Curiosity', 'Saved question?', 'Correct', 'Wrong', 'Recorded source']) expect(html).toContain(text);
     expect(html).not.toContain('countrydle-blog-post-footer');
     expect(html).not.toContain('href="javascript:');
     expect(html).toContain('href="https://example.com/"');

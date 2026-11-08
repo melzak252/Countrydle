@@ -424,7 +424,7 @@ class PublisherHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET()
 
-    def respond(self, status, payload, content_type="text/html; charset=utf-8"):
+    def respond(self, status, payload, content_type="text/html; charset=utf-8", headers=None):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(payload)))
@@ -432,6 +432,9 @@ class PublisherHandler(http.server.BaseHTTPRequestHandler):
         if status == 503:
             self.send_header("X-Robots-Tag", "noindex, nofollow")
             self.send_header("Retry-After", "60")
+        if headers:
+            for key, value in headers.items():
+                self.send_header(key, value)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(payload)
@@ -502,7 +505,7 @@ class PublisherHandler(http.server.BaseHTTPRequestHandler):
                 if not candidate.is_relative_to(state.assets) or any(part.startswith(".") for part in candidate.relative_to(state.assets).parts):
                     self.respond(404, b"Not found", "text/plain")
                     return
-                if candidate.is_file() and candidate.name not in ("index.html", "spa-shell.html"):
+                if candidate.is_file() and candidate.name not in ("index.html", "spa-shell.html", "game-shell.html"):
                     try:
                         payload = candidate.read_bytes()
                     except OSError:
@@ -512,12 +515,26 @@ class PublisherHandler(http.server.BaseHTTPRequestHandler):
                 elif path.startswith("/api/") or candidate.suffix or path.startswith("/explore/"):
                     self.respond(404, b"Not found", "text/plain")
                     return
+                elif route == "/game":
+                    target_shell = state.assets / "game-shell.html"
+                    if not target_shell.is_file():
+                        self.respond(503, UNAVAILABLE)
+                        return
+                    try:
+                        payload = target_shell.read_bytes()
+                    except OSError:
+                        self.respond(503, UNAVAILABLE)
+                        return
+                    self.respond(200, payload, content_type, headers={"X-Robots-Tag": "noindex, follow"})
+                    return
                 else:
                     try:
                         payload = (state.assets / "spa-shell.html").read_bytes()
                     except OSError:
                         self.respond(503, UNAVAILABLE)
                         return
+                    self.respond(200, payload, content_type)
+                    return
         self.respond(200, payload, content_type)
 
 

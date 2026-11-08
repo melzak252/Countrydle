@@ -200,6 +200,33 @@ class WrongGuessStat(BaseModel):
     guess: str
     count: int
 
+class CandidateFunnelStep(BaseModel):
+    criterion: str
+    explanation: str
+    remaining_count: int
+    sample_candidates: List[str] = Field(default_factory=list)
+
+
+class WrongGuessComparison(BaseModel):
+    guess: str
+    count: int
+    shared_traits: List[str] = Field(default_factory=list)
+    differences: List[str] = Field(default_factory=list)
+    guess_facts: Dict[str, Optional[str]] = Field(default_factory=dict)
+    target_facts: Dict[str, Optional[str]] = Field(default_factory=dict)
+
+
+class DeductionAnalysis(BaseModel):
+    has_analysis: bool = False
+    catalog_provenance: str = "Countrydle playable country catalog (country_facts.sqlite)"
+    disclaimer: str = (
+        "Illustrative deduction model based on present catalog facts; "
+        "this is not a recorded single-player walkthrough."
+    )
+    candidate_funnel: List[CandidateFunnelStep] = Field(default_factory=list)
+    wrong_guess_comparisons: List[WrongGuessComparison] = Field(default_factory=list)
+
+
 
 class CommunityGameDebrief(BaseModel):
     has_telemetry: bool = False
@@ -224,6 +251,7 @@ class BlogPostDisplay(BlogPostSummary):
     country: Optional[CountryDisplay] = None
     player_stats: Optional[Dict[str, Any]] = None
     game_debrief: Optional[CommunityGameDebrief] = None
+    deduction_analysis: Optional[DeductionAnalysis] = None
     related_posts: Optional[List[BlogPostSummary]] = None
     source_links: List[BlogSourceLink] = Field(default_factory=list)
     editorial_note: Optional[str] = None

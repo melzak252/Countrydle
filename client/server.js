@@ -30,7 +30,29 @@ Bun.serve({
       }
     }
 
-    // Static files from dist/ (including prerendered HTML snapshots)
+    // 1. Exact /game shell check precedes any existing dist/game snapshot folder so 503 cannot bypass
+    if (url.pathname === "/game" || url.pathname === "/game/") {
+      const gameShell = path.join(DIST_DIR, "game-shell.html");
+      if (fs.existsSync(gameShell)) {
+        return new Response(file(gameShell), {
+          headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex, follow" },
+        });
+      }
+      return new Response("Game shell unavailable", { status: 503 });
+    }
+
+    // 2. Root / serves bare SPA shell for this local preview entrypoint (never game-shell from dist/index.html)
+    if (url.pathname === "/" || url.pathname === "") {
+      const spaShell = path.join(DIST_DIR, "spa-shell.html");
+      if (fs.existsSync(spaShell)) {
+        return new Response(file(spaShell), {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+      return new Response("SPA shell unavailable", { status: 503 });
+    }
+
+    // 3. Static files from dist/ (including prerendered HTML snapshots)
     const rawPath = url.pathname.slice(1);
     let filePath = path.join(DIST_DIR, rawPath);
 
@@ -47,13 +69,15 @@ Bun.serve({
       return new Response(file(filePath));
     }
 
-    // SPA fallback
-    const fallbackPath = path.join(DIST_DIR, "index.html");
-    if (fs.existsSync(fallbackPath)) {
-      return new Response(file(fallbackPath));
+    // 4. SPA fallback: other SPA/private routes use bare spa-shell (503 if missing, no index.html shim)
+    const spaShell = path.join(DIST_DIR, "spa-shell.html");
+    if (fs.existsSync(spaShell)) {
+      return new Response(file(spaShell), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("SPA shell unavailable", { status: 503 });
   },
 });
 

@@ -186,11 +186,12 @@ Generate a JSON object with:
 1. "title": Catchy, exciting headline (e.g. "Countrydle Solution: {country_name} — [Evocative Description]").
 2. "subtitle": Engaging 1-sentence teaser summarizing the country's unique deduction identity.
 3. "summary": 2-3 sentence overview of the country and its daily deduction challenge.
-4. "fun_facts": Exactly 2 or 3 fascinating, grammatically complete, polished curiosities about culture, geography, or history.
+4. "editorial_body": 2-3 substantive, well-crafted paragraphs exploring {country_name}'s geographical context, terrain or waterways, and strategic deduction clues. Do NOT repeat intro lines or bulleted fast facts.
+5. "fun_facts": Exactly 2 or 3 fascinating, grammatically complete, polished curiosities about culture, geography, or history.
    Each curiosity MUST have:
    - "title": Catchy 2-4 word theme (e.g. "Alpine Wonderland", "Cradle of Classical Music", "Culinary Traditions").
    - "description": 1-2 polished, self-contained sentences. NEVER start with dangling pronouns like "This left..." or "On 11 November, the emperor...". Always clearly name {country_name} or the specific subject.
-5. "trivia_quiz":
+6. "trivia_quiz":
    A fun trivia question for players.
    CRITICAL RULE: The quiz question and answer MUST NOT simply repeat or copy any of the fun facts provided in "fun_facts"! It must test a different piece of cultural, historical, or geographic knowledge about {country_name}.
    - "question": Specific question string.
@@ -230,20 +231,28 @@ def _assemble_blog_post_payload(
     steps = get_deduction_steps(country_name, actual_questions)
     pro_tip = get_curator_pro_tip(country_name, country_facts)
     fun_facts = ai_data.get("fun_facts") or []
-    fact_lines = [
-        f"- **{label}**: {value}"
-        for label, value in (
-            ("Capital", country_facts.get("capital")),
-            ("Region", country_facts.get("region")),
-            ("Population", country_facts.get("population")),
-            ("Area", country_facts.get("area_km2")),
-            ("Water access", country_facts.get("water_access")),
-            ("Borders", country_facts.get("borders")),
-            ("Languages in dataset", country_facts.get("languages")),
-        )
-        if value and value != "N/A"
-    ]
-    markdown = f"## {country_name}\n\nStored country data:\n\n" + "\n".join(fact_lines)
+    if ai_data.get("editorial_body"):
+        markdown = ai_data["editorial_body"].strip()
+    else:
+        from utils.water_hierarchy import is_marine_water_body
+        region_str = country_facts.get("region") or country_facts.get("continent") or "the world"
+        capital_str = country_facts.get("capital")
+        cap_phrase = f" with its capital at {capital_str}" if capital_str and capital_str != "N/A" else ""
+        water_str = country_facts.get("water_access")
+        borders_str = country_facts.get("borders")
+        geo_parts = []
+        if water_str and water_str != "N/A":
+            water_items = [w.strip() for w in water_str.split(",") if w.strip()]
+            marine = [w for w in water_items if is_marine_water_body(w)]
+            inland = [w for w in water_items if not is_marine_water_body(w)]
+            if marine:
+                geo_parts.append(f"maritime coastal access along the {', '.join(marine)}")
+            if inland:
+                geo_parts.append(f"shoreline along inland endorheic water ({', '.join(inland)})")
+        if borders_str and borders_str != "N/A" and borders_str != "None":
+            geo_parts.append(f"land borders with {borders_str}")
+        geo_phrase = f" Key recorded geographical features include {'; '.join(geo_parts)}." if geo_parts else ""
+        markdown = f"## Geographic Profile\n\n{country_name} is situated in {region_str}{cap_phrase}.{geo_phrase}"
 
     deduction_masterclass = {
         "steps": steps,
