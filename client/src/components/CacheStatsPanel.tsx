@@ -5,7 +5,7 @@ import { adminService } from '../services/api';
 import type { CacheStats } from '../types';
 
 const REFRESH_INTERVAL_MS = 15_000;
-const cardClass = 'admin-panel min-w-0 space-y-3';
+const cardClass = 'min-w-0 space-y-3 rounded-md border border-app-border bg-app-surface p-4';
 
 export default function CacheStatsPanel() {
   const { t } = useTranslation('translation', { keyPrefix: 'adminCache' });
@@ -63,65 +63,65 @@ export default function CacheStatsPanel() {
 
   return (
     <section aria-labelledby="admin-page-title" className="min-w-0 space-y-5">
-      <div className="admin-toolbar">
-        <label className="flex min-h-11 items-center gap-3 text-sm text-slate-300">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="flex min-h-11 items-center gap-3 text-sm text-app-text-secondary">
           <input
             type="checkbox"
             checked={autoRefresh}
             onChange={(event) => setAutoRefresh(event.target.checked)}
-            className="h-4 w-4 accent-emerald-400"
+            className="h-4 w-4 accent-app-accent"
           />
           {t('autoRefresh')}
         </label>
-        <button type="button" onClick={refresh} disabled={isRefreshing} className="admin-button">
+        <button type="button" onClick={refresh} disabled={isRefreshing} className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-app-border px-3 py-2 text-sm font-medium text-app-text-secondary transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50">
           <RefreshCw aria-hidden="true" size={16} className={isRefreshing ? 'animate-spin' : ''} />
           {isRefreshing ? t('refreshing') : t('refresh')}
         </button>
       </div>
 
-      <p className="admin-meta">
+      <p className="text-sm text-app-text-muted">
         {t('processScope')}
         {snapshot && <> {t('lastSuccessfulUpdate')} <time dateTime={snapshot.receivedAt.toISOString()}>{timeFormat.format(snapshot.receivedAt)}</time>.</>}
         {!autoRefresh && <> {t('autoRefreshPaused')}</>}
       </p>
 
       {error && (
-        <div role="alert" className="space-y-3 rounded-sm border border-rose-400/40 bg-rose-950/30 p-4 text-sm text-rose-200">
+        <div role="alert" className="space-y-3 rounded-sm border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900">
           <p>{t('loadError')}</p>
           {snapshot && <p>{t('staleSnapshot')}</p>}
-          <button type="button" className="admin-button" onClick={refresh} disabled={isRefreshing}>{t('retry')}</button>
+          <button type="button" className="min-h-11 rounded-sm border border-app-border px-3 py-2 text-sm text-app-text-secondary transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50" onClick={refresh} disabled={isRefreshing}>{t('retry')}</button>
         </div>
       )}
 
-      {!snapshot && isRefreshing && <p role="status" className="text-sm text-slate-300">{t('loading')}</p>}
+      {!snapshot && isRefreshing && <p role="status" className="text-sm text-app-text-secondary">{t('loading')}</p>}
 
       {stats && (
         <div aria-busy={isRefreshing} className="space-y-5">
-          <p className="text-sm leading-relaxed text-slate-300">{t('plansNotAnswers')}</p>
+          <p className="text-sm leading-relaxed text-app-text-secondary">{t('plansNotAnswers')}</p>
           <div className="grid grid-cols-1 gap-4 min-[640px]:grid-cols-2 min-[1280px]:grid-cols-4">
             {metrics.map(({ label, value, detail, icon: Icon }) => (
               <article key={label} className={cardClass}>
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-sm font-medium text-slate-300">{label}</h2>
-                  <Icon aria-hidden="true" size={18} className="shrink-0 text-emerald-300" />
+                  <h2 className="text-sm font-medium text-app-text-secondary">{label}</h2>
+                  <Icon aria-hidden="true" size={18} className="shrink-0 text-app-accent" />
                 </div>
-                <p className="admin-metric break-words tabular-nums">{value}</p>
-                <p className="admin-meta">{detail}</p>
+                <p className="break-words text-3xl font-semibold tabular-nums text-app-text">{value}</p>
+                <p className="text-sm text-app-text-muted">{detail}</p>
               </article>
             ))}
           </div>
 
-          <div className="admin-panel space-y-3">
-            <h2 className="text-base font-semibold text-sand-100">{t('storage')}</h2>
-            <p className="font-mono text-sm text-emerald-300">{stats.storage.toUpperCase()}</p>
-            <p className="text-sm leading-relaxed text-slate-300">{t('storageSummary')}</p>
-            {lookups === 0 && <p className="text-sm text-slate-300">{t('noRecordedLookups')}</p>}
+          <div className={cardClass}>
+            <h2 className="text-base font-semibold text-app-text">{t('storage')}</h2>
+            <p className="font-mono text-sm font-medium text-app-accent">{stats.storage.toUpperCase()}</p>
+            <p className="text-sm leading-relaxed text-app-text-secondary">{t('storageSummary')}</p>
+            {lookups === 0 && <p className="text-sm text-app-text-secondary">{t('noRecordedLookups')}</p>}
           </div>
         </div>
       )}
 
-      <details className="admin-panel text-sm leading-relaxed text-slate-300">
-        <summary className="cursor-pointer rounded-sm text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">{t('helpTitle')}</summary>
+      <details className="rounded-md border border-app-border bg-app-surface p-4 text-sm leading-relaxed text-app-text-secondary">
+        <summary className="cursor-pointer rounded-sm text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">{t('helpTitle')}</summary>
         <div className="mt-3 max-w-prose space-y-3">
           <p>{t('counterScope')}</p>
           <p>{t('hitRateHelp')}</p>

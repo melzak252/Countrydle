@@ -389,24 +389,24 @@ export default function AdminDashboard() {
   const activeDefinition = TABS.find((tab) => tab.id === activeTab)!;
 
   return (
-    <div className="admin-workspace">
-      <nav className="admin-sidebar" aria-label={t('adminNavigation.pageSelector')}>
+    <div className="grid min-w-0 grid-cols-1 gap-6 bg-app-canvas text-app-text lg:grid-cols-[220px_minmax(0,1fr)]">
+      <nav className="hidden min-w-0 self-start rounded-md border border-app-border bg-app-surface p-3 lg:sticky lg:top-6 lg:block" aria-label={t('adminNavigation.pageSelector')}>
         {SECTIONS.map((section) => (
           <div key={section} className="mb-6">
-            <p className="admin-meta mb-2 px-3">{t(`adminNavigation.sections.${section}`)}</p>
+            <p className="mb-2 px-3 text-xs font-medium text-app-text-muted">{t(`adminNavigation.sections.${section}`)}</p>
             {TABS.filter((tab) => tab.section === section).map((tab) => {
               const Icon = tab.icon;
-              return <button key={tab.id} type="button" className="admin-button" aria-current={activeTab === tab.id ? 'page' : undefined} onClick={() => setActiveTab(tab.id)}>
+              return <button key={tab.id} type="button" className={`flex min-h-10 w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${activeTab === tab.id ? 'bg-app-surface-muted text-app-accent' : 'text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text'}`} aria-current={activeTab === tab.id ? 'page' : undefined} onClick={() => setActiveTab(tab.id)}>
                 <Icon size={18} aria-hidden="true" /><span>{t(tab.labelKey)}</span>
               </button>;
             })}
           </div>
         ))}
       </nav>
-      <div className="admin-content">
-        <label className="admin-field admin-mobile-navigation">
+      <div className="min-w-0">
+        <label className="mb-4 flex flex-col gap-2 lg:hidden">
           <span>{t('adminNavigation.pageSelector')}</span>
-          <select className="admin-control" value={activeTab} onChange={(event) => {
+          <select className="min-h-11 w-full rounded-sm border border-app-border bg-app-surface px-3 text-app-text focus:border-app-accent focus:outline-none focus:ring-2 focus:ring-app-focus" value={activeTab} onChange={(event) => {
             const destination = TABS.find((tab) => tab.id === event.target.value);
             if (destination) setActiveTab(destination.id);
           }}>
@@ -415,10 +415,10 @@ export default function AdminDashboard() {
             </optgroup>)}
           </select>
         </label>
-        <header className="admin-page-header">
-          <p className="admin-meta">Countrydle / Admin</p>
-          <h1 id="admin-page-title" tabIndex={-1}>{t(activeDefinition.labelKey)}</h1>
-          <p className="admin-muted">{t(activeDefinition.descriptionKey)}</p>
+        <header className="mb-6 border-b border-app-border pb-5">
+          <p className="font-mono text-xs text-app-text-muted">Countrydle / Admin</p>
+          <h1 id="admin-page-title" tabIndex={-1} className="mt-1 font-serif text-3xl leading-tight text-app-text">{t(activeDefinition.labelKey)}</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-app-text-secondary">{t(activeDefinition.descriptionKey)}</p>
         </header>
       {/* TAB CONTENT PANELS */}
       {activeTab === 'overview' && (

@@ -50,6 +50,21 @@ const MODES = [
       ] as const))),
 ] as const;
 const PAGE_SIZE = 20;
+const panelClass = 'min-w-0 rounded-md border border-app-border bg-app-surface p-4 text-app-text';
+const toolbarClass = 'flex flex-wrap items-end gap-4 rounded-md border border-app-border bg-app-surface p-4';
+const fieldClass = 'flex min-w-0 flex-col gap-2 text-sm font-medium text-app-text-secondary';
+const controlClass = 'min-h-11 w-full min-w-0 rounded-sm border border-app-border bg-app-surface-muted px-3 py-2 text-app-text placeholder:text-app-text-muted focus:border-app-accent focus:outline-none focus:ring-2 focus:ring-app-focus disabled:cursor-not-allowed disabled:opacity-50';
+const buttonBaseClass = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-sm border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50';
+const buttonClass = `${buttonBaseClass} border-app-border bg-app-surface-muted text-app-text hover:border-app-accent-hover hover:bg-app-surface-raised`;
+const badgeBaseClass = 'inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-medium';
+const badgeClass = `${badgeBaseClass} border-app-border bg-app-surface-muted text-app-text-secondary`;
+const successBadgeClass = `${badgeBaseClass} border-emerald-300 bg-emerald-50 text-emerald-800`;
+const warningBadgeClass = `${badgeBaseClass} border-amber-300 bg-amber-50 text-amber-900`;
+const errorBadgeClass = `${badgeBaseClass} border-rose-300 bg-rose-50 text-rose-800`;
+const metaClass = 'text-xs leading-5 text-app-text-muted';
+const questionClass = 'break-words text-base leading-6 text-app-text [overflow-wrap:anywhere]';
+const diagnosticsClass = 'max-h-[360px] max-w-full overflow-auto whitespace-pre-wrap break-words rounded-sm bg-app-surface-muted p-3 font-mono text-xs leading-5 text-app-text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus';
+const pagerClass = 'flex flex-wrap items-center justify-between gap-3';
 
 const isQuizMode = (mode: string) => ['coats_quiz', 'county_flags_quiz'].includes(mode) || (mode.startsWith('regional_symbols:') && mode.endsWith(':quiz'));
 const isSymbolMode = (mode: string) => ['heraldry', 'county_flags'].includes(mode) || mode.startsWith('regional_symbols:');
@@ -124,15 +139,15 @@ function getAnswerLabel(
   t: (key: string) => string,
 ): { label: string; className: string } {
   if (event.valid === false) {
-    return { label: t('adminSessions.invalid'), className: 'admin-answer-invalid' };
+    return { label: t('adminSessions.invalid'), className: warningBadgeClass };
   }
   if (event.answer === true) {
-    return { label: t('adminSessions.yes'), className: 'admin-answer-yes' };
+    return { label: t('adminSessions.yes'), className: successBadgeClass };
   }
   if (event.answer === false) {
-    return { label: t('adminSessions.no'), className: '' };
+    return { label: t('adminSessions.no'), className: badgeClass };
   }
-  return { label: t('adminSessions.noAnswer'), className: '' };
+  return { label: t('adminSessions.noAnswer'), className: badgeClass };
 }
 
 export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, selectedMode, selectedDate, onFiltersChange }) => {
@@ -245,12 +260,12 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
   };
 
   return (
-    <div className="space-y-4">
-      <div className="admin-toolbar" role="group" aria-label={t('adminSessions.filters')}>
-        <label className="admin-field w-full min-w-0 sm:min-w-[180px] sm:flex-1">
+    <div className="space-y-4 text-app-text">
+      <div className={toolbarClass} role="group" aria-label={t('adminSessions.filters')}>
+        <label className={`${fieldClass} w-full sm:min-w-[180px] sm:flex-1`}>
           <span>{t('adminSessions.mode')}</span>
           <select
-            className="admin-control"
+            className={controlClass}
             value={selectedMode}
             onChange={(event) => {
               onFiltersChange(event.target.value, selectedDate);
@@ -263,20 +278,20 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
           </select>
         </label>
 
-        <div className="admin-field w-full min-w-0 sm:min-w-[250px] sm:flex-[2]">
+        <div className={`${fieldClass} w-full sm:min-w-[250px] sm:flex-[2]`}>
           <span>{t('adminSessions.date')}</span>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <button type="button" className="admin-button" onClick={() => handleDatePreset(0)}>
+            <button type="button" className={buttonClass} onClick={() => handleDatePreset(0)}>
               {t('adminSessions.today')}
             </button>
-            <button type="button" className="admin-button" onClick={() => handleDatePreset(1)}>
+            <button type="button" className={buttonClass} onClick={() => handleDatePreset(1)}>
               {t('adminSessions.yesterday')}
             </button>
             <label className="col-span-2 flex min-w-0 items-center gap-2 sm:min-w-[180px] sm:flex-1">
-              <Calendar className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+              <Calendar className="h-4 w-4 shrink-0 text-app-text-muted" aria-hidden="true" />
               <span className="sr-only">{t('adminSessions.date')}</span>
               <input
-                className="admin-control min-w-0 flex-1"
+                className={`${controlClass} flex-1`}
                 type="date"
                 value={selectedDate}
                 onChange={(event) => {
@@ -290,7 +305,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
 
         <button
           type="button"
-          className="admin-button w-full sm:w-auto"
+          className={`${buttonClass} w-full sm:w-auto`}
           onClick={refreshAll}
           disabled={sessionsLoading || statsLoading}
         >
@@ -299,27 +314,27 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         </button>
       </div>
 
-      <section className="admin-panel space-y-4" aria-label={isQuizMode(selectedMode) ? 'Quiz scope and summary' : t('adminSessions.targetSummary')}>
+      <section className={`${panelClass} space-y-4`} aria-label={isQuizMode(selectedMode) ? 'Quiz scope and summary' : t('adminSessions.targetSummary')}>
         <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-center">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="admin-badge">{isQuizMode(selectedMode) ? 'Quiz scope' : t('adminSessions.targetEntity')}</span>
-              {stats?.target_subtitle && <span className="admin-badge">{stats.target_subtitle}</span>}
+              <span className={badgeClass}>{isQuizMode(selectedMode) ? 'Quiz scope' : t('adminSessions.targetEntity')}</span>
+              {stats?.target_subtitle && <span className={badgeClass}>{stats.target_subtitle}</span>}
             </div>
             {stats ? (
               <>
-                <h2 className="flex min-w-0 items-center gap-2 break-words text-sand-100">
-                  <Target className="h-6 w-6 shrink-0 text-slate-300" aria-hidden="true" />
+                <h2 className="flex min-w-0 items-center gap-2 break-words text-lg font-semibold text-app-text">
+                  <Target className="h-6 w-6 shrink-0 text-app-text-muted" aria-hidden="true" />
                   {stats.target_name}
                 </h2>
-                <p className="admin-meta mt-1">
+                <p className={`${metaClass} mt-1`}>
                   {isQuizMode(selectedMode) ? `Sessions on ${formatGameDate(stats.game_date || selectedDate, locale)}` : t('adminSessions.challengeDate', {
                     date: formatGameDate(stats.game_date || selectedDate, locale),
                   })}
                 </p>
               </>
             ) : (
-              <p className="text-base font-semibold text-sand-100" role={statsError ? undefined : 'status'}>
+              <p className="text-base font-semibold text-app-text" role={statsError ? undefined : 'status'}>
                 {statsError ? t('adminSessions.targetUnavailable') : t('adminSessions.loadingTarget')}
               </p>
             )}
@@ -340,26 +355,26 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 { label: t('adminSessions.avgQuestionsLost'), value: stats ? formatNumber(stats.avg_questions_losers, locale, 1) : '—' },
               ]),
             ].map((metric) => (
-              <div key={metric.label} className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-3">
-                <div className="admin-meta">{metric.label}</div>
-                <div className="admin-metric mt-1 text-sand-100">{metric.value}</div>
+              <div key={metric.label} className="min-w-0 rounded-md border border-app-border bg-app-surface-muted p-3">
+                <div className={metaClass}>{metric.label}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums text-app-text">{metric.value}</div>
               </div>
             ))}
           </div>
         </div>
 
         {statsLoading && stats && (
-          <p className="admin-meta" role="status">{t('adminCommon.updating')}</p>
+          <p className={metaClass} role="status">{t('adminCommon.updating')}</p>
         )}
         {statsError && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-400/40 p-3" role="alert">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-300 bg-rose-50 p-3 text-rose-800" role="alert">
             <span>
               {t('adminSessions.statsError')}
               {stats && ` ${t('adminSessions.staleData')}`}
             </span>
             <button
               type="button"
-              className="admin-button"
+              className={buttonClass}
               onClick={() => setStatsRetry((value) => value + 1)}
               disabled={statsLoading}
             >
@@ -369,13 +384,13 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         )}
       </section>
 
-      <section className="admin-panel space-y-4" aria-labelledby={`${idPrefix}-sessions-heading`}>
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-4 xl:flex-row xl:items-end xl:justify-between">
+      <section className={`${panelClass} space-y-4`} aria-labelledby={`${idPrefix}-sessions-heading`}>
+        <div className="flex flex-col gap-4 border-b border-app-border pb-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id={`${idPrefix}-sessions-heading`}>{t('adminSessions.sessionsTitle')}</h2>
+              <h2 id={`${idPrefix}-sessions-heading`} className="text-lg font-semibold text-app-text">{t('adminSessions.sessionsTitle')}</h2>
               {sessions && (
-                <span className="admin-badge">
+                <span className={badgeClass}>
                   {t('adminSessions.sessionCount', { count: sessions.total })}
                 </span>
               )}
@@ -383,10 +398,10 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
           </div>
 
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:w-[min(100%,32rem)]">
-            <label className="admin-field min-w-0">
+            <label className={fieldClass}>
               <span>{t('adminSessions.statusFilter')}</span>
               <select
-                className="admin-control"
+                className={controlClass}
                 value={statusFilter}
                 onChange={(event) => {
                   setStatusFilter(event.target.value);
@@ -399,10 +414,10 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 <option value="in_progress">{t('adminSessions.statusInProgress')}</option>
               </select>
             </label>
-            <label className="admin-field min-w-0">
+            <label className={fieldClass}>
               <span>{t('adminSessions.playerTypeFilter')}</span>
               <select
-                className="admin-control"
+                className={controlClass}
                 value={playerTypeFilter}
                 onChange={(event) => {
                   setPlayerTypeFilter(event.target.value);
@@ -418,20 +433,20 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         </div>
 
         {sessionsLoading && (
-          <p className="flex items-center gap-2 text-sand-100" role="status">
-            <Loader2 className="h-4 w-4 animate-spin text-slate-300" aria-hidden="true" />
+          <p className="flex items-center gap-2 text-app-text" role="status">
+            <Loader2 className="h-4 w-4 animate-spin text-app-accent" aria-hidden="true" />
             {sessions ? t('adminCommon.updating') : t('adminSessions.sessionsLoading')}
           </p>
         )}
         {sessionsError && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-400/40 p-3" role="alert">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-300 bg-rose-50 p-3 text-rose-800" role="alert">
             <span>
               {t('adminSessions.sessionsError')}
               {sessions && ` ${t('adminSessions.staleData')}`}
             </span>
             <button
               type="button"
-              className="admin-button"
+              className={buttonClass}
               onClick={() => setListRetry((value) => value + 1)}
               disabled={sessionsLoading}
             >
@@ -467,11 +482,11 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               });
 
               return (
-                <article key={session.session_id} className="overflow-hidden rounded-md border border-white/10 bg-obsidian-950">
+                <article key={session.session_id} className="overflow-hidden rounded-md border border-app-border bg-app-surface">
                   <button
                     id={buttonId}
                     type="button"
-                    className="admin-row-button flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-white/5"
+                    className="flex w-full items-center justify-between gap-3 p-4 text-left text-app-text transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={!hasDetails}
                     aria-expanded={hasDetails ? isExpanded : undefined}
                     aria-controls={hasDetails ? panelId : undefined}
@@ -479,28 +494,28 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                     onClick={() => toggleSession(session.session_id)}
                   >
                     <span className="flex min-w-0 items-start gap-3">
-                      <span className="mt-1 rounded-md border border-white/10 bg-obsidian-900 p-2 text-slate-300" aria-hidden="true">
+                      <span className="mt-1 rounded-md border border-app-border bg-app-surface-muted p-2 text-app-text-muted" aria-hidden="true">
                         {session.is_guest ? <UserX className="h-4 w-4" /> : <UserIcon className="h-4 w-4" />}
                       </span>
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="max-w-full break-words text-base font-semibold text-sand-100" title={session.username}>
+                          <span className="max-w-full break-words text-base font-semibold text-app-text" title={session.username}>
                             {session.username}
                           </span>
-                          {session.is_guest && <span className="admin-badge">{t('adminSessions.guest')}</span>}
+                          {session.is_guest && <span className={badgeClass}>{t('adminSessions.guest')}</span>}
                           <span
-                            className={`admin-badge ${
+                            className={`${badgeBaseClass} ${
                               session.status === 'won'
-                                ? 'border-emerald-400 text-emerald-200'
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                                 : session.status === 'lost'
-                                  ? 'border-rose-400 text-rose-200'
-                                  : ''
+                                  ? 'border-rose-300 bg-rose-50 text-rose-800'
+                                  : 'border-amber-300 bg-amber-50 text-amber-900'
                             }`}
                           >
                             {statusLabel}
                           </span>
                         </span>
-                        <span className="admin-meta mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className={`${metaClass} mt-1 flex flex-wrap items-center gap-x-3 gap-y-1`}>
                           <span>{t('adminSessions.startedAt', { time: started || t('adminSessions.unknownTime') })}</span>
                           {completed && <span>{t('adminSessions.completedAt', { time: completed })}</span>}
                           {isQuiz ? <span>{session.solved_count == null ? 'Solved count unavailable' : session.mode === 'coats_quiz' ? `${session.solved_count}/380 solved` : `${session.solved_count} solved`}</span> : <>
@@ -518,7 +533,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                         </span>
                       </span>
                     </span>
-                    {hasDetails && <span className="flex shrink-0 items-center gap-2 text-sand-100">
+                    {hasDetails && <span className="flex shrink-0 items-center gap-2 text-app-text">
                       <span>{isQuiz ? `${isExpanded ? 'Hide' : 'Show'} solved ${isFlagQuiz(session.mode) ? 'flags' : 'coats'}` : (isExpanded ? t('adminSessions.hideReplay') : t('adminSessions.showReplay'))}</span>
                       {isExpanded
                         ? <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -530,25 +545,25 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                     id={panelId}
                     aria-labelledby={buttonId}
                     hidden={!isExpanded}
-                    className="space-y-4 border-t border-white/10 bg-obsidian-900 p-4"
+                    className="space-y-4 border-t border-app-border bg-app-surface-muted p-4"
                   >
                     {session.quiz_solves.length > 0 && <section aria-label={isFlagQuiz(session.mode) ? 'Solved flags' : 'Solved coats'}>
-                      <h3 className="font-semibold text-sand-100">{isFlagQuiz(session.mode) ? 'Solved flags' : 'Solved coats'}</h3>
-                      <p className="admin-meta mt-1">Active elapsed time since quiz start, client-reported.</p>
+                      <h3 className="text-base font-semibold text-app-text">{isFlagQuiz(session.mode) ? 'Solved flags' : 'Solved coats'}</h3>
+                      <p className={`${metaClass} mt-1`}>Active elapsed time since quiz start, client-reported.</p>
                       <ul className="mt-3 space-y-1 text-sm">
                         {session.quiz_solves.map((solve) => <li key={solve.powiat_id} className="flex flex-wrap justify-between gap-2"><span>{solve.name}</span><span>{formatDuration(solve.active_elapsed_seconds, locale, t)}</span></li>)}
                       </ul>
                     </section>}
                     {session.timeline.length > 0 && <>
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
-                      <h3>{t('adminSessions.timelineTitle', { count: session.timeline.length })}</h3>
-                      <span className="admin-meta">{t('adminSessions.timelineOrder')}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-app-border pb-3">
+                      <h3 className="text-lg font-semibold text-app-text">{t('adminSessions.timelineTitle', { count: session.timeline.length })}</h3>
+                      <span className={metaClass}>{t('adminSessions.timelineOrder')}</span>
                     </div>
 
                     {session.timeline.length === 0 ? (
-                      <p className="admin-muted py-4">{t('adminSessions.noTimeline')}</p>
+                      <p className="py-4 text-app-text-muted">{t('adminSessions.noTimeline')}</p>
                     ) : (
-                      <ol className="list-decimal space-y-3 pl-7 marker:font-semibold marker:text-slate-400">
+                      <ol className="list-decimal space-y-3 pl-7 marker:font-semibold marker:text-app-text-muted">
                         {session.timeline.map((event, index) => {
                           const isQuestion = event.event_type === 'question';
                           const answer = isQuestion ? getAnswerLabel(event, (key) => t(key)) : null;
@@ -563,26 +578,24 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                                 : event.source;
 
                           return (
-                            <li key={`${event.id}-${index}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4">
+                            <li key={`${event.id}-${index}`} className="min-w-0 rounded-md border border-app-border bg-app-surface p-4">
                               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0 space-y-2">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="admin-badge">
+                                    <span className={badgeClass}>
                                       {t(isQuestion ? 'adminSessions.questionType' : 'adminSessions.guessType')}
                                     </span>
                                     {isQuestion && answer && (
-                                      <span className={`admin-badge ${answer.className}`}>{answer.label}</span>
+                                      <span className={answer.className}>{answer.label}</span>
                                     )}
                                     {isQuestion && sourceLabel && (
-                                      <span className="admin-badge">
+                                      <span className={badgeClass}>
                                         {sourceLabel}
                                         {event.source === 'local_kb' && event.relation ? ` (${event.relation})` : ''}
                                       </span>
                                     )}
                                     {!isQuestion && (
-                                      <span className={`admin-badge ${
-                                        event.correct ? 'border-emerald-400 text-emerald-200' : 'border-rose-400 text-rose-200'
-                                      }`}>
+                                      <span className={event.correct ? successBadgeClass : errorBadgeClass}>
                                         {event.correct
                                           ? t('adminSessions.targetFound')
                                           : t('adminSessions.incorrectGuess')}
@@ -591,20 +604,20 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                                   </div>
 
                                   {isQuestion ? (
-                                    <p className="admin-question break-words text-sand-100">{questionText}</p>
+                                    <p className={questionClass}>{questionText}</p>
                                   ) : (
-                                    <p className="admin-question break-words text-sand-100">{event.guess || ''}</p>
+                                    <p className={questionClass}>{event.guess || ''}</p>
                                   )}
                                 </div>
 
                                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                                   {event.timestamp && (
-                                    <time className="admin-meta" dateTime={event.timestamp}>{eventTime}</time>
+                                    <time className={metaClass} dateTime={event.timestamp}>{eventTime}</time>
                                   )}
                                   {isQuestion && onTestInQA && (
                                     <button
                                       type="button"
-                                      className="admin-button"
+                                      className={buttonClass}
                                       aria-label={t('adminSessions.testQuestionInQA', { question: questionText })}
                                       onClick={() => onTestInQA({
                                         mode: session.mode,
@@ -620,21 +633,21 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                               </div>
 
                               {isQuestion && event.clarification && (
-                                <p className="mt-3 border-l-2 border-emerald-500 pl-3 text-xs font-medium text-emerald-200/90">
-                                  <span className="font-semibold text-emerald-300">{t('adminSessions.clarification')}: </span>
+                                <p className="mt-3 border-l-2 border-emerald-300 pl-3 text-xs font-medium text-emerald-800">
+                                  <span className="font-semibold text-emerald-900">{t('adminSessions.clarification')}: </span>
                                   {event.clarification}
                                 </p>
                               )}
                               {isQuestion && event.explanation && (
-                                <p className="admin-muted mt-2 border-l-2 border-slate-500 pl-3">
+                                <p className="mt-2 border-l-2 border-app-border pl-3 text-sm text-app-text-secondary">
                                   <span className="font-semibold">{t('adminSessions.explanation')}: </span>
                                   {event.explanation}
                                 </p>
                               )}
                               {event.context && (
                                 <details className="mt-2">
-                                  <summary>{t('adminSessions.rawContext')}</summary>
-                                  <pre className="admin-diagnostics" tabIndex={0} aria-label={t('adminSessions.rawContext')}>
+                                  <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium text-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">{t('adminSessions.rawContext')}</summary>
+                                  <pre className={diagnosticsClass} tabIndex={0} aria-label={t('adminSessions.rawContext')}>
                                     {event.context}
                                   </pre>
                                 </details>
@@ -653,14 +666,14 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         )}
 
         {!sessionsLoading && !sessionsError && sessions?.items.length === 0 && (
-          <p className="admin-muted rounded-md border border-dashed border-white/20 p-6 text-center">
+          <p className="rounded-md border border-dashed border-app-border p-6 text-center text-app-text-muted">
             {t('adminSessions.noSessions')}
           </p>
         )}
 
         {sessions && (
-          <div className="admin-pager border-t border-white/10 pt-4">
-            <span className="admin-meta">
+          <div className={`${pagerClass} border-t border-app-border pt-4`}>
+            <span className={metaClass}>
               {t('adminCommon.page', {
                 page: formatNumber(page, locale),
                 pages: formatNumber(totalPages, locale),
@@ -670,7 +683,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="admin-button"
+                className={buttonClass}
                 disabled={page <= 1 || sessionsLoading}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
@@ -678,7 +691,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               </button>
               <button
                 type="button"
-                className="admin-button"
+                className={buttonClass}
                 disabled={page >= totalPages || sessionsLoading}
                 onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               >
@@ -689,34 +702,34 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         )}
       </section>
 
-      {!isQuizMode(selectedMode) && <details className="admin-panel">
-        <summary className="flex list-none items-center justify-between gap-3">
+      {!isQuizMode(selectedMode) && <details className={panelClass}>
+        <summary className="flex min-h-11 list-none cursor-pointer items-center justify-between gap-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">
           <span className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-slate-300" aria-hidden="true" />
+            <TrendingUp className="h-5 w-5 text-app-text-muted" aria-hidden="true" />
             <span className="text-lg font-semibold">{t('adminSessions.strategyInsights')}</span>
           </span>
-          <ChevronDown className="h-4 w-4 text-slate-300" aria-hidden="true" />
+          <ChevronDown className="h-4 w-4 text-app-text-muted" aria-hidden="true" />
         </summary>
 
         {stats && (
           <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-2">
-            {!isSymbolMode(selectedMode) && selectedMode !== 'flagdle' && <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-questions`}>
+            {!isSymbolMode(selectedMode) && selectedMode !== 'flagdle' && <section className="min-w-0 rounded-md border border-app-border bg-app-surface-muted p-4" aria-labelledby={`${idPrefix}-top-questions`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 id={`${idPrefix}-top-questions`} className="flex items-center gap-2">
-                  <HelpCircle className="h-4 w-4 text-slate-300" aria-hidden="true" />
+                <h3 id={`${idPrefix}-top-questions`} className="flex items-center gap-2 text-base font-semibold text-app-text">
+                  <HelpCircle className="h-4 w-4 text-app-text-muted" aria-hidden="true" />
                   {t('adminSessions.topQuestions')}
                 </h3>
-                <span className="admin-meta">{t('adminSessions.topQuestionsContext')}</span>
+                <span className={metaClass}>{t('adminSessions.topQuestionsContext')}</span>
               </div>
 
               {stats.top_questions.length > 0 ? (
-                <ol className="list-decimal space-y-2 pl-7 marker:text-slate-400">
+                <ol className="list-decimal space-y-2 pl-7 marker:text-app-text-muted">
                   {stats.top_questions.slice(0, 6).map((question, index) => (
-                    <li key={`${question.text}-${index}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-900 p-3">
+                    <li key={`${question.text}-${index}`} className="min-w-0 rounded-md border border-app-border bg-app-surface p-3">
                       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="break-words text-sand-100">“{question.text}”</p>
-                          <div className="admin-meta mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                          <p className="break-words text-app-text">“{question.text}”</p>
+                          <div className={`${metaClass} mt-2 flex flex-wrap gap-x-4 gap-y-1`}>
                             <span>{t('adminSessions.askedCount', { count: question.count })}</span>
                             <span>{t('adminSessions.yesPercentage', { percent: formatPercent(question.yes_pct, locale) })}</span>
                             <span>{t('adminSessions.winCorrelation', { percent: formatPercent(question.win_correlation, locale) })}</span>
@@ -725,7 +738,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                         {onTestInQA && (
                           <button
                             type="button"
-                            className="admin-button shrink-0"
+                            className={`${buttonClass} shrink-0`}
                             aria-label={t('adminSessions.testQuestionInQA', { question: question.text })}
                             onClick={() => onTestInQA({
                               mode: selectedMode,
@@ -742,35 +755,35 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                   ))}
                 </ol>
               ) : (
-                <p className="admin-muted py-6 text-center">{t('adminSessions.noQuestions')}</p>
+                <p className="py-6 text-center text-app-text-muted">{t('adminSessions.noQuestions')}</p>
               )}
             </section>}
 
-            <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-guesses`}>
+            <section className="min-w-0 rounded-md border border-app-border bg-app-surface-muted p-4" aria-labelledby={`${idPrefix}-top-guesses`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 id={`${idPrefix}-top-guesses`} className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-slate-300" aria-hidden="true" />
+                <h3 id={`${idPrefix}-top-guesses`} className="flex items-center gap-2 text-base font-semibold text-app-text">
+                  <TrendingUp className="h-4 w-4 text-app-text-muted" aria-hidden="true" />
                   {t('adminSessions.topGuesses')}
                 </h3>
-                <span className="admin-meta">{t('adminSessions.topGuessesContext')}</span>
+                <span className={metaClass}>{t('adminSessions.topGuessesContext')}</span>
               </div>
 
               {stats.top_guesses.length > 0 ? (
-                <ol className="list-decimal space-y-2 pl-7 marker:text-slate-400">
+                <ol className="list-decimal space-y-2 pl-7 marker:text-app-text-muted">
                   {stats.top_guesses.slice(0, 6).map((guess, index) => (
-                    <li key={`${guess.guess}-${index}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-900 p-3">
+                    <li key={`${guess.guess}-${index}`} className="min-w-0 rounded-md border border-app-border bg-app-surface p-3">
                       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
-                          <p className="break-words font-medium text-sand-100">{guess.guess}</p>
-                          <p className="admin-meta mt-1">
+                          <p className="break-words font-medium text-app-text">{guess.guess}</p>
+                          <p className={`${metaClass} mt-1`}>
                             {t('adminSessions.guessCount', { count: guess.count })}
                             {' · '}
                             {t('adminSessions.correctPercentage', { percent: formatPercent(guess.correct_pct, locale) })}
                           </p>
                         </div>
-                        <span className={`admin-badge shrink-0 ${
-                          guess.correct_pct > 0 ? 'border-emerald-400 text-emerald-200' : ''
-                        }`}>
+                        <span className={`${
+                          guess.correct_pct > 0 ? successBadgeClass : badgeClass
+                        } shrink-0`}>
                           {guess.correct_pct > 0
                             ? t('adminSessions.targetGuess')
                             : t('adminSessions.mistakenGuess')}
@@ -780,20 +793,20 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                   ))}
                 </ol>
               ) : (
-                <p className="admin-muted py-6 text-center">{t('adminSessions.noGuesses')}</p>
+                <p className="py-6 text-center text-app-text-muted">{t('adminSessions.noGuesses')}</p>
               )}
             </section>
           </div>
         )}
 
         {!stats && statsLoading && (
-          <p className="mt-4 flex items-center gap-2 text-sand-100" role="status">
-            <Loader2 className="h-4 w-4 animate-spin text-slate-300" aria-hidden="true" />
+          <p className="mt-4 flex items-center gap-2 text-app-text" role="status">
+            <Loader2 className="h-4 w-4 animate-spin text-app-accent" aria-hidden="true" />
             {t('adminSessions.loadingInsights')}
           </p>
         )}
         {!stats && statsError && (
-          <p className="admin-muted mt-4">{t('adminSessions.insightsUnavailable')}</p>
+          <p className="mt-4 text-app-text-muted">{t('adminSessions.insightsUnavailable')}</p>
         )}
       </details>}
     </div>

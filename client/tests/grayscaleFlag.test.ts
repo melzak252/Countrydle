@@ -201,6 +201,22 @@ describe('selectColorHintFamily', () => {
 });
 
 describe('transformFlagPixels', () => {
+  it('lifts grayscale blacks while preserving the light-to-dark range', () => {
+    const transformed = transformFlagPixels(
+      makeBuffer([
+        [0, 0, 0, 255],
+        [128, 128, 128, 255],
+        [255, 255, 255, 255],
+      ]),
+      { revealColorFamily: null }
+    );
+
+    expect(transformed[0]).toBe(48);
+    expect(transformed[4]).toBeGreaterThan(transformed[0]);
+    expect(transformed[4]).toBeLessThan(transformed[8]);
+    expect(transformed[8]).toBe(255);
+  });
+
   it('converts all pixels to luminance grayscale when revealColorFamily is null', () => {
     const pixels: Array<[number, number, number, number]> = [
       [255, 0, 0, 255], // Red

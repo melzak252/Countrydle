@@ -89,37 +89,37 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
   ];
 
   return (
-    <section className="min-w-0 space-y-4" aria-labelledby="admin-page-title">
+    <section className="min-w-0 space-y-4 bg-app-canvas text-app-text" aria-labelledby="admin-page-title">
       <div className="flex justify-end -mt-2">
-        <button type="button" className="admin-button" onClick={() => { onRefresh(); setCostState('loading'); setCostRevision((value) => value + 1); }} disabled={isLoading}>
+        <button type="button" className="min-h-11 rounded-md border border-app-border bg-app-surface-muted px-3 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50" onClick={() => { onRefresh(); setCostState('loading'); setCostRevision((value) => value + 1); }} disabled={isLoading}>
           {isLoading ? t('adminCommon.updating') : t('adminCommon.refresh')}
         </button>
       </div>
       {error && (
-        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-400/40 text-rose-200">
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-300 bg-rose-50 p-4 text-rose-800">
           <span>{t(error)}</span>
-          {hasOverview && <p className="admin-meta w-full">{t('adminCommon.stale')}</p>}
-          <button type="button" className="admin-button" onClick={onRefresh} disabled={isLoading}>
+          {hasOverview && <p className="w-full text-sm text-rose-700">{t('adminCommon.stale')}</p>}
+          <button type="button" className="min-h-11 rounded-md border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition-colors hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50" onClick={onRefresh} disabled={isLoading}>
             {t('adminCommon.retry')}
           </button>
         </div>
       )}
-      {!hasOverview && isLoading && <p role="status" className="admin-panel">{t('adminCommon.loading')}</p>}
-      {!hasOverview && !isLoading && !error && <p className="admin-panel">{t('adminOverview.notLoaded')}</p>}
-      {hasOverview && isLoading && <p role="status" className="admin-meta">{t('adminCommon.updating')}</p>}
+      {!hasOverview && isLoading && <p role="status" className="rounded-md border border-app-border bg-app-surface p-4 text-app-text-secondary">{t('adminCommon.loading')}</p>}
+      {!hasOverview && !isLoading && !error && <p className="rounded-md border border-app-border bg-app-surface p-4 text-app-text-secondary">{t('adminOverview.notLoaded')}</p>}
+      {hasOverview && isLoading && <p role="status" className="text-sm text-app-text-muted">{t('adminCommon.updating')}</p>}
 
       {hasOverview && (
         <>
-          {!overview.today && <p className="admin-panel admin-muted">{t('adminOverview.noDailyStats')}</p>}
+          {!overview.today && <p className="rounded-md border border-app-border bg-app-surface p-4 text-app-text-secondary">{t('adminOverview.noDailyStats')}</p>}
           <div className="grid grid-cols-2 gap-3 min-[1280px]:grid-cols-4">
             {metrics.map(({ label, value, note, Icon }) => (
-              <article key={label} className="admin-panel admin-overview-metric">
+              <article key={label} className="flex min-w-0 flex-col justify-between gap-2 rounded-md border border-app-border bg-app-surface p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="admin-meta">{label}</h2>
-                  <Icon size={18} aria-hidden="true" className="text-emerald-300" />
+                  <h2 className="text-xs font-semibold text-app-text-muted">{label}</h2>
+                  <Icon size={18} aria-hidden="true" className="text-app-accent" />
                 </div>
-                <p className={label === 'Countrydle AI cost' ? 'text-xl font-semibold text-sand-100 tabular-nums sm:text-2xl' : 'admin-metric tabular-nums'}>{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
-                <p className="text-xs leading-4 text-slate-400">{note}</p>
+                <p className={label === 'Countrydle AI cost' ? 'text-xl font-semibold text-app-text tabular-nums sm:text-2xl' : 'text-2xl font-semibold leading-tight text-app-text tabular-nums'}>{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
+                <p className={costState === 'error' && label === 'Countrydle AI cost' ? 'text-xs leading-4 text-rose-700' : 'text-xs leading-4 text-app-text-muted'}>{note}</p>
               </article>
             ))}
           </div>
@@ -127,75 +127,75 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
           <section className="space-y-3" aria-labelledby="admin-overview-games">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 id="admin-overview-games" className="text-lg font-semibold text-sand-100">{t('adminOverview.gamesTitle')}</h2>
-                <p className="admin-meta mt-1">{overview.date} UTC · {numberFormat.format(overview.modes_today?.length ?? 0)} modes</p>
+                <h2 id="admin-overview-games" className="text-lg font-semibold text-app-text">{t('adminOverview.gamesTitle')}</h2>
+                <p className="mt-1 text-sm text-app-text-muted">{overview.date} UTC · {numberFormat.format(overview.modes_today?.length ?? 0)} modes</p>
               </div>
-              <label className="admin-overview-search">
+              <label className="flex min-h-11 w-full max-w-[360px] items-center gap-2.5 rounded-md border border-app-border bg-app-surface px-3 text-app-text-secondary focus-within:border-app-accent focus-within:ring-2 focus-within:ring-app-focus">
                 <span className="sr-only">Search modes and targets</span>
                 <Search size={18} aria-hidden="true" />
-                <input type="search" value={modeSearch} onChange={(event) => setModeSearch(event.target.value)} placeholder="Search modes and targets" />
+                <input type="search" value={modeSearch} onChange={(event) => setModeSearch(event.target.value)} placeholder="Search modes and targets" className="min-h-10 w-full min-w-0 border-0 bg-transparent p-0 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-0" />
               </label>
             </div>
-            <p className="admin-overview-caveat">Participants are active accounts and guest browsers, not unique people. One person can use multiple browsers; guest play and a later login may not be linked.</p>
+            <p className="border-l-2 border-app-accent py-2 pl-3 text-sm leading-5 text-app-text-secondary">Participants are active accounts and guest browsers, not unique people. One person can use multiple browsers; guest play and a later login may not be linked.</p>
             {(overview.modes_today?.length ?? 0) === 0 ? (
-              <p className="admin-panel admin-muted">{t('adminOverview.noModes')}</p>
+              <p className="rounded-md border border-app-border bg-app-surface p-4 text-app-text-secondary">{t('adminOverview.noModes')}</p>
             ) : filteredModes.length === 0 ? (
-              <p className="admin-panel admin-muted" role="status">No modes or targets match “{modeSearch}”</p>
+              <p className="rounded-md border border-app-border bg-app-surface p-4 text-app-text-secondary" role="status">No modes or targets match “{modeSearch}”</p>
             ) : (
-              <div className="admin-overview-mode-list" role="list" aria-label="Modes today">
+              <div className="grid grid-cols-1 gap-2" role="list" aria-label="Modes today">
                 {filteredModes.map((mode) => (
-                  <article key={mode.mode_key} className="admin-panel admin-overview-mode" role="listitem">
-                    <div className="admin-overview-mode-title">
-                      <h3 className="break-words font-semibold text-sand-100">{mode.mode_label}</h3>
-                      <p className="break-words text-sm text-slate-300">{mode.target_name}</p>
+                  <article key={mode.mode_key} className="grid min-w-0 gap-3 rounded-md border border-app-border bg-app-surface p-4 md:grid-cols-[minmax(180px,1fr)_minmax(0,2fr)_auto] md:items-center md:gap-5" role="listitem">
+                    <div className="min-w-0">
+                      <h3 className="break-words font-semibold text-app-text">{mode.mode_label}</h3>
+                      <p className="break-words text-sm text-app-text-secondary">{mode.target_name}</p>
                     </div>
-                    <dl className="admin-overview-mode-stats">
-                      <div><dt>Accounts + browsers</dt><dd>{numberFormat.format(mode.players)}</dd></div>
-                      <div><dt>Sessions</dt><dd>{numberFormat.format(mode.sessions)}</dd></div>
-                      <div><dt>Solved</dt><dd>{numberFormat.format(mode.winners)} <span>({numberFormat.format(mode.win_rate_pct)}%)</span></dd></div>
-                      <div><dt>Questions / guesses</dt><dd>{numberFormat.format(mode.questions)} / {numberFormat.format(mode.guesses)}</dd></div>
+                    <dl className="grid min-w-0 grid-cols-2 gap-3 md:grid-cols-4 [&>div]:min-w-0">
+                      <div><dt className="text-xs leading-4 text-app-text-muted">Accounts + browsers</dt><dd className="mt-1 break-words text-lg font-semibold leading-6 text-app-text tabular-nums">{numberFormat.format(mode.players)}</dd></div>
+                      <div><dt className="text-xs leading-4 text-app-text-muted">Sessions</dt><dd className="mt-1 break-words text-lg font-semibold leading-6 text-app-text tabular-nums">{numberFormat.format(mode.sessions)}</dd></div>
+                      <div><dt className="text-xs leading-4 text-app-text-muted">Solved</dt><dd className="mt-1 break-words text-lg font-semibold leading-6 text-app-text tabular-nums">{numberFormat.format(mode.winners)} <span className="text-sm font-normal text-app-text-secondary">({numberFormat.format(mode.win_rate_pct)}%)</span></dd></div>
+                      <div><dt className="text-xs leading-4 text-app-text-muted">Questions / guesses</dt><dd className="mt-1 break-words text-lg font-semibold leading-6 text-app-text tabular-nums">{numberFormat.format(mode.questions)} / {numberFormat.format(mode.guesses)}</dd></div>
                     </dl>
-                    <button type="button" onClick={() => onOpenSessions(mode.mode_key)} className="admin-button admin-overview-session-link">View sessions</button>
+                    <button type="button" onClick={() => onOpenSessions(mode.mode_key)} className="inline-flex min-h-11 items-center justify-center justify-self-start rounded-sm border border-app-accent px-3 py-2 text-sm font-medium text-app-accent transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">View sessions</button>
                   </article>
                 ))}
               </div>
             )}
           </section>
-          <details className="admin-overview-coverage text-sm text-slate-300">
-            <summary className="cursor-pointer text-emerald-300">Coverage and cost basis</summary>
+          <details className="rounded-md border border-app-border bg-app-surface p-4 text-sm text-app-text-secondary">
+            <summary className="min-h-11 cursor-pointer py-2 font-medium text-app-accent">Coverage and cost basis</summary>
             <p className="mt-2">Participant counts combine active accounts and guest browsers; the same person may use multiple browsers, and guest play may not be linked to a later login. Unidentifiable legacy sessions are excluded from player counts, not sessions. Saved sessions include zero-move games and recovered histories, not general site traffic or human views. AI cost covers measured Countrydle Gemini planner and fallback usage only, not platform spend; incomplete coverage is not total cost. The cost date is the completed UTC day shown, not today.</p>
-            <button type="button" className="mt-2 text-emerald-300 underline" onClick={onOpenCosts}>View cost details</button>
+            <button type="button" className="mt-2 min-h-11 text-app-accent underline underline-offset-2 hover:text-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus" onClick={onOpenCosts}>View cost details</button>
           </details>
 
           <section className="space-y-3" aria-labelledby="admin-overview-history">
             <div className="flex items-center gap-2">
-              <Calendar size={18} aria-hidden="true" className="text-slate-300" />
-              <h2 id="admin-overview-history" className="text-lg font-semibold text-sand-100">{t('adminOverview.historyTitle')}</h2>
+              <Calendar size={18} aria-hidden="true" className="text-app-text-muted" />
+              <h2 id="admin-overview-history" className="text-lg font-semibold text-app-text">{t('adminOverview.historyTitle')}</h2>
             </div>
             {!overview.history_14d?.length ? (
-              <p className="admin-panel admin-muted">{t('adminOverview.noHistory')}</p>
+              <p className="rounded-md border border-app-border bg-app-surface p-4 text-app-text-secondary">{t('adminOverview.noHistory')}</p>
             ) : (
-              <div className="admin-table overflow-x-auto" role="region" aria-label={t('adminOverview.historyRegion')} tabIndex={0}>
-                <table className="w-full min-w-[840px] text-sm">
+              <div className="overflow-x-auto rounded-md border border-app-border bg-app-surface" role="region" aria-label={t('adminOverview.historyRegion')} tabIndex={0}>
+                <table className="w-full min-w-[840px] border-collapse text-sm leading-5">
                   <thead><tr>
-                    <th scope="col" className="sticky left-0 z-10 bg-obsidian-850 px-4 py-3 text-left">{t('adminOverview.columns.date')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.players')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.winners')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.winRate')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.averageQuestions')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.questions')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.guesses')}</th>
+                    <th scope="col" className="sticky left-0 z-10 border-b border-app-border bg-app-surface-raised px-4 py-3 text-left font-semibold text-app-text-secondary">{t('adminOverview.columns.date')}</th>
+                    <th scope="col" className="border-b border-app-border px-4 py-3 text-right font-semibold text-app-text-secondary tabular-nums">{t('adminOverview.columns.players')}</th>
+                    <th scope="col" className="border-b border-app-border px-4 py-3 text-right font-semibold text-app-text-secondary tabular-nums">{t('adminOverview.columns.winners')}</th>
+                    <th scope="col" className="border-b border-app-border px-4 py-3 text-right font-semibold text-app-text-secondary tabular-nums">{t('adminOverview.columns.winRate')}</th>
+                    <th scope="col" className="border-b border-app-border px-4 py-3 text-right font-semibold text-app-text-secondary tabular-nums">{t('adminOverview.columns.averageQuestions')}</th>
+                    <th scope="col" className="border-b border-app-border px-4 py-3 text-right font-semibold text-app-text-secondary tabular-nums">{t('adminOverview.columns.questions')}</th>
+                    <th scope="col" className="border-b border-app-border px-4 py-3 text-right font-semibold text-app-text-secondary tabular-nums">{t('adminOverview.columns.guesses')}</th>
                   </tr></thead>
                   <tbody>
                     {overview.history_14d.map((day) => (
                       <tr key={day.date}>
-                        <th scope="row" className="sticky left-0 bg-obsidian-900 px-4 py-3 text-left font-medium text-sand-100">{dateFormat.format(new Date(`${day.date}T00:00:00Z`))}</th>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_players)}</td>
-                        <td className="admin-number px-4 py-3 text-right text-emerald-300">{numberFormat.format(day.total_winners)}</td>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.win_rate_pct)}%</td>
-                        <td className="admin-number px-4 py-3 text-right">{day.avg_questions_won ? numberFormat.format(day.avg_questions_won) : '—'}</td>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_questions)}</td>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_guesses)}</td>
+                        <th scope="row" className="sticky left-0 border-b border-app-border bg-app-surface px-4 py-3 text-left font-medium text-app-text">{dateFormat.format(new Date(`${day.date}T00:00:00Z`))}</th>
+                        <td className="border-b border-app-border px-4 py-3 text-right text-app-text-secondary tabular-nums">{numberFormat.format(day.total_players)}</td>
+                        <td className="border-b border-app-border px-4 py-3 text-right text-emerald-700 tabular-nums">{numberFormat.format(day.total_winners)}</td>
+                        <td className="border-b border-app-border px-4 py-3 text-right text-app-text-secondary tabular-nums">{numberFormat.format(day.win_rate_pct)}%</td>
+                        <td className="border-b border-app-border px-4 py-3 text-right text-app-text-secondary tabular-nums">{day.avg_questions_won ? numberFormat.format(day.avg_questions_won) : '—'}</td>
+                        <td className="border-b border-app-border px-4 py-3 text-right text-app-text-secondary tabular-nums">{numberFormat.format(day.total_questions)}</td>
+                        <td className="border-b border-app-border px-4 py-3 text-right text-app-text-secondary tabular-nums">{numberFormat.format(day.total_guesses)}</td>
                       </tr>
                     ))}
                   </tbody>

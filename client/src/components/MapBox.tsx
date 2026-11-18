@@ -36,6 +36,7 @@ const PRIME_MERIDIAN_LINES: [number, number][][] = [
   [[-85, 0], [85, 0]],
 ];
 
+
 const REFERENCE_LABEL_ICON = L.divIcon({
   className: 'map-reference-label',
   html: '<span class="text-zinc-300 font-mono text-xs leading-4 select-none pointer-events-none">0°</span>',
@@ -93,7 +94,6 @@ function ReferenceLineLabels() {
 
   return null;
 }
-
 const REFERENCE_LINE_STYLE: PathOptions = {
   color: '#a1a1aa',
   weight: 1.5,
@@ -101,6 +101,7 @@ const REFERENCE_LINE_STYLE: PathOptions = {
   dashArray: '6, 6',
   interactive: false,
 };
+
 
 interface MapBoxProps {
   correctCountryName?: string;
@@ -297,6 +298,8 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     }} />;
 }
 
+
+
 const getStyleFromState = (
   feature: Feature | undefined,
   eligibleNames: ReadonlySet<string>,
@@ -379,8 +382,6 @@ const getStyleFromState = (
     dashArray: undefined,
   };
 };
-
-
 export function ControlledMapBox({
   correctCountryName,
   className,

@@ -27,7 +27,16 @@ type DivergenceResult = {
   error: string | null;
 };
 
-const controlClass = 'admin-control';
+const panelBaseClass = 'min-w-0 rounded-md border p-4';
+const panelClass = `${panelBaseClass} border-app-border bg-app-surface text-app-text`;
+const toolbarClass = 'flex flex-wrap items-end gap-4 rounded-md border border-app-border bg-app-surface p-4';
+const controlClass = 'min-h-11 w-full min-w-0 rounded-sm border border-app-border bg-app-surface-muted px-3 py-2 text-app-text placeholder:text-app-text-muted focus:border-app-accent focus:outline-none focus:ring-2 focus:ring-app-focus disabled:cursor-not-allowed disabled:opacity-50';
+const buttonBaseClass = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-sm border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50';
+const buttonClass = `${buttonBaseClass} border-app-border bg-app-surface-muted text-app-text hover:border-app-accent-hover hover:bg-app-surface-raised`;
+const badgeBaseClass = 'inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-medium';
+const badgeClass = `${badgeBaseClass} border-app-border bg-app-surface-muted text-app-text-secondary`;
+const metaClass = 'text-xs leading-5 text-app-text-muted';
+const diagnosticsClass = 'max-w-full overflow-auto whitespace-pre-wrap break-words rounded-sm border border-app-border bg-app-surface-muted p-3 font-mono text-xs leading-5 text-app-text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus';
 
 export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQuestion?: (question: string, mode: string) => void }) {
   const { t } = useTranslation('translation', { keyPrefix: 'adminTemplateAudit' });
@@ -99,9 +108,9 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
   };
 
   return (
-    <section aria-labelledby="admin-page-title" className="min-w-0 space-y-5">
-      <div className="admin-toolbar">
-        <label className="flex min-w-0 flex-col gap-1.5 text-sm text-slate-300">
+    <section aria-labelledby="admin-page-title" className="min-w-0 space-y-5 text-app-text">
+      <div className={toolbarClass}>
+        <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-app-text-secondary">
           {t('status')}
           <select value={query.status} disabled={busyId !== null} onChange={(event) => changeQuery({ status: event.target.value as TemplateDivergenceStatus, page: 1 })} className={controlClass}>
             <option value="open">{t('open')}</option>
@@ -109,65 +118,65 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
             <option value="all">{t('allStatuses')}</option>
           </select>
         </label>
-        <label className="flex min-w-0 flex-col gap-1.5 text-sm text-slate-300">
+        <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-app-text-secondary">
           {t('mode')}
           <select value={query.mode} disabled={busyId !== null} onChange={(event) => changeQuery({ mode: event.target.value, page: 1 })} className={controlClass}>
             <option value="">{t('allModes')}</option>
             {Object.entries(MODE_LABELS).map(([modeKey, label]) => <option key={modeKey} value={modeKey}>{modesT(`adminModes.modes.${modeKey}`, { defaultValue: label })}</option>)}
           </select>
         </label>
-        <button type="button" disabled={loading || busyId !== null} onClick={() => changeQuery({ revision: query.revision + 1 })} className="admin-button ml-auto flex items-center gap-2">
+        <button type="button" disabled={loading || busyId !== null} onClick={() => changeQuery({ revision: query.revision + 1 })} className={`${buttonClass} ml-auto`}>
           <RefreshCw size={16} aria-hidden="true" />{t('refresh')}
         </button>
       </div>
 
-      {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
-      {actionError && <p role="alert" className="text-sm text-rose-300">{actionError}</p>}
+      {notice && <p role="status" className="text-sm text-emerald-800">{notice}</p>}
+      {actionError && <p role="alert" className="text-sm text-rose-800">{actionError}</p>}
 
       <div aria-busy={loading} className="space-y-4">
-        {loading ? <p role="status" className="py-8 text-sm text-slate-300">{t('loading')}</p>
-          : currentResult?.error ? <div role="alert" className="space-y-3 rounded-sm border border-rose-400/30 p-4 text-sm text-rose-300">
+        {loading ? <p role="status" className="py-8 text-sm text-app-text-secondary">{t('loading')}</p>
+          : currentResult?.error ? <div role="alert" className="space-y-3 rounded-md border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800">
             <p>{currentResult.error}</p>
-            <button type="button" onClick={() => changeQuery({ revision: query.revision + 1 })} className="admin-button flex items-center gap-2"><RefreshCw size={16} aria-hidden="true" />{t('retry')}</button>
+            <button type="button" onClick={() => changeQuery({ revision: query.revision + 1 })} className={buttonClass}><RefreshCw size={16} aria-hidden="true" />{t('retry')}</button>
           </div>
-          : currentResult?.items.length === 0 ? <p role="status" className="admin-panel text-sm text-slate-300">{t('empty')}</p>
+          : currentResult?.items.length === 0 ? <p role="status" className={`${panelBaseClass} border-app-border bg-app-surface text-sm text-app-text-muted`}>{t('empty')}</p>
             : currentResult?.items.map((item) => (
-              <article key={item.id} className="admin-panel min-w-0 space-y-4">
+              <article key={item.id} className={`${panelClass} space-y-4`}>
                 <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-base font-semibold text-sand-100">{t('record', { id: item.id, mode: modesT(`adminModes.modes.${item.mode}`, { defaultValue: MODE_LABELS[item.mode] || item.mode }) })}</h2>
-                      <span className="admin-badge">{item.divergence_type}</span>
-                      <span className={`admin-badge ${item.reviewed_at ? '' : 'text-emerald-300'}`}>{item.reviewed_at ? t('reviewed') : t('open')}</span>
+                      <h2 className="text-base font-semibold text-app-text">{t('record', { id: item.id, mode: modesT(`adminModes.modes.${item.mode}`, { defaultValue: MODE_LABELS[item.mode] || item.mode }) })}</h2>
+                      <span className={badgeClass}>{item.divergence_type}</span>
+                      <span className={`${badgeBaseClass} ${item.reviewed_at ? 'border-app-border bg-app-surface-muted text-app-text-secondary' : 'border-amber-300 bg-amber-50 text-amber-900'}`}>{item.reviewed_at ? t('reviewed') : t('open')}</span>
                     </div>
-                    <p className="text-sm text-slate-300">{t('captured')} <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('en-US')}</time></p>
-                    {item.reviewed_at && <p className="text-sm text-slate-300">{t('reviewedAt')} <time dateTime={item.reviewed_at}>{new Date(item.reviewed_at).toLocaleString('en-US')}</time></p>}
+                    <p className="text-sm text-app-text-secondary">{t('captured')} <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('en-US')}</time></p>
+                    {item.reviewed_at && <p className="text-sm text-app-text-secondary">{t('reviewedAt')} <time dateTime={item.reviewed_at}>{new Date(item.reviewed_at).toLocaleString('en-US')}</time></p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {onTestQuestion && <button type="button" disabled={busyId !== null} onClick={() => onTestQuestion(item.question, item.mode)} className="admin-button">{t('testInQa')}</button>}
-                    <button type="button" disabled={busyId !== null} onClick={() => void reviewDivergence(item)} className="admin-button flex items-center gap-2">
+                    {onTestQuestion && <button type="button" disabled={busyId !== null} onClick={() => onTestQuestion(item.question, item.mode)} className={buttonClass}>{t('testInQa')}</button>}
+                    <button type="button" disabled={busyId !== null} onClick={() => void reviewDivergence(item)} className={buttonClass}>
                       {busyId === item.id ? <RefreshCw size={16} aria-hidden="true" className="animate-spin" /> : item.reviewed_at ? <RotateCcw size={16} aria-hidden="true" /> : <CheckCircle2 size={16} aria-hidden="true" />}
                       {busyId === item.id ? t('saving') : item.reviewed_at ? t('reopen') : t('markReviewed')}
                     </button>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-slate-400">{t('question')}</p>
-                  <p className="admin-question break-words">{item.question}</p>
+                  <p className={metaClass}>{t('question')}</p>
+                  <p className="break-words text-base leading-6 text-app-text [overflow-wrap:anywhere]">{item.question}</p>
                 </div>
-                {item.details?.gemini_explanation && <p className="whitespace-pre-wrap break-words border-l-2 border-amber-400/50 pl-3 text-sm text-slate-300"><span className="font-medium text-sand-100">{t('modelExplanation')}</span> {item.details.gemini_explanation}</p>}
-                <details className="border-t border-white/10 pt-3">
-                  <summary className="cursor-pointer text-sm text-emerald-300">{t('comparePlans')}</summary>
+                {item.details?.gemini_explanation && <p className="whitespace-pre-wrap break-words rounded-sm border-l-2 border-amber-400 bg-amber-50 py-2 pl-3 pr-2 text-sm text-amber-900"><span className="font-medium text-amber-950">{t('modelExplanation')}</span> {item.details.gemini_explanation}</p>}
+                <details className="border-t border-app-border pt-3">
+                  <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium text-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">{t('comparePlans')}</summary>
                   <div className="mt-3 grid min-w-0 gap-4 xl:grid-cols-2">
                     <section className="min-w-0 space-y-3">
-                      <h3 className="text-base font-medium text-sand-100">{t('templatePlan')}</h3>
-                      {item.details?.template_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{item.details.template_improved_question}</p>}
-                      <pre tabIndex={0} aria-label={t('templatePlan')} className="admin-diagnostics max-h-96 overflow-auto whitespace-pre-wrap break-words">{JSON.stringify(item.template_plan, null, 2)}</pre>
+                      <h3 className="text-base font-medium text-app-text">{t('templatePlan')}</h3>
+                      {item.details?.template_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-app-text-secondary">{item.details.template_improved_question}</p>}
+                      <pre tabIndex={0} aria-label={t('templatePlan')} className={`${diagnosticsClass} max-h-96`}>{JSON.stringify(item.template_plan, null, 2)}</pre>
                     </section>
                     <section className="min-w-0 space-y-3">
-                      <h3 className="text-base font-medium text-sand-100">{t('modelPlan')}</h3>
-                      {item.details?.gemini_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{item.details.gemini_improved_question}</p>}
-                      <pre tabIndex={0} aria-label={t('modelPlan')} className="admin-diagnostics max-h-96 overflow-auto whitespace-pre-wrap break-words">{JSON.stringify(item.gemini_plan, null, 2)}</pre>
+                      <h3 className="text-base font-medium text-app-text">{t('modelPlan')}</h3>
+                      {item.details?.gemini_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-app-text-secondary">{item.details.gemini_improved_question}</p>}
+                      <pre tabIndex={0} aria-label={t('modelPlan')} className={`${diagnosticsClass} max-h-96`}>{JSON.stringify(item.gemini_plan, null, 2)}</pre>
                     </section>
                   </div>
                 </details>
@@ -176,11 +185,11 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
       </div>
 
       {currentResult && !currentResult.error && (
-        <div className="admin-pager">
-          <p className="text-sm text-slate-300">{t('page', { page: query.page, pages: totalPages, count: currentResult?.total ?? 0 })}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-app-border pt-4">
+          <p className="text-sm text-app-text-secondary">{t('page', { page: query.page, pages: totalPages, count: currentResult?.total ?? 0 })}</p>
           <div className="flex gap-2">
-            <button type="button" disabled={query.page <= 1 || loading} onClick={() => changeQuery({ page: query.page - 1 })} className="admin-button">{t('previous')}</button>
-            <button type="button" disabled={query.page >= totalPages || loading} onClick={() => changeQuery({ page: query.page + 1 })} className="admin-button">{t('next')}</button>
+            <button type="button" disabled={query.page <= 1 || loading} onClick={() => changeQuery({ page: query.page - 1 })} className={buttonClass}>{t('previous')}</button>
+            <button type="button" disabled={query.page >= totalPages || loading} onClick={() => changeQuery({ page: query.page + 1 })} className={buttonClass}>{t('next')}</button>
           </div>
         </div>
       )}

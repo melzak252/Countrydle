@@ -114,7 +114,7 @@ export default function CookiePolicyPage() {
           so you can review, reject or withdraw your optional Google choices when those settings are available:
         </p>
         <div className="mb-4">
-          <PrivacySettingsButton className="min-h-11 rounded-sm border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400" />
+          <PrivacySettingsButton className="min-h-11 rounded-sm border border-app-accent bg-app-surface-muted px-4 py-2 text-sm font-medium text-app-accent transition-colors hover:bg-app-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus" />
         </div>
         <p className="mb-4">
           Rejecting or withdrawing the required Google consent stops advertising and Google Analytics; active
