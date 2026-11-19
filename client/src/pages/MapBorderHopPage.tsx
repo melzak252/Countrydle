@@ -33,6 +33,13 @@ export default function MapBorderHopPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const requestId = useRef(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const focusInput = useCallback(() => {
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+  }, []);
 
   const loadNeighbors = useCallback(async (name: string, expectedRequestId: number) => {
     setLoadingNeighbors(true);
@@ -110,6 +117,7 @@ export default function MapBorderHopPage() {
     const nextLocation = matchTypedNeighbor(typedName, availableNeighbors, path);
     if (!nextLocation) {
       setFeedback('That region is not an unvisited neighbor of your current location.');
+      focusInput();
       return;
     }
 
@@ -118,6 +126,7 @@ export default function MapBorderHopPage() {
     setTypedName('');
     setFeedback(null);
     setNeighborError(null);
+    focusInput();
 
     if (normalizeMapRegionName(nextLocation) === normalizeMapRegionName(challenge.target)) {
       setStatus('verifying');
@@ -284,13 +293,15 @@ export default function MapBorderHopPage() {
                     Next neighbor of {currentLocation || 'your current region'}
                   </label>
                   <input
+                    ref={inputRef}
                     id="next-region"
                     autoComplete="off"
                     value={typedName}
                     onChange={(event) => setTypedName(event.target.value)}
                     placeholder="Type the next bordering region"
-                    disabled={loadingNeighbors || !currentLocation}
-                    className="w-full border border-app-border/35 bg-app-surface px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-2 focus:ring-app-focus/25 disabled:opacity-60"
+                    readOnly={loadingNeighbors || !currentLocation}
+                    aria-busy={loadingNeighbors}
+                    className="w-full border border-app-border/35 bg-app-surface px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-2 focus:ring-app-focus/25 read-only:opacity-60"
                   />
                 </div>
                 <button

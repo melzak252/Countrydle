@@ -78,6 +78,12 @@ body {
   }
 }
 
+.explore-card-perf {
+  content-visibility: auto;
+  contain: layout style paint;
+  contain-intrinsic-size: auto 136px;
+}
+
 /* Tactile cartographer's desk / corkboard surface for pinned field notes */
 .cartography-desk-mat {
   background-color: #ece3cc;

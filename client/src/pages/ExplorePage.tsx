@@ -692,7 +692,7 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
                     const descriptor = details?.rules ?? gameGroupNotes[group.id];
                     const scope = details?.scope ?? geographyLabels[game.geography];
                     return (
-                      <li key={game.path} className="min-w-0">
+                      <li key={game.path} className="explore-card-perf min-w-0">
                         <Link to={game.path} className="group flex h-full min-h-[128px] min-w-0 flex-row items-center gap-3 rounded-sm border border-app-border bg-app-surface p-3 text-left text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">
                           <ExploreGameArtwork game={game} />
                           <span className="min-w-0 flex-1">
@@ -1022,7 +1022,7 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
               <div
                 key={c.id}
                 onClick={() => openCountryModal(c.cca3 || c.app_country_name)}
-                className="group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
+                className="explore-card-perf group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1.5 min-w-0 flex-1">
@@ -1044,6 +1044,7 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
                       src={`https://flagcdn.com/w80/${String(c.cca2).toLowerCase()}.png`}
                       alt={`${c.app_country_name} flag`}
                       loading="lazy"
+                      decoding="async"
                       className="h-10 w-15 shrink-0 rounded-xs border border-app-border object-cover shadow-xs"
                     />
                   )}
@@ -1077,7 +1078,7 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
               <div
                 key={s.id}
                 onClick={() => openStateModal(s.name)}
-                className="group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
+                className="explore-card-perf group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">

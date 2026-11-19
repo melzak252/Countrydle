@@ -259,7 +259,7 @@ function MapArtwork({ url, frame, variant }: { url: MapUrl; frame: MapFrame; var
   const topWorld = data && variant === 'duel-map' ? createMapPath(data, duelMapFrame, duelTopViewport) : '';
   const bottomWorld = data && variant === 'duel-map' ? createMapPath(data, duelMapFrame, duelBottomViewport) : '';
   return (
-    <svg data-game-artwork={variant} data-map-frame={frame.id} aria-hidden="true" focusable="false" viewBox={`0 0 ${artworkSize.width} ${artworkSize.height}`} preserveAspectRatio="xMidYMid meet" className="h-full w-full">
+    <svg data-game-artwork={variant} data-map-frame={frame.id} aria-hidden="true" focusable="false" shapeRendering="optimizeSpeed" viewBox={`0 0 ${artworkSize.width} ${artworkSize.height}`} preserveAspectRatio="xMidYMid meet" className="h-full w-full">
       {topWorld && (
         <path
           d={topWorld}
