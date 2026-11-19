@@ -771,7 +771,7 @@ def test_local_kb_clarification_is_spoiler_free():
         "right": {"value": True},
     })
     assert us_res is not None
-    assert us_res.clarification == "the US state has coastal access."
+    assert us_res.clarification == "The US state has coastal access."
     assert "New Jersey" not in us_res.clarification
 
     powiat_res = answer(POWIAT_CONFIG, "Bielsko-Biała", {
@@ -780,7 +780,7 @@ def test_local_kb_clarification_is_spoiler_free():
         "right": {"value": True},
     })
     assert powiat_res is not None
-    assert powiat_res.clarification == "the Polish county is a city with county rights."
+    assert powiat_res.clarification == "The county is a city with county rights."
     assert "Bielsko" not in powiat_res.clarification
 
 
@@ -906,3 +906,90 @@ def test_powiat_inverted_word_order_in_contains_text():
     })
     assert result is not None
     assert result.answer is True
+
+
+def test_powiat_parent_voivodeship_is_coastal_uses_voivodeship_not_powiat():
+    # Powiat kartuski has no Baltic coastline, but its voivodeship (Pomorskie) is coastal.
+    result = answer(POWIAT_CONFIG, "Powiat kartuski", {
+        "operator": "equals",
+        "left": {"entity": "target_voivodeship", "relation": "is_coastal"},
+        "right": {"value": True},
+    })
+    assert result is not None
+    assert result.answer is True
+    assert result.clarification == "The voivodeship has Baltic Sea coastline."
+
+
+def test_powiat_inverted_truth_clarification_for_false_literal():
+    # Asking "is it landlocked?" via is_coastal == False on a coastal US state (California -> False)
+    result = answer(US_STATE_CONFIG, "California", {
+        "operator": "equals",
+        "left": {"entity": "target_state", "relation": "is_coastal"},
+        "right": {"value": False},
+    })
+    assert result is not None
+    assert result.answer is False
+    assert result.clarification == "The US state has coastal access."
+
+
+def test_powiat_registration_plates_list_starts_with_and_clarification():
+    result = answer(POWIAT_CONFIG, "Powiat krakowski", {
+        "operator": "starts_with",
+        "left": {"entity": "target_powiat", "relation": "registration_plates"},
+        "right": {"value": "KR"},
+    })
+    assert result is not None
+    assert result.answer is True
+    assert result.clarification == 'The county\'s license plates start with "KR".'
+
+
+def test_powiat_historical_regions_english_and_unaccented_aliases():
+    res_en = answer(POWIAT_CONFIG, "Powiat krakowski", {
+        "operator": "contains_exact",
+        "left": {"entity": "target_powiat", "relation": "historical_regions"},
+        "right": {"value": "Lesser Poland"},
+    })
+    res_ascii = answer(POWIAT_CONFIG, "Powiat krakowski", {
+        "operator": "contains_exact",
+        "left": {"entity": "target_powiat", "relation": "historical_regions"},
+        "right": {"value": "Malopolska"},
+    })
+    assert res_en is not None and res_en.answer is True
+    assert res_en.clarification == "The county is in Lesser Poland."
+    assert res_ascii is not None and res_ascii.answer is True
+
+
+def test_powiat_seat_english_and_unaccented_aliases():
+    res = answer(POWIAT_CONFIG, "Powiat wrocławski", {
+        "operator": "equals",
+        "left": {"entity": "target_powiat", "relation": "seat"},
+        "right": {"value": "Wroclaw"},
+    })
+    assert res is not None and res.answer is True
+    assert res.clarification == "The county's seat is Wroclaw."
+
+
+def test_powiat_any_neighbor_city_county_clarification():
+    result = answer(POWIAT_CONFIG, "Powiat krakowski", {
+        "operator": "any",
+        "items": {"entity": "target_powiat", "relation": "borders_powiat"},
+        "condition": {"operator": "equals", "left": {"entity": "item", "relation": "is_city_county"}, "right": {"value": 1}},
+    })
+    assert result is not None
+    assert result.answer is True
+    assert result.clarification == "The county borders a city with county rights."
+
+
+def test_contains_text_on_name_does_not_trigger_auto_guess():
+    from game_logic import is_direct_name_win_plan
+    plan = question_plan({
+        "operator": "contains_text",
+        "left": {"entity": "target_powiat", "relation": "name"},
+        "right": {"value": "krak"},
+    })
+    assert is_direct_name_win_plan(True, True, plan) is False
+
+
+def test_powiat_gmina_counts_in_local_config():
+    assert "urban_gmina_count" in POWIAT_CONFIG.scalar_relations
+    assert "rural_gmina_count" in POWIAT_CONFIG.scalar_relations

@@ -228,7 +228,7 @@ def is_direct_name_win_plan(valid: bool, answer: bool | None, planned_question: 
     left = plan.get("left")
     right = plan.get("right")
     return (
-        plan.get("operator") in {"equals", "contains_exact", "contains", "contains_text"}
+        plan.get("operator") in {"equals", "contains_exact", "contains"}
         and isinstance(left, dict)
         and left.get("relation") == "name"
         and isinstance(right, dict)

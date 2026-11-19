@@ -696,7 +696,14 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
                         <Link to={game.path} className="group flex h-full min-h-[128px] min-w-0 flex-row items-center gap-3 rounded-sm border border-app-border bg-app-surface p-3 text-left text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">
                           <ExploreGameArtwork game={game} />
                           <span className="min-w-0 flex-1">
-                            <span data-game-title title={game.name} className="block line-clamp-2 max-w-full break-words font-serif text-base font-semibold leading-5">{game.name}</span>
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span data-game-title title={game.name} className="line-clamp-2 max-w-full break-words font-serif text-base font-semibold leading-5">{game.name}</span>
+                              {game.path === '/powiaty' && (
+                                <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                                  In development
+                                </span>
+                              )}
+                            </span>
                             <span data-game-descriptor title={descriptor} className="mt-2 block break-words text-sm leading-5 text-app-text-secondary">{descriptor}</span>
                             <span data-game-scope title={scope} className="mt-1 block break-words text-xs leading-4 text-app-text-muted">{scope}</span>
                           </span>

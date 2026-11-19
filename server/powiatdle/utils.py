@@ -23,6 +23,7 @@ LOCAL_CONFIG = LocalModeConfig(
         "name": "name", "voivodeship": "voivodeship", "is_city_county": "is_city_county", "seat": "seat",
         "population": "population", "area": "area_km2", "population_density": "population_density",
         "urbanization": "urbanization_percent", "gmina_count": "gmina_count",
+        "urban_gmina_count": "urban_gmina_count", "rural_gmina_count": "rural_gmina_count",
         "urban_rural_gmina_count": "urban_rural_gmina_count",
         "latitude": "latitude", "longitude": "longitude",
     },

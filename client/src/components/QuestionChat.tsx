@@ -144,7 +144,12 @@ export default function QuestionChat({
                     <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
                     <span>
                       {answer}
-                      {question.clarification ? `, ${question.clarification.replace(/^(?:Yes,?\s*|No,?\s*)/i, '')}` : ''}
+                      {question.valid && question.answer !== null && question.clarification
+                        ? (() => {
+                            const stripped = question.clarification.replace(/^(?:Yes,?\s*|No,?\s*)/i, '');
+                            return stripped ? `, ${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}` : '';
+                          })()
+                        : ''}
                     </span>
                   </span>
                 </div>

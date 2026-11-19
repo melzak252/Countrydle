@@ -158,7 +158,15 @@ export default function PowiatyGamePage() {
           <div className="hidden md:flex items-center gap-2 px-3 text-xs text-app-text-secondary">
             <span className="h-1.5 w-1.5 rounded-full bg-app-accent shrink-0" />
             <span>Powiaty</span>
+            <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+              In Dev
+            </span>
             <span className="font-semibold text-app-text hidden sm:inline">{dailyDate}</span>
+          </div>
+          <div className="flex md:hidden items-center px-2">
+            <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+              Beta
+            </span>
           </div>
 
           <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">

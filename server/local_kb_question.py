@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import sqlite3
+import unicodedata
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,47 @@ _REGIONAL_DISPLAY = {
 POLISH_CITY_ALIASES = {
     "warsaw": "Warszawa",
     "cracow": "Kraków",
+    "krakow": "Kraków",
+    "lodz": "Łódź",
+    "wroclaw": "Wrocław",
+    "poznan": "Poznań",
+    "gdansk": "Gdańsk",
+    "szczecin": "Szczecin",
+    "bialystok": "Białystok",
+    "rzeszow": "Rzeszów",
+    "torun": "Toruń",
+    "zielona gora": "Zielona Góra",
+    "gorzow wielkopolski": "Gorzów Wielkopolski",
+}
+
+POLISH_REGION_ALIASES = {
+    "lesser poland": "Małopolska",
+    "greater poland": "Wielkopolska",
+    "silesia": "Śląsk",
+    "lower silesia": "Dolny Śląsk",
+    "upper silesia": "Górny Śląsk",
+    "masovia": "Mazowsze",
+    "mazovia": "Mazowsze",
+    "pomerania": "Pomorze",
+    "western pomerania": "Pomorze Zachodnie",
+    "west pomerania": "Pomorze Zachodnie",
+    "gdansk pomerania": "Pomorze Gdańskie",
+    "masuria": "Mazury",
+    "warmia": "Warmia",
+    "podlachia": "Podlasie",
+    "podlasie": "Podlasie",
+    "kuyavia": "Kujawy",
+    "galicia": "Galicja",
+    "carpathians": "Karpaty",
+    "carpathian mountains": "Karpaty",
+    "sudetes": "Sudety",
+    "sudeten": "Sudety",
+    "beskids": "Beskidy",
+    "bieszczady mountains": "Bieszczady",
+    "tatras": "Tatry",
+    "tatra mountains": "Tatry",
+    "kashubia": "Kaszuby",
+    "holy cross mountains": "Góry Świętokrzyskie",
 }
 
 POLISH_HISTORICAL_PARTITION_ALIASES = {
@@ -286,6 +328,8 @@ Mode-specific planning notes (apply these to positive predicates AND their negat
 User question: {question}
 """.strip()
     allowed_relations = config.scalar_relations.keys() | config.list_relations.keys() | {"name"}
+    if config.mode_name == "Powiatdle":
+        allowed_relations = allowed_relations | {"is_coastal", "mountain_ranges"}
     operators = (PLANNER_OPERATORS - {"contains"}) | {"contains_exact", "contains_partial", "any", "all"}
     allow_named_entities = config.mode_name in {"Countrydle", "Powiatdle", "USStatedle", "Wojewodztwodle"}
     schema = planner_response_schema(
@@ -319,6 +363,11 @@ User question: {question}
 
 def norm(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
+
+
+def fold_polish(value: Any) -> str:
+    text = norm(value).replace("ł", "l")
+    return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
 
 
 POLISH_NEIGHBORING_COUNTRIES_ALIASES: dict[str, str] = {
@@ -371,6 +420,7 @@ _VOIVODESHIP_LIST_RELATIONS: dict[str, tuple[str, str]] = {
     "major_roads": ("voivodeship_major_roads", "road_name"),
     "mountain_ranges": ("voivodeship_mountain_ranges", "range_name"),
     "historical_region": ("voivodeship_historical_regions", "region_name"),
+    "historical_regions": ("voivodeship_historical_regions", "region_name"),
     "landform_regions": ("voivodeship_landform_regions", "region_name"),
     "regional_labels": ("voivodeship_regional_labels", "label"),
 }
@@ -664,18 +714,21 @@ def evaluate(
         # with new deterministic plans without weakening exact membership.
         left = [_canonical_us_region(value) for value in left] if isinstance(left, list) else _canonical_us_region(left)
         right = _canonical_us_region(right)
+    left_row = _reference_row(conn, config, row, left_node, item_value)
     if config.mode_name in {"Wojewodztwodle", "Powiatdle"} and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
         if config.mode_name == "Wojewodztwodle":
             is_coast = bool(row["is_coastal"])
+        elif left_node.get("entity") == "target_voivodeship":
+            is_coast = bool(left)
         else:
-            is_coast = bool(conn.execute("SELECT 1 FROM powiat_water_access WHERE powiat_id = ? LIMIT 1", (row["id"],)).fetchone())
+            target_row_id = left_row["id"] if left_row is not None else row["id"]
+            is_coast = bool(conn.execute("SELECT 1 FROM powiat_water_access WHERE powiat_id = ? LIMIT 1", (target_row_id,)).fetchone())
         if op == "exists":
             return is_coast
         if right in {True, 1, "true", "True"} or norm(right) in {"morze", "baltyk", "morze baltyckie", "baltyckie", "sea", "baltic sea", "baltic"}:
             return is_coast
         if right in {False, 0, "false", "False"}:
             return not is_coast
-    left_row = _reference_row(conn, config, row, left_node, item_value)
     if (
         config.mode_name == "Powiatdle"
         and isinstance(left_node, dict)
@@ -743,12 +796,21 @@ def evaluate(
             if rel_name == "historical_partitions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
                 target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
                 return any(norm(v) == norm(target_partition) for v in left)
-            if config.mode_name == "Powiatdle" and rel_name == "historical_regions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
-                target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
-                if left_row is not None:
-                    partitions = get_relation_value(conn, config, left_row, "historical_partitions") or []
-                    if any(norm(v) == norm(target_partition) for v in partitions):
-                        return True
+            if rel_name in {"historical_regions", "landform_regions", "regional_labels"}:
+                folded_r = fold_polish(right)
+                target_region = POLISH_REGION_ALIASES.get(r_norm) or POLISH_REGION_ALIASES.get(folded_r)
+                if target_region:
+                    return any(fold_polish(v) == fold_polish(target_region) for v in left)
+                if config.mode_name == "Powiatdle" and rel_name == "historical_regions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
+                    target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
+                    if left_row is not None:
+                        partitions = get_relation_value(conn, config, left_row, "historical_partitions") or []
+                        if any(norm(v) == norm(target_partition) for v in partitions):
+                            return True
+                return any(fold_polish(v) == folded_r for v in left)
+            if rel_name in {"national_parks", "major_lakes", "lakes", "health_resorts"} and config.mode_name in {"Powiatdle", "Wojewodztwodle"}:
+                folded_r = fold_polish(right)
+                return any(fold_polish(v) == folded_r for v in left)
             return any(norm(v) == r_norm for v in left)
         if (
             (type(left) is bool or (isinstance(left, int) and left in (0, 1)))
@@ -769,9 +831,9 @@ def evaluate(
         if n_left == n_right:
             return True
         if isinstance(left_node, dict) and left_node.get("relation") == "seat":
-            l_alias = POLISH_CITY_ALIASES.get(n_left)
-            r_alias = POLISH_CITY_ALIASES.get(n_right)
-            if norm(l_alias or left) == norm(r_alias or right):
+            l_alias = POLISH_CITY_ALIASES.get(n_left) or POLISH_CITY_ALIASES.get(fold_polish(left))
+            r_alias = POLISH_CITY_ALIASES.get(n_right) or POLISH_CITY_ALIASES.get(fold_polish(right))
+            if fold_polish(l_alias or left) == fold_polish(r_alias or right):
                 return True
         if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
             resolved_r = resolve_powiat_name(conn, right)
@@ -787,9 +849,11 @@ def evaluate(
     if op == "contains_partial":
         rel_name = left_node.get("relation") if isinstance(left_node, dict) else ""
         r_val = POLISH_RIVER_ALIASES.get(norm(right), right) if rel_name == "major_rivers" else right
+        if rel_name in {"historical_regions", "landform_regions", "regional_labels"}:
+            r_val = POLISH_REGION_ALIASES.get(norm(right)) or POLISH_REGION_ALIASES.get(fold_polish(right)) or r_val
         if isinstance(left, list):
-            return any(norm(v) == norm(r_val) or norm(r_val) in norm(v) for v in left)
-        return norm(r_val) in norm(left)
+            return any(fold_polish(v) == fold_polish(r_val) or fold_polish(r_val) in fold_polish(v) for v in left)
+        return fold_polish(r_val) in fold_polish(left)
     if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "west_of", "east_of", "north_of", "south_of"}:
         if isinstance(left, list) and type(right) is not bool and (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit())):
             lnum, rnum = float(len(left)), float(right)
@@ -812,8 +876,12 @@ def evaluate(
     r_effective = POLISH_RIVER_ALIASES.get(norm(right), right) if rel_name == "major_rivers" else right
     n_right = norm(r_effective)
     if op == "starts_with":
+        if isinstance(left, list):
+            return any(norm(v).startswith(n_right) for v in left)
         return n_txt.startswith(n_right)
     if op == "ends_with":
+        if isinstance(left, list):
+            return any(norm(v).endswith(n_right) for v in left)
         return n_txt.endswith(n_right)
     if op == "contains_text":
         if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
@@ -1172,50 +1240,140 @@ def generate_mode_explanation(
         return factual_fallback()
 
 
+def _clarification_subject(config: LocalModeConfig, entity: Any) -> str:
+    if entity == "target_voivodeship":
+        return "The voivodeship"
+    return {
+        "Powiatdle": "The county",
+        "Wojewodztwodle": "The voivodeship",
+        "USStatedle": "The US state",
+    }.get(config.mode_name, f"The {config.entity_label}")
+
+
+def _is_false_literal(val: Any) -> bool:
+    return val is False or (isinstance(val, int) and type(val) is int and val == 0) or norm(val) in {"0", "false", "no", "nie"}
+
+
 def _build_local_kb_clarification(config: LocalModeConfig, plan: QuestionPlan, answer: bool) -> str | None:
     """Return a short, spoiler-free confirmation of how a local KB question was interpreted."""
-    node = plan.plan
-    if isinstance(node, list) and len(node) == 1:
-        node = node[0]
+    root_plan = plan.plan
+    node = root_plan[-1] if isinstance(root_plan, list) and root_plan else root_plan
     if not isinstance(node, dict):
         return None
     op = str(node.get("operator") or "")
-    left = node.get("left")
-    if op == "not":
+    while op == "not":
         inner = node.get("condition") or node.get("operand")
-        if isinstance(inner, dict):
-            node = inner
-            op = str(node.get("operator") or "")
-            left = node.get("left")
-            answer = not answer
-    if not isinstance(left, dict):
+        if isinstance(inner, int) and isinstance(root_plan, list) and 0 <= inner < len(root_plan):
+            inner = root_plan[inner]
+        if not isinstance(inner, dict):
+            return None
+        node = inner
+        op = str(node.get("operator") or "")
+        answer = not answer
+
+    if op == "any":
+        items = node.get("items")
+        args = node.get("args")
+        pred = node.get("condition") or (args[0] if isinstance(args, list) and args else None)
+        if isinstance(items, dict) and items.get("relation") == "borders_powiat" and pred is not None:
+            if isinstance(pred, int) and isinstance(root_plan, list) and 0 <= pred < len(root_plan):
+                pred = root_plan[pred]
+            if isinstance(pred, dict) and isinstance(pred.get("left"), dict) and pred["left"].get("relation") == "is_city_county":
+                pred_val = pred.get("right", pred.get("value"))
+                if isinstance(pred_val, dict):
+                    pred_val = pred_val.get("value")
+                is_city = not _is_false_literal(pred_val)
+                subject = _clarification_subject(config, items.get("entity"))
+                kind = "a city with county rights" if is_city else "a land county"
+                return f"{subject} borders {kind}." if answer else f"{subject} does not border {kind}."
         return None
-    rel = str(left.get("relation") or "")
+
+    left = node.get("left")
     right = node.get("right", node.get("value"))
     val = right.get("value") if isinstance(right, dict) else right
-    subject = f"the {config.entity_label}"
+
+    if isinstance(left, dict):
+        rel = str(left.get("relation") or "")
+        subject = _clarification_subject(config, left.get("entity"))
+    elif op in config.list_relations or op.startswith("borders_"):
+        rel = op
+        subject = _clarification_subject(config, None)
+    else:
+        return None
 
     if rel == "is_coastal":
+        eff = (not answer) if _is_false_literal(val) else answer
         if config.mode_name == "USStatedle":
-            return f"{subject} has coastal access." if answer else f"{subject} is landlocked."
-        return f"{subject} has Baltic Sea coastline." if answer else f"{subject} does not have Baltic Sea coastline."
+            return f"{subject} has coastal access." if eff else f"{subject} is landlocked."
+        return f"{subject} has Baltic Sea coastline." if eff else f"{subject} does not have Baltic Sea coastline."
     if rel == "is_city_county":
-        return f"{subject} is a city with county rights." if answer else f"{subject} is a land county."
-    if rel == "name" and op in {"equals", "contains_exact", "contains", "contains_text"} and isinstance(val, str) and val.strip():
-        return f"{subject} is {val}." if answer else f"{subject} is not {val}."
-    if rel in {"voivodeship", "region", "division", "macroregion"} and isinstance(val, str) and val.strip():
-        return f"{subject} is in {val}." if answer else f"{subject} is not in {val}."
-    if rel.startswith("borders_") and isinstance(val, str) and val.strip():
-        return f"{subject} borders {val}." if answer else f"{subject} does not border {val}."
+        eff = (not answer) if _is_false_literal(val) else answer
+        return f"{subject} is a city with county rights." if eff else f"{subject} is a land county."
     if rel == "water_access":
+        eff = (not answer) if _is_false_literal(val) else answer
+        if isinstance(val, str) and val.strip() and norm(val) not in {"true", "false", "1", "0"}:
+            return f"{subject} has access to {val}." if eff else f"{subject} does not have access to {val}."
+        return f"{subject} has coastline/water access." if eff else f"{subject} has no coastline/water access."
+
+    if rel == "name":
+        if op in {"equals", "contains_exact", "contains"} and isinstance(val, str) and val.strip():
+            return f"{subject} is {val}." if answer else f"{subject} is not {val}."
+        if op in {"contains_text", "contains_partial"} and isinstance(val, str) and val.strip():
+            return f"{subject}'s name contains \"{val}\"." if answer else f"{subject}'s name does not contain \"{val}\"."
+        if op in {"starts_with", "ends_with"} and isinstance(val, str) and val.strip():
+            verb = "starts" if op == "starts_with" else "ends"
+            neg = "start" if op == "starts_with" else "end"
+            return f"{subject}'s name {verb} with \"{val}\"." if answer else f"{subject}'s name does not {neg} with \"{val}\"."
+        if op == "has_space":
+            return f"{subject}'s name has more than one word." if answer else f"{subject}'s name is a single word."
+        if op == "has_hyphen":
+            return f"{subject}'s name contains a hyphen." if answer else f"{subject}'s name does not contain a hyphen."
+        if op in {"word_count_equals", "word_count_greater_than", "word_count_less_than", "char_count_equals", "char_count_greater_than", "char_count_less_than"} and val is not None:
+            unit = "words" if op.startswith("word_count") else "letters"
+            cmp_map = {"equals": "", "greater_than": "more than ", "less_than": "fewer than "}
+            cmp_key = op.split("count_", 1)[1]
+            phrase = f"{cmp_map.get(cmp_key, '')}{val} {unit}"
+            return f"{subject}'s name has {phrase}." if answer else f"{subject}'s name does not have {phrase}."
+
+    if rel == "seat" and isinstance(val, str) and val.strip():
+        return f"{subject}'s seat is {val}." if answer else f"{subject}'s seat is not {val}."
+    if rel in {"voivodeship", "region", "division", "macroregion", "historical_regions", "landform_regions", "regional_labels"} and isinstance(val, str) and val.strip():
+        return f"{subject} is in {val}." if answer else f"{subject} is not in {val}."
+    if rel == "historical_partitions" and isinstance(val, str) and val.strip():
+        return f"{subject} was part of {val}." if answer else f"{subject} was not part of {val}."
+    if rel.startswith("borders_"):
+        if op in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"} and (isinstance(val, (int, float)) or (isinstance(val, str) and val.isdigit())):
+            unit = {"borders_country": "countries", "borders_state": "states", "borders_voivodeship": "voivodeships", "borders_powiat": "counties"}.get(rel, "neighbors")
+            cmp_phrase = {"equals": "", "greater_than": "more than ", "less_than": "fewer than ", "greater_than_or_equal": "at least ", "less_than_or_equal": "at most "}[op]
+            return f"{subject} borders {cmp_phrase}{val} {unit}." if answer else f"{subject} does not border {cmp_phrase}{val} {unit}."
         if isinstance(val, str) and val.strip():
-            return f"{subject} has access to {val}." if answer else f"{subject} does not have access to {val}."
-        return f"{subject} has coastline/water access." if answer else f"{subject} has no coastline/water access."
+            return f"{subject} borders {val}." if answer else f"{subject} does not border {val}."
+    if rel == "registration_plates":
+        if op in {"char_count_equals", "char_count_greater_than", "char_count_less_than"} and val is not None:
+            cmp_phrase = {"char_count_equals": "", "char_count_greater_than": "more than ", "char_count_less_than": "fewer than "}[op]
+            return f"{subject}'s license plates have {cmp_phrase}{val} characters." if answer else f"{subject}'s license plates do not have {cmp_phrase}{val} characters."
+        if op in {"starts_with", "ends_with"} and isinstance(val, str) and val.strip():
+            verb = "start" if op == "starts_with" else "end"
+            return f"{subject}'s license plates {verb} with \"{val}\"." if answer else f"{subject}'s license plates do not {verb} with \"{val}\"."
+        if isinstance(val, str) and val.strip():
+            return f"{subject} uses plate code {val}." if answer else f"{subject} does not use plate code {val}."
+    if rel in {"major_rivers", "major_roads", "national_parks", "lakes", "major_lakes", "unesco_sites", "health_resorts", "mountain_ranges"}:
+        if op == "exists":
+            label = rel.replace("_", " ")
+            return f"{subject} has {label}." if answer else f"{subject} does not have {label}."
+        if isinstance(val, str) and val.strip():
+            return f"{subject} has {val}." if answer else f"{subject} does not have {val}."
     if rel in {"latitude", "longitude"} and op in {"north_of", "south_of", "east_of", "west_of"}:
         dir_label = op.replace("_", " ")
         ref_name = right.get("entity") if isinstance(right, dict) and right.get("entity") else val
+        if isinstance(ref_name, str) and (ref_name.startswith("target_") or ref_name == "item"):
+            ref_name = None
         if ref_name is not None:
             return f"{subject} is {dir_label} {ref_name}." if answer else f"{subject} is not {dir_label} {ref_name}."
+    if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "equals"} and val is not None:
+        label = rel.replace("_", " ")
+        cmp_phrase = {"greater_than": "greater than", "less_than": "less than", "greater_than_or_equal": "at least", "less_than_or_equal": "at most", "equals": "equal to"}[op]
+        return f"{subject}'s {label} is {cmp_phrase} {val}." if answer else f"{subject}'s {label} is not {cmp_phrase} {val}."
     if op == "exists":
         label = rel.replace("_", " ")
         return f"{subject} has {label}." if answer else f"{subject} does not have {label}."
