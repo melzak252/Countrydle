@@ -44,7 +44,13 @@ export default function ResultsQuestionHistory({ questions, mode, isGameOver, no
           ? t('chat.answerNo', 'No')
           : t('chat.answerUnknown', 'Unknown');
         const Icon = warning ? AlertTriangle : question?.answer === true ? Check : question?.answer === false ? X : HelpCircle;
-        const tone = warning ? 'text-amber-900 bg-amber-50' : question?.answer === true ? 'text-emerald-900 bg-emerald-50' : question?.answer === false ? 'text-rose-900 bg-rose-50' : 'text-app-text-secondary bg-app-surface-muted';
+        const tone = warning
+          ? 'text-amber-900 bg-amber-50 dark:text-amber-200 dark:bg-amber-950/60'
+          : question?.answer === true
+            ? 'text-emerald-900 bg-emerald-50 dark:text-emerald-200 dark:bg-emerald-950/60'
+            : question?.answer === false
+              ? 'text-rose-900 bg-rose-50 dark:text-rose-200 dark:bg-rose-950/60'
+              : 'text-app-text-secondary bg-app-surface-muted';
 
         return (
           <li key={message.kind === 'question' ? `question-${message.question.id}` : `notice-${message.notice.id}`} className="min-w-0">

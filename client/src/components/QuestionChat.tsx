@@ -100,14 +100,14 @@ export default function QuestionChat({
                   <Compass size={13} className="text-app-accent" aria-hidden="true" />
                   <span>Countrydle</span>
                 </div>
-                <div className="w-fit max-w-[92%] rounded-sm border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 space-y-1 shadow-sm">
-                  <div className="flex items-center gap-1.5 font-semibold text-amber-900 text-sm">
-                    <AlertTriangle size={13} className="shrink-0 text-amber-700" aria-hidden="true" />
+                <div className="w-fit max-w-[92%] rounded-sm border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/60 dark:text-amber-200 space-y-1 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-200 text-sm">
+                    <AlertTriangle size={13} className="shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
                     <span>{notice.title}</span>
                   </div>
                   <p className="text-app-text-secondary leading-snug">{notice.reason}</p>
                   {notice.nextStep && (
-                    <p className="text-amber-900/80 text-xs pt-1 border-t border-amber-200">{notice.nextStep}</p>
+                    <p className="text-amber-900/80 dark:text-amber-200/80 text-xs pt-1 border-t border-amber-200 dark:border-amber-700/40">{notice.nextStep}</p>
                   )}
                 </div>
               </div>
@@ -119,7 +119,13 @@ export default function QuestionChat({
         const showExplanation = Boolean(question.explanation) && (!question.valid || isGameOver);
         const answer = !question.valid ? 'Invalid question' : question.answer === true ? 'Yes' : question.answer === false ? 'No' : 'Unknown';
         const Icon = !question.valid ? AlertTriangle : question.answer === true ? Check : question.answer === false ? X : HelpCircle;
-        const tone = !question.valid ? 'bg-amber-50 text-amber-900' : question.answer === true ? 'bg-emerald-50 text-emerald-900' : question.answer === false ? 'bg-rose-50 text-rose-900' : 'bg-app-surface-muted text-app-text-secondary';
+        const tone = !question.valid
+          ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:border dark:border-amber-700/50'
+          : question.answer === true
+            ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border dark:border-emerald-700/50'
+            : question.answer === false
+              ? 'bg-rose-50 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200 dark:border dark:border-rose-700/50'
+              : 'bg-app-surface-muted text-app-text-secondary';
 
         return (
           <li key={`question-${question.id}`} className="space-y-2 animate-message">
@@ -144,7 +150,7 @@ export default function QuestionChat({
                 </div>
                 {showExplanation && (
                   <div className="text-sm leading-relaxed text-app-text-secondary [overflow-wrap:anywhere] pt-0.5">
-                    {!question.valid && <p className="mb-0.5 font-medium text-amber-800">Try rephrasing your question</p>}
+                    {!question.valid && <p className="mb-0.5 font-medium text-amber-800 dark:text-amber-300">Try rephrasing your question</p>}
                     <p className="text-app-text-secondary">{question.explanation}</p>
                   </div>
                 )}

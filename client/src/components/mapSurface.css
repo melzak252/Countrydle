@@ -34,19 +34,23 @@
 }
 
 .antique-map-surface .leaflet-tile-pane {
-  background-color: var(--map-ocean, #e9dfca);
+  background-color: transparent;
   filter: var(--map-tile-filter, sepia(0.18) saturate(0.72));
 }
 
 .antique-map-surface .leaflet-tile {
-  background-color: var(--map-ocean, #e9dfca);
+  background-color: transparent;
 }
 
 .map-cartographic-texture {
+  position: absolute;
+  inset: 0;
+  z-index: 450;
   background-color: transparent !important;
   pointer-events: none !important;
   background-repeat: repeat;
-  background-size: 1024px 1024px;
+  background-size: 512px 512px;
+  opacity: 0.24;
   mix-blend-mode: multiply;
 }
 
@@ -112,7 +116,7 @@
 
 [data-theme="dark"] .map-cartographic-texture {
   mix-blend-mode: soft-light;
-  opacity: 0.35 !important;
+  opacity: 0.16;
 }
 
 [data-theme="dark"] .antique-map-surface .leaflet-tooltip {
