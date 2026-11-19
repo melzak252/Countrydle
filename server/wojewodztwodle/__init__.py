@@ -38,7 +38,7 @@ from schemas.wojewodztwodle import (
 )
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import wojewodztwodle.utils as wutils
-from game_logic import GameConfig, GameRules, GameState, is_valid_synced_game_state
+from game_logic import GameConfig, GameRules, GameState, is_direct_name_win_plan, is_valid_synced_game_state
 from utils.geo import enhance_guess_with_hint
 
 
@@ -386,19 +386,36 @@ async def _do_ask_question(
         return unresolved_question(question_create, WojewodztwoQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day_state.id
-    if user is None:
-        await record_guest_action(
-            session, request, response, "wojewodztwodle", day_state.id,
-            question=True, max_questions=WOJEWODZTWDLE_CONFIG.max_questions,
+    if is_direct_name_win_plan(question_create.valid, question_create.answer, planned_question):
+        new_question = await WojewodztwodleQuestionRepository(session).create_question(question_create)
+        guess_payload = WojewodztwoGuessBase(
+            guess=day_state.wojewodztwo.nazwa if getattr(day_state, "wojewodztwo", None) else "",
+            wojewodztwo_id=day_state.wojewodztwo_id,
         )
+        auto_guess_display = await make_guess(
+            guess=guess_payload,
+            request=request,
+            response=response,
+            user=user,
+            session=session,
+        )
+        result = WojewodztwoQuestionDisplay.model_validate(new_question)
+        result.auto_guess = auto_guess_display
+        await session.commit()
     else:
-        await consume_question(
-            session, WojewodztwodleState, user.id, day_state.id,
-            WOJEWODZTWDLE_CONFIG.max_questions, WOJEWODZTWDLE_CONFIG.max_guesses,
-        )
-    new_question = await WojewodztwodleQuestionRepository(session).create_question(question_create)
-    result = WojewodztwoQuestionDisplay.model_validate(new_question)
-    await session.commit()
+        if user is None:
+            await record_guest_action(
+                session, request, response, "wojewodztwodle", day_state.id,
+                question=True, max_questions=WOJEWODZTWDLE_CONFIG.max_questions,
+            )
+        else:
+            await consume_question(
+                session, WojewodztwodleState, user.id, day_state.id,
+                WOJEWODZTWDLE_CONFIG.max_questions, WOJEWODZTWDLE_CONFIG.max_guesses,
+            )
+        new_question = await WojewodztwodleQuestionRepository(session).create_question(question_create)
+        result = WojewodztwoQuestionDisplay.model_validate(new_question)
+        await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.
         try:

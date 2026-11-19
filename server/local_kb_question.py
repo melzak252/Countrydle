@@ -80,6 +80,7 @@ class LocalAnswer:
     answer: bool | None
     explanation: str
     relations: list[str]
+    clarification: str | None = None
 
 
 def load_dotenv() -> None:
@@ -1120,6 +1121,56 @@ def generate_mode_explanation(
         return factual_fallback()
 
 
+def _build_local_kb_clarification(config: LocalModeConfig, plan: QuestionPlan, answer: bool) -> str | None:
+    """Return a short, spoiler-free confirmation of how a local KB question was interpreted."""
+    node = plan.plan
+    if isinstance(node, list) and len(node) == 1:
+        node = node[0]
+    if not isinstance(node, dict):
+        return None
+    op = str(node.get("operator") or "")
+    left = node.get("left")
+    if op == "not":
+        inner = node.get("condition") or node.get("operand")
+        if isinstance(inner, dict):
+            node = inner
+            op = str(node.get("operator") or "")
+            left = node.get("left")
+            answer = not answer
+    if not isinstance(left, dict):
+        return None
+    rel = str(left.get("relation") or "")
+    right = node.get("right", node.get("value"))
+    val = right.get("value") if isinstance(right, dict) else right
+    subject = f"the {config.entity_label}"
+
+    if rel == "is_coastal":
+        if config.mode_name == "USStatedle":
+            return f"{subject} has coastal access." if answer else f"{subject} is landlocked."
+        return f"{subject} has Baltic Sea coastline." if answer else f"{subject} does not have Baltic Sea coastline."
+    if rel == "is_city_county":
+        return f"{subject} is a city with county rights." if answer else f"{subject} is a land county."
+    if rel == "name" and op in {"equals", "contains_exact", "contains", "contains_text"} and isinstance(val, str) and val.strip():
+        return f"{subject} is {val}." if answer else f"{subject} is not {val}."
+    if rel in {"voivodeship", "region", "division", "macroregion"} and isinstance(val, str) and val.strip():
+        return f"{subject} is in {val}." if answer else f"{subject} is not in {val}."
+    if rel.startswith("borders_") and isinstance(val, str) and val.strip():
+        return f"{subject} borders {val}." if answer else f"{subject} does not border {val}."
+    if rel == "water_access":
+        if isinstance(val, str) and val.strip():
+            return f"{subject} has access to {val}." if answer else f"{subject} does not have access to {val}."
+        return f"{subject} has coastline/water access." if answer else f"{subject} has no coastline/water access."
+    if rel in {"latitude", "longitude"} and op in {"north_of", "south_of", "east_of", "west_of"}:
+        dir_label = op.replace("_", " ")
+        ref_name = right.get("entity") if isinstance(right, dict) and right.get("entity") else val
+        if ref_name is not None:
+            return f"{subject} is {dir_label} {ref_name}." if answer else f"{subject} is not {dir_label} {ref_name}."
+    if op == "exists":
+        label = rel.replace("_", " ")
+        return f"{subject} has {label}." if answer else f"{subject} does not have {label}."
+    return None
+
+
 def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) -> LocalAnswer | None:
     if not plan.valid or not plan.supported or not plan.plan:
         return None
@@ -1133,9 +1184,11 @@ def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) 
         return None
     relations = collect_relations(plan.plan)
     explanation = generate_mode_explanation(config, row, plan, answer, conn)
+    clarification = _build_local_kb_clarification(config, plan, answer)
     return LocalAnswer(
         question=plan.improved_question or plan.original_question,
         answer=answer,
         explanation=explanation,
         relations=relations,
+        clarification=clarification,
     )

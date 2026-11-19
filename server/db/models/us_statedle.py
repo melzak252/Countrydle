@@ -68,6 +68,7 @@ class USStatedleQuestion(Base):
     question = Column(String)
     valid = Column(Boolean, nullable=False)
     answer = Column(Boolean)
+    clarification = Column(String)
     explanation = Column(String, nullable=False)
     asked_at = Column(DateTime, default=func.now())
 

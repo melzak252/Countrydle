@@ -127,6 +127,7 @@ async def analyze_and_answer_locally(
         question=answer.question,
         valid=True,
         answer=answer.answer,
+        clarification=answer.clarification,
         explanation=answer.explanation,
         context="local_kb:" + ",".join(answer.relations),
         intent=plan.explanation,

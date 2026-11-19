@@ -65,6 +65,7 @@ class USStateQuestionCreate(BaseModel):
     question: Optional[str]
     valid: bool
     answer: Optional[bool] = Field(strict=True)
+    clarification: Optional[str] = None
     explanation: str
     context: Optional[str]
     intent: Optional[str] = None
@@ -79,6 +80,7 @@ class USStateQuestionDisplay(ReportableQuestion):
     question: Optional[str]
     valid: bool
     answer: Optional[bool]
+    clarification: Optional[str] = None
     explanation: str
     asked_at: datetime
     user_id: Optional[int] = None
@@ -86,6 +88,7 @@ class USStateQuestionDisplay(ReportableQuestion):
     context: Optional[str] = Field(default=None, exclude=True)
     user: Optional[UserDisplay] = None
     us_state: Optional[USStateDisplay] = None
+    auto_guess: Optional[USStateGuessDisplay] = None
 
     model_config = ConfigDict(from_attributes=True)
 

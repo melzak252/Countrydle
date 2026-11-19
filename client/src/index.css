@@ -52,12 +52,6 @@ body {
   margin: 0;
   min-height: 100vh;
   background-color: rgb(var(--app-canvas));
-  background-image:
-    radial-gradient(circle, rgb(var(--app-paper-grain-color) / var(--app-paper-grain-opacity)) 0.45px, transparent 0.8px),
-    radial-gradient(circle, rgb(255 255 255 / 0.3) 0.45px, transparent 0.8px);
-  background-size: 7px 7px, 13px 13px;
-  background-position: 0 0, 3px 5px;
-  background-repeat: repeat;
   color: rgb(var(--app-text));
 }
 /* Static fine grain sits on the page canvas, separate from the map palette. */
@@ -68,13 +62,20 @@ body {
   background-size: 7px 7px, 13px 13px;
   background-position: 0 0, 3px 5px;
   background-repeat: repeat;
-  background-attachment: fixed;
 }
 
 [data-theme="dark"] #root > .bg-app-canvas {
   background-image:
     radial-gradient(circle, rgb(var(--app-paper-grain-color) / var(--app-paper-grain-opacity)) 0.45px, transparent 0.8px);
   background-size: 9px 9px;
+}
+
+/* Skip dense micro-dot radial gradients on touch devices for smooth 60/120fps scrolling */
+@media (hover: none) and (pointer: coarse) {
+  #root > .bg-app-canvas,
+  [data-theme="dark"] #root > .bg-app-canvas {
+    background-image: none;
+  }
 }
 
 /* Tactile cartographer's desk / corkboard surface for pinned field notes */

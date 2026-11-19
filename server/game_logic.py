@@ -214,3 +214,23 @@ class GameRules:
             elapsed_seconds=elapsed_seconds,
             streak=streak,
         )
+
+
+def is_direct_name_win_plan(valid: bool, answer: bool | None, planned_question: object) -> bool:
+    """Return True when a valid Yes answer directly named the hidden target entity."""
+    if not (valid and answer is True and getattr(planned_question, "plan", None) is not None):
+        return False
+    plan = getattr(planned_question, "plan", None)
+    if isinstance(plan, list) and len(plan) == 1:
+        plan = plan[0]
+    if not isinstance(plan, dict):
+        return False
+    left = plan.get("left")
+    right = plan.get("right")
+    return (
+        plan.get("operator") in {"equals", "contains_exact", "contains", "contains_text"}
+        and isinstance(left, dict)
+        and left.get("relation") == "name"
+        and isinstance(right, dict)
+        and "value" in right
+    )

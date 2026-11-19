@@ -33,7 +33,7 @@ from db.repositories.continental import (
 )
 from db.repositories.country import CountryRepository
 from db.repositories.user import UserRepository
-from game_logic import CONTINENTAL_CONFIG, GameRules, GameState, is_valid_synced_game_state
+from game_logic import CONTINENTAL_CONFIG, GameRules, GameState, is_direct_name_win_plan, is_valid_synced_game_state
 from qdrant.utils import add_question_to_qdrant
 from schemas.continental import (
     ContinentalEndStateResponse,
@@ -406,19 +406,37 @@ async def _do_ask_question(
     question_create.user_id = user.id if user else None
     question_create.day_id = day.id
     question_create.guest_id = get_guest_identity(request, response) if user is None else None
-    if user is None:
-        await record_guest_action(
-            session, request, response, f"continental:{continent.value}", day.id,
-            question=True, max_questions=CONTINENTAL_CONFIG.max_questions,
+    if is_direct_name_win_plan(question_create.valid, question_create.answer, planned_question):
+        new_question = await ContinentalQuestionRepository(session).create_question(question_create)
+        guess_payload = ContinentalGuessBase(
+            guess=day.country.name if getattr(day, "country", None) else "",
+            country_id=day.country_id,
         )
+        auto_guess_display = await make_guess(
+            continent=continent,
+            guess=guess_payload,
+            request=request,
+            response=response,
+            user=user,
+            session=session,
+        )
+        result = ContinentalQuestionDisplay.model_validate(new_question)
+        result.auto_guess = auto_guess_display
+        await session.commit()
     else:
-        await consume_question(
-            session, ContinentalState, user.id, day.id,
-            CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
-        )
-    new_question = await ContinentalQuestionRepository(session).create_question(question_create)
-    result = ContinentalQuestionDisplay.model_validate(new_question)
-    await session.commit()
+        if user is None:
+            await record_guest_action(
+                session, request, response, f"continental:{continent.value}", day.id,
+                question=True, max_questions=CONTINENTAL_CONFIG.max_questions,
+            )
+        else:
+            await consume_question(
+                session, ContinentalState, user.id, day.id,
+                CONTINENTAL_CONFIG.max_questions, CONTINENTAL_CONFIG.max_guesses,
+            )
+        new_question = await ContinentalQuestionRepository(session).create_question(question_create)
+        result = ContinentalQuestionDisplay.model_validate(new_question)
+        await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.
         try:

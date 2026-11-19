@@ -762,3 +762,55 @@ def test_powiatdle_fallback_prompt_includes_verified_parent_voivodeship_rivers()
     system_prompt, _ = putils.answer_prompts(q, "Powiat kępiński", "Context chunk")
     assert "Wielkopolskie" in system_prompt
     assert "Noteć, Obra, Prosna, Warta" in system_prompt
+
+
+def test_local_kb_clarification_is_spoiler_free():
+    us_res = answer(US_STATE_CONFIG, "New Jersey", {
+        "operator": "equals",
+        "left": {"entity": "target_state", "relation": "is_coastal"},
+        "right": {"value": True},
+    })
+    assert us_res is not None
+    assert us_res.clarification == "the US state has coastal access."
+    assert "New Jersey" not in us_res.clarification
+
+    powiat_res = answer(POWIAT_CONFIG, "Bielsko-Biała", {
+        "operator": "equals",
+        "left": {"entity": "target_powiat", "relation": "is_city_county"},
+        "right": {"value": True},
+    })
+    assert powiat_res is not None
+    assert powiat_res.clarification == "the Polish county is a city with county rights."
+    assert "Bielsko" not in powiat_res.clarification
+
+
+def test_is_direct_name_win_plan_helper():
+    from game_logic import is_direct_name_win_plan
+
+    assert is_direct_name_win_plan(
+        True,
+        True,
+        question_plan({
+            "operator": "equals",
+            "left": {"entity": "target_state", "relation": "name"},
+            "right": {"value": "Texas"},
+        }),
+    ) is True
+    assert is_direct_name_win_plan(
+        True,
+        False,
+        question_plan({
+            "operator": "equals",
+            "left": {"entity": "target_state", "relation": "name"},
+            "right": {"value": "Texas"},
+        }),
+    ) is False
+    assert is_direct_name_win_plan(
+        True,
+        True,
+        question_plan({
+            "operator": "equals",
+            "left": {"entity": "target_voivodeship", "relation": "name"},
+            "right": {"entity": "target_voivodeship", "relation": "seat"},
+        }),
+    ) is False
