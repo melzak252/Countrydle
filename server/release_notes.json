@@ -1,5 +1,5 @@
 {
-  "version": "2.0.4",
-  "title": "Standardized Auto-Guess, Local KB Clarifications, Mobile Scroll & Powiatdle Beta",
-  "body": "- Standardized direct-name auto-guess and spoiler-free question clarifications across Continental, Powiatdle, US Statedle, and Wojewodztwodle.\n- Improved Powiatdle local KB answering (parent voivodeship coastal checks, list-valued plate prefix/suffix checks, English/unaccented Polish region and city aliases, urban/rural gmina counts) and fixed false auto-wins on substring queries.\n- Improved mobile scrolling smoothness and added a Beta / In Development badge to Powiatdle."
+  "version": "2.0.5",
+  "title": "Map Border Hop Input Focus & Explore Page Scroll Performance",
+  "body": "- Kept focus in the Map Border Hop region input after submitting a step instead of blurring while loading borders.\n- Improved Explore page scroll smoothness on mobile using content-visibility isolation on catalog cards and faster SVG preview rendering."
 }
