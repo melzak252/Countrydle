@@ -234,7 +234,7 @@ export default function BlogListPage() {
         </div>
 
         {error ? (
-          <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-8 text-center text-amber-900">
+          <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-8 text-center text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/60 dark:text-amber-200">
             <p>{error}</p>
             <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded-sm border border-app-border px-4 py-2 text-app-text">Try again</button>
           </div>
@@ -291,7 +291,7 @@ export default function BlogListPage() {
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><time dateTime={featuredPost.date} className="min-w-0 break-words">{formatBlogDate(featuredPost.date)}</time></span>
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Clock size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.reading_time_minutes} {'min read'}</span></span>
                     {featuredPost.continent && (
-                      <span className="rounded-sm border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-xs text-emerald-800">
+                      <span className="rounded-sm border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-xs text-emerald-800 dark:border-emerald-700/50 dark:bg-emerald-950/60 dark:text-emerald-200">
                         {filterLabel(featuredPost.continent)}
                       </span>
                     )}
@@ -313,20 +313,20 @@ export default function BlogListPage() {
             )}
 
             {regularPosts.length > 0 ? (
-              <section className="cartography-desk-mat rounded-sm border border-[#c7b896] p-4 shadow-[inset_0_2px_10px_rgba(85,75,57,0.08)] sm:p-6 md:p-8">
+              <section className="cartography-desk-mat rounded-sm border border-[#c7b896] p-4 shadow-[inset_0_2px_10px_rgba(85,75,57,0.08)] dark:border-app-border sm:p-6 md:p-8">
                 <div className="mb-6 flex items-center gap-4">
-                  <h2 className="min-w-0 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[#554b39]">
+                  <h2 className="min-w-0 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[#554b39] dark:text-app-text-secondary">
                     {search ? ('Search results') : ('Pinned field dispatches')}
                   </h2>
-                  <div className="h-px flex-1 bg-[#bfb08f]" />
+                  <div className="h-px flex-1 bg-[#bfb08f] dark:bg-app-border" />
                 </div>
                 <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
                   {regularPosts.map((post, idx) => {
                     const noteStyles = [
-                      { card: 'bg-[#fdf7e4] border-[#d3c095] -rotate-[0.8deg]', pin: 'bg-[#a84436] ring-[#f7d8d2]' },
-                      { card: 'bg-[#f4f7ed] border-[#bcc9b0] rotate-[0.7deg]', pin: 'bg-[#2a5942] ring-[#d4e7dc]' },
-                      { card: 'bg-[#faf1de] border-[#d4ba8c] -rotate-[0.5deg]', pin: 'bg-[#355c7d] ring-[#d5e3ef]' },
-                      { card: 'bg-[#fcf5ea] border-[#ccb999] rotate-[0.4deg]', pin: 'bg-[#9a6b2f] ring-[#efe2cc]' },
+                      { card: 'bg-[#fdf7e4] border-[#d3c095] dark:bg-[#1c2329] dark:border-[#49555e] -rotate-[0.8deg]', pin: 'bg-[#a84436] ring-[#f7d8d2] dark:ring-[#3d2522]' },
+                      { card: 'bg-[#f4f7ed] border-[#bcc9b0] dark:bg-[#192421] dark:border-[#3c5648] rotate-[0.7deg]', pin: 'bg-[#2a5942] ring-[#d4e7dc] dark:ring-[#1f362a]' },
+                      { card: 'bg-[#faf1de] border-[#d4ba8c] dark:bg-[#1b222c] dark:border-[#415062] -rotate-[0.5deg]', pin: 'bg-[#355c7d] ring-[#d5e3ef] dark:ring-[#233242]' },
+                      { card: 'bg-[#fcf5ea] border-[#ccb999] dark:bg-[#23201a] dark:border-[#584c38] rotate-[0.4deg]', pin: 'bg-[#9a6b2f] ring-[#efe2cc] dark:ring-[#3a3021]' },
                     ];
                     const style = noteStyles[idx % noteStyles.length];
                     return (
@@ -343,7 +343,7 @@ export default function BlogListPage() {
                         aria-hidden="true"
                         className={`pointer-events-none absolute -top-2 left-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 rounded-full ${style.pin} ring-2 shadow-[0_2px_4px_rgba(0,0,0,0.28)]`}
                       />
-                      <Link to={`/blog/${post.slug}`} aria-label={post.title} className="flex h-28 items-center justify-center rounded-t-sm border-b border-app-border/60 bg-white/45 p-4 pt-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus sm:h-48 sm:p-6">
+                      <Link to={`/blog/${post.slug}`} aria-label={post.title} className="flex h-28 items-center justify-center rounded-t-sm border-b border-app-border/60 bg-app-surface-muted/60 p-4 pt-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus sm:h-48 sm:p-6">
                         {post.country_code ? (
                           <span className="inline-flex h-full max-h-36 items-center justify-center rounded-sm border border-app-border bg-app-surface-raised p-2 shadow-xs">
                             <img
@@ -373,9 +373,9 @@ export default function BlogListPage() {
                           <span>{post.reading_time_minutes} min</span>
                           {post.difficulty && (
                             <span className={`rounded-sm px-1.5 py-0.5 text-xs font-mono ${
-                              post.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-800' :
-                              post.difficulty === 'Challenging' ? 'bg-rose-50 text-rose-800' :
-                              'bg-amber-50 text-amber-800'
+                              post.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200' :
+                              post.difficulty === 'Challenging' ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200' :
+                              'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
                             }`}>
                               {filterLabel(post.difficulty)}
                             </span>

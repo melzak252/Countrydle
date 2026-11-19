@@ -272,14 +272,14 @@ export default function MapBorderHopPage() {
                     {verification.optimal_hops !== null ? ` · optimal ${verification.optimal_hops} hops` : ''}
                   </p>
                 )}
-                {optimalPath && <p className="mt-1 text-xs font-medium text-amber-900">The shortest route is shown in yellow.</p>}
+                {optimalPath && <p className="mt-1 text-xs font-medium text-amber-900 dark:text-amber-200">The shortest route is shown in yellow.</p>}
               </div>
             ) : status === 'verifying' ? (
               <p role="status" className="mb-3 flex items-center gap-2 border-b border-app-border/20 pb-3 text-sm text-app-text-secondary">
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" /> Verifying route…
               </p>
             ) : status === 'invalid' ? (
-              <p role="alert" className="mb-3 border-b border-app-border/20 pb-3 text-sm text-amber-950">
+              <p role="alert" className="mb-3 border-b border-app-border/20 pb-3 text-sm font-medium text-rose-700 dark:text-rose-300">
                 {feedback || 'The route could not be verified. Undo a step or reset and try again.'}
               </p>
             ) : null}
@@ -311,7 +311,7 @@ export default function MapBorderHopPage() {
             )}
 
             {(feedback || neighborError) && status === 'playing' && (
-              <p role="status" className="mt-2 text-sm text-amber-950">{feedback || neighborError}</p>
+              <p role="status" className="mt-2 text-sm font-medium text-rose-700 dark:text-rose-300">{feedback || neighborError}</p>
             )}
             {neighborError && status === 'playing' && (
               <button type="button" onClick={retryNeighbors} disabled={loadingNeighbors} className="mt-2 border border-app-border/35 bg-app-surface px-3 py-2 text-sm font-medium text-app-text-secondary hover:bg-app-surface-muted disabled:opacity-50">

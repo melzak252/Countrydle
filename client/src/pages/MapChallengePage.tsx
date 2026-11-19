@@ -63,8 +63,6 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
   const [submitting, setSubmitting] = useState(false);
   const [powiatFeedback, setPowiatFeedback] = useState<PowiatFeedback | null>(null);
   const [lastClickedState, setLastClickedState] = useState<string | null>(null);
-  const [targetChanged, setTargetChanged] = useState(false);
-  const previousActiveTarget = useRef<string | undefined>(undefined);
   const dailyLoadSequence = useRef(0);
   const authLoginLoadObserved = useRef(false);
 
@@ -340,21 +338,6 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
   const wrongClickedName = mode === 'powiaty'
     ? (powiatFeedback && !powiatFeedback.correct ? powiatFeedback.clickedName : null)
     : (game?.status === 'incorrect' ? lastClickedState : null);
-
-  useEffect(() => {
-    if (!target || finished) {
-      previousActiveTarget.current = undefined;
-      setTargetChanged(false);
-      return;
-    }
-    const prev = previousActiveTarget.current;
-    previousActiveTarget.current = target;
-    if (prev && prev !== target) {
-      setTargetChanged(true);
-      const timer = window.setTimeout(() => setTargetChanged(false), 2200);
-      return () => window.clearTimeout(timer);
-    }
-  }, [target, finished]);
   const score = mode === 'powiaty' ? dailyRun?.score ?? 0 : game?.score ?? 0;
   const roundCount = mode === 'powiaty' ? dailyRun?.round_count ?? 10 : game?.prompts.length ?? 10;
   const round = mode === 'powiaty'
@@ -405,22 +388,16 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
         >
           <p className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-app-text-muted">{title}</p>
           {target ? (
-            <motion.div
+            <motion.h1
               key={target}
+              aria-live="polite"
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="col-span-2 row-start-2 flex min-w-0 flex-wrap items-center justify-center gap-2 md:col-span-1 md:col-start-2 md:row-start-1"
+              className="col-span-2 row-start-2 min-w-0 break-words text-center text-lg font-bold leading-tight text-app-text sm:text-xl md:col-span-1 md:col-start-2 md:row-start-1"
             >
-              {targetChanged && !isCorrectFeedback && !isIncorrectFeedback && (
-                <span className="rounded-sm border border-app-accent/40 bg-app-accent/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-app-accent">
-                  New target
-                </span>
-              )}
-              <h1 aria-live="polite" className="min-w-0 break-words text-center text-lg font-bold leading-tight text-app-text sm:text-xl">
-                {target}
-              </h1>
-            </motion.div>
+              {target}
+            </motion.h1>
           ) : finished ? (
             <h1 className="col-span-2 row-start-2 text-center text-lg font-bold leading-tight text-app-text sm:text-xl md:col-span-1 md:col-start-2 md:row-start-1">
               Run complete
