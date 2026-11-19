@@ -219,13 +219,6 @@ export default function MapBorderHopPage() {
           <div className="flex flex-wrap gap-1.5">
             <ModeButton mode="powiaty" currentMode={mode} label="Powiaty" onSelect={handleModeChange} />
             <ModeButton mode="us_states" currentMode={mode} label="US States" onSelect={handleModeChange} />
-            <button
-              type="button"
-              onClick={handleNewRoute}
-              className="border border-app-border/35 bg-app-surface px-3 py-2 text-xs font-medium text-app-text-secondary hover:bg-app-surface-muted"
-            >
-              New route
-            </button>
           </div>
           {routeError && (
             <div role="alert" className="col-span-full flex flex-wrap items-center justify-between gap-2 text-sm">

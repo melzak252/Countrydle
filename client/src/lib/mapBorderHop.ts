@@ -2,14 +2,44 @@ import type { MapMarkerColor } from '../stores/gameStore';
 import type { BorderHopVerification } from '../services/api';
 import { normalizeMapRegionName } from './mapGameMode';
 
+function foldRegionText(value: string): string {
+  return normalizeMapRegionName(value)
+    .replace(/ł/g, 'l')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function stripPowiatWord(value: string): string {
+  return value.replace(/^powiat\s+/i, '').replace(/\s+powiat$/i, '').trim();
+}
+
+function stripVoivodeshipQualifier(value: string): string {
+  return value.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 export function matchTypedNeighbor(
   typedName: string,
   neighbors: readonly string[],
   visitedPath: readonly string[] = [],
 ): string | null {
-  const typedKey = normalizeMapRegionName(typedName);
+  const typedKey = foldRegionText(typedName);
   if (!typedKey) return null;
-  const matchedName = neighbors.find((neighbor) => normalizeMapRegionName(neighbor) === typedKey);
+
+  const typedWithoutPowiat = stripPowiatWord(typedKey);
+  const typedBase = stripPowiatWord(stripVoivodeshipQualifier(typedKey));
+
+  let matchedName = neighbors.find((neighbor) => foldRegionText(neighbor) === typedKey);
+  if (!matchedName) {
+    matchedName = neighbors.find((neighbor) => stripPowiatWord(foldRegionText(neighbor)) === typedWithoutPowiat);
+  }
+  if (!matchedName && typedBase) {
+    const baseMatches = neighbors.filter(
+      (neighbor) => stripPowiatWord(stripVoivodeshipQualifier(foldRegionText(neighbor))) === typedBase,
+    );
+    if (baseMatches.length === 1) {
+      matchedName = baseMatches[0];
+    }
+  }
   if (!matchedName) return null;
   const matchedKey = normalizeMapRegionName(matchedName);
   return visitedPath.some((visited) => normalizeMapRegionName(visited) === matchedKey) ? null : matchedName;

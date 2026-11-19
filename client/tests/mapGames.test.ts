@@ -77,6 +77,9 @@ test('typed Border Hop accepts only an unvisited listed neighbor', () => {
   expect(matchTypedNeighbor('  texas ', ['Texas', 'Oklahoma'], ['Alabama'])).toBe('Texas');
   expect(matchTypedNeighbor('Florida', ['Texas', 'Oklahoma'], ['Alabama'])).toBeNull();
   expect(matchTypedNeighbor('Texas', ['Texas', 'Oklahoma'], ['Texas'])).toBeNull();
+  expect(matchTypedNeighbor('krakowski', ['Powiat krakowski', 'Kraków'], [])).toBe('Powiat krakowski');
+  expect(matchTypedNeighbor('bielski', ['Powiat bielski (śląskie)', 'Powiat żywiecki'], [])).toBe('Powiat bielski (śląskie)');
+  expect(matchTypedNeighbor('lodzki wschodni', ['Powiat łódzki wschodni'], [])).toBe('Powiat łódzki wschodni');
 });
 
 test('Border Hop marks start, target, player path, and shared optimal route distinctly', () => {

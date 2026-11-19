@@ -8,11 +8,9 @@ from db.models.country import Country
 from db.repositories.participation import _aggregate, _participants, _stats
 
 def public_post_conditions(today: date):
-    """A recap is public only after its puzzle day and an attributed human review."""
+    """A recap is public as soon as its puzzle day has passed."""
     return (
         DailyBlogPost.date < today,
-        DailyBlogPost.reviewed_by_id.is_not(None),
-        DailyBlogPost.reviewed_at.is_not(None),
     )
 
 
