@@ -1,5 +1,5 @@
 {
-  "version": "1.43.0",
-  "title": "Clearer player statistics and friend access",
-  "body": "- The admin overview now separates participating account and guest-browser identities from saved sessions, excluding inactive account states from participant counts.\n- Searchable game rows show larger per-mode counts and provide direct access to session details.\n- New Continental guest guesses are associated with the same browser identity as questions. Older anonymous guesses remain unidentified.\n- Fixed saving verified Flagdle questions so they contribute to gameplay history and participation.\n- Added a Play with friend button to the homepage and improved the loading experience on reload."
+  "version": "2.0.0",
+  "title": "Antique Atlas Redesign, Dark Mode, Map Quizzes & Question Engine Fixes",
+  "body": "- Introduced a full antique cartographic redesign across all interactive maps, mode cards, and navigation, paired with a new Night Atlas dark mode toggle in the header.\n- Added dedicated Powiat and US State Map Quizzes with animated feedback and target-change indicators, alongside Map Border Hop and Flag Shades.\n- Fixed local question evaluation for coastal and city-county boolean checks, English/Polish voivodeship seat aliases (Warsaw/Warszawa), voivodeship name-vs-seat comparisons, Congress Poland historical partition queries, and inverted county word order.\n- Updated Terms of Service, FAQ, About, How It Works, and crawler metadata across all current game modes."
 }
