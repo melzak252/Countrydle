@@ -1,5 +1,5 @@
 {
-  "version": "1.43.0",
-  "title": "Clearer player statistics and friend access",
-  "body": "- The admin overview now separates participating account and guest-browser identities from saved sessions, excluding inactive account states from participant counts.\n- Searchable game rows show larger per-mode counts and provide direct access to session details.\n- New Continental guest guesses are associated with the same browser identity as questions. Older anonymous guesses remain unidentified.\n- Fixed saving verified Flagdle questions so they contribute to gameplay history and participation.\n- Added a Play with friend button to the homepage and improved the loading experience on reload."
+  "version": "2.0.3",
+  "title": "Public Daily Blog Publishing, Border Hop Matching & Home Featured Puzzles",
+  "body": "- Daily Countrydle blog recaps are now published immediately after each puzzle day concludes without waiting for prior editorial review.\n- Simplified Map Border Hop input so Polish counties no longer require typing 'powiat', Polish diacritics, or a voivodeship qualifier when the neighbor is unambiguous.\n- Removed the New route button from Map Border Hop and expanded Featured puzzles and Also popular links on the Home page."
 }

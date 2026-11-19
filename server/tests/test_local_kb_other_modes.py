@@ -814,3 +814,95 @@ def test_is_direct_name_win_plan_helper():
             "right": {"entity": "target_voivodeship", "relation": "seat"},
         }),
     ) is False
+
+
+@pytest.mark.parametrize("state, right_val, expected", [
+    ("New Jersey", True, True),
+    ("New Jersey", "true", True),
+    ("New Jersey", False, False),
+    ("Mississippi", True, True),
+    ("Kansas", True, False),
+    ("Kansas", False, True),
+])
+def test_us_state_is_coastal_boolean_vs_integer(state, right_val, expected):
+    result = answer(US_STATE_CONFIG, state, {
+        "operator": "equals",
+        "left": {"entity": "target_state", "relation": "is_coastal"},
+        "right": {"value": right_val},
+    })
+    assert result is not None
+    assert result.answer is expected
+
+
+def test_us_state_landlocked_negation_with_boolean():
+    result = answer(US_STATE_CONFIG, "New Jersey", {
+        "operator": "not",
+        "condition": {
+            "operator": "equals",
+            "left": {"entity": "target_state", "relation": "is_coastal"},
+            "right": {"value": True},
+        },
+    })
+    assert result is not None
+    assert result.answer is False
+
+
+@pytest.mark.parametrize("powiat, right_val, expected", [
+    ("Bielsko-Biała", True, True),
+    ("Bielsko-Biała", False, False),
+    ("Powiat piotrkowski", True, False),
+    ("Powiat piotrkowski", False, True),
+])
+def test_powiat_is_city_county_boolean_vs_integer(powiat, right_val, expected):
+    result = answer(POWIAT_CONFIG, powiat, {
+        "operator": "equals",
+        "left": {"entity": "target_powiat", "relation": "is_city_county"},
+        "right": {"value": right_val},
+    })
+    assert result is not None
+    assert result.answer is expected
+
+
+def test_wojewodztwo_seat_english_polish_alias():
+    result = answer(VOIVODESHIP_CONFIG, "Mazowieckie", {
+        "operator": "equals",
+        "left": {"entity": "target_voivodeship", "relation": "seat"},
+        "right": {"value": "Warsaw"},
+    })
+    assert result is not None
+    assert result.answer is True
+
+
+def test_wojewodztwo_name_not_equal_to_own_seat():
+    result = answer(VOIVODESHIP_CONFIG, "Mazowieckie", {
+        "operator": "equals",
+        "left": {"entity": "target_voivodeship", "relation": "name"},
+        "right": {"entity": "target_voivodeship", "relation": "seat"},
+    })
+    assert result is not None
+    assert result.answer is False
+
+
+@pytest.mark.parametrize("relation", ["historical_partitions", "historical_regions"])
+@pytest.mark.parametrize("powiat, expected", [
+    ("Powiat piotrkowski", True),
+    ("Powiat poznański", False),
+])
+def test_powiat_congress_poland_alias(relation, powiat, expected):
+    result = answer(POWIAT_CONFIG, powiat, {
+        "operator": "contains_exact",
+        "left": {"entity": "target_powiat", "relation": relation},
+        "right": {"value": "Congress Poland"},
+    })
+    assert result is not None
+    assert result.answer is expected
+
+
+def test_powiat_inverted_word_order_in_contains_text():
+    result = answer(POWIAT_CONFIG, "Powiat braniewski", {
+        "operator": "contains_text",
+        "left": {"entity": "target_powiat", "relation": "name"},
+        "right": {"value": "Braniewski powiat"},
+    })
+    assert result is not None
+    assert result.answer is True
