@@ -125,10 +125,10 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
         : question.source;
 
     return (
-      <article key={`${question.mode}:${question.id}`} className="space-y-3 rounded-md border border-white/10 bg-obsidian-950 p-3">
+      <article key={`${question.mode}:${question.id}`} className="space-y-3 rounded-sm border border-app-border bg-app-surface p-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="break-words font-semibold text-sand-100">{question.username}</span>
+            <span className="break-words font-semibold text-app-text">{question.username}</span>
             <span className="admin-badge font-mono">{question.mode}</span>
           </div>
           {question.asked_at && (
@@ -140,14 +140,14 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
 
         {question.target_name && (
           <p className="admin-meta break-words">
-            {t('adminLiveFeed.target')}: <span className="text-sand-100">{question.target_name}</span>
+            {t('adminLiveFeed.target')}: <span className="text-app-text">{question.target_name}</span>
             {question.target_subtitle && <span> ({question.target_subtitle})</span>}
           </p>
         )}
 
         <p className="admin-question break-words">“{question.question}”</p>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+        <div className="flex flex-wrap items-center gap-2 border-t border-app-border pt-3">
           <span className={result.className}>{result.label}</span>
           {sourceLabel && <span className="admin-badge">{sourceLabel}</span>}
           {onTestInQA && (
@@ -167,15 +167,15 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
         </div>
 
         {question.clarification && (
-          <div className="border-t border-white/10 pt-2 text-xs">
-            <span className="font-semibold text-emerald-300">{t('adminLiveFeed.clarification')}: </span>
-            <span className="text-emerald-200/90 font-medium">{question.clarification}</span>
+          <div className="border-t border-app-border pt-2 text-xs">
+            <span className="font-semibold text-emerald-800">{t('adminLiveFeed.clarification')}: </span>
+            <span className="text-emerald-800 font-medium">{question.clarification}</span>
           </div>
         )}
 
         {question.explanation && (
-          <details className="border-t border-white/10 pt-2">
-            <summary className="text-sm font-medium text-sand-100">{t('adminLiveFeed.explanation')}</summary>
+          <details className="border-t border-app-border pt-2">
+            <summary className="text-sm font-medium text-app-text">{t('adminLiveFeed.explanation')}</summary>
             <p className="admin-muted break-words pb-2">{question.explanation}</p>
           </details>
         )}
@@ -243,7 +243,7 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
       )}
 
       {error && (
-        <div role="alert" className="admin-panel border-rose-400/40 text-rose-200">
+        <div role="alert" className="admin-panel border-rose-200 bg-rose-50 text-rose-900">
           <p>{t('adminLiveFeed.requestFailed')}</p>
           <p className="mt-2 break-words text-sm">{t(error)}</p>
           {hasCurrentSnapshot && (
@@ -268,7 +268,7 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
       {hasCurrentSnapshot && (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <section className="admin-panel space-y-4" aria-labelledby="admin-live-feed-questions-heading">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-app-border pb-3">
               <h2 id="admin-live-feed-questions-heading" className="flex items-center gap-2">
                 <HelpCircle size={18} aria-hidden="true" />
                 {t('adminLiveFeed.questionsHeading')}
@@ -287,7 +287,7 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
           </section>
 
           <section className="admin-panel space-y-4" aria-labelledby="admin-live-feed-guesses-heading">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-app-border pb-3">
               <h2 id="admin-live-feed-guesses-heading" className="flex items-center gap-2">
                 <Target size={18} aria-hidden="true" />
                 {t('adminLiveFeed.guessesHeading')}
@@ -303,11 +303,11 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
                 {visibleData.recent_guesses.map((guess) => (
                   <article
                     key={`${guess.mode}:${guess.id}`}
-                    className="space-y-3 rounded-md border border-white/10 bg-obsidian-950 p-3"
+                    className="space-y-3 rounded-sm border border-app-border bg-app-surface p-3"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <span className="break-words font-semibold text-sand-100">{guess.username}</span>
+                        <span className="break-words font-semibold text-app-text">{guess.username}</span>
                         <span className="admin-badge font-mono">{guess.mode}</span>
                       </div>
                       {guess.guessed_at && (
@@ -319,14 +319,14 @@ export const AdminLiveFeedTab: React.FC<AdminLiveFeedTabProps> = ({
 
                     {guess.target_name && (
                       <p className="admin-meta break-words">
-                        {t('adminLiveFeed.target')}: <span className="text-sand-100">{guess.target_name}</span>
+                        {t('adminLiveFeed.target')}: <span className="text-app-text">{guess.target_name}</span>
                         {guess.target_subtitle && <span> ({guess.target_subtitle})</span>}
                       </p>
                     )}
 
                     <p className="admin-question break-words">“{guess.guess}”</p>
 
-                    <div className="border-t border-white/10 pt-3">
+                    <div className="border-t border-app-border pt-3">
                       <span className={`admin-badge ${guess.answer ? 'admin-answer-yes' : 'admin-outcome-error'}`}>
                         {guess.answer
                           ? t('adminLiveFeed.outcomes.solved')

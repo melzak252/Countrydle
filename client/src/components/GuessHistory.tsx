@@ -8,12 +8,12 @@ interface GuessHistoryProps {
 
 function getDistanceColor(distanceKm: number): string {
   if (distanceKm <= 500) {
-    return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+    return 'border-app-accent/30 bg-app-accent/10 text-app-accent';
   }
   if (distanceKm <= 2000) {
-    return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
+    return 'border-amber-700/25 bg-amber-500/10 text-amber-800';
   }
-  return 'border-white/10 bg-white/5 text-zinc-300';
+  return 'border-app-border/15 bg-app-surface-muted text-app-text-secondary';
 }
 
 export default function GuessHistory({ guesses }: GuessHistoryProps) {
@@ -21,7 +21,7 @@ export default function GuessHistory({ guesses }: GuessHistoryProps) {
 
   if (guesses.length === 0) {
     return (
-      <p className="text-sm leading-relaxed text-zinc-500">
+      <p className="text-sm leading-relaxed text-app-text-muted">
         {t('gamePage.makeAGuess')}
       </p>
     );
@@ -40,28 +40,28 @@ export default function GuessHistory({ guesses }: GuessHistoryProps) {
         return (
           <li
             key={g.id}
-            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-l-2 bg-obsidian-950 px-3 py-2.5 ${
-              g.answer ? 'border-emerald-500' : 'border-rose-500/60'
+            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-l-2 bg-app-surface-muted px-3 py-2.5 ${
+              g.answer ? 'border-app-accent' : 'border-rose-500/60'
             }`}
           >
             <div className="flex min-w-0 items-center gap-3">
               {g.answer ? (
                 <Check
                   size={16}
-                  className="shrink-0 text-emerald-400"
+                  className="shrink-0 text-app-accent"
                   aria-hidden="true"
                 />
               ) : (
                 <X
                   size={16}
-                  className="shrink-0 text-rose-400"
+                  className="shrink-0 text-rose-600"
                   aria-hidden="true"
                 />
               )}
               <span className="sr-only">
                 {t(g.answer ? 'gamePage.correct' : 'gamePage.incorrect')}:{' '}
               </span>
-              <span className="break-words text-sm font-medium text-zinc-200">
+              <span className="break-words text-sm font-medium text-app-text">
                 {g.guess}
               </span>
             </div>
@@ -83,7 +83,7 @@ export default function GuessHistory({ guesses }: GuessHistoryProps) {
 
                 {hasBearing && (
                   <span
-                    className="inline-flex items-center gap-1 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-400"
+                    className="inline-flex items-center gap-1 rounded border border-app-accent/30 bg-app-accent/10 px-2 py-0.5 font-semibold text-app-accent"
                     title={`${g.bearing_direction}${
                       g.bearing_degrees !== undefined && g.bearing_degrees !== null
                         ? ` (${g.bearing_degrees}°)`

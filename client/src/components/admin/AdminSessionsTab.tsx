@@ -273,7 +273,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               {t('adminSessions.yesterday')}
             </button>
             <label className="col-span-2 flex min-w-0 items-center gap-2 sm:min-w-[180px] sm:flex-1">
-              <Calendar className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+              <Calendar className="h-4 w-4 shrink-0 text-app-text-muted" aria-hidden="true" />
               <span className="sr-only">{t('adminSessions.date')}</span>
               <input
                 className="admin-control min-w-0 flex-1"
@@ -308,8 +308,8 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
             </div>
             {stats ? (
               <>
-                <h2 className="flex min-w-0 items-center gap-2 break-words text-sand-100">
-                  <Target className="h-6 w-6 shrink-0 text-slate-300" aria-hidden="true" />
+                <h2 className="flex min-w-0 items-center gap-2 break-words text-app-text">
+                  <Target className="h-6 w-6 shrink-0 text-app-text-secondary" aria-hidden="true" />
                   {stats.target_name}
                 </h2>
                 <p className="admin-meta mt-1">
@@ -319,7 +319,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 </p>
               </>
             ) : (
-              <p className="text-base font-semibold text-sand-100" role={statsError ? undefined : 'status'}>
+              <p className="text-base font-semibold text-app-text" role={statsError ? undefined : 'status'}>
                 {statsError ? t('adminSessions.targetUnavailable') : t('adminSessions.loadingTarget')}
               </p>
             )}
@@ -340,9 +340,9 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 { label: t('adminSessions.avgQuestionsLost'), value: stats ? formatNumber(stats.avg_questions_losers, locale, 1) : '—' },
               ]),
             ].map((metric) => (
-              <div key={metric.label} className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-3">
+              <div key={metric.label} className="min-w-0 rounded-sm border border-app-border bg-app-surface-muted p-3">
                 <div className="admin-meta">{metric.label}</div>
-                <div className="admin-metric mt-1 text-sand-100">{metric.value}</div>
+                <div className="admin-metric mt-1 text-app-text">{metric.value}</div>
               </div>
             ))}
           </div>
@@ -352,7 +352,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
           <p className="admin-meta" role="status">{t('adminCommon.updating')}</p>
         )}
         {statsError && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-400/40 p-3" role="alert">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-rose-200 bg-rose-50 p-3 text-rose-900" role="alert">
             <span>
               {t('adminSessions.statsError')}
               {stats && ` ${t('adminSessions.staleData')}`}
@@ -370,7 +370,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
       </section>
 
       <section className="admin-panel space-y-4" aria-labelledby={`${idPrefix}-sessions-heading`}>
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-4 border-b border-app-border pb-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 id={`${idPrefix}-sessions-heading`}>{t('adminSessions.sessionsTitle')}</h2>
@@ -418,13 +418,13 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         </div>
 
         {sessionsLoading && (
-          <p className="flex items-center gap-2 text-sand-100" role="status">
-            <Loader2 className="h-4 w-4 animate-spin text-slate-300" aria-hidden="true" />
+          <p className="flex items-center gap-2 text-app-text" role="status">
+            <Loader2 className="h-4 w-4 animate-spin text-app-text-secondary" aria-hidden="true" />
             {sessions ? t('adminCommon.updating') : t('adminSessions.sessionsLoading')}
           </p>
         )}
         {sessionsError && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-400/40 p-3" role="alert">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-rose-200 bg-rose-50 p-3 text-rose-900" role="alert">
             <span>
               {t('adminSessions.sessionsError')}
               {sessions && ` ${t('adminSessions.staleData')}`}
@@ -467,11 +467,11 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               });
 
               return (
-                <article key={session.session_id} className="overflow-hidden rounded-md border border-white/10 bg-obsidian-950">
+                <article key={session.session_id} className="overflow-hidden rounded-sm border border-app-border bg-app-surface">
                   <button
                     id={buttonId}
                     type="button"
-                    className="admin-row-button flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-white/5"
+                    className="admin-row-button flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-app-surface-muted"
                     disabled={!hasDetails}
                     aria-expanded={hasDetails ? isExpanded : undefined}
                     aria-controls={hasDetails ? panelId : undefined}
@@ -479,21 +479,21 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                     onClick={() => toggleSession(session.session_id)}
                   >
                     <span className="flex min-w-0 items-start gap-3">
-                      <span className="mt-1 rounded-md border border-white/10 bg-obsidian-900 p-2 text-slate-300" aria-hidden="true">
+                      <span className="mt-1 rounded-sm border border-app-border bg-app-surface-muted p-2 text-app-text-secondary" aria-hidden="true">
                         {session.is_guest ? <UserX className="h-4 w-4" /> : <UserIcon className="h-4 w-4" />}
                       </span>
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="max-w-full break-words text-base font-semibold text-sand-100" title={session.username}>
+                          <span className="max-w-full break-words text-base font-semibold text-app-text" title={session.username}>
                             {session.username}
                           </span>
                           {session.is_guest && <span className="admin-badge">{t('adminSessions.guest')}</span>}
                           <span
                             className={`admin-badge ${
                               session.status === 'won'
-                                ? 'border-emerald-400 text-emerald-200'
+                                ? 'border-emerald-200 bg-emerald-50 !text-emerald-800'
                                 : session.status === 'lost'
-                                  ? 'border-rose-400 text-rose-200'
+                                  ? 'border-rose-200 bg-rose-50 !text-rose-800'
                                   : ''
                             }`}
                           >
@@ -518,7 +518,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                         </span>
                       </span>
                     </span>
-                    {hasDetails && <span className="flex shrink-0 items-center gap-2 text-sand-100">
+                    {hasDetails && <span className="flex shrink-0 items-center gap-2 text-app-text">
                       <span>{isQuiz ? `${isExpanded ? 'Hide' : 'Show'} solved ${isFlagQuiz(session.mode) ? 'flags' : 'coats'}` : (isExpanded ? t('adminSessions.hideReplay') : t('adminSessions.showReplay'))}</span>
                       {isExpanded
                         ? <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -530,17 +530,17 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                     id={panelId}
                     aria-labelledby={buttonId}
                     hidden={!isExpanded}
-                    className="space-y-4 border-t border-white/10 bg-obsidian-900 p-4"
+                    className="space-y-4 border-t border-app-border bg-app-surface-muted p-4"
                   >
                     {session.quiz_solves.length > 0 && <section aria-label={isFlagQuiz(session.mode) ? 'Solved flags' : 'Solved coats'}>
-                      <h3 className="font-semibold text-sand-100">{isFlagQuiz(session.mode) ? 'Solved flags' : 'Solved coats'}</h3>
+                      <h3 className="font-semibold text-app-text">{isFlagQuiz(session.mode) ? 'Solved flags' : 'Solved coats'}</h3>
                       <p className="admin-meta mt-1">Active elapsed time since quiz start, client-reported.</p>
                       <ul className="mt-3 space-y-1 text-sm">
                         {session.quiz_solves.map((solve) => <li key={solve.powiat_id} className="flex flex-wrap justify-between gap-2"><span>{solve.name}</span><span>{formatDuration(solve.active_elapsed_seconds, locale, t)}</span></li>)}
                       </ul>
                     </section>}
                     {session.timeline.length > 0 && <>
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-app-border pb-3">
                       <h3>{t('adminSessions.timelineTitle', { count: session.timeline.length })}</h3>
                       <span className="admin-meta">{t('adminSessions.timelineOrder')}</span>
                     </div>
@@ -548,7 +548,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                     {session.timeline.length === 0 ? (
                       <p className="admin-muted py-4">{t('adminSessions.noTimeline')}</p>
                     ) : (
-                      <ol className="list-decimal space-y-3 pl-7 marker:font-semibold marker:text-slate-400">
+                      <ol className="list-decimal space-y-3 pl-7 marker:font-semibold marker:text-app-text-muted">
                         {session.timeline.map((event, index) => {
                           const isQuestion = event.event_type === 'question';
                           const answer = isQuestion ? getAnswerLabel(event, (key) => t(key)) : null;
@@ -563,7 +563,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                                 : event.source;
 
                           return (
-                            <li key={`${event.id}-${index}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4">
+                            <li key={`${event.id}-${index}`} className="min-w-0 rounded-sm border border-app-border bg-app-surface p-4">
                               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0 space-y-2">
                                   <div className="flex flex-wrap items-center gap-2">
@@ -581,7 +581,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                                     )}
                                     {!isQuestion && (
                                       <span className={`admin-badge ${
-                                        event.correct ? 'border-emerald-400 text-emerald-200' : 'border-rose-400 text-rose-200'
+                                        event.correct ? 'border-emerald-200 bg-emerald-50 !text-emerald-800' : 'border-rose-200 bg-rose-50 !text-rose-800'
                                       }`}>
                                         {event.correct
                                           ? t('adminSessions.targetFound')
@@ -591,9 +591,9 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                                   </div>
 
                                   {isQuestion ? (
-                                    <p className="admin-question break-words text-sand-100">{questionText}</p>
+                                    <p className="admin-question break-words text-app-text">{questionText}</p>
                                   ) : (
-                                    <p className="admin-question break-words text-sand-100">{event.guess || ''}</p>
+                                    <p className="admin-question break-words text-app-text">{event.guess || ''}</p>
                                   )}
                                 </div>
 
@@ -620,13 +620,13 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                               </div>
 
                               {isQuestion && event.clarification && (
-                                <p className="mt-3 border-l-2 border-emerald-500 pl-3 text-xs font-medium text-emerald-200/90">
-                                  <span className="font-semibold text-emerald-300">{t('adminSessions.clarification')}: </span>
+                                <p className="mt-3 border-l-2 border-emerald-200 pl-3 text-xs font-medium text-emerald-800">
+                                  <span className="font-semibold text-emerald-800">{t('adminSessions.clarification')}: </span>
                                   {event.clarification}
                                 </p>
                               )}
                               {isQuestion && event.explanation && (
-                                <p className="admin-muted mt-2 border-l-2 border-slate-500 pl-3">
+                                <p className="admin-muted mt-2 border-l-2 border-app-border pl-3">
                                   <span className="font-semibold">{t('adminSessions.explanation')}: </span>
                                   {event.explanation}
                                 </p>
@@ -653,13 +653,13 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         )}
 
         {!sessionsLoading && !sessionsError && sessions?.items.length === 0 && (
-          <p className="admin-muted rounded-md border border-dashed border-white/20 p-6 text-center">
+          <p className="admin-muted rounded-sm border border-dashed border-app-border p-6 text-center">
             {t('adminSessions.noSessions')}
           </p>
         )}
 
         {sessions && (
-          <div className="admin-pager border-t border-white/10 pt-4">
+          <div className="admin-pager border-t border-app-border pt-4">
             <span className="admin-meta">
               {t('adminCommon.page', {
                 page: formatNumber(page, locale),
@@ -692,30 +692,30 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
       {!isQuizMode(selectedMode) && <details className="admin-panel">
         <summary className="flex list-none items-center justify-between gap-3">
           <span className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-slate-300" aria-hidden="true" />
+            <TrendingUp className="h-5 w-5 text-app-text-secondary" aria-hidden="true" />
             <span className="text-lg font-semibold">{t('adminSessions.strategyInsights')}</span>
           </span>
-          <ChevronDown className="h-4 w-4 text-slate-300" aria-hidden="true" />
+          <ChevronDown className="h-4 w-4 text-app-text-secondary" aria-hidden="true" />
         </summary>
 
         {stats && (
           <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-2">
-            {!isSymbolMode(selectedMode) && selectedMode !== 'flagdle' && <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-questions`}>
+            {!isSymbolMode(selectedMode) && selectedMode !== 'flagdle' && <section className="min-w-0 rounded-sm border border-app-border bg-app-surface p-4" aria-labelledby={`${idPrefix}-top-questions`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 id={`${idPrefix}-top-questions`} className="flex items-center gap-2">
-                  <HelpCircle className="h-4 w-4 text-slate-300" aria-hidden="true" />
+                  <HelpCircle className="h-4 w-4 text-app-text-secondary" aria-hidden="true" />
                   {t('adminSessions.topQuestions')}
                 </h3>
                 <span className="admin-meta">{t('adminSessions.topQuestionsContext')}</span>
               </div>
 
               {stats.top_questions.length > 0 ? (
-                <ol className="list-decimal space-y-2 pl-7 marker:text-slate-400">
+                <ol className="list-decimal space-y-2 pl-7 marker:text-app-text-muted">
                   {stats.top_questions.slice(0, 6).map((question, index) => (
-                    <li key={`${question.text}-${index}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-900 p-3">
+                    <li key={`${question.text}-${index}`} className="min-w-0 rounded-sm border border-app-border bg-app-surface-muted p-3">
                       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="break-words text-sand-100">“{question.text}”</p>
+                          <p className="break-words text-app-text">“{question.text}”</p>
                           <div className="admin-meta mt-2 flex flex-wrap gap-x-4 gap-y-1">
                             <span>{t('adminSessions.askedCount', { count: question.count })}</span>
                             <span>{t('adminSessions.yesPercentage', { percent: formatPercent(question.yes_pct, locale) })}</span>
@@ -746,22 +746,22 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               )}
             </section>}
 
-            <section className="min-w-0 rounded-md border border-white/10 bg-obsidian-950 p-4" aria-labelledby={`${idPrefix}-top-guesses`}>
+            <section className="min-w-0 rounded-sm border border-app-border bg-app-surface p-4" aria-labelledby={`${idPrefix}-top-guesses`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 id={`${idPrefix}-top-guesses`} className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-slate-300" aria-hidden="true" />
+                  <TrendingUp className="h-4 w-4 text-app-text-secondary" aria-hidden="true" />
                   {t('adminSessions.topGuesses')}
                 </h3>
                 <span className="admin-meta">{t('adminSessions.topGuessesContext')}</span>
               </div>
 
               {stats.top_guesses.length > 0 ? (
-                <ol className="list-decimal space-y-2 pl-7 marker:text-slate-400">
+                <ol className="list-decimal space-y-2 pl-7 marker:text-app-text-muted">
                   {stats.top_guesses.slice(0, 6).map((guess, index) => (
-                    <li key={`${guess.guess}-${index}`} className="min-w-0 rounded-md border border-white/10 bg-obsidian-900 p-3">
+                    <li key={`${guess.guess}-${index}`} className="min-w-0 rounded-sm border border-app-border bg-app-surface-muted p-3">
                       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
-                          <p className="break-words font-medium text-sand-100">{guess.guess}</p>
+                          <p className="break-words font-medium text-app-text">{guess.guess}</p>
                           <p className="admin-meta mt-1">
                             {t('adminSessions.guessCount', { count: guess.count })}
                             {' · '}
@@ -769,7 +769,7 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                           </p>
                         </div>
                         <span className={`admin-badge shrink-0 ${
-                          guess.correct_pct > 0 ? 'border-emerald-400 text-emerald-200' : ''
+                          guess.correct_pct > 0 ? 'border-emerald-200 bg-emerald-50 !text-emerald-800' : ''
                         }`}>
                           {guess.correct_pct > 0
                             ? t('adminSessions.targetGuess')
@@ -787,8 +787,8 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
         )}
 
         {!stats && statsLoading && (
-          <p className="mt-4 flex items-center gap-2 text-sand-100" role="status">
-            <Loader2 className="h-4 w-4 animate-spin text-slate-300" aria-hidden="true" />
+          <p className="mt-4 flex items-center gap-2 text-app-text" role="status">
+            <Loader2 className="h-4 w-4 animate-spin text-app-text-secondary" aria-hidden="true" />
             {t('adminSessions.loadingInsights')}
           </p>
         )}

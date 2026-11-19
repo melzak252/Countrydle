@@ -39,7 +39,7 @@ const faqItems: FAQItem[] = [
     id: 'game-modes',
     category: 'modes',
     question: 'Which game modes are available?',
-    answer: 'There are nine daily modes: Countrydle (195 playable countries), Flagdle, Europedle, Asiadle, Africadle, Americadle, US Statedle (50 states), Województwodle (16 Polish voivodeships), and Powiatdle (380 Polish counties). The four continental modes focus on Europe, Asia, Africa, and the Americas. Play with a Friend offers separate live two-player duels.',
+    answer: 'Question-based daily modes include Countrydle (195 playable countries), Europedle, Asiadle, Africadle, Americadle, US Statedle (50 states), Województwodle (16 Polish voivodeships), and Powiatdle (380 Polish counties). Visual daily modes include Flagdle, Flag Shades (grayscale flags), County Coats of Arms, County Flags, and regional symbol puzzles. Countrydle also offers full Coats of Arms and Flags grid quizzes, Powiat and US State Map Quizzes, Border Hop (worldwide, powiaty, and US states), and live two-player Friend Duels.',
   },
   {
     id: 'flagdle',
@@ -57,7 +57,7 @@ const faqItems: FAQItem[] = [
     id: 'play-past-games',
     category: 'modes',
     question: 'Can I play previous daily puzzles?',
-    answer: 'You can browse past answers, but the Archive does not replay past puzzles. It currently covers Countrydle, US Statedle, Województwodle, and Powiatdle, not all nine daily modes. Countrydle entries link to daily blog recaps. Open Archive from the navigation menu to see the available dates and solutions.',
+    answer: 'You can browse past answers, but the Archive does not replay past puzzles. It currently covers Countrydle, US Statedle, Województwodle, and Powiatdle rather than every daily mode. Countrydle entries link to daily blog recaps. Open Archive from the navigation menu to see the available dates and solutions.',
   },
   {
     id: 'included-countries',
@@ -111,7 +111,7 @@ const faqItems: FAQItem[] = [
     id: 'streaks-and-profile',
     category: 'account',
     question: 'How do streaks, profiles and leaderboards work?',
-    answer: 'Profiles and daily-game leaderboards cover all nine daily modes separately. Monthly rankings use points earned in the current UTC calendar month; all-time average rankings require at least 5 completed games in the original modes and Flagdle, or 3 in a continental mode. Streak bonuses reward consecutive days solved in the same mode. Rankings sort by points or average score, then wins; elapsed time affects the score rather than acting as a separate tie-break. Finished friend matches have their own profile section, without daily points or leaderboard ranking.',
+    answer: 'Profiles and daily-game leaderboards cover the ranked daily modes separately. Monthly rankings use points earned in the current UTC calendar month; all-time average rankings require at least 5 completed games in the original modes and Flagdle, or 3 in a continental mode. Streak bonuses reward consecutive days solved in the same mode. Rankings sort by points or average score, then wins; elapsed time affects the score rather than acting as a separate tie-break. Finished friend matches have their own profile section, without daily points or leaderboard ranking.',
   },
   {
     id: 'remember-me',
@@ -156,7 +156,7 @@ export default function FAQPage() {
   }, [search, activeCategory]);
 
   return (
-    <div className="mx-auto max-w-4xl bg-obsidian-950 pb-8">
+    <div className="mx-auto max-w-4xl bg-app-canvas pb-8 text-app-text">
       <script
         id="countrydle-faq-schema"
         type="application/ld+json"
@@ -172,32 +172,32 @@ export default function FAQPage() {
           }).replace(/</g, '\\u003c'),
         }}
       />
-      <header className="border-b border-white/10 pb-8 md:pb-10">
-        <p className="mb-4 font-mono text-xs text-emerald-400">
+      <header className="border-b border-app-border/15 pb-8 md:pb-10">
+        <p className="mb-4 font-mono text-xs text-app-accent">
           {t('faq.badge', 'Knowledge Base & Help')}
         </p>
-        <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">
+        <h1 className="font-serif text-4xl leading-tight tracking-tight text-app-text sm:text-5xl">
           {t('faq.title', 'Frequently Asked Questions')}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
+        <p className="mt-4 max-w-2xl text-base leading-7 text-app-text-secondary">
           {t('faq.subtitle', 'Rules, modes, scoring, answer limitations, and account help.')}
         </p>
       </header>
 
       <div className="space-y-5 py-7">
         <div>
-          <label htmlFor="faq-search" className="mb-3 block text-xs font-medium text-zinc-400">
+          <label htmlFor="faq-search" className="mb-3 block text-xs font-medium text-app-text-muted">
             Search questions
           </label>
           <div className="relative">
-            <Search aria-hidden="true" size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <Search aria-hidden="true" size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-app-text-muted" />
             <input
               id="faq-search"
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search rules, streaks, borders or data..."
-              className="w-full rounded-sm border border-white/15 bg-obsidian-900 py-3 pl-11 pr-4 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="w-full rounded-sm border border-app-border/20 bg-app-surface py-3 pl-11 pr-4 text-base text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus/20"
             />
           </div>
         </div>
@@ -217,10 +217,10 @@ export default function FAQPage() {
               type="button"
               aria-pressed={activeCategory === cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`min-h-11 rounded-sm border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 ${
+              className={`min-h-11 rounded-sm border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${
                 activeCategory === cat.id
-                  ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
-                  : 'border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/25 hover:text-sand-100'
+                  ? 'border-app-accent/30 bg-app-accent/10 text-app-accent'
+                  : 'border-app-border/15 bg-app-surface text-app-text-secondary hover:border-app-border/25 hover:text-app-text'
               }`}
             >
               {cat.label}
@@ -229,19 +229,19 @@ export default function FAQPage() {
         </div>
       </div>
 
-      <p role="status" className="mb-3 text-sm text-zinc-400">
+      <p role="status" className="mb-3 text-sm text-app-text-muted">
         {filteredFAQs.length} {filteredFAQs.length === 1 ? 'question' : 'questions'}
       </p>
-      <div className="divide-y divide-white/10 border-y border-white/10">
+      <div className="divide-y divide-app-border/10 border-y border-app-border/15">
         {filteredFAQs.length === 0 ? (
-          <div className="bg-obsidian-900 px-5 py-10 text-base leading-7 text-zinc-400">
+          <div className="bg-app-surface-muted px-5 py-10 text-base leading-7 text-app-text-secondary">
             No questions found matching "{search}". Try searching for another topic.
           </div>
         ) : (
           filteredFAQs.map((faq) => {
             const isOpen = openIds.has(faq.id);
             return (
-              <section key={faq.id} aria-labelledby={`question-${faq.id}`} className={isOpen ? 'bg-obsidian-900' : ''}>
+              <section key={faq.id} aria-labelledby={`question-${faq.id}`} className={isOpen ? 'bg-app-surface' : ''}>
                 <h2>
                   <button
                     id={`question-${faq.id}`}
@@ -249,30 +249,30 @@ export default function FAQPage() {
                     aria-expanded={isOpen}
                     aria-controls={`answer-${faq.id}`}
                     onClick={() => toggleItem(faq.id)}
-                    className="flex w-full items-center justify-between gap-5 px-4 py-5 text-left transition-colors hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-emerald-400 sm:px-5"
+                    className="flex w-full items-center justify-between gap-5 px-4 py-5 text-left transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-app-focus sm:px-5"
                   >
-                    <span className="text-base font-medium leading-7 text-sand-100 sm:text-lg">{faq.question}</span>
+                    <span className="text-base font-medium leading-7 text-app-text sm:text-lg">{faq.question}</span>
                     <ChevronDown
                       aria-hidden="true"
                       size={20}
-                      className={`shrink-0 text-emerald-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                      className={`shrink-0 text-app-accent transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
                 </h2>
                 <div id={`answer-${faq.id}`} hidden={!isOpen} className="px-4 pb-6 sm:px-5">
-                  <p className="max-w-3xl text-base leading-7 text-zinc-300">{faq.answer}</p>
+                  <p className="max-w-3xl text-base leading-7 text-app-text-secondary">{faq.answer}</p>
                 </div>
               </section>
             );
           })
         )}
       </div>
-      <p className="mt-6 text-base leading-7 text-zinc-400">
-        Read the <Link to="/explore/modes/countrydle" className="text-emerald-300 underline underline-offset-4">game conventions and worked examples</Link>,
-        {' '}see <Link to="/about" className="text-emerald-300 underline underline-offset-4">our source inventory</Link>,
-        {' '}or <Link to="/contact" className="text-emerald-300 underline underline-offset-4">send a question or correction</Link>.
-        {' '}Privacy details are in the <Link to="/privacy-policy" className="text-emerald-300 underline underline-offset-4">Privacy Policy</Link>
-        {' '}and <Link to="/cookie-policy" className="text-emerald-300 underline underline-offset-4">Cookie Policy</Link>.
+      <p className="mt-6 text-base leading-7 text-app-text-secondary">
+        Read the <Link to="/explore/modes/countrydle" className="text-app-accent underline underline-offset-4">game conventions and worked examples</Link>,
+        {' '}see <Link to="/about" className="text-app-accent underline underline-offset-4">our source inventory</Link>,
+        {' '}or <Link to="/contact" className="text-app-accent underline underline-offset-4">send a question or correction</Link>.
+        {' '}Privacy details are in the <Link to="/privacy-policy" className="text-app-accent underline underline-offset-4">Privacy Policy</Link>
+        {' '}and <Link to="/cookie-policy" className="text-app-accent underline underline-offset-4">Cookie Policy</Link>.
       </p>
     </div>
   );

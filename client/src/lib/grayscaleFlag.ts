@@ -157,6 +157,9 @@ export function selectColorHintFamily(
   return null;
 }
 
+const MIN_GRAYSCALE_LUMINANCE = 48;
+const GRAYSCALE_LUMINANCE_RANGE = 255 - MIN_GRAYSCALE_LUMINANCE;
+
 /**
  * Transforms RGBA pixel buffer to perceptual luminance grayscale, optionally
  * keeping a specific chromatic color family in original color or full color when gameOver.
@@ -186,7 +189,11 @@ export function transformFlagPixels(
       output[i + 2] = b;
       output[i + 3] = a;
     } else {
-      const y = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      const sourceLuminance = 0.299 * r + 0.587 * g + 0.114 * b;
+      const y = Math.round(
+        MIN_GRAYSCALE_LUMINANCE +
+          (sourceLuminance / 255) * GRAYSCALE_LUMINANCE_RANGE
+      );
       output[i] = y;
       output[i + 1] = y;
       output[i + 2] = y;

@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type CSSProperties } from 'react';
 
-import { MapContainer, TileLayer, GeoJSON, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, GeoJSON, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useGameStore, type MapMarkerColor } from '../stores/gameStore';
+import { useGameStore } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
@@ -14,6 +14,11 @@ import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
 import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
 import { createMapRenderer } from '../lib/mapRenderer';
+import { getCountryFeatureStyle, MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import { EARTH_PAN_BOUNDS, WORLD_SHEET_BOUNDS } from '../lib/mapBounds';
+import MapCartographicTexture from './MapCartographicTexture';
+import MapPaperEdge from './MapPaperEdge';
+import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
 
 type FeatureLayer = L.Path & { feature?: Feature };
 
@@ -32,13 +37,23 @@ const EQUATOR_COORDINATES: [number, number][] = [
   [0, 180],
 ];
 
+const MERIDIAN_LATITUDES = [-58, -45, -30, -15, 0, 15, 30, 45, 60, 75, 84.6];
 const PRIME_MERIDIAN_LINES: [number, number][][] = [
-  [[-85, 0], [85, 0]],
+  [[-58, 0], [84.6, 0]],
 ];
+const GRATICULE_LINES: [number, number][][] = [
+  ...[-150, -120, -90, -60, -30, 30, 60, 90, 120, 150].map(longitude =>
+    MERIDIAN_LATITUDES.map(latitude => [latitude, longitude] as [number, number])
+  ),
+  ...[-30, 30, 60].map(latitude =>
+    Array.from({ length: 25 }, (_, index) => [latitude, -180 + index * 15] as [number, number])
+  ),
+];
+
 
 const REFERENCE_LABEL_ICON = L.divIcon({
   className: 'map-reference-label',
-  html: '<span class="text-zinc-300 font-mono text-xs leading-4 select-none pointer-events-none">0°</span>',
+  html: `<span class="font-mono text-xs leading-4 select-none pointer-events-none" style="color:${MAP_THEME.referenceLabel}">0°</span>`,
   iconSize: [20, 16],
   iconAnchor: [0, 0],
 });
@@ -51,8 +66,10 @@ function ReferenceLineLabels() {
       icon: REFERENCE_LABEL_ICON,
       interactive: false,
       keyboard: false,
-    }));
+      opacity: 0,
+    }).addTo(map));
 
+    let rafId: number | null = null;
     const update = () => {
       const { x: width, y: height } = map.getSize();
       const longitude = 0;
@@ -65,11 +82,11 @@ function ReferenceLineLabels() {
       const place = (index: number, x: number, y: number, visible: boolean) => {
         const label = labels[index];
         if (!visible) {
-          label.remove();
+          label.setOpacity(0);
           return;
         }
         label.setLatLng(map.containerPointToLatLng([x, y]));
-        if (!map.hasLayer(label)) label.addTo(map);
+        label.setOpacity(1);
       };
 
       const bounds = map.getBounds();
@@ -83,10 +100,19 @@ function ReferenceLineLabels() {
         && crossing.y > 100 && crossing.y < height - 184);
     };
 
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        update();
+      });
+    };
+
     update();
-    map.on('move zoom resize', update);
+    map.on('move zoom resize', scheduleUpdate);
     return () => {
-      map.off('move zoom resize', update);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      map.off('move zoom resize', scheduleUpdate);
       labels.forEach((label) => label.remove());
     };
   }, [map]);
@@ -94,11 +120,18 @@ function ReferenceLineLabels() {
   return null;
 }
 
+const GRATICULE_STYLE: PathOptions = {
+  color: MAP_THEME.graticule.color,
+  weight: 0.7,
+  opacity: MAP_THEME.graticule.opacity,
+  interactive: false,
+};
+
 const REFERENCE_LINE_STYLE: PathOptions = {
-  color: '#a1a1aa',
-  weight: 1.5,
-  opacity: 0.85,
-  dashArray: '6, 6',
+  color: MAP_THEME.referenceLines.color,
+  weight: 1.2,
+  opacity: MAP_THEME.referenceLines.opacity,
+  dashArray: '5, 7',
   interactive: false,
 };
 
@@ -173,7 +206,7 @@ function MapControls({
               e.preventDefault();
               handleResetView();
             }}
-            className="bg-zinc-800 text-zinc-200 p-2 rounded shadow-md hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-[var(--map-control-bg)] text-[var(--map-control-ink)] p-2 rounded shadow-sm hover:bg-[var(--map-control-hover)] hover:text-[var(--map-control-strong-ink)] transition-colors border border-[var(--map-control-border)] h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--map-control-focus)]"
             title={'Reset view'}
             aria-label={'Reset view'}
           >
@@ -186,10 +219,10 @@ function MapControls({
               e.preventDefault();
               onToggleReferenceLines();
             }}
-            className={`p-2 rounded shadow-md transition-colors border h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer ${
+            className={`p-2 rounded shadow-sm transition-colors border h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--map-control-focus)] ${
               showReferenceLines
-                ? 'bg-zinc-700 text-zinc-100 border-zinc-500 hover:bg-zinc-600'
-                : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-white'
+                ? 'bg-[var(--map-control-active)] text-[var(--map-control-strong-ink)] border-[var(--map-control-strong-border)] hover:bg-[var(--map-control-hover)]'
+                : 'bg-[var(--map-control-bg)] text-[var(--map-control-muted-ink)] border-[var(--map-control-border)] hover:bg-[var(--map-control-hover)] hover:text-[var(--map-control-ink)]'
             }`}
             title={showReferenceLines
               ? ('Hide Equator & Greenwich lines')
@@ -206,7 +239,7 @@ function MapControls({
               e.preventDefault();
               handleZoomToCorrect();
             }}
-            className="bg-emerald-600 text-white p-2 rounded shadow-md hover:bg-emerald-700 transition-colors border border-emerald-500 h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer"
+            className="bg-[var(--map-correct-fill)] text-white p-2 rounded shadow-sm hover:bg-[var(--map-correct-hover)] transition-colors border border-[var(--map-correct-edge)] h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--map-control-focus)]"
             title={'Zoom to correct country'}
             aria-label={'Zoom to correct country'}
           >
@@ -297,88 +330,6 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     }} />;
 }
 
-const getStyleFromState = (
-  feature: Feature | undefined,
-  eligibleNames: ReadonlySet<string>,
-  markings: Record<string, MapMarkerColor>,
-  currentCorrectName?: string
-): PathOptions => {
-  if (!feature || !feature.properties) return {};
-
-  const countryName = feature.properties.SOVEREIGNT.toUpperCase();
-  if (!eligibleNames.has(countryNameKey(countryName))) {
-    return {
-      fillColor: '#18181b',
-      weight: 1,
-      opacity: 0.4,
-      color: '#71717a',
-      fillOpacity: 0.7,
-      dashArray: undefined,
-    };
-  }
-  const isCorrect = isCorrectCountryFeature(feature, currentCorrectName);
-  const marker = markings[countryName];
-
-  if (isCorrect) {
-    return {
-      fillColor: '#10b981',
-      weight: 2,
-      opacity: 1,
-      color: '#34d399',
-      fillOpacity: 0.85,
-    };
-  }
-
-  if (marker === 'green') {
-    return {
-      fillColor: '#059669',
-      weight: 1.5,
-      opacity: 0.8,
-      color: '#6ee7b7',
-      fillOpacity: 0.35,
-    };
-  }
-
-  if (marker === 'red') {
-    return {
-      fillColor: '#b91c1c',
-      weight: 2.5,
-      opacity: 1,
-      color: '#ef4444',
-      fillOpacity: 0.45,
-      dashArray: undefined,
-    };
-  }
-
-  if (marker === 'blue') {
-    return {
-      fillColor: '#1d4ed8',
-      weight: 2,
-      opacity: 1,
-      color: '#60a5fa',
-      fillOpacity: 0.6,
-    };
-  }
-
-  if (marker === 'orange') {
-    return {
-      fillColor: '#c2410c',
-      weight: 2,
-      opacity: 1,
-      color: '#fb923c',
-      fillOpacity: 0.6,
-    };
-  }
-
-  return {
-    fillColor: '#242424',
-    weight: 1,
-    opacity: 1,
-    color: 'white',
-    fillOpacity: 0.7,
-    dashArray: undefined,
-  };
-};
 
 
 export function ControlledMapBox({
@@ -416,27 +367,41 @@ export function ControlledMapBox({
   const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
 
   const getStyle = useCallback((feature: Feature | undefined) => (
-    getStyleFromState(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName)
+    getCountryFeatureStyle(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName)
   ), []);
 
-  // Close lingering tooltips when mouse moves out of the map container
+  const hoverLayerRef = useRef<L.GeoJSON | null>(null);
+
+  // Dedicated lightweight SVG overlay for hover so pointer moves don't repaint the entire L.Canvas.
   useEffect(() => {
     if (!map) return;
+    const hoverRenderer = L.svg({ padding: 0.5 });
+    const hoverLayer = L.geoJSON(undefined, {
+      renderer: hoverRenderer,
+      interactive: false,
+      style: {
+        weight: 2,
+        color: MAP_THEME.controls.strongInk,
+        fillColor: MAP_THEME.controls.ink,
+        fillOpacity: 0.12,
+      },
+    } as L.GeoJSONOptions & { renderer: L.Renderer }).addTo(map);
+    hoverLayerRef.current = hoverLayer;
+
     const onMapMouseOut = () => {
+      hoverLayer.clearLayers();
       if (activeHoverLayerRef.current) {
-        const prev = activeHoverLayerRef.current;
-        prev.closeTooltip?.();
-        if (prev.feature) {
-          prev.setStyle?.(getStyle(prev.feature));
-        }
+        activeHoverLayerRef.current.closeTooltip?.();
         activeHoverLayerRef.current = null;
       }
     };
     map.on('mouseout', onMapMouseOut);
     return () => {
       map.off('mouseout', onMapMouseOut);
+      hoverLayer.remove();
+      hoverLayerRef.current = null;
     };
-  }, [map, getStyle]);
+  }, [map]);
 
   useEffect(() => {
     if (!onCountryCode) return;
@@ -458,7 +423,7 @@ export function ControlledMapBox({
         const layer = item as FeatureLayer;
         const feature = layer.feature;
         if (feature) {
-          const newStyle = getStyleFromState(
+          const newStyle = getCountryFeatureStyle(
             feature,
             eligibleNames,
             entityMarkings,
@@ -497,26 +462,20 @@ export function ControlledMapBox({
         if (!current.current.eligibleNames.has(countryNameKey(countryName))) return;
         const l = layer as FeatureLayer;
         if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
-          const prev = activeHoverLayerRef.current;
-          prev.closeTooltip?.();
-          if (prev.feature) {
-            prev.setStyle?.(getStyle(prev.feature));
-          }
+          activeHoverLayerRef.current.closeTooltip?.();
         }
         activeHoverLayerRef.current = l;
-
-        l.setStyle({
-          weight: 2,
-          fillOpacity: 0.85,
-        });
+        if (hoverLayerRef.current) {
+          hoverLayerRef.current.clearLayers();
+          hoverLayerRef.current.addData(feature);
+        }
         l.openTooltip?.();
       },
       mouseout: () => {
         const l = layer as FeatureLayer;
-        const style = getStyle(feature);
-        l.setStyle(style);
         l.closeTooltip?.();
         if (activeHoverLayerRef.current === l) {
+          hoverLayerRef.current?.clearLayers();
           activeHoverLayerRef.current = null;
         }
       }
@@ -537,40 +496,31 @@ export function ControlledMapBox({
 
   if (!geoJsonData) {
     return <MapLoading
-      className={className ?? 'border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}
+      className={className ?? 'border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}
       error={mapError}
       onRetry={retryMap}
     />;
   }
 
   return (
-    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-[#232227] border border-zinc-800 rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`}>
+    <div className={`country-map-theme w-full overflow-hidden relative ${className ? className : 'bg-[var(--map-ocean)] border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[350px] md:h-[500px] mb-4 md:mb-8'}`} style={MAP_THEME_CSS_VARIABLES as CSSProperties}>
       <style>{`
-        .leaflet-container, .leaflet-tile-pane, .leaflet-map-pane, .leaflet-pane {
-            background-color: #232227 !important;
-            background: #232227 !important;
-        }
-        .leaflet-tile {
-            background-color: #232227 !important;
-        }
-        .leaflet-interactive:focus {
-            outline: none;
-        }
-        .leaflet-tooltip {
-            pointer-events: none !important;
-        }
-        .leaflet-top, .leaflet-bottom, .leaflet-control {
+        .country-map-theme .leaflet-top,
+        .country-map-theme .leaflet-bottom,
+        .country-map-theme .leaflet-control {
             z-index: 1050 !important;
         }
       `}</style>
       <MapContainer 
+        className="antique-map-surface"
         center={center} 
         zoom={zoom}
-        style={{ height: '100%', width: '100%', background: '#232227', backgroundColor: '#232227' }}
+        style={{ height: '100%', width: '100%', background: MAP_THEME.map.backgroundColor, backgroundColor: MAP_THEME.map.backgroundColor }}
         minZoom={minZoom}
         maxZoom={maxZoom}
-        maxBounds={[[-80, -215], [84, 215]]}
-        maxBoundsViscosity={0.85}
+        maxBounds={EARTH_PAN_BOUNDS}
+        maxBoundsViscosity={0}
+        worldCopyJump={false}
         zoomSnap={0}
         zoomDelta={0.5}
         doubleClickZoom={!L.Browser.mobile}
@@ -580,16 +530,7 @@ export function ControlledMapBox({
         ref={setMap}
         renderer={renderer}
       >
-        <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-            attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            bounds={[[-78, -180], [82, 180]]}
-            errorTileUrl="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-            noWrap={true}
-            keepBuffer={2}
-            updateInterval={200}
-            updateWhenZooming={false}
-        />
+        <ParchmentWorldBackdrop />
         
         <GeoJSON 
             data={geoJsonData} 
@@ -597,6 +538,13 @@ export function ControlledMapBox({
             onEachFeature={onEachFeature}
             ref={geoJsonLayerRef}
         />
+        {GRATICULE_LINES.map((coordinates, index) => (
+          <Polyline
+            key={`graticule-${index}`}
+            positions={coordinates}
+            pathOptions={GRATICULE_STYLE}
+          />
+        ))}
         {showReferenceLines && (
           <>
             {/* Equator (0° Latitude) */}
@@ -619,6 +567,8 @@ export function ControlledMapBox({
         )}
         
         <MapController correctCountryName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
+        <MapCartographicTexture />
+        <MapPaperEdge bounds={WORLD_SHEET_BOUNDS} />
       </MapContainer>
       <MapControls
         correctCountryName={revealedName}

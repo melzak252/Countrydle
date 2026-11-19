@@ -69,6 +69,42 @@ const TABS: TabDefinition[] = [
   { id: 'aiCosts', labelKey: 'adminCosts.tab', descriptionKey: 'adminNavigation.pages.aiCosts.description', icon: DollarSign, section: 'system' },
 ];
 const SECTIONS: AdminSection[] = ['gameplay', 'qa', 'system'];
+const ADMIN_LIGHT_THEME = [
+  '!text-app-text',
+  '[&_.admin-panel]:!rounded-sm [&_.admin-panel]:!border-app-border [&_.admin-panel]:!bg-app-surface [&_.admin-panel]:!text-app-text',
+  '[&_.admin-toolbar]:!rounded-sm [&_.admin-toolbar]:!border-app-border [&_.admin-toolbar]:!bg-app-surface [&_.admin-toolbar]:!text-app-text',
+  '[&_.admin-control]:!rounded-sm [&_.admin-control]:!border-app-border [&_.admin-control]:!bg-app-surface [&_.admin-control]:!text-app-text',
+  '[&_.admin-button]:!rounded-sm [&_.admin-button]:!border-app-border [&_.admin-button]:!bg-app-surface [&_.admin-button]:!text-app-text',
+  '[&_.admin-button:hover:not(:disabled)]:!bg-app-surface-muted',
+  '[&_.admin-button.admin-button-primary]:!border-emerald-300 [&_.admin-button.admin-button-primary]:!bg-emerald-50 [&_.admin-button.admin-button-primary]:!text-emerald-900',
+  '[&_.admin-button.admin-button-danger]:!border-rose-200 [&_.admin-button.admin-button-danger]:!bg-rose-50 [&_.admin-button.admin-button-danger]:!text-rose-900',
+  '[&_.admin-sidebar_button[aria-current="page"]]:!border-app-accent [&_.admin-sidebar_button[aria-current="page"]]:!bg-app-accent/10 [&_.admin-sidebar_button[aria-current="page"]]:!text-app-accent',
+  '[&_.admin-badge]:!rounded-sm [&_.admin-badge]:!border-app-border [&_.admin-badge]:!bg-app-surface-muted [&_.admin-badge]:!text-app-text-secondary',
+  '[&_.admin-badge.admin-answer-yes]:!text-emerald-800 [&_.admin-badge.admin-answer-invalid]:!text-amber-900 [&_.admin-badge.admin-outcome-error]:!text-rose-800',
+  '[&_.admin-meta]:!text-app-text-muted [&_.admin-muted]:!text-app-text-secondary [&_.admin-question]:!text-app-text [&_.admin-metric]:!text-app-text',
+  '[&_.admin-diagnostics]:!rounded-sm [&_.admin-diagnostics]:!border [&_.admin-diagnostics]:!border-app-border [&_.admin-diagnostics]:!bg-app-surface-muted [&_.admin-diagnostics]:!text-app-text-secondary',
+  '[&_.admin-table]:!rounded-sm [&_.admin-table]:!border [&_.admin-table]:!border-app-border [&_.admin-table_th]:!border-app-border [&_.admin-table_th]:!text-app-text-secondary [&_.admin-table_td]:!border-app-border',
+  '[&_.admin-overview-metric]:!rounded-sm [&_.admin-overview-mode]:!rounded-sm [&_.admin-overview-search]:!rounded-sm [&_.admin-overview-search]:!border-app-border [&_.admin-overview-search]:!bg-app-surface [&_.admin-overview-search]:!text-app-text',
+  '[&_.admin-overview-search_input]:!text-app-text [&_.admin-overview-coverage]:!text-app-text-secondary [&_.admin-overview-mode-stats_dt]:!text-app-text-muted [&_.admin-overview-mode-stats_dd]:!text-app-text [&_.admin-overview-mode-stats_dd_span]:!text-app-text-secondary [&_.admin-overview-session-link]:!text-app-accent',
+  '[&_:is(button,input,select,textarea)]:!rounded-sm [&_*:focus-visible]:!outline-app-focus',
+  '[&_[class~="rounded"]]:!rounded-sm [&_[class~="rounded-md"]]:!rounded-sm [&_[class~="rounded-lg"]]:!rounded-sm [&_[class~="rounded-xl"]]:!rounded-sm [&_[class~="rounded-2xl"]]:!rounded-sm',
+  '[&_[class~="text-sand-100"]]:!text-app-text [&_[class~="text-sand-200"]]:!text-app-text [&_[class*="text-sand-100/"]]:!text-app-text-secondary',
+  '[&_[class~="text-slate-200"]]:!text-app-text-secondary [&_[class~="text-slate-300"]]:!text-app-text-secondary [&_[class~="text-slate-400"]]:!text-app-text-muted',
+  '[&_[class~="text-zinc-300"]]:!text-app-text-secondary [&_[class~="text-zinc-400"]]:!text-app-text-muted [&_[class~="text-obsidian-950"]]:!text-emerald-950',
+  '[&_[class*="text-emerald-"]]:!text-emerald-800 [&_[class*="text-amber-"]]:!text-amber-900 [&_[class*="text-rose-"]]:!text-rose-800',
+  '[&_[class~="bg-obsidian-950"]]:!bg-app-surface [&_[class*="bg-obsidian-950/"]]:!bg-app-surface [&_[class~="bg-obsidian-900"]]:!bg-app-surface-muted [&_[class~="bg-obsidian-850"]]:!bg-app-surface-muted [&_[class~="bg-black/30"]]:!bg-app-surface-muted',
+  '[&_[class*="bg-emerald-400/"]]:!bg-emerald-50 [&_[class*="bg-amber-400/"]]:!bg-amber-50 [&_[class*="bg-rose-400/"]]:!bg-rose-50 [&_[class*="bg-rose-950/"]]:!bg-rose-50',
+  '[&_[class*="border-white/"]]:!border-app-border [&_[class*="border-slate-"]]:!border-app-border [&_[class*="divide-white/"]]:!divide-app-border',
+  '[&_[class*="border-emerald-"]]:!border-emerald-200 [&_[class*="border-amber-"]]:!border-amber-200 [&_[class*="border-rose-"]]:!border-rose-200',
+  '[&_[class*="border-amber-500/"]]:!bg-amber-50 [&_[class*="border-emerald-700"]]:!bg-emerald-50',
+  '[&_[class~="hover:bg-white/5"]:hover]:!bg-app-surface-muted',
+  '[&_[role="alert"]]:!rounded-sm [&_[role="alert"]]:!border-rose-200 [&_[role="alert"]]:!bg-rose-50 [&_[role="alert"]]:!text-rose-900',
+  '[&_.admin-panel[role="alert"]]:!border-rose-200 [&_.admin-panel[role="alert"]]:!bg-rose-50 [&_.admin-panel[role="alert"]]:!text-rose-900',
+  '[&_.admin-panel.admin-success-panel]:!border-emerald-200 [&_.admin-panel.admin-success-panel]:!bg-emerald-50 [&_.admin-panel.admin-success-panel]:!text-emerald-900',
+  '[&_.admin-badge[class*="text-emerald-"]]:!border-emerald-200 [&_.admin-badge[class*="text-emerald-"]]:!bg-emerald-50 [&_.admin-badge[class*="text-amber-"]]:!border-amber-200 [&_.admin-badge[class*="text-amber-"]]:!bg-amber-50 [&_.admin-badge[class*="text-rose-"]]:!border-rose-200 [&_.admin-badge[class*="text-rose-"]]:!bg-rose-50',
+  '[&_.admin-badge.admin-answer-yes]:!border-emerald-200 [&_.admin-badge.admin-answer-yes]:!bg-emerald-50 [&_.admin-badge.admin-answer-invalid]:!border-amber-200 [&_.admin-badge.admin-answer-invalid]:!bg-amber-50 [&_.admin-badge.admin-outcome-error]:!border-rose-200 [&_.admin-badge.admin-outcome-error]:!bg-rose-50',
+].join(' ');
+
 
 function requestError(error: unknown): string {
   if (isAxiosError(error)) {
@@ -389,7 +425,7 @@ export default function AdminDashboard() {
   const activeDefinition = TABS.find((tab) => tab.id === activeTab)!;
 
   return (
-    <div className="admin-workspace">
+    <div className={`admin-workspace ${ADMIN_LIGHT_THEME}`}>
       <nav className="admin-sidebar" aria-label={t('adminNavigation.pageSelector')}>
         {SECTIONS.map((section) => (
           <div key={section} className="mb-6">

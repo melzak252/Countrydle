@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel
 from powiatdle.heraldry import get_or_fetch_herb_svg, get_or_fetch_herb_thumb, get_source_attribution, polish_sort_key
+from powiat_names import resolve_powiat_name
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,10 @@ _US_STATE_ADJACENCY: Optional[Dict[str, Set[str]]] = None
 _US_STATE_LOOKUP: Optional[Dict[str, str]] = None
 _US_STATE_ISLANDS: Optional[Set[str]] = None
 _US_STATE_CONNECTED_PAIRS: Optional[List[Tuple[str, str, int]]] = None
+_POWIAT_ADJACENCY: Optional[Dict[str, Set[str]]] = None
+_POWIAT_LOOKUP: Optional[Dict[str, str]] = None
+_POWIAT_ISLANDS: Optional[Set[str]] = None
+_POWIAT_CONNECTED_PAIRS: Optional[List[Tuple[str, str, int]]] = None
 
 
 def _get_country_graph() -> Tuple[Dict[str, Set[str]], Dict[str, str], Set[str]]:
@@ -166,6 +171,39 @@ def _get_us_state_graph() -> Tuple[Dict[str, Set[str]], Dict[str, str], Set[str]
     finally:
         conn.close()
 
+def _get_powiat_graph() -> Tuple[Dict[str, Set[str]], Dict[str, str], Set[str]]:
+    global _POWIAT_ADJACENCY, _POWIAT_LOOKUP, _POWIAT_ISLANDS
+    if _POWIAT_ADJACENCY is not None and _POWIAT_LOOKUP is not None and _POWIAT_ISLANDS is not None:
+        return _POWIAT_ADJACENCY, _POWIAT_LOOKUP, _POWIAT_ISLANDS
+
+    conn = get_db_connection("powiat_facts.sqlite")
+    try:
+        rows = conn.execute("SELECT id, name FROM powiats").fetchall()
+        names = {row[1] for row in rows}
+        lookup = {name.lower(): name for name in names}
+        adj = {name: set() for name in names}
+
+        borders = conn.execute("""
+            SELECT p.name, b.border_powiat_name
+            FROM powiats p
+            JOIN powiat_borders_powiats b ON p.id = b.powiat_id
+        """).fetchall()
+        for powiat_name, border_name in borders:
+            actual_border = lookup.get(border_name.strip().lower())
+            if actual_border in adj and powiat_name in adj:
+                adj[powiat_name].add(actual_border)
+                adj[actual_border].add(powiat_name)
+
+        islands = {name for name, neighbors in adj.items() if not neighbors}
+        _POWIAT_ADJACENCY = adj
+        _POWIAT_LOOKUP = lookup
+        _POWIAT_ISLANDS = islands
+        return _POWIAT_ADJACENCY, _POWIAT_LOOKUP, _POWIAT_ISLANDS
+    finally:
+        conn.close()
+
+
+
 
 def canonicalize_entity_name(name: str, mode: str = "countries") -> Optional[str]:
     clean = name.strip()
@@ -176,6 +214,16 @@ def canonicalize_entity_name(name: str, mode: str = "countries") -> Optional[str
     elif mode in ("us_states", "us_statedle"):
         _, lookup, _ = _get_us_state_graph()
         return lookup.get(clean.lower())
+    elif mode == "powiaty":
+        _, lookup, _ = _get_powiat_graph()
+        canonical_name = lookup.get(clean.lower())
+        if canonical_name:
+            return canonical_name
+        conn = get_db_connection("powiat_facts.sqlite")
+        try:
+            return resolve_powiat_name(conn, clean)
+        finally:
+            conn.close()
     return None
 
 
@@ -184,6 +232,8 @@ def find_shortest_border_path(start: str, target: str, mode: str = "countries") 
         adj, _, _ = _get_country_graph()
     elif mode in ("us_states", "us_statedle"):
         adj, _, _ = _get_us_state_graph()
+    elif mode == "powiaty":
+        adj, _, _ = _get_powiat_graph()
     else:
         return None
 
@@ -210,7 +260,7 @@ def find_shortest_border_path(start: str, target: str, mode: str = "countries") 
 
 
 def _get_connected_pairs(mode: str = "countries", min_hops: int = 3, max_hops: int = 5) -> List[Tuple[str, str, int]]:
-    global _COUNTRY_CONNECTED_PAIRS, _US_STATE_CONNECTED_PAIRS
+    global _COUNTRY_CONNECTED_PAIRS, _US_STATE_CONNECTED_PAIRS, _POWIAT_CONNECTED_PAIRS
     if mode in ("countries", "countrydle"):
         if _COUNTRY_CONNECTED_PAIRS is not None:
             return _COUNTRY_CONNECTED_PAIRS
@@ -219,6 +269,10 @@ def _get_connected_pairs(mode: str = "countries", min_hops: int = 3, max_hops: i
         if _US_STATE_CONNECTED_PAIRS is not None:
             return _US_STATE_CONNECTED_PAIRS
         adj, _, _ = _get_us_state_graph()
+    elif mode == "powiaty":
+        if _POWIAT_CONNECTED_PAIRS is not None:
+            return _POWIAT_CONNECTED_PAIRS
+        adj, _, _ = _get_powiat_graph()
     else:
         return []
 
@@ -241,8 +295,10 @@ def _get_connected_pairs(mode: str = "countries", min_hops: int = 3, max_hops: i
     pairs.sort()
     if mode in ("countries", "countrydle"):
         _COUNTRY_CONNECTED_PAIRS = pairs
-    else:
+    elif mode in ("us_states", "us_statedle"):
         _US_STATE_CONNECTED_PAIRS = pairs
+    else:
+        _POWIAT_CONNECTED_PAIRS = pairs
     return pairs
 
 GAME_MODES = [
@@ -531,15 +587,19 @@ async def get_border_hop_challenge(
     seed: Optional[str] = Query(None),
 ):
     """Generate a deterministic border hop path-finding challenge."""
-    if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
-        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries' or 'us_states'.")
+    if mode not in ("countries", "countrydle", "us_states", "us_statedle", "powiaty"):
+        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries', 'us_states', or 'powiaty'.")
 
-    normalized_mode = "us_states" if mode in ("us_states", "us_statedle") else "countries"
+    normalized_mode = (
+        "us_states" if mode in ("us_states", "us_statedle") else "powiaty" if mode == "powiaty" else "countries"
+    )
 
     if normalized_mode == "countries":
         adj, lookup, islands = _get_country_graph()
-    else:
+    elif normalized_mode == "us_states":
         adj, lookup, islands = _get_us_state_graph()
+    else:
+        adj, lookup, islands = _get_powiat_graph()
 
     if target:
         canon_target = canonicalize_entity_name(target, normalized_mode)
@@ -665,15 +725,19 @@ async def get_border_neighbors(
     mode: str = Query("countries"),
 ):
     """Get bordering neighbors for a specific entity."""
-    if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
-        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries' or 'us_states'.")
+    if mode not in ("countries", "countrydle", "us_states", "us_statedle", "powiaty"):
+        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries', 'us_states', or 'powiaty'.")
 
-    normalized_mode = "us_states" if mode in ("us_states", "us_statedle") else "countries"
+    normalized_mode = (
+        "us_states" if mode in ("us_states", "us_statedle") else "powiaty" if mode == "powiaty" else "countries"
+    )
 
     if normalized_mode == "countries":
         adj, _, _ = _get_country_graph()
-    else:
+    elif normalized_mode == "us_states":
         adj, _, _ = _get_us_state_graph()
+    else:
+        adj, _, _ = _get_powiat_graph()
 
     canon_name = canonicalize_entity_name(name, normalized_mode)
     if not canon_name:
@@ -691,15 +755,19 @@ async def get_border_neighbors(
 async def verify_border_hop(payload: BorderHopVerifyRequest):
     """Verify a completed border hop path against ground-truth borders."""
     mode = payload.mode
-    if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
-        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries' or 'us_states'.")
+    if mode not in ("countries", "countrydle", "us_states", "us_statedle", "powiaty"):
+        raise HTTPException(status_code=400, detail="Unsupported mode. Use 'countries', 'us_states', or 'powiaty'.")
 
-    normalized_mode = "us_states" if mode in ("us_states", "us_statedle") else "countries"
+    normalized_mode = (
+        "us_states" if mode in ("us_states", "us_statedle") else "powiaty" if mode == "powiaty" else "countries"
+    )
 
     if normalized_mode == "countries":
         adj, _, _ = _get_country_graph()
-    else:
+    elif normalized_mode == "us_states":
         adj, _, _ = _get_us_state_graph()
+    else:
+        adj, _, _ = _get_powiat_graph()
 
     canon_start = canonicalize_entity_name(payload.start, normalized_mode)
     canon_target = canonicalize_entity_name(payload.target, normalized_mode)

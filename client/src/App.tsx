@@ -19,6 +19,9 @@ import FlagShadesPage from './pages/FlagShadesPage';
 import PowiatHeraldryPage from './pages/PowiatHeraldryPage';
 import PowiatCoatsQuizPage from './pages/PowiatCoatsQuizPage';
 import BorderHopPage from './pages/BorderHopPage';
+import MapChallengePage from './pages/MapChallengePage';
+import { MAP_QUIZ_PATHS } from './lib/mapGameMode';
+import MapBorderHopPage from './pages/MapBorderHopPage';
 import DuelPage from './pages/DuelPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
@@ -134,8 +137,9 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-right" toastOptions={{
         style: {
-          background: '#333',
-          color: '#fff',
+          background: 'rgb(var(--app-surface-raised))',
+          color: 'rgb(var(--app-text))',
+          border: '1px solid rgb(var(--app-border) / 0.12)',
         },
       }} />
       <PageMetadata />
@@ -172,6 +176,9 @@ function App() {
             ];
           })}
           <Route path="border-hop" element={<BorderHopPage />} />
+          <Route path={MAP_QUIZ_PATHS.powiaty.slice(1)} element={<MapChallengePage mode="powiaty" />} />
+          <Route path={MAP_QUIZ_PATHS.us_states.slice(1)} element={<MapChallengePage mode="us_states" />} />
+          <Route path="map-border-hop" element={<MapBorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
@@ -190,9 +197,9 @@ function App() {
           {/* Fallback */}
           <Route path="*" element={
             <section className="mx-auto max-w-3xl px-4 py-12">
-              <h1 className="text-3xl font-bold text-sand-100">Page not found</h1>
-              <p className="mt-4 text-zinc-300">This page does not exist. Explore the daily geography games or return to the homepage.</p>
-              <Link to="/" className="mt-6 inline-block text-emerald-300 underline">Return to Countrydle</Link>
+              <h1 className="text-3xl font-bold text-app-text">Page not found</h1>
+              <p className="mt-4 text-app-text-secondary">This page does not exist. Explore the daily geography games or return to the homepage.</p>
+              <Link to="/" className="mt-6 inline-block text-app-accent underline">Return to Countrydle</Link>
             </section>
           } />
         </Route>

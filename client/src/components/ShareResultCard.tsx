@@ -178,14 +178,14 @@ export default function ShareResultCard({
   return (
     <section
       aria-label={`${gameName} result`}
-      className="relative w-full max-h-[calc(var(--app-height,100dvh)-2rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] space-y-4 rounded-sm border border-white/15 bg-obsidian-950 p-4 sm:p-6 text-left"
+      className="relative w-full max-h-[calc(var(--app-height,100dvh)-2rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] space-y-4 rounded-sm border border-app-border/20 bg-app-surface-raised p-4 sm:p-6 text-left"
     >
-      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
+      <div className="flex items-center justify-between gap-2 border-b border-app-border/15 pb-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-mono text-xs text-emerald-400 font-semibold">
+          <span className="font-mono text-xs text-app-accent font-semibold">
             {t('share.resultTitle', '{{gameName}} Result', { gameName })}
           </span>
-          <time dateTime={displayDate} className="font-mono text-[10px] sm:text-xs text-zinc-400">
+          <time dateTime={displayDate} className="font-mono text-[10px] sm:text-xs text-app-text-secondary">
             {displayDate}
           </time>
         </div>
@@ -193,7 +193,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-app-surface-muted text-app-text-secondary hover:bg-app-canvas hover:text-app-text transition-colors cursor-pointer"
             aria-label={t('share.closeModal', 'Close result modal')}
             title={t('share.closeModal', 'Close result modal')}
           >
@@ -202,23 +202,23 @@ export default function ShareResultCard({
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-sm bg-obsidian-900/60 p-3 sm:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-sm bg-app-surface-muted p-3 sm:p-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {targetName && flagCode && /^[a-z]{2}$/.test(flagCode) && (
             <img
               src={`https://flagcdn.com/w320/${flagCode}.png`}
               alt={t('share.flagAlt', 'Flag of {{targetName}}', { targetName })}
-              className="h-12 w-18 sm:h-16 sm:w-24 shrink-0 object-contain rounded-xs border border-white/10 shadow-sm"
+              className="h-12 w-18 sm:h-16 sm:w-24 shrink-0 object-contain rounded-sm border border-app-border/15 shadow-sm"
             />
           )}
           <div className="min-w-0">
-            <span className="font-mono text-xs text-emerald-400 font-semibold">
+            <span className="font-mono text-xs text-app-accent font-semibold">
               {t('share.mysteryLocation', 'The Mystery Location')}
             </span>
-            <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
+            <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-app-text">
               {targetName || t('share.mysteryLocation', 'Mystery Location')}
             </h2>
-            <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+            <p className="mt-1 text-xs leading-relaxed text-app-text-secondary">
               {won
                 ? t('share.solvedSubtitle', 'Outstanding deduction! You uncovered the location.')
                 : t('share.gameOverSubtitle', 'Better luck tomorrow! Study the clues and try again.')}
@@ -228,42 +228,42 @@ export default function ShareResultCard({
 
         {/* Outcome & Points */}
         <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
-            won ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-semibold font-mono ${
+            won ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'
           }`}>
             {won ? <Trophy size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
             <span>{won ? t('share.solved', 'Solved') : t('share.gameOver', 'Game Over')}</span>
           </div>
           {won && points !== undefined && points > 0 && (
-            <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
+            <div className="font-mono text-xl sm:text-2xl font-bold text-app-accent">
               +{points.toLocaleString('en-US')} {t('share.pointsUnit', 'pts')}
             </div>
           )}
         </div>
       </div>
 
-      <dl className="grid grid-cols-3 divide-x divide-white/10 rounded-sm border border-white/10 bg-obsidian-900/60">
+      <dl className="grid grid-cols-3 divide-x divide-app-border/15 rounded-sm border border-app-border/15 bg-app-surface-muted">
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-xs font-mono text-zinc-400">
+          <dt className="text-xs font-mono text-app-text-secondary">
             {t('share.questionsUsed', 'Questions Used')}
           </dt>
-          <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-sand-100">
-            {questionsAsked} <span className="text-zinc-400 font-normal">/ {maxQuestions}</span>
+          <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-app-text">
+            {questionsAsked} <span className="text-app-text-secondary font-normal">/ {maxQuestions}</span>
           </dd>
         </div>
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-xs font-mono text-zinc-400">
+          <dt className="text-xs font-mono text-app-text-secondary">
             {t('share.guessesMade', 'Guesses Made')}
           </dt>
-          <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-sand-100">
-            {guessesMade} <span className="text-zinc-400 font-normal">/ {maxGuesses}</span>
+          <dd className="mt-0.5 font-mono text-sm sm:text-base font-bold text-app-text">
+            {guessesMade} <span className="text-app-text-secondary font-normal">/ {maxGuesses}</span>
           </dd>
         </div>
         <div className="min-w-0 px-2 sm:px-4 py-2">
-          <dt className="text-xs font-mono text-zinc-400">
+          <dt className="text-xs font-mono text-app-text-secondary">
             {t('share.nextPuzzle', 'Next Puzzle')}
           </dt>
-          <dd className="mt-0.5 font-mono text-sm sm:text-base font-semibold text-emerald-400">
+          <dd className="mt-0.5 font-mono text-sm sm:text-base font-semibold text-app-accent">
             {countdown !== null ? countdown : '00:00 UTC'}
           </dd>
         </div>
@@ -274,7 +274,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={handleNativeShare}
-            className="col-span-3 sm:col-span-1 flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-4 py-2.5 text-sm font-bold text-obsidian-950 transition-colors hover:bg-emerald-300 cursor-pointer"
+            className="col-span-3 sm:col-span-1 flex min-h-11 items-center justify-center gap-2 rounded-sm bg-app-accent px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-app-accent-hover cursor-pointer"
           >
             {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
             <span>{copied ? t('share.copiedBtn', 'Copied to clipboard') : t('share.shareBtn', 'Share Result')}</span>
@@ -283,7 +283,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={handleCopy}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-sm border border-white/15 px-3 py-2.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 cursor-pointer"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-sm border border-app-border/20 px-3 py-2.5 text-xs font-semibold text-app-text-secondary transition-colors hover:bg-app-surface-muted cursor-pointer"
           >
             <Copy size={15} />
             <span>{t('share.copyBtn', 'Copy Card')}</span>
@@ -292,7 +292,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={handleShareX}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-white/15 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-app-border/20 text-app-text-secondary transition-colors hover:bg-app-surface-muted hover:text-app-text cursor-pointer"
             aria-label={t('share.shareX', 'Share on X / Twitter')}
             title={t('share.shareX', 'Share on X / Twitter')}
           >
@@ -304,7 +304,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={handleShareWhatsApp}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-white/15 text-zinc-300 transition-colors hover:bg-white/10 hover:text-emerald-400 cursor-pointer"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-app-border/20 text-app-text-secondary transition-colors hover:bg-app-surface-muted hover:text-app-accent cursor-pointer"
             aria-label={t('share.shareWhatsApp', 'Share on WhatsApp')}
             title={t('share.shareWhatsApp', 'Share on WhatsApp')}
           >
@@ -317,10 +317,10 @@ export default function ShareResultCard({
         {/* 1v1 Challenge Invite */}
         <Link
           to={`/friends?mode=${gamePath === '/powiaty' ? 'powiatdle' : gamePath === '/wojewodztwa' ? 'wojewodztwodle' : gamePath === '/us-states' ? 'us_statedle' : 'countrydle'}`}
-          className="flex min-h-11 items-center justify-between gap-2 rounded-sm border border-amber-400/25 bg-amber-400/5 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition-colors"
+          className="flex min-h-11 items-center justify-between gap-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-300">
+            <span className="rounded-sm bg-amber-100 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-900">
               {t('share.duel', '1v1 Duel')}
             </span>
             <span>{t('share.challengeFriend', 'Challenge a friend in real-time')}</span>
@@ -333,7 +333,7 @@ export default function ShareResultCard({
           <div
             role="tablist"
             aria-label={t('share.explorerLabel', 'Explore the result')}
-            className="grid grid-cols-2 gap-1 rounded-sm border border-white/10 bg-obsidian-900/60 p-1"
+            className="grid grid-cols-2 gap-1 rounded-sm border border-app-border/15 bg-app-surface-muted p-1"
             onKeyDown={(event) => {
               if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
               event.preventDefault();
@@ -351,7 +351,7 @@ export default function ShareResultCard({
               aria-controls={`${explorerId}-notes-panel`}
               tabIndex={selectedTab === 'notes' ? 0 : -1}
               onClick={() => setActiveTab('notes')}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-xs px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ${selectedTab === 'notes' ? 'bg-white/10 text-sand-100' : 'text-zinc-400 hover:text-sand-100'}`}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-sm px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus ${selectedTab === 'notes' ? 'bg-app-surface-raised text-app-text' : 'text-app-text-secondary hover:text-app-text'}`}
             >
               <BookOpen size={16} className="shrink-0" aria-hidden="true" />
               <span>{t('fieldNotes.title', 'Location Field Notes')}</span>
@@ -365,11 +365,11 @@ export default function ShareResultCard({
               aria-controls={`${explorerId}-questions-panel`}
               tabIndex={selectedTab === 'questions' ? 0 : -1}
               onClick={() => setActiveTab('questions')}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-xs px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ${selectedTab === 'questions' ? 'bg-white/10 text-sand-100' : 'text-zinc-400 hover:text-sand-100'}`}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-sm px-2 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus ${selectedTab === 'questions' ? 'bg-app-surface-raised text-app-text' : 'text-app-text-secondary hover:text-app-text'}`}
             >
               <MessageSquare size={16} className="shrink-0" aria-hidden="true" />
               <span>{t('chat.historyTitle', 'Question History')}</span>
-              <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">{questions?.length}</span>
+              <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.5 font-mono text-[10px] text-app-text-secondary">{questions?.length}</span>
             </button>
           </div>
         )}
@@ -393,7 +393,7 @@ export default function ShareResultCard({
             tabIndex={0}
             className={selectedTab === 'questions' ? 'block space-y-3' : 'hidden'}
           >
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-app-text-secondary">
               {t('chat.reviewHint', 'Select a question to review its explanation or report an issue.')}
             </p>
             <ResultsQuestionHistory
@@ -406,10 +406,10 @@ export default function ShareResultCard({
         )}
       </div>
 
-      <footer className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4 pb-[env(safe-area-inset-bottom)] text-xs">
+      <footer className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-app-border/15 pt-4 pb-[env(safe-area-inset-bottom)] text-xs">
         <Link
           to={otherMode.path}
-          className="flex min-h-11 items-center gap-1.5 text-zinc-400 hover:text-sand-100 transition-colors"
+          className="flex min-h-11 items-center gap-1.5 text-app-text-secondary hover:text-app-text transition-colors"
         >
           <span>{t('share.tryMode', 'Try {{modeName}}', { modeName: otherMode.name })}</span>
           <ArrowRight size={13} />
@@ -418,7 +418,7 @@ export default function ShareResultCard({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 w-full sm:w-auto px-4 py-2 rounded-sm border border-white/15 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="min-h-11 w-full sm:w-auto px-4 py-2 rounded-sm border border-app-border/20 text-xs font-medium text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text transition-colors cursor-pointer"
           >
             {t('share.closeAndViewMap', 'Close and View Map')}
           </button>

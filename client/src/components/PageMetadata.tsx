@@ -1,6 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { gameCatalog } from '../lib/gameCatalog';
+import { MAP_QUIZ_PATHS } from '../lib/mapGameMode';
 import { regionalSymbolGames, regionalSymbolLabels, regionalSymbolNouns, regionalSymbolPath } from '../services/api';
 import { usePageMetadataOverride, type PageMetadataInput } from '../lib/pageMetadata';
 
@@ -25,10 +26,10 @@ const publicPages: Record<string, RouteMetadata> = {
   },
   '/faq': {
     title: 'Countrydle FAQ — Daily Puzzles, Scoring and Accounts',
-    description: 'Answers to common Countrydle questions about daily resets, nine game modes, question budgets, guesses, scoring, guest progress and accounts.',
+    description: 'Answers to common Countrydle questions about daily resets, all geography game modes, flag and heraldry quizzes, map challenges, scoring, guest progress and accounts.',
   },
   '/explore': {
-    title: 'Explore Countrydle — Geography Modes and Deduction Guides',
+    title: 'Explore Countrydle — Geography Games & Maps',
     description: 'Compare Countrydle’s daily geography modes and explore practical deduction guides for countries, flags, continents, US states and Polish regions.',
     pageType: 'CollectionPage',
   },
@@ -116,7 +117,22 @@ function normalizePath(path: string): string {
   return `/${path.split('/').filter(Boolean).join('/')}`;
 }
 
-function routeMetadata(path: string): RouteMetadata {
+function routeMetadata(path: string, search = ''): RouteMetadata {
+  const isMapQuiz = path === MAP_QUIZ_PATHS.powiaty || path === MAP_QUIZ_PATHS.us_states;
+  if (isMapQuiz || path === '/map-border-hop') {
+    const isUSStates = path === MAP_QUIZ_PATHS.us_states ||
+      (path === '/map-border-hop' && new URLSearchParams(search).get('mode') === 'us_states');
+    const region = isUSStates ? 'US state' : 'Polish powiat';
+    const regionTitle = isUSStates ? 'US State' : 'Powiat';
+    const game = isMapQuiz ? 'Map Quiz' : 'Map Border Hop';
+    return {
+      title: `${regionTitle} ${game} | Countrydle`,
+      description: isMapQuiz
+        ? `Find the named ${region.toLowerCase()} on the map and earn a point for each correct answer.`
+        : `Build a border route between ${region.toLowerCase()}s by typing neighboring regions on the map.`,
+      noindex: true,
+    };
+  }
   if (publicPages[path]) return publicPages[path];
   for (const { scope, flags } of regionalSymbolGames) {
     const base = regionalSymbolPath(scope, flags);
@@ -216,10 +232,10 @@ function structuredData(metadata: RouteMetadata, path: string, url: string) {
 }
 
 export default function PageMetadata() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const loaded = usePageMetadataOverride();
   const path = normalizePath(pathname);
-  const defaults = routeMetadata(path);
+  const defaults = routeMetadata(path, search);
   let metadata: RouteMetadata = loaded?.pathname === pathname
     ? { ...defaults, ...loaded.metadata, noindex: loaded.metadata.noindex ?? false }
     : defaults;

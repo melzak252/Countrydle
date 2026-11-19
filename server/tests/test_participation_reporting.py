@@ -75,9 +75,9 @@ async def test_recovered_guess_only_player_appears_in_daily_and_mode_counts(repo
 
     totals, days, modes = await admin_counts(session, TODAY, TODAY)
 
-    assert (totals.players, totals.sessions) == (1, 0)
-    assert (days[TODAY].players, days[TODAY].sessions) == (1, 0)
-    assert (modes[(TODAY, "countrydle")].players, modes[(TODAY, "countrydle")].sessions) == (1, 0)
+    assert (totals.players, totals.sessions) == (1, 1)
+    assert (days[TODAY].players, days[TODAY].sessions) == (1, 1)
+    assert (modes[(TODAY, "countrydle")].players, modes[(TODAY, "countrydle")].sessions) == (1, 1)
 
 
 @pytest.mark.anyio
@@ -245,13 +245,13 @@ async def test_admin_player_counts_require_identified_actions_and_recover_saved_
 
     totals, days, modes = await admin_counts(session, TODAY, TODAY)
 
-    # Inactive state/guest rows and anonymous guesses remain legacy sessions,
-    # while only attributed accepted actions appear in the player totals.
-    assert totals.sessions == 6
+    # Inactive state/guest rows and invalid questions are excluded from both
+    # players and sessions; only active plays + legacy anonymous guesses count.
+    assert totals.sessions == 4
     assert totals.players == 3
-    assert days[TODAY].sessions == 6
+    assert days[TODAY].sessions == 4
     assert days[TODAY].players == 3
-    assert modes[(TODAY, "countrydle")].sessions == 6
+    assert modes[(TODAY, "countrydle")].sessions == 4
     assert modes[(TODAY, "countrydle")].players == 3
     assert await admin_mode_identities(session, TODAY, "countrydle") == {
         "user:20", "user:22", "user:30",

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Search, 
   Calendar, 
   Clock, 
   ArrowRight, 
+  Compass,
   Globe, 
   Loader2
 } from 'lucide-react';
@@ -152,64 +154,79 @@ export default function BlogListPage() {
     noindex: !!error || pending || posts.length === 0,
   });
   return (
-    <div data-publisher-ready={!pending && !error ? 'true' : 'false'} data-publisher-error={error ? 'true' : undefined} className="mx-auto min-w-0 max-w-6xl py-4 [overflow-wrap:anywhere] md:py-10">
+    <div data-publisher-ready={!pending && !error ? 'true' : 'false'} data-publisher-error={error ? 'true' : undefined} className="mx-auto min-w-0 max-w-6xl bg-app-canvas py-4 text-app-text [overflow-wrap:anywhere] md:py-10">
       <div className="space-y-6 md:space-y-10">
-        <header className="grid min-w-0 gap-4 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:gap-12">
+        <header className="grid min-w-0 gap-4 border-b border-app-border pb-6 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:gap-12">
           <div className="min-w-0">
-            <h1 className="flex items-center gap-2 font-serif text-3xl leading-tight tracking-tight text-sand-100 md:text-5xl">
-              <BookOpen size={24} className="shrink-0 text-emerald-400" />
-              {'Country journal'}
+            <div className="mb-3 inline-flex items-center gap-2 rounded-sm border border-app-border/70 bg-app-surface-muted/80 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-app-accent">
+              <Compass size={13} aria-hidden="true" />
+              <span>Field Notes · Country Journal</span>
+            </div>
+            <h1 className="flex items-center gap-2.5 font-serif text-3xl leading-tight tracking-tight text-app-text md:text-5xl">
+              <BookOpen size={26} className="shrink-0 text-app-accent" aria-hidden="true" />
+              <span>Country journal</span>
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400 md:text-base">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-app-text-secondary md:text-base">
               {'Explore past-day solutions, country-specific reasoning, community questions and sources recorded in the articles.'}
             </p>
           </div>
           <div className="min-w-0">
-            <label htmlFor="journal-search" className="mb-2 block text-sm font-medium text-zinc-300">
-              {'Search articles'}
+            <label htmlFor="journal-search" className="mb-2 block font-mono text-[11px] uppercase tracking-wider text-app-text-muted">
+              {'Search dispatches'}
             </label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-app-text-muted" size={17} />
               <input id="journal-search" type="search" value={search} onChange={(e) => setView({ search: e.target.value, page: 1 })}
                 placeholder={'Country, fact or keyword…'}
-                className="min-h-11 w-full min-w-0 rounded-md border border-white/15 bg-obsidian-900 py-3 pl-11 pr-4 text-sm text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                className="min-h-11 w-full min-w-0 rounded-sm border border-app-border bg-app-surface py-2.5 pl-10 pr-4 text-sm text-app-text placeholder:text-app-text-muted shadow-[inset_0_1px_2px_rgba(85,75,57,0.06)] focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-focus" />
             </div>
           </div>
         </header>
 
-        <div className="min-w-0 border-b border-white/10 pb-4">
-          <details className="rounded-md border border-white/10 bg-obsidian-900/60">
-            <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-medium text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-              {'Filters and sorting'}
-            </summary>
-            <div className="grid gap-4 border-t border-white/10 p-4 sm:grid-cols-3">
-              <label className="min-w-0 space-y-2 text-sm text-zinc-400">
-                <span className="block">{'Continent'}</span>
-                <select value={selectedContinent} onChange={(e) => setView({ continent: e.target.value, page: 1 })} className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-obsidian-950 px-2 text-sand-100 focus:outline-emerald-400">
-                  {continents.map((cont) => <option key={cont} value={cont}>{filterLabel(cont)}</option>)}
-                </select>
-              </label>
-              <label className="min-w-0 space-y-2 text-sm text-zinc-400">
-                <span className="block">{'Difficulty'}</span>
-                <select value={selectedDifficulty} onChange={(e) => setView({ difficulty: e.target.value, page: 1 })} className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-obsidian-950 px-2 text-sand-100 focus:outline-emerald-400">
-                  {difficulties.map((diff) => <option key={diff} value={diff}>{filterLabel(diff)}</option>)}
-                </select>
-              </label>
-              <label className="min-w-0 space-y-2 text-sm text-zinc-400">
-                <span className="block">{'Sort by'}</span>
-                <select value={sortBy} onChange={(e) => setView({ sort: e.target.value as typeof sortBy })} className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-obsidian-950 px-2 text-sand-100 focus:outline-emerald-400">
-                  {(['newest', 'solvers', 'fastest'] as const).map((sort) => <option key={sort} value={sort}>{filterLabel(sort)}</option>)}
-                </select>
-              </label>
+        <div className="min-w-0 space-y-3 border-b border-app-border pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by continent">
+              {continents.map((cont) => (
+                <button
+                  key={cont}
+                  type="button"
+                  onClick={() => setView({ continent: cont, page: 1 })}
+                  className={`rounded-sm border px-2.5 py-1.5 font-mono text-xs transition-colors cursor-pointer ${
+                    selectedContinent === cont
+                      ? 'border-app-accent bg-app-accent text-app-canvas font-semibold'
+                      : 'border-app-border bg-app-surface text-app-text-secondary hover:border-app-accent hover:bg-app-surface-muted hover:text-app-text'
+                  }`}
+                >
+                  {filterLabel(cont)}
+                </button>
+              ))}
             </div>
-          </details>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <select
+                aria-label="Difficulty"
+                value={selectedDifficulty}
+                onChange={(e) => setView({ difficulty: e.target.value, page: 1 })}
+                className="min-h-9 rounded-sm border border-app-border bg-app-surface px-2.5 py-1.5 text-app-text focus:border-app-accent focus:outline-none"
+              >
+                {difficulties.map((diff) => <option key={diff} value={diff}>{diff === 'all' ? 'All difficulties' : filterLabel(diff)}</option>)}
+              </select>
+              <select
+                aria-label="Sort by"
+                value={sortBy}
+                onChange={(e) => setView({ sort: e.target.value as typeof sortBy })}
+                className="min-h-9 rounded-sm border border-app-border bg-app-surface px-2.5 py-1.5 text-app-text focus:border-app-accent focus:outline-none"
+              >
+                {(['newest', 'solvers', 'fastest'] as const).map((sort) => <option key={sort} value={sort}>{`Sort: ${filterLabel(sort)}`}</option>)}
+              </select>
+            </div>
+          </div>
           {hasActiveFilters && (
-            <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
-              <p role="status" className="min-w-0 flex-1 break-words">
-                {'Active settings: '}
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-app-text-secondary">
+              <p role="status" className="min-w-0 flex-1 break-words font-mono">
+                {'Active filters: '}
                 {[search && `“${search}”`, selectedContinent !== 'all' && filterLabel(selectedContinent), selectedDifficulty !== 'all' && filterLabel(selectedDifficulty), sortBy !== 'newest' && filterLabel(sortBy)].filter(Boolean).join(' · ')}
               </p>
-              <button type="button" onClick={resetFilters} className="min-h-11 rounded px-3 text-emerald-300 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+              <button type="button" onClick={resetFilters} className="rounded-sm px-2.5 py-1 font-semibold text-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus">
                 {'Reset'}
               </button>
             </div>
@@ -217,140 +234,175 @@ export default function BlogListPage() {
         </div>
 
         {error ? (
-          <div role="alert" className="rounded-lg border border-amber-500/30 bg-obsidian-900 p-8 text-center text-zinc-300">
+          <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-8 text-center text-amber-900">
             <p>{error}</p>
-            <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded border border-white/20 px-4 py-2">{'Try again'}</button>
+            <button type="button" onClick={() => setRetry((value) => value + 1)} className="mt-4 min-h-11 rounded-sm border border-app-border px-4 py-2 text-app-text">Try again</button>
           </div>
         ) : pending ? (
           <div role="status" aria-label={'Loading articles'} className="flex justify-center py-24">
-            <Loader2 className="animate-spin text-emerald-400" size={32} />
+            <Loader2 className="animate-spin text-app-accent" size={32} />
           </div>
         ) : (
           <>
             {featuredPost && (
-              <article className="grid min-w-0 rounded-lg border border-white/10 bg-obsidian-900 md:grid-cols-2">
+              <motion.article
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                className="relative grid min-w-0 rounded-sm border border-app-border bg-app-surface shadow-[0_3px_14px_rgba(85,75,57,0.06)] md:grid-cols-2"
+              >
+                <span aria-hidden="true" className="pointer-events-none absolute left-2 top-2 h-2.5 w-2.5 border-l border-t border-app-accent/60" />
+                <span aria-hidden="true" className="pointer-events-none absolute right-2 top-2 h-2.5 w-2.5 border-r border-t border-app-accent/60" />
+                <span aria-hidden="true" className="pointer-events-none absolute bottom-2 left-2 h-2.5 w-2.5 border-b border-l border-app-accent/60" />
+                <span aria-hidden="true" className="pointer-events-none absolute bottom-2 right-2 h-2.5 w-2.5 border-b border-r border-app-accent/60" />
+
                 <Link
                   to={`/blog/${featuredPost.slug}`}
                   aria-label={featuredPost.title}
-                  className="flex min-h-24 items-center justify-center rounded-t-lg border-b border-white/10 bg-obsidian-950 p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 md:min-h-80 md:rounded-t-none md:rounded-l-lg md:border-b-0 md:border-r md:p-12"
+                  className="flex min-h-28 items-center justify-center rounded-t-sm border-b border-app-border bg-app-surface-muted/80 p-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus md:min-h-80 md:rounded-t-none md:rounded-l-sm md:border-b-0 md:border-r md:p-10"
                 >
                   {featuredPost.country_code ? (
-                    <img
-                      src={`https://flagcdn.com/w640/${featuredPost.country_code.toLowerCase()}.png`}
-                      alt={featuredPost.country_name}
-                      className="max-h-16 w-full max-w-28 object-contain md:max-h-64 md:max-w-sm"
-                    />
+                    <span className="inline-flex items-center justify-center rounded-sm border border-app-border bg-app-surface-raised p-3 shadow-sm">
+                      <img
+                        src={`https://flagcdn.com/w640/${featuredPost.country_code.toLowerCase()}.png`}
+                        alt={featuredPost.country_name}
+                        className="max-h-20 w-full max-w-32 object-contain md:max-h-56 md:max-w-xs"
+                      />
+                    </span>
                   ) : (
-                    <Globe size={80} strokeWidth={1} className="text-zinc-600" />
+                    <Globe size={80} strokeWidth={1} className="text-app-text-muted" />
                   )}
                 </Link>
-                <div className="flex min-w-0 flex-col justify-center p-4 sm:p-8 md:p-10">
-                  <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-xs">
-                    <span className="font-medium text-emerald-400">
-                      {'Most recent past-day recap'}
+                <div className="flex min-w-0 flex-col justify-center p-5 sm:p-8 md:p-10">
+                  <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 font-mono text-[11px] uppercase tracking-wider">
+                    <span className="rounded-sm border border-app-accent/30 bg-app-accent/10 px-2 py-0.5 font-semibold text-app-accent">
+                      {'Latest dispatch'}
                     </span>
-                    <span className="text-zinc-500">/</span>
-                    <span className="text-zinc-400">{featuredPost.country_name}</span>
+                    <span className="text-app-text-muted">·</span>
+                    <span className="text-app-text-secondary">{featuredPost.country_name}</span>
                   </div>
-                  <h2 className="min-w-0 break-words font-serif text-2xl leading-tight tracking-tight text-sand-100 md:text-3xl lg:text-4xl">
-                    <Link to={`/blog/${featuredPost.slug}`} className="transition-colors hover:text-emerald-300">
+                  <h2 className="min-w-0 break-words font-serif text-2xl leading-tight tracking-tight text-app-text md:text-3xl lg:text-4xl">
+                    <Link to={`/blog/${featuredPost.slug}`} className="transition-colors hover:text-app-accent">
                       {featuredPost.title}
                     </Link>
                   </h2>
-                  <p className="mt-4 text-sm leading-7 text-zinc-400">{featuredPost.summary}</p>
-                  <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-400">
+                  <p className="mt-4 text-sm leading-7 text-app-text-secondary">{featuredPost.summary}</p>
+                  <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-app-text-secondary">
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Calendar size={13} className="shrink-0" /><time dateTime={featuredPost.date} className="min-w-0 break-words">{formatBlogDate(featuredPost.date)}</time></span>
                     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5"><Clock size={13} className="shrink-0" /><span className="min-w-0 break-words">{featuredPost.reading_time_minutes} {'min read'}</span></span>
                     {featuredPost.continent && (
-                      <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/20">
+                      <span className="rounded-sm border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-xs text-emerald-800">
                         {filterLabel(featuredPost.continent)}
                       </span>
                     )}
                     {featuredPost.difficulty && (
-                      <span className="rounded bg-white/5 px-2 py-0.5 font-mono text-[10px] text-zinc-300">
+                      <span className="rounded-sm bg-app-surface-muted px-2 py-0.5 font-mono text-xs text-app-text-secondary">
                         {filterLabel(featuredPost.difficulty)}
                       </span>
                     )}
                   </div>
                   <Link
                     to={`/blog/${featuredPost.slug}`}
-                    className="mt-4 inline-flex min-h-11 w-fit max-w-full items-center gap-3 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300 md:mt-7"
+                    className="mt-5 inline-flex min-h-11 w-fit max-w-full items-center gap-2.5 rounded-sm border border-app-accent bg-app-accent px-4 py-2 text-sm font-semibold text-app-canvas transition-colors hover:bg-app-accent-hover md:mt-7"
                   >
-                    {'Read article'}
-                    <ArrowRight size={16} />
+                    <span>{'Read dispatch'}</span>
+                    <ArrowRight size={15} />
                   </Link>
                 </div>
-              </article>
+              </motion.article>
             )}
 
             {regularPosts.length > 0 ? (
-              <section>
+              <section className="cartography-desk-mat rounded-sm border border-[#c7b896] p-4 shadow-[inset_0_2px_10px_rgba(85,75,57,0.08)] sm:p-6 md:p-8">
                 <div className="mb-6 flex items-center gap-4">
-                  <h2 className="min-w-0 text-sm font-medium text-zinc-400">
-                    {search ? ('Search results') : ('Earlier entries')}
+                  <h2 className="min-w-0 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[#554b39]">
+                    {search ? ('Search results') : ('Pinned field dispatches')}
                   </h2>
-                  <div className="h-px flex-1 bg-white/10" />
+                  <div className="h-px flex-1 bg-[#bfb08f]" />
                 </div>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {regularPosts.map((post) => (
-                    <article key={post.id} className="group flex min-w-0 flex-col rounded-lg border border-white/10 bg-obsidian-900 transition-colors hover:border-white/25">
-                      <Link to={`/blog/${post.slug}`} aria-label={post.title} className="flex h-24 items-center justify-center rounded-t-lg border-b border-white/10 bg-obsidian-950 p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 sm:h-48 sm:p-7">
+                <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
+                  {regularPosts.map((post, idx) => {
+                    const noteStyles = [
+                      { card: 'bg-[#fdf7e4] border-[#d3c095] -rotate-[0.8deg]', pin: 'bg-[#a84436] ring-[#f7d8d2]' },
+                      { card: 'bg-[#f4f7ed] border-[#bcc9b0] rotate-[0.7deg]', pin: 'bg-[#2a5942] ring-[#d4e7dc]' },
+                      { card: 'bg-[#faf1de] border-[#d4ba8c] -rotate-[0.5deg]', pin: 'bg-[#355c7d] ring-[#d5e3ef]' },
+                      { card: 'bg-[#fcf5ea] border-[#ccb999] rotate-[0.4deg]', pin: 'bg-[#9a6b2f] ring-[#efe2cc]' },
+                    ];
+                    const style = noteStyles[idx % noteStyles.length];
+                    return (
+                    <motion.article
+                      key={post.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ y: -4, rotate: 0 }}
+                      transition={{ type: 'spring', stiffness: 320, damping: 24, delay: idx * 0.04 }}
+                      className={`group relative flex min-w-0 flex-col rounded-sm border ${style.card} shadow-[3px_6px_16px_rgba(68,56,36,0.14)] hover:border-app-accent hover:shadow-[5px_12px_26px_rgba(68,56,36,0.20)]`}
+                    >
+                      {/* Colored enamel pushpin */}
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute -top-2 left-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 rounded-full ${style.pin} ring-2 shadow-[0_2px_4px_rgba(0,0,0,0.28)]`}
+                      />
+                      <Link to={`/blog/${post.slug}`} aria-label={post.title} className="flex h-28 items-center justify-center rounded-t-sm border-b border-app-border/60 bg-white/45 p-4 pt-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus sm:h-48 sm:p-6">
                         {post.country_code ? (
-                          <img
-                            src={`https://flagcdn.com/w320/${post.country_code.toLowerCase()}.png`}
-                            alt={post.country_name}
-                            loading="lazy"
-                            className="max-h-full w-full max-w-28 object-contain sm:max-w-56"
-                          />
+                          <span className="inline-flex h-full max-h-36 items-center justify-center rounded-sm border border-app-border bg-app-surface-raised p-2 shadow-xs">
+                            <img
+                              src={`https://flagcdn.com/w320/${post.country_code.toLowerCase()}.png`}
+                              alt={post.country_name}
+                              loading="lazy"
+                              className="max-h-full w-full max-w-28 object-contain sm:max-w-48"
+                            />
+                          </span>
                         ) : (
-                          <Globe size={56} strokeWidth={1} className="text-zinc-600" />
+                          <Globe size={56} strokeWidth={1} className="text-app-text-muted" />
                         )}
                       </Link>
                       <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
                         <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
-                          <p className="min-w-0 break-words text-xs font-medium text-emerald-400">{post.country_name}</p>
+                        <p className="min-w-0 break-words text-xs font-medium text-app-accent">{post.country_name}</p>
                           {post.continent && (
-                            <span className="text-xs text-zinc-500">{filterLabel(post.continent)}</span>
+                            <span className="text-xs text-app-text-muted">{filterLabel(post.continent)}</span>
                           )}
                         </div>
-                        <h3 className="min-w-0 break-words font-serif text-2xl leading-snug text-sand-100">
-                          <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-emerald-300">{post.title}</Link>
+                        <h3 className="min-w-0 break-words font-serif text-2xl leading-snug text-app-text">
+                          <Link to={`/blog/${post.slug}`} className="transition-colors hover:text-app-accent">{post.title}</Link>
                         </h3>
-                        <p className="mt-3 text-sm leading-relaxed text-zinc-400">{post.summary}</p>
-                        <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+                        <p className="mt-3 text-sm leading-relaxed text-app-text-secondary">{post.summary}</p>
+                        <div className="mb-5 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-app-text-muted">
                           <time dateTime={post.date}>{formatBlogDate(post.date)}</time>
                           <span>{post.reading_time_minutes} min</span>
                           {post.difficulty && (
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                              post.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
-                              post.difficulty === 'Challenging' ? 'bg-rose-500/10 text-rose-400' :
-                              'bg-amber-500/10 text-amber-400'
+                            <span className={`rounded-sm px-1.5 py-0.5 text-xs font-mono ${
+                              post.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-800' :
+                              post.difficulty === 'Challenging' ? 'bg-rose-50 text-rose-800' :
+                              'bg-amber-50 text-amber-800'
                             }`}>
                               {filterLabel(post.difficulty)}
                             </span>
                           )}
                         </div>
-                        <Link to={`/blog/${post.slug}`} className="mt-auto flex min-h-11 items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">
-                          {'Read article'}
-                          <ArrowRight size={15} />
+                        <Link to={`/blog/${post.slug}`} className="mt-auto flex min-h-11 items-center justify-between gap-3 border-t border-app-border pt-4 text-sm font-medium text-app-accent transition-colors hover:text-app-accent-hover">
+                          {'Read dispatch'}
+                          <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
                         </Link>
                       </div>
-                    </article>
-                  ))}
+                    </motion.article>
+                    );
+                  })}
                 </div>
               </section>
             ) : (
               !featuredPost && (
-                <div className="rounded-lg border border-white/10 bg-obsidian-900 px-6 py-20 text-center">
-                  <Globe size={36} strokeWidth={1} className="mx-auto mb-4 text-zinc-600" />
-                  <p className="text-base text-zinc-400">{'No articles match your search.'}</p>
+                <div className="rounded-sm border border-app-border bg-app-surface px-6 py-20 text-center">
+                  <Globe size={36} strokeWidth={1} className="mx-auto mb-4 text-app-text-muted" />
+                  <p className="text-base text-app-text">{'No articles match your search.'}</p>
                 </div>
               )
             )}
-            {total > limit && <nav aria-label="Journal pagination" className="flex items-center justify-center gap-5 text-sm text-zinc-300">
-              <button type="button" disabled={page <= 1} onClick={() => setView({ page: page - 1 })} className="rounded border border-white/20 px-4 py-2 disabled:opacity-40">Previous</button>
+            {total > limit && <nav aria-label="Journal pagination" className="flex items-center justify-center gap-5 text-sm text-app-text-secondary">
+              <button type="button" disabled={page <= 1} onClick={() => setView({ page: page - 1 })} className="min-h-11 rounded-sm border border-app-border bg-app-surface px-4 py-2 text-app-text transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus disabled:opacity-40">Previous</button>
               <span>Page {page} of {Math.max(1, Math.ceil(total / limit))}</span>
-              <button type="button" disabled={page * limit >= total} onClick={() => setView({ page: page + 1 })} className="rounded border border-white/20 px-4 py-2 disabled:opacity-40">Next</button>
+              <button type="button" disabled={page * limit >= total} onClick={() => setView({ page: page + 1 })} className="min-h-11 rounded-sm border border-app-border bg-app-surface px-4 py-2 text-app-text transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus disabled:opacity-40">Next</button>
             </nav>}
           </>
         )}

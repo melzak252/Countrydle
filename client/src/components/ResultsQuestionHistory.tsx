@@ -44,36 +44,36 @@ export default function ResultsQuestionHistory({ questions, mode, isGameOver, no
           ? t('chat.answerNo', 'No')
           : t('chat.answerUnknown', 'Unknown');
         const Icon = warning ? AlertTriangle : question?.answer === true ? Check : question?.answer === false ? X : HelpCircle;
-        const tone = warning ? 'text-amber-300 bg-amber-400/10' : question?.answer === true ? 'text-emerald-300 bg-emerald-400/10' : question?.answer === false ? 'text-rose-300 bg-rose-400/10' : 'text-zinc-300 bg-white/5';
+        const tone = warning ? 'text-amber-900 bg-amber-50' : question?.answer === true ? 'text-emerald-900 bg-emerald-50' : question?.answer === false ? 'text-rose-900 bg-rose-50' : 'text-app-text-secondary bg-app-surface-muted';
 
         return (
           <li key={message.kind === 'question' ? `question-${message.question.id}` : `notice-${message.notice.id}`} className="min-w-0">
-            <details name={disclosureGroup} className="group rounded-sm border border-white/10 bg-obsidian-900/40">
-              <summary className="flex min-h-12 cursor-pointer list-none items-start gap-2 px-3 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 [&::-webkit-details-marker]:hidden">
-                <span className="w-5 shrink-0 pt-0.5 font-mono text-xs text-zinc-500">
+            <details name={disclosureGroup} className="group rounded-sm border border-app-border/15 bg-app-surface-muted">
+              <summary className="flex min-h-12 cursor-pointer list-none items-start gap-2 px-3 py-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus [&::-webkit-details-marker]:hidden">
+                <span className="w-5 shrink-0 pt-0.5 font-mono text-xs text-app-text-muted">
                   {message.kind === 'question' ? message.index + 1 : '—'}
                 </span>
-                <span className="min-w-0 flex-1 leading-relaxed text-sand-100 [overflow-wrap:anywhere]">{input}</span>
+                <span className="min-w-0 flex-1 leading-relaxed text-app-text [overflow-wrap:anywhere]">{input}</span>
                 <span className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-1 text-[10px] font-semibold ${tone}`}>
                   <Icon size={12} aria-hidden="true" />
                   {answer}
                 </span>
-                <ChevronDown size={15} className="mt-1 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" aria-hidden="true" />
+                <ChevronDown size={15} className="mt-1 shrink-0 text-app-text-muted transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
-              <div className="space-y-3 border-t border-white/10 px-3 py-3 text-xs leading-relaxed text-zinc-300 [overflow-wrap:anywhere]">
+              <div className="space-y-3 border-t border-app-border/15 px-3 py-3 text-xs leading-relaxed text-app-text-secondary [overflow-wrap:anywhere]">
                 {notice ? (
                   <div className="space-y-2">
-                    <p className="font-semibold text-amber-300">{notice.title}</p>
+                    <p className="font-semibold text-amber-900">{notice.title}</p>
                     <p className="whitespace-pre-wrap">{notice.reason}</p>
-                    {notice.nextStep && <p className="text-amber-200/80">{notice.nextStep}</p>}
+                    {notice.nextStep && <p className="text-amber-800">{notice.nextStep}</p>}
                   </div>
                 ) : (
                   <>
                     {question?.clarification && (
-                      <p className="font-medium text-emerald-400/90 whitespace-pre-wrap">{question.clarification}</p>
+                      <p className="font-medium text-app-accent whitespace-pre-wrap">{question.clarification}</p>
                     )}
                     {question?.explanation && (!question.valid || isGameOver) && (
-                      <p className="whitespace-pre-wrap text-zinc-300">{question.explanation}</p>
+                      <p className="whitespace-pre-wrap text-app-text-secondary">{question.explanation}</p>
                     )}
                     {isGameOver && <FactProvenance records={question?.fact_provenance} />}
                   </>
@@ -81,7 +81,7 @@ export default function ResultsQuestionHistory({ questions, mode, isGameOver, no
                 <button
                   type="button"
                   onClick={() => void copyQuestion(input)}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-sm px-2 text-xs text-zinc-400 hover:bg-white/5 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-sm px-2 text-xs text-app-text-secondary hover:bg-app-surface hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                 >
                   <Copy size={14} aria-hidden="true" />
                   {t('chat.copyQuestion', 'Copy question')}

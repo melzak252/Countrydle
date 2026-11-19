@@ -13,14 +13,14 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
   return parts.map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={index} className="font-semibold text-sand-100">
+        <strong key={index} className="font-semibold text-app-text">
           {part.slice(2, -2)}
         </strong>
       );
     }
     if (part.startsWith('*') && part.endsWith('*')) {
       return (
-        <em key={index} className="italic text-zinc-200">
+        <em key={index} className="italic text-app-text-secondary">
           {part.slice(1, -1)}
         </em>
       );
@@ -34,7 +34,7 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
         <a
           key={index}
           href={safeUrl}
-          className="break-words text-emerald-400 underline decoration-emerald-400/40 underline-offset-4 transition-colors hover:text-emerald-300"
+          className="break-words text-app-accent underline decoration-app-accent/40 underline-offset-4 transition-colors hover:text-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus"
           target={safeUrl.startsWith('/') ? '_self' : '_blank'}
           rel="noopener noreferrer"
         >
@@ -59,8 +59,8 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       elements.push(
         <ul key={`list-${key}`} className="my-6 space-y-3">
           {currentList.items.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-3 text-base leading-8 text-zinc-300 md:text-lg md:leading-8">
-              <span aria-hidden="true" className="mt-3.5 h-1 w-1 shrink-0 rounded-full bg-emerald-400" />
+            <li key={idx} className="flex items-start gap-3 text-base leading-8 text-app-text-secondary md:text-lg md:leading-8">
+              <span aria-hidden="true" className="mt-3.5 h-1 w-1 shrink-0 rounded-full bg-app-accent" />
               <div className="min-w-0">{parseInlineFormatting(item)}</div>
             </li>
           ))}
@@ -68,7 +68,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       );
     } else {
       elements.push(
-        <ol key={`list-${key}`} className="my-6 list-decimal space-y-3 pl-6 text-base leading-8 text-zinc-300 marker:text-emerald-400 md:text-lg md:leading-8">
+        <ol key={`list-${key}`} className="my-6 list-decimal space-y-3 pl-6 text-base leading-8 text-app-text-secondary marker:text-app-accent md:text-lg md:leading-8">
           {currentList.items.map((item, idx) => (
             <li key={idx} className="pl-1">
               {parseInlineFormatting(item)}
@@ -92,7 +92,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     // Horizontal Rule
     if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
       flushList(idx);
-      elements.push(<hr key={idx} className="my-10 border-white/10" />);
+      elements.push(<hr key={idx} className="my-10 border-app-border" />);
       return;
     }
 
@@ -100,7 +100,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     if (trimmed.startsWith('### ')) {
       flushList(idx);
       elements.push(
-        <h3 key={idx} className="mb-4 mt-8 font-serif text-2xl leading-snug tracking-tight text-sand-100">
+        <h3 key={idx} className="mb-4 mt-8 font-serif text-2xl leading-snug tracking-tight text-app-text">
           {parseInlineFormatting(trimmed.slice(4))}
         </h3>
       );
@@ -110,7 +110,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     if (trimmed.startsWith('## ')) {
       flushList(idx);
       elements.push(
-        <h2 key={idx} className="mb-5 mt-12 font-serif text-3xl leading-tight tracking-tight text-sand-100 md:text-4xl">
+        <h2 key={idx} className="mb-5 mt-12 font-serif text-3xl leading-tight tracking-tight text-app-text md:text-4xl">
           {parseInlineFormatting(trimmed.slice(3))}
         </h2>
       );
@@ -120,7 +120,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     if (trimmed.startsWith('# ')) {
       flushList(idx);
       elements.push(
-        <h1 key={idx} className="mb-5 mt-12 font-serif text-3xl leading-tight tracking-tight text-sand-100 md:text-4xl">
+        <h1 key={idx} className="mb-5 mt-12 font-serif text-3xl leading-tight tracking-tight text-app-text md:text-4xl">
           {parseInlineFormatting(trimmed.slice(2))}
         </h1>
       );
@@ -131,7 +131,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     if (trimmed.startsWith('> ')) {
       flushList(idx);
       elements.push(
-        <blockquote key={idx} className="my-8 border-l-2 border-emerald-400/60 py-1 pl-6 font-serif text-xl italic leading-8 text-sand-100 md:text-2xl md:leading-9">
+        <blockquote key={idx} className="my-8 border-l-2 border-app-border py-1 pl-6 font-serif text-xl italic leading-8 text-app-text md:text-2xl md:leading-9">
           {parseInlineFormatting(trimmed.slice(2))}
         </blockquote>
       );
@@ -162,7 +162,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     // Regular paragraph
     flushList(idx);
     elements.push(
-      <p key={idx} className="my-5 text-base leading-8 text-zinc-300 md:text-lg md:leading-8">
+      <p key={idx} className="my-5 text-base leading-8 text-app-text-secondary md:text-lg md:leading-8">
         {parseInlineFormatting(trimmed)}
       </p>
     );

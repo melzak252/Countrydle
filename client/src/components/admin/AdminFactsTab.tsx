@@ -69,7 +69,7 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
     <section className="min-w-0 space-y-5" aria-labelledby="admin-page-title">
       <div className="admin-toolbar flex flex-wrap items-end gap-4">
         <fieldset className="min-w-0 flex-1">
-          <legend className="mb-2 text-sm font-medium text-slate-300">{t('adminFacts.modeLabel')}</legend>
+          <legend className="mb-2 text-sm font-medium text-app-text-secondary">{t('adminFacts.modeLabel')}</legend>
           <div className="flex flex-wrap gap-2">
             {FACT_MODES.map((mode) => (
               <button
@@ -86,7 +86,7 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
           </div>
         </fieldset>
         <div className="w-full sm:w-80">
-          <label htmlFor="admin-facts-entity" className="mb-2 block text-sm font-medium text-slate-300">{t('adminFacts.entityLabel')}</label>
+          <label htmlFor="admin-facts-entity" className="mb-2 block text-sm font-medium text-app-text-secondary">{t('adminFacts.entityLabel')}</label>
           <select
             id="admin-facts-entity"
             className="admin-control"
@@ -109,12 +109,12 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
       </div>
 
       {selectedEntityId !== null && entityFacts && (
-        <h2 className="text-lg font-semibold text-sand-100">{entityFacts.country.name}</h2>
+        <h2 className="text-lg font-semibold text-app-text">{entityFacts.country.name}</h2>
       )}
-      <p className="admin-panel text-sm leading-6 text-slate-300">
-        {t('adminFacts.immediateWarning')} <span className="font-medium text-rose-300">{t('adminFacts.deleteWarning')}</span>
+      <p className="admin-panel text-sm leading-6 text-app-text-secondary">
+        {t('adminFacts.immediateWarning')} <span className="font-medium text-rose-800">{t('adminFacts.deleteWarning')}</span>
       </p>
-      {factError && <div role="alert" className="admin-panel border-rose-400/40 text-rose-200">{t(factError)}</div>}
+      {factError && <div role="alert" className="admin-panel border-rose-200 bg-rose-50 text-rose-900">{t(factError)}</div>}
       {(isEntitiesLoading || isFactsLoading) && <p role="status" className="admin-panel">{t('adminCommon.loading')}</p>}
       {factError && !isEntitiesLoading && !isFactsLoading && (
         <button type="button" className="admin-button" onClick={() => void onRefresh()} disabled={busy}>{t('adminCommon.retry')}</button>
@@ -132,8 +132,8 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
       {entityFacts && !isFactsLoading && (
         <div className="grid min-w-0 grid-cols-1 gap-4 min-[1280px]:grid-cols-2">
           <section className="admin-panel min-w-0 space-y-4" aria-labelledby="admin-facts-scalars">
-            <h3 id="admin-facts-scalars" className="flex items-center gap-2 text-base font-semibold text-sand-100">
-              <Database aria-hidden="true" size={17} className="text-emerald-300" />
+            <h3 id="admin-facts-scalars" className="flex items-center gap-2 text-base font-semibold text-app-text">
+              <Database aria-hidden="true" size={17} className="text-app-accent" />
               {t('adminFacts.scalarHeading')}
             </h3>
             {entityFacts.scalar_facts.length === 0 ? <p className="admin-muted">{t('adminFacts.noScalarFacts')}</p> : (
@@ -141,9 +141,9 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
                 {entityFacts.scalar_facts.map((fact) => {
                   const relation = fact.relation.replace(/_/g, ' ');
                   return (
-                    <div key={fact.relation} className="space-y-2 border-b border-white/10 pb-4">
+                    <div key={fact.relation} className="space-y-2 border-b border-app-border pb-4">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <label htmlFor={`fact-value-${fact.relation}`} className="font-medium capitalize text-sand-100">{relation}</label>
+                        <label htmlFor={`fact-value-${fact.relation}`} className="font-medium capitalize text-app-text">{relation}</label>
                         <span className="admin-meta">{fact.value_type}</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -158,8 +158,8 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
           </section>
 
           <section className="admin-panel min-w-0 space-y-4" aria-labelledby="admin-facts-lists">
-            <h3 id="admin-facts-lists" className="flex items-center gap-2 text-base font-semibold text-sand-100">
-              <FileText aria-hidden="true" size={17} className="text-slate-300" />
+            <h3 id="admin-facts-lists" className="flex items-center gap-2 text-base font-semibold text-app-text">
+              <FileText aria-hidden="true" size={17} className="text-app-text-secondary" />
               {t('adminFacts.listHeading')}
             </h3>
             {entityFacts.list_facts.length === 0 ? <p className="admin-muted">{t('adminFacts.noListFacts')}</p> : (
@@ -167,12 +167,11 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
                 {entityFacts.list_facts.map((listFact) => {
                   const relation = listFact.relation.replace(/_/g, ' ');
                   return (
-                    <div key={listFact.relation} className="space-y-3 border-b border-white/10 pb-4">
-                      <h4 className="font-medium capitalize text-sand-100">{relation} <span className="admin-meta">({numberFormat.format(listFact.values.length)})</span></h4>
+                    <div key={listFact.relation} className="space-y-3 border-b border-app-border pb-4">
+                      <h4 className="font-medium capitalize text-app-text">{relation} <span className="admin-meta">({numberFormat.format(listFact.values.length)})</span></h4>
                       <ul className="space-y-2">
                         {listFact.values.map((value) => (
-                          <li key={value.value} className="flex min-w-0 items-start justify-between gap-3 rounded-sm border border-white/10 bg-obsidian-950 px-3 py-2">
-                            <span className="min-w-0 break-words text-sm text-slate-300">{value.value}</span>
+                          <li key={value.value} className="flex min-w-0 items-start justify-between gap-3 rounded-sm border border-app-border bg-app-surface-muted px-3 py-2">
                             <button type="button" className="admin-button admin-button-danger shrink-0" aria-label={t('adminFacts.deleteValue', { value: value.value, relation })} onClick={() => void runWrite(() => onDeleteListFact(listFact.relation, value.value))} disabled={writesDisabled}>
                               <Trash2 aria-hidden="true" size={15} />{t('adminCommon.delete')}
                             </button>
@@ -180,7 +179,7 @@ export const AdminFactsTab: React.FC<AdminFactsTabProps> = ({
                         ))}
                       </ul>
                       <div className="flex flex-wrap gap-2">
-                        <label className="w-full text-sm font-medium text-slate-300" htmlFor={`fact-add-${listFact.relation}`}>{t('adminFacts.newValue', { relation })}</label>
+                        <label className="w-full text-sm font-medium text-app-text-secondary" htmlFor={`fact-add-${listFact.relation}`}>{t('adminFacts.newValue', { relation })}</label>
                         <input id={`fact-add-${listFact.relation}`} type="text" value={newListValues[listFact.relation] ?? ''} onChange={(event) => onNewListValueChange(listFact.relation, event.target.value)} placeholder={t('adminFacts.newValue', { relation })} className="admin-control min-w-0 flex-1" disabled={writesDisabled} />
                         <button type="button" className="admin-button admin-button-primary" onClick={() => void runWrite(() => onAddListFact(listFact.relation, newListValues[listFact.relation] ?? ''))} disabled={writesDisabled}>
                           <Plus aria-hidden="true" size={15} />{t('adminCommon.add')}

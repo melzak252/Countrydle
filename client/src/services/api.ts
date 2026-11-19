@@ -42,6 +42,9 @@ import { isCountryAvailable } from '../lib/countryEligibility';
 export const API_URL = typeof window !== 'undefined' && window.__COUNTRYDLE_PRERENDER__ === true
   ? '/api'
   : import.meta.env.VITE_API_URL || '/api';
+export function assetUrl(url: string): string {
+  return url.startsWith('/') ? `${API_URL.replace(/\/$/, '')}${url.replace(/^\/api(?=\/)/, '')}` : url;
+}
 
 
 const api = axios.create({
@@ -152,13 +155,79 @@ export const gameService = {
   },
 };
 
+export interface PowiatMapEntity {
+  id: number;
+  nazwa: string;
+}
+
+export interface PowiatMapQuizAnswer {
+  round: number;
+  target_name: string;
+  guess_id: number;
+  correct: boolean;
+}
+
+export interface PowiatMapQuizDailyState {
+  date: string;
+  round_count: number;
+  expected_round: number;
+  current_target: string | null;
+  score: number;
+  is_complete: boolean;
+  answers: PowiatMapQuizAnswer[];
+  last_answer: { round: number; guess_id: number; correct: boolean } | null;
+}
+
+export interface PowiatMapQuizHistoryItem {
+  date: string;
+  score: number;
+  round_count: number;
+  completed_at: string | null;
+  answers: PowiatMapQuizAnswer[];
+}
+
+export interface PowiatMapQuizHistory {
+  items: PowiatMapQuizHistoryItem[];
+  total: number;
+}
+
+export interface PowiatMapQuizDailyStats {
+  date: string;
+  completed_count: number | null;
+  average_score: number | null;
+  score_distribution: Record<string, number> | null;
+}
+
+export const powiatMapQuizService = {
+  getDaily: async (): Promise<PowiatMapQuizDailyState> => {
+    const response = await api.get<PowiatMapQuizDailyState>('/powiatdle/map-quiz/daily');
+    return response.data;
+  },
+  submitAnswer: async (payload: { guess_id: number; expected_round: number }): Promise<PowiatMapQuizDailyState> => {
+    const response = await api.post<PowiatMapQuizDailyState>('/powiatdle/map-quiz/daily/answer', payload);
+    return response.data;
+  },
+  getHistory: async (): Promise<PowiatMapQuizHistory> => {
+    const response = await api.get<PowiatMapQuizHistory>('/powiatdle/map-quiz/history');
+    return response.data;
+  },
+  getDailyStats: async (): Promise<PowiatMapQuizDailyStats> => {
+    const response = await api.get<PowiatMapQuizDailyStats>('/powiatdle/map-quiz/daily/stats');
+    return response.data;
+  },
+  claimDaily: async (): Promise<PowiatMapQuizDailyState> => {
+    const response = await api.post<PowiatMapQuizDailyState>('/powiatdle/map-quiz/daily/claim', {});
+    return response.data;
+  },
+};
+
 export const powiatService = {
   getState: async (): Promise<any> => {
     const response = await api.get('/powiatdle/state');
     return response.data;
   },
-  getPowiaty: async (): Promise<any[]> => {
-    const response = await api.get('/powiatdle/powiaty');
+  getPowiaty: async (): Promise<PowiatMapEntity[]> => {
+    const response = await api.get<PowiatMapEntity[]>('/powiatdle/powiaty');
     return response.data;
   },
   askQuestion: async (question: string): Promise<any> => {
@@ -550,8 +619,10 @@ export const blogService = {
   },
 };
 
+export type BorderHopMode = 'countries' | 'us_states' | 'powiaty';
+
 export interface BorderHopChallenge {
-  mode: string;
+  mode: BorderHopMode;
   start: string | null;
   target: string;
   connected: boolean;
@@ -629,7 +700,7 @@ export const exploreService = {
     const response = await api.get(`/explore/powiats/${encodeURIComponent(String(nameOrId))}`);
     return response.data;
   },
-  getBorderHopChallenge: async (params?: { mode?: string; target?: string; origin?: string; seed?: string }) => {
+  getBorderHopChallenge: async (params?: { mode?: BorderHopMode; target?: string; origin?: string; seed?: string }) => {
     const p = new URLSearchParams();
     if (params?.mode) p.append('mode', params.mode);
     if (params?.target) p.append('target', params.target);
@@ -639,13 +710,13 @@ export const exploreService = {
     const response = await api.get<BorderHopChallenge>(`/explore/border-hop/challenge${qs ? `?${qs}` : ''}`);
     return response.data;
   },
-  getBorderNeighbors: async (name: string, mode?: string) => {
+  getBorderNeighbors: async (name: string, mode?: BorderHopMode) => {
     const p = new URLSearchParams({ name });
     if (mode) p.append('mode', mode);
     const response = await api.get<BorderNeighborResponse>(`/explore/border-hop/neighbors?${p.toString()}`);
     return response.data;
   },
-  verifyBorderHop: async (payload: { mode: string; start: string; target: string; path: string[] }) => {
+  verifyBorderHop: async (payload: { mode: BorderHopMode; start: string; target: string; path: string[] }) => {
     const response = await api.post<BorderHopVerification>('/explore/border-hop/verify', payload);
     return response.data;
   },

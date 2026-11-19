@@ -7,6 +7,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        app: {
+          canvas: 'rgb(var(--app-canvas) / <alpha-value>)',
+          surface: 'rgb(var(--app-surface) / <alpha-value>)',
+          'surface-raised': 'rgb(var(--app-surface-raised) / <alpha-value>)',
+          'surface-muted': 'rgb(var(--app-surface-muted) / <alpha-value>)',
+          text: 'rgb(var(--app-text) / <alpha-value>)',
+          'text-secondary': 'rgb(var(--app-text-secondary) / <alpha-value>)',
+          'text-muted': 'rgb(var(--app-text-muted) / <alpha-value>)',
+          border: 'rgb(var(--app-border) / <alpha-value>)',
+          accent: 'rgb(var(--app-accent) / <alpha-value>)',
+          'accent-hover': 'rgb(var(--app-accent-hover) / <alpha-value>)',
+          focus: 'rgb(var(--app-focus) / <alpha-value>)',
+        },
         obsidian: {
           950: '#06080d',
           900: '#0b0f17',

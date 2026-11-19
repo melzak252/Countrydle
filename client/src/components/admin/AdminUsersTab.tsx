@@ -59,9 +59,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     <section className="min-w-0 space-y-4" aria-labelledby="admin-page-title">
       <div className="admin-toolbar flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1 sm:max-w-xl">
-          <label htmlFor="admin-users-search" className="mb-1 block text-sm font-medium text-slate-300">{t('adminUsers.searchLabel')}</label>
+          <label htmlFor="admin-users-search" className="mb-1 block text-sm font-medium text-app-text-secondary">{t('adminUsers.searchLabel')}</label>
           <div className="relative">
-            <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-app-text-muted" size={16} />
             <input
               id="admin-users-search"
               type="search"
@@ -78,7 +78,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
         </button>
       </div>
       {error && !queryPending && (
-        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-400/40 text-rose-200">
+        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-200 bg-rose-50 text-rose-900">
           <span>{t(error)}</span>
           <button type="button" className="admin-button" onClick={onRefresh} disabled={loading}>{t('adminCommon.retry')}</button>
         </div>
@@ -92,7 +92,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr>
-                <th scope="col" className="sticky left-0 z-10 bg-obsidian-850 px-4 py-3 text-left">{t('adminUsers.columns.user')}</th>
+                <th scope="col" className="sticky left-0 z-10 bg-app-surface-muted px-4 py-3 text-left">{t('adminUsers.columns.user')}</th>
                 <th scope="col" className="px-4 py-3 text-left">{t('adminUsers.columns.email')}</th>
                 <th scope="col" className="px-4 py-3 text-left">{t('adminUsers.columns.registered')}</th>
                 <th scope="col" className="admin-number px-4 py-3">{t('adminUsers.columns.points')}</th>
@@ -105,13 +105,13 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <th scope="row" className="sticky left-0 max-w-52 break-words bg-obsidian-900 px-4 py-3 text-left font-semibold text-sand-100">{user.username}</th>
-                  <td className="max-w-64 break-all px-4 py-3 text-slate-300">{user.email}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">{user.created_at ? dateFormat.format(new Date(user.created_at)) : '—'}</td>
+                  <th scope="row" className="sticky left-0 max-w-52 break-words bg-app-surface px-4 py-3 text-left font-semibold text-app-text">{user.username}</th>
+                  <td className="max-w-64 break-all px-4 py-3 text-app-text-secondary">{user.email}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-app-text-secondary">{user.created_at ? dateFormat.format(new Date(user.created_at)) : '—'}</td>
                   <td className="admin-number px-4 py-3 text-right">{numberFormat.format(user.total_points)}</td>
-                  <td className="admin-number px-4 py-3 text-right text-emerald-300">{numberFormat.format(user.total_wins)}</td>
+                  <td className="admin-number px-4 py-3 text-right text-emerald-800">{numberFormat.format(user.total_wins)}</td>
                   <td className="admin-number px-4 py-3 text-right">{numberFormat.format(user.games_played)}</td>
-                  <td className="admin-number px-4 py-3 text-right"><span className="inline-flex items-center gap-1">{numberFormat.format(user.current_streak)}<Flame aria-hidden="true" size={14} className="text-emerald-300" /></span></td>
+                  <td className="admin-number px-4 py-3 text-right"><span className="inline-flex items-center gap-1">{numberFormat.format(user.current_streak)}<Flame aria-hidden="true" size={14} className="text-app-accent" /></span></td>
                   <td className="px-4 py-3 text-center">
                     <span className="admin-badge">{user.is_admin ? t('adminUsers.admin') : t('adminUsers.player')}</span>
                   </td>
