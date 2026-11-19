@@ -445,7 +445,7 @@ const resources = {
         subtitle: 'Making geographical discovery engaging, educational, and accessible through daily deductive puzzles.',
         missionTitle: 'Our Mission',
         pedagogyTitle: 'Educational & Deductive Play',
-        modesTitle: 'Nine Daily Modes & Friend Duels',
+        modesTitle: 'Daily Modes, Quizzes & Friend Duels',
         dataTitle: 'Data Sources & Answer Limitations',
         dataSubtitle: 'Local facts, AI interpretation, and transparent limitations',
         privacyTitle: 'Player Privacy & Open Access',

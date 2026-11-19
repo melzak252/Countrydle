@@ -1,7 +1,7 @@
 import LegalDocument from '../components/LegalDocument';
 
 export default function TermsOfServicePage() {
-  const lastUpdated = "October 9, 2026";
+  const lastUpdated = "November 19, 2026";
 
   return (
     <LegalDocument title="Terms of Service" lastUpdated={lastUpdated}>
@@ -33,7 +33,7 @@ export default function TermsOfServicePage() {
         <ul>
           <li>Not to use bots, scripts, or any automated tools to play the game.</li>
           <li>Not to exploit bugs or vulnerabilities in the game engine.</li>
-          <li>Daily play is available in nine independent game modes, each with its own daily limit and reset at midnight UTC. Friend duels are separate player-versus-player games.</li>
+          <li>Daily play is available across independent geography, flag, heraldry, and map modes, each with its own daily rules and reset at midnight UTC. Repeatable quizzes, Border Hop, and friend duels are separate game modes.</li>
           <li>Cheating or manipulation may result in immediate suspension or banning.</li>
         </ul>
         <h3 className="mt-6">AI interpretation, factual limitations and reports</h3>

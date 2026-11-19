@@ -37,8 +37,8 @@ export default function AboutPage() {
 
       <section aria-labelledby="about-modes" className="grid gap-5 border-b border-app-border py-8 md:grid-cols-[1fr_2fr] md:gap-12 md:py-10">
         <div>
-          <h2 id="about-modes" className="text-xl font-semibold text-app-text">{t('about.modesTitle', 'Nine Daily Modes & Friend Duels')}</h2>
-          <p className="mt-3 text-sm leading-6 text-app-text-muted">Daily puzzles range from world countries and flags to continents and regional maps. Friend duels are a separate, live two-player game.</p>
+          <h2 id="about-modes" className="text-xl font-semibold text-app-text">{t('about.modesTitle', 'Daily Modes, Quizzes & Friend Duels')}</h2>
+          <p className="mt-3 text-sm leading-6 text-app-text-muted">Daily puzzles span world countries, flags, continents, and regional maps, alongside visual heraldry quizzes, map click challenges, border chains, and live friend duels.</p>
         </div>
         <div className="divide-y divide-app-border">
           <div className="pb-5">
@@ -50,8 +50,8 @@ export default function AboutPage() {
             <p className="text-base leading-7">Europedle, Asiadle, Africadle, and Americadle focus on Europe, Asia, Africa, and the Americas respectively. Each has its own daily target, with 8 questions and 3 guesses.</p>
           </div>
           <div className="py-5">
-            <h3 className="mb-2 font-semibold text-app-text">Flagdle</h3>
-            <p className="text-base leading-7">Identify a country from its partially revealed flag. You have 12 guesses, with more of the flag revealed after each guess and feedback to help narrow the candidates. Optional yes/no helper questions have no total question budget and do not spend guesses; request-rate limits still apply. Flagdle uses its own scoring formula.</p>
+            <h3 className="mb-2 font-semibold text-app-text">Flagdle &amp; Flag Shades</h3>
+            <p className="text-base leading-7">In Flagdle, identify a country from its partially revealed flag within 12 guesses, with optional yes/no helper questions. Flag Shades removes color completely, challenging you to recognize a national flag from grayscale luminance and proportions alone (unlocking a single color hint after 3 guesses).</p>
           </div>
           <div className="py-5">
             <h3 className="mb-2 font-semibold text-app-text">United States (US Statedle)</h3>
@@ -64,6 +64,14 @@ export default function AboutPage() {
           <div className="py-5">
             <h3 className="mb-2 font-semibold text-app-text">Polish Counties (Powiatdle)</h3>
             <p className="text-base leading-7">A local challenge covering 380 Polish counties, with 15 questions and 3 guesses. Clues include vehicle registration codes, city-county status, roads, and rivers.</p>
+          </div>
+          <div className="py-5">
+            <h3 className="mb-2 font-semibold text-app-text">Heraldry, Regional Flags &amp; Visual Grid Quizzes</h3>
+            <p className="text-base leading-7">Deduce Polish counties and regional entities from verified coats of arms and flags in daily 8-guess challenges with distance feedback, or test your memory across full JetPunk-style visual grid quizzes.</p>
+          </div>
+          <div className="py-5">
+            <h3 className="mb-2 font-semibold text-app-text">Map Quizzes &amp; Border Hop</h3>
+            <p className="text-base leading-7">Locate named Polish counties (daily 10-target challenge) or US states directly on the interactive map, or build a continuous border-to-border chain across countries, Polish counties, or US states in Border Hop.</p>
           </div>
           <div className="pt-5">
             <h3 className="mb-2 font-semibold text-app-text">Play with a Friend</h3>

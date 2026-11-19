@@ -31,6 +31,23 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root[data-theme="dark"] {
+  --app-canvas: 15 20 25;
+  --app-surface: 22 29 36;
+  --app-surface-raised: 29 38 47;
+  --app-surface-muted: 35 45 55;
+  --app-text: 237 232 220;
+  --app-text-secondary: 194 188 174;
+  --app-text-muted: 146 142 130;
+  --app-border: 76 86 94;
+  --app-accent: 112 184 142;
+  --app-accent-hover: 134 202 162;
+  --app-focus: 112 184 142;
+  --app-paper-grain-color: 235 225 200;
+  --app-paper-grain-opacity: 0.035;
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -54,6 +71,12 @@ body {
   background-attachment: fixed;
 }
 
+[data-theme="dark"] #root > .bg-app-canvas {
+  background-image:
+    radial-gradient(circle, rgb(var(--app-paper-grain-color) / var(--app-paper-grain-opacity)) 0.45px, transparent 0.8px);
+  background-size: 9px 9px;
+}
+
 /* Tactile cartographer's desk / corkboard surface for pinned field notes */
 .cartography-desk-mat {
   background-color: #ece3cc;
@@ -62,6 +85,14 @@ body {
     linear-gradient(to right, rgb(133 126 104 / 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(133 126 104 / 0.06) 1px, transparent 1px);
   background-size: 18px 18px, 72px 72px, 72px 72px;
+}
+
+[data-theme="dark"] .cartography-desk-mat {
+  background-color: #161d24;
+  background-image:
+    radial-gradient(rgb(237 232 220 / 0.08) 1px, transparent 1px),
+    linear-gradient(to right, rgb(76 86 94 / 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(76 86 94 / 0.12) 1px, transparent 1px);
 }
 
 

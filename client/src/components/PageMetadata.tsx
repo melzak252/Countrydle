@@ -26,7 +26,7 @@ const publicPages: Record<string, RouteMetadata> = {
   },
   '/faq': {
     title: 'Countrydle FAQ — Daily Puzzles, Scoring and Accounts',
-    description: 'Answers to common Countrydle questions about daily resets, nine game modes, question budgets, guesses, scoring, guest progress and accounts.',
+    description: 'Answers to common Countrydle questions about daily resets, all geography game modes, flag and heraldry quizzes, map challenges, scoring, guest progress and accounts.',
   },
   '/explore': {
     title: 'Explore Countrydle — Geography Games & Maps',

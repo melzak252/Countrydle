@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Info, Loader2, RotateCcw, X } from 'lucide-react';
 import { ControlledPowiatyMap } from '../components/PowiatyMap';
 import { ControlledUSStatesMap } from '../components/USStatesMap';
@@ -30,6 +31,7 @@ const EMPTY_REGION_HINTS: Readonly<Record<string, string>> = {};
 
 type PowiatFeedback = {
   targetName: string;
+  clickedName: string;
   round: number;
   correct: boolean;
 };
@@ -60,6 +62,9 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
   const [answerError, setAnswerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [powiatFeedback, setPowiatFeedback] = useState<PowiatFeedback | null>(null);
+  const [lastClickedState, setLastClickedState] = useState<string | null>(null);
+  const [targetChanged, setTargetChanged] = useState(false);
+  const previousActiveTarget = useRef<string | undefined>(undefined);
   const dailyLoadSequence = useRef(0);
   const authLoginLoadObserved = useRef(false);
 
@@ -208,6 +213,7 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
         if (state.last_answer) {
           setPowiatFeedback({
             targetName,
+            clickedName: name,
             round: state.last_answer.round,
             correct: state.last_answer.correct,
           });
@@ -233,6 +239,7 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
 
     if (!game || game.status !== 'playing') return;
     const targetName = game.prompts[game.currentPromptIndex];
+    setLastClickedState(name);
     setStateRun((current) => current?.mode === mode
       ? { ...current, state: answerMapChallenge(current.state, name) }
       : current);
@@ -328,6 +335,26 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
     ? powiatFeedback?.targetName ?? dailyRun?.current_target ?? undefined
     : game && game.status !== 'finished' ? game.prompts[game.currentPromptIndex] : undefined;
   const finished = mode === 'powiaty' ? Boolean(dailyRun?.is_complete) : game?.status === 'finished';
+  const isCorrectFeedback = Boolean(powiatFeedback?.correct || game?.status === 'correct');
+  const isIncorrectFeedback = Boolean((powiatFeedback && !powiatFeedback.correct) || game?.status === 'incorrect');
+  const wrongClickedName = mode === 'powiaty'
+    ? (powiatFeedback && !powiatFeedback.correct ? powiatFeedback.clickedName : null)
+    : (game?.status === 'incorrect' ? lastClickedState : null);
+
+  useEffect(() => {
+    if (!target || finished) {
+      previousActiveTarget.current = undefined;
+      setTargetChanged(false);
+      return;
+    }
+    const prev = previousActiveTarget.current;
+    previousActiveTarget.current = target;
+    if (prev && prev !== target) {
+      setTargetChanged(true);
+      const timer = window.setTimeout(() => setTargetChanged(false), 2200);
+      return () => window.clearTimeout(timer);
+    }
+  }, [target, finished]);
   const score = mode === 'powiaty' ? dailyRun?.score ?? 0 : game?.score ?? 0;
   const roundCount = mode === 'powiaty' ? dailyRun?.round_count ?? 10 : game?.prompts.length ?? 10;
   const round = mode === 'powiaty'
@@ -358,12 +385,42 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
       </section>
 
       <div className="pointer-events-none relative z-[500] flex h-full min-h-0 w-full flex-col px-2 py-2 sm:px-3 sm:py-3">
-        <header aria-label={`${title} status`} className="pointer-events-auto mx-auto mt-0 grid w-full max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border border-app-border/30 bg-app-surface/95 px-3 py-2 shadow-sm sm:px-4 md:grid-cols-[auto_minmax(0,1fr)_auto]">
+        <motion.header
+          aria-label={`${title} status`}
+          animate={
+            isIncorrectFeedback
+              ? { x: [0, -7, 7, -5, 5, -2, 0] }
+              : isCorrectFeedback
+                ? { scale: [1, 1.012, 1] }
+                : { x: 0, scale: 1 }
+          }
+          transition={{ duration: 0.34, ease: 'easeOut' }}
+          className={`pointer-events-auto relative mx-auto mt-0 grid w-full max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 overflow-hidden border bg-app-surface/95 px-3 py-2 shadow-sm transition-colors sm:px-4 md:grid-cols-[auto_minmax(0,1fr)_auto] ${
+            isIncorrectFeedback
+              ? 'border-rose-500/70'
+              : isCorrectFeedback
+                ? 'border-app-accent/70'
+                : 'border-app-border/30'
+          }`}
+        >
           <p className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-app-text-muted">{title}</p>
           {target ? (
-            <h1 aria-live="polite" className="col-span-2 row-start-2 min-w-0 break-words text-center text-lg font-bold leading-tight text-app-text sm:text-xl md:col-span-1 md:col-start-2 md:row-start-1">
-              {target}
-            </h1>
+            <motion.div
+              key={target}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="col-span-2 row-start-2 flex min-w-0 flex-wrap items-center justify-center gap-2 md:col-span-1 md:col-start-2 md:row-start-1"
+            >
+              {targetChanged && !isCorrectFeedback && !isIncorrectFeedback && (
+                <span className="rounded-sm border border-app-accent/40 bg-app-accent/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-app-accent">
+                  New target
+                </span>
+              )}
+              <h1 aria-live="polite" className="min-w-0 break-words text-center text-lg font-bold leading-tight text-app-text sm:text-xl">
+                {target}
+              </h1>
+            </motion.div>
           ) : finished ? (
             <h1 className="col-span-2 row-start-2 text-center text-lg font-bold leading-tight text-app-text sm:text-xl md:col-span-1 md:col-start-2 md:row-start-1">
               Run complete
@@ -413,12 +470,14 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
           )}
           {answerError && <p className="col-span-full text-sm text-rose-700 dark:text-rose-300" role="alert">{answerError}</p>}
           {submitting && <p className="col-span-full text-sm text-app-text-secondary" role="status">Saving your answer…</p>}
-          {(powiatFeedback?.correct || game?.status === 'correct') && (
-            <p role="status" className="col-span-full text-sm font-medium text-app-accent">Correct — one point added.</p>
+          {isCorrectFeedback && (
+            <p role="status" className="col-span-full text-sm font-medium text-app-accent">
+              Correct — one point added.{target ? ` (${target})` : ''} Advancing to next target…
+            </p>
           )}
-          {(powiatFeedback && !powiatFeedback.correct || game?.status === 'incorrect') && (
-            <p role="status" className="col-span-full text-sm text-rose-700 dark:text-rose-300">
-              Not quite. No point added; the correct region is highlighted red.
+          {isIncorrectFeedback && (
+            <p role="status" className="col-span-full text-sm font-medium text-rose-700 dark:text-rose-300">
+              Not quite. No point added{wrongClickedName ? ` (you clicked ${wrongClickedName})` : ''}; {target ? `${target} is highlighted red` : 'the correct region is highlighted red'} — advancing to next target…
             </p>
           )}
           {mapError && !mapData && (
@@ -429,7 +488,18 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
               </button>
             </div>
           )}
-        </header>
+          {(isCorrectFeedback || isIncorrectFeedback) && (
+            <motion.div
+              key={`${target ?? 'done'}-${round}-${isCorrectFeedback ? 'ok' : 'err'}`}
+              initial={{ scaleX: 1 }}
+              animate={{ scaleX: 0 }}
+              transition={{ duration: MAP_CHALLENGE_FEEDBACK_DELAY_MS / 1000, ease: 'linear' }}
+              style={{ transformOrigin: 'left center' }}
+              className={`absolute bottom-0 left-0 right-0 h-0.5 ${isIncorrectFeedback ? 'bg-rose-500' : 'bg-app-accent'}`}
+              aria-hidden="true"
+            />
+          )}
+        </motion.header>
       </div>
 
       {rulesOpen && (

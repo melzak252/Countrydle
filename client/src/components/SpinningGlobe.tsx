@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { Pause, Play } from 'lucide-react';
 import { CONTINENT_POINTS } from './globeData';
+import { useThemeStore } from '../stores/themeStore';
 
 interface SpinningGlobeProps {
   className?: string;
@@ -16,6 +17,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const themeMode = useThemeStore((state) => state.theme);
   const [hudCoords, setHudCoords] = useState<{ lon: string; tilt: string; isStopped: boolean }>({
     lon: '0°',
     tilt: '+16°',
@@ -436,7 +438,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
       cancelAnimationFrame(animationFrameId);
       motionPreference.removeEventListener('change', handleMotionPreference);
     };
-  }, []);
+  }, [themeMode]);
 
   // Mouse / Touch handlers for tactile rotation and tempo control
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {

@@ -14,7 +14,10 @@ import {
   HelpCircle,
   Mail,
   FileText,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import { useThemeStore } from '../stores/themeStore';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -26,6 +29,7 @@ import { primaryGames } from '../lib/gameCatalog';
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const { t } = useTranslation();
   const location = useLocation();
   
@@ -227,6 +231,16 @@ export default function Header() {
           <CountdownTimer />
 
           {/* User Profile or Login/Register CTAs */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="flex h-8 w-8 items-center justify-center rounded border border-app-border/20 text-app-text-secondary transition-colors hover:bg-app-surface-muted hover:text-app-text"
+          >
+            {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
+          </button>
+
           {showAccount ? (
             <div className="flex items-center gap-2 border-l border-app-border/15 pl-2">
               <Link
@@ -265,7 +279,16 @@ export default function Header() {
         </div>
 
         {/* Compact mobile header */}
-        <div className="flex shrink-0 items-center xl:hidden">
+        <div className="flex shrink-0 items-center gap-1 xl:hidden">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-app-text-secondary hover:bg-app-surface-muted transition-colors"
+          >
+            {theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
+          </button>
           <button
             ref={menuButtonRef}
             type="button"
@@ -399,7 +422,17 @@ export default function Header() {
             </div>
 
             <div className="space-y-1">
-              {showAccount ? (
+              <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="flex h-8 w-8 items-center justify-center rounded border border-app-border/20 text-app-text-secondary transition-colors hover:bg-app-surface-muted hover:text-app-text"
+          >
+            {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
+          </button>
+
+          {showAccount ? (
                 <>
                   <Link
                     to={`/profile/${user?.username}`}

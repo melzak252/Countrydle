@@ -30,11 +30,23 @@
     <meta name="twitter:title" content="Countrydle - Daily Geography Deduction Game" />
     <meta name="twitter:description" content="Test your geography skills with Countrydle! Ask yes/no questions and use deductive reasoning to find the daily secret location." />
 
-    <script>document.documentElement.classList.add('js-enabled');</script>
+    <script>
+      (function () {
+        document.documentElement.classList.add('js-enabled');
+        try {
+          if (localStorage.getItem('countrydle-theme') === 'dark') {
+            document.documentElement.dataset.theme = 'dark';
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <style>
       html.js-enabled #game-shell { display: none; }
-      html.js-enabled #root:has(#game-shell)::before { content: 'Loading Countrydle…'; display: block; padding: 2rem; color: #a1a1aa; font: 14px system-ui, sans-serif; }
-      html.js-enabled body { margin: 0; background: #09090b; }
+      html.js-enabled #root:has(#game-shell)::before { content: 'Loading Countrydle…'; display: block; padding: 2rem; color: #4b4f45; font: 14px system-ui, sans-serif; }
+      html.js-enabled[data-theme="dark"] #root:has(#game-shell)::before { color: #c2bcae; }
+      html.js-enabled body { margin: 0; background: #f4f1e7; }
+      html.js-enabled[data-theme="dark"] body { background: #0f1419; }
     </style>
 
     <!-- GAME_SHELL_STYLES_START -->
@@ -163,7 +175,7 @@
 
           <footer class="shell-footer">
             <p>
-              Puzzles reset daily at 00:00 UTC. To learn more about deduction strategies, visit the <a href="/explore/modes/countrydle">mode guide</a>, browse available game modes in the <a href="/explore">Explore directory</a>, or learn how question scoring works in <a href="/how-it-works">How It Works</a>.
+              Puzzles reset daily at 00:00 UTC. Explore all game modes in the <a href="/explore">Explore directory</a>, read the <a href="/explore/modes/countrydle">mode guide</a>, <a href="/how-it-works">How It Works</a>, <a href="/blog">Geography Blog</a>, <a href="/about">About</a>, <a href="/privacy-policy">Privacy Policy</a>, <a href="/terms">Terms of Service</a>, or <a href="/contact">Contact</a>.
             </p>
           </footer>
         </section>

@@ -39,7 +39,7 @@ const faqItems: FAQItem[] = [
     id: 'game-modes',
     category: 'modes',
     question: 'Which game modes are available?',
-    answer: 'There are nine daily modes: Countrydle (195 playable countries), Flagdle, Europedle, Asiadle, Africadle, Americadle, US Statedle (50 states), Województwodle (16 Polish voivodeships), and Powiatdle (380 Polish counties). The four continental modes focus on Europe, Asia, Africa, and the Americas. Play with a Friend offers separate live two-player duels.',
+    answer: 'Question-based daily modes include Countrydle (195 playable countries), Europedle, Asiadle, Africadle, Americadle, US Statedle (50 states), Województwodle (16 Polish voivodeships), and Powiatdle (380 Polish counties). Visual daily modes include Flagdle, Flag Shades (grayscale flags), County Coats of Arms, County Flags, and regional symbol puzzles. Countrydle also offers full Coats of Arms and Flags grid quizzes, Powiat and US State Map Quizzes, Border Hop (worldwide, powiaty, and US states), and live two-player Friend Duels.',
   },
   {
     id: 'flagdle',
@@ -57,7 +57,7 @@ const faqItems: FAQItem[] = [
     id: 'play-past-games',
     category: 'modes',
     question: 'Can I play previous daily puzzles?',
-    answer: 'You can browse past answers, but the Archive does not replay past puzzles. It currently covers Countrydle, US Statedle, Województwodle, and Powiatdle, not all nine daily modes. Countrydle entries link to daily blog recaps. Open Archive from the navigation menu to see the available dates and solutions.',
+    answer: 'You can browse past answers, but the Archive does not replay past puzzles. It currently covers Countrydle, US Statedle, Województwodle, and Powiatdle rather than every daily mode. Countrydle entries link to daily blog recaps. Open Archive from the navigation menu to see the available dates and solutions.',
   },
   {
     id: 'included-countries',
@@ -111,7 +111,7 @@ const faqItems: FAQItem[] = [
     id: 'streaks-and-profile',
     category: 'account',
     question: 'How do streaks, profiles and leaderboards work?',
-    answer: 'Profiles and daily-game leaderboards cover all nine daily modes separately. Monthly rankings use points earned in the current UTC calendar month; all-time average rankings require at least 5 completed games in the original modes and Flagdle, or 3 in a continental mode. Streak bonuses reward consecutive days solved in the same mode. Rankings sort by points or average score, then wins; elapsed time affects the score rather than acting as a separate tie-break. Finished friend matches have their own profile section, without daily points or leaderboard ranking.',
+    answer: 'Profiles and daily-game leaderboards cover the ranked daily modes separately. Monthly rankings use points earned in the current UTC calendar month; all-time average rankings require at least 5 completed games in the original modes and Flagdle, or 3 in a continental mode. Streak bonuses reward consecutive days solved in the same mode. Rankings sort by points or average score, then wins; elapsed time affects the score rather than acting as a separate tie-break. Finished friend matches have their own profile section, without daily points or leaderboard ranking.',
   },
   {
     id: 'remember-me',

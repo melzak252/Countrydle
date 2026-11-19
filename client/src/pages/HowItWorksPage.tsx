@@ -225,7 +225,7 @@ export default function HowItWorksPage() {
       </section>
 
       <section aria-labelledby="mode-budgets" className="space-y-4">
-        <h2 id="mode-budgets" className="font-serif text-2xl text-app-text">Nine daily modes and separate friend duels</h2>
+        <h2 id="mode-budgets" className="font-serif text-2xl text-app-text">Question-based daily modes and separate friend duels</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm leading-6">
             <caption className="mb-3 text-left text-app-text-muted">Daily puzzles rotate at midnight UTC. Question and guess budgets are separate.</caption>
