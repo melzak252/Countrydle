@@ -10,19 +10,35 @@ import { useAuthStore } from '../stores/authStore';
 import { useCountryGameStore } from '../stores/gameStore';
 import { isPrerenderCapture } from '../lib/pageMetadata';
 import { primaryGames, type CatalogGeography } from '../lib/gameCatalog';
+import { MAP_QUIZ_PATHS } from '../lib/mapGameMode';
+
+const FEATURED_EXTRA_GAMES: { path: string; name: string; geography: CatalogGeography }[] = [
+  { path: MAP_QUIZ_PATHS.powiaty, name: 'Powiat Map Quiz', geography: 'poland' },
+  { path: '/map-border-hop?mode=powiaty', name: 'Map Border Hop · Powiaty', geography: 'poland' },
+  { path: '/herby-powiatow', name: 'County Coats of Arms', geography: 'poland' },
+  { path: '/quiz-herbow', name: 'Coats of Arms Quiz', geography: 'poland' },
+];
+
+const FEATURED_GAMES = [...primaryGames, ...FEATURED_EXTRA_GAMES];
 
 const MODE_SUMMARIES: Record<string, { tag: string; summary: string; stripe: string }> = {
   '/game': { tag: '10 questions · 3 guesses', summary: 'Ask yes-or-no questions to uncover today’s secret country.', stripe: 'border-t-[#2a5942]' },
   '/flagdle': { tag: '12 tile guesses', summary: 'Identify the country as its national flag is uncovered.', stripe: 'border-t-[#a84436]' },
   '/flag-shades': { tag: 'Grayscale challenge', summary: 'Recognize the flag from proportions and luminance alone.', stripe: 'border-t-[#355c7d]' },
   '/us-states': { tag: '8 questions · 3 guesses', summary: 'Deduce today’s hidden US state on the map.', stripe: 'border-t-[#9a6b2f]' },
+  [MAP_QUIZ_PATHS.powiaty]: { tag: 'Daily · 10 powiats', summary: 'Click each named Polish county directly on the interactive map.', stripe: 'border-t-[#2a5942]' },
+  '/map-border-hop?mode=powiaty': { tag: 'Border chain', summary: 'Travel from county to county across Poland by typing neighboring powiats.', stripe: 'border-t-[#355c7d]' },
+  '/herby-powiatow': { tag: 'Daily heraldry', summary: 'Deduce today’s Polish county from its verified coat of arms.', stripe: 'border-t-[#9a6b2f]' },
+  '/quiz-herbow': { tag: 'All 380 counties', summary: 'Identify every Polish county coat of arms in a full visual grid quiz.', stripe: 'border-t-[#a84436]' },
 };
 
 const QUICK_OTHER_MODES: { path: string; name: string; tag: string; geography: CatalogGeography }[] = [
-  { path: '/powiaty', name: 'Powiatdle', tag: '380 Polish counties', geography: 'poland' },
   { path: '/wojewodztwa', name: 'Województwodle', tag: '16 Polish regions', geography: 'poland' },
   { path: '/border-hop', name: 'Border Hop', tag: 'Follow land borders', geography: 'worldwide' },
-  { path: '/herby-powiatow', name: 'County Coats of Arms', tag: 'Daily heraldry', geography: 'poland' },
+  { path: '/powiaty', name: 'Powiatdle', tag: '380 Polish counties', geography: 'poland' },
+  { path: MAP_QUIZ_PATHS.us_states, name: 'US State Map Quiz', tag: 'Click US states', geography: 'united-states' },
+  { path: '/map-border-hop?mode=us_states', name: 'Map Border Hop · US', tag: 'US state chains', geography: 'united-states' },
+  { path: '/flagi-powiatow', name: 'County Flags', tag: 'Daily Polish flags', geography: 'poland' },
 ];
 
 const HOW_IT_WORKS = [
@@ -152,7 +168,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {primaryGames.map((game, idx) => {
+          {FEATURED_GAMES.map((game, idx) => {
             const meta = MODE_SUMMARIES[game.path] ?? { tag: 'Daily puzzle', summary: 'Test your geography knowledge.', stripe: 'border-t-app-accent' };
             return (
               <motion.div
