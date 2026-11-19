@@ -45,6 +45,23 @@ _REGIONAL_DISPLAY = {
     "morze bałtyckie": "Baltic Sea",
 }
 
+POLISH_CITY_ALIASES = {
+    "warsaw": "Warszawa",
+    "cracow": "Kraków",
+}
+
+POLISH_HISTORICAL_PARTITION_ALIASES = {
+    "congress poland": "Zabór rosyjski",
+    "kongresowka": "Zabór rosyjski",
+    "krolestwo polskie": "Zabór rosyjski",
+    "kingdom of poland": "Zabór rosyjski",
+    "krolestwo kongresowe": "Zabór rosyjski",
+    "russian partition": "Zabór rosyjski",
+    "prussian partition": "Zabór pruski",
+    "austrian partition": "Zabór austriacki",
+    "recovered territories": "Ziemie Odzyskane",
+}
+
 
 @dataclass(frozen=True)
 class LocalModeConfig:
@@ -672,6 +689,7 @@ def evaluate(
             return None
         if left_row is not None and right == left_row[config.name_column]:
             return True
+    right_is_seat = isinstance(right_node, dict) and right_node.get("relation") == "seat"
     if (
         isinstance(left_node, dict)
         and (
@@ -680,6 +698,7 @@ def evaluate(
             or (config.mode_name == "Wojewodztwodle" and left_node.get("relation") == "name")
         )
         and op in {"contains", "contains_exact", "contains_partial", "equals"}
+        and not right_is_seat
         and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
         if left_row is not None and is_self_reference(right, left_row, config):
@@ -720,11 +739,39 @@ def evaluate(
             if rel_name == "major_rivers" and r_norm in POLISH_RIVER_ALIASES:
                 target_river = POLISH_RIVER_ALIASES[r_norm]
                 return any(norm(v) == norm(target_river) for v in left)
+            if rel_name == "historical_partitions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
+                target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
+                return any(norm(v) == norm(target_partition) for v in left)
+            if config.mode_name == "Powiatdle" and rel_name == "historical_regions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
+                target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
+                if left_row is not None:
+                    partitions = get_relation_value(conn, config, left_row, "historical_partitions") or []
+                    if any(norm(v) == norm(target_partition) for v in partitions):
+                        return True
             return any(norm(v) == r_norm for v in left)
+        if (
+            (type(left) is bool or (isinstance(left, int) and left in (0, 1)))
+            and (
+                type(right) is bool
+                or norm(right) in {"true", "false"}
+                or (
+                    isinstance(left_node, dict)
+                    and str(left_node.get("relation") or "").startswith("is_")
+                    and norm(right) in {"0", "1", "true", "false", "yes", "no", "tak", "nie"}
+                )
+            )
+        ):
+            right_bool = right if type(right) is bool else norm(right) in {"1", "true", "yes", "tak"}
+            return bool(left) is right_bool
         n_left = norm(left)
         n_right = norm(right)
         if n_left == n_right:
             return True
+        if isinstance(left_node, dict) and left_node.get("relation") == "seat":
+            l_alias = POLISH_CITY_ALIASES.get(n_left)
+            r_alias = POLISH_CITY_ALIASES.get(n_right)
+            if norm(l_alias or left) == norm(r_alias or right):
+                return True
         if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
             resolved_r = resolve_powiat_name(conn, right)
             if resolved_r and norm(resolved_r) == n_left:
@@ -768,6 +815,10 @@ def evaluate(
     if op == "ends_with":
         return n_txt.endswith(n_right)
     if op == "contains_text":
+        if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
+            resolved_r = resolve_powiat_name(conn, right)
+            if resolved_r and norm(resolved_r) == norm(left):
+                return True
         return n_right in n_txt
     if op == "has_space":
         return " " in txt.strip()
