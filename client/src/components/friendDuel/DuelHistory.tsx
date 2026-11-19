@@ -22,37 +22,37 @@ import type { DuelCopy } from './copy';
 
 export function PrivateAdvice({ guidance, copy }: { guidance?: FriendGuidance; copy: DuelCopy }) {
   return (
-    <aside className="rounded-sm border border-emerald-500/20 bg-emerald-950/20 p-3 sm:p-4" aria-label={copy.ai}>
-      <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+    <aside className="rounded-sm border border-app-accent/25 bg-app-accent/10 p-3 sm:p-4" aria-label={copy.ai}>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-app-accent">
         <h3 className="font-mono text-xs">{copy.ai}</h3>
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-zinc-400">{copy.aiHelp}</p>
+      <p className="mt-1 text-xs leading-relaxed text-app-text-secondary">{copy.aiHelp}</p>
       <div className="mt-2.5 text-xs" aria-live="polite">
         {!guidance || guidance.status === 'pending' || guidance.status === 'running' ? (
-          <p className="flex items-center gap-2 text-zinc-400 font-mono text-[11px]">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <p className="flex items-center gap-2 text-app-text-secondary font-mono text-[11px]">
+            <span className="inline-block h-2 w-2 rounded-full bg-app-accent animate-pulse" />
             {copy.aiPending}
           </p>
         ) : guidance.status === 'failed' ? (
-          <p className="text-amber-300 font-mono text-[11px]">{copy.aiFailed}</p>
+          <p className="text-amber-800 font-mono text-[11px]">{copy.aiFailed}</p>
         ) : (
           <div className="space-y-1.5">
             {guidance.answer && (
-              <span className="inline-flex items-center gap-1 rounded bg-emerald-500/20 px-2 py-0.5 font-mono text-xs font-bold text-emerald-300 border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1 rounded bg-app-accent/10 px-2 py-0.5 font-mono text-xs font-bold text-app-accent border border-app-accent/25">
                 {copy[guidance.answer]}
               </span>
             )}
-            <p className="whitespace-pre-wrap break-words text-xs text-zinc-300 leading-relaxed">
+            <p className="whitespace-pre-wrap break-words text-xs text-app-text leading-relaxed">
               {guidance.explanation || copy.aiNoExplanation}
             </p>
             {guidance.source && (
-              <p className="break-words text-[10px] font-mono text-zinc-500">
-                {copy.source}: <span className="text-zinc-400">{guidance.source}</span>
+              <p className="break-words text-[10px] font-mono text-app-text-muted">
+                {copy.source}: <span className="text-app-text-secondary">{guidance.source}</span>
               </p>
             )}
           </div>
         )}
-        {guidance?.late && <p className="mt-2 text-xs text-amber-300 font-mono text-[11px]">{copy.late}</p>}
+        {guidance?.late && <p className="mt-2 text-xs text-amber-800 font-mono text-[11px]">{copy.late}</p>}
       </div>
     </aside>
   );
@@ -73,10 +73,10 @@ export function AnswerPicker({
         const isYes = answer === 'yes' || answer === 'mostly_yes';
         const isNo = answer === 'no' || answer === 'mostly_no';
         const badgeColor = isYes
-          ? 'border-emerald-500/30 bg-emerald-950/60 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-500/20'
+          ? 'border-app-accent/30 bg-app-accent/10 text-app-accent hover:border-app-accent/60 hover:bg-app-accent/15'
           : isNo
-          ? 'border-rose-500/30 bg-rose-950/60 text-rose-300 hover:border-rose-400 hover:bg-rose-500/20'
-          : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800';
+          ? 'border-rose-300 bg-rose-50 text-rose-800 hover:border-rose-400 hover:bg-rose-100'
+          : 'border-app-border/30 bg-app-surface-muted text-app-text-secondary hover:border-app-border/50 hover:bg-app-border/20';
 
         return (
           <button
@@ -125,7 +125,7 @@ export function AnswerBubble({
 
   if (!answer && timedOut) {
     return (
-      <div className="rounded-2xl rounded-tl-xs border border-rose-500/40 bg-rose-950/70 px-3.5 py-1.5 text-xs font-medium text-rose-300 flex items-center gap-2 shadow-sm">
+      <div className="rounded-sm border border-rose-300 bg-rose-50 px-3.5 py-1.5 text-xs font-medium text-rose-800 flex items-center gap-2 shadow-sm">
         <Clock size={13} />
         <span>{copy.unanswered}</span>
       </div>
@@ -134,37 +134,37 @@ export function AnswerBubble({
 
   if (!answer) {
     return (
-      <div className="rounded-2xl rounded-tl-xs border border-amber-500/30 bg-amber-950/40 px-3.5 py-1.5 text-xs font-medium text-amber-300 flex items-center gap-2 animate-pulse shadow-sm">
+      <div className="rounded-sm border border-amber-300 bg-amber-50 px-3.5 py-1.5 text-xs font-medium text-amber-900 flex items-center gap-2 animate-pulse shadow-sm">
         <Clock size={13} />
         <span>{copy.pending}…</span>
       </div>
     );
   }
 
-  let bubbleStyle = 'border-zinc-700 bg-zinc-850 text-zinc-300';
-  let icon = <AlertCircle size={14} className="text-zinc-400 shrink-0" />;
+  let bubbleStyle = 'border-app-border/30 bg-app-surface-muted text-app-text-secondary';
+  let icon = <AlertCircle size={14} className="text-app-text-muted shrink-0" />;
   let label = copy.unknown;
 
   if (answer === 'yes') {
-    bubbleStyle = 'border-emerald-500/40 bg-emerald-950/85 text-emerald-200';
-    icon = <Check size={14} className="text-emerald-400 stroke-[3] shrink-0" />;
+    bubbleStyle = 'border-app-accent/40 bg-app-accent/10 text-app-accent';
+    icon = <Check size={14} className="text-app-accent stroke-[3] shrink-0" />;
     label = copy.yes;
   } else if (answer === 'mostly_yes') {
-    bubbleStyle = 'border-teal-500/40 bg-teal-950/85 text-teal-200';
-    icon = <Check size={14} className="text-teal-400 stroke-[2.5] shrink-0" />;
+    bubbleStyle = 'border-teal-700/30 bg-teal-50 text-teal-900';
+    icon = <Check size={14} className="text-teal-800 stroke-[2.5] shrink-0" />;
     label = copy.mostly_yes;
   } else if (answer === 'mostly_no') {
-    bubbleStyle = 'border-rose-400/40 bg-rose-950/70 text-rose-200';
-    icon = <X size={14} className="text-rose-400 stroke-[2.5] shrink-0" />;
+    bubbleStyle = 'border-rose-300 bg-rose-50 text-rose-800';
+    icon = <X size={14} className="text-rose-700 stroke-[2.5] shrink-0" />;
     label = copy.mostly_no;
   } else if (answer === 'no') {
-    bubbleStyle = 'border-rose-500/50 bg-rose-950/85 text-rose-200';
-    icon = <X size={14} className="text-rose-400 stroke-[3] shrink-0" />;
+    bubbleStyle = 'border-rose-300 bg-rose-50 text-rose-800';
+    icon = <X size={14} className="text-rose-700 stroke-[3] shrink-0" />;
     label = copy.no;
   }
 
   return (
-    <div className={`rounded-2xl rounded-tl-xs border px-3.5 py-1.5 text-xs sm:text-sm font-medium flex items-center gap-2 shadow-sm ${bubbleStyle}`}>
+    <div className={`rounded-sm border px-3.5 py-1.5 text-xs sm:text-sm font-medium flex items-center gap-2 shadow-sm ${bubbleStyle}`}>
       {icon}
       <span className="font-semibold">{label}</span>
       {isCorrected && (
@@ -173,7 +173,7 @@ export function AnswerBubble({
         </span>
       )}
       {isAiAnswer && (
-        <span className="ml-1 text-[9px] font-mono uppercase tracking-wider bg-amber-500/25 text-amber-300 border border-amber-500/35 px-1.5 py-0.2 rounded-full">
+        <span className="ml-1 text-[9px] font-mono uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded-sm">
           AI
         </span>
       )}
@@ -206,8 +206,8 @@ function ChatHistoryCard({
         <div className="space-y-1.5">
           {/* Inquirer's Question Message (Speech bubble on right if you, on left if opponent) */}
           <div className={`flex flex-col max-w-[85%] ${isYou ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
-            <div className="flex items-center gap-1.5 mb-0.5 px-1 font-mono text-xs text-zinc-500">
-              <span className={isYou ? 'text-emerald-400 font-semibold' : 'text-blue-400 font-semibold'}>
+            <div className="flex items-center gap-1.5 mb-0.5 px-1 font-mono text-xs text-app-text-muted">
+              <span className={isYou ? 'text-app-accent font-semibold' : 'text-blue-700 font-semibold'}>
                 {isYou ? copy.you : authorName} · #{String(item.ordinal).padStart(2, '0')}
               </span>
               <span>·</span>
@@ -216,10 +216,10 @@ function ChatHistoryCard({
               </span>
             </div>
             <div
-              className={`rounded-2xl px-3.5 py-2 text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
+              className={`rounded-sm px-3.5 py-2 text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
                 isYou
-                  ? 'rounded-tr-xs border border-emerald-500/30 bg-emerald-600/25 text-sand-100 text-right'
-                  : 'rounded-tl-xs border border-blue-500/30 bg-blue-600/25 text-sand-100 text-left'
+                  ? 'border border-app-accent/30 bg-app-accent/10 text-app-text text-right'
+                  : 'border border-blue-200 bg-blue-50 text-app-text text-left'
               }`}
             >
               {item.question}
@@ -228,7 +228,7 @@ function ChatHistoryCard({
 
           {/* Responder's Answer Message (Speech bubble on opposite side, NO nested outer boxes) */}
           <div className={`flex flex-col max-w-[85%] ${isYou ? 'mr-auto items-start' : 'ml-auto items-end'}`}>
-            <div className="flex items-center gap-1 mb-0.5 px-1 font-mono text-xs text-zinc-500">
+            <div className="flex items-center gap-1 mb-0.5 px-1 font-mono text-xs text-app-text-muted">
               <span>{item.answered_by === 'ai' || (item.timed_out && item.answer) ? 'AI Response' : `${responderName} Response`}</span>
             </div>
 
@@ -245,14 +245,14 @@ function ChatHistoryCard({
                 <div className="px-1">
                   <button
                     type="button"
-                    className="font-mono text-[9px] uppercase tracking-wider text-emerald-400/80 hover:text-emerald-300 transition-colors cursor-pointer"
+                    className="font-mono text-[9px] uppercase tracking-wider text-app-accent hover:text-app-accent-hover transition-colors cursor-pointer"
                     disabled={busy}
                     onClick={() => setEditing(!editing)}
                   >
                     {editing ? copy.cancel : '✎ ' + copy.correctAnswer}
                   </button>
                   {editing && (
-                    <div className="mt-1.5 p-2 rounded-sm border border-white/10 bg-obsidian-950 shadow-md">
+                    <div className="mt-1.5 p-2 rounded-sm border border-app-border/20 bg-app-surface-muted shadow-md">
                       <AnswerPicker
                         copy={copy}
                         disabled={busy}
@@ -275,20 +275,20 @@ function ChatHistoryCard({
           <div
             className={`w-full rounded-sm border p-2.5 text-xs flex items-center justify-between gap-3 shadow-sm ${
               item.correct
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                : 'border-rose-500/40 bg-rose-500/10 text-rose-300'
+                ? 'border-app-accent/30 bg-app-accent/10 text-app-accent'
+                : 'border-rose-300 bg-rose-50 text-rose-800'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
               {item.correct ? (
-                <Trophy size={14} className="text-amber-400 shrink-0" />
+                <Trophy size={14} className="text-amber-700 shrink-0" />
               ) : (
-                <Target size={14} className="text-rose-400 shrink-0" />
+                <Target size={14} className="text-rose-700 shrink-0" />
               )}
-              <span className="font-mono text-xs text-zinc-400 shrink-0">
+              <span className="font-mono text-xs text-app-text-secondary shrink-0">
                 {isYou ? copy.you : authorName} guessed:
               </span>
-              <strong className="text-sand-100 truncate">{item.entity?.name || 'Location'}</strong>
+              <strong className="text-app-text truncate">{item.entity?.name || 'Location'}</strong>
             </div>
             <span className="font-mono font-semibold text-xs shrink-0">
               {item.correct ? 'Correct' : 'Incorrect'}
@@ -298,7 +298,7 @@ function ChatHistoryCard({
       ) : (
         /* Pass Turn Entry */
         <div className="flex items-center justify-center my-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[10px] text-zinc-400">
+          <span className="inline-flex items-center gap-1.5 rounded-sm border border-app-border/20 bg-app-surface-muted px-2.5 py-0.5 font-mono text-[10px] text-app-text-secondary">
             <FastForward size={11} />
             <span>{isYou ? copy.you : authorName} passed turn</span>
           </span>
@@ -396,7 +396,7 @@ export default function DuelHistory({
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
       {/* 2-Tab Chat Header Switcher */}
-      <div className="flex items-center gap-1 border-b border-white/10 bg-obsidian-950/80 px-2 py-1.5 shrink-0">
+      <div className="flex items-center gap-1 border-b border-app-border/20 bg-app-surface-raised px-2 py-1.5 shrink-0">
         <button
           type="button"
           role="tab"
@@ -404,13 +404,13 @@ export default function DuelHistory({
           onClick={() => setChatTab('yours')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-sm font-mono text-xs transition-colors cursor-pointer ${
             chatTab === 'yours'
-              ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-semibold shadow-sm'
-              : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
+              ? 'bg-app-accent/10 border border-app-accent/30 text-app-accent font-semibold shadow-sm'
+              : 'text-app-text-secondary hover:text-app-text hover:bg-app-surface-muted'
           }`}
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <span className="h-1.5 w-1.5 rounded-full bg-app-accent shrink-0" />
           <span className="truncate">Your inquiries</span>
-          <span className="font-mono text-[9px] text-zinc-500 shrink-0">({yourMoves.length})</span>
+          <span className="font-mono text-[9px] text-app-text-muted shrink-0">({yourMoves.length})</span>
         </button>
 
         <button
@@ -420,13 +420,13 @@ export default function DuelHistory({
           onClick={() => setChatTab('opponent')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-sm font-mono text-xs transition-colors cursor-pointer truncate ${
             chatTab === 'opponent'
-              ? 'bg-blue-950/80 border border-blue-500/40 text-blue-300 font-semibold shadow-sm'
-              : 'text-zinc-400 hover:text-sand-100 hover:bg-white/5'
+              ? 'bg-blue-50 border border-blue-200 text-blue-800 font-semibold shadow-sm'
+              : 'text-app-text-secondary hover:text-app-text hover:bg-app-surface-muted'
           }`}
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shrink-0" />
+          <span className="h-1.5 w-1.5 rounded-full bg-blue-700 shrink-0" />
           <span className="truncate">{opponentName}&apos;s</span>
-          <span className="font-mono text-[9px] text-zinc-500 shrink-0">({opponentMoves.length})</span>
+          <span className="font-mono text-[9px] text-app-text-muted shrink-0">({opponentMoves.length})</span>
         </button>
       </div>
 
@@ -438,14 +438,14 @@ export default function DuelHistory({
         className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-xs custom-scrollbar overscroll-contain select-text"
       >
         {activeMoves.length === 0 ? (
-          <div className="py-8 text-center text-xs text-zinc-500 space-y-1">
-            <HelpCircle size={20} className="mx-auto text-zinc-600 mb-1" />
-            <p className="font-mono text-[11px] text-zinc-400">
+          <div className="py-8 text-center text-xs text-app-text-muted space-y-1">
+            <HelpCircle size={20} className="mx-auto text-app-text-muted mb-1" />
+            <p className="font-mono text-[11px] text-app-text-secondary">
               {chatTab === 'yours'
                 ? 'No inquiries sent yet.'
                 : `No inquiries received from ${opponentName} yet.`}
             </p>
-            <p className="text-[11px] text-zinc-600">
+            <p className="text-[11px] text-app-text-muted">
               {chatTab === 'yours'
                 ? 'Ask a question or guess a location on your turn.'
                 : 'Waiting for your friend to make a move.'}
@@ -490,7 +490,7 @@ export default function DuelHistory({
           </button>
         )}
 
-        {error && <p role="alert" className="mt-1 text-xs text-red-300">{error}</p>}
+        {error && <p role="alert" className="mt-1 text-xs text-rose-700">{error}</p>}
       </div>
     </div>
   );

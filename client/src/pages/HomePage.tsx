@@ -1,26 +1,38 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowDown, ArrowRight, BookOpen, ChevronDown } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, BookOpen, Compass, Play, Users } from 'lucide-react';
+import ExploreGameArtwork from '../components/ExploreGameArtwork';
 import GuestProgress from '../components/GuestProgress';
 import SpinningGlobe from '../components/SpinningGlobe';
 import { useDailyDate } from '../hooks/useDailyClock';
 import { useAuthStore } from '../stores/authStore';
 import { useCountryGameStore } from '../stores/gameStore';
-import { isPrerenderCapture } from '../lib/pageMetadata'
-import { useGameCatalog, type CatalogGeography } from '../lib/gameCatalog';
+import { isPrerenderCapture } from '../lib/pageMetadata';
+import { primaryGames, type CatalogGeography } from '../lib/gameCatalog';
 
-const geographies: { id: CatalogGeography; title: string; note?: string }[] = [
-  { id: 'worldwide', title: 'Worldwide' },
-  { id: 'continents', title: 'Continents' },
-  { id: 'poland', title: 'Poland' },
-  { id: 'united-states', title: 'United States' },
-  { id: 'uk', title: 'UK', note: 'England and London' },
+const MODE_SUMMARIES: Record<string, { tag: string; summary: string; stripe: string }> = {
+  '/game': { tag: '10 questions · 3 guesses', summary: 'Ask yes-or-no questions to uncover today’s secret country.', stripe: 'border-t-[#2a5942]' },
+  '/flagdle': { tag: '12 tile guesses', summary: 'Identify the country as its national flag is uncovered.', stripe: 'border-t-[#a84436]' },
+  '/flag-shades': { tag: 'Grayscale challenge', summary: 'Recognize the flag from proportions and luminance alone.', stripe: 'border-t-[#355c7d]' },
+  '/us-states': { tag: '8 questions · 3 guesses', summary: 'Deduce today’s hidden US state on the map.', stripe: 'border-t-[#9a6b2f]' },
+};
+
+const QUICK_OTHER_MODES: { path: string; name: string; tag: string; geography: CatalogGeography }[] = [
+  { path: '/powiaty', name: 'Powiatdle', tag: '380 Polish counties', geography: 'poland' },
+  { path: '/wojewodztwa', name: 'Województwodle', tag: '16 Polish regions', geography: 'poland' },
+  { path: '/border-hop', name: 'Border Hop', tag: 'Follow land borders', geography: 'worldwide' },
+  { path: '/herby-powiatow', name: 'County Coats of Arms', tag: 'Daily heraldry', geography: 'poland' },
+];
+
+const HOW_IT_WORKS = [
+  { step: '01', title: 'Ask', text: 'Start broad: continent, coastline, borders, or population. Every question gets a verified yes or no.' },
+  { step: '02', title: 'Narrow', text: 'Mark off ruled-out places right on the map as your picture sharpens.' },
+  { step: '03', title: 'Guess', text: 'Lock in your answer within 3 guesses. A new puzzle arrives daily at 00:00 UTC.' },
 ];
 
 export default function HomePage() {
-  const gameCatalog = useGameCatalog();
   const location = useLocation();
-  
   const today = useDailyDate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
@@ -44,166 +56,202 @@ export default function HomePage() {
     : null;
   const hasStarted = currentGuestState && (currentGuestState.questions_asked > 0 || currentGuestState.guesses_made > 0);
   const checkingProgress = !capture && (authLoading || (guest && (isLoading || (!error && !currentGuestState))));
+
   const playLabel = currentGuestState?.is_game_over
-    ? ('View today’s result')
+    ? 'View today’s result'
     : hasStarted
-      ? ('Continue today’s country')
-      : guest && error
-        ? ('Open today’s country')
-        : checkingProgress
-          ? ('Open today’s country')
-          : ('Play today’s country');
+      ? 'Continue today’s country'
+      : 'Play today’s country';
+
   const progressNote = guest && error
-    ? ('We couldn’t check your progress. Open the puzzle to try again.')
+    ? 'We couldn’t check your progress. Open the puzzle to try again.'
     : checkingProgress
-      ? ('Checking today’s progress…')
+      ? 'Checking today’s progress…'
       : currentGuestState?.is_game_over
-        ? ('Today’s puzzle is complete. Your result is ready.')
+        ? 'Today’s puzzle is complete. Your result is ready.'
         : hasStarted
-          ? (`${currentGuestState.remaining_questions} questions and ${currentGuestState.remaining_guesses} guesses remaining today.`)
+          ? `${currentGuestState.remaining_questions} questions and ${currentGuestState.remaining_guesses} guesses remaining today.`
           : null;
-  const copy = {
-    daily: 'Your daily geography puzzle',
-    title: 'Countrydle.',
-    titleEnd: 'One hidden country.',
-    intro: 'Find it with yes-or-no questions. 10 questions, 3 guesses. No sign-in needed.',
-    choose: 'Explore other games',
-    modes: 'What will you discover next?',
-    progress: 'Your progress on this device',
-    how: 'How to play the country puzzle',
-    reset: 'A new puzzle every day at 00:00 UTC.',
-    steps: [
-        { title: 'Ask a question', text: 'Start broad: is the country in Europe? Does it have a coastline? You’ll get a yes-or-no answer.' },
-        { title: 'Narrow the map', text: 'Use the answers to rule out countries. You have 10 questions, so choose them carefully.' },
-        { title: 'Guess the country', text: 'Choose a country when you have a candidate. You have 3 guesses to find today’s answer.' },
-      ],
-    blogTitle: 'Discover the stories behind the places',
-    blogText: 'Past puzzles, surprising facts and more geography to explore on the blog.',
-  };
-  const disclosureClass = 'group rounded-lg border border-white/10 bg-obsidian-900/60';
-  const summaryClass = 'flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 font-semibold text-sand-50 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 [&::-webkit-details-marker]:hidden';
 
   return (
-    <div className="mx-auto min-w-0 max-w-6xl pb-6 md:pb-12">
-      <section aria-labelledby="home-heading" className="grid min-w-0 items-center gap-5 border-b border-white/10 pb-6 md:grid-cols-[1.2fr_1fr] md:gap-12 md:pb-10">
-        <div className="min-w-0">
-          <p className="mb-2 text-sm font-medium text-emerald-400">{copy.daily}</p>
-          <h1 id="home-heading" className="text-[1.75rem] font-semibold leading-tight tracking-tight text-sand-50 sm:text-4xl lg:text-5xl">
-            {copy.title}
-            <span className="mt-1 block text-emerald-300">{copy.titleEnd}</span>
+    <div className="mx-auto min-w-0 max-w-6xl space-y-10 pb-8 text-app-text md:space-y-12 md:pb-12">
+      {/* Hero */}
+      <section aria-labelledby="home-heading" className="grid min-w-0 items-center gap-6 border-b border-app-border pb-8 md:grid-cols-[1.15fr_1fr] md:gap-12 md:pb-10">
+        <motion.div
+          initial={capture ? false : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="min-w-0"
+        >
+          <div className="inline-flex items-center gap-2 rounded-sm border border-app-border/70 bg-app-surface-muted/70 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-app-accent">
+            <Compass size={13} aria-hidden="true" />
+            <span>Daily geography puzzle · 00:00 UTC</span>
+          </div>
+
+          <h1 id="home-heading" className="mt-4 font-serif text-4xl font-semibold leading-[1.08] tracking-tight text-app-text sm:text-5xl lg:text-[3.25rem]">
+            Countrydle.
+            <span className="mt-1 block text-app-accent">One hidden country.</span>
           </h1>
-          <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-300 md:mt-4 md:text-lg">{copy.intro}</p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link to="/game" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-400 px-4 py-3 text-center text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 sm:w-auto sm:px-6">
-              <span className="min-w-0">{playLabel}</span>
+
+          <p className="mt-4 max-w-lg text-base leading-relaxed text-app-text-secondary sm:text-lg">
+            Deduce today’s secret country using yes-or-no questions and an interactive map. 10 questions, 3 guesses, no account needed.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link
+              to="/game"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-app-accent px-6 py-3 text-sm font-semibold text-app-canvas shadow-[0_2px_8px_rgba(85,75,57,0.18)] transition-all hover:-translate-y-0.5 hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus sm:w-auto"
+            >
+              <span>{playLabel}</span>
               <ArrowRight size={17} className="shrink-0" aria-hidden="true" />
             </Link>
-            <Link to="/friends" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-obsidian-950 transition-colors hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300 sm:w-auto sm:px-6">
-              <span>Play with friend</span>
-              <ArrowRight size={17} className="shrink-0" aria-hidden="true" />
+            <Link
+              to="/friends"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm border border-app-border bg-app-surface px-5 py-3 text-sm font-semibold text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus sm:w-auto"
+            >
+              <Users size={16} className="text-app-accent" aria-hidden="true" />
+              <span>Duel a friend</span>
             </Link>
           </div>
-          {progressNote && <p role="status" className="mt-3 max-w-lg text-sm leading-relaxed text-slate-400">{progressNote}</p>}
-          <a href="#maps" className="mt-4 flex w-fit min-h-11 items-center gap-2 py-2 text-sm text-slate-300 underline decoration-white/20 underline-offset-4 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
-            {copy.choose}<ArrowDown size={15} className="shrink-0" aria-hidden="true" />
-          </a>
-        </div>
-        <div className="mx-auto w-full max-w-[224px] sm:max-w-[280px] md:max-w-[380px]">
-          {!capture && <SpinningGlobe size={380} />}
-        </div>
+
+          {progressNote && (
+            <p role="status" className="mt-3 max-w-lg font-mono text-xs leading-relaxed text-app-text-muted">
+              {progressNote}
+            </p>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={capture ? false : { opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mx-auto flex w-full max-w-[230px] items-center justify-center sm:max-w-[290px] md:max-w-[380px]"
+        >
+          <div className="relative z-10 w-full">
+            {!capture && <SpinningGlobe size={380} />}
+          </div>
+        </motion.div>
       </section>
 
-      <section aria-labelledby="practice-heading" className="border-b border-white/10 py-6 md:py-8">
-        <h2 id="practice-heading" className="text-xl font-bold text-sand-50">See a country deduction in action</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          For practice, imagine the hidden country is Poland. This example is illustrative, not a clue about today&apos;s puzzle.
-        </p>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-300 marker:text-emerald-400">
-          <li><strong>Is it in Europe? Yes.</strong> Keep European countries as candidates.</li>
-          <li><strong>Is it landlocked? No.</strong> Poland has a Baltic Sea coast, so inland candidates can be ruled out.</li>
-          <li><strong>Does it border Germany? Yes.</strong> This narrows the coastal candidates further, but does not by itself prove the answer.</li>
-        </ol>
-        <p className="mt-3 text-sm leading-relaxed text-slate-400">
-          Check the geography in <a href="https://www.britannica.com/place/Poland" className="text-emerald-300 underline underline-offset-4">Britannica&apos;s Poland profile</a>, then explore the <Link to="/explore/modes/countrydle" className="text-emerald-300 underline underline-offset-4">country deduction guide</Link>.
-        </p>
-      </section>
+      {/* Featured Daily Modes */}
+      <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 space-y-5 border-b border-app-border pb-10">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-app-accent">Daily challenges</p>
+            <h2 id="maps-heading" tabIndex={-1} className="mt-1 font-serif text-2xl font-semibold tracking-tight text-app-text sm:text-3xl">
+              Featured puzzles
+            </h2>
+          </div>
+          <Link
+            to="/explore"
+            className="inline-flex min-h-10 items-center gap-2 self-start text-sm font-semibold text-app-accent underline decoration-app-border underline-offset-4 transition-colors hover:text-app-accent-hover sm:self-auto"
+          >
+            <span>Explore all modes &amp; atlas</span>
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
 
-      <section id="maps" aria-labelledby="maps-heading" className="scroll-mt-24 py-6 md:py-10">
-        <h2 id="maps-heading" tabIndex={-1} className="text-2xl font-bold tracking-tight text-sand-50">{copy.modes}</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">Choose how you want to play, then find a place to explore.</p>
-        <div className="mt-7 space-y-10">
-          {gameCatalog.map((group, index) => (
-            <section key={group.id} aria-labelledby={`games-${group.id}`} className="min-w-0">
-              <div className="flex items-baseline gap-3 border-b border-white/10 pb-3">
-                <span aria-hidden="true" className="text-xs font-semibold text-emerald-400">{String(index + 1).padStart(2, '0')}</span>
-                <h3 id={`games-${group.id}`} className="text-xl font-semibold tracking-tight text-sand-50">{group.title}</h3>
-              </div>
-              <div className={`mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3 ${group.id === 'more' ? 'max-w-md' : ''}`}>
-                {geographies.map((geography) => {
-                  const games = group.games.filter((game) => game.geography === geography.id);
-                  if (!games.length) return null;
-                  return (
-                    <section key={geography.id} aria-labelledby={`${group.id}-${geography.id}`} className="min-w-0 rounded-xl border border-white/10 bg-obsidian-900/60 p-4">
-                      <h4 id={`${group.id}-${geography.id}`} className="text-sm font-semibold text-emerald-300">{geography.title}</h4>
-                      {geography.note && <p className="mt-1 text-xs text-slate-400">{geography.note}</p>}
-                      <ul className="mt-3 space-y-1">
-                        {games.map((game) => (
-                          <li key={game.path}>
-                            <Link to={game.path} className="flex min-h-11 items-center justify-between gap-3 rounded-md px-2 py-2 text-sm leading-relaxed text-sand-100 transition-colors hover:bg-white/5 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400">
-                              <span>{game.name}</span>
-                              <ArrowRight size={15} className="shrink-0 text-emerald-400" aria-hidden="true" />
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  );
-                })}
-              </div>
-            </section>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {primaryGames.map((game, idx) => {
+            const meta = MODE_SUMMARIES[game.path] ?? { tag: 'Daily puzzle', summary: 'Test your geography knowledge.', stripe: 'border-t-app-accent' };
+            return (
+              <motion.div
+                key={game.path}
+                initial={capture ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={capture ? undefined : { y: -3 }}
+                transition={{ duration: 0.25, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                className="h-full"
+              >
+                <Link
+                  to={game.path}
+                  className={`group relative flex h-full flex-col rounded-sm border border-app-border border-t-[3px] ${meta.stripe} bg-app-surface p-4 text-app-text shadow-[1px_3px_10px_rgba(85,75,57,0.08)] transition-all duration-200 hover:border-app-accent hover:bg-app-surface-raised hover:shadow-[2px_8px_20px_rgba(85,75,57,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus`}
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <ExploreGameArtwork game={game} />
+                    <span className="rounded-sm bg-app-surface-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-app-accent">
+                      {meta.tag}
+                    </span>
+                  </div>
+                  <h3 className="font-serif text-lg font-semibold leading-snug text-app-text">{game.name}</h3>
+                  <p className="mt-1.5 flex-1 text-xs leading-5 text-app-text-secondary">{meta.summary}</p>
+                  <span className="mt-3 inline-flex items-center justify-between border-t border-app-border/60 pt-2.5 text-xs font-semibold text-app-accent">
+                    <span>Play</span>
+                    <Play size={12} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </span>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Compact secondary quick-links */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-app-text-muted">Also popular:</span>
+          {QUICK_OTHER_MODES.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="inline-flex items-center gap-2 rounded-sm border border-app-border bg-app-surface px-3 py-1.5 text-xs font-medium text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted"
+            >
+              <span>{item.name}</span>
+              <span className="font-mono text-[10px] text-app-text-muted">· {item.tag}</span>
+            </Link>
           ))}
         </div>
       </section>
 
-      <div className="space-y-3 border-t border-white/10 pt-6">
-        <details className={disclosureClass}>
-          <summary className={summaryClass}>
-            <h2 className="min-w-0 text-base">{copy.how}</h2>
-            <ChevronDown size={18} className="shrink-0 text-emerald-400 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-          </summary>
-          <div className="border-t border-white/10 p-4 md:p-5">
-            <ol className="grid gap-5 md:grid-cols-3">
-              {copy.steps.map((step) => (
-                <li key={step.title}>
-                  <h3 className="font-semibold text-sand-50">{step.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{step.text}</p>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-4 text-sm text-emerald-300">{copy.reset}</p>
-          </div>
-        </details>
-        {guest && (
-          <details className={disclosureClass}>
-            <summary className={summaryClass}>
-              <span className="min-w-0">{copy.progress}</span>
-              <ChevronDown size={18} className="shrink-0 text-emerald-400 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-            </summary>
-            <div className="border-t border-white/10 p-3 md:p-4"><GuestProgress gameType="country" today={today} /></div>
-          </details>
-        )}
-      </div>
-
-      <section aria-label="Explore the blog" className="mt-6">
-        <Link to="/blog" className="block min-w-0 rounded-lg border border-white/10 p-4 transition-colors hover:border-emerald-400/30 hover:bg-emerald-500/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 md:p-5">
-          <div className="flex items-start gap-3">
-            <BookOpen size={20} className="mt-0.5 shrink-0 text-emerald-400" aria-hidden="true" />
-            <h2 className="min-w-0 flex-1 font-semibold text-sand-50">{copy.blogTitle}</h2>
-            <ArrowRight size={16} className="mt-1 shrink-0 text-emerald-400" aria-hidden="true" />
-          </div>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">{copy.blogText}</p>
-        </Link>
+      {/* How It Works — Clean 3-step strip */}
+      <section aria-labelledby="how-heading" className="border-b border-app-border pb-10">
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="how-heading" className="font-serif text-2xl font-semibold tracking-tight text-app-text">
+            How it works
+          </h2>
+          <Link to="/how-it-works" className="text-xs font-semibold text-app-accent underline decoration-app-border underline-offset-4 hover:text-app-accent-hover">
+            Full guide &amp; deduction tips
+          </Link>
+        </div>
+        <ol className="grid gap-4 md:grid-cols-3">
+          {HOW_IT_WORKS.map((item) => (
+            <li key={item.step} className="rounded-sm border border-app-border bg-app-surface p-4">
+              <div className="flex items-baseline gap-2.5">
+                <span className="font-mono text-xs font-bold text-app-accent">{item.step}</span>
+                <h3 className="font-serif text-lg font-semibold text-app-text">{item.title}</h3>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-app-text-secondary">{item.text}</p>
+            </li>
+          ))}
+        </ol>
       </section>
+
+      {/* Progress & Blog */}
+      <div className={`grid gap-5 ${guest ? 'lg:grid-cols-[1.2fr_1fr]' : 'grid-cols-1'}`}>
+        {guest && <GuestProgress gameType="country" today={today} />}
+        <Link
+          to="/blog"
+          className="group flex flex-col justify-between rounded-sm border border-app-border bg-app-surface p-5 transition-all hover:-translate-y-0.5 hover:border-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus"
+        >
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-app-accent">
+                <BookOpen size={14} aria-hidden="true" />
+                <span>Field Notes &amp; Recaps</span>
+              </span>
+              <ArrowRight size={16} className="text-app-accent transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </div>
+            <h2 className="mt-3 font-serif text-xl font-semibold text-app-text">
+              Discover the stories behind the places
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-app-text-secondary">
+              Daily puzzle debriefs, player deduction stats, and geography facts from past Countrydle targets.
+            </p>
+          </div>
+          <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-app-accent">
+            <span>Read the blog</span>
+            <ArrowRight size={13} aria-hidden="true" />
+          </span>
+        </Link>
+      </div>
     </div>
   );
 }

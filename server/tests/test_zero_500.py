@@ -1,6 +1,8 @@
 import pytest
 from httpx import AsyncClient
 from unittest.mock import patch, AsyncMock, MagicMock
+from app import app
+from starlette.routing import Route
 
 
 @pytest.mark.anyio
@@ -84,3 +86,23 @@ async def test_powiatdle_question_survives_unexpected_crash(async_client: AsyncC
         data = response.json()
         assert data["valid"] is False
         assert data["answer"] is None
+
+@pytest.mark.anyio
+async def test_unhandled_api_error_keeps_browser_cors_headers(async_client: AsyncClient):
+    async def fail(_request):
+        raise RuntimeError("Simulated endpoint failure")
+
+    route = Route("/_test/unhandled-cors-error", endpoint=fail, methods=["GET"])
+    app.router.routes.append(route)
+    try:
+        response = await async_client.get(
+            "/_test/unhandled-cors-error",
+            headers={"Origin": "http://localhost:5173"},
+        )
+    finally:
+        app.router.routes.remove(route)
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "An unexpected error occurred. Please try again."}
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert response.headers["access-control-allow-credentials"] == "true"

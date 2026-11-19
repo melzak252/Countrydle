@@ -183,15 +183,15 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
   }, [revealColorHint, isGameOver, hintInfo]);
 
   return (
-    <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-2 sm:p-3 shadow-2xl">
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-obsidian-900 flex items-center justify-center">
+    <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-app-border/30 bg-app-surface-raised p-2 sm:p-3 shadow-sm">
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-app-surface-muted flex items-center justify-center">
         {(!flagUrl || (isLoading && !rawImageDataRef.current)) && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-obsidian-900 text-zinc-500 animate-pulse font-mono text-sm">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-app-surface-muted text-app-text-muted animate-pulse font-mono text-sm">
             Loading Flag...
           </div>
         )}
         {hasError && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-obsidian-900 text-rose-400 font-mono text-sm">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-app-surface-muted text-rose-700 font-mono text-sm">
             Failed to load flag
           </div>
         )}
@@ -214,15 +214,15 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
                   className={`relative flex items-center justify-center transition-opacity duration-300 ease-out ${
                     isRevealed
                       ? 'opacity-0 pointer-events-none'
-                      : 'bg-[#0f0f14] opacity-100 z-10 pointer-events-auto border border-white/10'
+                      : 'bg-app-surface-muted opacity-100 z-10 pointer-events-auto border border-app-border/30'
                   }`}
                 >
                   {!isRevealed && (
                     <div className="flex flex-col items-center justify-center gap-0.5 text-center p-1 select-none">
-                      <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 font-mono text-[10px] sm:text-xs font-semibold text-zinc-300 shadow-inner">
+                      <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-raised font-mono text-[10px] sm:text-xs font-semibold text-app-text shadow-none">
                         {tileIdx + 1}
                       </div>
-                      <span className="font-mono text-[11px] text-zinc-400 font-medium">
+                      <span className="font-mono text-[11px] text-app-text-secondary font-medium">
                         Card {tileIdx + 1}
                       </span>
                     </div>
@@ -235,9 +235,9 @@ export const GrayscaleFlagCanvas: React.FC<GrayscaleFlagCanvasProps> = ({
       </div>
 
       {/* Status Footer Bar */}
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-mono text-zinc-400">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-mono text-app-text-muted">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="inline-block h-2 w-2 rounded-full bg-app-accent" />
           <span>
             {effectiveStage} of 12 cards uncovered ({Math.min(100, Math.round((effectiveStage / 12) * 100))}%)
           </span>

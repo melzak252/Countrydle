@@ -201,23 +201,23 @@ export default function GuessInput<Id extends string | number = number>({
             }
           }}
           placeholder={placeholder || t('inputs.guessPlaceholder', { count: remainingGuesses })}
-          className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-3 pl-10 pr-28 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-40 sm:text-sm"
+          className="w-full rounded-sm border border-app-border/20 bg-app-surface-raised py-3 pl-10 pr-28 text-base text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus/20 disabled:opacity-40 sm:text-sm"
           disabled={disabled}
         />
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted" aria-hidden="true" />
         <button
           type="submit"
           disabled={!query.trim() || disabled || (!filteredCountries.length && !onUnknownGuess)}
-          className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3 text-xs font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:opacity-40"
+          className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center gap-2 rounded-sm bg-app-accent px-3 text-xs font-semibold text-white transition-colors hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:opacity-40"
         >
           <span>{submitLabel || ('Guess')}</span>
           <ArrowRight size={14} aria-hidden="true" />
         </button>
       </form>
-      {duplicateWarning && <p role="status" className="mt-2 text-sm leading-relaxed text-amber-200">{duplicateWarning}</p>}
+      {duplicateWarning && <p role="status" className="mt-2 text-sm leading-relaxed text-amber-800">{duplicateWarning}</p>}
 
       {suggestionsVisible && (
-        <div id={listId} role="listbox" aria-label={'Matching locations'} className={`absolute left-0 right-0 ${dropup ? 'bottom-full mb-1.5 max-h-[min(18rem,calc(var(--app-height,100dvh)-8rem))]' : 'top-full mt-1 max-h-72'} z-50 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900/95 shadow-xl backdrop-blur-md divide-y divide-white/5`}>
+        <div id={listId} role="listbox" aria-label={'Matching locations'} className={`absolute left-0 right-0 ${dropup ? 'bottom-full mb-1.5 max-h-[min(18rem,calc(var(--app-height,100dvh)-8rem))]' : 'top-full mt-1 max-h-72'} z-50 overflow-y-auto rounded-sm border border-app-border/20 bg-app-surface-raised shadow-xl divide-y divide-app-border/10`}>
           {filteredCountries.map(({ country }, index) => (
             <button
               id={`${listId}-${index}`}
@@ -229,15 +229,15 @@ export default function GuessInput<Id extends string | number = number>({
               onMouseDown={e => e.preventDefault()}
               onClick={() => handleSelect(country)}
               onMouseEnter={() => setActiveIndex(index)}
-              className={`flex min-h-11 w-full items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-left text-sm text-sand-100 last:border-0 hover:bg-white/5 ${index === activeIndex ? 'bg-white/5' : ''}`}
+              className={`flex min-h-11 w-full items-center justify-between gap-3 border-b border-app-border/10 px-4 py-3 text-left text-sm text-app-text last:border-0 hover:bg-app-surface-muted ${index === activeIndex ? 'bg-app-surface-muted' : ''}`}
             >
               <span>{displayName(country)}</span>
-              <ArrowRight size={13} className="shrink-0 text-emerald-400" aria-hidden="true" />
+              <ArrowRight size={13} className="shrink-0 text-app-accent" aria-hidden="true" />
             </button>
           ))}
         </div>
       )}
-      {query.trim() && !filteredCountries.length && !onUnknownGuess && !disabled && <p role="status" className="mt-2 text-xs text-zinc-400">{noMatchesLabel || ('No matching locations.')}</p>}
+      {query.trim() && !filteredCountries.length && !onUnknownGuess && !disabled && <p role="status" className="mt-2 text-xs text-app-text-secondary">{noMatchesLabel || ('No matching locations.')}</p>}
     </div>
   );
 }

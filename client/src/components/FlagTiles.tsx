@@ -22,8 +22,8 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
   // Preserve natural proportions without fit=grid so wide flags (like Mongolia 1:2) are never squashed in width
   const displayFlagUrl = flagUrl ? flagUrl.replace(/[?&]fit=grid/, '') : null;
   return (
-    <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-2 sm:p-3 shadow-2xl">
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-obsidian-900 flex items-center justify-center">
+    <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-sm border border-app-border/30 bg-app-surface-raised p-2 sm:p-3 shadow-sm">
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm bg-app-surface-muted flex items-center justify-center">
         {displayFlagUrl ? (
           <img
             src={displayFlagUrl}
@@ -31,7 +31,7 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
             className="h-full w-full object-contain p-0.5 transition-all duration-500 select-none"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-zinc-500 animate-pulse font-mono text-sm">
+          <div className="flex h-full w-full items-center justify-center text-app-text-secondary animate-pulse font-mono text-sm">
             Loading Flag...
           </div>
         )}
@@ -47,15 +47,15 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
                   className={`relative flex items-center justify-center transition-opacity duration-300 ease-out ${
                     isRevealed
                       ? 'opacity-0 pointer-events-none'
-                      : 'bg-[#0f0f14] opacity-100 z-10 pointer-events-auto border border-white/10'
+                      : 'bg-app-surface-muted opacity-100 z-10 pointer-events-auto border border-app-border/30'
                   }`}
                 >
                   {!isRevealed && (
                     <div className="flex flex-col items-center justify-center gap-0.5 text-center p-1 select-none">
-                      <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 font-mono text-[10px] sm:text-xs font-semibold text-zinc-300 shadow-inner">
+                      <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-raised font-mono text-[10px] sm:text-xs font-semibold text-app-text shadow-none">
                         {tileIdx + 1}
                       </div>
-                      <span className="font-mono text-[11px] text-zinc-400 font-medium">
+                      <span className="font-mono text-[11px] text-app-text-secondary font-medium">
                         Card {tileIdx + 1}
                       </span>
                     </div>
@@ -66,12 +66,12 @@ export const FlagTiles: React.FC<FlagTilesProps> = ({
           </div>
         )}
       </div>
-      <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-zinc-400">
+      <div className="mt-3 flex items-center justify-between px-2 text-xs sm:text-sm font-medium text-app-text-secondary">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="inline-block h-2 w-2 rounded-full bg-app-accent" />
           <span>{effectiveStage} of 12 cards uncovered</span>
         </div>
-        <span className="font-mono text-sand-100 font-semibold">
+        <span className="font-mono text-app-text font-semibold">
           {Math.min(100, Math.round((effectiveStage / 12) * 100))}% Revealed
         </span>
       </div>

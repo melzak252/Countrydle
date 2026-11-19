@@ -19,6 +19,7 @@ export function mapClickColor(activeColor: MapMarkerColor, isSecondary = false):
     case 'red': return 'green';
     case 'blue': return 'orange';
     case 'orange': return 'blue';
+    case 'yellow': return 'orange';
   }
 }
 

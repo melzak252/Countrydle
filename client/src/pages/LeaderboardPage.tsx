@@ -177,26 +177,26 @@ export default function LeaderboardPage() {
   const lastVisibleResult = Math.min(visiblePage * PAGE_SIZE, rankedPlayers.length);
 
   return (
-    <div className="mx-auto max-w-5xl pb-8">
-      <header className="mb-8 border-b border-white/10 pb-6 md:pb-8">
-        <p className="mb-3 font-mono text-xs text-emerald-400">The standings</p>
-        <h1 className="font-serif text-4xl tracking-tight text-sand-100 md:text-5xl">{t('leaderboard.title')}</h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
+    <div className="mx-auto max-w-5xl pb-8 text-app-text">
+      <header className="mb-8 border-b border-app-border pb-6 md:pb-8">
+        <p className="mb-3 font-mono text-xs text-app-accent">The standings</p>
+        <h1 className="font-serif text-4xl tracking-tight text-app-text md:text-5xl">{t('leaderboard.title')}</h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-app-text-secondary">
           Daily challenges, ranked. Find a player or jump straight to your own row. Friend games are just for fun — no points or rankings.
         </p>
-        {gameType === 'heraldry' && <Link to="/herby-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Coats of Arms</Link>}
-        {gameType === 'county_flags' && <Link to="/flagi-powiatow" className="mt-3 inline-block text-sm text-emerald-300 underline">Play County Flags</Link>}
-        {regionalModes.filter((mode) => mode.id === gameType).map((mode) => <Link key={mode.id} to={mode.path} className="mt-3 inline-block text-sm text-emerald-300 underline">Play {mode.label}</Link>)}
+        {gameType === 'heraldry' && <Link to="/herby-powiatow" className="mt-3 inline-block text-sm text-app-accent underline">Play County Coats of Arms</Link>}
+        {gameType === 'county_flags' && <Link to="/flagi-powiatow" className="mt-3 inline-block text-sm text-app-accent underline">Play County Flags</Link>}
+        {regionalModes.filter((mode) => mode.id === gameType).map((mode) => <Link key={mode.id} to={mode.path} className="mt-3 inline-block text-sm text-app-accent underline">Play {mode.label}</Link>)}
       </header>
 
-      <div className="mb-6 border-b border-white/10 pb-6">
-        <label htmlFor="leaderboard-game" className="mb-2 block text-xs font-medium text-zinc-500">Choose a game</label>
+      <div className="mb-6 border-b border-app-border pb-6">
+        <label htmlFor="leaderboard-game" className="mb-2 block text-xs font-medium text-app-text-muted">Choose a game</label>
         <div className="relative w-full sm:max-w-xs">
           <select
             id="leaderboard-game"
             value={gameType}
             onChange={(event) => changeGame(event.target.value as GameType)}
-            className="min-h-12 w-full appearance-none rounded-sm border border-white/15 bg-obsidian-900 py-3 pl-4 pr-11 text-base font-medium text-sand-100 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+            className="min-h-12 w-full appearance-none rounded-sm border border-app-border bg-app-surface py-3 pl-4 pr-11 text-base font-medium text-app-text focus:border-app-focus focus:outline-none focus:ring-2 focus:ring-app-focus"
           >
             {(['World & flags', 'Continents', 'Regional'] as const).map((group) => (
               <optgroup key={group} label={group}>
@@ -206,24 +206,24 @@ export default function LeaderboardPage() {
               </optgroup>
             ))}
           </select>
-          <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400" />
+          <ChevronDown size={18} aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-app-accent" />
         </div>
       </div>
 
       <section aria-label={`${gameLabel} standings`}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-medium text-sand-100">{gameLabel}</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-400">{periodDescription}</p>
+            <h2 className="text-base font-medium text-app-text">{gameLabel}</h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-app-text-secondary">{periodDescription}</p>
           </div>
-          <div role="group" aria-label="Ranking period" className="inline-flex rounded-sm border border-white/15 p-1">
+          <div role="group" aria-label="Ranking period" className="inline-flex rounded-sm border border-app-border p-1">
             {(['monthly', 'average'] as const).map((period) => (
               <button
                 key={period}
                 type="button"
                 onClick={() => changePeriod(period)}
                 aria-pressed={leaderboardType === period}
-                className={`min-h-11 rounded-sm px-4 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 ${leaderboardType === period ? 'bg-sand-100 text-obsidian-950' : 'text-zinc-400 hover:text-sand-100'}`}
+                className={`min-h-11 rounded-sm px-4 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${leaderboardType === period ? 'bg-app-accent text-app-canvas' : 'text-app-text-secondary hover:text-app-accent'}`}
               >
                 {period === 'monthly' ? 'Monthly' : 'Average'}
               </button>
@@ -232,17 +232,17 @@ export default function LeaderboardPage() {
         </div>
 
         {isLoading ? (
-          <div role="status" aria-live="polite" className="flex min-h-64 items-center justify-center gap-3 border-y border-white/10 text-sm text-zinc-400">
-            <Loader2 className="animate-spin text-emerald-400" size={20} aria-hidden="true" />
+          <div role="status" aria-live="polite" className="flex min-h-64 items-center justify-center gap-3 border-y border-app-border text-sm text-app-text-muted">
+            <Loader2 className="animate-spin text-app-accent" size={20} aria-hidden="true" />
             Loading {gameLabel.toLocaleLowerCase()} standings…
           </div>
         ) : hasError ? (
-          <div role="alert" className="flex min-h-48 flex-col items-center justify-center gap-4 border-y border-white/10 px-5 text-center">
-            <p className="text-sm text-zinc-300">We couldn’t load these standings. Check your connection and try again.</p>
+          <div role="alert" className="flex min-h-48 flex-col items-center justify-center gap-4 border-y border-app-border px-5 text-center">
+            <p className="text-sm text-app-text-secondary">We couldn’t load these standings. Check your connection and try again.</p>
             <button
               type="button"
               onClick={() => setRequestGeneration((generation) => generation + 1)}
-              className="min-h-11 rounded-sm border border-emerald-400/40 px-4 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+              className="min-h-11 rounded-sm border border-app-accent px-4 text-sm font-medium text-app-accent transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus"
             >
               Retry
             </button>
@@ -252,7 +252,7 @@ export default function LeaderboardPage() {
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <label className="relative block w-full sm:max-w-sm">
                 <span className="sr-only">Search players by username</span>
-                <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-app-text-muted" />
                 <input
                   type="search"
                   value={searchQuery}
@@ -262,41 +262,41 @@ export default function LeaderboardPage() {
                     setFindMessage(null);
                   }}
                   placeholder="Search username"
-                  className="min-h-12 w-full rounded-sm border border-white/15 bg-obsidian-900 py-2.5 pl-10 pr-3 text-base text-sand-100 placeholder:text-zinc-500 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  className="min-h-12 w-full rounded-sm border border-app-border bg-app-surface py-2.5 pl-10 pr-3 text-base text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-2 focus:ring-app-focus"
                 />
               </label>
               {isAuthenticated && user && (
                 <button
                   type="button"
                   onClick={findMe}
-                  className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-sm border border-white/15 px-4 text-sm font-medium text-sand-100 transition-colors hover:border-emerald-400/40 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                  className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-sm border border-app-border px-4 text-sm font-medium text-app-text transition-colors hover:border-app-accent hover:text-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus"
                 >
                   <Users size={16} aria-hidden="true" />
                   Find me
                 </button>
               )}
             </div>
-            {findMessage && <p role="status" className="mb-4 text-sm text-zinc-400">{findMessage}</p>}
+            {findMessage && <p role="status" className="mb-4 text-sm text-app-text-secondary">{findMessage}</p>}
 
             {rankedPlayers.length === 0 ? (
-              <div className="flex min-h-48 flex-col items-center justify-center border-y border-white/10 px-5 text-center">
-                <p className="text-sm text-zinc-300">
+              <div className="flex min-h-48 flex-col items-center justify-center border-y border-app-border px-5 text-center">
+                <p className="text-sm text-app-text-secondary">
                   {hasSearch ? `No players match “${searchQuery.trim()}”.` : 'No eligible players yet for this leaderboard.'}
                 </p>
                 {hasSearch && (
-                  <button type="button" onClick={() => setSearchQuery('')} className="mt-3 min-h-10 px-3 text-sm text-emerald-300 hover:text-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+                  <button type="button" onClick={() => setSearchQuery('')} className="mt-3 min-h-10 px-3 text-sm text-app-accent hover:text-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus">
                     Clear search
                   </button>
                 )}
               </div>
             ) : (
               <>
-                <div role="region" aria-label={`${gameLabel} leaderboard`} tabIndex={0} className="overflow-hidden rounded-sm border border-white/10 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 md:overflow-x-auto">
+                <div role="region" aria-label={`${gameLabel} leaderboard`} tabIndex={0} className="overflow-hidden rounded-sm border border-app-border bg-app-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus md:overflow-x-auto">
                   <table className="w-full min-w-0 table-fixed text-left text-sm md:min-w-[600px]">
                     <caption className="sr-only">
                       {gameLabel} — {leaderboardType === 'monthly' ? 'monthly points standings' : 'monthly average standings'}
                     </caption>
-                    <thead className="border-b border-white/10 text-xs text-zinc-400">
+                    <thead className="border-b border-app-border text-xs text-app-text-muted">
                       <tr>
                         <th scope="col" className="w-12 px-2 py-3.5 text-center font-medium sm:w-16 sm:px-3">Rank</th>
                         <th scope="col" className="px-2 py-3.5 font-medium sm:px-3">Player</th>
@@ -327,7 +327,7 @@ export default function LeaderboardPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/10">
+                    <tbody className="divide-y divide-app-border">
                       {pagePlayers.map((row) => {
                         const isMe = row.entry.id === currentUserId;
                         const winRate = row.entry.games_played > 0
@@ -339,45 +339,45 @@ export default function LeaderboardPage() {
                             ref={isMe ? myRowRef : undefined}
                             tabIndex={isMe ? -1 : undefined}
                             aria-current={isMe ? 'true' : undefined}
-                            className={`transition-colors hover:bg-white/[0.03] ${isMe ? 'bg-emerald-400/[0.07] ring-1 ring-inset ring-emerald-400/25' : ''}`}
+                            className={`transition-colors hover:bg-app-surface-muted ${isMe ? 'bg-app-surface-muted ring-1 ring-inset ring-app-accent' : ''}`}
                           >
-                            <td className={`px-2 py-4 text-center font-mono tabular-nums sm:px-3 ${row.rank === 1 ? 'text-emerald-300' : 'text-zinc-500'}`}>
+                            <td className={`px-2 py-4 text-center font-mono tabular-nums sm:px-3 ${row.rank === 1 ? 'text-app-accent' : 'text-app-text-muted'}`}>
                               #{row.rank}
                             </td>
                             <td className="px-2 py-4 sm:px-3">
                               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                                <span aria-hidden="true" className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/10 font-mono text-xs text-zinc-400 sm:flex">
+                                <span aria-hidden="true" className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-app-border font-mono text-xs text-app-text-muted sm:flex">
                                   {row.entry.username.substring(0, 2).toUpperCase()}
                                 </span>
-                                <Link to={`/profile/${row.entry.username}`} title={row.entry.username} className="min-w-0 break-words font-medium text-sand-100 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+                                <Link to={`/profile/${row.entry.username}`} title={row.entry.username} className="min-w-0 break-words font-medium text-app-text hover:text-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus">
                                   {row.entry.username}
                                 </Link>
-                                {isMe && <span className="shrink-0 rounded-sm bg-emerald-400/10 px-1.5 py-0.5 text-xs font-semibold text-emerald-300">You</span>}
+                                {isMe && <span className="shrink-0 rounded-sm bg-app-surface-muted px-1.5 py-0.5 text-xs font-semibold text-app-accent">You</span>}
                               </div>
-                              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400 md:hidden">
-                                <span>Avg / Game <span className="font-mono tabular-nums text-zinc-200">{formatAverage(row.entry.average_points)}</span></span>
-                                <span>Games <span className="font-mono tabular-nums text-zinc-200">{formatNumber(row.entry.games_played)}</span></span>
-                                <span>Wins <span className="font-mono tabular-nums text-zinc-200">{formatNumber(row.entry.wins)}</span></span>
-                                <span>Win % <span className="font-mono tabular-nums text-zinc-200">{winRate}%</span></span>
+                              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-text-muted md:hidden">
+                                <span>Avg / Game <span className="font-mono tabular-nums text-app-text-secondary">{formatAverage(row.entry.average_points)}</span></span>
+                                <span>Games <span className="font-mono tabular-nums text-app-text-secondary">{formatNumber(row.entry.games_played)}</span></span>
+                                <span>Wins <span className="font-mono tabular-nums text-app-text-secondary">{formatNumber(row.entry.wins)}</span></span>
+                                <span>Win % <span className="font-mono tabular-nums text-app-text-secondary">{winRate}%</span></span>
                               </div>
                             </td>
                             <td className={`px-2 py-4 text-right font-mono tabular-nums sm:px-3 ${
-                              leaderboardType === 'monthly' ? 'font-semibold text-emerald-300' : 'text-sand-100'
+                              leaderboardType === 'monthly' ? 'font-semibold text-app-accent' : 'text-app-text'
                             }`}>
                               {formatNumber(row.entry.points)}
                             </td>
                             <td className={`hidden px-2 py-4 text-right font-mono tabular-nums sm:px-3 md:table-cell ${
-                              leaderboardType === 'average' ? 'font-semibold text-emerald-300' : 'text-zinc-300'
+                              leaderboardType === 'average' ? 'font-semibold text-app-accent' : 'text-app-text-secondary'
                             }`}>
                               {formatAverage(row.entry.average_points)}
                             </td>
-                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3 md:table-cell">
+                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-app-text-secondary sm:px-3 md:table-cell">
                               {formatNumber(row.entry.games_played)}
                             </td>
-                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-zinc-300 sm:px-3 md:table-cell">
+                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-app-text-secondary sm:px-3 md:table-cell">
                               {formatNumber(row.entry.wins)}
                             </td>
-                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-zinc-400 sm:px-3 md:table-cell">
+                            <td className="hidden px-2 py-4 text-right font-mono tabular-nums text-app-text-muted sm:px-3 md:table-cell">
                               {winRate}%
                             </td>
                           </tr>
@@ -387,7 +387,7 @@ export default function LeaderboardPage() {
                   </table>
                 </div>
                 <div className="mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                  <p role="status" className="text-zinc-400">
+                  <p role="status" className="text-app-text-muted">
                     Showing {firstVisibleResult}–{lastVisibleResult} of {formatNumber(rankedPlayers.length)} {rankedPlayers.length === 1 ? 'player' : 'players'}{hasSearch ? ' matching your search' : ''}. Global ranks are preserved.
                   </p>
                   {pageCount > 1 && (
@@ -397,18 +397,18 @@ export default function LeaderboardPage() {
                         onClick={() => setPage((current) => Math.max(1, current - 1))}
                         disabled={visiblePage === 1}
                         aria-label="Previous page"
-                        className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-white/15 px-3 text-zinc-300 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-app-border px-3 text-app-text-secondary hover:border-app-accent disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <ArrowLeft size={15} aria-hidden="true" />
                         Previous
                       </button>
-                      <span aria-current="page" className="px-2 text-zinc-300">Page {visiblePage} of {pageCount}</span>
+                      <span aria-current="page" className="px-2 text-app-text-secondary">Page {visiblePage} of {pageCount}</span>
                       <button
                         type="button"
                         onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                         disabled={visiblePage === pageCount}
                         aria-label="Next page"
-                        className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-white/15 px-3 text-zinc-300 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-app-border px-3 text-app-text-secondary hover:border-app-accent disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Next
                         <ArrowRight size={15} aria-hidden="true" />

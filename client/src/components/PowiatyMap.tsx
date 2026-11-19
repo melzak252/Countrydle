@@ -1,6 +1,6 @@
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties } from 'react';
+import { MapContainer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { usePowiatyGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
@@ -13,13 +13,37 @@ import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
 import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
 import { createMapRenderer } from '../lib/mapRenderer';
+import {
+  bindMapRegionHintAccessibility,
+  bindRegionTooltip,
+  getRegionHint,
+  restoreRegionTooltip,
+  routeMapRegionActivation,
+} from '../lib/mapRegionTooltips';
+import { normalizeMapRegionName } from '../lib/mapGameMode';
+import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import MapCartographicTexture from './MapCartographicTexture';
+import MapPaperEdge from './MapPaperEdge';
+import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
+import { POLAND_PAN_BOUNDS, WORLD_SHEET_BOUNDS } from '../lib/mapBounds';
 
 type FeatureLayer = L.Path & { feature?: Feature };
+const EMPTY_REGION_NAMES: readonly string[] = [];
+
+const EMPTY_REGION_HINTS: Readonly<Record<string, string>> = {};
 
 interface PowiatyMapProps {
   correctPowiatName?: string;
   className?: string;
   onPowiatClick?: (name: string) => void;
+  hideUnlistedTooltips?: boolean;
+  visibleRegionNames?: readonly string[];
+  showMapToolbar?: boolean;
+  onRetryMap?: () => void;
+  regionHints?: Readonly<Record<string, string>>;
+  activeHintName?: string | null;
+  onHintOpen?: (name: string) => void;
+  onHintClose?: (name: string) => void;
 }
 
 function MapController({ correctName, geoJsonData, isGameOver }: { correctName?: string, geoJsonData: FeatureCollection | null, isGameOver: boolean }) {
@@ -93,6 +117,14 @@ export function ControlledPowiatyMap({
   className,
   onPowiatClick,
   interaction,
+  hideUnlistedTooltips = false,
+  visibleRegionNames = EMPTY_REGION_NAMES,
+  regionHints = EMPTY_REGION_HINTS,
+  activeHintName = null,
+  onHintOpen,
+  onHintClose,
+  showMapToolbar = true,
+  onRetryMap,
 }: PowiatyMapProps & { interaction: MapInteractionState }) {
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData('/powiaty-min.geojson');
   const [map, setMap] = useState<L.Map | null>(null);
@@ -102,12 +134,75 @@ export function ControlledPowiatyMap({
   const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
   const revealedName = isGameOver ? correctPowiatName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
-  const current = useRef({ interaction, revealedName, onPowiatClick });
+  const current = useRef({
+    interaction,
+    revealedName,
+    onPowiatClick,
+    hideUnlistedTooltips,
+    visibleRegionNames,
+    regionHints,
+    activeHintName,
+    onHintOpen,
+    onHintClose,
+  });
   useLayoutEffect(() => {
-    current.current = { interaction, revealedName, onPowiatClick };
-  }, [interaction, revealedName, onPowiatClick]);
+    current.current = {
+      interaction,
+      revealedName,
+      onPowiatClick,
+      hideUnlistedTooltips,
+      visibleRegionNames,
+      regionHints,
+      activeHintName,
+      onHintOpen,
+      onHintClose,
+    };
+  }, [
+    interaction,
+    revealedName,
+    onPowiatClick,
+    hideUnlistedTooltips,
+    visibleRegionNames,
+    regionHints,
+    activeHintName,
+    onHintOpen,
+    onHintClose,
+  ]);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
+  const hintAccessibilityCleanup = useRef(new WeakMap<L.Layer, () => void>());
+  const bindHintAccessibility = useCallback((layer: FeatureLayer, name: string) => {
+    const existingCleanup = hintAccessibilityCleanup.current.get(layer);
+    if (!current.current.hideUnlistedTooltips) {
+      existingCleanup?.();
+      hintAccessibilityCleanup.current.delete(layer);
+      return;
+    }
+
+    const attach = () => {
+      const path = layer.getElement();
+      if (!path) return;
+      hintAccessibilityCleanup.current.get(layer)?.();
+      const hint = getRegionHint(name, current.current.regionHints);
+      const cleanup = bindMapRegionHintAccessibility(
+        path,
+        name,
+        hint,
+        (regionName) => {
+          current.current.onHintOpen?.(regionName);
+          layer.openTooltip?.();
+        },
+        (regionName) => {
+          current.current.onHintClose?.(regionName);
+          layer.closeTooltip?.();
+        },
+      );
+      hintAccessibilityCleanup.current.set(layer, cleanup);
+    };
+
+    if (layer.getElement()) attach();
+    else layer.once('add', attach);
+  }, []);
 
 
   const getStyleFromState = useCallback((feature: Feature | undefined, markings: Record<string, MapMarkerColor>, currentCorrect?: string): PathOptions => {
@@ -117,78 +212,43 @@ export function ControlledPowiatyMap({
     const isCorrect = currentCorrect ? name === currentCorrect.toUpperCase() : false;
     const marker = markings[name];
 
-    if (isCorrect) {
-      return {
-        fillColor: '#10b981',
-        weight: 2,
-        opacity: 1,
-        color: '#34d399',
-        fillOpacity: 0.85,
-      };
-    }
-
-    if (marker === 'green') {
-      return {
-        fillColor: '#059669',
-        weight: 1.5,
-        opacity: 0.8,
-        color: '#6ee7b7',
-        fillOpacity: 0.35,
-      };
-    }
-
-    if (marker === 'red') {
-      return {
-        fillColor: '#b91c1c',
-        weight: 2.5,
-        opacity: 1,
-        color: '#ef4444',
-        fillOpacity: 0.45,
-        dashArray: undefined,
-      };
-    }
-
-    if (marker === 'blue') {
-      return {
-        fillColor: '#1d4ed8',
-        weight: 2,
-        opacity: 1,
-        color: '#60a5fa',
-        fillOpacity: 0.6,
-      };
-    }
-
-    if (marker === 'orange') {
-      return {
-        fillColor: '#c2410c',
-        weight: 2,
-        opacity: 1,
-        color: '#fb923c',
-        fillOpacity: 0.6,
-      };
-    }
-
-    return {
-      fillColor: '#242424',
-      weight: 1,
-      opacity: 1,
-      color: 'white',
-      fillOpacity: 0.7,
-      dashArray: undefined,
-    };
+    if (isCorrect) return MAP_THEME.countries.correct;
+    if (marker) return MAP_THEME.countries.markers[marker];
+    return MAP_THEME.countries.available;
   }, []);
 
   const getStyle = useCallback((feature: Feature | undefined) => (
     getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName)
   ), [getStyleFromState]);
+  const hoverLayerRef = useRef<L.GeoJSON | null>(null);
   useEffect(() => {
     if (!map) return;
+    const hoverRenderer = L.svg({ padding: 0.5 });
+    const hoverLayer = L.geoJSON(undefined, {
+      renderer: hoverRenderer,
+      interactive: false,
+      style: {
+        weight: 2,
+        color: MAP_THEME.controls.strongInk,
+        fillColor: MAP_THEME.controls.ink,
+        fillOpacity: 0.12,
+      },
+    } as L.GeoJSONOptions & { renderer: L.Renderer }).addTo(map);
+    hoverLayerRef.current = hoverLayer;
+
     const onMapMouseOut = () => {
+      hoverLayer.clearLayers();
       if (activeHoverLayerRef.current) {
         const prev = activeHoverLayerRef.current;
-        prev.closeTooltip?.();
-        if (prev.feature) {
-          prev.setStyle?.(getStyle(prev.feature));
+        const name = prev.feature?.properties?.nazwa;
+        if (typeof name === 'string') {
+          restoreRegionTooltip(
+            prev,
+            name,
+            current.current.visibleRegionNames,
+            getRegionHint(name, current.current.regionHints),
+            current.current.activeHintName,
+          );
         }
         activeHoverLayerRef.current = null;
       }
@@ -196,8 +256,10 @@ export function ControlledPowiatyMap({
     map.on('mouseout', onMapMouseOut);
     return () => {
       map.off('mouseout', onMapMouseOut);
+      hoverLayer.remove();
+      hoverLayerRef.current = null;
     };
-  }, [map, getStyle]);
+  }, [map]);
 
   useEffect(() => {
     if (geoJsonLayerRef.current) {
@@ -219,53 +281,103 @@ export function ControlledPowiatyMap({
       });
     }
   }, [entityMarkings, revealedName, geoJsonData, getStyleFromState]);
+  useEffect(() => {
+    geoJsonLayerRef.current?.eachLayer((item) => {
+      const layer = item as FeatureLayer;
+      const name = layer.feature?.properties?.nazwa;
+      if (typeof name !== 'string') return;
+      const hint = getRegionHint(name, regionHints);
+      bindRegionTooltip(layer, name, hideUnlistedTooltips, visibleRegionNames, hint);
+      bindHintAccessibility(layer, name);
+      if (hint && activeHintName && normalizeMapRegionName(activeHintName) === normalizeMapRegionName(name)) {
+        layer.openTooltip?.();
+      } else if (hint) {
+        layer.closeTooltip?.();
+      }
+    });
+  }, [geoJsonData, hideUnlistedTooltips, visibleRegionNames, regionHints, activeHintName, bindHintAccessibility]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.nazwa;
-    
+
     layer.on({
       click: () => {
-        current.current.interaction.handleEntityMapClick((name || '').toUpperCase(), false);
-        if (name) current.current.onPowiatClick?.(name);
+        if (typeof name !== 'string') return;
+        routeMapRegionActivation(
+          name,
+          current.current.visibleRegionNames,
+          (regionName) => {
+            if (!getRegionHint(regionName, current.current.regionHints)) return;
+            current.current.onHintOpen?.(regionName);
+            layer.openTooltip?.();
+          },
+          (regionName) => {
+            if (current.current.activeHintName) {
+              current.current.onHintClose?.(current.current.activeHintName);
+            }
+            current.current.interaction.handleEntityMapClick(regionName.toUpperCase(), false);
+            current.current.onPowiatClick?.(regionName);
+          },
+        );
       },
-      contextmenu: (e: L.LeafletMouseEvent) => {
-        e.originalEvent?.preventDefault?.();
+      contextmenu: (event: L.LeafletMouseEvent) => {
+        event.originalEvent?.preventDefault?.();
         current.current.interaction.handleEntityMapClick((name || '').toUpperCase(), true);
       },
       mouseover: () => {
-        const l = layer as FeatureLayer;
-        if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
-          const prev = activeHoverLayerRef.current;
-          prev.closeTooltip?.();
-          if (prev.feature) {
-            prev.setStyle?.(getStyle(prev.feature));
+        const activeLayer = layer as FeatureLayer;
+        if (activeHoverLayerRef.current && activeHoverLayerRef.current !== activeLayer) {
+          const previous = activeHoverLayerRef.current;
+          const previousName = previous.feature?.properties?.nazwa;
+          if (typeof previousName === 'string') {
+            restoreRegionTooltip(
+              previous,
+              previousName,
+              current.current.visibleRegionNames,
+              getRegionHint(previousName, current.current.regionHints),
+              current.current.activeHintName,
+            );
+          } else {
+            previous.closeTooltip?.();
           }
         }
-        activeHoverLayerRef.current = l;
-
-        l.setStyle({
-          weight: 2,
-          fillOpacity: 0.85,
-        });
-        l.openTooltip?.();
+        activeHoverLayerRef.current = activeLayer;
+        if (hoverLayerRef.current) {
+          hoverLayerRef.current.clearLayers();
+          hoverLayerRef.current.addData(feature);
+        }
+        activeLayer.openTooltip?.();
       },
       mouseout: () => {
-        const l = layer as FeatureLayer;
-        const style = getStyle(feature);
-        l.setStyle(style);
-        l.closeTooltip?.();
-        if (activeHoverLayerRef.current === l) {
+        const activeLayer = layer as FeatureLayer;
+        if (typeof name === 'string') {
+          restoreRegionTooltip(
+            activeLayer,
+            name,
+            current.current.visibleRegionNames,
+            getRegionHint(name, current.current.regionHints),
+            current.current.activeHintName,
+          );
+        } else {
+          activeLayer.closeTooltip?.();
+        }
+        if (activeHoverLayerRef.current === activeLayer) {
+          hoverLayerRef.current?.clearLayers();
           activeHoverLayerRef.current = null;
         }
-      }
+      },
     });
 
-    if (feature.properties) {
-      layer.bindTooltip(`${feature.properties.nazwa}`, {
-        sticky: false,
-        direction: 'auto',
-        opacity: 0.95,
-      });
+    if (typeof name === 'string') {
+      const featureLayer = layer as FeatureLayer;
+      bindRegionTooltip(
+        layer,
+        name,
+        current.current.hideUnlistedTooltips,
+        current.current.visibleRegionNames,
+        getRegionHint(name, current.current.regionHints),
+      );
+      bindHintAccessibility(featureLayer, name);
     }
   };
 
@@ -288,14 +400,18 @@ export function ControlledPowiatyMap({
   };
 
   if (!geoJsonData) {
-    return <MapLoading className={className ?? 'border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'} error={mapError} onRetry={retryMap} />;
+    return <MapLoading className={className ?? 'border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[400px] md:h-[600px]'} error={mapError} onRetry={onRetryMap ?? retryMap} />;
   }
 
   return (
-    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'}`}>
+    <div className={`w-full overflow-hidden relative ${className ? className : 'bg-[var(--map-ocean)] border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[400px] md:h-[600px]'}`} style={MAP_THEME_CSS_VARIABLES as CSSProperties}>
       <style>{`
         .leaflet-interactive:focus {
             outline: none;
+        }
+        .leaflet-interactive:focus-visible {
+            outline: 3px solid #f59e0b;
+            outline-offset: 2px;
         }
         .leaflet-tooltip {
             pointer-events: none !important;
@@ -304,13 +420,15 @@ export function ControlledPowiatyMap({
             z-index: 1050 !important;
         }
       `}</style>
-      <MapToolbar
-        activeColor={activeMarkerColor}
-        onColorChange={setActiveMarkerColor}
-        onClear={clearMapMarkings}
-        onReset={() => { if (map) resetMapView(map, [52.065, 19.48], 6); }}
-        className={revealedName ? 'max-md:!top-[8.25rem]' : 'max-md:!top-[5.75rem]'}
-      />
+      {showMapToolbar && (
+        <MapToolbar
+          activeColor={activeMarkerColor}
+          onColorChange={setActiveMarkerColor}
+          onClear={clearMapMarkings}
+          onReset={() => { if (map) resetMapView(map, [52.065, 19.48], 6); }}
+          className={revealedName ? 'max-md:!top-[8.25rem]' : 'max-md:!top-[5.75rem]'}
+        />
+      )}
       {revealedName && (
         <div className="absolute top-[5.75rem] left-[12px] md:top-[5.25rem] z-[1050]">
           <button
@@ -325,11 +443,15 @@ export function ControlledPowiatyMap({
       )}
 
       <MapContainer 
+        className="antique-map-surface"
         center={[52.065, 19.48]} 
         zoom={6} 
-        style={{ height: '100%', width: '100%', background: '#242424' }}
+        style={{ height: '100%', width: '100%', background: MAP_THEME.map.backgroundColor }}
         minZoom={5}
         maxZoom={12}
+        maxBounds={POLAND_PAN_BOUNDS}
+        maxBoundsViscosity={0}
+        worldCopyJump={false}
         attributionControl={false}
         wheelDebounceTime={40}
         wheelPxPerZoomLevel={60}
@@ -339,13 +461,7 @@ export function ControlledPowiatyMap({
         ref={setMap}
         renderer={renderer}
       >
-        <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-            attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            keepBuffer={2}
-            updateInterval={200}
-            updateWhenZooming={false}
-        />
+        <ParchmentWorldBackdrop />
         
         <GeoJSON 
             data={geoJsonData} 
@@ -355,6 +471,8 @@ export function ControlledPowiatyMap({
         />
 
         <MapController correctName={revealedName} geoJsonData={geoJsonData} isGameOver={isGameOver} />
+        <MapCartographicTexture />
+        <MapPaperEdge bounds={WORLD_SHEET_BOUNDS} />
       </MapContainer>
     </div>
   );

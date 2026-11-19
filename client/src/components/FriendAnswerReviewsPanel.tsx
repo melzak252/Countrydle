@@ -64,38 +64,38 @@ function ReviewCard({ item, onSaved }: { item: Evidence; onSaved: () => void }) 
   return (
     <article className="admin-panel min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="break-words text-lg font-semibold text-sand-100">{item.target.name} · {modesT(`adminModes.modes.${item.mode}`, { defaultValue: item.mode })}</h3>
+        <h3 className="break-words text-lg font-semibold text-app-text">{item.target.name} · {modesT(`adminModes.modes.${item.mode}`, { defaultValue: item.mode })}</h3>
         <span className="admin-badge">{t(`labels.${item.comparison}`, { defaultValue: item.comparison })}</span>
       </div>
       <p className="admin-question break-words">{item.question}</p>
       <div className="grid gap-4 xl:grid-cols-2">
-        <section aria-label={t('humanAnswer')} className="min-w-0 space-y-3 rounded-sm border border-white/10 bg-obsidian-950 p-4">
-          <h4 className="text-base font-semibold text-sand-100">{t('humanAnswer')}</h4>
-          <p className="text-sm text-sand-100">{item.human_answer ? t(`labels.${item.human_answer.toLowerCase()}`, { defaultValue: item.human_answer }) : t('noAnswerSubmitted')}</p>
+        <section aria-label={t('humanAnswer')} className="min-w-0 space-y-3 rounded-sm border border-app-border bg-app-surface-muted p-4">
+          <h4 className="text-base font-semibold text-app-text">{t('humanAnswer')}</h4>
+          <p className="text-sm text-app-text">{item.human_answer ? t(`labels.${item.human_answer.toLowerCase()}`, { defaultValue: item.human_answer }) : t('noAnswerSubmitted')}</p>
           <p className="admin-meta">{formatTime(item.human_answered_at)}</p>
-          <p className="text-sm leading-relaxed text-slate-300">{item.ai_seen_before_answer ? t('aiSeen') : t('aiNotSeen')}</p>
+          <p className="text-sm leading-relaxed text-app-text-secondary">{item.ai_seen_before_answer ? t('aiSeen') : t('aiNotSeen')}</p>
           {item.revisions?.length > 1 && <details className="text-sm">
-            <summary className="cursor-pointer rounded-sm py-2 text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">{t('answerRevisions')}</summary>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-slate-300">
+            <summary className="cursor-pointer rounded-sm py-2 text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">{t('answerRevisions')}</summary>
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-app-text-secondary">
               {item.revisions.map(revision => <li key={revision.revision}>#{revision.revision}: {t(`labels.${revision.answer.toLowerCase()}`, { defaultValue: revision.answer })} · {formatTime(revision.created_at)}</li>)}
             </ol>
           </details>}
         </section>
-        <section aria-label={t('privateAiRecommendation')} className="min-w-0 space-y-3 rounded-sm border border-white/10 bg-obsidian-950 p-4">
-          <h4 className="text-base font-semibold text-sand-100">{t('privateAiRecommendation')}</h4>
-          <p className="text-sm text-sand-100">{t(`labels.${(item.ai?.answer || item.ai?.status || 'pending').toLowerCase()}`, { defaultValue: item.ai?.answer || item.ai?.status || 'pending' })}</p>
-          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{item.ai?.explanation || t('noExplanation')}</p>
+        <section aria-label={t('privateAiRecommendation')} className="min-w-0 space-y-3 rounded-sm border border-app-border bg-app-surface-muted p-4">
+          <h4 className="text-base font-semibold text-app-text">{t('privateAiRecommendation')}</h4>
+          <p className="text-sm text-app-text">{t(`labels.${(item.ai?.answer || item.ai?.status || 'pending').toLowerCase()}`, { defaultValue: item.ai?.answer || item.ai?.status || 'pending' })}</p>
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-app-text-secondary">{item.ai?.explanation || t('noExplanation')}</p>
           <p className="admin-meta break-words">{item.ai?.source || t('sourceUnavailable')} · {formatTime(item.ai?.completed_at || null)}</p>
         </section>
       </div>
       {item.reports?.length > 0 && <section className="space-y-2">
-        <h4 className="text-base font-semibold text-sand-100">{t('postGameReports')}</h4>
-        {item.reports.map((report, index) => <p key={index} className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{report.comment} <span className="admin-meta">({formatTime(report.created_at)})</span></p>)}
+        <h4 className="text-base font-semibold text-app-text">{t('postGameReports')}</h4>
+        {item.reports.map((report, index) => <p key={index} className="whitespace-pre-wrap break-words text-sm leading-relaxed text-app-text-secondary">{report.comment} <span className="admin-meta">({formatTime(report.created_at)})</span></p>)}
       </section>}
       <details className="text-sm">
-        <summary className="cursor-pointer rounded-sm py-2 text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">{t('diagnosticEvidence')}</summary>
+        <summary className="cursor-pointer rounded-sm py-2 text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">{t('diagnosticEvidence')}</summary>
         <p className="admin-meta mt-2 break-all">{t('recordIds', { matchId: item.match_id, questionId: item.id })}</p>
-        <pre tabIndex={0} aria-label={t('diagnosticEvidence')} className="admin-diagnostics mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-sm bg-black/30 p-3">{JSON.stringify(item.ai?.evidence ?? {}, null, 2)}</pre>
+        <pre tabIndex={0} aria-label={t('diagnosticEvidence')} className="admin-diagnostics mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-sm bg-app-surface-muted p-3">{JSON.stringify(item.ai?.evidence ?? {}, null, 2)}</pre>
       </details>
       <div className="grid gap-4 xl:grid-cols-[minmax(12rem,0.4fr)_minmax(0,1fr)]">
         <label className="admin-field">
@@ -109,7 +109,7 @@ function ReviewCard({ item, onSaved }: { item: Evidence; onSaved: () => void }) 
           <textarea className={`${control} min-h-24 w-full`} value={note} maxLength={2000} onChange={event => setNote(event.target.value)} disabled={saving} />
         </label>
       </div>
-      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+      {error && <p role="alert" className="rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</p>}
       <button type="button" className="admin-button admin-button-primary" onClick={() => void save()} disabled={saving}>{saving ? t('saving') : t('saveReview')}</button>
     </article>
   );
@@ -141,8 +141,8 @@ export default function FriendAnswerReviewsPanel() {
 
   return (
     <section aria-labelledby="admin-page-title" className="min-w-0 space-y-5">
-      <details className="admin-panel text-sm leading-relaxed text-slate-300">
-        <summary className="cursor-pointer rounded-sm text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300">{t('reviewCaveatTitle')}</summary>
+      <details className="admin-panel text-sm leading-relaxed text-app-text-secondary">
+        <summary className="cursor-pointer rounded-sm text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">{t('reviewCaveatTitle')}</summary>
         <p className="mt-3">{t('reviewCaveat')}</p>
       </details>
       <div className="admin-toolbar">
@@ -161,14 +161,14 @@ export default function FriendAnswerReviewsPanel() {
         </label>
         <button type="button" className="admin-button" onClick={retry} disabled={loading}>{t('refresh')}</button>
       </div>
-      {loading && <p role="status" className="text-sm text-slate-300">{t('loading')}</p>}
-      {current?.error && <div className="space-y-3" role="alert">
-        <p className="text-sm text-rose-300">{current.error}</p>
+      {loading && <p role="status" className="text-sm text-app-text-secondary">{t('loading')}</p>}
+      {current?.error && <div className="space-y-3 rounded-sm border border-rose-200 bg-rose-50 p-3" role="alert">
+        <p className="text-sm text-rose-900">{current.error}</p>
         <button type="button" className="admin-button" onClick={retry}>{t('retry')}</button>
       </div>}
       {current && !current.error && <>
         <p role="status" className="admin-meta">{t('matchingQuestions', { count: current.total })}</p>
-        {current.items.length === 0 && <p className="text-sm text-slate-300">{t('empty')}</p>}
+        {current.items.length === 0 && <p className="text-sm text-app-text-secondary">{t('empty')}</p>}
         <div className="space-y-4">
           {current.items.map(item => <ReviewCard key={`${item.mode}:${item.id}:${query.revision}`} item={item} onSaved={() => setQuery(previous => ({ ...previous, revision: previous.revision + 1 }))} />)}
         </div>

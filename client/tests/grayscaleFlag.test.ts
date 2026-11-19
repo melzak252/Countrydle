@@ -201,6 +201,22 @@ describe('selectColorHintFamily', () => {
 });
 
 describe('transformFlagPixels', () => {
+  it('lifts grayscale blacks while preserving the light-to-dark range', () => {
+    const transformed = transformFlagPixels(
+      makeBuffer([
+        [0, 0, 0, 255],
+        [128, 128, 128, 255],
+        [255, 255, 255, 255],
+      ]),
+      { revealColorFamily: null }
+    );
+
+    expect(transformed[0]).toBe(48);
+    expect(transformed[4]).toBeGreaterThan(transformed[0]);
+    expect(transformed[4]).toBeLessThan(transformed[8]);
+    expect(transformed[8]).toBe(255);
+  });
+
   it('converts all pixels to luminance grayscale when revealColorFamily is null', () => {
     const pixels: Array<[number, number, number, number]> = [
       [255, 0, 0, 255], // Red
@@ -220,31 +236,28 @@ describe('transformFlagPixels', () => {
       expect(g).toBe(b);
     }
 
-    // Perceptual luminance check:
-    // Red: 0.299 * 255 = 76.245 -> 76
-    expect(transformed[0]).toBe(76);
-    expect(transformed[1]).toBe(76);
-    expect(transformed[2]).toBe(76);
+    // Luminance is lifted to keep grayscale flag content distinct from a dark UI surface.
+    expect(transformed[0]).toBe(110);
+    expect(transformed[1]).toBe(110);
+    expect(transformed[2]).toBe(110);
 
-    // Green: 0.587 * 255 = 149.685 -> 150
-    expect(transformed[4]).toBe(150);
-    expect(transformed[5]).toBe(150);
-    expect(transformed[6]).toBe(150);
+    expect(transformed[4]).toBe(170);
+    expect(transformed[5]).toBe(170);
+    expect(transformed[6]).toBe(170);
 
-    // Blue: 0.114 * 255 = 29.07 -> 29
-    expect(transformed[8]).toBe(29);
-    expect(transformed[9]).toBe(29);
-    expect(transformed[10]).toBe(29);
+    expect(transformed[8]).toBe(72);
+    expect(transformed[9]).toBe(72);
+    expect(transformed[10]).toBe(72);
 
-    // White: 255
+    // White remains white.
     expect(transformed[12]).toBe(255);
     expect(transformed[13]).toBe(255);
     expect(transformed[14]).toBe(255);
 
-    // Black: 0
-    expect(transformed[16]).toBe(0);
-    expect(transformed[17]).toBe(0);
-    expect(transformed[18]).toBe(0);
+    // Black is lifted to the darkest paper-safe grayscale.
+    expect(transformed[16]).toBe(48);
+    expect(transformed[17]).toBe(48);
+    expect(transformed[18]).toBe(48);
   });
 
   it('preserves exact (r, g, b) of blue pixels while converting red, yellow, and others to grayscale', () => {
@@ -264,18 +277,18 @@ describe('transformFlagPixels', () => {
     expect(transformed[3]).toBe(255);
 
     // Red pixel converted to grayscale
-    expect(transformed[4]).toBe(76);
-    expect(transformed[5]).toBe(76);
-    expect(transformed[6]).toBe(76);
+    expect(transformed[4]).toBe(110);
+    expect(transformed[5]).toBe(110);
+    expect(transformed[6]).toBe(110);
     expect(transformed[7]).toBe(255);
 
-    // Yellow pixel converted to grayscale: 0.299 * 255 + 0.587 * 255 = 225.93 -> 226
-    expect(transformed[8]).toBe(226);
-    expect(transformed[9]).toBe(226);
-    expect(transformed[10]).toBe(226);
+    // Yellow remains distinguishable in grayscale while highlights stay close to white.
+    expect(transformed[8]).toBe(231);
+    expect(transformed[9]).toBe(231);
+    expect(transformed[10]).toBe(231);
     expect(transformed[11]).toBe(255);
 
-    // White pixel converted to grayscale: 255
+    // White remains white.
     expect(transformed[12]).toBe(255);
     expect(transformed[13]).toBe(255);
     expect(transformed[14]).toBe(255);

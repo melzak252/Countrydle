@@ -374,10 +374,10 @@ export default function ModeGuidePage() {
 
   if (!mode) {
     return (
-      <div className="mx-auto max-w-4xl space-y-5 py-8">
-        <h1 className="font-serif text-4xl text-sand-100">Mode guide not found</h1>
-        <p className="text-base leading-7 text-zinc-400">This address does not match an available daily-mode guide.</p>
-        <Link to="/explore" className="text-emerald-300 underline underline-offset-4">Return to Geography Explorer</Link>
+      <div className="mx-auto max-w-4xl space-y-5 bg-app-canvas py-8 text-app-text">
+        <h1 className="font-serif text-4xl text-app-text">Mode guide not found</h1>
+        <p className="text-base leading-7 text-app-text-secondary">This address does not match an available daily-mode guide.</p>
+        <Link to="/explore" className="text-app-accent underline underline-offset-4">Return to Geography Explorer</Link>
       </div>
     );
   }
@@ -385,35 +385,35 @@ export default function ModeGuidePage() {
   const isCountryMode = normalizedId === 'countrydle' || normalizedId === 'flagdle' || (normalizedId !== undefined && normalizedId in CONTINENTAL_MODES);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 py-5 text-zinc-300 md:space-y-10 md:py-10">
-      <Link to="/explore" className="inline-flex items-center gap-2 text-sm text-emerald-300 underline underline-offset-4">
+    <div className="mx-auto max-w-4xl space-y-8 bg-app-canvas py-5 text-app-text md:space-y-10 md:py-10">
+      <Link to="/explore" className="inline-flex items-center gap-2 text-sm text-app-accent underline underline-offset-4">
         <ArrowLeft size={16} aria-hidden="true" />
         Back to Geography Explorer
       </Link>
       
-      <header className="border-b border-white/10 pb-8">
-        <p className="mb-4 flex items-center gap-2 font-mono text-xs text-emerald-400">
+      <header className="border-b border-app-border pb-8">
+        <p className="mb-4 flex items-center gap-2 font-mono text-xs text-app-accent">
           <BookOpen size={14} aria-hidden="true" />
           Mode deduction guide
         </p>
-        <h1 className="font-serif text-4xl leading-tight text-sand-100 sm:text-5xl">{mode.name}</h1>
+        <h1 className="font-serif text-4xl leading-tight text-app-text sm:text-5xl">{mode.name}</h1>
         <p className="mt-4 text-base leading-7">{mode.description}</p>
         <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4">
-            <dt className="text-zinc-400">Candidate pool</dt>
-            <dd className="mt-2 text-sand-100">{mode.pool}</dd>
+          <div className="rounded-sm border border-app-border bg-app-surface p-4">
+            <dt className="text-app-text-muted">Candidate pool</dt>
+            <dd className="mt-2 text-app-text">{mode.pool}</dd>
           </div>
-          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4">
-            <dt className="text-zinc-400">Questions</dt>
-            <dd className="mt-2 text-emerald-300">{mode.questions}</dd>
+          <div className="rounded-sm border border-app-border bg-app-surface p-4">
+            <dt className="text-app-text-muted">Questions</dt>
+            <dd className="mt-2 text-app-accent">{mode.questions}</dd>
           </div>
-          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4">
-            <dt className="text-zinc-400">Guesses</dt>
-            <dd className="mt-2 text-sand-100">{mode.guesses}</dd>
+          <div className="rounded-sm border border-app-border bg-app-surface p-4">
+            <dt className="text-app-text-muted">Guesses</dt>
+            <dd className="mt-2 text-app-text">{mode.guesses}</dd>
           </div>
-          <div className="rounded-sm border border-white/10 bg-obsidian-900 p-4">
-            <dt className="text-zinc-400">Daily reset</dt>
-            <dd className="mt-2 text-sand-100">00:00 UTC</dd>
+          <div className="rounded-sm border border-app-border bg-app-surface p-4">
+            <dt className="text-app-text-muted">Daily reset</dt>
+            <dd className="mt-2 text-app-text">00:00 UTC</dd>
           </div>
         </dl>
       </header>
@@ -424,7 +424,7 @@ export default function ModeGuidePage() {
             key={id}
             to={`/explore/modes/${id}`}
             aria-current={id === normalizedId ? 'page' : undefined}
-            className="text-emerald-300 underline underline-offset-4"
+            className="text-app-accent underline underline-offset-4"
           >
             {item.name.split(' — ')[0]}
           </Link>
@@ -433,14 +433,14 @@ export default function ModeGuidePage() {
 
       {/* Strategy Section */}
       <section aria-labelledby="mode-strategy" className="space-y-4">
-        <h2 id="mode-strategy" className="flex items-center gap-2 font-serif text-2xl text-sand-100">
+        <h2 id="mode-strategy" className="flex items-center gap-2 font-serif text-2xl text-app-text">
           <Compass size={22} aria-hidden="true" />
           Questions that make useful distinctions
         </h2>
         <p className="text-base leading-7">
           Choose a question for the candidates you actually have left. A balanced yes/no split can be useful, but neither answer is guaranteed to eliminate half the pool; overlapping categories and missing facts matter. Prefer explicit predicates to vague terms such as nearby or large.
         </p>
-        <ol className="list-decimal space-y-4 pl-6 marker:text-emerald-400">
+        <ol className="list-decimal space-y-4 pl-6 marker:text-app-accent">
           {mode.tips.map((tip) => (
             <li key={tip} className="pl-2 text-base leading-7">{tip}</li>
           ))}
@@ -448,25 +448,25 @@ export default function ModeGuidePage() {
       </section>
 
       {/* Worked Example */}
-      <section aria-labelledby="mode-example" className="space-y-4 rounded-sm border border-white/10 bg-obsidian-900 p-5 sm:p-6">
-        <h2 id="mode-example" className="font-serif text-2xl text-sand-100">Worked example: {mode.example.title}</h2>
-        <p className="text-sm leading-6 text-zinc-400">Illustrative examples explain current fact and eligibility logic. They are not today’s hidden target, measured player results or recorded provider responses.</p>
-        <ol className="list-decimal space-y-3 pl-6 marker:text-emerald-400">
+      <section aria-labelledby="mode-example" className="space-y-4 rounded-sm border border-app-border bg-app-surface p-5 sm:p-6">
+        <h2 id="mode-example" className="font-serif text-2xl text-app-text">Worked example: {mode.example.title}</h2>
+        <p className="text-sm leading-6 text-app-text-secondary">Illustrative examples explain current fact and eligibility logic. They are not today’s hidden target, measured player results or recorded provider responses.</p>
+        <ol className="list-decimal space-y-3 pl-6 marker:text-app-accent">
           {mode.example.steps.map((step) => (
             <li key={step} className="pl-2 text-base leading-7">{step}</li>
           ))}
         </ol>
-        <p className="border-t border-white/10 pt-4 text-base leading-7">{mode.example.lesson}</p>
+        <p className="border-t border-app-border pt-4 text-base leading-7">{mode.example.lesson}</p>
         {normalizedId === 'countrydle' && (
-          <p className="text-sm text-zinc-400">
-            Geography source: <a href="https://www.britannica.com/place/Poland" className="text-emerald-300 underline underline-offset-4">Encyclopaedia Britannica, Poland</a>.
+          <p className="text-sm text-app-text-secondary">
+            Geography source: <a href="https://www.britannica.com/place/Poland" className="text-app-accent underline underline-offset-4">Encyclopaedia Britannica, Poland</a>.
           </p>
         )}
       </section>
 
       {/* Mode-Specific Geographic Reference & Regional Breakdown */}
-      <section aria-labelledby="mode-reference" className="space-y-5 border-t border-white/10 pt-8">
-        <h2 id="mode-reference" className="flex items-center gap-2 font-serif text-2xl text-sand-100">
+      <section aria-labelledby="mode-reference" className="space-y-5 border-t border-app-border pt-8">
+        <h2 id="mode-reference" className="flex items-center gap-2 font-serif text-2xl text-app-text">
           <Globe size={22} aria-hidden="true" />
           {mode.reference.heading}
         </h2>
@@ -477,25 +477,25 @@ export default function ModeGuidePage() {
         </div>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {mode.reference.keyFacts.map((fact, idx) => (
-            <div key={idx} className="rounded-sm border border-white/10 bg-obsidian-900 p-4">
-              <span className="font-mono text-xs text-emerald-400 block font-semibold">{fact.label}</span>
-              <span className="text-sm text-sand-100 block mt-1">{fact.detail}</span>
+            <div key={idx} className="rounded-sm border border-app-border bg-app-surface p-4">
+              <span className="font-mono text-xs text-app-accent block font-semibold">{fact.label}</span>
+              <span className="text-sm text-app-text block mt-1">{fact.detail}</span>
             </div>
           ))}
         </div>
       </section>
 
       {normalizedId === 'powiaty' && (
-        <section aria-labelledby="county-flag-games" className="space-y-3 border-t border-white/10 pt-8">
-          <h2 id="county-flag-games" className="font-serif text-2xl text-sand-100">Explore county flags</h2>
-          <p className="text-base leading-7">The <Link to="/flagi-powiatow" className="text-emerald-300 underline">county flag challenge</Link> uses verified flags of land and city counties, with eight guesses and registration plate hints after five wrong guesses. The <Link to="/quiz-flag-powiatow" className="text-emerald-300 underline">flag grid quiz</Link> includes the available verified flags, not necessarily every county. A city’s flag is not automatically the flag of its surrounding land county.</p>
+        <section aria-labelledby="county-flag-games" className="space-y-3 border-t border-app-border pt-8">
+          <h2 id="county-flag-games" className="font-serif text-2xl text-app-text">Explore county flags</h2>
+          <p className="text-base leading-7">The <Link to="/flagi-powiatow" className="text-app-accent underline">county flag challenge</Link> uses verified flags of land and city counties, with eight guesses and registration plate hints after five wrong guesses. The <Link to="/quiz-flag-powiatow" className="text-app-accent underline">flag grid quiz</Link> includes the available verified flags, not necessarily every county. A city’s flag is not automatically the flag of its surrounding land county.</p>
         </section>
       )}
 
       {/* Conventions for Country Modes */}
       {isCountryMode && (
-        <section aria-labelledby="country-conventions" className="space-y-5 border-t border-white/10 pt-8">
-          <h2 id="country-conventions" className="font-serif text-2xl text-sand-100">Catalog, continent and disputed-region conventions</h2>
+        <section aria-labelledby="country-conventions" className="space-y-5 border-t border-app-border pt-8">
+          <h2 id="country-conventions" className="font-serif text-2xl text-app-text">Catalog, continent and disputed-region conventions</h2>
           <p className="text-base leading-7">
             The current worldwide pool has 195 playable countries. Kosovo is included; Israel is excluded from playable targets and guesses without removing its canonical geography or historical facts. This is a game eligibility policy, not a diplomatic recognition rule. Use the current game suggestions as the candidate list; dependencies and disputed regions shown on a map are not automatically separate guesses.
           </p>
@@ -515,8 +515,8 @@ export default function ModeGuidePage() {
       )}
 
       {/* Budgets & Scoring */}
-      <section aria-labelledby="mode-scoring" className="space-y-4 border-t border-white/10 pt-8">
-        <h2 id="mode-scoring" className="font-serif text-2xl text-sand-100">Budgets and scoring</h2>
+      <section aria-labelledby="mode-scoring" className="space-y-4 border-t border-app-border pt-8">
+        <h2 id="mode-scoring" className="font-serif text-2xl text-app-text">Budgets and scoring</h2>
         <p className="text-base leading-7">
           {normalizedId === 'flagdle'
             ? 'Flagdle uses 12 guesses with unlimited optional helper questions. Its win score combines +500 base points, a guess bonus from +1,500 on the first guess to +50 on the twelfth, up to +300 speed points over 3 minutes, and up to +500 streak points. It has no question-efficiency bonus.'
@@ -528,8 +528,8 @@ export default function ModeGuidePage() {
       </section>
 
       {/* Sources & Editorial Limits */}
-      <section aria-labelledby="mode-sources" className="space-y-4 border-t border-white/10 pt-8">
-        <h2 id="mode-sources" className="font-serif text-2xl text-sand-100">Sources, limits and corrections</h2>
+      <section aria-labelledby="mode-sources" className="space-y-4 border-t border-app-border pt-8">
+        <h2 id="mode-sources" className="font-serif text-2xl text-app-text">Sources, limits and corrections</h2>
         <p className="text-base leading-7">
           {isCountryMode
             ? 'Country facts combine REST Countries, CIA World Factbook profiles distributed through factbook.json, and curated additions. Some facts are extracted from Wikipedia text using AI.'
@@ -540,13 +540,13 @@ export default function ModeGuidePage() {
           Supported templates and local facts reduce dependence on AI-generated answers, but data and interpretation can be wrong or outdated. Questions outside local coverage may use retrieved article text or general knowledge through AI fallback. An explanation is not proof of human verification.
         </p>
         <p className="text-base leading-7">
-          Read the <Link to="/about" className="text-emerald-300 underline underline-offset-4">source inventory</Link>, <Link to="/how-it-works" className="text-emerald-300 underline underline-offset-4">answer-engine explanation</Link> and <Link to="/faq" className="text-emerald-300 underline underline-offset-4">FAQ</Link>. To request a correction, <Link to="/contact" className="text-emerald-300 underline underline-offset-4">contact us</Link> with the mode, date, exact question, answer, explanation and supporting source. Avoid posting today’s target publicly.
+          Read the <Link to="/about" className="text-app-accent underline underline-offset-4">source inventory</Link>, <Link to="/how-it-works" className="text-app-accent underline underline-offset-4">answer-engine explanation</Link> and <Link to="/faq" className="text-app-accent underline underline-offset-4">FAQ</Link>. To request a correction, <Link to="/contact" className="text-app-accent underline underline-offset-4">contact us</Link> with the mode, date, exact question, answer, explanation and supporting source. Avoid posting today’s target publicly.
         </p>
       </section>
 
       <Link
         to={mode.path}
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-5 py-3 font-semibold text-obsidian-950 hover:bg-emerald-300"
+        className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-app-accent px-5 py-3 font-semibold text-app-canvas hover:bg-app-accent-hover"
       >
         <Play size={16} aria-hidden="true" />
         Play {mode.name.split(' — ')[0]}

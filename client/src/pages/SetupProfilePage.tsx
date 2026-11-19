@@ -37,20 +37,20 @@ export default function SetupProfilePage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow-xl sm:p-8">
+      <div className="w-full max-w-md rounded-sm border border-app-border bg-app-surface p-4 shadow-xl sm:p-8">
         
-        <h2 className="text-2xl font-semibold mb-2 text-center">Set up your profile</h2>
-        <p className="text-zinc-400 text-center mb-8">Please choose a nickname to get started.</p>
+        <h2 className="text-2xl font-semibold mb-2 text-center text-app-text">Set up your profile</h2>
+        <p className="text-app-text-secondary text-center mb-8">Please choose a nickname to get started.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Nickname</label>
+            <label className="block text-sm font-medium text-app-text-secondary mb-1">Nickname</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your nickname"
-              className="min-h-11 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-base focus:border-emerald-500 focus:outline-none transition-colors"
+              className="min-h-11 w-full rounded-sm border border-app-border bg-app-surface-muted px-4 py-2 text-base text-app-text focus:border-app-accent focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-app-focus transition-colors"
               required
               minLength={3}
               maxLength={30}
@@ -61,7 +61,7 @@ export default function SetupProfilePage() {
           <button
             type="submit"
             disabled={loading || !username.trim()}
-            className="flex min-h-11 w-full items-center justify-center rounded-lg bg-emerald-400 py-2 font-medium text-obsidian-950 transition-colors hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 w-full items-center justify-center rounded-sm bg-app-accent py-2 font-medium text-app-canvas transition-colors hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" size={20} /> : 'Start Playing'}
           </button>

@@ -7,11 +7,11 @@ from db.repositories.participation import _participants
 
 
 def _admin_identities(start=None, end=None):
-    # Existing active participation includes the new heraldry and quiz sessions.
-    active = _participants(start, end)
+    """Count only active gameplay sessions (no empty page-opens, no double-counted synced guests)."""
+    active = _admin_active_identities(start, end)
     branches = [select(active.c.date, active.c.mode, active.c.day_id, active.c.identity)]
     for key, cfg in ADMIN_MODE_CONFIGS.items():
-        day, state, question, guess = cfg.day_model, cfg.state_model, cfg.question_model, cfg.guess_model
+        day, guess = cfg.day_model, cfg.guess_model
         mode = literal('continental:') + cast(day.continent, String) if key == 'continental' else literal(key)
         day_id = cast(day.id, String)
         filters = []
@@ -19,26 +19,14 @@ def _admin_identities(start=None, end=None):
             filters.append(day.date >= start)
         if end is not None:
             filters.append(day.date <= end)
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'),
-                               (literal('user:') + cast(state.user_id, String)).label('identity'))
-                        .select_from(state).join(day, day.id == state.day_id).where(state.user_id.is_not(None), *filters))
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'),
-                               (literal('guest:') + GuestParticipation.guest_id).label('identity'))
-                        .select_from(GuestParticipation).join(day, day.id == GuestParticipation.day_id)
-                        .where(GuestParticipation.mode == mode, GuestParticipation.user_id.is_(None), *filters))
-        guest_identity = (literal('guest:') + question.guest_id) if hasattr(question, 'guest_id') else cast(null(), String)
-        author = case((question.user_id.is_not(None), literal('user:') + cast(question.user_id, String)),
-                      else_=guest_identity)
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'), author.label('identity'))
-                        .select_from(question).join(day, day.id == question.day_id).where(*filters))
-        # Legacy anonymous guesses with no guest attribution form one opaque
-        # session per puzzle, not an identified person.
-        anonymous = [guess.user_id.is_(None)]
+        # Legacy anonymous guesses with no user or guest attribution still count as 1 session per puzzle.
+        anonymous = [guess.user_id.is_(None), guess.answer.is_not(None)]
         if hasattr(guess, 'guest_id'):
             anonymous.append(guess.guest_id.is_(None))
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'),
-                               cast(null(), String).label('identity'))
-                        .select_from(guess).join(day, day.id == guess.day_id).where(*anonymous, *filters))
+        branches.append(
+            select(day.date, mode.label('mode'), day_id.label('day_id'), cast(null(), String).label('identity'))
+            .select_from(guess).join(day, day.id == guess.day_id).where(*anonymous, *filters)
+        )
     rows = union_all(*branches).subquery()
     return select(rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity).group_by(
         rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity

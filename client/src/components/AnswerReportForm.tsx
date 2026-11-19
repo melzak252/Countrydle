@@ -73,7 +73,7 @@ export default function AnswerReportForm({ mode, questionId, reportToken, compac
   };
 
   return (
-    <div className={`border-t border-white/10 ${compact ? 'px-3 py-1.5' : 'px-4 py-3'}`}>
+    <div className={`border-t border-app-border/15 ${compact ? 'px-3 py-1.5' : 'px-4 py-3'}`}>
       <button
         ref={triggerRef}
         type="button"
@@ -81,20 +81,20 @@ export default function AnswerReportForm({ mode, questionId, reportToken, compac
         disabled={pending || reported}
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
-        className="inline-flex min-h-8 items-center gap-2 rounded-sm text-xs text-zinc-400 transition-colors hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400 disabled:cursor-default disabled:opacity-60"
+        className="inline-flex min-h-8 items-center gap-2 rounded-sm text-xs text-app-text-secondary transition-colors hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus disabled:cursor-default disabled:opacity-60"
       >
         <Flag size={13} aria-hidden="true" />
         {reported ? 'Reported' : 'Report answer'}
       </button>
-      <p role="status" className={reported ? 'mt-2 text-sm leading-6 text-emerald-300' : 'sr-only'}>
+      <p role="status" className={reported ? 'mt-2 text-sm leading-6 text-emerald-800' : 'sr-only'}>
         {status === 'submitted' ? 'Report sent. Thank you for helping improve the answers.' : status === 'duplicate' ? 'This answer has already been reported. Thank you.' : pending ? 'Sending report…' : ''}
       </p>
       {isOpen && (
         <div id={`${id}-panel`} className="mt-3">
           <form onSubmit={handleSubmit} aria-busy={pending} className="space-y-3">
             <div>
-              <label htmlFor={`${id}-comment`} className="mb-2 block text-sm font-medium text-sand-100">What seems wrong?</label>
-              <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-zinc-400">Explain why you think this answer or question assessment is incorrect. Reporting does not change your game.</p>
+              <label htmlFor={`${id}-comment`} className="mb-2 block text-sm font-medium text-app-text">What seems wrong?</label>
+              <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-app-text-secondary">Explain why you think this answer or question assessment is incorrect. Reporting does not change your game.</p>
               <textarea
                 id={`${id}-comment`}
                 value={comment}
@@ -104,21 +104,21 @@ export default function AnswerReportForm({ mode, questionId, reportToken, compac
                 rows={4}
                 readOnly={pending}
                 aria-describedby={`${id}-help ${id}-count${error ? ` ${id}-error` : ''}`}
-                className="block w-full resize-y rounded-sm border border-white/15 bg-obsidian-900 px-3 py-2.5 text-base leading-6 text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 read-only:opacity-60"
+                className="block w-full resize-y rounded-sm border border-app-border/20 bg-app-surface-raised px-3 py-2.5 text-base leading-6 text-app-text focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus/20 read-only:opacity-60"
               />
-              <p id={`${id}-count`} className="mt-1 text-right font-mono text-xs text-zinc-500">{comment.length} / 2,000</p>
+              <p id={`${id}-count`} className="mt-1 text-right font-mono text-xs text-app-text-muted">{comment.length} / 2,000</p>
             </div>
-            {error && <p id={`${id}-error`} role="alert" className="text-sm leading-6 text-rose-300">{error}</p>}
+            {error && <p id={`${id}-error`} role="alert" className="text-sm leading-6 text-rose-700">{error}</p>}
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="submit"
                 disabled={pending || !comment.trim()}
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-app-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {pending && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
                 {pending ? 'Sending…' : 'Send report'}
               </button>
-              <button type="button" onClick={close} disabled={pending} className="min-h-10 rounded-sm px-2 py-2 text-sm text-zinc-400 hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={close} disabled={pending} className="min-h-10 rounded-sm px-2 py-2 text-sm text-app-text-secondary hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
             </div>
           </form>
         </div>

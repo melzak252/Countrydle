@@ -65,7 +65,7 @@ export default function AdminSuggestionsTab() {
       {isLoading ? (
         <p role="status" className="admin-panel">{t('adminSuggestions.loading')}</p>
       ) : error ? (
-        <div role="alert" className="admin-panel border-rose-400/40 text-rose-200">
+        <div role="alert" className="admin-panel border-rose-200 bg-rose-50 text-rose-900">
           <p>{t('adminSuggestions.error')}</p>
           <button type="button" onClick={refresh} className="admin-button admin-button-danger mt-3">{t('adminSuggestions.retry')}</button>
         </div>
@@ -82,19 +82,19 @@ export default function AdminSuggestionsTab() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <span className="admin-badge">{t(`suggestion.topics.${suggestion.topic}`)}</span>
-                    <span className="text-sm text-slate-300">{suggestion.reporter_username || t('adminSuggestions.guest')}</span>
+                    <span className="text-sm text-app-text-secondary">{suggestion.reporter_username || t('adminSuggestions.guest')}</span>
                   </div>
                   <time dateTime={createdAt} className="admin-meta shrink-0">
                     {new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(createdAt))}
                   </time>
                 </div>
                 {(suggestion.name || suggestion.email) && (
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-300">
-                    {suggestion.name && <span>{t('adminSuggestions.name')}: <span className="break-words text-sand-100">{suggestion.name}</span></span>}
-                    {suggestion.email && <span>{t('adminSuggestions.email')}: <a href={`mailto:${suggestion.email}`} className="break-all text-emerald-300 underline underline-offset-2">{suggestion.email}</a></span>}
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-app-text-secondary">
+                    {suggestion.name && <span>{t('adminSuggestions.name')}: <span className="break-words text-app-text">{suggestion.name}</span></span>}
+                    {suggestion.email && <span>{t('adminSuggestions.email')}: <a href={`mailto:${suggestion.email}`} className="break-all text-app-accent underline underline-offset-2">{suggestion.email}</a></span>}
                   </div>
                 )}
-                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-sand-100">{suggestion.message}</p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-app-text">{suggestion.message}</p>
               </article>
             );
           })}

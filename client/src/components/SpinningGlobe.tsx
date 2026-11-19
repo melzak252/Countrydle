@@ -68,8 +68,42 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
     let animationFrameId: number;
     let lastTime = performance.now();
-    let pulseTime = 0;
-
+    const theme = getComputedStyle(canvas);
+    const readRgb = (name: string, fallback: readonly [number, number, number]) => {
+      const channels = theme.getPropertyValue(name).trim().split(/\s+/);
+      if (channels.length < 3) return fallback;
+      const red = Number(channels[0]);
+      const green = Number(channels[1]);
+      const blue = Number(channels[2]);
+      return Number.isFinite(red) && Number.isFinite(green) && Number.isFinite(blue)
+        ? [red, green, blue] as const
+        : fallback;
+    };
+    const rgba = (rgb: readonly [number, number, number], alpha: number) =>
+      `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+    const ink = readRgb('--app-text', [38, 43, 36]);
+    const accent = readRgb('--app-accent', [42, 89, 66]);
+    const surface = readRgb('--app-surface', [250, 248, 240]);
+    const surfaceMuted = readRgb('--app-surface-muted', [237, 234, 223]);
+    const mapTone = accent;
+    const globeColors = {
+      sphereLight: rgba(surface, 0.48),
+      sphereMid: rgba(surfaceMuted, 0.28),
+      sphereEdge: rgba(ink, 0.12),
+      backGrid: rgba(ink, 0.08),
+      grid: rgba(ink, 0.22),
+      equator: rgba(mapTone, 0.42),
+      meridian: rgba(ink, 0.18),
+      landBack: rgba(mapTone, 0.12),
+      landEdge: rgba(mapTone, 0.42),
+      landMid: rgba(mapTone, 0.64),
+      landFront: rgba(mapTone, 0.82),
+      landCenter: rgba(mapTone, 0.94),
+      markerRing: rgba(ink, 0.62),
+      marker: rgba(mapTone, 0.94),
+      outline: rgba(ink, 0.62),
+      tick: rgba(mapTone, 0.72),
+    };
     // Fixed axial tilt (Earth's obliquity: 23.44 degrees)
     const AXIAL_TILT = (23.44 * Math.PI) / 180;
 
@@ -80,7 +114,6 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
     const render = (time: number) => {
       const dt = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
-      if (!motionPreference.matches) pulseTime += dt;
 
       const state = rotationRef.current;
 
@@ -168,7 +201,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
       };
 
 
-      // 2. Translucent Sphere Body (Dark Glass Hologram)
+      // 2. Shaded parchment sphere
       const sphereFill = ctx.createRadialGradient(
         cx - radius * 0.3,
         cy - radius * 0.3,
@@ -177,9 +210,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         cy,
         radius
       );
-      sphereFill.addColorStop(0, 'rgba(16, 185, 129, 0.06)');
-      sphereFill.addColorStop(0.7, 'rgba(6, 18, 15, 0.35)');
-      sphereFill.addColorStop(1, 'rgba(16, 185, 129, 0.12)');
+      sphereFill.addColorStop(0, globeColors.sphereLight);
+      sphereFill.addColorStop(0.72, globeColors.sphereMid);
+      sphereFill.addColorStop(1, globeColors.sphereEdge);
 
       ctx.fillStyle = sphereFill;
       ctx.beginPath();
@@ -241,9 +274,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
             }
             return res;
           },
-          isEquator ? 'rgba(52, 211, 153, 0.32)' : 'rgba(52, 211, 153, 0.16)',
-          'rgba(16, 185, 129, 0.06)',
-          isEquator ? 1.2 : 0.8
+          isEquator ? globeColors.equator : globeColors.grid,
+          globeColors.backGrid,
+          isEquator ? 1 : 0.7
         );
       });
 
@@ -257,13 +290,13 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
             }
             return res;
           },
-          'rgba(52, 211, 153, 0.18)',
-          'rgba(16, 185, 129, 0.05)',
-          0.8
+          globeColors.meridian,
+          globeColors.backGrid,
+          0.7
         );
       }
 
-      // 5. Landmass Dot Constellation
+      // 5. Landmass stipple, shaded by depth
       const frontDots: [number, number, number][] = [];
       const backDots: [number, number, number][] = [];
 
@@ -277,8 +310,8 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         }
       }
 
-      // 5a. Render Back Dots (Translucent Glass Matrix)
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+      // 5a. Back hemisphere stipple
+      ctx.fillStyle = globeColors.landBack;
       ctx.beginPath();
       for (let i = 0; i < backDots.length; i++) {
         const [px, py] = backDots[i];
@@ -287,7 +320,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
       }
       ctx.fill();
 
-      // 5b. Render Front Dots in 4 Depth Tiers for Maximum Performance & Crisp Glow
+      // 5b. Render front dots in four depth tiers
       const tier1: [number, number][] = []; // 0 < z <= 0.25
       const tier2: [number, number][] = []; // 0.25 < z <= 0.5
       const tier3: [number, number][] = []; // 0.5 < z <= 0.75
@@ -308,7 +341,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
       // Tier 1: Rim / Horizon edge
       if (tier1.length > 0) {
-        ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
+        ctx.fillStyle = globeColors.landEdge;
         ctx.beginPath();
         for (let i = 0; i < tier1.length; i++) {
           const [px, py] = tier1[i];
@@ -320,7 +353,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
       // Tier 2: Mid-depth
       if (tier2.length > 0) {
-        ctx.fillStyle = 'rgba(52, 211, 153, 0.55)';
+        ctx.fillStyle = globeColors.landMid;
         ctx.beginPath();
         for (let i = 0; i < tier2.length; i++) {
           const [px, py] = tier2[i];
@@ -332,7 +365,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
 
       // Tier 3: Near-front
       if (tier3.length > 0) {
-        ctx.fillStyle = 'rgba(52, 211, 153, 0.78)';
+        ctx.fillStyle = globeColors.landFront;
         ctx.beginPath();
         for (let i = 0; i < tier3.length; i++) {
           const [px, py] = tier3[i];
@@ -342,9 +375,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         ctx.fill();
       }
 
-      // Tier 4: Direct Facing (High Intensity Emerald Glow)
+      // Tier 4: Direct-facing land
       if (tier4.length > 0) {
-        ctx.fillStyle = '#6ee7b7';
+        ctx.fillStyle = globeColors.landCenter;
         ctx.beginPath();
         for (let i = 0; i < tier4.length; i++) {
           const [px, py] = tier4[i];
@@ -354,48 +387,32 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         ctx.fill();
       }
 
-      // 6. Mystery Location Beacon Ping
+      // 6. Fixed atlas marker for the daily focus point
       const [bx, by, bz] = project(BEACON_LAT, BEACON_LON);
       if (bz > 0) {
-        const pingProgress = (pulseTime * 0.9) % 1; // 0 to 1
-        const pingRadius = 3 + pingProgress * 18;
-        const pingAlpha = Math.max(0, (1 - pingProgress) * 0.75 * bz);
-
-        // Expanding radar wave
-        ctx.strokeStyle = `rgba(52, 211, 153, ${pingAlpha})`;
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = globeColors.markerRing;
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
-        ctx.arc(bx, by, pingRadius, 0, Math.PI * 2);
+        ctx.arc(bx, by, 4, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Pulsing core dot
-        ctx.fillStyle = '#6ee7b7';
+        ctx.fillStyle = globeColors.marker;
         ctx.beginPath();
-        ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+        ctx.arc(bx, by, 1.5, 0, Math.PI * 2);
         ctx.fill();
-
-        // Micro crosshair around beacon
-        ctx.strokeStyle = `rgba(110, 231, 183, ${0.4 * bz})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(bx - 6, by);
-        ctx.lineTo(bx + 6, by);
-        ctx.moveTo(bx, by - 6);
-        ctx.lineTo(bx, by + 6);
-        ctx.stroke();
       }
 
-      // 7. Outer Horizon Perimeter Ring & Ticks
-      ctx.strokeStyle = 'rgba(52, 211, 153, 0.55)';
-      ctx.lineWidth = 1.4;
+      // 7. Inked perimeter and cardinal ticks
+      ctx.strokeStyle = globeColors.outline;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
 
       // Cardinal tick marks
       const ticks = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
-      ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = globeColors.tick;
+      ctx.lineWidth = 1.2;
       ticks.forEach((ang) => {
         const xStart = cx + Math.cos(ang) * (radius - 5);
         const yStart = cy + Math.sin(ang) * (radius - 5);
@@ -407,15 +424,6 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         ctx.stroke();
       });
 
-      // Subtle Center Crosshair
-      ctx.strokeStyle = 'rgba(52, 211, 153, 0.25)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(cx - 10, cy);
-      ctx.lineTo(cx + 10, cy);
-      ctx.moveTo(cx, cy - 10);
-      ctx.lineTo(cx, cy + 10);
-      ctx.stroke();
 
       ctx.restore();
 
@@ -559,26 +567,9 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
           role="img"
         />
 
-        {/* Tactical Corner Crosshair Accents */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 h-3 w-3 border-l border-t border-emerald-500/40"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-0 h-3 w-3 border-r border-t border-emerald-500/40"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 left-0 h-3 w-3 border-b border-l border-emerald-500/40"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 right-0 h-3 w-3 border-b border-r border-emerald-500/40"
-        />
       </div>
 
-      <figcaption className="mt-2 flex w-full items-center justify-between gap-2 border-t border-emerald-500/20 pt-1 text-xs text-emerald-300/80" style={{ maxWidth: size }}>
+      <figcaption className="mt-2 flex w-full items-center justify-between gap-2 border-t border-app-border/40 pt-1 text-xs text-app-text-secondary" style={{ maxWidth: size }}>
         <span className="min-w-0">
           {isInteracting
             ? ('Rotating by hand')
@@ -596,7 +587,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
             ? ('Resume globe rotation')
             : ('Pause globe rotation')}
           aria-pressed={hudCoords.isStopped}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-emerald-300 hover:bg-emerald-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus"
         >
           {hudCoords.isStopped ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
         </button>

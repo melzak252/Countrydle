@@ -431,9 +431,9 @@ export default function FlagShadesPage() {
 
   if (isLoading && !challenge) {
     return (
-      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-app-accent">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
-        <span className="text-sm font-medium text-sand-300">
+        <span className="text-sm font-medium text-app-text-secondary">
           {'Loading Flag Shades...'}
         </span>
       </div>
@@ -443,48 +443,48 @@ export default function FlagShadesPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-6 sm:py-4">
       {/* Header Bar */}
-      <header className="mb-2.5 border-b border-sand-800/80 pb-2.5 sm:mb-6 sm:pb-4 space-y-2 sm:space-y-3">
+      <header className="mb-2.5 border-b border-app-border/30 pb-2.5 sm:mb-6 sm:pb-4 space-y-2 sm:space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
-            <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono font-semibold text-sand-400 sm:mb-1">
+            <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono font-semibold text-app-text-muted sm:mb-1">
               <span className="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                <Palette size={14} className="text-emerald-400 shrink-0" />
+                <Palette size={14} className="text-app-accent shrink-0" />
                 <span>{'Grayscale Deduction'}</span>
               </span>
-              <span className="text-sand-600 hidden min-[340px]:inline select-none" aria-hidden="true">•</span>
-              <span className="whitespace-nowrap shrink-0 text-sand-300">
+              <span className="text-app-text-muted hidden min-[340px]:inline select-none" aria-hidden="true">•</span>
+              <span className="whitespace-nowrap shrink-0 text-app-text-secondary">
                 {mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}
               </span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-sand-100 sm:text-3xl">
+            <h1 className="text-xl font-bold tracking-tight text-app-text sm:text-3xl">
               {'Flag Shades'}
             </h1>
-            <p className="mt-0.5 text-xs text-sand-400 sm:text-sm leading-snug">
+            <p className="mt-0.5 text-xs text-app-text-secondary sm:text-sm leading-snug">
               {'Identify the national flag rendered entirely in shades of grey.'}
             </p>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Guesses Remaining Pill */}
-            <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
-              <span className="mr-1.5 font-mono text-xs text-zinc-400 sm:mr-2">
+            <div className="flex items-center rounded-sm border border-app-border/25 bg-app-surface-raised px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
+              <span className="mr-1.5 font-mono text-xs text-app-text-muted sm:mr-2">
                 {'Guesses:'}
               </span>
               <span
                 className={`font-mono text-sm sm:text-base font-bold ${
-                  guesses.length >= maxGuesses - 2 ? 'text-amber-400' : 'text-emerald-400'
+                  guesses.length >= maxGuesses - 2 ? 'text-amber-800' : 'text-app-accent'
                 }`}
               >
                 {guesses.length}
               </span>
-              <span className="font-mono text-[11px] sm:text-xs text-zinc-500"> / {maxGuesses}</span>
+              <span className="font-mono text-[11px] sm:text-xs text-app-text-muted"> / {maxGuesses}</span>
             </div>
 
             {/* Help Modal Button */}
             <button
               type="button"
               onClick={() => setShowInstructions(true)}
-              className="flex h-11 w-11 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors shrink-0"
+              className="flex h-11 w-11 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-raised text-app-text-secondary hover:border-app-accent/50 hover:text-app-accent transition-colors shrink-0"
               title={'How to play Flag Shades'}
               aria-label={'Instructions'}
             >
@@ -496,7 +496,7 @@ export default function FlagShadesPage() {
               <button
                 type="button"
                 onClick={() => setShowResultsModal(true)}
-                className="flex min-h-[44px] sm:min-h-0 sm:h-9 items-center gap-1.5 px-3 rounded-sm border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer shrink-0"
+                className="flex min-h-[44px] sm:min-h-0 sm:h-9 items-center gap-1.5 px-3 rounded-sm border border-app-accent/30 bg-app-accent/10 text-app-accent hover:bg-app-accent/15 transition-colors text-xs font-semibold cursor-pointer shrink-0"
                 title={'Show results'}
               >
                 <Trophy size={15} />
@@ -507,15 +507,15 @@ export default function FlagShadesPage() {
         </div>
 
         {/* Mode Switcher Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 pt-1 border-t border-white/5">
-          <div className="inline-flex rounded-sm border border-white/10 bg-obsidian-950 p-0.5 sm:p-1 text-xs font-medium">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 pt-1 border-t border-app-border/20">
+          <div className="inline-flex rounded-sm border border-app-border/30 bg-app-surface-muted p-0.5 sm:p-1 text-xs font-medium">
             <button
               type="button"
               onClick={() => handleSwitchMode('daily')}
               className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xs transition-colors cursor-pointer text-[11px] sm:text-xs ${
                 mode === 'daily'
-                  ? 'bg-emerald-500/20 text-emerald-300 font-semibold shadow-xs'
-                  : 'text-zinc-400 hover:text-sand-200'
+                  ? 'bg-app-accent/10 text-app-accent font-semibold shadow-xs'
+                  : 'text-app-text-secondary hover:text-app-text'
               }`}
             >
               📅 {'Daily Puzzle'}
@@ -525,8 +525,8 @@ export default function FlagShadesPage() {
               onClick={() => handleSwitchMode('challenge')}
               className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xs transition-colors cursor-pointer text-[11px] sm:text-xs ${
                 mode === 'challenge'
-                  ? 'bg-emerald-500/20 text-emerald-300 font-semibold shadow-xs'
-                  : 'text-zinc-400 hover:text-sand-200'
+                  ? 'bg-app-accent/10 text-app-accent font-semibold shadow-xs'
+                  : 'text-app-text-secondary hover:text-app-text'
               }`}
             >
               ⚡ {'Challenge Mode'}
@@ -538,7 +538,7 @@ export default function FlagShadesPage() {
               type="button"
               onClick={() => loadChallenge('challenge', `challenge-${Date.now()}`)}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-sm border border-sand-700 bg-sand-900/60 text-sand-200 hover:bg-sand-800 text-[11px] sm:text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-sm border border-app-border/30 bg-app-surface-raised text-app-text-secondary hover:bg-app-surface-muted text-[11px] sm:text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
             >
               <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
               <span>{'New Challenge'}</span>
@@ -567,15 +567,15 @@ export default function FlagShadesPage() {
             <button
               type="button"
               disabled
-              className="flex min-h-[44px] w-full items-center justify-between rounded-sm border border-white/10 bg-obsidian-900/70 px-3 py-2 sm:px-4 sm:py-2.5 text-xs text-zinc-400 cursor-not-allowed opacity-75"
+              className="flex min-h-[44px] w-full items-center justify-between rounded-sm border border-app-border/25 bg-app-surface-muted px-3 py-2 sm:px-4 sm:py-2.5 text-xs text-app-text-secondary cursor-not-allowed"
             >
               <div className="flex items-center gap-2 min-w-0 text-left">
-                <Lock size={15} className="text-zinc-500 shrink-0" />
+                <Lock size={15} className="text-app-text-muted shrink-0" />
                 <span className="leading-snug sm:leading-normal">
                   {`Color Hint unlocks after 3 guesses (${guesses.length}/${hintUnlockThreshold})`}
                 </span>
               </div>
-              <span className="font-mono text-[11px] text-zinc-500 shrink-0 ml-2 whitespace-nowrap">
+              <span className="font-mono text-[11px] text-app-text-muted shrink-0 ml-2 whitespace-nowrap">
                 {hintUnlockThreshold - guesses.length} {'left'}
               </span>
             </button>
@@ -585,7 +585,7 @@ export default function FlagShadesPage() {
             <button
               type="button"
               onClick={handleRevealColorHint}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-sm border border-amber-500/50 bg-amber-950 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-amber-200 transition-colors hover:border-amber-400 hover:bg-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 cursor-pointer"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-amber-900 transition-colors hover:border-amber-400 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-700 cursor-pointer"
             >
               <Palette size={16} className="shrink-0 sm:h-[18px] sm:w-[18px]" />
               <span className="text-center leading-snug sm:leading-normal">
@@ -595,14 +595,14 @@ export default function FlagShadesPage() {
           )}
 
           {!isGameOver && colorHintUsed && (
-            <div className="flex min-h-[44px] items-center justify-between rounded-sm border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 sm:px-4 sm:py-2.5 text-xs text-emerald-300 font-medium">
+            <div className="flex min-h-[44px] items-center justify-between rounded-sm border border-app-accent/30 bg-app-accent/10 px-3 py-2 sm:px-4 sm:py-2.5 text-xs text-app-accent font-medium">
               <div className="flex items-center gap-2 min-w-0 text-left">
-                <Palette size={15} className="text-emerald-400 shrink-0" />
+                <Palette size={15} className="text-app-accent shrink-0" />
                 <span className="leading-snug sm:leading-normal">
                   {`Color Hint Active: ${hintInfo?.colorName || '1 color'} restored (${hintInfo?.sharePct || '≥10'}% of flag)`}
                 </span>
               </div>
-              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-emerald-300 shrink-0 ml-2 whitespace-nowrap">
+              <span className="rounded-sm bg-app-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-app-accent shrink-0 ml-2 whitespace-nowrap">
                 {'Active'}
               </span>
             </div>
@@ -633,14 +633,14 @@ export default function FlagShadesPage() {
                       'Search flag by country name...'
                     }
                     disabled={isSubmitting || isLoading}
-                    className="w-full min-w-0 rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2.5 text-base md:text-sm text-sand-100 placeholder:text-zinc-500 shadow-inner focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-50 sm:px-4 sm:py-3"
+                    className="w-full min-w-0 rounded-sm border border-app-border/35 bg-app-surface-raised px-3 py-2.5 text-base md:text-sm text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus/20 disabled:bg-app-surface-muted disabled:text-app-text-muted disabled:opacity-100 sm:px-4 sm:py-3"
                   />
 
                   {/* Autocomplete Dropdown */}
                   {showSuggestions && filteredCountries.length > 0 && (
                     <div
                       ref={dropdownRef}
-                      className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900 shadow-2xl"
+                      className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-sm border border-app-border/30 bg-app-surface-raised shadow-sm"
                     >
                       {filteredCountries.map((c, idx) => (
                         <button
@@ -652,13 +652,13 @@ export default function FlagShadesPage() {
                           }}
                           className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between ${
                             idx === highlightedIndex
-                              ? 'bg-emerald-500/20 text-emerald-200'
-                              : 'text-sand-100 hover:bg-white/5'
+                              ? 'bg-app-accent/10 text-app-accent'
+                              : 'text-app-text-secondary hover:bg-app-surface-muted'
                           }`}
                         >
                           <span className="font-medium">{c.name}</span>
                           {c.official_name && c.official_name !== c.name && (
-                            <span className="text-xs text-zinc-400 truncate max-w-[200px] ml-2">
+                            <span className="text-xs text-app-text-muted truncate max-w-[200px] ml-2">
                               {c.official_name}
                             </span>
                           )}
@@ -672,7 +672,7 @@ export default function FlagShadesPage() {
                   type="button"
                   onClick={handleSubmitGuess}
                   disabled={isSubmitting || isLoading || !inputVal.trim()}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-3.5 sm:px-4 py-2 text-sm font-semibold text-obsidian-950 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-sm bg-app-accent hover:bg-app-accent-hover px-3.5 sm:px-4 py-2 text-sm font-semibold text-white transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shrink-0"
                 >
                   {isSubmitting ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -692,10 +692,10 @@ export default function FlagShadesPage() {
         {guesses.length > 0 && (
           <section aria-label={'Guess History'} className="mx-auto w-full max-w-xl space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-mono text-zinc-400">
+              <span className="text-xs font-mono text-app-text-secondary">
                 {'Your Guesses'}
               </span>
-              <span className="text-xs font-mono text-zinc-500">
+              <span className="text-xs font-mono text-app-text-muted">
                 {guesses.length} / {maxGuesses}
               </span>
             </div>
@@ -704,28 +704,28 @@ export default function FlagShadesPage() {
               {sortedGuesses.map((g, idx) => (
                 <li
                   key={idx}
-                  className={`rounded-sm border-l-2 bg-obsidian-950 p-3 sm:px-4 sm:py-3 transition-colors ${
-                    g.answer ? 'border-emerald-400 shadow-sm' : 'border-rose-500/60'
+                  className={`rounded-sm border border-app-border/25 border-l-2 bg-app-surface-raised p-3 sm:px-4 sm:py-3 transition-colors ${
+                    g.answer ? 'border-l-app-accent shadow-sm' : 'border-l-rose-400'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       {g.answer ? (
-                        <Check size={18} className="shrink-0 text-emerald-400" aria-hidden="true" />
+                        <Check size={18} className="shrink-0 text-app-accent" aria-hidden="true" />
                       ) : (
-                        <X size={18} className="shrink-0 text-rose-400" aria-hidden="true" />
+                        <X size={18} className="shrink-0 text-rose-700" aria-hidden="true" />
                       )}
-                      <span className="truncate text-sm font-semibold text-sand-100">{g.guess}</span>
+                      <span className="truncate text-sm font-semibold text-app-text">{g.guess}</span>
                     </div>
 
                     {/* Distance & Bearing Arrow */}
                     {g.distance_km !== null && g.distance_km !== undefined && !g.answer && (
-                      <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
-                        <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5">
+                      <div className="flex items-center gap-2 font-mono text-xs text-app-text-secondary">
+                        <span className="rounded-sm border border-app-border/25 bg-app-surface-muted px-2 py-0.5">
                           {g.distance_km.toLocaleString('en-US')} km
                         </span>
                         {g.bearing_arrow && (
-                          <span className="text-emerald-400 text-sm font-bold" title={g.bearing_direction || ''}>
+                          <span className="text-app-accent text-sm font-bold" title={g.bearing_direction || ''}>
                             {g.bearing_arrow}
                           </span>
                         )}
@@ -741,7 +741,7 @@ export default function FlagShadesPage() {
                         {g.matched_symbols.map((sym) => (
                           <span
                             key={sym}
-                            className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[11px] font-mono text-indigo-300"
+                            className="inline-flex items-center gap-1 rounded-sm border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-[11px] font-mono text-indigo-900"
                           >
                             <span>✦</span>
                             <span>{sym}</span>
@@ -756,7 +756,7 @@ export default function FlagShadesPage() {
                         {g.matched_colors.map((c) => (
                           <span
                             key={c}
-                            className="inline-flex items-center rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-mono text-emerald-300"
+                            className="inline-flex items-center rounded-sm border border-app-accent/30 bg-app-accent/10 px-1.5 py-0.5 text-[10px] font-mono text-app-accent"
                           >
                             ✓ {c}
                           </span>
@@ -774,24 +774,24 @@ export default function FlagShadesPage() {
         {isGameOver && (
           <section
             aria-label={'Game Result Summary'}
-            className="mx-auto w-full max-w-xl rounded-sm border border-emerald-500/30 bg-obsidian-950 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            className="mx-auto w-full max-w-xl rounded-sm border border-app-accent/30 bg-app-surface-raised p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
             <div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="font-mono text-xs text-emerald-400 font-semibold whitespace-nowrap">
+                <span className="font-mono text-xs text-app-accent font-semibold whitespace-nowrap">
                   {won ? ('Flag Identified') : ('Game Over')}
                 </span>
-                <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
-                <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">
+                <span className="text-app-text-muted hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
+                <span className="text-xs font-mono text-app-text-secondary whitespace-nowrap">
                   {colorHintUsed
                     ? '🎨 Color Hint used'
                     : '🖤 Pure Grayscale solve'}
                 </span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-sand-100 mt-1">
+              <h3 className="text-lg sm:text-xl font-bold text-app-text mt-1">
                 {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || ('Mystery Country')}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-app-text-secondary mt-0.5">
                 {won
                   ? `Solved in ${guesses.length} of ${maxGuesses} guesses.`
                   : 'All guesses used. Check out the revealed flag!'}
@@ -802,7 +802,7 @@ export default function FlagShadesPage() {
               <button
                 type="button"
                 onClick={() => setShowResultsModal(true)}
-                className="inline-flex min-h-10 items-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 text-xs sm:text-sm font-semibold text-obsidian-950 transition-colors cursor-pointer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-sm bg-app-accent hover:bg-app-accent-hover px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer"
               >
                 <Trophy size={16} aria-hidden="true" />
                 <span>{'View Results'}</span>
@@ -811,10 +811,10 @@ export default function FlagShadesPage() {
               <button
                 type="button"
                 onClick={handleShare}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-sm border border-white/20 bg-white/5 hover:bg-white/10 px-3 py-2 text-xs sm:text-sm font-semibold text-sand-100 transition-colors cursor-pointer"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-sm border border-app-border/30 bg-app-surface-muted hover:bg-app-surface-raised px-3 py-2 text-xs sm:text-sm font-semibold text-app-text-secondary transition-colors cursor-pointer"
                 title={'Share'}
               >
-                {copied ? <Check size={16} className="text-emerald-400" /> : <Share2 size={16} />}
+                {copied ? <Check size={16} className="text-app-accent" /> : <Share2 size={16} />}
               </button>
             </div>
           </section>
@@ -825,7 +825,7 @@ export default function FlagShadesPage() {
           <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-y-auto md:z-50 md:max-h-none">
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
+              className="fixed inset-0 bg-app-canvas/85 backdrop-blur-sm transition-opacity cursor-pointer"
               onClick={() => setShowResultsModal(false)}
               aria-hidden="true"
             />
@@ -835,24 +835,24 @@ export default function FlagShadesPage() {
               role="dialog"
               aria-modal="true"
               aria-label={'Game Result'}
-              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-4 sm:p-8 shadow-2xl text-left space-y-4 sm:space-y-6 my-auto"
+              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-app-border/30 bg-app-surface-raised p-4 sm:p-8 shadow-sm text-left space-y-4 sm:space-y-6 my-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Bar */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 text-left">
+              <div className="flex items-center justify-between border-b border-app-border/25 pb-3 text-left">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="font-mono text-xs text-emerald-400 font-semibold whitespace-nowrap">
+                  <span className="font-mono text-xs text-app-accent font-semibold whitespace-nowrap">
                     {'Flag Shades Result'}
                   </span>
-                  <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
-                  <span className="font-mono text-xs text-zinc-400 whitespace-nowrap">
+                  <span className="text-app-text-muted hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
+                  <span className="font-mono text-xs text-app-text-secondary whitespace-nowrap">
                     {mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-app-surface-muted text-app-text-secondary hover:bg-app-canvas hover:text-app-text transition-colors cursor-pointer"
                   aria-label={'Close'}
                 >
                   <X size={16} />
@@ -860,9 +860,9 @@ export default function FlagShadesPage() {
               </div>
 
               {/* Revealed Country Card */}
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="rounded-sm border border-app-border/25 bg-app-surface-muted p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
+                  <div className="shrink-0 overflow-hidden rounded-sm border border-app-border/30 bg-app-surface-raised p-1 shadow-sm">
                     {resolvedFlagUrl ? (
                       <img
                         src={resolvedFlagUrl}
@@ -872,13 +872,13 @@ export default function FlagShadesPage() {
                     ) : null}
                   </div>
                   <div className="min-w-0">
-                    <span className="font-mono text-xs text-emerald-400 font-semibold">
+                    <span className="font-mono text-xs text-app-accent font-semibold">
                       {'Secret National Flag'}
                     </span>
-                    <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
+                    <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-app-text">
                       {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || ('Mystery Country')}
                     </h2>
-                    <p className="mt-1 text-xs text-zinc-400">
+                    <p className="mt-1 text-xs text-app-text-secondary">
                       {won
                         ? `Identified in ${guesses.length} of ${maxGuesses} guesses.`
                         : `Used all ${maxGuesses} guesses.`}
@@ -886,19 +886,19 @@ export default function FlagShadesPage() {
                   </div>
                 </div>
 
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-app-border/25 pt-3 sm:pt-0">
                   <div
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-semibold font-mono ${
                       won
-                        ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                        : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+                        ? 'bg-app-accent/10 border border-app-accent/30 text-app-accent'
+                        : 'bg-rose-50 border border-rose-300 text-rose-800'
                     }`}
                   >
                     {won ? <Sparkles size={14} /> : <AlertCircle size={14} />}
                     <span>{won ? ('Solved') : ('Game Over')}</span>
                   </div>
 
-                  <span className="text-xs font-mono text-zinc-400">
+                  <span className="text-xs font-mono text-app-text-secondary">
                     {colorHintUsed
                       ? '🎨 Color Hint used'
                       : '🖤 Pure Grayscale solve'}
@@ -908,21 +908,21 @@ export default function FlagShadesPage() {
 
               {/* Performance Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
+                <div className="rounded-sm border border-app-border/25 bg-app-surface-muted p-4">
+                  <span className="text-xs font-mono text-app-text-muted block">
                     {'Guesses Used'}
                   </span>
                   <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="font-mono text-2xl font-bold text-sand-100">{guesses.length}</span>
-                    <span className="text-xs text-zinc-500 font-mono">/ {maxGuesses}</span>
+                    <span className="font-mono text-2xl font-bold text-app-text">{guesses.length}</span>
+                    <span className="text-xs text-app-text-muted font-mono">/ {maxGuesses}</span>
                   </div>
                 </div>
 
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
+                <div className="rounded-sm border border-app-border/25 bg-app-surface-muted p-4">
+                  <span className="text-xs font-mono text-app-text-muted block">
                     {'Solve Mode'}
                   </span>
-                  <div className="mt-1 font-mono text-sm font-semibold text-emerald-300 flex items-center gap-1.5">
+                  <div className="mt-1 font-mono text-sm font-semibold text-app-accent flex items-center gap-1.5">
                     {colorHintUsed ? (
                       <>
                         <Palette size={15} />
@@ -937,12 +937,12 @@ export default function FlagShadesPage() {
                   </div>
                 </div>
 
-                <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
-                  <span className="text-xs font-mono text-zinc-400 block">
+                <div className="col-span-2 sm:col-span-1 rounded-sm border border-app-border/25 bg-app-surface-muted p-4 flex flex-col justify-between">
+                  <span className="text-xs font-mono text-app-text-muted block">
                     {'Next Daily'}
                   </span>
-                  <div className="mt-1 font-mono text-lg font-semibold text-emerald-400">
-                    <CountdownTimer variant="minimal" className="text-lg text-emerald-400 font-semibold" />
+                  <div className="mt-1 font-mono text-lg font-semibold text-app-accent">
+                    <CountdownTimer variant="minimal" className="text-lg text-app-accent font-semibold" />
                   </div>
                 </div>
               </div>
@@ -953,7 +953,7 @@ export default function FlagShadesPage() {
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
+                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-app-accent hover:bg-app-accent-hover px-5 py-3 text-sm font-bold text-white transition-colors shadow-sm cursor-pointer"
                   >
                     {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
                     <span>{copied ? ('Copied to clipboard') : ('Share Results')}</span>
@@ -966,7 +966,7 @@ export default function FlagShadesPage() {
                       setMode('challenge');
                       loadChallenge('challenge', `challenge-${Date.now()}`);
                     }}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/20 transition-colors cursor-pointer"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-900 hover:bg-amber-100 transition-colors cursor-pointer"
                   >
                     <span>⚡ {'Play Challenge Round'}</span>
                     <ArrowRight size={15} />
@@ -976,7 +976,7 @@ export default function FlagShadesPage() {
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
-                  className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="w-full min-h-11 rounded-sm border border-app-border/30 bg-app-surface-muted py-2.5 text-xs font-semibold text-app-text-secondary hover:bg-app-surface-raised transition-colors cursor-pointer"
                 >
                   {'Close & View Flag'}
                 </button>
@@ -991,7 +991,7 @@ export default function FlagShadesPage() {
         <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-6 sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+1.5rem)] overflow-y-auto md:z-50 md:max-h-none">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-app-canvas/85 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={handleCloseInstructions}
             aria-hidden="true"
           />
@@ -1000,23 +1000,23 @@ export default function FlagShadesPage() {
             role="dialog"
             aria-modal="true"
             aria-label={'How to Play Flag Shades'}
-            className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-4 md:max-h-[92vh] sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
+            className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-sm border border-app-border/30 bg-app-surface-raised p-4 md:max-h-[92vh] sm:p-8 shadow-sm space-y-4 sm:space-y-6 my-auto text-app-text"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
+            <div className="flex items-start justify-between border-b border-app-border/25 pb-4 text-left gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
-                  <Palette className="text-emerald-400" size={26} />
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-app-text flex items-center gap-2.5">
+                  <Palette className="text-app-accent" size={26} />
                   <span>{'How to Play Flag Shades'}</span>
                 </h2>
-                <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
+                <p className="mt-1.5 text-sm text-app-text-secondary leading-relaxed max-w-xl">
                   {'Deduce the secret national flag in 8 guesses or fewer. The full flag is shown in shades of grey.'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-app-surface-muted text-app-text-secondary hover:bg-app-canvas hover:text-app-text transition-colors cursor-pointer"
                 aria-label={'Close'}
               >
                 <X size={16} />
@@ -1024,71 +1024,71 @@ export default function FlagShadesPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-app-accent/30 bg-app-surface-raised p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>1. {'Luminance Grayscale'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {'All flag colors are transformed into perceptual luminance grayscale. Yellow renders light grey, navy renders dark grey, and white/black stay true.'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Full flag visible from start'}
                 </div>
               </div>
 
-              <div className="rounded-sm border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-amber-300 bg-amber-50 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>2. {'Color Hint after 3 Guesses'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {'After 3 guesses, unlock a color hint button that restores exactly 1 major chromatic color family (covering ≥10% of the flag image).'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Optional hint after 3 attempts'}
                 </div>
               </div>
 
-              <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-cyan-300 bg-cyan-50 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>3. {'Distance & Compass Bearing'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {'Each missed guess provides great-circle distance in kilometers and a compass bearing arrow pointing toward the secret target country.'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Great-circle guidance'}
                 </div>
               </div>
 
-              <div className="rounded-sm border border-indigo-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-indigo-300 bg-indigo-50 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>4. {'Shared Flag Symbols'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {'If your guessed flag shares national symbols with the target (e.g. stars, stripes, sun, eagle), they appear in your guess trail as clues!'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Symbol overlap clues'}
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-zinc-500 font-mono text-center sm:text-left">
+            <div className="border-t border-app-border/25 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-app-text-muted font-mono text-center sm:text-left">
                 {'Daily puzzle rotates at 00:00 UTC. Challenge mode lets you play unlimited rounds.'}
               </p>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-app-accent hover:bg-app-accent-hover px-6 py-3 text-sm font-semibold text-white transition-colors shadow-sm cursor-pointer"
               >
                 <span>{"Got it, let's play"}</span>
                 <ArrowRight size={16} />

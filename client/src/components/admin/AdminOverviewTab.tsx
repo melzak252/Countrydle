@@ -82,8 +82,8 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
       ? `$${cost.cost_lower_usd.toFixed(4)}`
       : `$${cost.cost_lower_usd.toFixed(4)}–$${cost.cost_upper_usd.toFixed(4)}`;
   const metrics = [
-    { label: 'Participating identities', value: overview?.today?.total_players, note: 'Accounts + guest browsers, not people', Icon: Users },
-    { label: 'Sessions today', value: overview?.today?.total_sessions, note: 'Saved game sessions', Icon: Activity },
+    { label: 'Unique players today', value: overview?.today?.total_players, note: 'Distinct accounts + guest browsers who played', Icon: Users },
+    { label: 'Active sessions today', value: overview?.today?.total_sessions, note: 'Sum of played modes (excludes empty opens)', Icon: Activity },
     { label: 'Countrydle AI cost', value: costState === 'loading' ? 'Loading…' : costState === 'error' || costValue === '—' ? 'Unavailable' : costValue, note: costState === 'error' ? 'Report unavailable · refresh to retry' : cost ? `${cost.day} UTC · ${cost.cost_status.replaceAll('_', ' ')}` : 'No completed-day data', Icon: DollarSign },
     { label: 'Win rate today', value: overview?.today?.win_rate_pct === undefined ? undefined : `${numberFormat.format(overview.today.win_rate_pct)}%`, note: overview?.today ? t('adminOverview.metrics.winners', { count: overview.today.total_winners }) : '—', Icon: Trophy },
   ];
@@ -96,7 +96,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
         </button>
       </div>
       {error && (
-        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-400/40 text-rose-200">
+        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-200 bg-rose-50 text-rose-900">
           <span>{t(error)}</span>
           {hasOverview && <p className="admin-meta w-full">{t('adminCommon.stale')}</p>}
           <button type="button" className="admin-button" onClick={onRefresh} disabled={isLoading}>
@@ -116,10 +116,10 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
               <article key={label} className="admin-panel admin-overview-metric">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="admin-meta">{label}</h2>
-                  <Icon size={18} aria-hidden="true" className="text-emerald-300" />
+                  <Icon size={18} aria-hidden="true" className="text-app-accent" />
                 </div>
-                <p className={label === 'Countrydle AI cost' ? 'text-xl font-semibold text-sand-100 tabular-nums sm:text-2xl' : 'admin-metric tabular-nums'}>{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
-                <p className="text-xs leading-4 text-slate-400">{note}</p>
+                <p className={label === 'Countrydle AI cost' ? 'text-xl font-semibold text-app-text tabular-nums sm:text-2xl' : 'admin-metric tabular-nums'}>{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
+                <p className="text-xs leading-4 text-app-text-muted">{note}</p>
               </article>
             ))}
           </div>
@@ -127,7 +127,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
           <section className="space-y-3" aria-labelledby="admin-overview-games">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 id="admin-overview-games" className="text-lg font-semibold text-sand-100">{t('adminOverview.gamesTitle')}</h2>
+                <h2 id="admin-overview-games" className="text-lg font-semibold text-app-text">{t('adminOverview.gamesTitle')}</h2>
                 <p className="admin-meta mt-1">{overview.date} UTC · {numberFormat.format(overview.modes_today?.length ?? 0)} modes</p>
               </div>
               <label className="admin-overview-search">
@@ -146,8 +146,8 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
                 {filteredModes.map((mode) => (
                   <article key={mode.mode_key} className="admin-panel admin-overview-mode" role="listitem">
                     <div className="admin-overview-mode-title">
-                      <h3 className="break-words font-semibold text-sand-100">{mode.mode_label}</h3>
-                      <p className="break-words text-sm text-slate-300">{mode.target_name}</p>
+                      <h3 className="break-words font-semibold text-app-text">{mode.mode_label}</h3>
+                      <p className="break-words text-sm text-app-text-secondary">{mode.target_name}</p>
                     </div>
                     <dl className="admin-overview-mode-stats">
                       <div><dt>Accounts + browsers</dt><dd>{numberFormat.format(mode.players)}</dd></div>
@@ -161,16 +161,16 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
               </div>
             )}
           </section>
-          <details className="admin-overview-coverage text-sm text-slate-300">
-            <summary className="cursor-pointer text-emerald-300">Coverage and cost basis</summary>
+          <details className="admin-overview-coverage text-sm text-app-text-secondary">
+            <summary className="cursor-pointer text-emerald-800">Coverage and cost basis</summary>
             <p className="mt-2">Participant counts combine active accounts and guest browsers; the same person may use multiple browsers, and guest play may not be linked to a later login. Unidentifiable legacy sessions are excluded from player counts, not sessions. Saved sessions include zero-move games and recovered histories, not general site traffic or human views. AI cost covers measured Countrydle Gemini planner and fallback usage only, not platform spend; incomplete coverage is not total cost. The cost date is the completed UTC day shown, not today.</p>
-            <button type="button" className="mt-2 text-emerald-300 underline" onClick={onOpenCosts}>View cost details</button>
+            <button type="button" className="mt-2 text-emerald-800 underline" onClick={onOpenCosts}>View cost details</button>
           </details>
 
           <section className="space-y-3" aria-labelledby="admin-overview-history">
             <div className="flex items-center gap-2">
-              <Calendar size={18} aria-hidden="true" className="text-slate-300" />
-              <h2 id="admin-overview-history" className="text-lg font-semibold text-sand-100">{t('adminOverview.historyTitle')}</h2>
+              <Calendar size={18} aria-hidden="true" className="text-app-text-secondary" />
+              <h2 id="admin-overview-history" className="text-lg font-semibold text-app-text">{t('adminOverview.historyTitle')}</h2>
             </div>
             {!overview.history_14d?.length ? (
               <p className="admin-panel admin-muted">{t('adminOverview.noHistory')}</p>
@@ -178,7 +178,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
               <div className="admin-table overflow-x-auto" role="region" aria-label={t('adminOverview.historyRegion')} tabIndex={0}>
                 <table className="w-full min-w-[840px] text-sm">
                   <thead><tr>
-                    <th scope="col" className="sticky left-0 z-10 bg-obsidian-850 px-4 py-3 text-left">{t('adminOverview.columns.date')}</th>
+                    <th scope="col" className="sticky left-0 z-10 bg-app-surface-muted px-4 py-3 text-left">{t('adminOverview.columns.date')}</th>
                     <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.players')}</th>
                     <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.winners')}</th>
                     <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.winRate')}</th>
@@ -189,9 +189,9 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, is
                   <tbody>
                     {overview.history_14d.map((day) => (
                       <tr key={day.date}>
-                        <th scope="row" className="sticky left-0 bg-obsidian-900 px-4 py-3 text-left font-medium text-sand-100">{dateFormat.format(new Date(`${day.date}T00:00:00Z`))}</th>
+                        <th scope="row" className="sticky left-0 bg-app-surface px-4 py-3 text-left font-medium text-app-text">{dateFormat.format(new Date(`${day.date}T00:00:00Z`))}</th>
                         <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_players)}</td>
-                        <td className="admin-number px-4 py-3 text-right text-emerald-300">{numberFormat.format(day.total_winners)}</td>
+                        <td className="admin-number px-4 py-3 text-right text-emerald-800">{numberFormat.format(day.total_winners)}</td>
                         <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.win_rate_pct)}%</td>
                         <td className="admin-number px-4 py-3 text-right">{day.avg_questions_won ? numberFormat.format(day.avg_questions_won) : '—'}</td>
                         <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_questions)}</td>

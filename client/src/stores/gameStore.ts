@@ -17,7 +17,7 @@ import { mapClickColor, toggleMapMarking } from '../lib/mapMarkings';
 import { gameplayFailure, type GameplayNotice, type GameplayNoticeInput } from '../lib/gameplayNotices';
 import toast from 'react-hot-toast';
 
-export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange';
+export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange' | 'yellow';
 
 interface GameData {
   notices: GameplayNotice[];

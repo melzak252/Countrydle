@@ -1,0 +1,76 @@
+.antique-map-surface.leaflet-container {
+  background-color: var(--map-ocean, #e9dfca) !important;
+}
+
+/* Aged vellum edge vignette + double-rule cartographic frame */
+.antique-map-surface.leaflet-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 470;
+  box-shadow:
+    inset 0 0 0 1px rgba(107, 89, 59, 0.45),
+    inset 0 0 0 5px rgba(240, 231, 210, 0.42),
+    inset 0 0 0 6px rgba(107, 89, 59, 0.28),
+    inset 0 0 42px rgba(78, 62, 36, 0.22);
+}
+
+.map-fixed-neatline {
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  z-index: 460;
+  border: 1.5px solid rgba(70, 57, 38, 0.55);
+  box-shadow: inset 0 0 0 3px rgba(240, 231, 210, 0.45), inset 0 0 0 4px rgba(92, 75, 50, 0.35);
+}
+
+.map-fixed-neatline__compass {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  color: #5c4b32;
+  opacity: 0.38;
+}
+
+.antique-map-surface .leaflet-tile-pane {
+  background-color: var(--map-ocean, #e9dfca);
+  filter: var(--map-tile-filter, sepia(0.18) saturate(0.72));
+}
+
+.antique-map-surface .leaflet-tile {
+  background-color: var(--map-ocean, #e9dfca);
+}
+
+.map-cartographic-texture {
+  background-color: transparent !important;
+  pointer-events: none !important;
+  background-repeat: repeat;
+  background-size: 1024px 1024px;
+  mix-blend-mode: multiply;
+}
+
+
+.antique-map-surface .leaflet-interactive:focus {
+  outline: none;
+}
+
+.antique-map-surface .leaflet-tooltip {
+  pointer-events: none !important;
+  color: var(--map-control-ink);
+  background-color: var(--map-control-bg);
+  border-color: var(--map-control-border);
+  box-shadow: 0 2px 5px rgba(76, 61, 38, 0.2);
+}
+
+.antique-map-surface .leaflet-control-zoom a {
+  background-color: var(--map-control-bg);
+  border-color: var(--map-control-border);
+  color: var(--map-control-ink);
+}
+
+.antique-map-surface .leaflet-control-zoom a:hover,
+.antique-map-surface .leaflet-control-zoom a:focus {
+  background-color: var(--map-control-hover);
+  color: var(--map-control-strong-ink);
+}

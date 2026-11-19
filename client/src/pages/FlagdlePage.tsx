@@ -228,44 +228,44 @@ export default function FlagdlePage() {
   const sortedGuesses = useMemo(() => [...guesses].reverse(), [guesses]);
   if (!gameState && isLoading) {
     return (
-      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-app-accent">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
-        <span className="text-sm font-medium text-sand-300">Loading daily Flagdle...</span>
+        <span className="text-sm font-medium text-app-text-secondary">Loading daily Flagdle...</span>
       </div>
     );
   }
   return (
     <div className="mx-auto w-full max-w-4xl px-3 py-2 sm:px-6 sm:py-4">
       {/* Header Bar */}
-      <header className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-sand-800/80 pb-2 sm:mb-6 sm:gap-3 sm:pb-4">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-app-border/20 pb-2 sm:mb-6 sm:gap-3 sm:pb-4">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs font-mono font-semibold text-sand-400">
+          <div className="mb-1 flex items-center gap-2 text-xs font-mono font-semibold text-app-text-secondary">
             <span>Daily Flag Deduction</span>
             <span>•</span>
             <span>{dailyDate}</span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-sand-100 sm:text-3xl">Flagdle</h1>
-          {isGuest && <p className="mt-1 text-xs text-sand-500">Playing as Guest • No account required</p>}
+          <h1 className="text-xl font-bold tracking-tight text-app-text sm:text-3xl">Flagdle</h1>
+          {isGuest && <p className="mt-1 text-xs text-app-text-muted">Playing as Guest • No account required</p>}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Guesses Remaining Pill */}
-          <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2.5 py-1.5 shadow-sm sm:px-3.5 sm:py-2">
-            <span className="text-xs text-zinc-400 mr-2 font-mono">Guesses:</span>
+          <div className="flex items-center rounded-sm border border-app-border/20 bg-app-surface px-2.5 py-1.5 shadow-sm sm:px-3.5 sm:py-2">
+            <span className="text-xs text-app-text-secondary mr-2 font-mono">Guesses:</span>
             <span
               className={`font-mono text-base font-bold ${
-                guesses.length >= 10 ? 'text-amber-400' : 'text-emerald-400'
+                guesses.length >= 10 ? 'text-amber-800' : 'text-app-accent'
               }`}
             >
               {guesses.length}
             </span>
-            <span className="text-xs text-zinc-500 font-mono"> / 12</span>
+            <span className="text-xs text-app-text-muted font-mono"> / 12</span>
           </div>
           {/* Instructions Modal Button */}
           <button
             type="button"
             onClick={() => setShowInstructions(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors sm:h-9 sm:w-9"
+            className="flex h-11 w-11 items-center justify-center rounded-sm border border-app-border bg-app-surface-muted text-app-text-secondary hover:border-app-border/80 hover:text-app-text transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus sm:h-9 sm:w-9"
             title="How to play Flagdle"
           >
             <HelpCircle size={18} />
@@ -274,7 +274,7 @@ export default function FlagdlePage() {
             <button
               type="button"
               onClick={() => setShowResultsModal(true)}
-              className="flex h-11 md:h-9 items-center gap-1.5 px-3 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
+              className="flex h-11 md:h-9 items-center gap-1.5 px-3 rounded-sm border border-app-accent/30 bg-app-accent/10 text-app-accent hover:bg-app-accent/20 transition-colors text-xs font-semibold cursor-pointer"
               title="Show results"
             >
               <Trophy size={15} />
@@ -317,14 +317,14 @@ export default function FlagdlePage() {
                     onKeyDown={handleKeyDown}
                     placeholder="Search national flag by country name..."
                     disabled={isLoading || isGameOver}
-                    className="w-full min-w-0 rounded-sm border border-white/15 bg-obsidian-950 px-3 py-2.5 text-base md:text-sm text-sand-100 placeholder:text-zinc-500 shadow-inner focus:border-emerald-500/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 disabled:opacity-50 sm:px-4 sm:py-3"
+                    className="w-full min-w-0 rounded-sm border border-app-border/30 bg-app-surface-raised px-3 py-2.5 text-base md:text-sm text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus/30 disabled:bg-app-surface-muted disabled:text-app-text-muted disabled:opacity-100 sm:px-4 sm:py-3"
                   />
 
                   {/* Suggestion Dropdown */}
                   {showSuggestions && filteredCountries.length > 0 && (
                     <div
                       ref={dropdownRef}
-                      className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-64 max-md:max-h-[min(35dvh,calc(var(--app-height,100dvh)-8rem))] overflow-y-auto rounded-sm border border-white/15 bg-obsidian-900 p-1.5 shadow-2xl"
+                      className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-64 max-md:max-h-[min(35dvh,calc(var(--app-height,100dvh)-8rem))] overflow-y-auto rounded-sm border border-app-border/30 bg-app-surface-raised p-1.5 shadow-sm"
                     >
                       {filteredCountries.map((c, idx) => (
                         <div
@@ -332,12 +332,12 @@ export default function FlagdlePage() {
                           onClick={() => handleSelectCountry(c)}
                           onMouseEnter={() => setHighlightedIndex(idx)}
                           className={`flex max-md:min-h-11 items-center justify-between gap-2 rounded-sm px-3 py-2 cursor-pointer transition-colors ${
-                            idx === highlightedIndex ? 'bg-white/10 text-white' : 'text-zinc-300 hover:bg-white/5'
+                            idx === highlightedIndex ? 'bg-app-accent/10 text-app-text' : 'text-app-text-secondary hover:bg-app-surface-muted'
                           }`}
                         >
                           <span className="text-sm font-medium">{c.name}</span>
                           {c.official_name && c.official_name !== c.name && (
-                            <span className="text-xs text-zinc-500 truncate ml-auto">
+                            <span className="text-xs text-app-text-muted truncate ml-auto">
                               {c.official_name}
                             </span>
                           )}
@@ -351,7 +351,7 @@ export default function FlagdlePage() {
                   type="button"
                   onClick={handleSubmitGuess}
                   disabled={isLoading || !inputVal.trim()}
-                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-obsidian-950 shadow-md hover:bg-emerald-300 active:scale-95 disabled:pointer-events-none disabled:opacity-50 transition-colors cursor-pointer sm:px-5 sm:py-3"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm bg-app-accent px-3 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-app-accent-hover active:scale-95 disabled:pointer-events-none disabled:bg-app-surface-muted disabled:text-app-text-muted disabled:opacity-100 transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus sm:px-5 sm:py-3"
                 >
                   {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Guess'}
                 </button>
@@ -364,32 +364,32 @@ export default function FlagdlePage() {
         {guesses.length > 0 && (
           <section aria-label="Previous Guesses" className="mx-auto w-full max-w-xl space-y-2">
             <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-mono text-zinc-400">Your Guesses</span>
-              <span className="text-xs font-mono text-zinc-500">{guesses.length} / 12</span>
+              <span className="text-xs font-mono text-app-text-secondary">Your Guesses</span>
+              <span className="text-xs font-mono text-app-text-muted">{guesses.length} / 12</span>
             </div>
             <ul className="space-y-1.5">
               {sortedGuesses.map((g, idx) => (
                 <li
                   key={g.id || idx}
-                  className={`flex items-center justify-between rounded-sm border-l-2 bg-obsidian-950 px-3.5 py-2.5 ${
-                    g.answer ? 'border-emerald-400' : 'border-rose-500/60'
+                  className={`flex items-center justify-between rounded-sm border-l-2 bg-app-surface-raised px-3.5 py-2.5 ${
+                    g.answer ? 'border-app-accent' : 'border-rose-600/70'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {g.answer ? (
-                      <Check size={16} className="shrink-0 text-emerald-400" aria-hidden="true" />
+                      <Check size={16} className="shrink-0 text-app-accent" aria-hidden="true" />
                     ) : (
-                      <X size={16} className="shrink-0 text-rose-400" aria-hidden="true" />
+                      <X size={16} className="shrink-0 text-rose-600" aria-hidden="true" />
                     )}
-                    <span className="truncate text-sm font-medium text-sand-100">{g.guess}</span>
+                    <span className="truncate text-sm font-medium text-app-text">{g.guess}</span>
                   </div>
                   {g.distance_km !== null && g.distance_km !== undefined && !g.answer && (
-                    <div className="flex items-center gap-1.5 font-mono text-xs text-zinc-400">
-                      <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-zinc-300">
+                    <div className="flex items-center gap-1.5 font-mono text-xs text-app-text-secondary">
+                      <span className="rounded border border-app-border/20 bg-app-surface-muted px-2 py-0.5 text-app-text-secondary">
                         {g.distance_km.toLocaleString('en-US')} km
                       </span>
                       {g.bearing_arrow && (
-                        <span className="text-emerald-400 text-sm font-semibold">{g.bearing_arrow}</span>
+                        <span className="text-app-accent text-sm font-semibold">{g.bearing_arrow}</span>
                       )}
                     </div>
                   )}
@@ -401,23 +401,23 @@ export default function FlagdlePage() {
         {isGameOver && (
           <section
             aria-label="Game Result Summary"
-            className="mx-auto w-full max-w-xl rounded-sm border border-emerald-500/30 bg-obsidian-950 p-4 sm:p-5 flex items-center justify-between gap-4"
+            className="mx-auto w-full max-w-xl rounded-sm border border-app-accent/30 bg-app-surface-raised p-4 sm:p-5 flex items-center justify-between gap-4"
           >
             <div>
-              <span className="font-mono text-xs text-emerald-400">
+              <span className="font-mono text-xs text-app-accent">
                 {isWon ? 'Puzzle Solved' : 'Game Over'}
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-sand-100">
+              <h3 className="text-base sm:text-lg font-bold text-app-text">
                 {correctCountry?.name || 'Mystery Flag'}
               </h3>
               {isWon && gameState && gameState.points > 0 ? (
-                <p className="font-mono text-xs text-emerald-400">+{gameState.points.toLocaleString('en-US')} pts</p>
+                <p className="font-mono text-xs text-app-accent">+{gameState.points.toLocaleString('en-US')} pts</p>
               ) : null}
             </div>
             <button
               type="button"
               onClick={() => setShowResultsModal(true)}
-              className="inline-flex min-h-10 items-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-4 py-2 text-xs sm:text-sm font-semibold text-obsidian-950 transition-colors cursor-pointer"
+              className="inline-flex min-h-10 items-center gap-2 rounded-sm bg-app-accent hover:bg-app-accent-hover px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
             >
               <Trophy size={16} aria-hidden="true" />
               <span>View Results</span>
@@ -430,7 +430,7 @@ export default function FlagdlePage() {
           <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-y-auto md:z-50 md:max-h-none">
             {/* Backdrop: clicking background closes modal */}
             <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
+              className="fixed inset-0 bg-app-canvas/85 backdrop-blur-sm transition-opacity cursor-pointer"
               onClick={() => setShowResultsModal(false)}
               aria-hidden="true"
             />
@@ -440,24 +440,24 @@ export default function FlagdlePage() {
               role="dialog"
               aria-modal="true"
               aria-label="Game Result"
-              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-3 md:max-h-[92vh] sm:p-8 shadow-2xl text-left space-y-4 sm:space-y-6 my-auto"
+              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-app-border/30 bg-app-surface-raised p-3 md:max-h-[92vh] sm:p-8 shadow-sm text-left space-y-4 sm:space-y-6 my-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Bar */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3.5 -mt-1 text-left">
+              <div className="flex items-center justify-between border-b border-app-border/20 pb-3.5 -mt-1 text-left">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-emerald-400 font-semibold">
+                  <span className="font-mono text-xs text-app-accent font-semibold">
                     Flagdle Result
                   </span>
-                  <span className="text-zinc-600">·</span>
-                  <span className="font-mono text-xs text-zinc-400">
+                  <span className="text-app-text-muted">·</span>
+                  <span className="font-mono text-xs text-app-text-secondary">
                     {dailyDate}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
-                  className="flex h-11 w-11 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                  className="flex h-11 w-11 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-sm bg-app-surface-muted text-app-text-secondary hover:bg-app-border/20 hover:text-app-text transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                   aria-label="Close"
                   title="Close"
                 >
@@ -466,10 +466,10 @@ export default function FlagdlePage() {
               </div>
 
               {/* Hero Reveal Banner */}
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5">
+              <div className="rounded-sm border border-app-border/20 bg-app-surface-muted p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5">
                 <div className="flex items-center gap-4 sm:gap-5 min-w-0">
                   {correctCountry && (
-                    <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
+                    <div className="shrink-0 overflow-hidden rounded-sm border border-app-border/30 bg-app-surface p-1 shadow-md">
                       {resolvedFlagUrl ? (
                         <img
                           src={resolvedFlagUrl}
@@ -486,16 +486,16 @@ export default function FlagdlePage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <span className="font-mono text-xs text-emerald-400 font-semibold">
+                    <span className="font-mono text-xs text-app-accent font-semibold">
                       Secret National Flag
                     </span>
-                    <h2 className="mt-0.5 break-words font-serif text-3xl sm:text-4xl text-sand-100">
+                    <h2 className="mt-0.5 break-words font-serif text-3xl sm:text-4xl text-app-text">
                       {correctCountry?.name || 'Mystery Country'}
                     </h2>
                     {correctCountry?.official_name && correctCountry.official_name !== correctCountry.name && (
-                      <p className="mt-0.5 text-xs text-zinc-400 truncate">{correctCountry.official_name}</p>
+                      <p className="mt-0.5 text-xs text-app-text-secondary truncate">{correctCountry.official_name}</p>
                     )}
-                    <p className="mt-1 text-xs text-zinc-400">
+                    <p className="mt-1 text-xs text-app-text-secondary">
                       {isWon
                         ? `Identified in ${guesses.length} of 12 guesses.`
                         : 'Used all 12 guesses. Study the flag and try tomorrow!'}
@@ -504,15 +504,15 @@ export default function FlagdlePage() {
                 </div>
 
                 {/* Outcome Badge & Points */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
-                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
-                    isWon ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-app-border/20 pt-3 sm:pt-0">
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-semibold font-mono ${
+                    isWon ? 'bg-app-accent/10 border border-app-accent/30 text-app-accent' : 'bg-rose-50 border border-rose-300 text-rose-800'
                   }`}>
                     {isWon ? <Sparkles size={14} /> : <AlertCircle size={14} />}
                     <span>{isWon ? 'Solved' : 'Game Over'}</span>
                   </div>
                   {isWon && gameState?.points ? (
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
+                    <div className="font-mono text-xl sm:text-2xl font-bold text-app-accent">
                       +{gameState.points.toLocaleString('en-US')} pts
                     </div>
                   ) : null}
@@ -521,31 +521,31 @@ export default function FlagdlePage() {
 
               {/* Performance Metrics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
+                <div className="rounded-sm border border-app-border/20 bg-app-surface p-4">
+                  <span className="text-xs font-mono text-app-text-secondary block">
                     Guesses Used
                   </span>
                   <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-bold text-sand-100">{guesses.length}</span>
-                    <span className="text-xs text-zinc-500 font-mono">/ 12</span>
+                    <span className="font-mono text-2xl sm:text-3xl font-bold text-app-text">{guesses.length}</span>
+                    <span className="text-xs text-app-text-muted font-mono">/ 12</span>
                   </div>
                 </div>
 
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
+                <div className="rounded-sm border border-app-border/20 bg-app-surface p-4">
+                  <span className="text-xs font-mono text-app-text-secondary block">
                     Points Earned
                   </span>
-                  <div className="mt-1 font-mono text-2xl sm:text-3xl font-bold text-emerald-300">
+                  <div className="mt-1 font-mono text-2xl sm:text-3xl font-bold text-app-accent">
                     {isWon && gameState?.points ? `+${gameState.points.toLocaleString('en-US')}` : '0 pts'}
                   </div>
                 </div>
 
-                <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
-                  <span className="text-xs font-mono text-zinc-400 block">
+                <div className="col-span-2 sm:col-span-1 rounded-sm border border-app-border/20 bg-app-surface p-4 flex flex-col justify-between">
+                  <span className="text-xs font-mono text-app-text-secondary block">
                     Next Flagdle
                   </span>
-                  <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-emerald-400">
-                    <CountdownTimer variant="minimal" className="text-lg sm:text-xl text-emerald-400 font-semibold" />
+                  <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-app-accent">
+                    <CountdownTimer variant="minimal" className="text-lg sm:text-xl text-app-accent font-semibold" />
                   </div>
                 </div>
               </div>
@@ -556,16 +556,16 @@ export default function FlagdlePage() {
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
+                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-app-accent hover:bg-app-accent-hover px-5 py-3 text-sm font-bold text-white transition-colors shadow-md cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                   >
                     {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
                     <span>{copied ? 'Copied to clipboard' : 'Share Flagdle Result'}</span>
                   </button>
                   <Link
                     to="/friends?mode=countrydle"
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/10 transition-colors"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-700/25 bg-amber-500/10 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-800 hover:bg-amber-500/15 transition-colors"
                   >
-                    <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-300">
+                    <span className="rounded-sm bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-800">
                       1v1 Duel
                     </span>
                     <span>Challenge a friend</span>
@@ -576,7 +576,7 @@ export default function FlagdlePage() {
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(false)}
-                  className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="w-full min-h-11 rounded-sm border border-app-border/30 py-2.5 text-xs font-semibold text-app-text-secondary hover:bg-app-surface-muted transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                 >
                   Close & View Flag
                 </button>
@@ -592,7 +592,7 @@ export default function FlagdlePage() {
         <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-6 sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+1.5rem)] overflow-y-auto md:z-50 md:max-h-none">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-app-canvas/85 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={handleCloseInstructions}
             aria-hidden="true"
           />
@@ -601,22 +601,22 @@ export default function FlagdlePage() {
             role="dialog"
             aria-modal="true"
             aria-label="How to Play Flagdle"
-            className="relative z-10 w-full max-w-4xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-3 md:max-h-[92vh] sm:rounded-md sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
+            className="relative z-10 w-full max-w-4xl max-h-full overflow-y-auto rounded-sm border border-app-border/30 bg-app-surface-raised p-3 md:max-h-[92vh] sm:rounded-sm sm:p-8 shadow-sm space-y-4 sm:space-y-6 my-auto text-app-text"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
+            <div className="flex items-start justify-between border-b border-app-border/20 pb-4 text-left gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-app-text flex items-center gap-2.5">
                   <span>🚩 How to Play Flagdle</span>
                 </h2>
-                <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
+                <p className="mt-1.5 text-sm text-app-text-secondary leading-relaxed max-w-xl">
                   Deduce the secret national flag in <strong>12 guesses or fewer</strong>. A new mystery flag rotates daily at 00:00 UTC.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 md:h-8 md:w-8"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-app-surface-muted text-app-text-secondary hover:bg-app-border/20 hover:text-app-text transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus md:h-8 md:w-8"
                 aria-label="Close"
                 title="Close"
               >
@@ -625,77 +625,77 @@ export default function FlagdlePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-sm border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-emerald-700/25 bg-app-surface-muted p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>1. 12-Card Cover Grid</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     The secret flag is covered by 12 solid tiles in a 3×4 grid. Each guess unmasks 1 tile, progressively revealing more of the national flag design underneath.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/20 text-[11px] font-mono text-app-text-muted">
                   1 unmasked tile per guess
                 </div>
               </div>
 
-              <div className="rounded-sm border border-cyan-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-cyan-700/25 bg-app-surface-muted p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>2. Color &amp; Symbol Match</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     Each guess compares the colors and symbols of your guessed flag against the secret target. Green chips show matching colors; crossed-out chips indicate absent colors.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/20 text-[11px] font-mono text-app-text-muted">
                   Color &amp; symbol overlap clues
                 </div>
               </div>
 
-              <div className="rounded-sm border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-amber-700/25 bg-app-surface-muted p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>3. Distance &amp; Direction</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     Distance in kilometers unlocks on guess 3, and compass bearing arrows (e.g. ↗ 3,200 km) point towards the secret target country starting on guess 5.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/20 text-[11px] font-mono text-app-text-muted">
                   Great-circle distance &amp; compass bearing
                 </div>
               </div>
 
-              <div className="rounded-sm border border-indigo-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-indigo-700/25 bg-app-surface-muted p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <span>4. Unlimited Free AI Questions</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     Stuck on the visual clues? You can ask unlimited yes/no questions about colors, stripes, stars, or symbols without consuming any of your 12 guess turns!
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/20 text-[11px] font-mono text-app-text-muted">
                   Free helper questions
                 </div>
               </div>
             </div>
-            <div className="rounded-sm border border-amber-500/20 bg-amber-500/[0.04] p-3.5 flex items-start gap-3 text-xs">
-              <Flag size={15} className="text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-zinc-300 leading-relaxed">
-                <strong className="text-amber-300">Spot a mistake?</strong> After the game, click the flag icon on any answer card in your history to report it with notes — it helps us see mistakes and patch them quickly.
+            <div className="rounded-sm border border-amber-700/20 bg-amber-50 p-3.5 flex items-start gap-3 text-xs">
+              <Flag size={15} className="text-amber-800 shrink-0 mt-0.5" />
+              <p className="text-amber-950 leading-relaxed">
+                <strong className="text-amber-950">Spot a mistake?</strong> After the game, click the flag icon on any answer card in your history to report it with notes — it helps us see mistakes and patch them quickly.
               </p>
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-zinc-500 font-mono text-center sm:text-left">
+            <div className="border-t border-app-border/20 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-app-text-muted font-mono text-center sm:text-left">
                 This guide won't show automatically on startup again. You can reopen it anytime via the Flagdle Guide button.
               </p>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors shadow-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 shrink-0"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-sm bg-app-accent hover:bg-app-accent-hover px-6 py-3 text-sm font-semibold text-white transition-colors shadow-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus shrink-0"
               >
                 <span>Got it, let's play</span>
                 <ArrowRight size={16} />
