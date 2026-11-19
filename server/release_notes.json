@@ -1,5 +1,5 @@
 {
-  "version": "2.0.1",
-  "title": "Dark Mode Contrast & Map Zoom Stability Fixes",
-  "body": "- Enabled Tailwind class-based dark mode and updated question answer badges, blog post cards, and Map Border Hop error notices for high contrast in dark mode.\n- Replaced the tiled map paper texture layer with a static viewport overlay so the map background stays steady without flickering while zooming.\n- Removed the extra New target badge in Map Quizzes while keeping target-change transitions and clicked-region feedback."
+  "version": "2.0.2",
+  "title": "Public Daily Blog Publishing, Border Hop Matching & Home Featured Puzzles",
+  "body": "- Daily Countrydle blog recaps are now published immediately after each puzzle day concludes without waiting for prior editorial review.\n- Simplified Map Border Hop input so Polish counties no longer require typing 'powiat', Polish diacritics, or a voivodeship qualifier when the neighbor is unambiguous.\n- Removed the New route button from Map Border Hop and expanded Featured puzzles and Also popular links on the Home page."
 }
