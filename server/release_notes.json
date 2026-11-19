@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
-  "title": "Antique Atlas Redesign, Dark Mode, Map Quizzes & Question Engine Fixes",
-  "body": "- Introduced a full antique cartographic redesign across all interactive maps, mode cards, and navigation, paired with a new Night Atlas dark mode toggle in the header.\n- Added dedicated Powiat and US State Map Quizzes with animated feedback and target-change indicators, alongside Map Border Hop and Flag Shades.\n- Fixed local question evaluation for coastal and city-county boolean checks, English/Polish voivodeship seat aliases (Warsaw/Warszawa), voivodeship name-vs-seat comparisons, Congress Poland historical partition queries, and inverted county word order.\n- Updated Terms of Service, FAQ, About, How It Works, and crawler metadata across all current game modes."
+  "version": "2.0.1",
+  "title": "Dark Mode Contrast & Map Zoom Stability Fixes",
+  "body": "- Enabled Tailwind class-based dark mode and updated question answer badges, blog post cards, and Map Border Hop error notices for high contrast in dark mode.\n- Replaced the tiled map paper texture layer with a static viewport overlay so the map background stays steady without flickering while zooming.\n- Removed the extra New target badge in Map Quizzes while keeping target-change transitions and clicked-region feedback."
 }
