@@ -1,5 +1,5 @@
 {
-  "version": "2.0.5",
-  "title": "Map Border Hop Input Focus & Explore Page Scroll Performance",
-  "body": "- Kept focus in the Map Border Hop region input after submitting a step instead of blurring while loading borders.\n- Improved Explore page scroll smoothness on mobile using content-visibility isolation on catalog cards and faster SVG preview rendering."
+  "version": "2.0.6",
+  "title": "Unrestricted Random Map Border Hop Routes",
+  "body": "- Removed the 3-5 hop distance cap for daily Powiat and US State Map Border Hop challenges so any connected pair (>=2 hops apart) can be selected."
 }
