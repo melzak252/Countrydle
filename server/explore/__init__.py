@@ -692,9 +692,12 @@ async def get_border_hop_challenge(
         }
 
     # Daily puzzle (no target provided)
-    pairs = _get_connected_pairs(normalized_mode, min_hops=3, max_hops=5)
-    if not pairs:
-        pairs = _get_connected_pairs(normalized_mode, min_hops=2, max_hops=6)
+    if normalized_mode in ("powiaty", "us_states"):
+        pairs = _get_connected_pairs(normalized_mode, min_hops=2, max_hops=1000)
+    else:
+        pairs = _get_connected_pairs(normalized_mode, min_hops=3, max_hops=5)
+        if not pairs:
+            pairs = _get_connected_pairs(normalized_mode, min_hops=2, max_hops=6)
 
     seed_val = seed or date.today().isoformat()
     rng = random.Random(seed_val)
