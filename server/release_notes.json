@@ -1,5 +1,5 @@
 {
-  "version": "2.0.6",
-  "title": "Unrestricted Random Map Border Hop Routes",
-  "body": "- Removed the 3-5 hop distance cap for daily Powiat and US State Map Border Hop challenges so any connected pair (>=2 hops apart) can be selected."
+  "version": "2.0.7",
+  "title": "Direct Link Support for Map Border Hop & Map Quiz Routes",
+  "body": "- Added /map-border-hop, /powiat-map-quiz, and /us-state-map-quiz to the frontend Nginx SPA route allowlist so direct links and page refreshes work without 404."
 }
