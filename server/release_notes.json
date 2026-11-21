@@ -1,5 +1,5 @@
 {
-  "version": "2.0.8",
-  "title": "Security Hardening & Dependency Updates",
-  "body": "- Hardened SQL query construction, path handling, XML parsing, and URL validation across backend services and scripts.\n- Tightened Nginx WebSocket upgrade handling, container non-root execution, and updated dependencies."
+  "version": "2.0.9",
+  "title": "Security Scanner Cleanup & Migration Hardening",
+  "body": "- Replaced dynamic table-name interpolation in Alembic heraldry downgrade scripts with static SQL statements.\n- Added targeted Semgrep suppressions on verified-safe URL, path, hash, and Nginx proxy guards."
 }
