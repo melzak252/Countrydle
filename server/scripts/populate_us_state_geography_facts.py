@@ -200,6 +200,7 @@ Context:
         "generationConfig": {"temperature": 0, "maxOutputTokens": 768, "responseMimeType": "application/json"},
     }
     request = Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urlopen(request, timeout=60) as response:
         data = json.loads(response.read().decode("utf-8"))
     raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")

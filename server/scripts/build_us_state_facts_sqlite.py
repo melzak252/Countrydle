@@ -323,6 +323,7 @@ class USStateRow:
 def fetch_text(url: str) -> str:
     if urlparse(url).scheme not in ("https", "http"):
         raise ValueError(f"Unsupported URL scheme: {url}")
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urlopen(url, timeout=30) as response:
         return response.read().decode("utf-8")
 

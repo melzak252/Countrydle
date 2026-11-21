@@ -32,10 +32,11 @@ def upgrade():
 
 def downgrade():
     connection = op.get_bind()
-    for table in ("heraldry_daily_sessions", "heraldry_quiz_runs"):
-        if connection.execute(sa.text(
-            f"SELECT EXISTS (SELECT 1 FROM {table} WHERE entity_scope <> 'county')"
-        )).scalar():
+    for stmt in (
+        sa.text("SELECT EXISTS (SELECT 1 FROM heraldry_daily_sessions WHERE entity_scope <> 'county')"),
+        sa.text("SELECT EXISTS (SELECT 1 FROM heraldry_quiz_runs WHERE entity_scope <> 'county')"),
+    ):
+        if connection.execute(stmt).scalar():
             raise RuntimeError("Cannot downgrade heraldry geography scope: regional history exists.")
     _drop_indexes()
     _indexes(False)

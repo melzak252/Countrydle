@@ -273,6 +273,7 @@ def call_gemini(prompt: str, model: str, api_key: str, retries: int = 3) -> dict
     for attempt in range(1, retries + 1):
         request = Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
         try:
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             with urlopen(request, timeout=90) as response:
                 payload_json = json.loads(response.read().decode("utf-8"))
             raw = payload_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")

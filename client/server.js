@@ -54,6 +54,7 @@ Bun.serve({
 
     // 3. Static files from dist/ (including prerendered HTML snapshots)
     const rawPath = url.pathname.slice(1);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
     const filePath = path.resolve(DIST_DIR, rawPath);
     if (filePath !== DIST_DIR && !filePath.startsWith(DIST_DIR + path.sep)) {
       return new Response("Forbidden", { status: 403 });
@@ -61,6 +62,7 @@ Bun.serve({
 
     // If directory, serve directory/index.html
     if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+      // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
       const indexPath = path.resolve(filePath, "index.html");
       if (indexPath.startsWith(DIST_DIR + path.sep) && fs.existsSync(indexPath)) {
         return new Response(file(indexPath));

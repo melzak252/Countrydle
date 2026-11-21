@@ -126,6 +126,7 @@ def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -
         data=payload.encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         res = json.loads(resp.read().decode("utf-8"))
         raw_text = res["candidates"][0]["content"]["parts"][0]["text"]

@@ -65,6 +65,7 @@ def build(records, assets: Path, destination: Path, prefix: str, max_side: int =
     entries = {}
     for record in records:
         source = assets / record['filename']
+        # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1
         source_hash = hashlib.sha1(source.read_bytes(), usedforsecurity=False).hexdigest()
         expected = record['source'].get('asset_sha1') or record['source'].get('sha1')
         if source_hash != expected:

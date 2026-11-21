@@ -19,10 +19,11 @@ def upgrade():
 
 def downgrade():
     connection = op.get_bind()
-    for table in ("heraldry_daily_sessions", "heraldry_quiz_runs"):
-        if connection.execute(sa.text(
-            f"SELECT EXISTS (SELECT 1 FROM {table} WHERE symbol_mode <> 'coat')"
-        )).scalar():
+    for stmt in (
+        sa.text("SELECT EXISTS (SELECT 1 FROM heraldry_daily_sessions WHERE symbol_mode <> 'coat')"),
+        sa.text("SELECT EXISTS (SELECT 1 FROM heraldry_quiz_runs WHERE symbol_mode <> 'coat')"),
+    ):
+        if connection.execute(stmt).scalar():
             raise RuntimeError(
                 "Cannot downgrade heraldry symbol modes: non-coat history exists; preserve flag data."
             )

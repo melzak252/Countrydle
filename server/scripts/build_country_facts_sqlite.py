@@ -305,6 +305,7 @@ def fetch_rest_countries() -> list[dict]:
     for url in REST_COUNTRIES_URLS:
         if urlparse(url).scheme not in ("https", "http"):
             raise ValueError(f"Unsupported URL scheme: {url}")
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urlopen(url, timeout=60) as response:
             payload = json.loads(response.read().decode("utf-8"))
         for country in payload:
@@ -323,6 +324,7 @@ def fetch_factbook_profiles() -> dict[str, dict]:
     """
     if urlparse(FACTBOOK_TREE_URL).scheme not in ("https", "http"):
         raise ValueError(f"Unsupported URL scheme: {FACTBOOK_TREE_URL}")
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urlopen(FACTBOOK_TREE_URL, timeout=60) as response:
         tree = json.loads(response.read().decode("utf-8"))
 
@@ -337,6 +339,7 @@ def fetch_factbook_profiles() -> dict[str, dict]:
         url = FACTBOOK_RAW_BASE_URL + path
         if urlparse(url).scheme not in ("https", "http"):
             raise ValueError(f"Unsupported URL scheme: {url}")
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urlopen(url, timeout=60) as response:
             profile = json.loads(response.read().decode("utf-8"))
 

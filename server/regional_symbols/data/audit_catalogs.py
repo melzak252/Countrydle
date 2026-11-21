@@ -73,6 +73,7 @@ def audit():
                     result["errors"].append(f"{scope}/{mode}: invalid filename")
                     continue
                 data = (folder / "assets" / name).read_bytes()
+                # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1
                 sha1 = hashlib.sha1(data, usedforsecurity=False).hexdigest()
                 source_info = entry["source"]
                 if not valid_credits(source_info):

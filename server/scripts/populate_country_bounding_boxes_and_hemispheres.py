@@ -87,6 +87,7 @@ def populate_boxes_and_hemispheres(db_path: Path):
     if urlparse(GEOJSON_URL).scheme not in ("https", "http"):
         raise ValueError(f"Unsupported URL scheme: {GEOJSON_URL}")
     req = urllib.request.Request(GEOJSON_URL, headers={"User-Agent": "Countrydle-Data-Builder/1.0"})
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urllib.request.urlopen(req) as resp:
         data = json.load(resp)
 

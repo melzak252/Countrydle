@@ -93,6 +93,7 @@ def _get_or_fetch_flag_svg(iso2: str) -> bytes:
         if parsed.scheme != "https" or parsed.netloc != "flagcdn.com":
             raise ValueError("Invalid flag SVG URL")
         req = urllib.request.Request(url, headers={"User-Agent": "Countrydle/1.0"})
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(req, timeout=5) as resp:
             content = resp.read()
     except Exception as exc:

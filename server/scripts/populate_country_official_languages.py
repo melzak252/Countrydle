@@ -146,6 +146,7 @@ def fetch_wikidata_official_languages(cca3_values: list[str], sleep_seconds: flo
         if urlparse(url).scheme not in ("https", "http"):
             raise ValueError(f"Unsupported URL scheme: {url}")
         request = Request(url, headers={"User-Agent": USER_AGENT})
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urlopen(request, timeout=60) as response:
             payload = json.loads(response.read().decode("utf-8"))
         for binding in payload.get("results", {}).get("bindings", []):
