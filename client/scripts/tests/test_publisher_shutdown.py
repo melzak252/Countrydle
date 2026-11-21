@@ -95,9 +95,9 @@ class PublisherShutdown(unittest.TestCase):
                    "--entrypoint", "python3", image, "/shutdown-test.py", "--backend")
             backend_url = address(backend, 8080)
             docker("run", "-d", "--name", frontend, "--network", network,
-                   "-p", "127.0.0.1::80", "-e", "PUBLISHER_BACKEND_URL=http://backend:8080",
+                   "-p", "127.0.0.1::8080", "-e", "PUBLISHER_BACKEND_URL=http://backend:8080",
                    "-e", "PUBLISHER_POLL_SECONDS=5", image)
-            frontend_url = address(frontend, 80)
+            frontend_url = address(frontend, 8080)
             wait_until(lambda: available(frontend_url + "/api/ping"), "Native frontend did not start")
             pending = executor.submit(get, frontend_url + "/api/held")
             wait_until(lambda: json.loads(get(backend_url + "/status")[1])["started"],

@@ -57,6 +57,6 @@ COPY scripts/publisher-runtime.py /usr/local/lib/countrydle/
 COPY scripts/publisher-entrypoint.sh /usr/local/bin/publisher-entrypoint.sh
 
 USER nginx
-EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1/healthz || exit 1
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/publisher-entrypoint.sh"]
