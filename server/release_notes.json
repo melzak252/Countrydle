@@ -1,5 +1,5 @@
 {
-  "version": "2.0.7",
-  "title": "Direct Link Support for Map Border Hop & Map Quiz Routes",
-  "body": "- Added /map-border-hop, /powiat-map-quiz, and /us-state-map-quiz to the frontend Nginx SPA route allowlist so direct links and page refreshes work without 404."
+  "version": "2.0.8",
+  "title": "Security Hardening & Dependency Updates",
+  "body": "- Hardened SQL query construction, path handling, XML parsing, and URL validation across backend services and scripts.\n- Tightened Nginx WebSocket upgrade handling, container non-root execution, and updated dependencies."
 }
