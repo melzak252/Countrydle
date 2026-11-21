@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sqlite3
@@ -424,6 +425,24 @@ _VOIVODESHIP_LIST_RELATIONS: dict[str, tuple[str, str]] = {
     "landform_regions": ("voivodeship_landform_regions", "region_name"),
     "regional_labels": ("voivodeship_regional_labels", "label"),
 }
+_VOIVODESHIP_LIST_QUERIES: dict[str, str] = {
+    "borders_voivodeship": "SELECT border_voivodeship_name FROM voivodeship_borders_voivodeships WHERE voivodeship_id = ?",
+    "borders_country": "SELECT country_name FROM voivodeship_borders_countries WHERE voivodeship_id = ?",
+    "water_access": "SELECT water_body FROM voivodeship_water_access WHERE voivodeship_id = ?",
+    "major_rivers": "SELECT river_name FROM voivodeship_major_rivers WHERE voivodeship_id = ?",
+    "major_roads": "SELECT road_name FROM voivodeship_major_roads WHERE voivodeship_id = ?",
+    "mountain_ranges": "SELECT range_name FROM voivodeship_mountain_ranges WHERE voivodeship_id = ?",
+    "historical_region": "SELECT region_name FROM voivodeship_historical_regions WHERE voivodeship_id = ?",
+    "landform_regions": "SELECT region_name FROM voivodeship_landform_regions WHERE voivodeship_id = ?",
+    "regional_labels": "SELECT label FROM voivodeship_regional_labels WHERE voivodeship_id = ?",
+}
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _safe_identifier(name: str) -> str:
+    if not _SQL_IDENTIFIER_RE.fullmatch(name):
+        raise ValueError(f"Invalid SQL identifier: {name}")
+    return name
 _VOIVODESHIP_SCALAR_RELATIONS: dict[str, str] = {
     "name": "name",
     "seat": "seat",
@@ -454,20 +473,21 @@ def _get_parent_voivodeship_relation(row: sqlite3.Row, relation: str) -> Any:
             return None
         if relation in _VOIVODESHIP_SCALAR_RELATIONS:
             return v_row[_VOIVODESHIP_SCALAR_RELATIONS[relation]]
-        if relation in _VOIVODESHIP_LIST_RELATIONS:
-            table, column = _VOIVODESHIP_LIST_RELATIONS[relation]
+        if relation in _VOIVODESHIP_LIST_QUERIES:
             return [
                 r[0]
                 for r in v_conn.execute(
-                    f"SELECT {column} FROM {table} WHERE voivodeship_id = ?",
+                    _VOIVODESHIP_LIST_QUERIES[relation],
                     (v_row["id"],),
                 ).fetchall()
             ]
     return None
 def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_name: str) -> sqlite3.Row | None:
     conn.row_factory = sqlite3.Row
+    table = _safe_identifier(config.table)
+    name_col = _safe_identifier(config.name_column)
     row = conn.execute(
-        f"SELECT * FROM {config.table} WHERE {config.name_column} = ? COLLATE NOCASE",
+        " ".join(["SELECT * FROM", table, "WHERE", name_col, "= ? COLLATE NOCASE"]),
         (entity_name,),
     ).fetchone()
     if row:
@@ -475,11 +495,14 @@ def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_nam
     if config.mode_name == "Wojewodztwodle":
         resolved_v = resolve_voivodeship_name(entity_name)
         if resolved_v:
-            row = conn.execute(f"SELECT * FROM {config.table} WHERE {config.name_column} = ?", (resolved_v,)).fetchone()
+            row = conn.execute(
+                " ".join(["SELECT * FROM", table, "WHERE", name_col, "= ?"]),
+                (resolved_v,),
+            ).fetchone()
             if row:
                 return row
     target_norm = norm(entity_name)
-    all_rows = conn.execute(f"SELECT * FROM {config.table}").fetchall()
+    all_rows = conn.execute(" ".join(["SELECT * FROM", table])).fetchall()
     for r in all_rows:
         if norm(r[config.name_column]) == target_norm:
             return r
@@ -493,17 +516,26 @@ def get_relation_value(conn: sqlite3.Connection, config: LocalModeConfig, row: s
         col = config.scalar_relations[relation]
         return row[col]
     if relation in config.list_relations:
-        table, column = config.list_relations[relation]
-        fk_column = config.fk_column or f"{config.table[:-1]}_id"
+        raw_table, raw_column = config.list_relations[relation]
+        table = _safe_identifier(raw_table)
+        column = _safe_identifier(raw_column)
+        fk_column = _safe_identifier(config.fk_column or "".join([config.table[:-1], "_id"]))
         if config.mode_name == "Powiatdle" and relation in {"borders_powiat", "borders_voivodeship"}:
-            values = conn.execute(
-                f"SELECT facts.{column} FROM powiat_border_coverage AS coverage "
-                f"LEFT JOIN {table} AS facts ON facts.{fk_column} = coverage.powiat_id "
+            query = " ".join([
+                "SELECT", ".".join(["facts", column]),
+                "FROM powiat_border_coverage AS coverage LEFT JOIN", table,
+                "AS facts ON", ".".join(["facts", fk_column]), "= coverage.powiat_id",
                 "WHERE coverage.powiat_id = ?",
+            ])
+            values = conn.execute(query, (row["id"],)).fetchall()
+            return [value[0] for value in values if value[0] is not None] if values else None
+        waters = [
+            r[0]
+            for r in conn.execute(
+                " ".join(["SELECT", column, "FROM", table, "WHERE", fk_column, "= ?"]),
                 (row["id"],),
             ).fetchall()
-            return [value[0] for value in values if value[0] is not None] if values else None
-        waters = [r[0] for r in conn.execute(f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)).fetchall()]
+        ]
         if relation == "water_access":
             from utils.water_hierarchy import expand_water_bodies
             return list(expand_water_bodies(waters))
@@ -636,10 +668,11 @@ def evaluate(
             return None
         item_rows = {}
         if items and isinstance(items_node, dict) and items_node.get("relation") in config.entity_list_relations:
-            placeholders = ",".join("?" for _ in items)
+            table = _safe_identifier(config.table)
+            name_col = _safe_identifier(config.name_column)
             neighbors = conn.execute(
-                f"SELECT * FROM {config.table} WHERE {config.name_column} IN ({placeholders})",
-                items,
+                " ".join(["SELECT * FROM", table, "WHERE", name_col, "IN (SELECT value FROM json_each(?))"]),
+                (json.dumps(items),),
             )
             item_rows = {neighbor[config.name_column]: neighbor for neighbor in neighbors}
         decisive = op == "any"
@@ -1061,9 +1094,11 @@ def generate_mode_explanation(
         if isinstance(items, list):
             item_rows = {}
             if items and isinstance(items_node, dict) and items_node.get("relation") in config.entity_list_relations:
-                placeholders = ",".join("?" for _ in items)
+                table = _safe_identifier(config.table)
+                name_col = _safe_identifier(config.name_column)
                 neighbors = conn.execute(
-                    f"SELECT * FROM {config.table} WHERE {config.name_column} IN ({placeholders})", items,
+                    " ".join(["SELECT * FROM", table, "WHERE", name_col, "IN (SELECT value FROM json_each(?))"]),
+                    (json.dumps(items),),
                 )
                 item_rows = {neighbor[config.name_column]: neighbor for neighbor in neighbors}
             condition = node.get("condition") or {}
@@ -1160,10 +1195,12 @@ def generate_mode_explanation(
             if rel == "water_access" and parent:
                 values = _get_parent_voivodeship_relation(target_row, rel)
             elif rel == "water_access":
-                table, column = config.list_relations[rel]
-                fk_column = config.fk_column or f"{config.table[:-1]}_id"
+                raw_table, raw_column = config.list_relations[rel]
+                table = _safe_identifier(raw_table)
+                column = _safe_identifier(raw_column)
+                fk_column = _safe_identifier(config.fk_column or "".join([config.table[:-1], "_id"]))
                 values = [r[0] for r in conn.execute(
-                    f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)
+                    " ".join(["SELECT", column, "FROM", table, "WHERE", fk_column, "= ?"]), (row["id"],)
                 )]
             else:
                 values = resolve_ref(conn, config, target_row, left, item_value)
@@ -1210,7 +1247,7 @@ def generate_mode_explanation(
             return f"{name} is a coastal state with ocean/gulf coastline." if row[config.scalar_relations[rel]] else f"{name} is an inland state with no ocean coastline."
         if rel == "water_access":
             from utils.water_hierarchy import WATER_BODY_PARENT_MAP, is_multi_ocean_question, get_distinct_oceans
-            direct_waters = [r[0] for r in conn.execute(f"SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
+            direct_waters = [r[0] for r in conn.execute("SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
             if is_multi_ocean_question(plan.original_question):
                 oceans = sorted(get_distinct_oceans(direct_waters))
                 count = len(oceans)

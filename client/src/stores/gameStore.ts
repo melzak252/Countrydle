@@ -261,7 +261,7 @@ const createGameStore = (gameType: MapGameType) => {
                     }));
                     return;
                 } catch (syncError) {
-                    console.error(`[${gameType}] Failed to sync guest data during fetchGameState:`, syncError);
+                    console.error('[%s] Failed to sync guest data during fetchGameState:', gameType, syncError);
                 }
             } else {
                 removeGuestSnapshot(localKey, stored.raw);
@@ -578,7 +578,7 @@ const createGameStore = (gameType: MapGameType) => {
                 }
             }
         } catch (e) {
-            console.error(`[${gameType}] Failed to sync guest data:`, e);
+            console.error('[%s] Failed to sync guest data:', gameType, e);
         }
     },
 

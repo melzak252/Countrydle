@@ -41,17 +41,25 @@ def get_continent_country_names(continent: ContinentCode, db_path: Path | None =
     try:
         c = conn.cursor()
         continents = CONTINENT_MAP[continent]
-        placeholders = ",".join("?" for _ in continents)
-        c.execute(
-            f"""
-            SELECT DISTINCT c.app_country_name
-            FROM countries c
-            JOIN country_continents cc ON c.id = cc.country_id
-            WHERE cc.continent IN ({placeholders})
-            ORDER BY c.app_country_name
-            """,
-            continents,
-        )
+        if len(continents) == 1:
+            query = (
+                "SELECT DISTINCT c.app_country_name "
+                "FROM countries c "
+                "JOIN country_continents cc ON c.id = cc.country_id "
+                "WHERE cc.continent = ? "
+                "ORDER BY c.app_country_name"
+            )
+        elif len(continents) == 2:
+            query = (
+                "SELECT DISTINCT c.app_country_name "
+                "FROM countries c "
+                "JOIN country_continents cc ON c.id = cc.country_id "
+                "WHERE cc.continent IN (?, ?) "
+                "ORDER BY c.app_country_name"
+            )
+        else:
+            raise ValueError(f"Unsupported continent filter size: {len(continents)}")
+        c.execute(query, continents)
         return [row[0] for row in c.fetchall() if is_country_eligible(row[0], continent.value)]
     finally:
         conn.close()

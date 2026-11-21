@@ -108,9 +108,12 @@ class PlanCache:
         if not module_name or not class_name:
             return data
         # Cached classes are the two planner result models used by this application.
-        if module_name not in {"local_kb_question", "countrydle.local_planner"}:
+        if module_name == "local_kb_question":
+            import local_kb_question as target
+        elif module_name == "countrydle.local_planner":
+            import countrydle.local_planner as target
+        else:
             return data
-        target: Any = importlib.import_module(module_name)
         for component in class_name.split("."):
             target = getattr(target, component)
         return target(**data)

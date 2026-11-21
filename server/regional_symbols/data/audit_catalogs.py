@@ -73,7 +73,7 @@ def audit():
                     result["errors"].append(f"{scope}/{mode}: invalid filename")
                     continue
                 data = (folder / "assets" / name).read_bytes()
-                sha1 = hashlib.sha1(data).hexdigest()
+                sha1 = hashlib.sha1(data, usedforsecurity=False).hexdigest()
                 source_info = entry["source"]
                 if not valid_credits(source_info):
                     result["errors"].append(f"{scope}/{mode}/{name}: invalid source or component credits")

@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import urllib.parse
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -110,6 +111,9 @@ def get_curator_pro_tip(country_name: str, facts: Dict[str, Any]) -> str:
 
 def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -> Dict[str, Any]:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "generativelanguage.googleapis.com":
+        raise ValueError("Invalid Gemini API URL")
     payload = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {

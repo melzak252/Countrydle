@@ -20,6 +20,67 @@ COUNTERS = (
 TOKEN_FIELDS = ("input_tokens", "cached_input_tokens", "output_tokens", "thought_tokens", "total_tokens")
 MODEL_FLASH_LITE = "gemini-2.5-flash-lite"
 
+_CREATE_DAILY_METRICS_SQL = (
+    "CREATE TABLE IF NOT EXISTS daily_metrics ("
+    "day TEXT NOT NULL, model TEXT NOT NULL, stage TEXT NOT NULL, "
+    "requests INTEGER NOT NULL DEFAULT 0, answered INTEGER NOT NULL DEFAULT 0, "
+    "invalid INTEGER NOT NULL DEFAULT 0, quota_failures INTEGER NOT NULL DEFAULT 0, "
+    "provider_failures INTEGER NOT NULL DEFAULT 0, template_answers INTEGER NOT NULL DEFAULT 0, "
+    "plan_cache_hits INTEGER NOT NULL DEFAULT 0, new_planner_calls INTEGER NOT NULL DEFAULT 0, "
+    "fallback_cache_hits INTEGER NOT NULL DEFAULT 0, fallback_model_calls INTEGER NOT NULL DEFAULT 0, "
+    "retries INTEGER NOT NULL DEFAULT 0, failed_attempts INTEGER NOT NULL DEFAULT 0, "
+    "input_tokens INTEGER NOT NULL DEFAULT 0, cached_input_tokens INTEGER NOT NULL DEFAULT 0, "
+    "cached_input_unknown_tokens INTEGER NOT NULL DEFAULT 0, output_tokens INTEGER NOT NULL DEFAULT 0, "
+    "thought_tokens INTEGER NOT NULL DEFAULT 0, total_tokens INTEGER NOT NULL DEFAULT 0, "
+    "unknown_usage_calls INTEGER NOT NULL DEFAULT 0, "
+    "PRIMARY KEY(day, model, stage))"
+)
+
+_INSERT_DAILY_METRICS_SQL = (
+    "INSERT INTO daily_metrics("
+    "day, model, stage, requests, answered, invalid, quota_failures, provider_failures, "
+    "template_answers, plan_cache_hits, new_planner_calls, fallback_cache_hits, "
+    "fallback_model_calls, retries, failed_attempts, input_tokens, cached_input_tokens, "
+    "cached_input_unknown_tokens, output_tokens, thought_tokens, total_tokens, unknown_usage_calls"
+    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+    "ON CONFLICT(day, model, stage) DO UPDATE SET "
+    "requests=daily_metrics.requests+excluded.requests, "
+    "answered=daily_metrics.answered+excluded.answered, "
+    "invalid=daily_metrics.invalid+excluded.invalid, "
+    "quota_failures=daily_metrics.quota_failures+excluded.quota_failures, "
+    "provider_failures=daily_metrics.provider_failures+excluded.provider_failures, "
+    "template_answers=daily_metrics.template_answers+excluded.template_answers, "
+    "plan_cache_hits=daily_metrics.plan_cache_hits+excluded.plan_cache_hits, "
+    "new_planner_calls=daily_metrics.new_planner_calls+excluded.new_planner_calls, "
+    "fallback_cache_hits=daily_metrics.fallback_cache_hits+excluded.fallback_cache_hits, "
+    "fallback_model_calls=daily_metrics.fallback_model_calls+excluded.fallback_model_calls, "
+    "retries=daily_metrics.retries+excluded.retries, "
+    "failed_attempts=daily_metrics.failed_attempts+excluded.failed_attempts, "
+    "input_tokens=daily_metrics.input_tokens+excluded.input_tokens, "
+    "cached_input_tokens=daily_metrics.cached_input_tokens+excluded.cached_input_tokens, "
+    "cached_input_unknown_tokens=daily_metrics.cached_input_unknown_tokens+excluded.cached_input_unknown_tokens, "
+    "output_tokens=daily_metrics.output_tokens+excluded.output_tokens, "
+    "thought_tokens=daily_metrics.thought_tokens+excluded.thought_tokens, "
+    "total_tokens=daily_metrics.total_tokens+excluded.total_tokens, "
+    "unknown_usage_calls=daily_metrics.unknown_usage_calls+excluded.unknown_usage_calls"
+)
+
+_SELECT_DAILY_METRICS_FROM_SQL = (
+    "SELECT day, model, stage, requests, answered, invalid, quota_failures, provider_failures, "
+    "template_answers, plan_cache_hits, new_planner_calls, fallback_cache_hits, "
+    "fallback_model_calls, retries, failed_attempts, input_tokens, cached_input_tokens, "
+    "cached_input_unknown_tokens, output_tokens, thought_tokens, total_tokens, unknown_usage_calls "
+    "FROM daily_metrics WHERE day >= ? ORDER BY day, stage, model"
+)
+
+_SELECT_DAILY_METRICS_RANGE_SQL = (
+    "SELECT day, model, stage, requests, answered, invalid, quota_failures, provider_failures, "
+    "template_answers, plan_cache_hits, new_planner_calls, fallback_cache_hits, "
+    "fallback_model_calls, retries, failed_attempts, input_tokens, cached_input_tokens, "
+    "cached_input_unknown_tokens, output_tokens, thought_tokens, total_tokens, unknown_usage_calls "
+    "FROM daily_metrics WHERE day >= ? AND day <= ? ORDER BY day, stage, model"
+)
+
 
 def _database_path(path: str | Path | None = None) -> Path:
     return Path(path or os.getenv("COUNTRYDLE_COST_METRICS_DB", DEFAULT_DATABASE_PATH))
@@ -30,12 +91,7 @@ def _connect(path: str | Path | None, started_at: str | None = None) -> sqlite3.
     target.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(target, timeout=10, isolation_level=None)
     connection.execute("PRAGMA busy_timeout = 10000")
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS daily_metrics ("
-        "day TEXT NOT NULL, model TEXT NOT NULL, stage TEXT NOT NULL, "
-        + ", ".join(f"{column} INTEGER NOT NULL DEFAULT 0" for column in COUNTERS)
-        + ", PRIMARY KEY(day, model, stage))"
-    )
+    connection.execute(_CREATE_DAILY_METRICS_SQL)
     connection.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
     connection.execute(
         "INSERT OR IGNORE INTO metadata(key, value) VALUES ('started_at', ?)",
@@ -64,15 +120,11 @@ def append_metrics(event: Mapping, *, database_path: str | Path | None = None) -
     counters = {name: _integer(event.get(name, 0)) for name in COUNTERS}
     if counters["cached_input_tokens"] > counters["input_tokens"]:
         counters["cached_input_tokens"] = counters["input_tokens"]
-    names = ", ".join(COUNTERS)
-    placeholders = ", ".join("?" for _ in range(3 + len(COUNTERS)))
-    updates = ", ".join(f"{name}=daily_metrics.{name}+excluded.{name}" for name in COUNTERS)
     connection = _connect(database_path, event.get("started_at"))
     try:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
-            f"INSERT INTO daily_metrics(day, model, stage, {names}) VALUES ({placeholders}) "
-            f"ON CONFLICT(day, model, stage) DO UPDATE SET {updates}",
+            _INSERT_DAILY_METRICS_SQL,
             (day, model, stage, *(counters[name] for name in COUNTERS)),
         )
         connection.commit()
@@ -90,13 +142,16 @@ def aggregate_daily_metrics(start: date, end: date | None = None, *, database_pa
     connection = sqlite3.connect(target, timeout=10)
     connection.execute("PRAGMA busy_timeout = 10000")
     try:
-        query = "SELECT day, model, stage, " + ", ".join(COUNTERS) + " FROM daily_metrics WHERE day >= ?"
-        parameters: tuple = (start.isoformat(),)
         if end is not None:
-            query += " AND day <= ?"
-            parameters += (end.isoformat(),)
-        query += " ORDER BY day, stage, model"
-        cursor = connection.execute(query, parameters)
+            cursor = connection.execute(
+                _SELECT_DAILY_METRICS_RANGE_SQL,
+                (start.isoformat(), end.isoformat()),
+            )
+        else:
+            cursor = connection.execute(
+                _SELECT_DAILY_METRICS_FROM_SQL,
+                (start.isoformat(),),
+            )
         return [dict(zip((column[0] for column in cursor.description), row)) for row in cursor.fetchall()]
     finally:
         connection.close()

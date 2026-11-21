@@ -13,6 +13,7 @@ from countrydle.local_planner import analyze_question_for_local_plan
 from countrydle.local_answering import execute_local_plan
 from schemas.countrydle import QuestionBase, QuestionCreate, InvalidQuestionDisplay
 from schemas.countrydle import LeaderboardEntry
+import urllib.parse
 import urllib.request
 
 from country_eligibility import is_country_eligible
@@ -88,6 +89,9 @@ def _get_or_fetch_flag_svg(iso2: str) -> bytes:
             logger.warning("Failed to read cached SVG for %s: %s", code, exc)
 
         url = f"https://flagcdn.com/{code}.svg"
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme != "https" or parsed.netloc != "flagcdn.com":
+            raise ValueError("Invalid flag SVG URL")
         req = urllib.request.Request(url, headers={"User-Agent": "Countrydle/1.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             content = resp.read()

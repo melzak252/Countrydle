@@ -11,6 +11,12 @@ services:
     image: pgvector/pgvector:pg17
     container_name: database
     restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
     deploy:
       resources:
         limits:
@@ -30,6 +36,11 @@ services:
     image: qdrant/qdrant:latest
     container_name: qdrant
     restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     deploy:
       resources:
         limits:
@@ -48,6 +59,11 @@ services:
   backend:
     container_name: server
     image: ghcr.io/melzak252/countrydle-backend:latest
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     deploy:
       resources:
         limits:
@@ -90,6 +106,7 @@ services:
       - POWIATDLE_CONTEXT_LIMIT=${POWIATDLE_CONTEXT_LIMIT:-1}
       - US_STATEDLE_CONTEXT_LIMIT=${US_STATEDLE_CONTEXT_LIMIT:-3}
       - WOJEWODZTWDLE_CONTEXT_LIMIT=${WOJEWODZTWDLE_CONTEXT_LIMIT:-1}
+      - PYTHONDONTWRITEBYTECODE=1
     volumes:
       - backend_data:/usr/src/app/data
       - qdrant_snapshots:/qdrant/snapshots
@@ -98,6 +115,15 @@ services:
     container_name: client
     image: ghcr.io/melzak252/countrydle-frontend:latest
     restart: always
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/log/nginx
+      - /var/run
+      - /etc/nginx/conf.d
     # VITE_* advertising flags/inventory are baked into this image by docker-publish.yml.
     environment:
       PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
@@ -124,6 +150,12 @@ services:
     profiles: ["publisher-capture"]
     image: ${PUBLISHER_CAPTURE_IMAGE:-ghcr.io/melzak252/countrydle-publisher:latest}
     restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /dev/shm
     environment:
       PUBLISHER_BACKEND_URL: ${PUBLISHER_BACKEND_URL:-http://backend:8080}
       PUBLISHER_ORIGIN: ${PUBLISHER_ORIGIN:-https://countrydle.online}

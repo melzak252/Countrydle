@@ -296,11 +296,13 @@ def replace_border_facts(conn: sqlite3.Connection, borders_path: Path) -> dict[s
             "powiat_id INTEGER PRIMARY KEY, "
             "FOREIGN KEY (powiat_id) REFERENCES powiats(id) ON DELETE CASCADE)"
         )
-        for table in (
-            "powiat_borders_powiats", "powiat_borders_voivodeships",
-            "powiat_name_aliases", "powiat_border_coverage",
+        for sql in (
+            "DELETE FROM powiat_borders_powiats",
+            "DELETE FROM powiat_borders_voivodeships",
+            "DELETE FROM powiat_name_aliases",
+            "DELETE FROM powiat_border_coverage",
         ):
-            conn.execute(f"DELETE FROM {table}")
+            conn.execute(sql)
         conn.executemany("INSERT INTO powiat_borders_powiats VALUES (?, ?)", border_rows)
         conn.executemany("INSERT INTO powiat_borders_voivodeships VALUES (?, ?)", sorted(province_rows))
         conn.executemany(

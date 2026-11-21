@@ -16,10 +16,11 @@ fastapi-mail
 alembic
 requests
 langchain-text-splitters
-pytest==8.3.4
-pytest-asyncio==0.24.0
+pytest==9.0.3
+pytest-asyncio==1.5.0
 aiosqlite
 httpx
 psycopg2-binary
 shapely>=2.0,<3
 Pillow>=10,<12
+defusedxml>=0.7.1

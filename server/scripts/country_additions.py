@@ -48,43 +48,61 @@ def add_kosovo_facts(connection: sqlite3.Connection) -> bool:
         return False
     seed = json.loads((SOURCE_DIR / "kosovo.json").read_text(encoding="utf-8"))
     country = seed["country"]
-    columns = ", ".join(country)
-    placeholders = ", ".join("?" for _ in country)
     country_id = connection.execute(
-        f"INSERT INTO countries ({columns}) VALUES ({placeholders})", tuple(country.values())
+        "INSERT INTO countries ("
+        "app_country_name, official_name, cca2, cca3, region, subregion, capital, "
+        "population, area_km2, latitude, longitude, is_island, driving_side, "
+        "government_type, dominant_religion, source"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            country["app_country_name"],
+            country["official_name"],
+            country["cca2"],
+            country["cca3"],
+            country["region"],
+            country["subregion"],
+            country["capital"],
+            country["population"],
+            country["area_km2"],
+            country["latitude"],
+            country["longitude"],
+            country["is_island"],
+            country["driving_side"],
+            country["government_type"],
+            country["dominant_religion"],
+            country["source"],
+        ),
     ).lastrowid
     # The base schema predates these three enrichment tables.
-    for table, column in (
-        ("country_flag_colors", "color"),
-        ("country_flag_symbols", "symbol"),
-        ("country_historical_unions", "union_name"),
+    for ddl in (
+        "CREATE TABLE IF NOT EXISTS country_flag_colors ("
+        "country_id INTEGER NOT NULL REFERENCES countries(id), color TEXT NOT NULL, "
+        "PRIMARY KEY (country_id, color))",
+        "CREATE TABLE IF NOT EXISTS country_flag_symbols ("
+        "country_id INTEGER NOT NULL REFERENCES countries(id), symbol TEXT NOT NULL, "
+        "PRIMARY KEY (country_id, symbol))",
+        "CREATE TABLE IF NOT EXISTS country_historical_unions ("
+        "country_id INTEGER NOT NULL REFERENCES countries(id), union_name TEXT NOT NULL, "
+        "PRIMARY KEY (country_id, union_name))",
     ):
-        connection.execute(
-            f"CREATE TABLE IF NOT EXISTS {table} ("
-            f"country_id INTEGER NOT NULL REFERENCES countries(id), {column} TEXT NOT NULL, "
-            f"PRIMARY KEY (country_id, {column}))"
-        )
-    for key, table, columns in (
-        ("continents", "country_continents", "continent"),
-        ("regions", "country_regions", "region_name"),
-        ("subregions", "country_subregions", "subregion_name"),
-        ("borders", "country_borders", "border_country_name, border_cca3"),
-        ("currencies", "country_currencies", "currency_code, currency_name, currency_symbol"),
-        ("languages", "country_languages", "language_code, language_name"),
-        ("memberships", "country_memberships", "organization"),
-        ("water_access", "country_water_access", "water_body"),
-        ("major_rivers", "country_major_rivers", "river_name"),
-        ("flag_colors", "country_flag_colors", "color"),
-        ("flag_symbols", "country_flag_symbols", "symbol"),
-        ("historical_unions", "country_historical_unions", "union_name"),
+        connection.execute(ddl)
+    for key, sql in (
+        ("continents", "INSERT OR IGNORE INTO country_continents (country_id, continent) VALUES (?, ?)"),
+        ("regions", "INSERT OR IGNORE INTO country_regions (country_id, region_name) VALUES (?, ?)"),
+        ("subregions", "INSERT OR IGNORE INTO country_subregions (country_id, subregion_name) VALUES (?, ?)"),
+        ("borders", "INSERT OR IGNORE INTO country_borders (country_id, border_country_name, border_cca3) VALUES (?, ?, ?)"),
+        ("currencies", "INSERT OR IGNORE INTO country_currencies (country_id, currency_code, currency_name, currency_symbol) VALUES (?, ?, ?, ?)"),
+        ("languages", "INSERT OR IGNORE INTO country_languages (country_id, language_code, language_name) VALUES (?, ?, ?)"),
+        ("memberships", "INSERT OR IGNORE INTO country_memberships (country_id, organization) VALUES (?, ?)"),
+        ("water_access", "INSERT OR IGNORE INTO country_water_access (country_id, water_body) VALUES (?, ?)"),
+        ("major_rivers", "INSERT OR IGNORE INTO country_major_rivers (country_id, river_name) VALUES (?, ?)"),
+        ("flag_colors", "INSERT OR IGNORE INTO country_flag_colors (country_id, color) VALUES (?, ?)"),
+        ("flag_symbols", "INSERT OR IGNORE INTO country_flag_symbols (country_id, symbol) VALUES (?, ?)"),
+        ("historical_unions", "INSERT OR IGNORE INTO country_historical_unions (country_id, union_name) VALUES (?, ?)"),
     ):
         for value in seed[key]:
             values = value if isinstance(value, list) else [value]
-            placeholders = ", ".join("?" for _ in range(len(values) + 1))
-            connection.execute(
-                f"INSERT OR IGNORE INTO {table} (country_id, {columns}) VALUES ({placeholders})",
-                (country_id, *values),
-            )
+            connection.execute(sql, (country_id, *values))
     for border_name, _ in seed["borders"]:
         connection.execute(
             "INSERT INTO country_borders (country_id, border_country_name, border_cca3) "

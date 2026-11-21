@@ -14,6 +14,7 @@ import sqlite3
 import sys
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT_DIR / "server"))
@@ -53,9 +54,15 @@ def ensure_schema(conn: sqlite3.Connection):
         # 1. Bounding box columns in countries table
         cursor = conn.execute("PRAGMA table_info(countries)")
         cols = {row[1] for row in cursor.fetchall()}
-        for col_name in ("min_latitude", "max_latitude", "min_longitude", "max_longitude"):
+        add_column_sql = {
+            "min_latitude": "ALTER TABLE countries ADD COLUMN min_latitude REAL",
+            "max_latitude": "ALTER TABLE countries ADD COLUMN max_latitude REAL",
+            "min_longitude": "ALTER TABLE countries ADD COLUMN min_longitude REAL",
+            "max_longitude": "ALTER TABLE countries ADD COLUMN max_longitude REAL",
+        }
+        for col_name, sql in add_column_sql.items():
             if col_name not in cols:
-                conn.execute(f"ALTER TABLE countries ADD COLUMN {col_name} REAL")
+                conn.execute(sql)
 
         # 2. country_hemispheres table
         conn.execute("""
@@ -77,6 +84,8 @@ def populate_boxes_and_hemispheres(db_path: Path):
     ensure_schema(conn)
 
     print(f"Fetching reference GeoJSON from: {GEOJSON_URL}")
+    if urlparse(GEOJSON_URL).scheme not in ("https", "http"):
+        raise ValueError(f"Unsupported URL scheme: {GEOJSON_URL}")
     req = urllib.request.Request(GEOJSON_URL, headers={"User-Agent": "Countrydle-Data-Builder/1.0"})
     with urllib.request.urlopen(req) as resp:
         data = json.load(resp)

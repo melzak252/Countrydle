@@ -278,12 +278,32 @@ def init_db(output_path: Path) -> sqlite3.Connection:
     return conn
 
 
+INSERT_STATEMENTS = {
+    ("voivodeship_borders_voivodeships", "voivodeship_id", "border_voivodeship_name"):
+        "INSERT OR IGNORE INTO voivodeship_borders_voivodeships (voivodeship_id, border_voivodeship_name) VALUES (?, ?)",
+    ("voivodeship_borders_countries", "voivodeship_id", "country_name"):
+        "INSERT OR IGNORE INTO voivodeship_borders_countries (voivodeship_id, country_name) VALUES (?, ?)",
+    ("voivodeship_water_access", "voivodeship_id", "water_body"):
+        "INSERT OR IGNORE INTO voivodeship_water_access (voivodeship_id, water_body) VALUES (?, ?)",
+    ("voivodeship_major_rivers", "voivodeship_id", "river_name"):
+        "INSERT OR IGNORE INTO voivodeship_major_rivers (voivodeship_id, river_name) VALUES (?, ?)",
+    ("voivodeship_mountain_ranges", "voivodeship_id", "range_name"):
+        "INSERT OR IGNORE INTO voivodeship_mountain_ranges (voivodeship_id, range_name) VALUES (?, ?)",
+    ("voivodeship_historical_regions", "voivodeship_id", "region_name"):
+        "INSERT OR IGNORE INTO voivodeship_historical_regions (voivodeship_id, region_name) VALUES (?, ?)",
+    ("voivodeship_landform_regions", "voivodeship_id", "region_name"):
+        "INSERT OR IGNORE INTO voivodeship_landform_regions (voivodeship_id, region_name) VALUES (?, ?)",
+    ("voivodeship_regional_labels", "voivodeship_id", "label"):
+        "INSERT OR IGNORE INTO voivodeship_regional_labels (voivodeship_id, label) VALUES (?, ?)",
+}
+
+
 def insert_many(cur: sqlite3.Cursor, table: str, id_col: str, item_col: str, entity_id: int, values: list[str]) -> None:
+    sql = INSERT_STATEMENTS.get((table, id_col, item_col))
+    if sql is None:
+        raise ValueError(f"Unsupported insert target: {table} ({id_col}, {item_col})")
     for value in sorted(set(values)):
-        cur.execute(
-            f"INSERT OR IGNORE INTO {table} ({id_col}, {item_col}) VALUES (?, ?)",
-            (entity_id, value),
-        )
+        cur.execute(sql, (entity_id, value))
 
 
 def build(output_path: Path, csv_path: Path) -> None:

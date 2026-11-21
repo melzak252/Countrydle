@@ -1362,7 +1362,12 @@ class LocalCountryFacts:
         target_value = None
         target_label = None
         if target_country and target_country != country["app_country_name"]:
-            row = conn.execute(f"SELECT {field} FROM countries WHERE app_country_name=?", (target_country,)).fetchone()
+            field_query = (
+                "SELECT population FROM countries WHERE app_country_name=?"
+                if field == "population"
+                else "SELECT area_km2 FROM countries WHERE app_country_name=?"
+            )
+            row = conn.execute(field_query, (target_country,)).fetchone()
             if row and row[0] is not None:
                 target_value = row[0]
                 target_label = target_country

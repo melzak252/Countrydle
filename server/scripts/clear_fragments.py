@@ -20,17 +20,17 @@ async def clear_fragments():
     
     # 1. Clear Postgres tables
     async with AsyncSessionLocal() as session:
-        tables = [
-            "country_fragments",
-            "powiat_fragments",
-            "wojewodztwo_fragments",
-            "us_state_fragments"
-        ]
-        
-        for table in tables:
+        truncate_statements = {
+            "country_fragments": text("TRUNCATE TABLE country_fragments CASCADE"),
+            "powiat_fragments": text("TRUNCATE TABLE powiat_fragments CASCADE"),
+            "wojewodztwo_fragments": text("TRUNCATE TABLE wojewodztwo_fragments CASCADE"),
+            "us_state_fragments": text("TRUNCATE TABLE us_state_fragments CASCADE"),
+        }
+
+        for table, stmt in truncate_statements.items():
             print(f"Clearing Postgres table: {table}...")
             try:
-                await session.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+                await session.execute(stmt)
                 await session.commit()
                 print(f"Successfully cleared {table}.")
             except Exception as e:
