@@ -1,4 +1,6 @@
 import logging
+import os
+import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -58,7 +60,7 @@ from admin.resolver import (
     query_admin_questions,
     query_admin_target_stats,
 )
-from admin.participation import admin_counts
+from admin.participation import admin_counts, admin_overview_counts
 from users.utils import get_admin_user
 from admin.question_tests import router as question_tests_router
 from admin.country_costs import router as country_costs_router
@@ -92,12 +94,22 @@ def _mode_today(stats, mode_key: str, mode_label: str, target_name: str) -> Admi
     )
 
 
+_OVERVIEW_CACHE_TTL_SECONDS = 20.0
+_overview_cache: dict[date, tuple[float, AdminOverviewResponse]] = {}
+
+
 @router.get("/overview", response_model=AdminOverviewResponse)
 async def get_admin_overview(
+    refresh: bool = Query(False),
     admin: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db),
 ):
     today = get_today_date()
+    use_cache = not refresh and os.environ.get("PYTEST_CURRENT_TEST") is None
+    if use_cache:
+        cached = _overview_cache.get(today)
+        if cached is not None and (time.monotonic() - cached[0]) < _OVERVIEW_CACHE_TTL_SECONDS:
+            return cached[1]
 
     # Use the same UTC date and day resolution as the drilldown endpoints.
     c_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["countrydle"], today, "countrydle"))[1]
@@ -153,7 +165,7 @@ async def get_admin_overview(
     ]
     participation = ParticipationRepository(session)
     mode_stats = await participation.get_mode_stats(today)
-    _, admin_days, admin_modes = await admin_counts(session, today - timedelta(days=13), today)
+    admin_all_time, admin_days, admin_modes = await admin_overview_counts(session, today - timedelta(days=13), today)
     modes_today = []
     for key, label, target in targets:
         stats = dict(mode_stats.get(key, {}))
@@ -165,7 +177,7 @@ async def get_admin_overview(
 
     # Unique players across challenges; wins and win rate remain per-game metrics.
     daily_stats = await participation.get_daily_stats(today - timedelta(days=13), today)
-    current = await participation.get_stats(today)
+    current = daily_stats.get(today, {})
     today_count = admin_days.get(today)
     today_overview = AdminOverviewToday(
         total_players=today_count.players if today_count else 0,
@@ -198,7 +210,6 @@ async def get_admin_overview(
 
     # All-time tracked participation; legacy anonymous guesses are not people.
     platform = await participation.get_stats()
-    admin_all_time, _, _ = await admin_counts(session, include_breakdown=False)
     u_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
     b_total = (await session.execute(select(func.count(DailyBlogPost.id)))).scalar() or 0
 
@@ -210,13 +221,17 @@ async def get_admin_overview(
         total_blog_posts=b_total,
     )
 
-    return AdminOverviewResponse(
+    response = AdminOverviewResponse(
         date=today,
         today=today_overview,
         modes_today=modes_today,
         history_14d=history_14d,
         totals=totals,
     )
+    if use_cache:
+        _overview_cache.clear()
+        _overview_cache[today] = (time.monotonic(), response)
+    return response
 
 
 @router.get("/users", response_model=AdminUsersResponse)
