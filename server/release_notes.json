@@ -1,5 +1,5 @@
 {
-  "version": "2.0.9",
-  "title": "Security Scanner Cleanup & Migration Hardening",
-  "body": "- Replaced dynamic table-name interpolation in Alembic heraldry downgrade scripts with static SQL statements.\n- Added targeted Semgrep suppressions on verified-safe URL, path, hash, and Nginx proxy guards."
+  "version": "2.0.10",
+  "title": "Faster Admin Dashboard Overview",
+  "body": "- Consolidated admin overview participation queries into a single pass and collapsed heraldry/quiz union branches for significantly faster loading.\n- Removed redundant daily stats lookup and added a short 20-second in-memory cache for repeat overview loads."
 }
