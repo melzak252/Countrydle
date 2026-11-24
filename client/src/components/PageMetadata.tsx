@@ -6,7 +6,7 @@ import { regionalSymbolGames, regionalSymbolLabels, regionalSymbolNouns, regiona
 import { usePageMetadataOverride, type PageMetadataInput } from '../lib/pageMetadata';
 
 const ORIGIN = 'https://countrydle.online';
-const IMAGE = `${ORIGIN}/android-chrome-512x512.png`;
+const IMAGE = `${ORIGIN}/android-chrome-512x512.png?v=2.0.12`;
 
 
 type RouteMetadata = PageMetadataInput & { pageType?: string };
