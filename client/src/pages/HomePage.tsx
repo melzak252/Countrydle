@@ -35,7 +35,6 @@ const MODE_SUMMARIES: Record<string, { tag: string; summary: string; stripe: str
 const QUICK_OTHER_MODES: { path: string; name: string; tag: string; geography: CatalogGeography }[] = [
   { path: '/wojewodztwa', name: 'Województwodle', tag: '16 Polish regions', geography: 'poland' },
   { path: '/border-hop', name: 'Border Hop', tag: 'Follow land borders', geography: 'worldwide' },
-  { path: '/powiaty', name: 'Powiatdle', tag: '380 Polish counties', geography: 'poland' },
   { path: MAP_QUIZ_PATHS.us_states, name: 'US State Map Quiz', tag: 'Click US states', geography: 'united-states' },
   { path: '/map-border-hop?mode=us_states', name: 'Map Border Hop · US', tag: 'US state chains', geography: 'united-states' },
   { path: '/flagi-powiatow', name: 'County Flags', tag: 'Daily Polish flags', geography: 'poland' },
@@ -211,11 +210,6 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 rounded-sm border border-app-border bg-app-surface px-3 py-1.5 text-xs font-medium text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted"
             >
               <span>{item.name}</span>
-              {item.path === '/powiaty' && (
-                <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
-                  Beta
-                </span>
-              )}
               <span className="font-mono text-[10px] text-app-text-muted">· {item.tag}</span>
             </Link>
           ))}

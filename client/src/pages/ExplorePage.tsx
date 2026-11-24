@@ -699,13 +699,18 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
                             <span className="flex flex-wrap items-center gap-1.5">
                               <span data-game-title title={game.name} className="line-clamp-2 max-w-full break-words font-serif text-base font-semibold leading-5">{game.name}</span>
                               {game.path === '/powiaty' && (
-                                <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
-                                  In development
+                                <span className="rounded-sm border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                                  Beta · In dev
                                 </span>
                               )}
                             </span>
                             <span data-game-descriptor title={descriptor} className="mt-2 block break-words text-sm leading-5 text-app-text-secondary">{descriptor}</span>
                             <span data-game-scope title={scope} className="mt-1 block break-words text-xs leading-4 text-app-text-muted">{scope}</span>
+                            {game.path === '/powiaty' && (
+                              <span className="mt-1.5 block text-[11px] font-medium leading-4 text-amber-800 dark:text-amber-300">
+                                In active development — expect bugs &amp; rough answers.
+                              </span>
+                            )}
                           </span>
                         </Link>
                       </li>
@@ -1779,7 +1784,7 @@ const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; titl
                   className="inline-flex items-center gap-2 rounded-sm border border-app-border bg-app-surface px-4 py-2 text-xs font-semibold text-app-text-secondary hover:bg-app-surface-muted transition-colors"
                 >
                   <Play size={13} />
-                  <span>{'Play Powiatdle'}</span>
+                  <span>{'Play Powiatdle (Beta)'}</span>
                 </Link>
               </div>
               <button
