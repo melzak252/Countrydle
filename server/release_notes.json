@@ -1,5 +1,5 @@
 {
-  "version": "2.0.11",
-  "title": "Powiatdle Beta Visibility Update",
-  "body": "- Removed Powiatdle from the homepage quick-links while keeping it playable via Explore.\n- Updated the Explore Powiatdle card and atlas link with a clearer Beta / In dev notice."
+  "version": "2.0.12",
+  "title": "Updated Share Preview & Favicon Cache Busting",
+  "body": "- Updated Open Graph and Twitter share preview metadata to use the 512x512 PNG icon with cache-busting versioning.\n- Bumped favicon and apple-touch-icon cache-buster query strings."
 }
