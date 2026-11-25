@@ -992,7 +992,7 @@ class LocalCountryFacts:
         if not target:
             return None
         if target == country["app_country_name"] or canonical_country_name(target) == canonical_country_name(country["app_country_name"]):
-            answer = True
+            answer = False
         else:
             borders = {
                 canonical_country_name(r[0])
@@ -1864,7 +1864,7 @@ def evaluate_plan_node(
             and str(left_ref.get("relation") or "").startswith("borders_")
             and is_self_country_reference(right, target_country)
         ):
-            return True
+            return False
         relation = str(left_ref.get("relation") or "") if isinstance(left_ref, dict) else ""
         if operator == "contains":
             if not isinstance(left, list) or isinstance(right, (list, dict, bool)):
@@ -1881,7 +1881,7 @@ def evaluate_plan_node(
                     return None
                 subject = resolve_entity(conn, left_ref["entity"], target_country, item_value)
                 if subject is not None and resolved["id"] == subject["id"]:
-                    return True
+                    return False
                 r_canon = canonical_country_name(resolved["app_country_name"])
                 return any(canonical_country_name(value) == r_canon for value in left)
             if relation == "currency":

@@ -44,8 +44,8 @@ def test_qa_playground_dataset_integrity():
     ("us_statedle", "Is it coastal?", "California", True),
     ("countrydle", "Is Catholicism the dominant religion?", "Poland", True),
     ("countrydle", "Is it neither in Europe nor in Asia?", "Brazil", True),
-    ("countrydle", "Does the country have territory in both Africa and Asia?", "Egypt", True),
-    ("countrydle", "Does any of the country territory lie in Europe?", "Kazakhstan", True),
+    ("countrydle", "Does the country have territory in both Africa and Asia?", "Egypt", False),
+    ("countrydle", "Does any of the country territory lie in Europe?", "Kazakhstan", False),
     ("countrydle", "Does the country have territory in all four hemispheres?", "Kiribati", True),
     ("countrydle", "Is the US dollar an official currency in El Salvador?", "El Salvador", True),
 ])

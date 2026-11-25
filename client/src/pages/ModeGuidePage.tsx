@@ -111,7 +111,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
     example: {
       title: 'Egypt: Dual Marine Basins and Continental Frontiers',
       steps: [
-        'Egypt is an eligible nation in Africadle (excluded from Asiadle, with the Sinai Peninsula recognized as its Asian transcontinental territory).',
+        'Egypt is an eligible nation in Africadle and is treated as African-only in Countrydle and Asiadle.',
         'Querying "Does it border the Mediterranean Sea?" evaluates to affirmative, isolating North African coastal states from sub-Saharan nations.',
         'Asking "Does it have a coastline on the Red Sea?" also evaluates to affirmative, confirming Egypt’s unique dual-basin coastal geography.',
         'Querying "Does it border Sudan?" confirms the southern land boundary and uniquely identifies Egypt.',

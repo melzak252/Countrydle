@@ -36,6 +36,7 @@ class USStateGuessBase(BaseModel):
 
 class USStateGuessCreate(USStateGuessBase):
     user_id: Optional[int] = None
+    guest_id: Optional[str] = None
     day_id: int
     answer: bool
 
@@ -60,6 +61,7 @@ class USStateQuestionBase(BaseModel):
 
 class USStateQuestionCreate(BaseModel):
     user_id: Optional[int]
+    guest_id: Optional[str] = None
     day_id: int
     original_question: str
     question: Optional[str]

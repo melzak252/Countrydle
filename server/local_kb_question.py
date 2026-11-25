@@ -276,7 +276,7 @@ Self-neighbor rule:
   (Polish: "sąsiaduje z samym sobą"), this is a valid supported question.
 - Create a contains_exact plan on the relevant borders_* relation with right as
   the hidden entity name reference, e.g. {{"entity":"{config.target_entity}","relation":"name"}}.
-- The executor treats this special self-border/self-neighbor case as true.
+- The executor treats this self-border/self-neighbor case as false (an entity does not border itself).
 
 Allowed operators:
 - contains_exact: exact list membership or complete scalar equality, never a text substring
@@ -632,8 +632,8 @@ def evaluate(
         right_val = resolve_ref(conn, config, row, right_node, item_value)
         if isinstance(right_val, dict):
             right_val = right_val.get("value", right_val.get("entity"))
-        if is_self_reference(right_val, row, config):
-            return True
+        if rel_name.startswith("borders_") and is_self_reference(right_val, row, config):
+            return False
         if config.mode_name == "Powiatdle" and rel_name == "borders_powiat":
             right_val = resolve_powiat_name(conn, right_val)
         if rel_name == "borders_voivodeship" or (config.mode_name == "Powiatdle" and rel_name == "voivodeship"):
@@ -646,8 +646,8 @@ def evaluate(
                 rel_items = [_canonical_us_region(value) for value in rel_items]
         if right_val is None:
             return None
-        if is_self_reference(right_val, row, config):
-            return True
+        if rel_name.startswith("borders_") and is_self_reference(right_val, row, config):
+            return False
         if isinstance(rel_items, list):
             right_norm = norm(right_val)
             if rel_name == "borders_country" and right_norm in POLISH_NEIGHBORING_COUNTRIES_ALIASES:
@@ -770,12 +770,12 @@ def evaluate(
         and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
         if left_row is not None and is_self_reference(right, left_row, config):
-            return True
+            return False
         right = resolve_powiat_name(conn, right)
         if right is None:
             return None
         if left_row is not None and right == left_row[config.name_column]:
-            return True
+            return False
     right_is_seat = isinstance(right_node, dict) and right_node.get("relation") == "seat"
     if (
         isinstance(left_node, dict)
@@ -788,23 +788,22 @@ def evaluate(
         and not right_is_seat
         and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
-        if left_row is not None and is_self_reference(right, left_row, config):
-            return True
+        is_border_voiv = left_node.get("relation") == "borders_voivodeship"
+        if is_border_voiv and left_row is not None and is_self_reference(right, left_row, config):
+            return False
         resolved_v = resolve_voivodeship_name(right)
         if resolved_v is not None:
             right = resolved_v
-        if left_row is not None and right == left_row[config.name_column]:
-            return True
+        if is_border_voiv and left_row is not None and right == left_row[config.name_column]:
+            return False
     if left is None or (op not in {"has_space", "has_hyphen", "exists"} and right is None):
         return None
 
-    # Game rule inherited from the old prompts: if the user asks whether the
-    # referenced entity borders/neighbors itself, answer true. We do not store
-    # self-edges in SQLite border tables, so handle it explicitly for all modes.
+    # An entity never borders/neighbors itself.
     if op in {"contains", "contains_exact", "equals"} and isinstance(left_node, dict):
         relation = str(left_node.get("relation") or "")
         if relation.startswith("borders_") and left_row is not None and is_self_reference(right, left_row, config):
-            return True
+            return False
     if op == "exists":
         # If right/value is provided, the planner intended membership check (e.g. water_access contains "Gulf of Mexico")
         if right is not None:

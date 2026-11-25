@@ -83,9 +83,9 @@ def test_name_compared_with_capital_remains_a_text_comparison():
     assert local_answer(plan, "Poland").answer is False
 
 
-def test_resolved_border_name_preserves_the_self_border_rule():
+def test_resolved_border_name_does_not_self_border():
     plan = contains_plan("borders_country", "St Kitis")
-    assert local_answer(plan, "Saint Kitts and Nevis").answer is True
+    assert local_answer(plan, "Saint Kitts and Nevis").answer is False
     assert local_answer(plan, "Dominica").answer is False
 
 
@@ -500,11 +500,11 @@ def test_name_text_pattern_operators_are_evaluated_locally():
     assert local_answer(ends_with_stan, "Poland").answer is False
 
 
-def test_self_bordering_rule_is_true_for_target_country_reference():
+def test_self_bordering_rule_is_false_for_target_country_reference():
     answer = local_answer(contains_plan("borders_country", "Poland"), "Poland")
 
     assert answer is not None
-    assert answer.answer is True
+    assert answer.answer is False
 
 
 def test_exists_operator_for_known_list_relations():

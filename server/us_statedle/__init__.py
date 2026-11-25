@@ -8,6 +8,7 @@ from typing import Union, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    get_guest_identity,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -375,6 +376,7 @@ async def _do_ask_question(
     if not is_answered(question_create):
         return unresolved_question(question_create, USStateQuestionDisplay)
     question_create.user_id = user.id if user else None
+    question_create.guest_id = get_guest_identity(request, response) if user is None else None
     question_create.day_id = day_state.id
     if is_direct_name_win_plan(question_create.valid, question_create.answer, planned_question):
         new_question = await USStatedleQuestionRepository(session).create_question(question_create)
@@ -485,11 +487,13 @@ async def make_guess(
         token = create_guest_game_token("us_statedle", day_state.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_us_statedle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
+        guest_id = get_guest_identity(request, response)
         guess_create = USStateGuessCreate(
             guess=guess.guess,
             us_state_id=guess.us_state_id,
             day_id=day_state.id,
             user_id=None,
+            guest_id=guest_id,
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )

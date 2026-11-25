@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, Compass, Play, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Compass, MessageSquare, Play, Users } from 'lucide-react';
 import ExploreGameArtwork from '../components/ExploreGameArtwork';
 import GuestProgress from '../components/GuestProgress';
 import SpinningGlobe from '../components/SpinningGlobe';
@@ -126,6 +126,13 @@ export default function HomePage() {
             >
               <Users size={16} className="text-app-accent" aria-hidden="true" />
               <span>Duel a friend</span>
+            </Link>
+            <Link
+              to="/contact"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm border border-app-border bg-app-surface px-5 py-3 text-sm font-semibold text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus sm:w-auto"
+            >
+              <MessageSquare size={16} className="text-app-accent" aria-hidden="true" />
+              <span>Suggestions</span>
             </Link>
           </div>
 

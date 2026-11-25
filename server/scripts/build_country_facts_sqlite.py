@@ -589,6 +589,8 @@ def insert_country(
         )
 
     for continent in country.get("continents") or []:
+        if (app_name == "Egypt" and continent == "Asia") or (app_name == "Kazakhstan" and continent == "Europe"):
+            continue
         connection.execute(
             "INSERT OR IGNORE INTO country_continents(country_id, continent) VALUES (?, ?)",
             (country_id, continent),

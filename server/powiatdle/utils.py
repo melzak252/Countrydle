@@ -282,8 +282,8 @@ Context:
 
 Find facts that confirm or contradict the proposition; use general knowledge of
 Polish geography and administration when context lacks a fact. If the answer cannot
-be determined with high confidence, set answer to null. For this game a county
-borders itself. Treat "or" and lists as inclusive: any matching option is enough.
+be determined with high confidence, set answer to null. A county does not
+border itself. Treat "or" and lists as inclusive: any matching option is enough.
 Answer about the county in the third person, even for first-person questions.
 Provide an informative factual explanation supporting the answer, rather than
 starting with yes or no or simply repeating it.

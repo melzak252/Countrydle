@@ -229,8 +229,8 @@ def test_border_operator_resolves_entity_reference_and_explains_name():
     )
 
     assert result is not None
-    assert result.answer is True
-    assert "borders California" in result.explanation
+    assert result.answer is False
+    assert "does not border California" in result.explanation
     assert "target_state" not in result.explanation
 
 
@@ -417,7 +417,7 @@ def test_generic_boolean_any_all_and_self_neighbor_semantics():
 
     assert answer(US_STATE_CONFIG, "California", any_border_starts_with_a).answer is True
     assert answer(US_STATE_CONFIG, "California", all_california_waters_are_oceans).answer is True
-    assert answer(VOIVODESHIP_CONFIG, "Małopolskie", self_neighbor).answer is True
+    assert answer(VOIVODESHIP_CONFIG, "Małopolskie", self_neighbor).answer is False
 
 
 def test_generic_mixed_sqlite_and_unsupported_conditions_fallback_only_when_needed():
