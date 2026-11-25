@@ -1,5 +1,5 @@
 {
-  "version": "2.0.13",
-  "title": "Updated 512x512 App & Share Icons",
-  "body": "- Regenerated android-chrome-512x512.png and android-chrome-192x192.png from the current emerald globe favicon.svg.\n- Bumped Open Graph, Twitter, and favicon cache-buster URLs to v=2.0.13."
+  "version": "2.0.14",
+  "title": "Border Rules, Continent Cleanup, Suggestions & US Statedle Sessions",
+  "body": "- Updated border logic so countries, states, and regions no longer count as bordering themselves.\n- Updated Egypt (Africa-only) and Kazakhstan (Asia-only) continent associations.\n- Added per-guest session attribution for US Statedle questions and guesses in Admin Game Sessions.\n- Added a direct Suggestions button to the homepage."
 }
