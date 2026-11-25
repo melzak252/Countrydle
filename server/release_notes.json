@@ -1,5 +1,5 @@
 {
-  "version": "2.0.12",
-  "title": "Updated Share Preview & Favicon Cache Busting",
-  "body": "- Updated Open Graph and Twitter share preview metadata to use the 512x512 PNG icon with cache-busting versioning.\n- Bumped favicon and apple-touch-icon cache-buster query strings."
+  "version": "2.0.13",
+  "title": "Updated 512x512 App & Share Icons",
+  "body": "- Regenerated android-chrome-512x512.png and android-chrome-192x192.png from the current emerald globe favicon.svg.\n- Bumped Open Graph, Twitter, and favicon cache-buster URLs to v=2.0.13."
 }
