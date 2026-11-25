@@ -1,5 +1,5 @@
 {
-  "version": "2.0.14",
-  "title": "Border Rules, Continent Cleanup, Suggestions & US Statedle Sessions",
-  "body": "- Updated border logic so countries, states, and regions no longer count as bordering themselves.\n- Updated Egypt (Africa-only) and Kazakhstan (Asia-only) continent associations.\n- Added per-guest session attribution for US Statedle questions and guesses in Admin Game Sessions.\n- Added a direct Suggestions button to the homepage."
+  "version": "2.0.15",
+  "title": "Google Analytics Consent Mode & Rybbit Analytics Fix",
+  "body": "- Enabled Google Analytics (gtag.js) with Google Consent Mode v2 defaults so measurement works across all regions while respecting GDPR consent.\n- Enabled cookieless Rybbit analytics for all visitors without gating it on non-GDPR CMP responses.\n- Updated Cookie Policy and Privacy Policy disclosures to match the analytics setup."
 }
