@@ -1,5 +1,5 @@
 {
-  "version": "2.0.15",
-  "title": "Google Analytics Consent Mode & Rybbit Analytics Fix",
-  "body": "- Enabled Google Analytics (gtag.js) with Google Consent Mode v2 defaults so measurement works across all regions while respecting GDPR consent.\n- Enabled cookieless Rybbit analytics for all visitors without gating it on non-GDPR CMP responses.\n- Updated Cookie Policy and Privacy Policy disclosures to match the analytics setup."
+  "version": "2.0.16",
+  "title": "Performance, Accessibility & Google Analytics Reporting Improvements",
+  "body": "- Enabled gzip compression in Nginx for faster JS, CSS, HTML, and SVG delivery.\n- Added route-level code-splitting (React.lazy) so the homepage loads significantly less JavaScript.\n- Improved mobile accessibility by removing viewport zoom restrictions and adding explicit image dimensions on homepage cards.\n- Updated Google Analytics default analytics_storage to granted (keeping ad storage denied until CMP consent) so GA4 reports populate reliably."
 }
