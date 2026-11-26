@@ -105,4 +105,52 @@ describe('Dual-State Map Marking & Elimination Store Logic', () => {
     expect(useCountryGameStore.getState().candidateEntities).toEqual([]);
     expect(useCountryGameStore.getState().eliminatedEntities).toEqual([]);
   });
+
+  test('computeAutoEntityMarkings only colors countries specified by each question', async () => {
+    const { computeAutoEntityMarkings } = await import('../src/lib/mapMarkings');
+
+    // Q1: "Is it in Europe?" -> No => ONLY European countries are orange, rest untouched
+    const qEuropeNo = {
+      id: 1,
+      original_question: 'Is it in Europe?',
+      valid: true,
+      answer: false,
+      user_id: 0,
+      day_id: 1,
+      asked_at: '2026-11-27T00:00:00Z',
+      map_highlight: {
+        supported: true,
+        matched: ['Japan', 'Brazil', 'Senegal'],
+        eliminated: ['Poland', 'France', 'Russia'],
+      },
+    };
+    const afterEuropeNo = computeAutoEntityMarkings([qEuropeNo]);
+    expect(afterEuropeNo['POLAND']).toBe('orange');
+    expect(afterEuropeNo['FRANCE']).toBe('orange');
+    expect(afterEuropeNo['RUSSIA']).toBe('orange');
+    expect(afterEuropeNo['JAPAN']).toBeUndefined();
+    expect(afterEuropeNo['BRAZIL']).toBeUndefined();
+
+    // Q2: "Is it in Asia?" -> Yes => Asia-only becomes blue, Russia stays orange, Brazil untouched
+    const qAsiaYes = {
+      id: 2,
+      original_question: 'Is it in Asia?',
+      valid: true,
+      answer: true,
+      user_id: 0,
+      day_id: 1,
+      asked_at: '2026-11-27T00:01:00Z',
+      map_highlight: {
+        supported: true,
+        matched: ['Japan', 'Russia', 'India'],
+        eliminated: ['Poland', 'France', 'Brazil', 'Senegal'],
+      },
+    };
+    const afterAsiaYes = computeAutoEntityMarkings([qEuropeNo, qAsiaYes]);
+    expect(afterAsiaYes['JAPAN']).toBe('blue');
+    expect(afterAsiaYes['INDIA']).toBe('blue');
+    expect(afterAsiaYes['RUSSIA']).toBe('orange');
+    expect(afterAsiaYes['POLAND']).toBe('orange');
+    expect(afterAsiaYes['BRAZIL']).toBeUndefined();
+  });
 });

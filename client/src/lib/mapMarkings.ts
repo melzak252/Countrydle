@@ -18,36 +18,40 @@ function normalizeAutoKey(name: string): string {
 }
 
 export function computeAutoEntityMarkings(questions: readonly Question[]): Record<string, MapMarkerColor> {
-  const everEliminated = new Set<string>();
-  let currentPossible: Set<string> | null = null;
+  const ruledOut = new Set<string>();
+  let positive: Set<string> | null = null;
 
   for (const question of questions) {
     const highlight = question.map_highlight;
     if (!highlight || !highlight.supported) continue;
 
-    for (const name of highlight.eliminated || []) {
-      everEliminated.add(normalizeAutoKey(name));
-    }
-
-    const matchedSet = new Set((highlight.matched || []).map(normalizeAutoKey));
-    if (currentPossible === null) {
-      currentPossible = matchedSet;
-    } else {
-      const next = new Set<string>();
-      for (const name of currentPossible) {
-        if (matchedSet.has(name)) next.add(name);
+    if (question.answer === false) {
+      // Only color the countries the question asked about as ruled-out (orange); leave the rest untouched.
+      for (const name of highlight.eliminated || []) {
+        ruledOut.add(normalizeAutoKey(name));
       }
-      currentPossible = next;
+    } else if (question.answer === true) {
+      // Only color the countries the question matched as possible (blue), narrowing cumulatively.
+      const matchedSet = new Set((highlight.matched || []).map(normalizeAutoKey));
+      if (positive === null) {
+        positive = matchedSet;
+      } else {
+        const next = new Set<string>();
+        for (const name of positive) {
+          if (matchedSet.has(name)) next.add(name);
+        }
+        positive = next;
+      }
     }
   }
 
   const markings: Record<string, MapMarkerColor> = {};
-  for (const name of everEliminated) {
+  for (const name of ruledOut) {
     markings[name] = 'orange';
   }
-  if (currentPossible) {
-    for (const name of currentPossible) {
-      if (!everEliminated.has(name)) {
+  if (positive) {
+    for (const name of positive) {
+      if (!ruledOut.has(name)) {
         markings[name] = 'blue';
       }
     }

@@ -444,28 +444,73 @@ export function ControlledMapBox({
     onCountryCode(code?.toLowerCase());
   }, [revealedName, geoJsonData, onCountryCode]);
 
-  // Optimization: Update styles imperatively instead of re-rendering whole map
+  const prevAutoMarkingsRef = useRef<Record<string, string>>({});
+  const prevShowAutoRef = useRef<boolean>(showAutoMarkings);
+
+  // Optimization: Update styles imperatively instead of re-rendering whole map,
+  // with a smooth fade-in when bot auto-coloring updates countries.
   useEffect(() => {
-    if (geoJsonLayerRef.current) {
-      geoJsonLayerRef.current.eachLayer((item) => {
-        const layer = item as FeatureLayer;
-        const feature = layer.feature;
-        if (feature) {
-          const newStyle = getCountryFeatureStyle(
-            feature,
-            eligibleNames,
-            entityMarkings,
-            revealedName,
-            autoEntityMarkings,
-            showAutoMarkings,
-          );
-          layer.setStyle(newStyle);
-          if (isCorrectCountryFeature(feature, revealedName)) {
-            layer.bringToFront();
-          }
-        }
-      });
-    }
+    const geoLayer = geoJsonLayerRef.current;
+    if (!geoLayer) return;
+
+    const prevAuto = prevAutoMarkingsRef.current;
+    const prevShow = prevShowAutoRef.current;
+    const nextAuto = showAutoMarkings ? (autoEntityMarkings || {}) : {};
+    const animatedLayers: Array<{ layer: FeatureLayer; style: PathOptions; targetOpacity: number }> = [];
+
+    geoLayer.eachLayer((item) => {
+      const layer = item as FeatureLayer;
+      const feature = layer.feature;
+      if (!feature) return;
+      const newStyle = getCountryFeatureStyle(
+        feature,
+        eligibleNames,
+        entityMarkings,
+        revealedName,
+        autoEntityMarkings,
+        showAutoMarkings,
+      );
+      const rawName = feature.properties?.SOVEREIGNT;
+      const normKey = typeof rawName === 'string' ? countryNameKey(rawName) : '';
+      const hasManual = typeof rawName === 'string' && Boolean(entityMarkings[rawName.toUpperCase()]);
+      const nextColor = normKey ? nextAuto[normKey] : undefined;
+      const prevColor = prevShow && normKey ? prevAuto[normKey] : undefined;
+
+      if (!hasManual && nextColor && nextColor !== prevColor && !isCorrectCountryFeature(feature, revealedName)) {
+        const targetOpacity = typeof newStyle.fillOpacity === 'number' ? newStyle.fillOpacity : 0.6;
+        layer.setStyle({ ...newStyle, fillOpacity: 0.08 });
+        animatedLayers.push({ layer, style: newStyle, targetOpacity });
+      } else {
+        layer.setStyle(newStyle);
+      }
+      if (isCorrectCountryFeature(feature, revealedName)) {
+        layer.bringToFront();
+      }
+    });
+
+    prevAutoMarkingsRef.current = { ...(autoEntityMarkings || {}) };
+    prevShowAutoRef.current = showAutoMarkings;
+
+    if (animatedLayers.length === 0) return;
+
+    const durationMs = 420;
+    const start = performance.now();
+    let rafId = 0;
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      for (const entry of animatedLayers) {
+        entry.layer.setStyle({
+          ...entry.style,
+          fillOpacity: 0.08 + (entry.targetOpacity - 0.08) * eased,
+        });
+      }
+      if (progress < 1) {
+        rafId = requestAnimationFrame(step);
+      }
+    };
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
   }, [entityMarkings, autoEntityMarkings, showAutoMarkings, revealedName, geoJsonData, eligibleNames]);
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const countryName = feature.properties?.SOVEREIGNT;
