@@ -1,5 +1,5 @@
 {
-  "version": "2.0.17",
-  "title": "Bot Map Auto-Coloring & Clearer Directional Clarifications",
-  "body": "- Added automatic bot map coloring for geographic questions (continents, regions, borders, coastlines, islands, hemispheres, and north/south/east/west coordinates): possible countries are shaded blue and ruled-out countries are shaded orange, while keeping your manual green/red markers on top.\n- Added a toggle button on the map to hide or show bot coloring at any time, and a notice when a question cannot be auto-colored.\n- Improved directional clarifications (north/south/east/west) to display the reference latitude or longitude line and explain that the target can lie anywhere along that side."
+  "version": "2.0.18",
+  "title": "Focused Bot Map Coloring & Smooth Fade-In Animation",
+  "body": "- Refined bot map coloring so only the countries specified by each geographic question are shaded (blue on Yes, orange on No), leaving unrelated regions untouched.\n- Added a smooth fade-in animation when bot map shading updates."
 }
