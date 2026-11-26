@@ -26,6 +26,13 @@ class QuestionEnhanced(BaseModel):
 
 
 
+class MapHighlight(BaseModel):
+    supported: bool = False
+    matched: list[str] = Field(default_factory=list)
+    eliminated: list[str] = Field(default_factory=list)
+    note: str | None = None
+
+
 class QuestionCreate(QuestionEnhanced):
     answer: bool | None = Field(strict=True)
     user_id: int | None
@@ -34,6 +41,7 @@ class QuestionCreate(QuestionEnhanced):
     guest_id: str | None = None
     server_version: str | None = SERVER_VERSION
     fact_provenance: list[dict] = Field(default_factory=list)
+    map_highlight: MapHighlight | None = Field(default=None, exclude=True)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -80,6 +88,7 @@ class QuestionDisplay(ReportableQuestion, PublicFactEvidence):
     day_id: int
     asked_at: datetime
     auto_guess: GuessDisplay | None = None
+    map_highlight: MapHighlight | None = None
     model_config = ConfigDict(from_attributes=True)
 
 

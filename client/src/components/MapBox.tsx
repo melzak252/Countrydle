@@ -6,7 +6,7 @@ import { useGameStore } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import MapToolbar from './MapToolbar';
-import { Check, Compass, RotateCcw } from 'lucide-react';
+import { Bot, Check, Compass, RotateCcw } from 'lucide-react';
 import type { MapInteractionState } from '../lib/mapMarkings';
 import { isCountryAvailable } from '../lib/countryEligibility';
 import { useMapData } from '../hooks/useMapData';
@@ -233,6 +233,24 @@ function MapControls({
             <Compass size={15} />
           </button>
         )}
+        {interaction.onToggleAutoMarkings && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              interaction.onToggleAutoMarkings?.();
+            }}
+            className={`p-2 rounded shadow-sm transition-colors border h-9 w-9 md:w-8 md:h-8 flex items-center justify-center cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--map-control-focus)] ${
+              interaction.showAutoMarkings !== false
+                ? 'bg-[var(--map-control-active)] text-[var(--map-control-strong-ink)] border-[var(--map-control-strong-border)] hover:bg-[var(--map-control-hover)]'
+                : 'bg-[var(--map-control-bg)] text-[var(--map-control-muted-ink)] border-[var(--map-control-border)] hover:bg-[var(--map-control-hover)] hover:text-[var(--map-control-ink)]'
+            }`}
+            title={interaction.showAutoMarkings !== false ? 'Hide bot coloring' : 'Show bot coloring'}
+            aria-label={interaction.showAutoMarkings !== false ? 'Hide bot coloring' : 'Show bot coloring'}
+            aria-pressed={interaction.showAutoMarkings !== false}
+          >
+            <Bot size={15} />
+          </button>
+        )}
         {isGameOver && correctCountryName && (
           <button
             onClick={(e) => {
@@ -322,6 +340,9 @@ export default function MapBox({ correctCountryName, className, onCountryCode }:
     correctCountryName={correctCountryName || state.correctEntity?.name}
     interaction={{
       entityMarkings: state.entityMarkings,
+      autoEntityMarkings: state.autoEntityMarkings,
+      showAutoMarkings: state.showAutoMarkings,
+      onToggleAutoMarkings: state.toggleAutoMarkings,
       activeMarkerColor: state.activeMarkerColor,
       setActiveMarkerColor: state.setActiveMarkerColor,
       handleEntityMapClick: state.handleEntityMapClick,
@@ -351,7 +372,7 @@ export function ControlledMapBox({
   const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
   const [showReferenceLines, setShowReferenceLines] = useState<boolean>(true);
-  const { entityMarkings, isGameOver } = interaction;
+  const { entityMarkings, autoEntityMarkings, showAutoMarkings = true, isGameOver } = interaction;
   const eligibleNames = useMemo(() => new Set(eligibleCountries
     .filter(country => isCountryAvailable(country.name, countryMode))
     .map(country => countryNameKey(country.name))), [eligibleCountries, countryMode]);
@@ -367,7 +388,14 @@ export function ControlledMapBox({
   const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
 
   const getStyle = useCallback((feature: Feature | undefined) => (
-    getCountryFeatureStyle(feature, current.current.eligibleNames, current.current.interaction.entityMarkings, current.current.revealedName)
+    getCountryFeatureStyle(
+      feature,
+      current.current.eligibleNames,
+      current.current.interaction.entityMarkings,
+      current.current.revealedName,
+      current.current.interaction.autoEntityMarkings,
+      current.current.interaction.showAutoMarkings !== false,
+    )
   ), []);
 
   const hoverLayerRef = useRef<L.GeoJSON | null>(null);
@@ -427,7 +455,9 @@ export function ControlledMapBox({
             feature,
             eligibleNames,
             entityMarkings,
-            revealedName
+            revealedName,
+            autoEntityMarkings,
+            showAutoMarkings,
           );
           layer.setStyle(newStyle);
           if (isCorrectCountryFeature(feature, revealedName)) {
@@ -436,7 +466,7 @@ export function ControlledMapBox({
         }
       });
     }
-  }, [entityMarkings, revealedName, geoJsonData, eligibleNames]);
+  }, [entityMarkings, autoEntityMarkings, showAutoMarkings, revealedName, geoJsonData, eligibleNames]);
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const countryName = feature.properties?.SOVEREIGNT;
     

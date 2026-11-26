@@ -966,6 +966,62 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     )
     assert ans_coords is not None
     assert ans_coords.answer is True
+    assert ans_coords.clarification == "The country is above 43°N (anywhere above this line)."
+
+    # Coordinates (south_of, west_of, east_of) directional line clarifications
+    south_plan = {
+        "operator": "south_of",
+        "left": {"entity": "target_country", "relation": "coordinates.latitude"},
+        "right": {"entity": "United States", "relation": "coordinates.latitude"},
+    }
+    ans_south = execute_local_plan(south_plan, "Senegal", "Is it south of USA?")
+    assert ans_south is not None
+    assert ans_south.answer is True
+    assert "below 38°N (anywhere below this line)" in (ans_south.clarification or "")
+
+    ans_not_south = execute_local_plan(south_plan, "Poland", "Is it south of USA?")
+    assert ans_not_south is not None
+    assert ans_not_south.answer is False
+    assert "not below 38°N (at or above this line)" in (ans_not_south.clarification or "")
+
+    west_plan = {
+        "operator": "west_of",
+        "left": {"entity": "target_country", "relation": "coordinates.longitude"},
+        "right": {"entity": "Chad", "relation": "coordinates.longitude"},
+    }
+    ans_west = execute_local_plan(west_plan, "Senegal", "Is it west of Chad?")
+    assert ans_west is not None
+    assert ans_west.answer is True
+    assert "west of 19°E (anywhere left of this line)" in (ans_west.clarification or "")
+
+    east_plan = {
+        "operator": "east_of",
+        "left": {"entity": "target_country", "relation": "coordinates.longitude"},
+        "right": {"entity": "Poland", "relation": "coordinates.longitude"},
+    }
+    ans_east = execute_local_plan(east_plan, "Japan", "Is it east of Poland?")
+    assert ans_east is not None
+    assert ans_east.answer is True
+    assert "east of 20°E (anywhere right of this line)" in (ans_east.clarification or "")
+
+    # Geographic auto-coloring map_highlight: borders Poland -> neighbors matched, Poland eliminated
+    border_pl_plan = contains_plan("borders_country", "Poland")
+    ans_border_pl = execute_local_plan(border_pl_plan, "Germany", "Does it border Poland?")
+    assert ans_border_pl is not None
+    assert ans_border_pl.answer is True
+    assert ans_border_pl.map_highlight is not None
+    assert ans_border_pl.map_highlight["supported"] is True
+    assert "Germany" in ans_border_pl.map_highlight["matched"]
+    assert "Czech Republic" in ans_border_pl.map_highlight["matched"]
+    assert "Poland" in ans_border_pl.map_highlight["eliminated"]
+    assert len(ans_border_pl.map_highlight["matched"]) + len(ans_border_pl.map_highlight["eliminated"]) == 196
+    assert ans_south.map_highlight is not None
+    assert len(ans_south.map_highlight["matched"]) + len(ans_south.map_highlight["eliminated"]) == 195
+    assert "Senegal" in ans_south.map_highlight["matched"]
+    assert "Poland" in ans_south.map_highlight["eliminated"]
+
+    # Non-geographic trivia (currency) should NOT auto-color
+    assert ans_curr.map_highlight is None
 
 
 @pytest.mark.parametrize("hemisphere, expected", [

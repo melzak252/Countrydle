@@ -159,6 +159,11 @@ export default function QuestionChat({
                     <p className="text-app-text-secondary">{question.explanation}</p>
                   </div>
                 )}
+                {question.valid && question.answer !== null && question.map_highlight && !question.map_highlight.supported && question.map_highlight.note && (
+                  <p className="text-xs text-app-text-muted pt-0.5">
+                    {question.map_highlight.note}
+                  </p>
+                )}
                 {isGameOver && <FactProvenance records={question.fact_provenance} />}
                 {isGameOver && question.id > 0 && (
                   <AnswerReportForm mode={mode} questionId={question.id} reportToken={question.report_token} compact />

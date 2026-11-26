@@ -178,6 +178,7 @@ async def analyze_and_answer_locally(
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",
         fact_provenance=local_answer.fact_provenance,
+        map_highlight=local_answer.map_highlight,
     ), planned_question
 
 

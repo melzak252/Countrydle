@@ -159,6 +159,8 @@ export function getCountryFeatureStyle(
   eligibleNames: ReadonlySet<string>,
   markings: Record<string, MapMarkerColor>,
   currentCorrectName?: string,
+  autoMarkings?: Record<string, MapMarkerColor>,
+  showAutoMarkings = true,
 ): PathOptions {
   if (!feature?.properties) return MAP_THEME.countries.unavailable;
   const countryName = feature.properties.SOVEREIGNT;
@@ -166,6 +168,20 @@ export function getCountryFeatureStyle(
   if (!eligibleNames.has(countryNameKey(countryName))) return MAP_THEME.countries.unavailable;
   if (isCorrectCountryFeature(feature, currentCorrectName)) return MAP_THEME.countries.correct;
 
-  const marker = markings[countryName.toUpperCase()];
-  return marker ? MAP_THEME.countries.markers[marker] : MAP_THEME.countries.available;
+  const key = countryName.toUpperCase();
+  const manualMarker = markings[key];
+  if (manualMarker) return MAP_THEME.countries.markers[manualMarker];
+
+  if (showAutoMarkings && autoMarkings) {
+    const autoMarker = autoMarkings[countryNameKey(countryName)] ?? autoMarkings[key];
+    if (autoMarker) {
+      const base = MAP_THEME.countries.markers[autoMarker];
+      return {
+        ...base,
+        fillOpacity: autoMarker === 'orange' ? 0.45 : 0.68,
+      };
+    }
+  }
+
+  return MAP_THEME.countries.available;
 }

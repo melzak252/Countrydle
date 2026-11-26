@@ -32,6 +32,29 @@ class LocalAnswer:
     relation: str
     clarification: str | None = None
     fact_provenance: list[dict] = field(default_factory=list)
+    map_highlight: dict | None = None
+
+
+GEOGRAPHIC_AUTO_COLOR_RELATIONS = frozenset({
+    "continent",
+    "geographic_area",
+    "region",
+    "subregion",
+    "hemisphere",
+    "borders_country",
+    "water_access",
+    "marine_access",
+    "is_island",
+    "coordinates",
+    "coordinates.latitude",
+    "coordinates.longitude",
+    "latitude",
+    "longitude",
+    "min_latitude",
+    "max_latitude",
+    "min_longitude",
+    "max_longitude",
+})
 
 
 POLISH_COUNTRY_ALIASES = {
@@ -2595,7 +2618,11 @@ def generate_factual_explanation(
     return ""
 
 
-def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
+def generate_plan_clarification(
+    plan: dict,
+    answer: bool,
+    conn: sqlite3.Connection | None = None,
+) -> str | None:
     """Generate a clean, grammatical English clarification directly from AST plan node."""
     if not isinstance(plan, dict):
         return None
@@ -2611,7 +2638,7 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
     if op == "not":
         child = plan.get("condition") or (plan.get("args") and isinstance(plan.get("args")[0], dict) and plan.get("args")[0])
         if child:
-            return generate_plan_clarification(child, not answer)
+            return generate_plan_clarification(child, not answer, conn=conn)
         if rel in ("marine_access", "water_access"):
             return "The country is landlocked." if answer else "The country has access to the sea/ocean."
 
@@ -2695,9 +2722,59 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
             return f"The country is in the {val} Hemisphere." if answer else f"The country is not in the {val} Hemisphere."
 
     if op in ("north_of", "south_of", "east_of", "west_of"):
+        axis = "latitude" if op in ("north_of", "south_of") else "longitude"
+        ref_coord = None
+        if entity and conn is not None:
+            other_country = find_country(conn, entity)
+            if other_country is not None:
+                ref_coord = other_country[axis]
+        elif isinstance(val, (int, float)):
+            ref_coord = float(val)
+
+        if ref_coord is not None:
+            positive, negative = ("N", "S") if axis == "latitude" else ("E", "W")
+            cardinal = positive if ref_coord >= 0 else negative
+            coord_text = f"{round(abs(ref_coord))}°{cardinal}"
+            phrases = {
+                "south_of": (
+                    f"The country is below {coord_text} (anywhere below this line).",
+                    f"The country is not below {coord_text} (at or above this line).",
+                ),
+                "north_of": (
+                    f"The country is above {coord_text} (anywhere above this line).",
+                    f"The country is not above {coord_text} (at or below this line).",
+                ),
+                "west_of": (
+                    f"The country is west of {coord_text} (anywhere left of this line).",
+                    f"The country is not west of {coord_text} (at or right of this line).",
+                ),
+                "east_of": (
+                    f"The country is east of {coord_text} (anywhere right of this line).",
+                    f"The country is not east of {coord_text} (at or left of this line).",
+                ),
+            }
+            return phrases[op][0 if answer else 1]
+
         target = entity or val or "that country"
-        direction = op.replace("_of", "")
-        return f"The country is {direction} of {target}." if answer else f"The country is not {direction} of {target}."
+        fallback_phrases = {
+            "south_of": (
+                f"The country is south of {target} (anywhere below its latitude line).",
+                f"The country is not south of {target} (at or above its latitude line).",
+            ),
+            "north_of": (
+                f"The country is north of {target} (anywhere above its latitude line).",
+                f"The country is not north of {target} (at or below its latitude line).",
+            ),
+            "west_of": (
+                f"The country is west of {target} (anywhere left of its longitude line).",
+                f"The country is not west of {target} (at or right of its longitude line).",
+            ),
+            "east_of": (
+                f"The country is east of {target} (anywhere right of its longitude line).",
+                f"The country is not east of {target} (at or left of its longitude line).",
+            ),
+        }
+        return fallback_phrases[op][0 if answer else 1]
 
     # Capital
     if rel == "capital":
@@ -2763,6 +2840,46 @@ def generate_plan_clarification(plan: dict, answer: bool) -> str | None:
             )
     return None
 
+def compute_geographic_map_highlight(
+    conn: sqlite3.Connection,
+    plan: dict,
+    answer: bool,
+) -> dict | None:
+    """Evaluate a geographic AST plan across all countries to return matched/eliminated sets.
+
+    Only runs when every relation referenced by the plan is geographic/spatial so
+    non-geographic trivia (population, currency, language, etc.) is never auto-solved.
+    """
+    relations = plan_relations(plan)
+    if not relations or not relations.issubset(GEOGRAPHIC_AUTO_COLOR_RELATIONS):
+        return None
+    rows = conn.execute("SELECT * FROM countries").fetchall()
+    matched: list[str] = []
+    eliminated: list[str] = []
+    for row in rows:
+        name = row["app_country_name"]
+        if not name:
+            continue
+        try:
+            row_ans = evaluate_plan_node(conn, plan, row)
+        except Exception:
+            continue
+        if row_ans is None:
+            continue
+        if bool(row_ans) is bool(answer):
+            matched.append(name)
+        else:
+            eliminated.append(name)
+    if not matched and not eliminated:
+        return None
+    return {
+        "supported": True,
+        "matched": matched,
+        "eliminated": eliminated,
+        "note": None,
+    }
+
+
 def execute_local_plan(
     plan: dict | list,
     country_name: str,
@@ -2809,7 +2926,7 @@ def execute_local_plan(
             conn, country, plan, answer
         )
 
-        clarification = generate_plan_clarification(plan, answer)
+        clarification = generate_plan_clarification(plan, answer, conn=conn)
         if not clarification:
             try:
                 direct_answer = LocalCountryFacts(DEFAULT_DB_PATH).try_answer(improved_question, country_name)
@@ -2829,6 +2946,7 @@ def execute_local_plan(
                 else:
                     rest = re.sub(r"^(?:does (?:the |this )?country|does it|does|do|have|has)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
                     clarification = f"The country {rest}." if answer else f"The country does not {rest}."
+        map_highlight = compute_geographic_map_highlight(conn, plan, answer)
         return LocalAnswer(
             question=improved_question,
             answer=answer,
@@ -2836,4 +2954,5 @@ def execute_local_plan(
             explanation=explanation,
             relation="+".join(relations),
             fact_provenance=fact_provenance,
+            map_highlight=map_highlight,
         )
