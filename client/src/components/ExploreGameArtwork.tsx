@@ -308,11 +308,14 @@ function MapArtwork({ url, frame, variant }: { url: MapUrl; frame: MapFrame; var
 
 export default function ExploreGameArtwork({ game, featured = false }: { game: ExploreGame; featured?: boolean }) {
   const dimensions = featured ? 'h-32 w-32' : 'h-24 w-24';
+  const imgSize = featured ? 104 : 72;
+  const flagTileW = featured ? 48 : 34;
+  const flagTileH = featured ? 32 : 22;
   const frameClass = `grid aspect-square shrink-0 place-items-center overflow-hidden border border-app-border bg-[#e9dfca] ${dimensions}`;
   if (isCoatArtwork(game)) {
     return (
       <span data-game-artwork-frame className={`${frameClass} p-3`}>
-        <img data-game-artwork="coat" src={game.artworkUrl || '/coats/1.png'} alt="" loading={featured ? 'eager' : 'lazy'} decoding="async" className="block max-h-full max-w-full min-h-0 object-contain object-center" />
+        <img data-game-artwork="coat" src={game.artworkUrl || '/coats/1.png'} alt="" width={imgSize} height={imgSize} loading={featured ? 'eager' : 'lazy'} decoding="async" className="block max-h-full max-w-full min-h-0 object-contain object-center" />
       </span>
     );
   }
@@ -323,7 +326,7 @@ export default function ExploreGameArtwork({ game, featured = false }: { game: E
         <span data-game-artwork-frame data-game-artwork={isFlagShadesArtwork ? 'flag-shades' : 'flag-montage'} aria-hidden="true" className={`${frameClass} p-3`}>
           <span className="grid h-full w-full grid-cols-2 gap-1">
             {game.artworkUrls.map((artworkUrl) => (
-              <img key={artworkUrl} src={artworkUrl} alt="" loading={featured ? 'eager' : 'lazy'} decoding="async" className={`block h-full w-full object-contain object-center${isFlagShadesArtwork ? ' grayscale' : ''}`} />
+              <img key={artworkUrl} src={artworkUrl} alt="" width={flagTileW} height={flagTileH} loading={featured ? 'eager' : 'lazy'} decoding="async" className={`block h-full w-full object-contain object-center${isFlagShadesArtwork ? ' grayscale' : ''}`} />
             ))}
           </span>
         </span>

@@ -152,10 +152,10 @@ export default function PrivacyPolicyPage() {
                 to valid legal requests.</li>
             </ul>
             <p className="mt-3">
-              Google Analytics uses Google Consent Mode with storage defaulting to denied until the consent service
-              reports the required Google consent or explicitly reports that GDPR does not apply. Optional Rybbit
-              analytics is cookieless aggregate measurement separate from gameplay records and advertising inventory.
-              Provider configuration determines collection and storage.
+              Google Analytics measures aggregate site visits while keeping advertising storage defaulting to denied
+              until the consent service reports the required Google consent or explicitly reports that GDPR does not
+              apply. Optional Rybbit analytics is cookieless aggregate measurement separate from gameplay records and
+              advertising inventory. Provider configuration determines collection and storage.
               Optional analytics and advertising are not loaded during static page capture. Aggregate AI-cost
               measurements record request counts and token usage rather than player identities or question text.
               Do not include sensitive or unnecessary personal information in questions or feedback.

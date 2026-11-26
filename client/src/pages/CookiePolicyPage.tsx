@@ -77,10 +77,11 @@ export default function CookiePolicyPage() {
       <section>
         <h2>3. Analytics, Advertising and External Services</h2>
         <p className="mb-4">
-          Google Analytics uses Google Consent Mode with <code>analytics_storage</code> and advertising storage
-          defaulting to denied until the consent service reports either the required Google consent or that GDPR
-          does not apply. Optional Rybbit analytics is cookieless aggregate measurement configured separately from
-          advertising. External scripts and their configuration determine collection and storage behavior.
+          Google Analytics measures aggregate site visits while keeping advertising storage
+          (<code>ad_storage</code>, <code>ad_user_data</code>, and <code>ad_personalization</code>) defaulting to
+          denied until the consent service reports either the required Google consent or that GDPR does not apply.
+          Optional Rybbit analytics is cookieless aggregate measurement configured separately from advertising.
+          External scripts and their configuration determine collection and storage behavior.
           Analytics and advertising are disabled during static capture.
         </p>
         <p className="mb-4">

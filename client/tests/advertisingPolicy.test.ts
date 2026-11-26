@@ -305,7 +305,7 @@ test('analytics start with Consent Mode v2 defaults and update on grant/withdraw
       .filter(args => args[0] === 'consent');
     expect(consentCalls()).toEqual([
       ['consent', 'default', {
-        analytics_storage: 'denied',
+        analytics_storage: 'granted',
         ad_storage: 'denied',
         ad_user_data: 'denied',
         ad_personalization: 'denied',
