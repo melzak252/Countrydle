@@ -1,5 +1,5 @@
 {
-  "version": "2.0.16",
-  "title": "Performance, Accessibility & Google Analytics Reporting Improvements",
-  "body": "- Enabled gzip compression in Nginx for faster JS, CSS, HTML, and SVG delivery.\n- Added route-level code-splitting (React.lazy) so the homepage loads significantly less JavaScript.\n- Improved mobile accessibility by removing viewport zoom restrictions and adding explicit image dimensions on homepage cards.\n- Updated Google Analytics default analytics_storage to granted (keeping ad storage denied until CMP consent) so GA4 reports populate reliably."
+  "version": "2.0.17",
+  "title": "Bot Map Auto-Coloring & Clearer Directional Clarifications",
+  "body": "- Added automatic bot map coloring for geographic questions (continents, regions, borders, coastlines, islands, hemispheres, and north/south/east/west coordinates): possible countries are shaded blue and ruled-out countries are shaded orange, while keeping your manual green/red markers on top.\n- Added a toggle button on the map to hide or show bot coloring at any time, and a notice when a question cannot be auto-colored.\n- Improved directional clarifications (north/south/east/west) to display the reference latitude or longitude line and explain that the target can lie anywhere along that side."
 }
