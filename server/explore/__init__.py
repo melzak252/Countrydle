@@ -900,7 +900,11 @@ async def verify_border_hop(
         try:
             from stats.service import record_mode_result
 
-            record_mode = "border_hop" if normalized_mode == "countries" else "border_hop:us_states"
+            record_mode = (
+                "border_hop"
+                if normalized_mode == "countries"
+                else ("border_hop:powiaty" if normalized_mode == "powiaty" else "border_hop:us_states")
+            )
             user_id = user.id if user is not None else None
             guest_id = None if user is not None else get_guest_identity(request, response)
             await record_mode_result(

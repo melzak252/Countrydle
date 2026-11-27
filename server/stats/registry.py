@@ -168,6 +168,13 @@ def _build_registry() -> Dict[str, ModeStatsSpec]:
             is_daily=True,
             record_mode="border_hop:us_states",
         ),
+        "border_hop:powiaty": ModeStatsSpec(
+            mode="border_hop:powiaty",
+            adapter="mode_result",
+            mode_kind="score_daily",
+            is_daily=True,
+            record_mode="border_hop:powiaty",
+        ),
         # New Area 1-3 Modes (ready adapters)
         "plates_quiz": ModeStatsSpec(
             mode="plates_quiz",

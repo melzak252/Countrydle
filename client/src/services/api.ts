@@ -821,7 +821,7 @@ export const exploreService = {
     const response = await api.get<BorderNeighborResponse>(`/explore/border-hop/neighbors?${p.toString()}`);
     return response.data;
   },
-  verifyBorderHop: async (payload: { mode: BorderHopMode; start: string; target: string; path: string[] }) => {
+  verifyBorderHop: async (payload: { mode: BorderHopMode; start: string; target: string; path: string[]; is_daily?: boolean; elapsed_seconds?: number }) => {
     const response = await api.post<BorderHopVerification>('/explore/border-hop/verify', payload);
     return response.data;
   },

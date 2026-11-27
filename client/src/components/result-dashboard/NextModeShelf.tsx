@@ -107,8 +107,9 @@ export const DAILY_MODE_POOL: DailyModeCard[] = [
   {
     path: '/map-border-hop?mode=powiaty',
     name: 'Map Border Hop',
-    tag: 'Interactive border chain',
+    tag: 'Daily border chain',
     accent: 'border-t-[#355c7d]',
+    storageKey: (d) => `map_border_hop_powiaty_${d}`,
   },
   {
     path: '/border-hop',
