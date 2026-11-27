@@ -7,7 +7,6 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import GamePage from './pages/GamePage';
-import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
 import SetupProfilePage from './pages/SetupProfilePage';
 import PowiatyGamePage from './pages/PowiatyGamePage';
@@ -145,7 +144,7 @@ function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="game" element={<GamePage />} />
-          <Route path="leaderboard" element={<LeaderboardPage />} />
+          <Route path="leaderboard" element={<Navigate to="/" replace />} />
           <Route path="archive" element={<ArchivePage />} />
           <Route path="patch-notes" element={<PatchNotesPage />} />
           <Route path="profile/:username" element={<ProfilePage />} />

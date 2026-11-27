@@ -5,8 +5,6 @@ import {
   Share2,
   Check,
   X,
-  Sparkles,
-  AlertCircle,
   Trophy,
   ArrowRight,
   Palette,
@@ -15,7 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import GrayscaleFlagCanvas from '../components/GrayscaleFlagCanvas';
-import CountdownTimer from '../components/CountdownTimer';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
 import { flagShadesService } from '../services/api';
 import type { FlagdleCountry, FlagShadesChallenge, FlagShadesGuessResult } from '../types';
 
@@ -380,8 +378,8 @@ export default function FlagShadesPage() {
   const canUnlockHint = !colorHintUsed && !isGameOver && guesses.length >= hintUnlockThreshold;
   const hintLocked = !colorHintUsed && !isGameOver && guesses.length < hintUnlockThreshold;
 
-  const handleShare = () => {
-    if (!challenge) return;
+  const buildShareText = () => {
+    if (!challenge) return '';
     const scoreText = won ? `${guesses.length}/${maxGuesses}` : `X/${maxGuesses}`;
     const hintBadge = colorHintUsed
       ? ('🎨 Color Hint used')
@@ -415,10 +413,15 @@ export default function FlagShadesPage() {
     lines.push(
       typeof window !== 'undefined'
         ? `${window.location.origin}/flag-shades`
-        : 'https://countrydle.com/flag-shades'
+        : 'https://countrydle.online/flag-shades'
     );
 
-    const fullShareText = lines.join('\n');
+    return lines.join('\n');
+  };
+
+  const handleShare = () => {
+    const fullShareText = buildShareText();
+    if (!fullShareText) return;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(fullShareText);
       setCopied(true);
@@ -820,169 +823,54 @@ export default function FlagShadesPage() {
           </section>
         )}
 
-        {/* 6. Results Modal */}
+        {/* 6. Results Dashboard */}
         {isGameOver && showResultsModal && (
-          <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-y-auto md:z-50 md:max-h-none">
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
-              onClick={() => setShowResultsModal(false)}
-              aria-hidden="true"
-            />
-
-            {/* Modal Dialog Card */}
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-label={'Game Result'}
-              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-4 sm:p-8 shadow-2xl text-left space-y-4 sm:space-y-6 my-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header Bar */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 text-left">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="font-mono text-xs text-emerald-400 font-semibold whitespace-nowrap">
-                    {'Flag Shades Result'}
-                  </span>
-                  <span className="text-zinc-600 hidden min-[340px]:inline select-none" aria-hidden="true">·</span>
-                  <span className="font-mono text-xs text-zinc-400 whitespace-nowrap">
-                    {mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowResultsModal(false)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                  aria-label={'Close'}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Revealed Country Card */}
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
-                    {resolvedFlagUrl ? (
-                      <img
-                        src={resolvedFlagUrl}
-                        alt={targetCountry?.name || 'Country Flag'}
-                        className="h-16 w-24 sm:h-20 sm:w-30 object-contain"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-mono text-xs text-emerald-400 font-semibold">
-                      {'Secret National Flag'}
-                    </span>
-                    <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl text-sand-100">
-                      {targetCountry?.name || (won && guesses[guesses.length - 1]?.guess) || ('Mystery Country')}
-                    </h2>
-                    <p className="mt-1 text-xs text-zinc-400">
-                      {won
-                        ? `Identified in ${guesses.length} of ${maxGuesses} guesses.`
-                        : `Used all ${maxGuesses} guesses.`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
-                  <div
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
-                      won
-                        ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                        : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
-                    }`}
-                  >
-                    {won ? <Sparkles size={14} /> : <AlertCircle size={14} />}
-                    <span>{won ? ('Solved') : ('Game Over')}</span>
-                  </div>
-
-                  <span className="text-xs font-mono text-zinc-400">
-                    {colorHintUsed
-                      ? '🎨 Color Hint used'
-                      : '🖤 Pure Grayscale solve'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Performance Metrics */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
-                    {'Guesses Used'}
-                  </span>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="font-mono text-2xl font-bold text-sand-100">{guesses.length}</span>
-                    <span className="text-xs text-zinc-500 font-mono">/ {maxGuesses}</span>
-                  </div>
-                </div>
-
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
-                    {'Solve Mode'}
-                  </span>
-                  <div className="mt-1 font-mono text-sm font-semibold text-emerald-300 flex items-center gap-1.5">
-                    {colorHintUsed ? (
-                      <>
-                        <Palette size={15} />
-                        <span>{'With Hint'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>🖤</span>
-                        <span>{'Pure Grayscale'}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
-                  <span className="text-xs font-mono text-zinc-400 block">
-                    {'Next Daily'}
-                  </span>
-                  <div className="mt-1 font-mono text-lg font-semibold text-emerald-400">
-                    <CountdownTimer variant="minimal" className="text-lg text-emerald-400 font-semibold" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-2">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
-                  >
-                    {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-                    <span>{copied ? ('Copied to clipboard') : ('Share Results')}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowResultsModal(false);
-                      setMode('challenge');
-                      loadChallenge('challenge', `challenge-${Date.now()}`);
-                    }}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/20 transition-colors cursor-pointer"
-                  >
-                    <span>⚡ {'Play Challenge Round'}</span>
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowResultsModal(false)}
-                  className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  {'Close & View Flag'}
-                </button>
-              </div>
-            </section>
-          </div>
+          <GameResultDashboard
+            mode="flag_shades"
+            modeKind="visual"
+            gameName="Flag Shades"
+            gamePath="/flag-shades"
+            date={challenge?.date}
+            isDaily={mode === 'daily'}
+            won={won}
+            guessesMade={guesses.length}
+            maxGuesses={maxGuesses}
+            targetLabel="Secret National Flag"
+            targetName={
+              targetCountry?.name ||
+              (won && guesses[guesses.length - 1]?.guess) ||
+              'Mystery Country'
+            }
+            targetImageUrl={resolvedFlagUrl}
+            subtitle={
+              won
+                ? `Identified in ${guesses.length} of ${maxGuesses} guesses · ${
+                    colorHintUsed ? 'Color Hint used' : 'Pure Grayscale solve'
+                  }`
+                : `Used all ${maxGuesses} guesses.`
+            }
+            metrics={[
+              { label: 'Guesses', value: `${guesses.length} / ${maxGuesses}` },
+              {
+                label: 'Solve Mode',
+                value: colorHintUsed ? 'With Hint' : 'Pure Grayscale',
+                accent: colorHintUsed ? 'amber' : 'emerald',
+              },
+            ]}
+            shareText={buildShareText()}
+            duelMode="countrydle"
+            primaryAction={{
+              label: 'Play Challenge Round',
+              onClick: () => {
+                setShowResultsModal(false);
+                setMode('challenge');
+                loadChallenge('challenge', `challenge-${Date.now()}`);
+              },
+              icon: <ArrowRight size={15} />,
+            }}
+            onClose={() => setShowResultsModal(false)}
+            closeLabel="Close & View Flag"
+          />
         )}
       </main>
 

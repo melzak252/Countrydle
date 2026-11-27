@@ -21,6 +21,7 @@ import COAT_THUMBNAILS from '../data/coat_thumbnails.json';
 import { API_URL, coatsQuizService, countyFlagsQuizService, countyFlagsService, regionalSymbolsService, regionalSymbolLabels, regionalSymbolNouns, type CoatsQuizSolve, type CoatsQuizStats } from '../services/api';
 import { countyFlagQuizCatalog } from '../lib/countyFlagCatalog';
 import RegionalGeographyCredit from '../components/RegionalGeographyCredit';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
 import { isPrerenderCapture } from '../lib/pageMetadata';
 import type { PowiatHeraldrySourceAttribution, RegionalSymbolScope } from '../types';
 
@@ -773,34 +774,51 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
         </div>
       </section>
 
-      {/* Completion or Give-Up Summary Banner */}
+      {/* Completion or Give-Up Result Dashboard */}
       {(isCompleted || isGivenUp) && (
-        <div
-          className={`flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4 ${
+        <GameResultDashboard
+          variant="inline"
+          mode={
+            scope
+              ? `regional_symbols:${scope}:${flags ? 'flag' : 'coat'}:quiz`
+              : flags
+              ? 'county_flags_quiz'
+              : 'coats_quiz'
+          }
+          modeKind="quiz"
+          isDaily={false}
+          gameName={
+            scope
+              ? `${regionalSymbolLabels[scope]} ${flags ? 'Flags' : 'Coats of Arms'} Quiz`
+              : flags
+              ? 'County Flags Quiz'
+              : 'Coats of Arms Quiz'
+          }
+          gamePath={
+            scope
+              ? `/regional-symbols/${scope}/${flags ? 'flag' : 'coat'}/quiz`
+              : flags
+              ? '/quiz-flag-powiatow'
+              : '/quiz-herbow'
+          }
+          won={isCompleted}
+          outcomeLabel={isCompleted ? 'Quiz Completed!' : 'Quiz Ended'}
+          targetLabel={flags ? 'Flags Identified' : 'Coats of Arms Identified'}
+          targetName={`${guessedCount} / ${TOTAL_COUNT} (${pct}%)`}
+          subtitle={
             isCompleted
-              ? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-200'
-              : 'border-amber-500/40 bg-amber-950/25 text-amber-200'
-          }`}
-        >
-          <div className="space-y-1">
-            <h2 className="font-serif text-lg font-bold">
-              {isCompleted
-                ? `Congratulations! You solved all ${TOTAL_COUNT} ${flags ? 'flags' : 'coats of arms'} in ${formatTime(elapsedSeconds)}!`
-                : `Quiz ended — you solved ${guessedCount} of ${TOTAL_COUNT} ${flags ? 'flags' : 'coats of arms'} (${pct}%) in ${formatTime(elapsedSeconds)}.`}
-            </h2>
-            <p className="text-xs text-zinc-300">
-              {`All missed ${noun} names are now revealed below. Click any ${flags ? 'flag' : 'coat of arms'} for fullscreen inspection.`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleResetQuiz}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
-          >
-            <RotateCcw size={14} />
-            <span>{'Play Again'}</span>
-          </button>
-        </div>
+              ? `You solved all ${TOTAL_COUNT} ${flags ? 'flags' : 'coats of arms'} in ${formatTime(elapsedSeconds)}!`
+              : `All missed ${noun} names are now revealed below. Click any ${flags ? 'flag' : 'coat of arms'} for fullscreen inspection.`
+          }
+          score={guessedCount}
+          maxScore={TOTAL_COUNT}
+          elapsedSeconds={elapsedSeconds}
+          primaryAction={{
+            label: 'Play Again',
+            onClick: handleResetQuiz,
+            icon: <RotateCcw size={14} />,
+          }}
+        />
       )}
       <section aria-label="Community quiz statistics" className="rounded-lg border border-white/10 bg-obsidian-900 p-3 text-xs text-zinc-300 space-y-2">
         <div className="flex flex-wrap items-center gap-3">

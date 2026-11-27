@@ -26,6 +26,7 @@ import { API_URL, countyFlagsService, powiatHeraldryService, regionalSymbolsServ
 import { isPrerenderCapture } from '../lib/pageMetadata';
 import RegionalGeographyCredit from '../components/RegionalGeographyCredit';
 import SymbolComponentCredits from '../components/SymbolComponentCredits';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
 import { useAuthStore } from '../stores/authStore';
 import type {
   PowiatHeraldryChallenge,
@@ -483,8 +484,8 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
   const hintUnlockThreshold = challenge?.hint_unlock_guesses || 5;
   const isPlatesUnlocked = Boolean(registrationPlates && registrationPlates.length > 0);
 
-  const handleShare = () => {
-    if (!challenge) return;
+  const buildShareText = () => {
+    if (!challenge) return '';
     const scoreText = won ? `${guesses.length}/${maxGuesses}` : `X/${maxGuesses}`;
     const headerTitle = `${label} ${flags ? 'Flags' : 'Coats of Arms'} · ${mode === 'daily' ? challenge.date : 'Challenge'}`;
 
@@ -511,10 +512,15 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
     lines.push(
       typeof window !== 'undefined'
         ? `${window.location.origin}${regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}`
-        : `https://countrydle.com${regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}`
+        : `https://countrydle.online${regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}`
     );
 
-    const fullShareText = lines.join('\n');
+    return lines.join('\n');
+  };
+
+  const handleShare = () => {
+    const fullShareText = buildShareText();
+    if (!fullShareText) return;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(fullShareText);
       setCopied(true);
@@ -962,7 +968,13 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                   {challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}
                 </p>
                 {challenge?.ranked && !isAuthenticated && <p className="text-xs text-sand-400">Sign in to add your daily result to the leaderboard.</p>}
-                <Link to={`/leaderboard?mode=${encodeURIComponent(leaderboardMode)}`} className="text-xs text-emerald-300 underline">View leaderboard</Link>
+                <button
+                  type="button"
+                  onClick={() => setShowResultsModal(true)}
+                  className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 hover:text-emerald-200 underline cursor-pointer"
+                >
+                  Open Results &amp; Leaderboard Dashboard
+                </button>
               </div>
 
               {/* Registration Plates on Victory Card */}
@@ -1140,123 +1152,70 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
         {scope && <RegionalGeographyCredit scope={scope} />}
       </main>
 
-      {/* 6. Results Modal */}
+      {/* 6. Results Dashboard */}
       {showResultsModal && isGameOver && (
-        <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-3 overflow-y-auto md:z-50 md:max-h-none">
-          <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
-            onClick={() => setShowResultsModal(false)}
-            aria-hidden="true"
-          />
-
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label={'Game Results'}
-            className="relative z-10 w-full max-w-lg rounded-xl border border-white/15 bg-obsidian-950 p-5 sm:p-7 shadow-2xl space-y-4 my-auto text-sand-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-white/10 pb-3">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-sand-100 flex items-center gap-2">
-                  {won ? (
-                    <>
-                      <Trophy className="text-emerald-400" size={24} />
-                      <span>{'Victory!'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <X className="text-red-400" size={24} />
-                      <span>{'Game Over'}</span>
-                    </>
-                  )}
-                </h2>
-                <p className="mt-1 text-xs text-sand-400">
-                  {won
-                    ? `Identified ${noun} ${flags ? 'flag' : 'coat of arms'} in ${guesses.length}/${maxGuesses} guesses!`
-                    : 'Out of guesses this round.'}
-                </p>
-                <p className="mt-2 text-sm text-emerald-300">{challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}</p>
-                <Link to={`/leaderboard?mode=${encodeURIComponent(leaderboardMode)}`} className="mt-1 inline-block text-xs text-emerald-300 underline">View leaderboard</Link>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowResultsModal(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                aria-label={'Close'}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Revealed target */}
-            {targetPowiat && (
-              <div className="rounded-lg border border-sand-800 bg-obsidian-900/80 p-4 space-y-2">
-                <div className="text-xs font-mono uppercase text-sand-400">
-                  {`Target ${noun}:`}
+        <GameResultDashboard
+          mode={leaderboardMode}
+          modeKind="visual"
+          gameName={`${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
+          gamePath={regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}
+          date={challenge?.date}
+          isDaily={mode === 'daily'}
+          won={won}
+          points={challenge?.ranked ? challenge.points : null}
+          guessesMade={guesses.length}
+          maxGuesses={maxGuesses}
+          targetLabel={`Target ${noun}`}
+          targetName={targetPowiat?.name || 'Game Over'}
+          targetSubtitle={!scope && targetPowiat ? `Voivodeship ${targetPowiat.voivodeship}` : undefined}
+          targetImageUrl={resolvedCoatUrl}
+          targetAccessory={
+            !scope && registrationPlates && registrationPlates.length > 0 ? (
+              <PolishLicensePlateBadge plates={registrationPlates} />
+            ) : undefined
+          }
+          subtitle={
+            won
+              ? `Identified ${noun} ${flags ? 'flag' : 'coat of arms'} in ${guesses.length}/${maxGuesses} guesses!`
+              : 'Out of guesses this round.'
+          }
+          shareText={buildShareText()}
+          duelMode="powiatdle"
+          primaryAction={{
+            label: 'New Challenge',
+            onClick: () => {
+              setShowResultsModal(false);
+              if (mode === 'challenge') {
+                loadChallenge('challenge', `challenge-${Date.now()}`);
+              } else {
+                setMode('challenge');
+                loadChallenge('challenge', `challenge-${Date.now()}`);
+              }
+            },
+            icon: <RefreshCw size={14} />,
+          }}
+          detailsTitle={flags ? 'Flag Source & Attribution' : 'Heraldic Source & Attribution'}
+          detailsSlot={
+            attribution ? (
+              <div className="space-y-1.5 text-xs text-zinc-300">
+                <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+                  {flags ? 'Flag Source & Attribution' : 'Heraldic Source & Attribution'}
                 </div>
-                <div className="text-lg font-bold text-sand-100">{targetPowiat.name}</div>
-                {!scope && <div className="text-xs text-emerald-400 font-mono">
-                  Voivodeship {targetPowiat.voivodeship}
-                </div>}
-              </div>
-            )}
-
-            {/* Registration plates badge */}
-            {!scope && registrationPlates && registrationPlates.length > 0 && (
-              <div className="rounded-lg border border-blue-500/20 bg-blue-950/20 p-3 flex items-center justify-between">
-                <span className="text-xs text-blue-300 font-medium">
-                  {'Registration plates:'}
-                </span>
-                <PolishLicensePlateBadge plates={registrationPlates} />
-              </div>
-            )}
-
-            {/* Attribution */}
-            {attribution && (
-              <div className="text-[11px] text-zinc-400 border-t border-white/5 pt-2">
-                {attribution.title && <div>{attribution.title}</div>}
+                {attribution.title && <div className="font-medium text-sand-100">{attribution.title}</div>}
                 {(attribution.artist || attribution.author) && (
-                  <div>
-                    {'Author: '}
-                    {attribution.artist || attribution.author} {attribution.license ? `(${attribution.license})` : ''}
+                  <div className="text-zinc-400">
+                    Author: {attribution.artist || attribution.author}{' '}
+                    {attribution.license ? `(${attribution.license})` : ''}
                   </div>
                 )}
-                {attribution.context && <div>Context: {attribution.context}</div>}
+                {attribution.context && <div className="text-zinc-400">Context: {attribution.context}</div>}
                 {scope && <SymbolComponentCredits credits={attribution.component_credits} />}
               </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex items-center gap-2 pt-2 border-t border-white/10">
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-sm bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors cursor-pointer"
-              >
-                {copied ? <Check size={15} /> : <Share2 size={15} />}
-                <span>{copied ? ('Copied!') : 'Share Results'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowResultsModal(false);
-                  if (mode === 'challenge') {
-                    loadChallenge('challenge', `challenge-${Date.now()}`);
-                  } else {
-                    setMode('challenge');
-                    loadChallenge('challenge', `challenge-${Date.now()}`);
-                  }
-                }}
-                className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-sand-700 bg-sand-900/60 px-4 py-2 text-xs sm:text-sm font-semibold text-sand-200 hover:bg-sand-800 transition-colors cursor-pointer"
-              >
-                <RefreshCw size={14} />
-                <span>{'New Challenge'}</span>
-              </button>
-            </div>
-          </section>
-        </div>
+            ) : undefined
+          }
+          onClose={() => setShowResultsModal(false)}
+          closeLabel="Close & Inspect Symbol"
+        />
       )}
 
       {/* 7. Instructions Modal */}

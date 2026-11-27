@@ -80,7 +80,6 @@ const utilityPages: Record<string, [string, string]> = {
   '/admin': ['Administration', 'Private Countrydle administration.'],
   '/friends': ['Play a Friend', 'Arrange a live Countrydle duel with a friend.'],
   '/archive': ['Puzzle Archive', 'Browse past Countrydle puzzle answers.'],
-  '/leaderboard': ['Leaderboard', 'View Countrydle player rankings.'],
   '/game': ['Play Today’s Country', 'Play today’s world-country deduction puzzle.'],
   '/powiaty': ['Play Today’s Polish County', 'Play today’s Polish-county deduction puzzle.'],
   '/us-states': ['Play Today’s US State', 'Play today’s US-state deduction puzzle.'],

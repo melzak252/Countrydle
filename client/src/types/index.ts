@@ -17,6 +17,72 @@ export interface LeaderboardEntry {
   average_points: number;
 }
 
+export type DashboardLeaderboardPeriod = 'daily' | 'monthly' | 'all_time';
+
+export interface DistributionBucket {
+  label: string;
+  count: number;
+  pct: number;
+  is_player: boolean;
+}
+
+export interface DashboardLeaderboardEntry {
+  rank: number;
+  user_id?: number | null;
+  username: string;
+  points: number;
+  wins: number;
+  games_played: number;
+  average_points?: number | null;
+  questions_used?: number | null;
+  guesses_used?: number | null;
+  score?: number | null;
+  elapsed_seconds?: number | null;
+  is_current_user?: boolean;
+}
+
+export interface DashboardPlayerSummary {
+  played: boolean;
+  won: boolean;
+  points?: number | null;
+  questions_used?: number | null;
+  guesses_used?: number | null;
+  score?: number | null;
+  elapsed_seconds?: number | null;
+  percentile?: number | null;
+  daily_rank?: number | null;
+  monthly_rank?: number | null;
+  all_time_rank?: number | null;
+}
+
+export interface DashboardLeaderboardPayload {
+  period: DashboardLeaderboardPeriod;
+  total_ranked: number;
+  entries: DashboardLeaderboardEntry[];
+  current_user_entry?: DashboardLeaderboardEntry | null;
+}
+
+export interface DashboardSummary {
+  mode: string;
+  mode_kind: string;
+  date: string;
+  played_today: number;
+  completed_today: number;
+  winners_today: number;
+  win_rate_pct: number;
+  avg_questions_won?: number | null;
+  avg_guesses_won?: number | null;
+  avg_score?: number | null;
+  avg_elapsed_seconds?: number | null;
+  distributions: {
+    questions?: DistributionBucket[];
+    guesses?: DistributionBucket[];
+    score?: DistributionBucket[];
+  };
+  player?: DashboardPlayerSummary | null;
+  leaderboard: DashboardLeaderboardPayload;
+}
+
 export interface Country {
   id: number;
   name: string;

@@ -205,7 +205,6 @@ export default function Header() {
                   if ((event.target as HTMLElement).closest('a, button')) event.currentTarget.closest('details')?.removeAttribute('open');
                 }}
               >
-                {id === 'explore' && <NavLink to="/leaderboard" className={({ isActive }) => `block rounded px-2 py-2 text-sm ${isActive ? 'bg-emerald-500/10 text-emerald-300' : 'text-sand-100 hover:bg-white/5'}`}>{t('header.leaderboard', 'Leaderboard')}</NavLink>}
                 {items.map((item) => {
                   const Icon = item.icon;
                   return <NavLink key={item.path} to={item.path} className={({ isActive }) =>
@@ -357,9 +356,6 @@ export default function Header() {
             <div className="space-y-1">
               <NavLink to="/blog" className={mobileLinkClass}>
                 {t('header.blog', 'Blog')}
-              </NavLink>
-              <NavLink to="/leaderboard" className={mobileLinkClass}>
-                {t('header.leaderboard', 'Leaderboard')}
               </NavLink>
             </div>
 

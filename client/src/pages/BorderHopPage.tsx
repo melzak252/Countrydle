@@ -6,9 +6,6 @@ import {
   ArrowRight,
   RotateCcw,
   Undo2,
-  Trophy,
-  Share2,
-  Check,
   Sparkles,
   MapPin,
   AlertCircle,
@@ -17,8 +14,8 @@ import {
   ExternalLink,
   Search,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { exploreService, type BorderHopChallenge, type BorderHopVerification } from '../services/api';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
 
 type HopMode = 'countries' | 'us_states';
 
@@ -58,7 +55,6 @@ export default function BorderHopPage() {
   const [status, setStatus] = useState<'playing' | 'won' | 'error'>('playing');
   const [verification, setVerification] = useState<BorderHopVerification | null>(null);
   const [searchFilter, setSearchFilter] = useState<string>('');
-  const [copied, setCopied] = useState<boolean>(false);
 
   const currentLocation = path.length > 0 ? path[path.length - 1] : null;
 
@@ -73,7 +69,6 @@ export default function BorderHopPage() {
     setError(null);
     setStatus('playing');
     setVerification(null);
-    setCopied(false);
     setSearchFilter('');
 
     const targetMode = customParams?.mode || mode;
@@ -220,32 +215,6 @@ export default function BorderHopPage() {
     const q = searchFilter.toLowerCase();
     return availableNeighbors.filter((n) => n.toLowerCase().includes(q));
   }, [availableNeighbors, searchFilter]);
-
-  // Share result generator
-  const handleCopyResult = async () => {
-    if (!challenge) return;
-    const hops = path.length - 1;
-    const optHops = challenge.optimal_hops ?? hops;
-    const rankEmoji = hops === optHops ? '🥇' : hops <= optHops + 2 ? '🥈' : '🥉';
-    const hopBoxes = Array.from({ length: hops }, () => '🟩').join(' ➔ ');
-
-    const shareText = [
-      `Countrydle Border Hop (${mode === 'us_states' ? 'US States' : 'World Countries'})`,
-      `${challenge.start} ➔ ${challenge.target}`,
-      `Hops: ${hops} (Optimal: ${optHops}) ${rankEmoji}`,
-      hopBoxes,
-      `https://countrydle.online/border-hop?mode=${mode}`,
-    ].join('\n');
-
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      toast.success('Copied result to clipboard!');
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      toast.error('Failed to copy');
-    }
-  };
 
   const currentHops = path.length > 0 ? path.length - 1 : 0;
   const optimalHops = challenge?.optimal_hops ?? '?';
@@ -456,105 +425,89 @@ export default function BorderHopPage() {
             </div>
           </div>
 
-          {/* Victory Debrief Modal / Card */}
+          {/* Victory Result Dashboard */}
           {status === 'won' && verification && (
-            <div className="rounded-sm border-2 border-emerald-400 bg-obsidian-900/90 p-4 sm:p-6 text-left space-y-4 sm:space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-3 sm:pb-4">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className="rounded-full bg-emerald-500/20 border border-emerald-500/40 p-2 sm:p-2.5 text-emerald-400 shrink-0">
-                    <Trophy size={22} className="sm:w-6 sm:h-6" />
-                  </div>
-                  <div>
-                    <h2 className="font-mono text-lg sm:text-2xl font-bold text-sand-100">
-                      {'Route Completed!'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-emerald-400 font-semibold font-mono">
-                      {verification.rank === 'gold'
-                        ? '🥇 Gold Route — Shortest Possible Path!'
-                        : verification.rank === 'silver'
-                        ? '🥈 Silver Route — Great Navigation!'
-                        : '🥉 Bronze Route — Scenic Detour!'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Score Summary */}
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 w-full sm:w-auto self-start sm:self-auto">
-                  <div className="rounded-sm bg-obsidian-950 border border-white/10 px-2.5 sm:px-3 py-1.5 text-center">
-                    <span className="block text-[10px] font-mono uppercase text-zinc-400">
-                      {'Hops Taken'}
-                    </span>
-                    <span className="font-mono text-sm sm:text-base font-bold text-sand-100">{verification.hops}</span>
-                  </div>
-                  <div className="rounded-sm bg-obsidian-950 border border-emerald-500/30 px-2.5 sm:px-3 py-1.5 text-center">
-                    <span className="block text-[10px] font-mono uppercase text-emerald-400">
-                      {'Optimal'}
-                    </span>
-                    <span className="font-mono text-sm sm:text-base font-bold text-emerald-300">
-                      {verification.optimal_hops}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Path Reveal Comparison */}
-              {verification.optimal_path && (
-                <div className="space-y-1.5 sm:space-y-2 text-xs">
-                  <span className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
-                    {'Optimal Shortest Path:'}
-                  </span>
-                  <div className="p-2.5 sm:p-3 rounded-sm bg-obsidian-950/70 border border-white/10 font-mono text-zinc-300 flex flex-wrap items-center gap-1.5">
-                    {verification.optimal_path.map((node, i) => (
-                      <span key={node} className="inline-flex items-center gap-1 max-w-full">
-                        <span className="font-semibold text-emerald-300 break-words [overflow-wrap:anywhere]">{node}</span>
-                        {i < verification.optimal_path!.length - 1 && (
-                          <ArrowRight size={11} className="text-zinc-600 shrink-0" />
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-2">
-                <button
-                  type="button"
-                  onClick={handleCopyResult}
-                  className="flex items-center gap-2 rounded-sm bg-emerald-400 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow-md cursor-pointer"
-                >
-                  {copied ? <Check size={14} /> : <Share2 size={14} />}
-                  <span>{copied ? ('Copied!') : ('Share Result')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleNewRandomRoute}
-                  className="flex items-center gap-2 rounded-sm border border-white/15 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <Sparkles size={14} className="text-amber-400 shrink-0" />
-                  <span>{'Play Another Route'}</span>
-                </button>
-
+            <GameResultDashboard
+              variant="inline"
+              mode={mode === 'us_states' ? 'border_hop:us_states' : 'border_hop'}
+              modeKind="route"
+              gameName="Border Hop"
+              gamePath="/border-hop"
+              won
+              outcomeLabel={
+                verification.rank === 'gold'
+                  ? 'Gold Route'
+                  : verification.rank === 'silver'
+                  ? 'Silver Route'
+                  : 'Bronze Route'
+              }
+              targetLabel="Completed Border Route"
+              targetName={`${challenge.start} ➔ ${challenge.target}`}
+              subtitle={
+                verification.rank === 'gold'
+                  ? '🥇 Gold Route — Shortest Possible Path!'
+                  : verification.rank === 'silver'
+                  ? '🥈 Silver Route — Great Navigation!'
+                  : '🥉 Bronze Route — Scenic Detour!'
+              }
+              guessesMade={verification.hops}
+              maxGuesses={verification.optimal_hops ?? undefined}
+              metrics={[
+                { label: 'Hops Taken', value: String(verification.hops) },
+                { label: 'Optimal Hops', value: String(verification.optimal_hops ?? '—'), accent: 'emerald' },
+                {
+                  label: 'Route Rank',
+                  value: verification.rank
+                    ? verification.rank.charAt(0).toUpperCase() + verification.rank.slice(1)
+                    : 'Completed',
+                  accent: verification.rank === 'gold' ? 'amber' : 'default',
+                },
+              ]}
+              shareText={[
+                `Countrydle Border Hop (${mode === 'us_states' ? 'US States' : 'World Countries'})`,
+                `${challenge.start} ➔ ${challenge.target}`,
+                `Hops: ${verification.hops} (Optimal: ${verification.optimal_hops}) ${
+                  verification.rank === 'gold' ? '🥇' : verification.rank === 'silver' ? '🥈' : '🥉'
+                }`,
+                Array.from({ length: verification.hops }, () => '🟩').join(' ➔ '),
+                `https://countrydle.online/border-hop?mode=${mode}`,
+              ].join('\n')}
+              duelMode={mode === 'us_states' ? 'us_statedle' : 'countrydle'}
+              primaryAction={{
+                label: 'Play Another Route',
+                onClick: handleNewRandomRoute,
+                icon: <Sparkles size={14} className="text-amber-300 shrink-0" />,
+              }}
+              secondaryActions={
                 <Link
                   to="/explore"
-                  className="flex items-center gap-1.5 rounded-sm border border-white/15 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-zinc-300 hover:bg-white/10 transition-colors"
+                  className="flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-sm border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10 transition-colors"
                 >
-                  <span className="break-words [overflow-wrap:anywhere]">
-                    {`Explore ${challenge.target} in Atlas`}
-                  </span>
+                  <span className="truncate">{`Explore ${challenge.target} in Atlas`}</span>
                   <ExternalLink size={13} className="shrink-0" />
                 </Link>
-
-                <Link
-                  to={mode === 'us_states' ? '/us-states' : '/game'}
-                  className="text-xs text-zinc-400 hover:text-sand-100 w-full sm:w-auto sm:ml-auto flex items-center justify-start sm:justify-end gap-1 pt-1 sm:pt-0 transition-colors"
-                >
-                  <span>{'Back to Daily Game'}</span>
-                  <ArrowRight size={13} className="shrink-0" />
-                </Link>
-              </div>
-            </div>
+              }
+              detailsTitle="Optimal Shortest Path"
+              detailsSlot={
+                verification.optimal_path ? (
+                  <div className="space-y-2 text-xs">
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
+                      Optimal Shortest Path
+                    </span>
+                    <div className="p-3 rounded-sm bg-obsidian-950/70 border border-white/10 font-mono text-zinc-300 flex flex-wrap items-center gap-1.5">
+                      {verification.optimal_path.map((node, i) => (
+                        <span key={node} className="inline-flex items-center gap-1 max-w-full">
+                          <span className="font-semibold text-emerald-300 break-words [overflow-wrap:anywhere]">{node}</span>
+                          {i < verification.optimal_path!.length - 1 && (
+                            <ArrowRight size={11} className="text-zinc-600 shrink-0" />
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : undefined
+              }
+            />
           )}
 
           {/* Active Hop Dock (When still playing) */}
