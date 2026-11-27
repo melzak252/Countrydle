@@ -21,7 +21,6 @@ interface CompactLeaderboardProps {
 const PERIOD_TABS: { id: DashboardLeaderboardPeriod; label: string }[] = [
   { id: 'daily', label: 'Today' },
   { id: 'monthly', label: 'Monthly' },
-  { id: 'all_time', label: 'All-Time' },
 ];
 
 function rankBadgeClass(rank: number): string {
