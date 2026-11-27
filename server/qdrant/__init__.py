@@ -72,6 +72,12 @@ async def sync_from_postgres(session: AsyncSession, collection_name: str):
         info = client.get_collection(collection_name)
         qdrant_count = info.points_count or 0
 
+        if pg_count == 0 and qdrant_count > 0:
+            print(
+                f"Collection {collection_name} already has {qdrant_count} points in Qdrant (Postgres fragments migrated to SQLite); skipping sync."
+            )
+            return
+
         if pg_count == qdrant_count:
             print(f"Collection {collection_name} is up to date ({pg_count} points).")
             return

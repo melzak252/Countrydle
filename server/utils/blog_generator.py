@@ -507,13 +507,22 @@ async def create_daily_blog_post(
     Callers must finish their discovery transaction before invoking generation;
     no caller session or ORM instance is retained across provider I/O.
     """
+    from utils.rag_fragments_store import get_entity_fragments
+
+    fragments = get_entity_fragments(
+        "country",
+        entity_id=country_id,
+        entity_name=country_name,
+        limit=25,
+    )
     async with AsyncSession(bind=engine) as input_session:
-        res = await input_session.execute(
-            select(CountryFragment.text)
-            .where(CountryFragment.country_id == country_id)
-            .limit(25)
-        )
-        fragments = list(res.scalars().all())
+        if not fragments:
+            res = await input_session.execute(
+                select(CountryFragment.text)
+                .where(CountryFragment.country_id == country_id)
+                .limit(25)
+            )
+            fragments = list(res.scalars().all())
         day_id = await input_session.scalar(
             select(CountrydleDay.id).where(CountrydleDay.date == post_date)
         )
