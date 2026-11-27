@@ -3,12 +3,17 @@ import logging
 import random
 import sqlite3
 from collections import deque
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from db import get_db
+from db.models.user import User
 from powiatdle.heraldry import get_or_fetch_herb_svg, get_or_fetch_herb_thumb, get_source_attribution, polish_sort_key
+from users.utils import get_current_or_guest_user
+from utils.guest_session import get_guest_identity
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +67,8 @@ class BorderHopVerifyRequest(BaseModel):
     start: str
     target: str
     path: List[str]
+    is_daily: Optional[bool] = None
+    elapsed_seconds: Optional[float] = None
 
 
 class BorderHopVerifyResponse(BaseModel):
@@ -687,8 +694,27 @@ async def get_border_neighbors(
     }
 
 
+def _get_daily_border_hop_pair(normalized_mode: str, challenge_date: date) -> Optional[Tuple[str, str]]:
+    pairs = _get_connected_pairs(normalized_mode, min_hops=3, max_hops=5)
+    if not pairs:
+        pairs = _get_connected_pairs(normalized_mode, min_hops=2, max_hops=6)
+    if not pairs:
+        return None
+    rng = random.Random(challenge_date.isoformat())
+    chosen_pair = rng.choice(pairs)
+    if rng.random() < 0.5:
+        return chosen_pair[0], chosen_pair[1]
+    return chosen_pair[1], chosen_pair[0]
+
+
 @router.post("/border-hop/verify", response_model=BorderHopVerifyResponse)
-async def verify_border_hop(payload: BorderHopVerifyRequest):
+async def verify_border_hop(
+    payload: BorderHopVerifyRequest,
+    request: Request,
+    response: Response,
+    user: Optional[User] = Depends(get_current_or_guest_user),
+    session: AsyncSession = Depends(get_db),
+):
     """Verify a completed border hop path against ground-truth borders."""
     mode = payload.mode
     if mode not in ("countries", "countrydle", "us_states", "us_statedle"):
@@ -778,10 +804,54 @@ async def verify_border_hop(payload: BorderHopVerifyRequest):
 
     if is_optimal:
         rank = "gold"
+        points = 1000
     elif optimal_hops is not None and hops <= optimal_hops + 2:
         rank = "silver"
+        points = 700
     else:
         rank = "bronze"
+        points = 400
+
+    today_utc = datetime.now(timezone.utc).date()
+    should_record = False
+    if payload.is_daily is True:
+        should_record = True
+    elif payload.is_daily is not False:
+        daily_pair = _get_daily_border_hop_pair(normalized_mode, today_utc)
+        if daily_pair == (canon_start, canon_target):
+            should_record = True
+        elif date.today() != today_utc:
+            local_pair = _get_daily_border_hop_pair(normalized_mode, date.today())
+            if local_pair == (canon_start, canon_target):
+                should_record = True
+
+    if should_record:
+        try:
+            from stats.service import record_mode_result
+
+            record_mode = "border_hop" if normalized_mode == "countries" else "border_hop:us_states"
+            user_id = user.id if user is not None else None
+            guest_id = None if user is not None else get_guest_identity(request, response)
+            await record_mode_result(
+                session,
+                mode=record_mode,
+                record_date=today_utc,
+                user_id=user_id,
+                guest_id=guest_id,
+                completed=True,
+                won=True,
+                points=points,
+                guesses_used=hops,
+                score=hops,
+                max_score=optimal_hops,
+                elapsed_seconds=payload.elapsed_seconds,
+            )
+        except Exception as exc:
+            logger.warning("Could not record border_hop daily result: %s", exc)
+            try:
+                await session.rollback()
+            except Exception:
+                pass
 
     return BorderHopVerifyResponse(
         valid=True,

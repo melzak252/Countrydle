@@ -29,7 +29,7 @@ from db.repositories.flagdle import (
     FlagdleStateRepository,
     FlagdleQuestionRepository,
 )
-from game_logic import FLAGDLE_CONFIG, GameRules, GameState, is_valid_synced_game_state
+from game_logic import FLAGDLE_CONFIG, GameRules, GameState, calculate_flagdle_points, is_valid_synced_game_state
 from schemas.country import CountryDisplay
 from schemas.flagdle import (
     DayFlagdleDisplay,
@@ -274,6 +274,9 @@ async def get_shades_flag_asset(
 @router.post("/shades/guess", response_model=FlagShadesGuessResult)
 async def make_shades_guess(
     body: FlagShadesGuessRequest,
+    request: Request,
+    response: Response,
+    user: Optional[User] = Depends(get_current_or_guest_user),
     session: AsyncSession = Depends(get_db),
 ):
     """Evaluates a guess in Flag Shades challenge mode."""
@@ -284,7 +287,7 @@ async def make_shades_guess(
             detail="Invalid shades token.",
         )
 
-    _seed, target_country_id = verified
+    seed_str, target_country_id = verified
     target_country = await CountryRepository(session).get(target_country_id)
     if not target_country:
         raise HTTPException(
@@ -328,6 +331,33 @@ async def make_shades_guess(
         if is_game_over
         else None
     )
+
+    if is_game_over and seed_str.startswith("daily-"):
+        try:
+            challenge_date = date.fromisoformat(seed_str[len("daily-"):])
+            from stats.service import record_mode_result
+
+            user_id = user.id if user is not None else None
+            guest_id = None if user is not None else get_guest_identity(request, response)
+            points = calculate_flagdle_points(is_correct, body.guesses_made)
+            await record_mode_result(
+                session,
+                mode="flag_shades",
+                record_date=challenge_date,
+                user_id=user_id,
+                guest_id=guest_id,
+                completed=True,
+                won=is_correct,
+                points=points,
+                guesses_used=body.guesses_made,
+                elapsed_seconds=getattr(body, "elapsed_seconds", None),
+            )
+        except Exception as exc:
+            logger.warning("Could not record flag_shades daily result: %s", exc)
+            try:
+                await session.rollback()
+            except Exception:
+                pass
 
     return FlagShadesGuessResult(
         answer=is_correct,

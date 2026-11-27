@@ -30,6 +30,7 @@ from friend_matches import router as friend_matches_router
 from patch_notes import router as patch_notes_router
 from admin.template_divergences import router as template_divergences_router
 from explore import router as explore_router
+from stats import router as stats_router
 from db import get_db
 
 from db.repositories.user import UserRepository
@@ -201,6 +202,7 @@ app.include_router(friend_matches_router)
 app.include_router(patch_notes_router)
 app.include_router(template_divergences_router)
 app.include_router(explore_router)
+app.include_router(stats_router)
 
 
 
