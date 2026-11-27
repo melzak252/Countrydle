@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { type PathOptions } from 'leaflet';
@@ -6,6 +6,9 @@ import type { Feature } from 'geojson';
 import { useMapData } from '../hooks/useMapData';
 import MapLoading from './MapLoading';
 import { createMapRenderer } from '../lib/mapRenderer';
+import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import MapCartographicTexture from './MapCartographicTexture';
+import { EARTH_MAP_BOUNDS } from '../lib/mapBounds';
 
 interface RecapComparisonMapProps {
   targetName: string;
@@ -74,37 +77,9 @@ export default function RecapComparisonMap({
     (feature?: Feature): PathOptions => {
       if (!feature?.properties) return {};
 
-      // 1. Target Solution: Emerald
-      if (featureMatchesName(feature, targetName)) {
-        return {
-          fillColor: '#10b981',
-          weight: 2,
-          opacity: 1,
-          color: '#34d399',
-          fillOpacity: 0.7,
-        };
-      }
-
-      // 2. Common Recorded Misguess: Rose
-      const isGuess = wrongGuesses.some((wg) => featureMatchesName(feature, wg.guess));
-      if (isGuess) {
-        return {
-          fillColor: '#f43f5e',
-          weight: 1.5,
-          opacity: 0.9,
-          color: '#fb7185',
-          fillOpacity: 0.55,
-        };
-      }
-
-      // 3. Unselected base: Dark neutral
-      return {
-        fillColor: '#18181b',
-        weight: 0.5,
-        opacity: 0.7,
-        color: '#27272a',
-        fillOpacity: 0.4,
-      };
+      if (featureMatchesName(feature, targetName)) return MAP_THEME.countries.correct;
+      if (wrongGuesses.some((wg) => featureMatchesName(feature, wg.guess))) return MAP_THEME.countries.markers.red;
+      return MAP_THEME.countries.available;
     },
     [targetName, wrongGuesses],
   );
@@ -124,7 +99,7 @@ export default function RecapComparisonMap({
         el.appendChild(b);
         el.appendChild(document.createElement('br'));
         const s = document.createElement('span');
-        s.style.color = '#34d399';
+        s.style.color = MAP_THEME.countries.correct.color;
         s.textContent = 'Target Solution';
         el.appendChild(s);
         layer.bindTooltip(el, { sticky: true });
@@ -136,7 +111,7 @@ export default function RecapComparisonMap({
         el.appendChild(b);
         el.appendChild(document.createElement('br'));
         const s = document.createElement('span');
-        s.style.color = '#fb7185';
+        s.style.color = MAP_THEME.countries.markers.red.color;
         s.textContent = `${matchedGuess.count} recorded misguesses`;
         el.appendChild(s);
         layer.bindTooltip(el, { sticky: true });
@@ -171,46 +146,34 @@ export default function RecapComparisonMap({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <div className="relative h-64 sm:h-80 md:h-96 w-full rounded-lg border border-white/10 bg-obsidian-950 overflow-hidden">
-        <style>{`
-          .recap-map-pane .leaflet-container, .recap-map-pane .leaflet-tile-pane, .recap-map-pane .leaflet-pane {
-              background-color: #18181b !important;
-              background: #18181b !important;
-          }
-          .recap-map-pane .leaflet-interactive:focus {
-              outline: none;
-          }
-          .recap-map-pane .leaflet-tooltip {
-              background-color: rgba(24, 24, 27, 0.95) !important;
-              border: 1px solid rgba(255, 255, 255, 0.15) !important;
-              color: #f4f4f5 !important;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
-              pointer-events: none !important;
-          }
-        `}</style>
+      <div className="relative h-64 sm:h-80 md:h-96 w-full rounded-lg border border-[var(--map-frame-border)] bg-[var(--map-ocean)] overflow-hidden" style={MAP_THEME_CSS_VARIABLES as CSSProperties}>
 
         {(!geoJsonData || mapError) && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-obsidian-950/80">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--map-ocean)]">
             <MapLoading className="h-full" error={Boolean(mapError)} onRetry={retry} />
           </div>
         )}
 
         <div className="recap-map-pane h-full w-full">
           <MapContainer
+            className="antique-map-surface"
             center={[15, 10]}
             zoom={2}
-            style={{ height: '100%', width: '100%', background: '#18181b' }}
+            style={{ height: '100%', width: '100%', background: MAP_THEME.map.backgroundColor }}
             minZoom={1}
             maxZoom={8}
+            maxBounds={EARTH_MAP_BOUNDS}
+            maxBoundsViscosity={1}
+            worldCopyJump={false}
             zoomSnap={0.5}
             attributionControl={true}
             ref={setMap}
             renderer={renderer}
           >
             <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+              url={MAP_THEME.map.tileUrl}
               attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-              bounds={[[-78, -180], [82, 180]]}
+              bounds={EARTH_MAP_BOUNDS}
               errorTileUrl="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
               noWrap={true}
               keepBuffer={2}
@@ -224,29 +187,30 @@ export default function RecapComparisonMap({
                 ref={geoJsonLayerRef}
               />
             )}
+            <MapCartographicTexture />
           </MapContainer>
         </div>
       </div>
 
       {/* Map Legend & Absent Geometry Notes */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-zinc-400 px-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-app-text-muted px-1">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex items-center gap-1.5 font-medium text-sand-100">
-            <span className="inline-block h-3 w-3 rounded-sm border border-emerald-400 bg-emerald-500/80" />
+          <span className="flex items-center gap-1.5 font-medium text-app-text">
+            <span className="inline-block h-3 w-3 rounded-sm border border-emerald-700 bg-emerald-600/80" />
             <span>Target ({targetName})</span>
           </span>
-          <span className="flex items-center gap-1.5 font-medium text-sand-100">
-            <span className="inline-block h-3 w-3 rounded-sm border border-rose-400 bg-rose-500/80" />
+          <span className="flex items-center gap-1.5 font-medium text-app-text">
+            <span className="inline-block h-3 w-3 rounded-sm border border-rose-700 bg-rose-600/80" />
             <span>Common misguesses</span>
           </span>
-          <span className="flex items-center gap-1.5 text-zinc-500">
-            <span className="inline-block h-3 w-3 rounded-sm border border-zinc-700 bg-zinc-900" />
+          <span className="flex items-center gap-1.5 text-app-text-muted">
+            <span className="inline-block h-3 w-3 rounded-sm border border-app-border/50 bg-[#e1d7bf]" />
             <span>Other mapped areas</span>
           </span>
         </div>
 
         {(absentTarget || absentGuesses.length > 0) && (
-          <div className="text-[11px] text-zinc-500 italic space-x-2">
+          <div className="text-[11px] text-app-text-muted italic space-x-2">
             {absentTarget && <span>Target country ({targetName}) geometry absent from 50m GeoJSON polygons.</span>}
             {absentGuesses.length > 0 && <span>Absent from 50m GeoJSON polygons: {absentGuesses.join(', ')}.</span>}
           </div>

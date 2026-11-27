@@ -114,16 +114,16 @@ export default function LocationFieldNotes({
   return (
     <div className="text-left space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border/15 pb-3">
         <div className="flex items-center gap-2">
-          <BookOpen size={18} className="text-emerald-400" />
-          <h3 className="font-mono text-xs font-semibold tracking-wide text-sand-100 uppercase">
+          <BookOpen size={18} className="text-app-accent" />
+          <h3 className="font-mono text-xs font-semibold tracking-wide text-app-text uppercase">
             {t('fieldNotes.title', 'Location Field Notes')}
           </h3>
         </div>
         <Link
           to="/explore"
-          className="text-xs text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1"
+          className="text-xs text-app-text-secondary hover:text-app-accent transition-colors flex items-center gap-1"
         >
           <span>{t('fieldNotes.atlasGuide', 'Atlas Guide')}</span>
           <ExternalLink size={12} />
@@ -131,21 +131,21 @@ export default function LocationFieldNotes({
       </div>
 
       {loading ? (
-        <div className="py-4 text-center text-xs text-zinc-400 font-mono animate-pulse">
+        <div className="py-4 text-center text-xs text-app-text-muted font-mono animate-pulse">
           {'Loading geographic field notes...'}
         </div>
       ) : (
         <>
           {/* Key Metrics Grid */}
           {facts && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5 rounded-sm bg-obsidian-900/40 p-4 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5 rounded-sm bg-app-surface-muted p-4 text-xs">
               {/* Capital or Seat */}
               {(facts.capital || facts.seat) && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {facts.capital ? ('Capital') : ('Seat')}
                   </span>
-                  <span className="font-semibold text-sand-100 break-words block mt-1">
+                  <span className="font-semibold text-app-text break-words block mt-1">
                     {facts.capital || facts.seat}
                   </span>
                 </div>
@@ -154,10 +154,10 @@ export default function LocationFieldNotes({
               {/* Population */}
               {facts.population !== undefined && facts.population !== null && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {'Population'}
                   </span>
-                  <span className="font-semibold font-mono text-sand-100 break-words block mt-1">
+                  <span className="font-semibold font-mono text-app-text break-words block mt-1">
                     {Number(facts.population).toLocaleString('en-US')}
                   </span>
                 </div>
@@ -166,10 +166,10 @@ export default function LocationFieldNotes({
               {/* Area */}
               {(facts.area_km2 || facts.area_sq_mi) && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {'Area'}
                   </span>
-                  <span className="font-semibold font-mono text-sand-100 break-words block mt-1">
+                  <span className="font-semibold font-mono text-app-text break-words block mt-1">
                     {facts.area_km2
                       ? `${Number(facts.area_km2).toLocaleString('en-US')} km²`
                       : `${Number(facts.area_sq_mi).toLocaleString('en-US')} sq mi`}
@@ -180,14 +180,14 @@ export default function LocationFieldNotes({
               {/* Region or Voivodeship or Admission Year */}
               {(facts.subregion || facts.region || facts.voivodeship || facts.admission_year) && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {facts.voivodeship
                       ? ('Voivodeship')
                       : facts.admission_year
                       ? ('Admission')
                       : ('Region')}
                   </span>
-                  <span className="font-semibold text-sand-100 break-words block mt-1">
+                  <span className="font-semibold text-app-text break-words block mt-1">
                     {facts.voivodeship || facts.admission_year || facts.subregion || facts.region}
                   </span>
                 </div>
@@ -196,10 +196,10 @@ export default function LocationFieldNotes({
               {/* Plates for Powiaty */}
               {facts.registration_plates && facts.registration_plates.length > 0 && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {'Plates'}
                   </span>
-                  <span className="font-semibold font-mono text-sand-100 break-words block mt-1">
+                  <span className="font-semibold font-mono text-app-text break-words block mt-1">
                     {facts.registration_plates.join(', ')}
                   </span>
                 </div>
@@ -208,10 +208,10 @@ export default function LocationFieldNotes({
               {/* Languages for Countries */}
               {facts.languages && facts.languages.length > 0 && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {'Languages'}
                   </span>
-                  <span className="font-semibold text-sand-100 break-words block mt-1">
+                  <span className="font-semibold text-app-text break-words block mt-1">
                     {facts.languages.join(', ')}
                   </span>
                 </div>
@@ -220,10 +220,10 @@ export default function LocationFieldNotes({
               {/* Water Access */}
               {facts.water_access !== undefined && (
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-app-text-muted block">
                     {'Water Access'}
                   </span>
-                  <span className="font-semibold text-sand-100 break-words block mt-1">
+                  <span className="font-semibold text-app-text break-words block mt-1">
                     {facts.is_island
                       ? ('Island')
                       : facts.water_access && facts.water_access.length > 0
@@ -238,16 +238,16 @@ export default function LocationFieldNotes({
           {/* Bordering Neighbors Badges */}
           {rawBorders.length > 0 && (
             <div className="space-y-1.5 pt-1">
-              <span className="text-[11px] uppercase font-mono tracking-wider text-zinc-400 block">
+              <span className="text-[11px] uppercase font-mono tracking-wider text-app-text-muted block">
                 {`Bordering Neighbors (${rawBorders.length})`}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {rawBorders.map((nbr) => (
                   <span
                     key={nbr}
-                    className="inline-flex items-center gap-1 rounded-xs bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-zinc-300"
+                    className="inline-flex items-center gap-1 rounded-xs bg-app-surface-muted border border-app-border/15 px-2 py-0.5 text-xs text-app-text-secondary"
                   >
-                    <MapPin size={10} className="text-zinc-500" />
+                    <MapPin size={10} className="text-app-text-muted" />
                     {nbr}
                   </span>
                 ))}
@@ -256,42 +256,42 @@ export default function LocationFieldNotes({
           )}
 
           {/* Border Hop Bridge Card */}
-          <div className="rounded-sm border border-emerald-500/25 bg-emerald-950/25 p-4 space-y-3">
+          <div className="rounded-sm border border-app-accent/20 bg-app-accent/5 p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Route size={16} className="text-emerald-400" />
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                <Route size={16} className="text-app-accent" />
+                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-app-accent">
                   {'Border Hop Challenge'}
                 </span>
               </div>
               {challenge?.optimal_hops !== null && challenge?.optimal_hops !== undefined && (
-                <span className="font-mono text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-xs">
+                <span className="font-mono text-[11px] font-bold text-app-accent bg-app-accent/10 border border-app-accent/25 px-2 py-0.5 rounded-xs">
                   {`${challenge.optimal_hops} hops`}
                 </span>
               )}
             </div>
 
             {challenge?.connected && challenge.start ? (
-              <p className="text-xs text-zinc-300">
+              <p className="text-xs text-app-text-secondary">
                 {(
                   <>
-                    Can you navigate from <strong className="text-sand-100">{challenge.start}</strong> to{' '}
-                    <strong className="text-sand-100">{challenge.target}</strong> across bordering territories in{' '}
-                    <strong className="text-emerald-400">{challenge.optimal_hops} hops</strong>?
+                    Can you navigate from <strong className="text-app-text">{challenge.start}</strong> to{' '}
+                    <strong className="text-app-text">{challenge.target}</strong> across bordering territories in{' '}
+                    <strong className="text-app-accent">{challenge.optimal_hops} hops</strong>?
                   </>
                 )}
               </p>
             ) : challenge?.is_island ? (
-              <p className="text-xs text-zinc-300">
+              <p className="text-xs text-app-text-secondary">
                 {(
                   <>
-                    <strong className="text-sand-100">{targetName}</strong> is an island with no land borders! Try
+                    <strong className="text-app-text">{targetName}</strong> is an island with no land borders! Try
                     today's featured Daily Border Hop instead.
                   </>
                 )}
               </p>
             ) : (
-              <p className="text-xs text-zinc-300">
+              <p className="text-xs text-app-text-secondary">
                 {'Play the geographic path-finding puzzle across bordering countries and states!'}
               </p>
             )}
@@ -300,7 +300,7 @@ export default function LocationFieldNotes({
               {challenge?.connected && challenge.start ? (
                 <Link
                   to={`/border-hop?mode=${hopMode}&start=${encodeURIComponent(challenge.start)}&target=${encodeURIComponent(challenge.target)}`}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400 px-3.5 py-2 text-xs font-bold text-obsidian-950 transition-colors hover:bg-emerald-300"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-app-accent px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                 >
                   <Route size={14} />
                   <span>
@@ -311,7 +311,7 @@ export default function LocationFieldNotes({
               ) : (
                 <Link
                   to="/border-hop"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-emerald-400/90 px-3.5 py-2 text-xs font-bold text-obsidian-950 transition-colors hover:bg-emerald-300"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-app-accent px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                 >
                   <Globe size={14} />
                   <span>{'Play Daily Border Hop'}</span>

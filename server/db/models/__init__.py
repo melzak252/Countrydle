@@ -35,3 +35,4 @@ from .heraldry_daily import HeraldryDailySession
 from .heraldry_quiz import QuizRun, QuizSolve
 from .mode_result import ModeResultRecord
 from .map_quiz import MapQuizDailySession
+from .powiat_map_quiz import PowiatMapQuizSession

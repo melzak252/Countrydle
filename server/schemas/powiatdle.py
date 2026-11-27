@@ -64,6 +64,7 @@ class PowiatQuestionCreate(BaseModel):
     question: Optional[str]
     valid: bool
     answer: Optional[bool] = Field(strict=True)
+    clarification: Optional[str] = None
     explanation: str
     context: Optional[str]
     intent: Optional[str] = None
@@ -78,6 +79,7 @@ class PowiatQuestionDisplay(ReportableQuestion):
     question: Optional[str]
     valid: bool
     answer: Optional[bool]
+    clarification: Optional[str] = None
     explanation: str
     asked_at: datetime
     user_id: Optional[int] = None
@@ -85,6 +87,7 @@ class PowiatQuestionDisplay(ReportableQuestion):
     context: Optional[str] = Field(default=None, exclude=True)
     user: Optional[UserDisplay] = None
     powiat: Optional[PowiatDisplay] = None
+    auto_guess: Optional[PowiatGuessDisplay] = None
 
     model_config = ConfigDict(from_attributes=True)
 

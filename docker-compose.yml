@@ -3,6 +3,12 @@ services:
   db:
     image: pgvector/pgvector:pg17
     container_name: database
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
     networks:
       - countrydle
     environment:
@@ -22,6 +28,11 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     networks:
       - countrydle
     ports:
@@ -41,6 +52,11 @@ services:
     container_name: server
     build: ./server
     command: uvicorn app:app --host 0.0.0.0 --port 8080
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     networks:
       - countrydle
     ports:
@@ -71,12 +87,22 @@ services:
       - LOCAL_QUESTION_MODEL=${LOCAL_QUESTION_MODEL:-gemini-2.5-flash-lite}
       - GEMINI_QUESTION_MODEL=${GEMINI_QUESTION_MODEL:-gemini-2.5-flash-lite}
       - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
     volumes:
       - ./server:/usr/src/app
       - ./data:/usr/src/app/data
 
   frontend:
     container_name: client
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/log/nginx
+      - /var/run
+      - /etc/nginx/conf.d
     build:
       context: ./client
       target: serving
@@ -95,7 +121,7 @@ services:
     volumes:
       - ${PUBLISHER_SNAPSHOT_DIR:-./publisher-snapshots}:/var/run/countrydle-publisher:ro
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -103,7 +129,7 @@ services:
     networks:
       - countrydle
     ports:
-      - "5173:80"
+      - "5173:8080"
     depends_on:
       - backend
 
@@ -111,6 +137,12 @@ services:
   # Run once with: docker compose --profile publisher-capture run --rm publisher-capture
   publisher-capture:
     profiles: ["publisher-capture"]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /dev/shm
     build:
       context: ./client
       target: publisher-capture

@@ -43,6 +43,20 @@ MODE_TABLE_MAP: dict[str, tuple[str, str, str]] = {
     "americas": ("country_facts.sqlite", "countries", "app_country_name"),
 }
 
+_COORDS_BY_NAME_QUERIES: dict[tuple[str, str], str] = {
+    ("countries", "app_country_name"): "SELECT latitude, longitude FROM countries WHERE LOWER(app_country_name) = LOWER(?)",
+    ("us_states", "name"): "SELECT latitude, longitude FROM us_states WHERE LOWER(name) = LOWER(?)",
+    ("voivodeships", "name"): "SELECT latitude, longitude FROM voivodeships WHERE LOWER(name) = LOWER(?)",
+    ("powiats", "name"): "SELECT latitude, longitude FROM powiats WHERE LOWER(name) = LOWER(?)",
+}
+
+_COORDS_BY_ID_QUERIES: dict[str, str] = {
+    "countries": "SELECT latitude, longitude FROM countries WHERE id = ?",
+    "us_states": "SELECT latitude, longitude FROM us_states WHERE id = ?",
+    "voivodeships": "SELECT latitude, longitude FROM voivodeships WHERE id = ?",
+    "powiats": "SELECT latitude, longitude FROM powiats WHERE id = ?",
+}
+
 
 def calculate_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
     """Calculate great-circle distance between two points in km using Haversine formula."""
@@ -102,10 +116,11 @@ def get_entity_coordinates(
         conn = sqlite3.connect(path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
+        row = None
         if name:
             clean_name = name.strip()
             row = cursor.execute(
-                f"SELECT latitude, longitude FROM {table} WHERE LOWER({name_col}) = LOWER(?)",
+                _COORDS_BY_NAME_QUERIES[(table, name_col)],
                 (clean_name,),
             ).fetchone()
             if not row and mode in ("countrydle", "country"):
@@ -116,7 +131,7 @@ def get_entity_coordinates(
 
         if not row and entity_id is not None and entity_id > 0:
             row = cursor.execute(
-                f"SELECT latitude, longitude FROM {table} WHERE id = ?", (entity_id,)
+                _COORDS_BY_ID_QUERIES[table], (entity_id,)
             ).fetchone()
         conn.close()
 

@@ -32,7 +32,7 @@ jobs:
       PUBLISHER_FRONTEND_CONTAINER: ${{ vars.PUBLISHER_FRONTEND_CONTAINER }}
     steps:
       - name: Checkout transport script
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Require configured deployment and SSH account
         id: configuration
@@ -85,14 +85,14 @@ jobs:
           PY
 
       - name: Log in to GHCR for the configured capture image
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore previously validated off-host snapshots
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ runner.temp }}/publisher-snapshots
           key: publisher-snapshots-${{ steps.configuration.outputs.cache_key }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -148,7 +148,7 @@ jobs:
           PY
 
       - name: Save bounded validated snapshots for incremental capture
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ runner.temp }}/publisher-snapshots
           key: publisher-snapshots-${{ steps.configuration.outputs.cache_key }}-${{ github.run_id }}-${{ github.run_attempt }}

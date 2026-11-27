@@ -1,41 +1,11 @@
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import PageMetadata from './components/PageMetadata';
 import { isPrerenderCapture } from './lib/pageMetadata';
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import GamePage from './pages/GamePage';
-import ProfilePage from './pages/ProfilePage';
-import SetupProfilePage from './pages/SetupProfilePage';
-import PowiatyGamePage from './pages/PowiatyGamePage';
-import USStatesGamePage from './pages/USStatesGamePage';
-import WojewodztwaGamePage from './pages/WojewodztwaGamePage';
-import CountydleGamePage from './pages/CountydleGamePage';
-import ContinentalGamePage from './pages/ContinentalGamePage';
-import FlagdlePage from './pages/FlagdlePage';
-import FlagShadesPage from './pages/FlagShadesPage';
-import PowiatHeraldryPage from './pages/PowiatHeraldryPage';
-import PowiatCoatsQuizPage from './pages/PowiatCoatsQuizPage';
-import PowiatPlatesQuizPage from './pages/PowiatPlatesQuizPage';
-import MapQuizPage from './pages/MapQuizPage';
-import BorderHopPage from './pages/BorderHopPage';
-import DuelPage from './pages/DuelPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import TermsOfServicePage from './pages/TermsOfServicePage';
-import CookiePolicyPage from './pages/CookiePolicyPage';
-import ArchivePage from './pages/ArchivePage';
-import AdminDashboard from './pages/AdminDashboard';
-import HowItWorksPage from './pages/HowItWorksPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import FAQPage from './pages/FAQPage';
-import BlogListPage from './pages/BlogListPage';
-import BlogPostPage from './pages/BlogPostPage';
-import PatchNotesPage from './pages/PatchNotesPage';
-import ExplorePage from './pages/ExplorePage';
-import ModeGuidePage from './pages/ModeGuidePage';
+import { MAP_QUIZ_PATHS } from './lib/mapGameMode';
 import { useAuthStore } from './stores/authStore';
 import { countyFlagsService, mapQuizScopes, mapQuizService, regionalSymbolGames, regionalSymbolPath, regionalSymbolsService } from './services/api';
 import {
@@ -50,7 +20,41 @@ import {
   useAmericasGameStore,
   useFlagdleGameStore,
 } from './stores/gameStore';
-import { useEffect } from 'react';
+
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const GamePage = lazy(() => import('./pages/GamePage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SetupProfilePage = lazy(() => import('./pages/SetupProfilePage'));
+const PowiatyGamePage = lazy(() => import('./pages/PowiatyGamePage'));
+const USStatesGamePage = lazy(() => import('./pages/USStatesGamePage'));
+const WojewodztwaGamePage = lazy(() => import('./pages/WojewodztwaGamePage'));
+const CountydleGamePage = lazy(() => import('./pages/CountydleGamePage'));
+const ContinentalGamePage = lazy(() => import('./pages/ContinentalGamePage'));
+const FlagdlePage = lazy(() => import('./pages/FlagdlePage'));
+const FlagShadesPage = lazy(() => import('./pages/FlagShadesPage'));
+const PowiatHeraldryPage = lazy(() => import('./pages/PowiatHeraldryPage'));
+const PowiatCoatsQuizPage = lazy(() => import('./pages/PowiatCoatsQuizPage'));
+const PowiatPlatesQuizPage = lazy(() => import('./pages/PowiatPlatesQuizPage'));
+const MapQuizPage = lazy(() => import('./pages/MapQuizPage'));
+const BorderHopPage = lazy(() => import('./pages/BorderHopPage'));
+const MapChallengePage = lazy(() => import('./pages/MapChallengePage'));
+const MapBorderHopPage = lazy(() => import('./pages/MapBorderHopPage'));
+const DuelPage = lazy(() => import('./pages/DuelPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
+const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
+const ArchivePage = lazy(() => import('./pages/ArchivePage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const FAQPage = lazy(() => import('./pages/FAQPage'));
+const BlogListPage = lazy(() => import('./pages/BlogListPage'));
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
+const PatchNotesPage = lazy(() => import('./pages/PatchNotesPage'));
+const ExplorePage = lazy(() => import('./pages/ExplorePage'));
+const ModeGuidePage = lazy(() => import('./pages/ModeGuidePage'));
 
 function App() {
   const { user, setUser, isAuthenticated, isLoading: authLoading } = useAuthStore();
@@ -146,11 +150,13 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-right" toastOptions={{
         style: {
-          background: '#333',
-          color: '#fff',
+          background: 'rgb(var(--app-surface-raised))',
+          color: 'rgb(var(--app-text))',
+          border: '1px solid rgb(var(--app-border) / 0.12)',
         },
       }} />
       <PageMetadata />
+      <Suspense fallback={<div className="mx-auto max-w-5xl px-4 py-12 text-sm text-app-text-muted">Loading…</div>}>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
@@ -189,6 +195,9 @@ function App() {
           <Route path="map-quiz/london-boroughs" element={<MapQuizPage scope="london_boroughs" />} />
           <Route path="map-quiz/england-counties" element={<MapQuizPage scope="england_counties" />} />
           <Route path="border-hop" element={<BorderHopPage />} />
+          <Route path={MAP_QUIZ_PATHS.powiaty.slice(1)} element={<MapChallengePage mode="powiaty" />} />
+          <Route path={MAP_QUIZ_PATHS.us_states.slice(1)} element={<MapChallengePage mode="us_states" />} />
+          <Route path="map-border-hop" element={<MapBorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
@@ -207,13 +216,14 @@ function App() {
           {/* Fallback */}
           <Route path="*" element={
             <section className="mx-auto max-w-3xl px-4 py-12">
-              <h1 className="text-3xl font-bold text-sand-100">Page not found</h1>
-              <p className="mt-4 text-zinc-300">This page does not exist. Explore the daily geography games or return to the homepage.</p>
-              <Link to="/" className="mt-6 inline-block text-emerald-300 underline">Return to Countrydle</Link>
+              <h1 className="text-3xl font-bold text-app-text">Page not found</h1>
+              <p className="mt-4 text-app-text-secondary">This page does not exist. Explore the daily geography games or return to the homepage.</p>
+              <Link to="/" className="mt-6 inline-block text-app-accent underline">Return to Countrydle</Link>
             </section>
           } />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

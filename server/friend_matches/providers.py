@@ -44,15 +44,38 @@ CONTINENTAL_MODES = {
     "americas": ["North America", "South America"],
 }
 
+_ENTITY_POOL_QUERIES: dict[str, str] = {
+    "countrydle": "SELECT * FROM countries ORDER BY app_country_name, cca3",
+    "us_statedle": "SELECT * FROM us_states ORDER BY name, name",
+    "wojewodztwodle": "SELECT * FROM voivodeships ORDER BY name, teryt",
+    "powiatdle": "SELECT * FROM powiats ORDER BY name, terc",
+}
+
+_ENTITY_BY_KEY_QUERIES: dict[str, str] = {
+    "countrydle": "SELECT * FROM countries WHERE cca3 = ?",
+    "europe": "SELECT * FROM countries WHERE cca3 = ?",
+    "asia": "SELECT * FROM countries WHERE cca3 = ?",
+    "africa": "SELECT * FROM countries WHERE cca3 = ?",
+    "americas": "SELECT * FROM countries WHERE cca3 = ?",
+    "us_statedle": "SELECT * FROM us_states WHERE name = ?",
+    "wojewodztwodle": "SELECT * FROM voivodeships WHERE teryt = ?",
+    "powiatdle": "SELECT * FROM powiats WHERE terc = ?",
+}
+
 @lru_cache(maxsize=16)
 def _engine(mode: str) -> _Engine:
     if mode not in {"countrydle", "us_statedle", "wojewodztwodle", "powiatdle", *CONTINENTAL_MODES}:
         raise ValueError("Unsupported friend match mode")
     if mode in CONTINENTAL_MODES or mode == "countrydle":
-        module = importlib.import_module("countrydle.utils")
+        import countrydle.utils as module
         from countrydle.local_answering import DEFAULT_DB_PATH
         return _Engine(mode, module, DEFAULT_DB_PATH, "countries", "app_country_name", "cca3", "cca2", "target_country")
-    module = importlib.import_module(f"{mode}.utils")
+    if mode == "us_statedle":
+        import us_statedle.utils as module
+    elif mode == "wojewodztwodle":
+        import wojewodztwodle.utils as module
+    else:
+        import powiatdle.utils as module
     config = module.LOCAL_CONFIG
     key, code = {
         "us_statedle": ("name", None),
@@ -87,17 +110,26 @@ def _entity_pool(mode: str, stamp: tuple[int, int]) -> tuple[dict, ...]:
     with closing(_connect(engine.db_path)) as conn:
         if mode in CONTINENTAL_MODES:
             continents = CONTINENTAL_MODES[mode]
-            ph = ",".join("?" for _ in continents)
-            query = (
-                f"SELECT DISTINCT c.* FROM {engine.table} c "
-                f"JOIN country_continents cc ON c.id = cc.country_id "
-                f"WHERE cc.continent IN ({ph}) "
-                f"ORDER BY c.{engine.name_column}, c.{engine.key_column}"
-            )
+            if len(continents) == 1:
+                query = (
+                    "SELECT DISTINCT c.* FROM countries c "
+                    "JOIN country_continents cc ON c.id = cc.country_id "
+                    "WHERE cc.continent = ? "
+                    "ORDER BY c.app_country_name, c.cca3"
+                )
+            elif len(continents) == 2:
+                query = (
+                    "SELECT DISTINCT c.* FROM countries c "
+                    "JOIN country_continents cc ON c.id = cc.country_id "
+                    "WHERE cc.continent IN (?, ?) "
+                    "ORDER BY c.app_country_name, c.cca3"
+                )
+            else:
+                raise ValueError(f"Unsupported continent filter size: {len(continents)}")
             entities = tuple(_entity(engine, row) for row in conn.execute(query, continents))
         else:
             entities = tuple(_entity(engine, row) for row in conn.execute(
-                f"SELECT * FROM {engine.table} ORDER BY {engine.name_column}, {engine.key_column}"
+                _ENTITY_POOL_QUERIES[mode]
             ))
     if mode == "countrydle" or mode in CONTINENTAL_MODES:
         entities = tuple(item for item in entities if is_country_eligible(item["name"], mode))
@@ -211,7 +243,7 @@ def _evaluate(mode: str, entity: dict, question: str) -> dict | _Fallback:
         raise ValueError("Entity identifier must be a canonical string")
     with closing(_connect(engine.db_path)) as conn:
         row = conn.execute(
-            f"SELECT * FROM {engine.table} WHERE {engine.key_column} = ?", (entity_id,)
+            _ENTITY_BY_KEY_QUERIES[mode], (entity_id,)
         ).fetchone()
         if row is None:
             raise ValueError("Unknown entity for this mode")
@@ -233,7 +265,7 @@ def _evaluate(mode: str, entity: dict, question: str) -> dict | _Fallback:
 
     with closing(_connect(engine.db_path)) as conn:
         row = conn.execute(
-            f"SELECT * FROM {engine.table} WHERE {engine.key_column} = ?", (entity_id,)
+            _ENTITY_BY_KEY_QUERIES[mode], (entity_id,)
         ).fetchone()
         if row is None:
             raise RuntimeError("Canonical target disappeared during guidance evaluation")

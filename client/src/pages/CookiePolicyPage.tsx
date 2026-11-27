@@ -77,12 +77,12 @@ export default function CookiePolicyPage() {
       <section>
         <h2>3. Analytics, Advertising and External Services</h2>
         <p className="mb-4">
-          Google Analytics may measure visits after the consent service reports either the required Google
-          consent or that GDPR does not apply. Optional Rybbit analytics is configured separately from advertising
-          and runs only when the consent service explicitly reports that GDPR does not apply; Google's consent
-          does not authorize Rybbit. Unknown or denied permission and unavailable consent services do not start
-          analytics. External scripts and their configuration determine collection and storage behavior; we do not
-          assume analytics necessarily uses cookies. Analytics and advertising are disabled during static capture.
+          Google Analytics measures aggregate site visits while keeping advertising storage
+          (<code>ad_storage</code>, <code>ad_user_data</code>, and <code>ad_personalization</code>) defaulting to
+          denied until the consent service reports either the required Google consent or that GDPR does not apply.
+          Optional Rybbit analytics is cookieless aggregate measurement configured separately from advertising.
+          External scripts and their configuration determine collection and storage behavior.
+          Analytics and advertising are disabled during static capture.
         </p>
         <p className="mb-4">
           Google AdSense advertising is optional and disabled by default. The deployment must explicitly set
@@ -114,12 +114,12 @@ export default function CookiePolicyPage() {
           so you can review, reject or withdraw your optional Google choices when those settings are available:
         </p>
         <div className="mb-4">
-          <PrivacySettingsButton className="min-h-11 rounded-sm border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400" />
+          <PrivacySettingsButton className="min-h-11 rounded-sm border border-app-border bg-app-surface px-4 py-2 text-sm font-medium text-app-accent transition-colors hover:bg-app-surface-muted hover:text-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus" />
         </div>
         <p className="mb-4">
-          Rejecting or withdrawing the required Google consent stops advertising and Google Analytics; active
-          provider runtimes are cleared by reloading the page when permission is withdrawn. A change from an
-          explicit non-GDPR determination also unloads active Rybbit analytics. This does not delete necessary
+          Rejecting or withdrawing the required Google consent stops advertising and revokes Google Analytics
+          storage consent; active provider runtimes are cleared by reloading the page when permission is withdrawn.
+          This does not delete necessary
           game or login cookies, your saved progress, or server records. Playing, creating an account or accepting
           the Terms of Service is not consent to optional advertising storage or tracking.
         </p>

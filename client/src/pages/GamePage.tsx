@@ -24,12 +24,12 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 
 function getDistanceColor(distanceKm: number): string {
   if (distanceKm <= 500) {
-    return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+    return 'border-app-accent/30 bg-app-accent/10 text-app-accent';
   }
   if (distanceKm <= 2000) {
-    return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
+    return 'border-amber-700/25 bg-amber-500/10 text-amber-800';
   }
-  return 'border-white/10 bg-white/5 text-zinc-300';
+  return 'border-app-border/15 bg-app-surface-muted text-app-text-secondary';
 }
 
 export default function GamePage() {
@@ -94,9 +94,9 @@ export default function GamePage() {
 
   if (!gameState && isLoading) {
     return (
-      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-app-accent">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
-        <span className="text-sm font-mono text-zinc-400">Loading fieldwork puzzle…</span>
+        <span className="text-sm font-mono text-app-text-secondary">Loading fieldwork puzzle…</span>
       </div>
     );
   }
@@ -144,7 +144,7 @@ export default function GamePage() {
   };
 
   return (
-    <div className="relative flex-1 min-h-0 h-full w-full overflow-hidden bg-obsidian-950 font-sans select-none">
+    <div className="relative flex-1 min-h-0 h-full w-full overflow-hidden bg-app-canvas font-sans select-none">
       {/* 1. Full-Canvas Map */}
       <div className="game-map-layer absolute inset-0 z-0 w-full">
         <MapBox
@@ -156,43 +156,42 @@ export default function GamePage() {
 
       {/* 2. Top Status HUD Bar */}
       <div className="game-status-bar pointer-events-none absolute inset-x-0 top-0 z-[1200] w-full md:inset-x-auto md:left-1/2 md:top-3 md:z-[1000] md:w-auto md:-translate-x-1/2 md:px-2 md:max-w-full">
-        <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-white/10 bg-obsidian-950 text-xs font-mono max-md:[@media(max-height:560px)]:h-8 md:h-8 md:w-auto md:divide-x md:divide-white/10 md:rounded-sm md:border md:border-white/15 md:bg-obsidian-900/85 md:shadow-lg md:backdrop-blur-md">
-          <div className="hidden md:flex items-center gap-2 px-3 text-xs text-zinc-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+        <div className="pointer-events-auto flex h-11 w-full items-stretch border-b border-app-border/15 bg-app-surface/95 text-xs font-mono text-app-text max-md:[@media(max-height:560px)]:h-8 md:h-8 md:w-auto md:divide-x md:divide-app-border/15 md:rounded-sm md:border md:border-app-border/20 md:bg-app-surface/95 md:shadow-sm md:backdrop-blur-md">
+          <div className="hidden md:flex items-center gap-2 px-3 text-xs text-app-text-secondary">
+            <span className="h-1.5 w-1.5 rounded-full bg-app-accent shrink-0" />
             <span className="hidden sm:inline">Daily fieldwork</span>
-            <span className="font-semibold text-sand-100 hidden sm:inline">{dailyDate}</span>
-            <span className="font-semibold text-sand-100 max-md:hidden">Daily</span>
+            <span className="font-semibold text-app-text hidden sm:inline">{dailyDate}</span>
+            <span className="font-semibold text-app-text max-md:hidden">Daily</span>
           </div>
 
           <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">
-            <span className="text-xs text-zinc-400">Q:</span>
-            <span className="font-semibold text-sand-100">
+            <span className="text-xs text-app-text-muted">Q:</span>
+            <span className="font-semibold text-app-text">
               {gameState.remaining_questions}
-              <span className="text-[10px] text-zinc-500">/10</span>
+              <span className="text-[10px] text-app-text-muted">/10</span>
             </span>
           </div>
 
           <div className="flex flex-1 items-center justify-center gap-1.5 px-2 md:flex-none md:px-3">
-            <span className="text-xs text-zinc-400">G:</span>
-            <span className="font-semibold text-emerald-400">
+            <span className="text-xs text-app-text-muted">G:</span>
+            <span className="font-semibold text-app-accent">
               {gameState.remaining_guesses}
-              <span className="text-[10px] text-zinc-500">/3</span>
+              <span className="text-[10px] text-app-text-muted">/3</span>
             </span>
           </div>
 
           <GameInstructions
             gameName={t('gamePage.title')}
-            examples={t('gamePage.examples', { returnObjects: true }) as string[]}
             scoring={{ maxPoints: 3300, details: t('gamePage.scoringDetails', { returnObjects: true }) as string[] }}
             compact={true}
-            triggerClassName="max-md:min-h-11 max-md:min-w-11 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:min-w-8 flex items-center gap-1.5 px-2.5 text-zinc-400 hover:text-sand-100 hover:bg-white/5 transition-colors text-xs cursor-pointer whitespace-nowrap"
+            triggerClassName="max-md:min-h-11 max-md:min-w-11 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:min-w-8 flex items-center gap-1.5 px-2.5 text-app-text-secondary hover:text-app-text hover:bg-app-surface-muted transition-colors text-xs cursor-pointer whitespace-nowrap"
           />
 
           {isGameOver && (
             <button
               type="button"
               onClick={() => setIsResultDismissed(false)}
-              className="max-md:min-h-11 max-md:[@media(max-height:560px)]:min-h-8 flex items-center gap-1.5 bg-emerald-500/20 px-3 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+              className="max-md:min-h-11 max-md:[@media(max-height:560px)]:min-h-8 flex items-center gap-1.5 bg-app-accent/10 px-3 text-xs font-semibold text-app-accent hover:bg-app-accent/20 transition-colors cursor-pointer"
             >
               <Trophy size={13} />
               <span>{'Result'}</span>
@@ -206,74 +205,74 @@ export default function GamePage() {
       <div className={`pointer-events-none ${
         isChatOpen
           ? 'game-notebook-layer absolute inset-0 z-[1100] md:absolute md:inset-0 md:z-[1000]'
-          : 'absolute inset-x-0 bottom-0 z-[995] w-full bg-obsidian-950 pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)] md:bg-transparent md:pb-0'
+          : 'absolute inset-x-0 bottom-0 z-[995] w-full bg-app-surface pb-[env(safe-area-inset-bottom)] md:absolute md:inset-x-auto md:left-4 md:bottom-4 md:z-[1000] md:w-fit md:max-w-[calc(100vw-2rem)] md:bg-transparent md:pb-0'
       }`}>
         {!isChatOpen ? (
-          <div className="pointer-events-auto flex w-full gap-2 border-t border-white/15 bg-obsidian-950 p-1 shadow-xl max-md:[@media(max-height:560px)]:p-0.5 md:block md:w-auto md:border md:bg-obsidian-900/90 md:p-0">
+          <div className="pointer-events-auto flex w-full gap-2 border-t border-app-border/15 bg-app-surface-raised p-1 shadow-sm max-md:[@media(max-height:560px)]:p-0.5 md:block md:w-auto md:border md:border-app-border/20 md:bg-app-surface-raised md:p-0">
             <button
               type="button"
               onClick={() => { setUserSelectedTab('question'); setIsChatOpen(true); }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 md:hidden"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-app-border/20 bg-app-surface px-3 font-mono text-xs text-app-text hover:bg-app-surface-muted max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 md:hidden"
             >
-              {'Ask'} <span className="text-zinc-400">{gameState.remaining_questions}/10</span>
+              {'Ask'} <span className="text-app-text-muted">{gameState.remaining_questions}/10</span>
             </button>
             <button
               type="button"
               onClick={() => { setUserSelectedTab('guess'); setIsChatOpen(true); }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-white/10 bg-obsidian-900 px-3 font-mono text-xs text-sand-100 hover:bg-obsidian-850 max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 md:hidden"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-sm border border-app-border/20 bg-app-surface px-3 font-mono text-xs text-app-text hover:bg-app-surface-muted max-md:[@media(max-height:560px)]:min-h-8 max-md:[@media(max-height:560px)]:py-1 md:hidden"
             >
-              {'Guess'} <span className="text-emerald-400">{gameState.remaining_guesses}/3</span>
+              {'Guess'} <span className="text-app-accent">{gameState.remaining_guesses}/3</span>
             </button>
             <button
               type="button"
               onClick={() => setIsChatOpen(true)}
-              className="hidden min-h-11 items-center gap-2 rounded-sm border border-white/15 bg-obsidian-900/90 px-3 py-1.5 font-mono text-xs text-sand-100 md:flex"
+              className="hidden min-h-11 items-center gap-2 rounded-sm border border-app-border/20 bg-app-surface-raised px-3 py-1.5 font-mono text-xs text-app-text md:flex"
               aria-label={'Open notebook'}
             >
-              <MessageSquare size={13} className="text-emerald-400" />
+              <MessageSquare size={13} className="text-app-accent" />
               <span>{'Notebook'}</span>
-              <span className="text-sand-100 font-semibold">Q: {questions.length}/10</span>
-              <span className="text-zinc-500">·</span>
-              <span className="text-emerald-400 font-semibold">G: {guesses.length}/3</span>
-              <ChevronUp size={13} className="text-zinc-400 ml-0.5" />
+              <span className="text-app-text font-semibold">Q: {questions.length}/10</span>
+              <span className="text-app-text-muted">·</span>
+              <span className="text-app-accent font-semibold">G: {guesses.length}/3</span>
+              <ChevronUp size={13} className="text-app-text-muted ml-0.5" />
             </button>
           </div>
         ) : (
-          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-obsidian-950 shadow-lg md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-2xl md:border md:border-white/15 md:bg-obsidian-900 md:pb-0">
+          <div onWheel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} className="pointer-events-auto absolute inset-0 flex h-full flex-col overflow-hidden bg-app-surface-raised shadow-sm md:inset-x-auto md:inset-y-auto md:left-4 md:bottom-4 md:h-[68vh] md:max-h-[72vh] md:w-[28rem] md:rounded-sm md:border md:border-app-border/20 md:bg-app-surface md:pb-0">
 
             {/* Notebook Tabbed Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-obsidian-950/80 px-2 py-1 shrink-0 max-md:[@media(max-height:560px)]:py-0.5 md:px-4 md:py-3 md:bg-obsidian-900/70 md:backdrop-blur-md">
+            <div className="flex items-center justify-between border-b border-app-border/15 bg-app-surface-raised px-2 py-1 shrink-0 max-md:[@media(max-height:560px)]:py-0.5 md:px-4 md:py-3 md:bg-app-surface">
               <div role="group" aria-label={'Choose question or guess'} className="flex items-center gap-1">
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'questions'}
                   onClick={() => setUserSelectedTab('question')}
-                  className={`flex min-h-11 max-md:[@media(max-height:560px)]:min-h-8 items-center gap-1 rounded-xl px-2 py-2 max-md:[@media(max-height:560px)]:py-1 text-xs transition-colors cursor-pointer ${
+                  className={`flex min-h-11 max-md:[@media(max-height:560px)]:min-h-8 items-center gap-1 rounded-sm px-2 py-2 max-md:[@media(max-height:560px)]:py-1 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'questions'
-                      ? 'bg-emerald-400/15 font-semibold text-sand-100'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
+                      ? 'bg-app-surface-muted font-semibold text-app-text'
+                      : 'text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text'
                   }`}
                 >
-                  <MessageSquare size={12} className={`hidden md:block ${activeChatTab === 'questions' ? 'text-emerald-400' : ''}`} />
+                  <MessageSquare size={12} className={`hidden md:block ${activeChatTab === 'questions' ? 'text-app-accent' : ''}`} />
                   <span className="md:hidden">{'Ask'}</span>
                   <span className="hidden md:inline">{'Questions'}</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({questions.length}/10)</span>
+                  <span className="font-mono text-[10px] text-app-text-muted">({questions.length}/10)</span>
                 </button>
 
                 <button
                   type="button"
                   aria-pressed={activeChatTab === 'guesses'}
                   onClick={() => setUserSelectedTab('guess')}
-                  className={`flex min-h-11 max-md:[@media(max-height:560px)]:min-h-8 items-center gap-1 rounded-xl px-2 py-2 max-md:[@media(max-height:560px)]:py-1 text-xs transition-colors cursor-pointer ${
+                  className={`flex min-h-11 max-md:[@media(max-height:560px)]:min-h-8 items-center gap-1 rounded-sm px-2 py-2 max-md:[@media(max-height:560px)]:py-1 text-xs transition-colors cursor-pointer ${
                     activeChatTab === 'guesses'
-                      ? 'bg-emerald-400/15 font-semibold text-sand-100'
-                      : 'text-zinc-400 hover:bg-white/5 hover:text-sand-100'
+                      ? 'bg-app-surface-muted font-semibold text-app-text'
+                      : 'text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text'
                   }`}
                 >
-                  <Target size={12} className={`hidden md:block ${activeChatTab === 'guesses' ? 'text-emerald-400' : ''}`} />
+                  <Target size={12} className={`hidden md:block ${activeChatTab === 'guesses' ? 'text-app-accent' : ''}`} />
                   <span className="md:hidden">{'Guess'}</span>
                   <span className="hidden md:inline">{'Guesses'}</span>
-                  <span className="font-mono text-[10px] text-zinc-500">({guesses.length}/3)</span>
+                  <span className="font-mono text-[10px] text-app-text-muted">({guesses.length}/3)</span>
                 </button>
               </div>
 
@@ -292,31 +291,16 @@ export default function GamePage() {
               >
                 {sortedQuestions.length === 0 && notices.length === 0 && !pendingQuestion ? (
                   <div className="my-auto mx-auto flex w-full max-w-sm flex-col items-center justify-center text-center select-text py-4 max-md:[@media(max-height:560px)]:py-1 space-y-3 max-md:[@media(max-height:560px)]:space-y-1.5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-400/10 text-emerald-300 shadow-sm max-md:[@media(max-height:560px)]:h-8 max-md:[@media(max-height:560px)]:w-8 max-md:[@media(max-height:560px)]:rounded-lg">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-app-accent/20 bg-app-accent/10 text-app-accent shadow-sm max-md:[@media(max-height:560px)]:h-8 max-md:[@media(max-height:560px)]:w-8 max-md:[@media(max-height:560px)]:rounded-sm">
                       <MessageSquare size={22} className="max-md:[@media(max-height:560px)]:h-4 max-md:[@media(max-height:560px)]:w-4" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-sand-100 max-md:[@media(max-height:560px)]:text-xs">
+                      <p className="text-sm font-semibold text-app-text max-md:[@media(max-height:560px)]:text-xs">
                         {'Every question is a clue'}
                       </p>
-                      <p className="mt-1 text-xs leading-relaxed text-zinc-400 max-w-xs mx-auto max-md:[@media(max-height:560px)]:hidden">
+                      <p className="mt-1 text-xs leading-relaxed text-app-text-secondary max-w-xs mx-auto max-md:[@media(max-height:560px)]:hidden">
                         {'Ask a yes-or-no question below about geography, population, or culture to narrow it down.'}
                       </p>
-                    </div>
-                    <div className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left space-y-1.5 max-md:[@media(max-height:560px)]:hidden">
-                      <p className="font-mono text-xs text-emerald-400/90 font-semibold">
-                        {'Example questions:'}
-                      </p>
-                      <ul className="text-xs text-zinc-300 space-y-1">
-                        <li className="flex items-center gap-1.5">
-                          <span className="text-emerald-400 text-[10px]">●</span>
-                          <span>{'Does it have a coastline?'}</span>
-                        </li>
-                        <li className="flex items-center gap-1.5">
-                          <span className="text-emerald-400 text-[10px]">●</span>
-                          <span>{'Is it in Europe?'}</span>
-                        </li>
-                      </ul>
                     </div>
                   </div>
                 ) : (
@@ -341,19 +325,19 @@ export default function GamePage() {
                 }`}
               >
                 {guesses.length === 0 ? (
-                  <div className="my-auto mx-auto w-full max-w-sm text-center text-zinc-400 space-y-2.5 border border-dashed border-white/10 rounded-2xl bg-white/[0.02] p-5 max-md:[@media(max-height:560px)]:py-2 max-md:[@media(max-height:560px)]:space-y-1 max-md:[@media(max-height:560px)]:rounded-lg">
-                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sand-200 max-md:[@media(max-height:560px)]:h-7 max-md:[@media(max-height:560px)]:w-7 max-md:[@media(max-height:560px)]:rounded-md">
-                      <Compass size={22} className="text-emerald-400 max-md:[@media(max-height:560px)]:h-4 max-md:[@media(max-height:560px)]:w-4" aria-hidden="true" />
+                  <div className="my-auto mx-auto w-full max-w-sm text-center text-app-text-secondary space-y-2.5 border border-dashed border-app-border/25 rounded-sm bg-app-surface-muted p-5 max-md:[@media(max-height:560px)]:py-2 max-md:[@media(max-height:560px)]:space-y-1 max-md:[@media(max-height:560px)]:rounded-sm">
+                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-sm border border-app-border/15 bg-app-surface-raised text-app-text-secondary max-md:[@media(max-height:560px)]:h-7 max-md:[@media(max-height:560px)]:w-7 max-md:[@media(max-height:560px)]:rounded-sm">
+                      <Compass size={22} className="text-app-accent max-md:[@media(max-height:560px)]:h-4 max-md:[@media(max-height:560px)]:w-4" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="font-mono text-xs font-semibold text-sand-100">
+                      <p className="font-mono text-xs font-semibold text-app-text">
                         {'No attempts logged'}
                       </p>
-                      <p className="mt-1 text-xs text-zinc-400 max-md:[@media(max-height:560px)]:hidden">
+                      <p className="mt-1 text-xs text-app-text-secondary max-md:[@media(max-height:560px)]:hidden">
                         {'Submit country guesses when ready (max 3 tries).'}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-white/5 bg-obsidian-950/60 px-3 py-2 text-[11px] leading-relaxed text-zinc-400 max-md:[@media(max-height:560px)]:hidden">
+                    <div className="rounded-sm border border-app-border/15 bg-app-surface-raised px-3 py-2 text-[11px] leading-relaxed text-app-text-secondary max-md:[@media(max-height:560px)]:hidden">
                       {'Each guess reveals the distance in kilometers and compass bearing to the target.'}
                     </div>
                   </div>
@@ -363,28 +347,28 @@ export default function GamePage() {
                     const hasBearing = Boolean(g.bearing_direction && !g.answer);
 
                     return (
-                      <div key={g.id} className="space-y-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                        <div className="flex items-center justify-between font-mono text-xs text-zinc-400">
+                      <div key={g.id} className="space-y-1 border-b border-app-border/10 pb-2 last:border-0 last:pb-0">
+                        <div className="flex items-center justify-between font-mono text-xs text-app-text-muted">
                           <span>#{String(index + 1).padStart(2, '0')} · Location Attempt</span>
                         </div>
                         <div
-                          className={`flex items-center justify-between gap-3 border-l-2 bg-obsidian-950/70 px-3 py-2 max-md:[@media(max-height:560px)]:py-1 rounded-r-sm transition-colors ${
+                          className={`flex items-center justify-between gap-3 border-l-2 bg-app-surface-muted px-3 py-2 max-md:[@media(max-height:560px)]:py-1 rounded-r-sm transition-colors ${
                             g.answer
-                              ? 'border-l-emerald-400 bg-emerald-500/10'
+                              ? 'border-l-app-accent bg-app-accent/10'
                               : 'border-l-rose-500/60'
                           }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             {g.answer ? (
-                              <Check size={14} className="text-emerald-400 shrink-0" />
+                              <Check size={14} className="text-app-accent shrink-0" />
                             ) : (
-                              <X size={14} className="text-rose-400 shrink-0" />
+                              <X size={14} className="text-rose-600 shrink-0" />
                             )}
-                            <span className="text-xs font-medium text-sand-100 truncate">{g.guess}</span>
+                            <span className="text-xs font-medium text-app-text truncate">{g.guess}</span>
                           </div>
 
                           {g.answer ? (
-                            <span className="font-mono text-xs font-semibold text-emerald-400">
+                            <span className="font-mono text-xs font-semibold text-app-accent">
                               Correct
                             </span>
                           ) : hasDistance ? (
@@ -394,7 +378,7 @@ export default function GamePage() {
                               </span>
                               {hasBearing && (
                                 <span
-                                  className="inline-flex items-center gap-0.5 rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-400 font-semibold"
+                                  className="inline-flex items-center gap-0.5 rounded-sm border border-app-accent/30 bg-app-accent/10 px-1.5 py-0.5 text-app-accent font-semibold"
                                   title={`${g.bearing_direction} (${g.bearing_degrees}°)`}
                                 >
                                   <span>{g.bearing_arrow || '↗'}</span>
@@ -440,18 +424,18 @@ export default function GamePage() {
                 )}
               </GameActionComposer>
             ) : (
-              <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-obsidian-950/80 px-4 py-3 max-md:[@media(max-height:560px)]:py-1.5 max-md:[@media(max-height:560px)]:px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:pb-3">
+              <div className="flex items-center justify-between gap-3 border-t border-app-border/15 bg-app-surface-raised px-4 py-3 max-md:[@media(max-height:560px)]:py-1.5 max-md:[@media(max-height:560px)]:px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] max-md:[@media(max-height:560px)]:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] md:pb-3">
                 <div className="flex items-center gap-3">
-                  <Trophy size={16} className="text-amber-400" />
-                  <span className="font-mono text-xs font-semibold text-sand-100">
+                  <Trophy size={16} className="text-amber-700" />
+                  <span className="font-mono text-xs font-semibold text-app-text">
                     {gameState.won ? ('Fieldwork solved') : ('Investigation concluded')}
                   </span>
-                  <span className="font-mono text-xs text-emerald-400">{gameState.points} pts</span>
+                  <span className="font-mono text-xs text-app-accent">{gameState.points} pts</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsResultDismissed(false)}
-                  className="rounded-sm bg-emerald-400 px-3 py-1.5 font-mono text-xs font-semibold text-obsidian-950 hover:bg-emerald-300 transition-colors shadow cursor-pointer"
+                  className="rounded-sm bg-app-accent px-3 py-1.5 font-mono text-xs font-semibold text-white hover:bg-app-accent-hover transition-colors shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
                 >
                   {'View Result Card'}
                 </button>

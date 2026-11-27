@@ -25,6 +25,7 @@ import re
 import sqlite3
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 try:
@@ -302,6 +303,9 @@ def fetch_rest_countries() -> list[dict]:
     """
     merged: dict[str, dict] = {}
     for url in REST_COUNTRIES_URLS:
+        if urlparse(url).scheme not in ("https", "http"):
+            raise ValueError(f"Unsupported URL scheme: {url}")
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urlopen(url, timeout=60) as response:
             payload = json.loads(response.read().decode("utf-8"))
         for country in payload:
@@ -318,6 +322,9 @@ def fetch_factbook_profiles() -> dict[str, dict]:
     Factbook uses CIA/GEC file codes, so matching by country names is simpler
     and robust enough for this build-time script.
     """
+    if urlparse(FACTBOOK_TREE_URL).scheme not in ("https", "http"):
+        raise ValueError(f"Unsupported URL scheme: {FACTBOOK_TREE_URL}")
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urlopen(FACTBOOK_TREE_URL, timeout=60) as response:
         tree = json.loads(response.read().decode("utf-8"))
 
@@ -329,7 +336,11 @@ def fetch_factbook_profiles() -> dict[str, dict]:
 
     index: dict[str, dict] = {}
     for path in json_paths:
-        with urlopen(FACTBOOK_RAW_BASE_URL + path, timeout=60) as response:
+        url = FACTBOOK_RAW_BASE_URL + path
+        if urlparse(url).scheme not in ("https", "http"):
+            raise ValueError(f"Unsupported URL scheme: {url}")
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        with urlopen(url, timeout=60) as response:
             profile = json.loads(response.read().decode("utf-8"))
 
         country_name = ((profile.get("Government") or {}).get("Country name") or {})
@@ -578,6 +589,8 @@ def insert_country(
         )
 
     for continent in country.get("continents") or []:
+        if (app_name == "Egypt" and continent == "Asia") or (app_name == "Kazakhstan" and continent == "Europe"):
+            continue
         connection.execute(
             "INSERT OR IGNORE INTO country_continents(country_id, continent) VALUES (?, ?)",
             (country_id, continent),

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 import sqlite3
 from typing import Any
 
@@ -213,6 +214,28 @@ FACT_MODE_CONFIGS: dict[str, FactModeConfig] = {
 }
 
 
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+ALLOWED_ENTITY_TABLES: frozenset[str] = frozenset(cfg.entity_table for cfg in FACT_MODE_CONFIGS.values())
+ALLOWED_LIST_TABLES: frozenset[str] = frozenset(
+    rel.table for cfg in FACT_MODE_CONFIGS.values() for rel in cfg.list_relations.values()
+)
+ALLOWED_COLUMNS: frozenset[str] = frozenset(
+    {
+        *(cfg.name_column for cfg in FACT_MODE_CONFIGS.values()),
+        *(cfg.fk_column for cfg in FACT_MODE_CONFIGS.values()),
+        *(rel.column for cfg in FACT_MODE_CONFIGS.values() for rel in cfg.scalar_relations.values()),
+        *(rel.value_column for cfg in FACT_MODE_CONFIGS.values() for rel in cfg.list_relations.values()),
+        *(col for cfg in FACT_MODE_CONFIGS.values() for rel in cfg.list_relations.values() for col in rel.metadata_columns),
+    }
+)
+
+
+def _safe_identifier(name: str, allowed: frozenset[str]) -> str:
+    if name not in allowed or not _SQL_IDENTIFIER_RE.fullmatch(name):
+        raise ValueError(f"Disallowed SQL identifier: {name}")
+    return name
+
+
 def _connect(db_path: Path | str | None = None) -> sqlite3.Connection:
     conn = sqlite3.connect(str(db_path or DEFAULT_DB_PATH))
     conn.row_factory = sqlite3.Row
@@ -268,14 +291,16 @@ def find_country_fact_id(country_name: str, db_path: Path | str | None = None) -
 
 def find_entity_fact_id(config: FactModeConfig, entity_name: str) -> int:
     wanted = _normalize_text(entity_name).lower()
+    table = _safe_identifier(config.entity_table, ALLOWED_ENTITY_TABLES)
+    name_col = _safe_identifier(config.name_column, ALLOWED_COLUMNS)
     with _connect(config.db_path) as conn:
         direct = conn.execute(
-            f"SELECT id FROM {config.entity_table} WHERE lower({config.name_column})=lower(?)",
+            " ".join(["SELECT id FROM", table, "WHERE", "".join(["lower(", name_col, ")=lower(?)"])]),
             (entity_name,),
         ).fetchone()
         if direct is not None:
             return direct["id"]
-        for row in conn.execute(f"SELECT id, {config.name_column} FROM {config.entity_table}"):
+        for row in conn.execute(" ".join(["SELECT id,", name_col, "FROM", table])):
             if _normalize_text(row[config.name_column]).lower() == wanted:
                 return row["id"]
     raise KeyError(f"Facts not found for name={entity_name}")
@@ -287,8 +312,10 @@ def get_local_facts(game_type: str, entity_id: int | None = None, entity_name: s
         entity_id = find_entity_fact_id(config, entity_name)
     if entity_id is None:
         raise ValueError("entity_id or entity_name is required")
+    entity_table = _safe_identifier(config.entity_table, ALLOWED_ENTITY_TABLES)
+    fk_col = _safe_identifier(config.fk_column, ALLOWED_COLUMNS)
     with _connect(config.db_path) as conn:
-        entity = conn.execute(f"SELECT * FROM {config.entity_table} WHERE id=?", (entity_id,)).fetchone()
+        entity = conn.execute(" ".join(["SELECT * FROM", entity_table, "WHERE id=?"]), (entity_id,)).fetchone()
         if entity is None:
             raise KeyError(f"Facts not found for id={entity_id}")
         scalars = [
@@ -302,9 +329,11 @@ def get_local_facts(game_type: str, entity_id: int | None = None, entity_name: s
         ]
         lists: list[dict[str, Any]] = []
         for relation in config.list_relations.values():
-            columns = [relation.value_column, *relation.metadata_columns]
+            list_table = _safe_identifier(relation.table, ALLOWED_LIST_TABLES)
+            val_col = _safe_identifier(relation.value_column, ALLOWED_COLUMNS)
+            columns = [_safe_identifier(col, ALLOWED_COLUMNS) for col in (relation.value_column, *relation.metadata_columns)]
             rows = conn.execute(
-                f"SELECT {', '.join(columns)} FROM {relation.table} WHERE {config.fk_column}=? ORDER BY {relation.value_column}",
+                " ".join(["SELECT", ", ".join(columns), "FROM", list_table, "WHERE", fk_col, "=?", "ORDER BY", val_col]),
                 (entity_id,),
             ).fetchall()
             lists.append(
@@ -343,13 +372,15 @@ def update_local_scalar_fact(game_type: str, entity_id: int, relation_name: str,
     relation = config.scalar_relations.get(relation_name)
     if relation is None:
         raise KeyError(f"Unsupported scalar relation: {relation_name}")
+    entity_table = _safe_identifier(config.entity_table, ALLOWED_ENTITY_TABLES)
+    col = _safe_identifier(relation.column, ALLOWED_COLUMNS)
     converted = _convert_scalar_value(value, relation.value_type)
     with _connect(config.db_path) as conn:
-        row = conn.execute(f"SELECT {relation.column} FROM {config.entity_table} WHERE id=?", (entity_id,)).fetchone()
+        row = conn.execute(" ".join(["SELECT", col, "FROM", entity_table, "WHERE id=?"]), (entity_id,)).fetchone()
         if row is None:
             raise KeyError(f"Facts not found for id={entity_id}")
         old_value = row[relation.column]
-        conn.execute(f"UPDATE {config.entity_table} SET {relation.column}=? WHERE id=?", (converted, entity_id))
+        conn.execute(" ".join(["UPDATE", entity_table, "SET", col, "=? WHERE id=?"]), (converted, entity_id))
         conn.commit()
     return old_value, converted, "update"
 
@@ -363,15 +394,20 @@ def add_local_list_fact(game_type: str, entity_id: int, relation_name: str, valu
     if not clean_value:
         raise ValueError("Value cannot be empty")
     metadata = metadata or {}
-    columns = [config.fk_column, relation.value_column, *relation.metadata_columns]
+    entity_table = _safe_identifier(config.entity_table, ALLOWED_ENTITY_TABLES)
+    list_table = _safe_identifier(relation.table, ALLOWED_LIST_TABLES)
+    columns = [_safe_identifier(col, ALLOWED_COLUMNS) for col in (config.fk_column, relation.value_column, *relation.metadata_columns)]
     values = [entity_id, clean_value, *[metadata.get(column) for column in relation.metadata_columns]]
     placeholders = ", ".join("?" for _ in columns)
     with _connect(config.db_path) as conn:
-        conn.execute(f"SELECT 1 FROM {config.entity_table} WHERE id=?", (entity_id,)).fetchone() or (_ for _ in ()).throw(
+        conn.execute(" ".join(["SELECT 1 FROM", entity_table, "WHERE id=?"]), (entity_id,)).fetchone() or (_ for _ in ()).throw(
             KeyError(f"Facts not found for id={entity_id}")
         )
         try:
-            conn.execute(f"INSERT INTO {relation.table} ({', '.join(columns)}) VALUES ({placeholders})", values)
+            conn.execute(
+                " ".join(["INSERT INTO", list_table, "".join(["(", ", ".join(columns), ")"]), "VALUES", "".join(["(", placeholders, ")"])]),
+                values,
+            )
             conn.commit()
         except sqlite3.IntegrityError as exc:
             raise ValueError(f"Value already exists for this relation: {clean_value}") from exc
@@ -383,10 +419,13 @@ def delete_local_list_fact(game_type: str, entity_id: int, relation_name: str, v
     relation = config.list_relations.get(relation_name)
     if relation is None:
         raise KeyError(f"Unsupported list relation: {relation_name}")
+    list_table = _safe_identifier(relation.table, ALLOWED_LIST_TABLES)
+    fk_col = _safe_identifier(config.fk_column, ALLOWED_COLUMNS)
+    val_col = _safe_identifier(relation.value_column, ALLOWED_COLUMNS)
     clean_value = _normalize_text(value)
     with _connect(config.db_path) as conn:
         cursor = conn.execute(
-            f"DELETE FROM {relation.table} WHERE {config.fk_column}=? AND {relation.value_column}=?",
+            " ".join(["DELETE FROM", list_table, "WHERE", fk_col, "=? AND", val_col, "=?"]),
             (entity_id, clean_value),
         )
         if cursor.rowcount == 0:
@@ -422,9 +461,11 @@ def get_country_facts(country_id: int, db_path: Path | str | None = None) -> dic
 
         lists: list[dict[str, Any]] = []
         for relation in LIST_RELATIONS.values():
-            columns = [relation.value_column, *relation.metadata_columns]
+            list_table = _safe_identifier(relation.table, ALLOWED_LIST_TABLES)
+            val_col = _safe_identifier(relation.value_column, ALLOWED_COLUMNS)
+            columns = [_safe_identifier(col, ALLOWED_COLUMNS) for col in (relation.value_column, *relation.metadata_columns)]
             rows = conn.execute(
-                f"SELECT {', '.join(columns)} FROM {relation.table} WHERE country_id=? ORDER BY {relation.value_column}",
+                " ".join(["SELECT", ", ".join(columns), "FROM", list_table, "WHERE country_id=? ORDER BY", val_col]),
                 (country_id,),
             ).fetchall()
             lists.append(
@@ -463,15 +504,16 @@ def update_scalar_fact(country_id: int, relation_name: str, value: Any, db_path:
     relation = SCALAR_RELATIONS.get(relation_name)
     if relation is None:
         raise KeyError(f"Unsupported scalar relation: {relation_name}")
+    col = _safe_identifier(relation.column, ALLOWED_COLUMNS)
     converted = _convert_scalar_value(value, relation.value_type)
     with _connect(db_path) as conn:
-        row = conn.execute(f"SELECT {relation.column} FROM countries WHERE id=?", (country_id,)).fetchone()
+        row = conn.execute(" ".join(["SELECT", col, "FROM countries WHERE id=?"]), (country_id,)).fetchone()
         if row is None:
             raise KeyError(f"Country facts not found for id={country_id}")
         fact_provenance.ensure_schema(conn)
         old_value = row[relation.column]
         conn.execute(
-            f"UPDATE countries SET {relation.column}=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            " ".join(["UPDATE countries SET", col, "=?, updated_at=CURRENT_TIMESTAMP WHERE id=?"]),
             (converted, country_id),
         )
         conn.commit()
@@ -492,7 +534,8 @@ def add_list_fact(
     if not clean_value:
         raise ValueError("Value cannot be empty")
     metadata = metadata or {}
-    columns = ["country_id", relation.value_column, *relation.metadata_columns]
+    list_table = _safe_identifier(relation.table, ALLOWED_LIST_TABLES)
+    columns = [_safe_identifier(col, ALLOWED_COLUMNS) for col in ("country_id", relation.value_column, *relation.metadata_columns)]
     values = [country_id, clean_value, *[metadata.get(column) for column in relation.metadata_columns]]
     placeholders = ", ".join("?" for _ in columns)
     with _connect(db_path) as conn:
@@ -508,7 +551,7 @@ def add_list_fact(
             provenance = fact_provenance.FactProvenance.model_validate(provenance).model_dump(mode="json")
         try:
             conn.execute(
-                f"INSERT INTO {relation.table} ({', '.join(columns)}) VALUES ({placeholders})",
+                " ".join(["INSERT INTO", list_table, "".join(["(", ", ".join(columns), ")"]), "VALUES", "".join(["(", placeholders, ")"])]),
                 values,
             )
             if previous is not None:
@@ -526,12 +569,14 @@ def delete_list_fact(country_id: int, relation_name: str, value: str, db_path: P
     relation = LIST_RELATIONS.get(relation_name)
     if relation is None:
         raise KeyError(f"Unsupported list relation: {relation_name}")
+    list_table = _safe_identifier(relation.table, ALLOWED_LIST_TABLES)
+    val_col = _safe_identifier(relation.value_column, ALLOWED_COLUMNS)
     clean_value = _normalize_text(value)
     with _connect(db_path) as conn:
         fact_provenance.ensure_schema(conn)
         previous = fact_provenance.values(conn, country_id, relation_name) if relation_name in fact_provenance.RELATIONS else None
         cursor = conn.execute(
-            f"DELETE FROM {relation.table} WHERE country_id=? AND {relation.value_column}=?",
+            " ".join(["DELETE FROM", list_table, "WHERE country_id=? AND", val_col, "=?"]),
             (country_id, clean_value),
         )
         if cursor.rowcount == 0:

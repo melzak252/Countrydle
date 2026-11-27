@@ -127,7 +127,7 @@ def format_countrydle_guesses(guesses: list, target_country_id: int, target_name
     return formatted
 
 
-def _player_question_display(question, *, terminal=False, auto_guess=None) -> FullQuestionDisplay:
+def _player_question_display(question, *, terminal=False, auto_guess=None, map_highlight=None) -> FullQuestionDisplay:
     # Serialize scalar history only, never lazy target/user relationships.
     from datetime import datetime
     payload = {field: getattr(question, field, None) for field in (
@@ -138,6 +138,8 @@ def _player_question_display(question, *, terminal=False, auto_guess=None) -> Fu
         payload["asked_at"] = datetime.now()
     if auto_guess is not None:
         payload["auto_guess"] = auto_guess
+    if map_highlight is not None:
+        payload["map_highlight"] = map_highlight
     return FullQuestionDisplay.model_validate(
         payload,
         context={"terminal": terminal},
@@ -924,6 +926,14 @@ async def _do_ask_question(
         if not (isinstance(plan, dict) and plan.get("operator") == "equals" and plan.get("left", {}).get("relation") == "name"):
             is_direct_name_win = False
 
+    map_highlight = question_create.map_highlight
+    if map_highlight is None and question_create.valid and question_create.answer in (True, False):
+        from schemas.countrydle import MapHighlight
+        map_highlight = MapHighlight(
+            supported=False,
+            note="Couldn't auto-color all matching countries for this question — mark the map manually.",
+        )
+
     auto_guess_display = None
     if is_direct_name_win:
         # Do NOT consume a question turn. Execute winning guess!
@@ -936,7 +946,9 @@ async def _do_ask_question(
             user=user,
             session=session,
         )
-        result = _player_question_display(new_question, terminal=True, auto_guess=auto_guess_display)
+        result = _player_question_display(
+            new_question, terminal=True, auto_guess=auto_guess_display, map_highlight=map_highlight,
+        )
         await session.commit()
     else:
         if user is None:
@@ -950,7 +962,7 @@ async def _do_ask_question(
                 COUNTRYDLE_CONFIG.max_questions, COUNTRYDLE_CONFIG.max_guesses,
             )
         new_question = await CountrydleQuestionsRepository(session).create_question(question_create)
-        result = _player_question_display(new_question)
+        result = _player_question_display(new_question, map_highlight=map_highlight)
         await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.

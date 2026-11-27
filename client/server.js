@@ -2,7 +2,7 @@ import { file } from "bun";
 import path from "path";
 import fs from "fs";
 
-const DIST_DIR = path.join(import.meta.dir, "dist");
+const DIST_DIR = path.resolve(import.meta.dir, "dist");
 const API_TARGET = process.env.API_PROXY_TARGET || "http://127.0.0.1:8105";
 const PORT = Number(process.env.PORT) || 5176;
 
@@ -54,12 +54,17 @@ Bun.serve({
 
     // 3. Static files from dist/ (including prerendered HTML snapshots)
     const rawPath = url.pathname.slice(1);
-    let filePath = path.join(DIST_DIR, rawPath);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+    const filePath = path.resolve(DIST_DIR, rawPath);
+    if (filePath !== DIST_DIR && !filePath.startsWith(DIST_DIR + path.sep)) {
+      return new Response("Forbidden", { status: 403 });
+    }
 
     // If directory, serve directory/index.html
     if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
-      const indexPath = path.join(filePath, "index.html");
-      if (fs.existsSync(indexPath)) {
+      // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+      const indexPath = path.resolve(filePath, "index.html");
+      if (indexPath.startsWith(DIST_DIR + path.sep) && fs.existsSync(indexPath)) {
         return new Response(file(indexPath));
       }
     }

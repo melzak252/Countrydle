@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   Search, 
   Globe, 
   Play, 
-  ChevronRight, 
   X,
   Compass,
   BookOpen,
@@ -16,17 +16,87 @@ import {
   Sun,
   Moon,
   MapPin,
-  Layers
+  Flag,
 } from 'lucide-react';
 import AdSenseUnit from '../components/AdSenseUnit';
+import ExploreGameArtwork from '../components/ExploreGameArtwork';
 import { exploreService } from '../services/api';
 import { setPageEditorialEligibility } from '../advertising';
+import { gameCatalog as baseGameCatalog, useGameCatalog, type CatalogGeography } from '../lib/gameCatalog';
+import { MAP_QUIZ_PATHS } from '../lib/mapGameMode';
 
-type TabType = 'modes' | 'powiats' | 'voivodeships' | 'countries' | 'us_states';
+type TabType = 'index' | 'powiats' | 'voivodeships' | 'countries' | 'us_states';
+type FactTabType = Exclude<TabType, 'index'>;
 type CountyTypeFilter = 'all' | 'land' | 'city';
+type GameModeGroupId = (typeof baseGameCatalog)[number]['id'];
+type ExploreGroupId = GameModeGroupId | 'typed-chain';
+type CatalogMode = (typeof baseGameCatalog)[number]['games'][number];
+type ExploreCatalogGroup = { id: ExploreGroupId; title: string; games: CatalogMode[] };
 
 type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
-const GUIDE_IDS: Record<string, string> = { countrydle: 'countrydle', us_statedle: 'us-states', wojewodztwodle: 'wojewodztwa', powiatdle: 'powiaty', flagdle: 'flagdle', europe: 'europe', asia: 'asia', africa: 'africa', americas: 'americas' };
+const geographyLabels: Record<CatalogGeography, string> = {
+  worldwide: 'Worldwide',
+  continents: 'Continents',
+  poland: 'Poland',
+  'united-states': 'United States',
+  uk: 'England and London',
+};
+const gameGroupNotes: Record<ExploreGroupId, string> = {
+  'true-false': 'Ask yes-or-no questions to identify a country or region.',
+  daily: 'Identify a flag or regional symbol from visual clues.',
+  quizzes: 'Answer a quiz about flags, heraldry, and regional symbols.',
+  more: 'Invite a friend to a geography duel.',
+  'map-quizzes': 'Click the current Powiat or State target on its map.',
+  'typed-chain': 'Type neighboring places to continue a border chain.',
+};
+const gameGroupMarkers = {
+  'true-false': { label: 'Countrydle', icon: Search },
+  daily: { label: 'Visual puzzle', icon: Flag },
+  quizzes: { label: 'Visual quiz', icon: BookOpen },
+  more: { label: 'Play with friends', icon: Globe },
+  'map-quizzes': { label: 'Click the map', icon: MapPin },
+  'typed-chain': { label: 'Follow borders', icon: Compass },
+} as const;
+const gameIndexFacts: Record<string, { scope: string; rules?: string }> = {
+  '/game': { scope: 'Worldwide · 195 playable countries', rules: '10 yes/no questions · 3 guesses' },
+  '/europe': { scope: 'Europe · 44 countries', rules: '8 yes/no questions · 3 guesses' },
+  '/asia': { scope: 'Asia · 48 countries', rules: '8 yes/no questions · 3 guesses' },
+  '/africa': { scope: 'Africa · 54 nations', rules: '8 yes/no questions · 3 guesses' },
+  '/americas': { scope: 'The Americas · 35 nations', rules: '8 yes/no questions · 3 guesses' },
+  '/us-states': { scope: 'United States · 50 states', rules: '8 yes/no questions · 3 guesses' },
+  '/wojewodztwa': { scope: 'Poland · 16 voivodeships', rules: '5 questions · 2 guesses' },
+  '/powiaty': { scope: 'Poland · 380 counties', rules: '15 questions · 3 guesses' },
+  '/flagdle': { scope: 'Worldwide · 195 national flags', rules: '12 tile guesses · unlimited helper questions' },
+  '/flag-shades': { scope: 'Worldwide · flag colors' },
+  '/herby-powiatow': { scope: 'Poland · 380 county coats of arms' },
+  '/flagi-powiatow': { scope: 'Poland · county flags' },
+  '/quiz-herbow': { scope: 'Poland · county coats of arms' },
+  '/quiz-flag-powiatow': { scope: 'Poland · county flags' },
+  '/border-hop': { scope: 'Worldwide · country-border routes' },
+  '/border-hop?mode=powiaty': { scope: 'Poland · 380 counties', rules: 'Type a neighboring county to extend the chain' },
+  [MAP_QUIZ_PATHS.powiaty]: { scope: 'Poland · 380 counties', rules: 'Daily · 10 Powiats · click the current target' },
+  [MAP_QUIZ_PATHS.us_states]: { scope: 'United States · 50 states', rules: 'Repeatable · 10 States per run · click the current target' },
+  '/map-border-hop?mode=powiaty': { scope: 'Poland · 380 counties', rules: 'Type a neighboring county to extend the chain' },
+  '/map-border-hop?mode=us_states': { scope: 'United States · 50 states', rules: 'Type a neighboring state to extend the chain' },
+  '/friends': { scope: 'Worldwide · friend duels' },
+};
+const confirmedMapGameGroups: ExploreCatalogGroup[] = [
+  {
+    id: 'typed-chain',
+    title: 'Follow borders',
+    games: [
+      { path: '/border-hop', name: 'Border Hop · Countries', geography: 'worldwide' },
+      { path: '/border-hop?mode=powiaty', name: 'Border Hop · Powiaty', geography: 'poland' },
+      { path: '/map-border-hop?mode=powiaty', name: 'Map Border Hop · Powiaty', geography: 'poland' },
+      { path: '/map-border-hop?mode=us_states', name: 'Map Border Hop · US States', geography: 'united-states' },
+    ],
+  },
+];
+const relocatedMapRoutes = new Set(confirmedMapGameGroups.flatMap((group) => group.games.map((game) => game.path)));
+function gameRegionLabel(game: CatalogMode): string {
+  const scope = gameIndexFacts[game.path]?.scope;
+  return scope ? scope.split('·')[0].trim() : geographyLabels[game.geography];
+}
 const regionalDisplay: Record<string, string> = {
   centrum: 'Central', południe: 'South', 'południowe centrum': 'South central',
   'południowy wschód': 'Southeast', 'południowy zachód': 'Southwest', północ: 'North',
@@ -49,6 +119,7 @@ function foldPolish(str: string): string {
     .replace(/ź/g, 'z')
     .replace(/ż/g, 'z');
 }
+
 
 function MiniLicensePlate({ plates }: { plates: string[] }) {
   if (!plates || plates.length === 0) return null;
@@ -85,10 +156,11 @@ function rememberView(key: string, value: string) {
 }
 
 export default function ExplorePage() {
+  const gameCatalog = useGameCatalog();
 
   const [activeTab, updateActiveTab] = useState<TabType>(() => {
     const tab = initialView().get('tab');
-    return tab === 'powiats' || tab === 'countries' || tab === 'us_states' || tab === 'voivodeships' ? tab : 'modes';
+    return tab === 'powiats' || tab === 'countries' || tab === 'us_states' || tab === 'voivodeships' ? tab : 'index';
   });
   const [search, updateSearch] = useState(() => initialView().get('q') || '');
   const [selectedRegion, updateSelectedRegion] = useState(() => initialView().get('region') || 'all');
@@ -96,17 +168,15 @@ export default function ExplorePage() {
   const [powiatPage, setPowiatPage] = useState<number>(1);
   const [lightCoatsBackdrop, setLightCoatsBackdrop] = useState<boolean>(false);
 
-  const setActiveTab = (tab: TabType) => { rememberView('tab', tab === 'modes' ? '' : tab); updateActiveTab(tab); setPowiatPage(1); };
+  const setActiveTab = (tab: TabType) => { rememberView('tab', tab === 'index' ? '' : tab); updateActiveTab(tab); setPowiatPage(1); };
   const setSearch = (value: string) => { rememberView('q', value); updateSearch(value); setPowiatPage(1); };
   const setSelectedRegion = (value: string) => { rememberView('region', value === 'all' ? '' : value); updateSelectedRegion(value); setPowiatPage(1); };
 
-  const [modes, setModes] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
   const [usStates, setUsStates] = useState<any[]>([]);
   const [voivodeships, setVoivodeships] = useState<any[]>([]);
   const [powiats, setPowiats] = useState<any[]>([]);
-  const [loadStatus, setLoadStatus] = useState<Record<TabType, LoadStatus>>({
-    modes: 'idle',
+  const [loadStatus, setLoadStatus] = useState<Record<FactTabType, LoadStatus>>({
     powiats: 'idle',
     voivodeships: 'idle',
     countries: 'idle',
@@ -135,22 +205,9 @@ export default function ExplorePage() {
   const setSelectedPowiat = (value: typeof selectedPowiat) => { if (!value) rememberView('detail', ''); updateSelectedPowiat(value); };
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
-  useEffect(() => {
-    let cancelled = false;
-    setLoadStatus(prev => ({ ...prev, modes: 'loading' }));
-    exploreService.getModes().then(data => {
-      if (!Array.isArray(data) || data.some(mode => !mode || !GUIDE_IDS[mode.id] || typeof mode.name !== 'string' || !mode.name.trim() || typeof mode.description !== 'string' || !mode.description.trim() || typeof mode.path !== 'string' || !mode.path.startsWith('/') || mode.path.startsWith('//') || !Number.isFinite(mode.entity_count) || !Number.isFinite(mode.question_limit) || !Number.isFinite(mode.guess_limit))) throw new Error('Invalid guide response');
-      if (cancelled) return;
-      setModes(data);
-      setLoadStatus(prev => ({ ...prev, modes: 'success' }));
-    }).catch(() => {
-      if (!cancelled) setLoadStatus(prev => ({ ...prev, modes: 'error' }));
-    });
-    return () => { cancelled = true; };
-  }, []);
 
   useEffect(() => {
-    if (activeTab === 'modes') return;
+    if (activeTab === 'index') return;
     const existingCount =
       activeTab === 'countries'
         ? countries.length
@@ -403,18 +460,18 @@ export default function ExplorePage() {
     return ['all'];
   }, [activeTab]);
 
-  const status = loadStatus[activeTab];
-  const loading = status === 'idle' || status === 'loading';
+  const status: LoadStatus = activeTab === 'index' ? 'success' : loadStatus[activeTab];
+  const loading = activeTab !== 'index' && (status === 'idle' || status === 'loading');
   const visibleCount =
-    activeTab === 'modes'
-      ? modes.length
+    activeTab === 'index'
+      ? 0
       : activeTab === 'countries'
-      ? filteredCountries.length
-      : activeTab === 'us_states'
-      ? filteredUSStates.length
-      : activeTab === 'voivodeships'
-      ? filteredVoivodeships.length
-      : filteredPowiats.length;
+        ? filteredCountries.length
+        : activeTab === 'us_states'
+          ? filteredUSStates.length
+          : activeTab === 'voivodeships'
+            ? filteredVoivodeships.length
+            : filteredPowiats.length;
   const detailOpen =
     modalLoading ||
     Boolean(
@@ -425,524 +482,280 @@ export default function ExplorePage() {
         selectedPowiat ||
         initialView().get('detail')
     );
-  const publisherReady = status === 'success' && visibleCount > 0 && !detailOpen;
-  const publisherError = status === 'error' || Boolean(modalError) || (status === 'success' && visibleCount === 0);
+  const publisherReady = status === 'success' && !detailOpen && (
+    activeTab === 'index' ? gameCatalog.some((group) => group.games.length > 0) : visibleCount > 0
+  );
+  const publisherError = status === 'error' || Boolean(modalError) || (
+    activeTab !== 'index' && status === 'success' && visibleCount === 0
+  );
+  const resolvePowiatCoatUrl = (powiatId: number) => `/api/explore/powiats/${powiatId}/coat?v=2`;
+  const resolvePowiatCoatThumbUrl = (powiatId: number) => `/coats/${powiatId}.png`;
+  const baseGameGroups: ExploreCatalogGroup[] = gameCatalog
+    .map((group) => ({ ...group, games: group.games.filter((game) => !relocatedMapRoutes.has(game.path)) }))
+    .filter((group) => group.games.length > 0);
+  const exploreGameGroups = [
+    ...baseGameGroups.filter((group) => group.id === 'true-false'),
+    ...confirmedMapGameGroups,
+    ...baseGameGroups.filter((group) => group.id === 'daily').map((group) => ({ ...group, title: 'Daily games' })),
+    ...baseGameGroups.filter((group) => group.id === 'quizzes').map((group) => ({ ...group, title: 'Full quizzes' })),
+    ...baseGameGroups.filter((group) => group.id === 'more').map((group) => ({ ...group, title: 'Play with friends' })),
+    ...baseGameGroups.filter((group) => !['true-false', 'daily', 'quizzes', 'more'].includes(group.id)),
+  ];
+const playStyleMeta: Record<ExploreGroupId, { index: string; badge: string; title: string; summary: string; cta: string }> = {
+  'true-false': {
+    index: 'I',
+    badge: 'Yes / No Deduction',
+    title: 'Question & Map Deduction',
+    summary: 'Ask yes-or-no questions to narrow down a secret country, state, or county.',
+    cta: 'Play Countrydle',
+  },
+  'map-quizzes': {
+    index: 'II',
+    badge: 'Map Pinpoint',
+    title: 'Click the Map',
+    summary: 'Locate and click the named county or state directly on the blank cartographic map.',
+    cta: 'Play Map Quiz',
+  },
+  'typed-chain': {
+    index: 'III',
+    badge: 'Border Chain',
+    title: 'Follow Borders',
+    summary: 'Step from neighbor to neighbor across land borders to connect two places.',
+    cta: 'Play Border Hop',
+  },
+  daily: {
+    index: 'IV',
+    badge: 'Visual Clues',
+    title: 'Flags & Regional Symbols',
+    summary: 'Uncover a daily flag or coat of arms tile by tile with optional clues.',
+    cta: 'Play Flagdle',
+  },
+  quizzes: {
+    index: 'V',
+    badge: 'Heraldry & Flag Quiz',
+    title: 'Symbol Recognition',
+    summary: 'Test your knowledge of Polish county coats of arms and regional flags.',
+    cta: 'Play Quiz',
+  },
+  more: {
+    index: 'VI',
+    badge: '1v1 Multiplayer',
+    title: 'Friend Duels',
+    summary: 'Create an invite link and race a friend to deduce the same secret place.',
+    cta: 'Start a Duel',
+  },
+};
 
+  const mechanicCards: { group: ExploreCatalogGroup; game: CatalogMode; meta: (typeof playStyleMeta)[ExploreGroupId] }[] = [];
+  const seenStylePaths = new Set<string>();
+  for (const group of exploreGameGroups) {
+    const featuredGame = group.id === 'true-false'
+      ? group.games.find((game) => game.primary === 1) ?? group.games[0]
+      : group.games[0];
+    if (featuredGame && !seenStylePaths.has(featuredGame.path)) {
+      seenStylePaths.add(featuredGame.path);
+      mechanicCards.push({
+        group,
+        game: featuredGame,
+        meta: playStyleMeta[group.id],
+      });
+    }
+  }
+  const totalGameModeCount = exploreGameGroups.reduce((count, group) => count + group.games.length, 0);
+  const gameRegionLabels = new Set<string>();
+  for (const group of exploreGameGroups) {
+    for (const game of group.games) gameRegionLabels.add(gameRegionLabel(game));
+  }
+  const gameRegionCount = gameRegionLabels.size;
   useEffect(() => {
     setPageEditorialEligibility(publisherReady);
   }, [publisherReady]);
 
   useEffect(() => () => setPageEditorialEligibility(false), []);
 
-  const resolvePowiatCoatUrl = (powiatId: number) => `/api/explore/powiats/${powiatId}/coat?v=2`;
-  const resolvePowiatCoatThumbUrl = (powiatId: number) => `/coats/${powiatId}.png`;
-
   return (
-    <div data-publisher-ready={publisherReady ? 'true' : undefined} data-publisher-error={publisherError ? 'true' : undefined} className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 md:py-12">
-      {/* Header & Interactive Atlas Switcher */}
-      <header className="border-b border-white/10 pb-6 text-center sm:text-left">
-        <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 font-mono text-xs text-emerald-400">
-          <Globe size={13} />
-          <span>{'Geographic & Heraldic Knowledge Base'}</span>
-        </div>
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-sand-100 sm:text-5xl">
-          {'Geography Atlas, County Coats of Arms & Guides'}
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm sm:text-base leading-7 text-zinc-300">
-          {'Explore all 380 Polish counties with official coats of arms, registration plate codes and basic facts, 16 Polish voivodeships, 195 world countries with flags, 50 US states, and deduction strategy guides.'}
-        </p>
-
-        {/* Redesigned Category Cards Switcher */}
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-          <button
-            type="button"
-            onClick={() => { setActiveTab('powiats'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
-              activeTab === 'powiats'
-                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
-                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
-            }`}
-          >
-            <div className="flex w-full items-center justify-between">
-              <Shield size={16} className={activeTab === 'powiats' ? 'text-emerald-300' : 'text-emerald-400/80'} />
-              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
-                380
-              </span>
+    <div data-publisher-ready={publisherReady ? 'true' : undefined} data-publisher-error={publisherError ? 'true' : undefined} className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-app-text sm:px-6 md:py-12">
+      <header className="relative border-b border-app-border pb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-sm border border-app-border/70 bg-app-surface-muted/70 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-app-accent">
+              <Compass size={13} aria-hidden="true" />
+              <span>Atlas · games &amp; maps</span>
             </div>
-            <div className="mt-2.5">
-              <div className="font-serif text-sm font-bold text-sand-100">
-                {'Polish Counties'}
-              </div>
-              <div className="mt-0.5 text-[11px] text-zinc-400">
-                {'Coats of arms & facts'}
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setActiveTab('voivodeships'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
-              activeTab === 'voivodeships'
-                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
-                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
-            }`}
-          >
-            <div className="flex w-full items-center justify-between">
-              <Layers size={16} className={activeTab === 'voivodeships' ? 'text-emerald-300' : 'text-emerald-400/80'} />
-              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
-                16
-              </span>
-            </div>
-            <div className="mt-2.5">
-              <div className="font-serif text-sm font-bold text-sand-100">
-                {'Voivodeships'}
-              </div>
-              <div className="mt-0.5 text-[11px] text-zinc-400">
-                {'Polish provinces'}
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setActiveTab('countries'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
-              activeTab === 'countries'
-                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
-                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
-            }`}
-          >
-            <div className="flex w-full items-center justify-between">
-              <Globe size={16} className={activeTab === 'countries' ? 'text-emerald-300' : 'text-emerald-400/80'} />
-              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
-                195
-              </span>
-            </div>
-            <div className="mt-2.5">
-              <div className="font-serif text-sm font-bold text-sand-100">
-                {'World Countries'}
-              </div>
-              <div className="mt-0.5 text-[11px] text-zinc-400">
-                {'Flags, capitals & borders'}
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setActiveTab('us_states'); setSearch(''); setSelectedRegion('all'); }}
-            className={`group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
-              activeTab === 'us_states'
-                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
-                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
-            }`}
-          >
-            <div className="flex w-full items-center justify-between">
-              <MapPin size={16} className={activeTab === 'us_states' ? 'text-emerald-300' : 'text-emerald-400/80'} />
-              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
-                50
-              </span>
-            </div>
-            <div className="mt-2.5">
-              <div className="font-serif text-sm font-bold text-sand-100">
-                {'US States'}
-              </div>
-              <div className="mt-0.5 text-[11px] text-zinc-400">
-                {'Regions & state facts'}
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setActiveTab('modes'); setSearch(''); }}
-            className={`col-span-2 sm:col-span-1 group flex flex-col items-start justify-between rounded-md border p-4 text-left transition-colors cursor-pointer ${
-              activeTab === 'modes'
-                ? 'border-emerald-400/50 bg-obsidian-800 text-sand-100'
-                : 'border-white/10 bg-obsidian-900/70 text-zinc-300 hover:border-emerald-500/40 hover:bg-obsidian-900'
-            }`}
-          >
-            <div className="flex w-full items-center justify-between">
-              <Compass size={16} className={activeTab === 'modes' ? 'text-emerald-300' : 'text-emerald-400/80'} />
-              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sand-200">
-                {'Guides'}
-              </span>
-            </div>
-            <div className="mt-2.5">
-              <div className="font-serif text-sm font-bold text-sand-100">
-                {'Mode Guides'}
-              </div>
-              <div className="mt-0.5 text-[11px] text-zinc-400">
-                {'Rules & deduction axes'}
-              </div>
-            </div>
-          </button>
+            <h1 className="mt-3 font-serif text-3xl leading-tight tracking-tight text-app-text sm:text-5xl">
+              Explore the atlas
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-app-text-secondary sm:text-base">
+              Pick a unique play style below, browse the full catalog of {totalGameModeCount} modes, or open the geographic reference desk.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2 font-mono text-xs">
+            <span className="rounded-sm border border-app-border bg-app-surface px-3 py-2 text-app-text shadow-[0_1px_0_rgba(85,75,57,0.08)]">
+              <strong className="text-app-accent">{mechanicCards.length}</strong> styles
+            </span>
+            <span className="rounded-sm border border-app-border bg-app-surface px-3 py-2 text-app-text shadow-[0_1px_0_rgba(85,75,57,0.08)]">
+              <strong className="text-app-accent">{totalGameModeCount}</strong> modes
+            </span>
+            <span className="rounded-sm border border-app-border bg-app-surface px-3 py-2 text-app-text-secondary shadow-[0_1px_0_rgba(85,75,57,0.08)]">
+              {gameRegionCount} regions
+            </span>
+          </div>
         </div>
       </header>
 
-      {loading && <p role="status" className="text-base leading-7 text-zinc-400">Loading {activeTab === 'modes' ? 'mode guides' : 'geography facts'}…</p>}
-      {status === 'error' && <p role="alert" className="text-base leading-7 text-amber-300">This content could not be loaded. Reload the page to try again; no substitute data is shown.</p>}
-      {status === 'success' && visibleCount === 0 && <p role="status" className="text-base leading-7 text-zinc-400">No entries match this view. Clear the search or choose another region; an empty response is not evidence that a place is absent from the game.</p>}
-      {modalLoading && <p role="status" className="text-base leading-7 text-zinc-400">Loading fact sheet…</p>}
-      {modalError && <div role="alert" className="space-y-3 text-amber-300"><p>{modalError}</p><button type="button" onClick={() => { rememberView('detail', ''); setModalError(''); }} className="underline underline-offset-4">Close fact sheet error</button></div>}
-      {activeTab === 'modes' && (
-        <section className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {modes.map((mode) => (
-              <div
-                key={mode.id}
-                className="flex flex-col justify-between rounded-md border border-white/10 bg-obsidian-900/60 p-6 transition-colors hover:border-emerald-500/30"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-emerald-400 font-semibold">
-                      {mode.entity_count} Entities
-                    </span>
-                    <span className="font-mono text-[11px] text-zinc-500">
-                      {mode.question_limit} Qs · {mode.guess_limit} Guesses
-                    </span>
-                  </div>
-                  <h3 className="font-serif text-2xl font-semibold text-sand-100">
-                    {mode.name}
-                  </h3>
-                  <p className="text-sm leading-6 text-zinc-400">
-                    {mode.id === 'countrydle' ? 'Deduce a playable country using factual yes/no questions. The game catalog is distinct from a UN membership list and from map-boundary data.' : mode.description}
-                  </p>
-                </div>
-
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-                  <Link
-                    to={`/explore/modes/${GUIDE_IDS[mode.id]}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-                  >
-                    <span>{'Read Strategy Guide'}</span>
-                    <ChevronRight size={14} />
-                  </Link>
-                  <Link
-                    to={mode.path}
-                    className="inline-flex items-center gap-1.5 rounded-sm bg-white/10 px-3 py-1.5 text-xs font-medium text-sand-100 hover:bg-emerald-400 hover:text-obsidian-950 transition-colors"
-                  >
-                    <Play size={12} />
-                    <span>{'Play Mode'}</span>
-                  </Link>
-                </div>
-              </div>
-            ))}
+      <section aria-labelledby="quick-start-heading" className="space-y-4">
+        <header className="flex flex-col gap-2 border-b border-app-border pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-app-accent">Unique mechanics</p>
+            <h2 id="quick-start-heading" className="mt-1 font-serif text-2xl leading-tight text-app-text sm:text-3xl">Choose your style</h2>
+            <p className="mt-1 text-sm leading-5 text-app-text-secondary">Six distinct ways to play — no duplicates.</p>
           </div>
+          <span className="font-mono text-xs text-app-text-muted">{mechanicCards.length} unique styles</span>
+        </header>
+        <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mechanicCards.map(({ game, meta }, idx) => (
+            <motion.div
+              key={game.path}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -3 }}
+              transition={{ duration: 0.28, delay: idx * 0.04, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full"
+            >
+              <Link
+                to={game.path}
+                aria-label={`${meta.title}: ${meta.cta}`}
+                className="group relative flex h-full min-h-[216px] min-w-0 flex-col rounded-sm border border-app-border border-t-[3px] border-t-app-accent bg-app-surface p-4 text-app-text shadow-[1px_3px_12px_rgba(85,75,57,0.08)] transition-all duration-200 hover:border-app-accent hover:bg-app-surface-raised hover:shadow-[2px_8px_22px_rgba(85,75,57,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus"
+              >
+                {/* Subtle cartographic corner ticks */}
+                <span aria-hidden="true" className="pointer-events-none absolute left-1.5 top-1.5 h-2 w-2 border-l border-t border-app-border/70 transition-colors group-hover:border-app-accent/70" />
+                <span aria-hidden="true" className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 border-r border-t border-app-border/70 transition-colors group-hover:border-app-accent/70" />
+                <span aria-hidden="true" className="pointer-events-none absolute bottom-1.5 left-1.5 h-2 w-2 border-b border-l border-app-border/70 transition-colors group-hover:border-app-accent/70" />
+                <span aria-hidden="true" className="pointer-events-none absolute bottom-1.5 right-1.5 h-2 w-2 border-b border-r border-app-border/70 transition-colors group-hover:border-app-accent/70" />
 
-          {/* Section A — Comparative Overview of All 9 Daily Geography Modes */}
-          <article aria-labelledby="modes-comparative-overview" className="mt-12 space-y-6 rounded-lg border border-white/10 bg-obsidian-900/40 p-6 md:p-8">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 font-mono text-xs text-emerald-400">
-                <Compass size={14} aria-hidden="true" />
-                <span>{'Daily Game Mechanics'}</span>
-              </div>
-              <h2 id="modes-comparative-overview" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-                {'Section A: Comparative Overview of All 9 Daily Geography Modes'}
-              </h2>
-              <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
-                {'Countrydle offers 9 specialized daily deductive challenges spanning diverse spatial scales, from global sovereign states down to subnational counties and flags. Each mode balances a tailored question budget against a strict guess limit, rewarding systematic elimination over unstructured guessing. The comparative reference table below summarizes pool dimensions, question constraints, guess allowances, primary geographic axes, and direct links to comprehensive strategy guides.'}
-              </p>
-            </div>
-
-            <div className="overflow-x-auto rounded-md border border-white/10 bg-obsidian-950/80">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="border-b border-white/10 bg-white/5 font-mono text-xs text-sand-100">
-                  <tr>
-                    <th scope="col" className="px-4 py-3.5">Mode & Guide</th>
-                    <th scope="col" className="px-4 py-3.5">Pool Size</th>
-                    <th scope="col" className="px-4 py-3.5">Questions</th>
-                    <th scope="col" className="px-4 py-3.5">Guesses</th>
-                    <th scope="col" className="px-4 py-3.5">Primary Geographic Axes & Invariants</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10 text-zinc-300">
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/countrydle" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Countrydle: World Countries
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">195 playable countries</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">10 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      Global physical continents (Africa, Asia, Europe, North America, South America, Oceania) and UN statistical regions; 4 global coordinate quadrants relative to the Equator (0°) and Prime Meridian (0°); open marine coastlines versus landlocked enclaves; direct land border topologies; population and surface area (km²) thresholds. Includes Kosovo; excludes Israel from playable targets.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/flagdle" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Flagdle: Daily Flag Reveal
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">195 national flags</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-zinc-400">Unlimited helper Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">12 tiles / guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      Vexillological geometry (horizontal/vertical bicolors, tricolors, Nordic crosses, saltires, cantons, triangles); primary heraldic tinctures (red, white, blue, yellow, green, black); national emblems (stars, crescents, suns, coats of arms); regional cultural color schemes (Pan-African, Pan-Arab, Pan-Slavic). Progressive 12-tile visual unmasking.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/europe" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Europedle: Europe
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">44 European countries</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      European macroregions (Nordic Fennoscandia, Western Europe, Central Europe, Eastern European Plain, Mediterranean/Southern Europe, Balkans); marginal and connected seas (Baltic, North, Mediterranean, Adriatic, Black Sea); 16 landlocked European states; Schengen Area and EU boundaries; Alpine and Carpathian mountain chains. Excludes transcontinental Kazakhstan, Azerbaijan, and Georgia.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/asia" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Asiadle: Asia
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">48 Asian countries</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      Asian geographic realms (West Asia/Middle East, Central Asia, South Asia, East Asia, Southeast Asia); oceanic drainage (Indian, Pacific, Arctic) vs. major endorheic terminal basins (Caspian Sea, Aral Sea); archipelagic maritime nations (Indonesia, Philippines, Japan) vs. landlocked Central Asian republics; Himalayan and Hindu Kush topographic barriers. Excludes Egypt.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/africa" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Africadle: Africa
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">54 African nations</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      UN subregions (North Africa/Maghreb, West Africa, Central Africa, East Africa, Southern Africa); oceanic and marginal water bodies (Atlantic Ocean, Indian Ocean, Mediterranean Sea, Red Sea); Great East African Rift Valley; Sahel transition belt; 7 Equator-straddling countries; 16 landlocked African states.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/americas" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Americadle: The Americas
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">35 American nations</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      Continental realms (North America, Central American isthmus, Caribbean island nations, South America); dual-ocean interfaces (Atlantic/Caribbean vs. Pacific); continuous Andean cordillera and Amazonian river basin; 2 landlocked South American nations (Bolivia, Paraguay); normalized borders (French Guiana mapped as a land border with France).
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/us-states" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        US Statedle: 50 States
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">50 US states</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">8 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      US Census Bureau 4 official regions (Northeast, Midwest, South, West) and 9 divisions; marine coastlines (Atlantic Ocean direct, Gulf of Mexico, Pacific Ocean) vs. freshwater Great Lakes shorelines; Mississippi-Missouri river drainage; Appalachian and Rocky Mountain orographic divides; statehood admission chronology (1787–1959). Excludes Washington, D.C. and US territories.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/wojewodztwa" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Województwodle: 16 Voivodeships
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">16 Polish voivodeships</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">5 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-amber-300 font-bold">2 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      Historical Polish lands (Wielkopolska, Małopolska, Mazowsze, Śląsk, Pomorze, Warmia i Mazury); Baltic Sea open maritime coastline (Pomorskie, Zachodniopomorskie); foreign international frontiers with 7 neighboring sovereign nations; Wisła and Odra river drainage basins; mutual voivodeship adjacency graphs. Tight 5-question / 2-guess budget.
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-white/[0.02] transition-colors">
-                    <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
-                      <Link to="/explore/modes/powiaty" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Powiatdle: 380 Counties
-                        <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </th>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">380 Polish powiaty</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-emerald-300 font-bold">15 Qs</td>
-                    <td className="px-4 py-4 whitespace-nowrap font-mono text-xs text-sand-200">3 guesses</td>
-                    <td className="px-4 py-4 text-xs leading-relaxed text-zinc-300">
-                      Parent voivodeship jurisdiction (16 clusters); administrative legal status (314 land counties / powiaty ziemskie vs. 66 cities with county rights / miasta na prawach powiatu); vehicle registration plate prefixes (tablice rejestracyjne, 2-letter municipal vs. 3-letter land county); highway networks (A1, A2, A4, S3, S7, S8) and river arteries.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </article>
-
-          {/* Section B — Core Geographic Taxonomies & Deductive Principles */}
-          <article aria-labelledby="modes-deductive-taxonomies" className="mt-12 space-y-10 rounded-lg border border-white/10 bg-obsidian-900/40 p-6 md:p-8">
-            <div className="space-y-2 border-b border-white/10 pb-6">
-              <div className="inline-flex items-center gap-2 font-mono text-xs text-emerald-400">
-                <BookOpen size={14} aria-hidden="true" />
-                <span>{'Geographic Methodology & Theory'}</span>
-              </div>
-              <h2 id="modes-deductive-taxonomies" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-                {'Section B: Core Geographic Taxonomies & Deductive Principles'}
-              </h2>
-              <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
-                {'Mastering Countrydle requires treating the globe as an interconnected mathematical coordinate system and political-geographic hierarchy. Rather than expending precious questions on subjective traits ("Is it a major power?"), experienced players query well-defined taxonomic boundaries. The educational guides below elucidate three fundamental geographical principles that underpin Countrydle’s deductive engine.'}
-              </p>
-            </div>
-
-            {/* Subsection 1 */}
-            <section aria-labelledby="taxonomy-hemispheres" className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 font-mono text-sm font-bold text-emerald-400">
-                  1
-                </div>
-                <h3 id="taxonomy-hemispheres" className="font-serif text-xl font-semibold text-sand-100 sm:text-2xl">
-                  Hemispheres, Equator & Prime Meridian Crossings
-                </h3>
-              </div>
-              <div className="space-y-3 text-sm leading-relaxed text-zinc-300 sm:text-base">
-                <p>
-                  Earth’s spherical coordinate system partitions the planetary surface into four geometric quadrants through two principal great circles: the <strong>Equator</strong> (0° latitude), which separates the Northern and Southern Hemispheres, and the <strong>Prime Meridian</strong> (0° longitude) paired with the 180° antimeridian, which separates the Eastern and Western Hemispheres. In deductive geography puzzles, players often begin by asking hemisphere questions to narrow the candidate pool. However, a common pitfall is treating sovereign nations as dimensionless mathematical points rather than expansive, two-dimensional spatial polygons.
-                </p>
-                <p>
-                  Countries whose territory crosses 0° latitude span both the Northern and Southern Hemispheres. In Countrydle, hemisphere questions evaluate against stored territorial associations rather than single point coordinates or dynamic map calculations. A country cataloged as straddling the Equator will return an affirmative answer for Northern Hemisphere inclusion as well as Southern Hemisphere inclusion. In South America, <strong>Ecuador</strong>, <strong>Colombia</strong>, and <strong>Brazil</strong> have land in both hemispheres. In Africa, equatorial states include <strong>Gabon</strong>, the <strong>Republic of the Congo</strong>, the <strong>Democratic Republic of the Congo</strong>, <strong>Uganda</strong>, <strong>Kenya</strong>, and <strong>Somalia</strong>. In Southeast Asia, <strong>Indonesia</strong> spans the Equator across major islands, while the Pacific island nation of <strong>Kiribati</strong> straddles both the Equator and the 180° meridian.
-                </p>
-                <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs text-emerald-400 font-semibold mb-2">Prime Meridian (0° Longitude) Crossings</h4>
-                  <p className="text-sm leading-relaxed text-zinc-300">
-                    The Prime Meridian (0° longitude) bisects parts of Europe and Africa. In Europe, the <strong>United Kingdom</strong>, <strong>France</strong>, and <strong>Spain</strong> have mainland territory on both sides of 0° longitude, so queries asking whether they are in the Eastern or Western Hemisphere both return affirmative under stored game conventions. In Africa, the Prime Meridian passes through countries including <strong>Algeria</strong>, <strong>Mali</strong>, <strong>Burkina Faso</strong>, <strong>Ghana</strong>, and <strong>Togo</strong>. Because these countries cross the meridian, hemisphere queries alone do not isolate them to a single half of the globe.
-                  </p>
-                </div>
-                <p>
-                  <strong>Strategic Deductive Heuristic:</strong> Candidate counts depend on the active pool and remaining candidates. If querying <em>"Is the country in the Northern Hemisphere?"</em> returns a negative answer, all candidates with Northern Hemisphere territory are ruled out. Conversely, when the answer is affirmative, players should remember that equatorial states (such as Brazil, Colombia, Kenya, and Indonesia) span both hemispheres and remain eligible until further constrained.
-                </p>
-              </div>
-            </section>
-
-            {/* Subsection 2 */}
-            <section aria-labelledby="taxonomy-marine-endorheic" className="space-y-4 border-t border-white/10 pt-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 font-mono text-sm font-bold text-emerald-400">
-                  2
-                </div>
-                <h3 id="taxonomy-marine-endorheic" className="font-serif text-xl font-semibold text-sand-100 sm:text-2xl">
-                  Marine Access vs. Endorheic Basins & Inland Lakes
-                </h3>
-              </div>
-              <div className="space-y-3 text-sm leading-relaxed text-zinc-300 sm:text-base">
-                <p>
-                  A fundamental distinction in physical geography and Countrydle deduction is the hydrological separation between <strong>open marine access</strong> and <strong>endorheic (closed) basins</strong> or inland freshwater lakes. While everyday speech often equates any large body of water with a "coast," international maritime law and geomorphology maintain strict boundary criteria.
-                </p>
-                <p>
-                  <strong>Open Marine Access:</strong> A sovereign country or subnational entity is classified as having marine coastal access if its coastline borders the contiguous World Ocean (Pacific, Atlantic, Indian, Arctic, or Southern Oceans) or marginal and mediterranean seas connected to the global ocean via natural navigable straits. Examples include the <em>Baltic Sea</em> (connected to the Atlantic via the Danish Straits / Kattegat and Skagerrak), the <em>Mediterranean Sea</em> (connected via the Strait of Gibraltar), the <em>Black Sea</em> (connected through the Bosporus, Sea of Marmara, and Dardanelles), the <em>Red Sea</em> (connected via the Bab-el-Mandeb), and the <em>Gulf of Mexico</em> (connected via the Straits of Florida). These marginal water bodies participate in global oceanic circulation, tidal regimes, and saline interchange.
-                </p>
-                <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4 space-y-2">
-                  <h4 className="font-mono text-xs text-emerald-400 font-semibold">The Caspian Sea Endorheic Anomaly</h4>
-                  <p className="text-sm leading-relaxed text-zinc-300">
-                    Covering roughly 371,000 $km^2$, the <strong>Caspian Sea</strong> is the largest enclosed inland body of water on Earth. Despite its historical name and brackish salinity, it possesses no natural hydrological outlet to the World Ocean; it sits in a continental depression with its surface approximately 28 meters below global sea level. Consequently, the Caspian is an <em>endorheic lake basin</em>.
-                  </p>
-                  <p className="text-sm leading-relaxed text-zinc-300">
-                    In physical geography and Countrydle game rules, countries bordering solely the Caspian Sea (notably <strong>Azerbaijan</strong> and <strong>Turkmenistan</strong>) are classified as <strong>landlocked states</strong> (<em>państwa śródlądowe</em>). A query asking <em>"Is it landlocked?"</em> evaluates to affirmative for Azerbaijan, while asking <em>"Does it border the Caspian Sea?"</em> evaluates separately to affirmative. Shoreline on the Caspian Sea does not confer open marine access.
-                  </p>
-                </div>
-                <p>
-                  <strong>Freshwater Great Lakes vs. Marine Coastlines (US Statedle):</strong> The Laurentian Great Lakes (Superior, Michigan, Huron, Erie, Ontario) contain 21% of the world’s surface freshwater. States such as Michigan, Wisconsin, Illinois, Indiana, and Ohio possess thousands of miles of deepwater lacustrine shoreline and commercial shipping channels linked artificially to the Atlantic via the St. Lawrence Seaway. However, in geographic taxonomy, Great Lakes shoreline is freshwater lacustrine frontage, not oceanic coastline. In US Statedle, only states bordering the Atlantic Ocean, Pacific Ocean, Arctic Ocean, or Gulf of Mexico are recognized as coastal states; Great Lakes states are categorized as interior states unless they possess true marine frontage.
-                </p>
-                <p>
-                  <strong>Strategic Deductive Heuristic:</strong> Deductive impact depends on the active pool and remaining candidates. In general yes/no deduction, asking <em>"Is the country landlocked?"</em> separates inland states from those with marine access. An affirmative answer eliminates coastal candidates and preserves landlocked states (including Caspian-littoral states like Azerbaijan and Turkmenistan), while a negative answer eliminates inland candidates and keeps coastal nations. Specific water-body questions (such as <em>"Does it border the Baltic Sea?"</em> or <em>"Does it border the Gulf of Mexico?"</em>) are best reserved until the broader regional or coastal basin has been identified.
-                </p>
-              </div>
-            </section>
-
-            {/* Subsection 3 */}
-            <section aria-labelledby="taxonomy-subnational-hierarchies" className="space-y-4 border-t border-white/10 pt-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 font-mono text-sm font-bold text-emerald-400">
-                  3
-                </div>
-                <h3 id="taxonomy-subnational-hierarchies" className="font-serif text-xl font-semibold text-sand-100 sm:text-2xl">
-                  Subnational Administrative Hierarchies (US States & Polish Regions)
-                </h3>
-              </div>
-              <div className="space-y-3 text-sm leading-relaxed text-zinc-300 sm:text-base">
-                <p>
-                  Subnational puzzle modes (US Statedle, Województwodle, Powiatdle) demand mastery of formal administrative subdivisions. Rather than memorizing hundreds of standalone entities in isolation, top players navigate these pools through their standardized hierarchical tiers, statistical regional partitions, and legal administrative classifications.
-                </p>
-                
-                <div className="space-y-3 rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs text-emerald-400 font-semibold">US Census Bureau Regional Taxonomy (50 States)</h4>
-                  <p className="text-sm leading-relaxed text-zinc-300">
-                    The US Census Bureau partitions the 50 states into four official regions, which further subdivide into nine geographic divisions:
-                  </p>
-                  <ul className="list-disc space-y-1.5 pl-5 text-xs text-zinc-300 sm:text-sm">
-                    <li><strong>Northeast Region (9 states):</strong> <em>New England Division</em> (Maine, New Hampshire, Vermont, Massachusetts, Rhode Island, Connecticut) and <em>Middle Atlantic Division</em> (New York, New Jersey, Pennsylvania).</li>
-                    <li><strong>Midwest Region (12 states):</strong> <em>East North Central Division</em> (Ohio, Indiana, Illinois, Michigan, Wisconsin) and <em>West North Central Division</em> (Minnesota, Iowa, Missouri, North Dakota, South Dakota, Nebraska, Kansas).</li>
-                    <li><strong>South Region (16 states):</strong> <em>South Atlantic Division</em> (Delaware, Maryland, Virginia, West Virginia, North Carolina, South Carolina, Georgia, Florida), <em>East South Central Division</em> (Kentucky, Tennessee, Alabama, Mississippi), and <em>West South Central Division</em> (Arkansas, Louisiana, Oklahoma, Texas).</li>
-                    <li><strong>West Region (13 states):</strong> <em>Mountain Division</em> (Montana, Idaho, Wyoming, Colorado, New Mexico, Arizona, Utah, Nevada) and <em>Pacific Division</em> (Washington, Oregon, California, Alaska, Hawaii).</li>
-                  </ul>
-                  <p className="text-xs text-zinc-400">
-                    *Note: Washington, D.C. and US territories (Puerto Rico, Guam, US Virgin Islands, American Samoa, Northern Mariana Islands) are excluded from the 50-state game pool.
-                  </p>
+                <div className="mb-3 flex items-center justify-between gap-2 border-b border-app-border/50 pb-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-app-accent">{meta.badge}</span>
+                  <span className="font-serif text-xs italic text-app-text-muted">Plate {meta.index}</span>
                 </div>
 
-                <div className="space-y-3 rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs text-emerald-400 font-semibold">Poland’s Three-Tier Administrative Structure (16 Voivodeships &amp; 380 Powiaty)</h4>
-                  <p className="text-sm leading-relaxed text-zinc-300">
-                    Poland’s territorial division, enacted on January 1, 1999 (<em>zasadniczy trójstopniowy podział terytorialny państwa</em>), establishes three hierarchical tiers:
-                  </p>
-                  <ul className="list-disc space-y-2 pl-5 text-xs text-zinc-300 sm:text-sm">
-                    <li>
-                      <strong>Tier 1 (16 Województwa / Voivodeships):</strong> First-order regional administrative units governed by a dual executive: the state-appointed <em>wojewoda</em> (representing the central Council of Ministers) and the regional self-government headed by the <em>marszałek województwa</em> and provincial assembly (<em>sejmik województwa</em>).
-                    </li>
-                    <li>
-                      <strong>Tier 2 (380 Powiaty / Counties):</strong> The county level is strictly partitioned into two legal categories:
-                      <ul className="list-circle space-y-1 pl-5 pt-1 text-zinc-300">
-                        <li><strong>314 Powiaty Ziemskie (Land Counties):</strong> Multi-communal districts comprising several urban and rural gminas, administered by a county council (<em>rada powiatu</em>) and an executive board headed by a <em>starosta</em>.</li>
-                        <li><strong>66 Miasta na Prawach Powiatu (Cities with County Rights):</strong> Also known historically as <em>powiaty grodzkie</em>. Autonomous municipalities where the city president (<em>prezydent miasta</em>) and city council perform both municipal and county functions simultaneously (e.g., Warszawa, Kraków, Łódź, Wrocław, Poznań, Gdańsk, Szczecin, Katowice).</li>
-                      </ul>
-                    </li>
-                    <li>
-                      <strong>Tier 3 (2,477 Gminy):</strong> The primary local communal level, divided into urban (<em>gminy miejskie</em>), urban-rural (<em>gminy miejsko-wiejskie</em>), and rural (<em>gminy wiejskie</em>) units.
-                    </li>
-                  </ul>
-                </div>
+                <span className="flex min-w-0 flex-1 items-start gap-4">
+                  <ExploreGameArtwork game={game} featured />
+                  <span className="min-w-0 flex-1">
+                    <span data-game-title className="block break-words font-serif text-lg font-semibold leading-6 text-app-text">{meta.title}</span>
+                    <span data-game-descriptor className="mt-1.5 block break-words text-xs leading-5 text-app-text-secondary">{meta.summary}</span>
+                  </span>
+                </span>
+                <span className="mt-3 flex shrink-0 items-center justify-between border-t border-app-border/60 pt-2.5 text-xs font-semibold text-app-accent">
+                  <span>{meta.cta}</span>
+                  <Play size={12} className="transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+                </span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
-                <div className="rounded-md border border-white/10 bg-obsidian-950/60 p-4">
-                  <h4 className="font-mono text-xs text-emerald-400 font-semibold mb-2">Polish Vehicle Registration Codes (Wyróżniki Tablic Rejestracyjnych)</h4>
-                  <p className="text-sm leading-relaxed text-zinc-300">
-                    In Powiatdle, vehicle registration plate prefixes provide an authoritative deductive axis. The initial letter designates the parent voivodeship (e.g., <strong>W</strong> for Mazowieckie, <strong>K</strong> for Małopolskie, <strong>D</strong> for Dolnośląskie, <strong>P</strong> for Wielkopolskie, <strong>G</strong> for Pomorskie, <strong>Z</strong> for Zachodniopomorskie, <strong>S</strong> for Śląskie, <strong>E</strong> for Łódzkie, <strong>B</strong> for Podlaskie, <strong>L</strong> for Lubelskie, <strong>R</strong> for Podkarpackie, <strong>T</strong> for Świętokrzyskie, <strong>O</strong> for Opolskie, <strong>C</strong> for Kujawsko-Pomorskie, <strong>F</strong> for Lubuskie, <strong>N</strong> for Warmińsko-Mazurskie). Furthermore, <strong>two-letter prefixes</strong> almost universally denote cities with county rights (e.g., <em>KR</em> for Kraków, <em>PO</em> for Poznań, <em>DW</em> for Wrocław, <em>GD</em> for Gdańsk), whereas <strong>three-letter prefixes</strong> denote land counties (e.g., <em>KRA</em> for powiat krakowski, <em>PZ</em> for powiat poznański, <em>DWR</em> for powiat wrocławski).
-                  </p>
-                </div>
+      <nav aria-label="Explore games" className="border-y border-app-border py-2">
+        <a href="#playable-modes" className="inline-flex min-h-9 items-center border border-app-accent bg-app-surface-muted px-3 text-sm font-semibold text-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">
+          Browse all game modes
+        </a>
+      </nav>
 
-                <p>
-                  <strong>Strategic Deductive Heuristic:</strong> In Powiatdle, checking whether the secret entity is a city with county rights (<em>miasto na prawach powiatu</em>) tests the established 66-versus-314 split across Poland’s 380 counties. An affirmative answer eliminates 314 land counties (82.6%), leaving 66 cities with county rights, whereas a negative answer eliminates 66 cities (17.4%) and leaves 314 land counties. Following up by isolating the parent voivodeship then narrows the search to that specific regional cluster.
-                </p>
-              </div>
-            </section>
-          </article>
-        </section>
-      )}
+      <section id="playable-modes" aria-labelledby="playable-modes-heading" className="scroll-mt-24 space-y-4">
+        <header className="flex flex-col gap-2 border-b border-app-border pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-app-accent">Complete catalog</p>
+            <h2 id="playable-modes-heading" className="mt-1 font-serif text-2xl leading-tight text-app-text sm:text-3xl">Browse every game mode</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-app-text-secondary">
+              Every mode is shown below, grouped by how it plays. Each entry links to its existing game.
+            </p>
+          </div>
+          <span className="shrink-0 font-mono text-xs text-app-text-muted">{totalGameModeCount} modes</span>
+        </header>
+        <div id="game-mode-results" className="space-y-7">
+          {exploreGameGroups.map((group) => {
+            const MarkerIcon = gameGroupMarkers[group.id].icon;
+            return (
+              <section key={group.id} id={`play-modes-${group.id}`} aria-labelledby={`play-modes-heading-${group.id}`} className="scroll-mt-24">
+                <div className="flex items-start justify-between gap-4 border-b border-app-border pb-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center border border-app-border bg-app-surface-muted text-app-accent"><MarkerIcon size={16} /></span>
+                    <div className="min-w-0">
+                      <h3 id={`play-modes-heading-${group.id}`} className="text-lg font-semibold text-app-text">{group.title}</h3>
+                      <p className="mt-1 text-sm leading-5 text-app-text-secondary">{gameGroupNotes[group.id]}</p>
+                    </div>
+                  </div>
+                </div>
+                <ul className="mt-4 grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {group.games.map((game) => {
+                    const details = gameIndexFacts[game.path];
+                    const descriptor = details?.rules ?? gameGroupNotes[group.id];
+                    const scope = details?.scope ?? geographyLabels[game.geography];
+                    return (
+                      <li key={game.path} className="explore-card-perf min-w-0">
+                        <Link to={game.path} className="group flex h-full min-h-[128px] min-w-0 flex-row items-center gap-3 rounded-sm border border-app-border bg-app-surface p-3 text-left text-app-text transition-colors hover:border-app-accent hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus">
+                          <ExploreGameArtwork game={game} />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span data-game-title title={game.name} className="line-clamp-2 max-w-full break-words font-serif text-base font-semibold leading-5">{game.name}</span>
+                              {game.path === '/powiaty' && (
+                                <span className="rounded-sm border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                                  Beta · In dev
+                                </span>
+                              )}
+                            </span>
+                            <span data-game-descriptor title={descriptor} className="mt-2 block break-words text-sm leading-5 text-app-text-secondary">{descriptor}</span>
+                            <span data-game-scope title={scope} className="mt-1 block break-words text-xs leading-4 text-app-text-muted">{scope}</span>
+                            {game.path === '/powiaty' && (
+                              <span className="mt-1.5 block text-[11px] font-medium leading-4 text-amber-800 dark:text-amber-300">
+                                In active development — expect bugs &amp; rough answers.
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
+      </section>
+      <section aria-labelledby="atlas-facts-heading" className="space-y-3 border-t border-app-border pt-5">
+        <header>
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-app-accent">Reference desk</p>
+          <h2 id="atlas-facts-heading" className="mt-1 font-serif text-2xl text-app-text">Atlas facts</h2>
+          <p className="mt-1 text-sm leading-5 text-app-text-secondary">Look up countries and regional divisions separately from the games.</p>
+        </header>
+        <nav aria-label="Atlas fact collections" className="flex flex-wrap gap-2">
+          <button type="button" aria-pressed={activeTab === 'powiats'} onClick={() => { setActiveTab('powiats'); setSearch(''); setSelectedRegion('all'); }} className={`min-h-10 border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${activeTab === 'powiats' ? 'border-app-accent bg-app-accent text-app-on-accent' : 'border-app-border bg-app-surface text-app-text-secondary hover:border-app-accent hover:text-app-text'}`}>
+            Counties of Poland
+          </button>
+          <button type="button" aria-pressed={activeTab === 'voivodeships'} onClick={() => { setActiveTab('voivodeships'); setSearch(''); setSelectedRegion('all'); }} className={`min-h-10 border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${activeTab === 'voivodeships' ? 'border-app-accent bg-app-accent text-app-on-accent' : 'border-app-border bg-app-surface text-app-text-secondary hover:border-app-accent hover:text-app-text'}`}>
+            Polish regions
+          </button>
+          <button type="button" aria-pressed={activeTab === 'countries'} onClick={() => { setActiveTab('countries'); setSearch(''); setSelectedRegion('all'); }} className={`min-h-10 border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${activeTab === 'countries' ? 'border-app-accent bg-app-accent text-app-on-accent' : 'border-app-border bg-app-surface text-app-text-secondary hover:border-app-accent hover:text-app-text'}`}>
+            Countries
+          </button>
+          <button type="button" aria-pressed={activeTab === 'us_states'} onClick={() => { setActiveTab('us_states'); setSearch(''); setSelectedRegion('all'); }} className={`min-h-10 border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus ${activeTab === 'us_states' ? 'border-app-accent bg-app-accent text-app-on-accent' : 'border-app-border bg-app-surface text-app-text-secondary hover:border-app-accent hover:text-app-text'}`}>
+            US states
+          </button>
+        </nav>
+      </section>
+
+      {loading && <p role="status" className="text-base leading-7 text-app-text-secondary">Loading atlas facts…</p>}
+      {status === 'error' && <p role="alert" className="text-base leading-7 text-amber-800">This content could not be loaded. Reload the page to try again; no substitute data is shown.</p>}
+      {activeTab !== 'index' && status === 'success' && visibleCount === 0 && <p role="status" className="text-base leading-7 text-app-text-secondary">No entries match this view. Clear the search or choose another region; an empty response is not evidence that a place is absent from the game.</p>}
+      {modalLoading && <p role="status" className="text-base leading-7 text-app-text-secondary">Loading fact sheet…</p>}
+      {modalError && <div role="alert" className="space-y-3 text-amber-800"><p>{modalError}</p><button type="button" onClick={() => { rememberView('detail', ''); setModalError(''); }} className="underline underline-offset-4">Close fact sheet error</button></div>}
 
       {/* Search & Filters Toolbar for Atlas Tabs */}
-      {activeTab !== 'modes' && (
-        <div className="space-y-4 rounded-lg border border-white/10 bg-obsidian-900/50 p-4">
+      {activeTab !== 'index' && (
+        <div className="space-y-4 rounded-sm border border-app-border bg-app-surface p-4">
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-app-text-muted" />
               <input
                 type="text"
                 value={search}
@@ -952,13 +765,13 @@ export default function ExplorePage() {
                     ? 'Search county, seat or plate prefix'
                     : 'Search name, capital or code'
                 }
-                className="w-full rounded-sm border border-white/15 bg-obsidian-950 py-2.5 pl-10 pr-9 text-sm text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none"
+                className="w-full rounded-sm border border-app-border bg-app-surface-raised py-2.5 pl-10 pr-9 text-sm text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-secondary hover:text-app-text cursor-pointer"
                 >
                   <X size={14} />
                 </button>
@@ -967,37 +780,37 @@ export default function ExplorePage() {
 
             {activeTab === 'powiats' && (
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-sm border border-white/10 bg-obsidian-950 p-0.5 text-xs">
+                <div className="inline-flex rounded-sm border border-app-border bg-app-surface-raised p-0.5 text-xs">
                   <button
                     type="button"
                     onClick={() => { setCountyTypeFilter('all'); setPowiatPage(1); }}
-                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus ${
                       countyTypeFilter === 'all'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : 'text-zinc-400 hover:text-sand-100'
-                    }`}
+                        ? 'bg-app-accent text-app-canvas border border-app-accent'
+                        : 'text-app-text-secondary hover:text-app-text'
+                  }`}
                   >
                     {'All (380)'}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setCountyTypeFilter('land'); setPowiatPage(1); }}
-                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus ${
                       countyTypeFilter === 'land'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : 'text-zinc-400 hover:text-sand-100'
-                    }`}
+                        ? 'bg-app-accent text-app-canvas border border-app-accent'
+                        : 'text-app-text-secondary hover:text-app-text'
+                  }`}
                   >
                     {'Land (314)'}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setCountyTypeFilter('city'); setPowiatPage(1); }}
-                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer ${
+                    className={`rounded-xs px-2.5 py-1 font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus ${
                       countyTypeFilter === 'city'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : 'text-zinc-400 hover:text-sand-100'
-                    }`}
+                        ? 'bg-app-accent text-app-canvas border border-app-accent'
+                        : 'text-app-text-secondary hover:text-app-text'
+                  }`}
                   >
                     {'Cities (66)'}
                   </button>
@@ -1009,7 +822,7 @@ export default function ExplorePage() {
                   title={'Toggle light/dark backdrop behind coats of arms'}
                   className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
                     lightCoatsBackdrop
-                      ? 'border-amber-400/50 bg-sand-100 text-obsidian-950 font-semibold'
+                      ? 'border-amber-700/50 bg-amber-50 text-amber-950 font-semibold'
                       : 'border-white/15 bg-obsidian-950 text-zinc-300 hover:border-white/30'
                   }`}
                 >
@@ -1022,7 +835,7 @@ export default function ExplorePage() {
 
           {regions.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-xs text-zinc-500 mr-1 font-mono">
+              <span className="text-xs text-app-text-muted mr-1 font-mono">
                 {activeTab === 'powiats' ? ('Voivodeship:') : 'Region:'}
               </span>
               {regions.map((reg) => (
@@ -1030,11 +843,11 @@ export default function ExplorePage() {
                   key={reg}
                   type="button"
                   onClick={() => setSelectedRegion(reg)}
-                  className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus ${
                     selectedRegion === reg
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
-                  }`}
+                      ? 'bg-app-accent text-app-canvas border border-app-accent'
+                      : 'bg-app-surface-muted text-app-text-secondary hover:bg-app-surface-raised hover:text-app-text'
+                }`}
                 >
                   {reg === 'all' ? ('All') : reg}
                 </button>
@@ -1047,7 +860,7 @@ export default function ExplorePage() {
       {/* TAB: Polish Counties & Coats of Arms (380) */}
       {activeTab === 'powiats' && (
         <section className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-app-text-secondary font-mono">
             <span>
               {`Showing ${filteredPowiats.length} of ${powiats.length || 380} Polish counties`}
             </span>
@@ -1055,20 +868,20 @@ export default function ExplorePage() {
               <span>{'Click shield to zoom • Click card for full facts'}</span>
               <Link
                 to="/herby-powiatow"
-                className="inline-flex items-center gap-1 rounded-sm bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-emerald-300 hover:bg-emerald-500/25 font-sans font-semibold"
+                className="inline-flex items-center gap-1 rounded-sm bg-app-accent px-2.5 py-1 text-app-canvas hover:bg-app-accent-hover font-sans font-semibold"
               >
                 <Play size={11} />
                 <span>{'Play County Coats of Arms'}</span>
               </Link>
               <Link
                 to="/quiz-herbow"
-                className="inline-flex items-center gap-1 rounded-sm bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-amber-300 hover:bg-amber-500/25 font-sans font-semibold"
+                className="inline-flex items-center gap-1 rounded-sm border border-amber-700/30 bg-amber-50 px-2.5 py-1 text-amber-900 hover:bg-amber-100 font-sans font-semibold"
               >
                 <Shield size={11} />
                 <span>{'380 Coats Quiz (JetPunk)'}</span>
               </Link>
-              <Link to="/flagi-powiatow" className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2.5 py-1 text-emerald-300 font-sans font-semibold">County Flags</Link>
-              <Link to="/quiz-flag-powiatow" className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2.5 py-1 text-emerald-300 font-sans font-semibold">County Flags Quiz</Link>
+              <Link to="/flagi-powiatow" className="inline-flex items-center gap-1 rounded-sm border border-app-border px-2.5 py-1 text-app-accent hover:text-app-accent-hover font-sans font-semibold">County Flags</Link>
+              <Link to="/quiz-flag-powiatow" className="inline-flex items-center gap-1 rounded-sm border border-app-border px-2.5 py-1 text-app-accent hover:text-app-accent-hover font-sans font-semibold">County Flags Quiz</Link>
             </div>
           </div>
 
@@ -1080,7 +893,7 @@ export default function ExplorePage() {
                 <div
                   key={p.id}
                   onClick={() => openPowiatModal(p.id)}
-                  className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between gap-3"
+                  className="group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between gap-3"
                 >
                   <div className="flex items-start gap-3">
                     {/* Compact Low-Res Coat of Arms Thumbnail with 1-click Fullscreen SVG Icon */}
@@ -1097,10 +910,10 @@ export default function ExplorePage() {
                         });
                       }}
                       title={'Inspect coat of arms (full SVG)'}
-                      className={`relative h-15 w-13.5 shrink-0 rounded-md border p-1.5 flex items-center justify-center transition-colors ${
+                      className={`relative h-15 w-13.5 shrink-0 rounded-sm border p-1.5 flex items-center justify-center transition-colors ${
                         lightCoatsBackdrop
-                          ? 'bg-sand-100 border-sand-300 shadow-inner'
-                          : 'bg-obsidian-950/90 border-white/10 group-hover:border-emerald-500/30'
+                          ? 'bg-app-surface-raised border-app-border shadow-inner'
+                          : 'bg-obsidian-950/90 border-white/10 group-hover:border-app-accent'
                       }`}
                     >
                       <img
@@ -1114,7 +927,7 @@ export default function ExplorePage() {
                       />
                       <span
                         aria-hidden="true"
-                        className="absolute bottom-0.5 right-0.5 inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-75 hover:opacity-100 hover:text-emerald-300 transition-opacity"
+                        className="absolute bottom-0.5 right-0.5 inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-app-surface-raised border border-app-border text-app-text-secondary opacity-75 hover:opacity-100 hover:text-app-accent transition-opacity"
                       >
                         <Maximize2 size={10} />
                       </span>
@@ -1122,14 +935,14 @@ export default function ExplorePage() {
                     {/* County Identity & License Plates */}
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1">
-                        <span className="font-mono text-xs text-emerald-400 font-semibold">
+                        <span className="font-mono text-xs text-app-accent font-semibold">
                           Voivodeship {p.voivodeship}
                         </span>
                         <span
                           className={`rounded px-1.5 py-0.5 font-mono text-xs ${
                             p.is_city_county
-                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
-                              : 'bg-white/5 text-zinc-400 border border-white/10'
+                              ? 'bg-amber-50 text-amber-900 border border-amber-700/30'
+                              : 'bg-app-surface-muted text-app-text-secondary border border-app-border'
                           }`}
                         >
                           {p.is_city_county
@@ -1138,7 +951,7 @@ export default function ExplorePage() {
                         </span>
                       </div>
 
-                      <h4 className="font-serif text-base font-bold text-sand-100 group-hover:text-emerald-300 transition-colors leading-snug">
+                      <h4 className="font-serif text-base font-bold text-app-text group-hover:text-app-accent transition-colors leading-snug">
                         {p.name}
                       </h4>
 
@@ -1148,22 +961,22 @@ export default function ExplorePage() {
                     </div>
                   </div>
 
-                  <div className="pt-2.5 border-t border-white/5 grid grid-cols-3 gap-2 text-[11px] text-zinc-400 font-mono">
+                  <div className="pt-2.5 border-t border-app-border grid grid-cols-3 gap-2 text-[11px] text-app-text-secondary font-mono">
                     <div className="truncate">
-                      <span className="text-zinc-500 block text-[10px]">{'Seat'}</span>
-                      <span className="text-sand-100 truncate block" title={p.seat || '—'}>
+                      <span className="text-app-text-muted block text-[10px]">{'Seat'}</span>
+                      <span className="text-app-text truncate block" title={p.seat || '—'}>
                         {p.seat || '—'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-zinc-500 block text-[10px]">{'Pop.'}</span>
-                      <span className="text-sand-100 block">
+                      <span className="text-app-text-muted block text-[10px]">{'Pop.'}</span>
+                      <span className="text-app-text block">
                         {p.population ? Number(p.population).toLocaleString('en-US') : '—'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-zinc-500 block text-[10px]">{'Area'}</span>
-                      <span className="text-sand-100 block">
+                      <span className="text-app-text-muted block text-[10px]">{'Area'}</span>
+                      <span className="text-app-text block">
                         {p.area_km2 ? `${Number(p.area_km2).toLocaleString('en-US')} km²` : '—'}
                       </span>
                     </div>
@@ -1174,7 +987,7 @@ export default function ExplorePage() {
           </div>
 
           {totalPowiatPages > 1 && (
-            <div className="flex items-center justify-between border-t border-white/10 pt-4 font-mono text-xs text-zinc-400">
+            <div className="flex items-center justify-between border-t border-app-border pt-4 font-mono text-xs text-app-text-secondary">
               <span>
                 {`Page ${powiatPage} of ${totalPowiatPages} (${filteredPowiats.length} counties)`}
               </span>
@@ -1183,7 +996,7 @@ export default function ExplorePage() {
                   type="button"
                   disabled={powiatPage <= 1}
                   onClick={() => setPowiatPage((p) => Math.max(1, p - 1))}
-                  className="rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-sand-100 hover:border-emerald-400 disabled:opacity-40 cursor-pointer"
+                  className="rounded-sm border border-app-border bg-app-surface px-3 py-1.5 text-app-text-secondary hover:border-app-accent hover:text-app-text disabled:opacity-40 cursor-pointer"
                 >
                   {'Previous'}
                 </button>
@@ -1191,7 +1004,7 @@ export default function ExplorePage() {
                   type="button"
                   disabled={powiatPage >= totalPowiatPages}
                   onClick={() => setPowiatPage((p) => Math.min(totalPowiatPages, p + 1))}
-                  className="rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-sand-100 hover:border-emerald-400 disabled:opacity-40 cursor-pointer"
+                  className="rounded-sm border border-app-border bg-app-surface px-3 py-1.5 text-app-text-secondary hover:border-app-accent hover:text-app-text disabled:opacity-40 cursor-pointer"
                 >
                   {'Next'}
                 </button>
@@ -1204,7 +1017,7 @@ export default function ExplorePage() {
       {/* TAB 2: Countries Grid */}
       {activeTab === 'countries' && (
         <section className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+          <div className="flex items-center justify-between text-xs text-app-text-secondary font-mono">
             <span>Showing {filteredCountries.length} countries</span>
             <span>Click any card for full fact sheet</span>
           </div>
@@ -1214,20 +1027,20 @@ export default function ExplorePage() {
               <div
                 key={c.id}
                 onClick={() => openCountryModal(c.cca3 || c.app_country_name)}
-                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                className="explore-card-perf group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-emerald-400">
+                      <span className="font-mono text-xs font-bold text-app-accent">
                         {c.cca3 || c.cca2}
                       </span>
-                      <span className="text-[11px] text-zinc-500">{c.region}</span>
+                      <span className="text-[11px] text-app-text-muted">{c.region}</span>
                     </div>
-                    <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
+                    <h4 className="font-serif text-lg font-semibold text-app-text group-hover:text-app-accent transition-colors">
                       {c.app_country_name}
                     </h4>
-                    <p className="text-xs text-zinc-400 break-words">
+                    <p className="text-xs text-app-text-secondary break-words">
                       {c.official_name || c.app_country_name}
                     </p>
                   </div>
@@ -1236,19 +1049,20 @@ export default function ExplorePage() {
                       src={`https://flagcdn.com/w80/${String(c.cca2).toLowerCase()}.png`}
                       alt={`${c.app_country_name} flag`}
                       loading="lazy"
-                      className="h-10 w-15 shrink-0 rounded-xs border border-white/15 object-cover shadow-xs"
+                      decoding="async"
+                      className="h-10 w-15 shrink-0 rounded-xs border border-app-border object-cover shadow-xs"
                     />
                   )}
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
+                <div className="mt-4 pt-3 border-t border-app-border grid grid-cols-2 gap-2 text-[11px] text-app-text-secondary font-mono">
                   <div>
-                    <span className="text-zinc-600 block">Capital</span>
-                    <span className="text-sand-100 block break-words">{c.capital || 'N/A'}</span>
+                    <span className="text-app-text-muted block">Capital</span>
+                    <span className="text-app-text block break-words">{c.capital || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 block">Population</span>
-                    <span className="text-sand-100 block">{c.population ? Number(c.population).toLocaleString('en-US') : 'N/A'}</span>
+                    <span className="text-app-text-muted block">Population</span>
+                    <span className="text-app-text block">{c.population ? Number(c.population).toLocaleString('en-US') : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -1259,7 +1073,7 @@ export default function ExplorePage() {
       {/* TAB 3: US States Grid */}
       {activeTab === 'us_states' && (
         <section className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+          <div className="flex items-center justify-between text-xs text-app-text-secondary font-mono">
             <span>Showing {filteredUSStates.length} states</span>
             <span>Click any card for state facts & borders</span>
           </div>
@@ -1269,31 +1083,31 @@ export default function ExplorePage() {
               <div
                 key={s.id}
                 onClick={() => openStateModal(s.name)}
-                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                className="explore-card-perf group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-emerald-400">
+                    <span className="font-mono text-xs font-bold text-app-accent">
                       #{s.admission_order} admitted ({s.admission_year})
                     </span>
-                    <span className="text-[11px] text-zinc-500">{s.region}</span>
+                    <span className="text-[11px] text-app-text-muted">{s.region}</span>
                   </div>
-                  <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
+                  <h4 className="font-serif text-lg font-semibold text-app-text group-hover:text-app-accent transition-colors">
                     {s.name}
                   </h4>
-                  <p className="text-xs text-zinc-400 break-words">
+                  <p className="text-xs text-app-text-secondary break-words">
                     {s.nickname || 'The State of ' + s.name}
                   </p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
+                <div className="mt-4 pt-3 border-t border-app-border grid grid-cols-2 gap-2 text-[11px] text-app-text-secondary font-mono">
                   <div>
-                    <span className="text-zinc-600 block">Division</span>
-                    <span className="text-sand-100 block break-words">{s.division || 'N/A'}</span>
+                    <span className="text-app-text-muted block">Division</span>
+                    <span className="text-app-text block break-words">{s.division || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 block">Population</span>
-                    <span className="text-sand-100 block">{s.population ? Number(s.population).toLocaleString('en-US') : 'N/A'}</span>
+                    <span className="text-app-text-muted block">Population</span>
+                    <span className="text-app-text block">{s.population ? Number(s.population).toLocaleString('en-US') : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -1305,7 +1119,7 @@ export default function ExplorePage() {
       {/* TAB 4: Voivodeships Grid */}
       {activeTab === 'voivodeships' && (
         <section className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+          <div className="flex items-center justify-between text-xs text-app-text-secondary font-mono">
             <span>Showing {filteredVoivodeships.length} voivodeships</span>
             <span>Click any card for regional stats</span>
           </div>
@@ -1315,31 +1129,31 @@ export default function ExplorePage() {
               <div
                 key={v.id}
                 onClick={() => openVoivodeshipModal(v.name)}
-                className="group cursor-pointer rounded-md border border-white/10 bg-obsidian-900/60 p-4 transition-colors hover:border-emerald-500/40 hover:bg-obsidian-900 flex flex-col justify-between"
+                className="group cursor-pointer rounded-sm border border-app-border bg-app-surface p-4 transition-colors hover:border-app-accent hover:bg-app-surface-muted flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-emerald-400">
+                    <span className="font-mono text-xs font-bold text-app-accent">
                       TERYT {v.teryt}
                     </span>
-                    <span className="text-[11px] text-zinc-500">{regionalDisplay[v.macroregion] ?? v.macroregion}</span>
+                    <span className="text-[11px] text-app-text-muted">{regionalDisplay[v.macroregion] ?? v.macroregion}</span>
                   </div>
-                  <h4 className="font-serif text-lg font-semibold text-sand-100 group-hover:text-emerald-300 transition-colors">
+                  <h4 className="font-serif text-lg font-semibold text-app-text group-hover:text-app-accent transition-colors">
                     {v.name}
                   </h4>
-                  <p className="text-xs text-zinc-400">
-                    Administrative seat: <strong className="text-sand-100">{v.seat}</strong>
+                  <p className="text-xs text-app-text-secondary">
+                    Administrative seat: <strong className="text-app-text">{v.seat}</strong>
                   </p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2 text-[11px] text-zinc-400 font-mono">
+                <div className="mt-4 pt-3 border-t border-app-border grid grid-cols-2 gap-2 text-[11px] text-app-text-secondary font-mono">
                   <div>
-                    <span className="text-zinc-600 block">Counties</span>
-                    <span className="text-sand-100 block">{v.powiat_count}</span>
+                    <span className="text-app-text-muted block">Counties</span>
+                    <span className="text-app-text block">{v.powiat_count}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-600 block">Urbanization</span>
-                    <span className="text-sand-100 block">{v.urbanization_percent}%</span>
+                    <span className="text-app-text-muted block">Urbanization</span>
+                    <span className="text-app-text block">{v.urbanization_percent}%</span>
                   </div>
                 </div>
               </div>
@@ -1354,59 +1168,59 @@ export default function ExplorePage() {
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedCountry(null)}
-          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-app-text/40 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh] md:p-8"
+            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-sm border border-app-border bg-app-surface-raised p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-app-text shadow-lg md:max-h-[90vh] md:p-8"
           >
             <button 
               type="button" 
               onClick={() => setSelectedCountry(null)}
               aria-label={'Close country details'}
-              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-app-text-secondary hover:text-app-text"
             >
               <X size={20} />
             </button>
 
-            <header className="border-b border-white/10 pb-4">
-              <span className="font-mono text-xs text-emerald-400">
+            <header className="border-b border-app-border pb-4">
+              <span className="font-mono text-xs text-app-accent">
                 {selectedCountry.cca3} &bull; {selectedCountry.region}
               </span>
-              <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
+              <h2 className="font-serif text-3xl font-bold mt-1 text-app-text">
                 {selectedCountry.app_country_name}
               </h2>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-app-text-muted mt-1">
                 Official: {selectedCountry.official_name}
               </p>
             </header>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Capital</span>
-                <span className="font-bold text-sand-100">{selectedCountry.capital || 'N/A'}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Capital</span>
+                <span className="font-bold text-app-text">{selectedCountry.capital || 'N/A'}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Population</span>
-                <span className="font-bold text-sand-100">{Number(selectedCountry.population).toLocaleString('en-US')}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Population</span>
+                <span className="font-bold text-app-text">{Number(selectedCountry.population).toLocaleString('en-US')}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Area (km²)</span>
-                <span className="font-bold text-sand-100">{Number(selectedCountry.area_km2).toLocaleString('en-US')}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Area (km²)</span>
+                <span className="font-bold text-app-text">{Number(selectedCountry.area_km2).toLocaleString('en-US')}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Driving Side</span>
-                <span className="font-bold text-sand-100 capitalize">{selectedCountry.driving_side || 'N/A'}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Driving Side</span>
+                <span className="font-bold text-app-text capitalize">{selectedCountry.driving_side || 'N/A'}</span>
               </div>
             </div>
 
             <div className="space-y-4 text-xs">
               {selectedCountry.borders && selectedCountry.borders.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Neighboring Borders ({selectedCountry.borders.length}):</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Neighboring Borders ({selectedCountry.borders.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCountry.borders.map((b: string) => (
-                      <span key={b} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
+                      <span key={b} className="px-2 py-0.5 bg-app-surface-muted border border-app-border rounded text-app-text-secondary">
                         {b}
                       </span>
                     ))}
@@ -1416,10 +1230,10 @@ export default function ExplorePage() {
 
               {selectedCountry.water_access && selectedCountry.water_access.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Water &amp; Coastline Access:</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Water &amp; Coastline Access:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCountry.water_access.map((w: string) => (
-                      <span key={w} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
+                      <span key={w} className="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded">
                         {w}
                       </span>
                     ))}
@@ -1429,17 +1243,17 @@ export default function ExplorePage() {
 
               {selectedCountry.languages && selectedCountry.languages.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Recorded Languages:</span>
-                  <span className="text-zinc-400">{selectedCountry.languages.join(', ')}</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Recorded Languages:</span>
+                  <span className="text-app-text-secondary">{selectedCountry.languages.join(', ')}</span>
                 </div>
               )}
 
               {selectedCountry.flag_colors && selectedCountry.flag_colors.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">National Flag Colors:</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">National Flag Colors:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCountry.flag_colors.map((fc: string) => (
-                      <span key={fc} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded capitalize">
+                      <span key={fc} className="px-2 py-0.5 bg-app-surface-muted border border-app-border text-app-text-secondary rounded capitalize">
                         {fc}
                       </span>
                     ))}
@@ -1448,10 +1262,10 @@ export default function ExplorePage() {
               )}
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex justify-between items-center">
+            <div className="border-t border-app-border pt-4 flex justify-between items-center">
               <Link 
                 to="/game"
-                className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
+                className="inline-flex items-center gap-2 rounded-sm bg-app-accent px-4 py-2 text-xs font-bold text-app-canvas hover:bg-app-accent-hover transition-colors"
               >
                 <Play size={13} />
                 <span>Play World Countrydle</span>
@@ -1459,7 +1273,7 @@ export default function ExplorePage() {
               <button 
                 type="button" 
                 onClick={() => setSelectedCountry(null)}
-                className="text-xs text-zinc-400 hover:text-white"
+                className="text-xs text-app-text-secondary hover:text-app-text"
               >
                 Close Fact Sheet
               </button>
@@ -1470,63 +1284,63 @@ export default function ExplorePage() {
 
       {/* Modal: State Details */}
       {selectedState && (
-        <div 
+        <div
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedState(null)}
-          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-app-text/40 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh] md:p-8"
+            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-sm border border-app-border bg-app-surface-raised p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-app-text shadow-lg md:max-h-[90vh] md:p-8"
           >
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setSelectedState(null)}
               aria-label={'Close state details'}
-              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-app-text-secondary hover:text-app-text"
             >
               <X size={20} />
             </button>
 
-            <header className="border-b border-white/10 pb-4">
-              <span className="font-mono text-xs text-emerald-400">
+            <header className="border-b border-app-border pb-4">
+              <span className="font-mono text-xs text-app-accent">
                 #{selectedState.admission_order} Admitted &bull; {selectedState.region}
               </span>
-              <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
+              <h2 className="font-serif text-3xl font-bold mt-1 text-app-text">
                 {selectedState.name}
               </h2>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-app-text-muted mt-1">
                 {selectedState.nickname}
               </p>
             </header>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Division</span>
-                <span className="font-bold text-sand-100">{selectedState.division || 'N/A'}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Division</span>
+                <span className="font-bold text-app-text">{selectedState.division || 'N/A'}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Population</span>
-                <span className="font-bold text-sand-100">{Number(selectedState.population).toLocaleString('en-US')}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Population</span>
+                <span className="font-bold text-app-text">{Number(selectedState.population).toLocaleString('en-US')}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Area (sq mi)</span>
-                <span className="font-bold text-sand-100">{Number(selectedState.area_sq_mi).toLocaleString('en-US')}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Area (sq mi)</span>
+                <span className="font-bold text-app-text">{Number(selectedState.area_sq_mi).toLocaleString('en-US')}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Admission Year</span>
-                <span className="font-bold text-sand-100">{selectedState.admission_year}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Admission Year</span>
+                <span className="font-bold text-app-text">{selectedState.admission_year}</span>
               </div>
             </div>
 
             <div className="space-y-4 text-xs">
               {selectedState.neighboring_states && selectedState.neighboring_states.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Neighboring US States ({selectedState.neighboring_states.length}):</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Neighboring US States ({selectedState.neighboring_states.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedState.neighboring_states.map((st: string) => (
-                      <span key={st} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
+                      <span key={st} className="px-2 py-0.5 bg-app-surface-muted border border-app-border rounded text-app-text-secondary">
                         {st}
                       </span>
                     ))}
@@ -1536,10 +1350,10 @@ export default function ExplorePage() {
 
               {selectedState.water_access && selectedState.water_access.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Water Bodies &amp; Ocean Access:</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Water Bodies &amp; Ocean Access:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedState.water_access.map((w: string) => (
-                      <span key={w} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
+                      <span key={w} className="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded">
                         {w}
                       </span>
                     ))}
@@ -1548,18 +1362,18 @@ export default function ExplorePage() {
               )}
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex justify-between items-center">
-              <Link 
+            <div className="border-t border-app-border pt-4 flex justify-between items-center">
+              <Link
                 to="/us-states"
-                className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
+                className="inline-flex items-center gap-2 rounded-sm bg-app-accent px-4 py-2 text-xs font-bold text-app-canvas hover:bg-app-accent-hover transition-colors"
               >
                 <Play size={13} />
                 <span>Play US Statedle</span>
               </Link>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setSelectedState(null)}
-                className="text-xs text-zinc-400 hover:text-white"
+                className="text-xs text-app-text-secondary hover:text-app-text"
               >
                 Close Fact Sheet
               </button>
@@ -1570,63 +1384,63 @@ export default function ExplorePage() {
 
       {/* Modal: Voivodeship Details */}
       {selectedVoivodeship && (
-        <div 
+        <div
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedVoivodeship(null)}
-          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-app-text/40 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh] md:p-8"
+            className="relative w-full max-w-2xl max-h-full overflow-y-auto rounded-sm border border-app-border bg-app-surface-raised p-4 pt-14 sm:p-8 sm:pt-14 space-y-6 text-app-text shadow-lg md:max-h-[90vh] md:p-8"
           >
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setSelectedVoivodeship(null)}
               aria-label={'Close voivodeship details'}
-              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white"
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-app-text-secondary hover:text-app-text"
             >
               <X size={20} />
             </button>
 
-            <header className="border-b border-white/10 pb-4">
-              <span className="font-mono text-xs text-emerald-400">
+            <header className="border-b border-app-border pb-4">
+              <span className="font-mono text-xs text-app-accent">
                 TERYT {selectedVoivodeship.teryt} &bull; Macroregion {regionalDisplay[selectedVoivodeship.macroregion] ?? selectedVoivodeship.macroregion}
               </span>
-              <h2 className="font-serif text-3xl font-bold mt-1 text-sand-100">
+              <h2 className="font-serif text-3xl font-bold mt-1 text-app-text">
                 {selectedVoivodeship.name} Voivodeship
               </h2>
-              <p className="text-xs text-zinc-400 mt-1">
-                Administrative seat: <strong className="text-sand-100">{selectedVoivodeship.seat}</strong>
+              <p className="text-xs text-app-text-muted mt-1">
+                Administrative seat: <strong className="text-app-text">{selectedVoivodeship.seat}</strong>
               </p>
             </header>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Population</span>
-                <span className="font-bold text-sand-100">{Number(selectedVoivodeship.population).toLocaleString('en-US')}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Population</span>
+                <span className="font-bold text-app-text">{Number(selectedVoivodeship.population).toLocaleString('en-US')}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Area</span>
-                <span className="font-bold text-sand-100">{Number(selectedVoivodeship.area_km2).toLocaleString('en-US')} km²</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Area</span>
+                <span className="font-bold text-app-text">{Number(selectedVoivodeship.area_km2).toLocaleString('en-US')} km²</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Counties</span>
-                <span className="font-bold text-sand-100">{selectedVoivodeship.powiat_count}</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Counties</span>
+                <span className="font-bold text-app-text">{selectedVoivodeship.powiat_count}</span>
               </div>
-              <div className="p-3 bg-white/5 rounded">
-                <span className="text-zinc-500 block">Urbanization</span>
-                <span className="font-bold text-sand-100">{selectedVoivodeship.urbanization_percent}%</span>
+              <div className="p-3 bg-app-surface-muted rounded">
+                <span className="text-app-text-muted block">Urbanization</span>
+                <span className="font-bold text-app-text">{selectedVoivodeship.urbanization_percent}%</span>
               </div>
             </div>
 
             <div className="space-y-4 text-xs">
               {selectedVoivodeship.neighboring_voivodeships && selectedVoivodeship.neighboring_voivodeships.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Neighboring voivodeships ({selectedVoivodeship.neighboring_voivodeships.length}):</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Neighboring voivodeships ({selectedVoivodeship.neighboring_voivodeships.length}):</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedVoivodeship.neighboring_voivodeships.map((v: string) => (
-                      <span key={v} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-zinc-300">
+                      <span key={v} className="px-2 py-0.5 bg-app-surface-muted border border-app-border rounded text-app-text-secondary">
                         {v}
                       </span>
                     ))}
@@ -1636,10 +1450,10 @@ export default function ExplorePage() {
 
               {selectedVoivodeship.neighboring_countries && selectedVoivodeship.neighboring_countries.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">Bordering countries:</span>
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">Bordering countries:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedVoivodeship.neighboring_countries.map((c: string) => (
-                      <span key={c} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded">
+                      <span key={c} className="px-2 py-0.5 bg-app-surface-muted border border-app-border text-app-accent rounded">
                         {regionalDisplay[c] ?? c}
                       </span>
                     ))}
@@ -1648,18 +1462,18 @@ export default function ExplorePage() {
               )}
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex justify-between items-center">
-              <Link 
+            <div className="border-t border-app-border pt-4 flex justify-between items-center">
+              <Link
                 to="/wojewodztwa"
-                className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
+                className="inline-flex items-center gap-2 rounded-sm bg-app-accent px-4 py-2 text-xs font-bold text-app-canvas hover:bg-app-accent-hover transition-colors"
               >
                 <Play size={13} />
                 <span>Play Województwodle</span>
               </Link>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setSelectedVoivodeship(null)}
-                className="text-xs text-zinc-400 hover:text-white"
+                className="text-xs text-app-text-secondary hover:text-app-text"
               >
                 Close fact sheet
               </button>
@@ -1674,22 +1488,22 @@ export default function ExplorePage() {
           role="dialog"
           aria-modal="true"
           onClick={() => setSelectedPowiat(null)}
-          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm md:max-h-none md:p-4"
+          className="fixed inset-0 z-[1200] flex max-h-[var(--app-height,100dvh)] items-center justify-center overflow-y-auto bg-app-text/40 p-2 backdrop-blur-sm md:max-h-none md:p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-3xl max-h-full overflow-y-auto rounded-lg border border-white/15 bg-obsidian-900 p-4 pt-12 sm:p-7 sm:pt-12 space-y-6 text-sand-100 shadow-2xl md:max-h-[90vh]"
+            className="relative w-full max-w-3xl max-h-full overflow-y-auto rounded-sm border border-app-border bg-app-surface-raised p-4 pt-12 sm:p-7 sm:pt-12 space-y-6 text-app-text shadow-lg md:max-h-[90vh]"
           >
             <button
               type="button"
               onClick={() => setSelectedPowiat(null)}
               aria-label={'Close county details'}
-              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+              className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center text-app-text-secondary hover:text-app-text cursor-pointer"
             >
               <X size={20} />
             </button>
 
-            <header className="flex flex-col sm:flex-row items-center sm:items-start gap-5 border-b border-white/10 pb-5">
+            <header className="flex flex-col sm:flex-row items-center sm:items-start gap-5 border-b border-app-border pb-5">
               {/* Coat of Arms Pedestal with Fullscreen Trigger */}
               <div
                 role="button"
@@ -1716,10 +1530,10 @@ export default function ExplorePage() {
                   }
                 }}
                 aria-label={'Inspect county coat of arms'}
-                className={`group relative h-32 w-28 shrink-0 rounded-lg border p-3 flex items-center justify-center cursor-zoom-in transition-colors ${
+                className={`group relative h-32 w-28 shrink-0 rounded-sm border p-3 flex items-center justify-center cursor-zoom-in transition-colors ${
                   lightCoatsBackdrop
-                    ? 'bg-sand-100 border-sand-300 shadow-md'
-                    : 'bg-obsidian-950 border-white/15 hover:border-emerald-400/50 shadow-inner'
+                    ? 'bg-app-surface-raised border-app-border shadow-md'
+                    : 'bg-obsidian-950 border-white/15 hover:border-app-accent shadow-inner'
                 }`}
               >
                 <img
@@ -1729,7 +1543,7 @@ export default function ExplorePage() {
                 />
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute bottom-1.5 right-1.5 inline-flex h-6 w-6 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 group-hover:border-emerald-400/50 group-hover:text-emerald-300"
+                  className="pointer-events-none absolute bottom-1.5 right-1.5 inline-flex h-6 w-6 items-center justify-center rounded bg-app-surface-raised border border-app-border text-app-text-secondary group-hover:border-app-accent group-hover:text-app-accent"
                 >
                   <Maximize2 size={13} />
                 </span>
@@ -1737,39 +1551,39 @@ export default function ExplorePage() {
 
               <div className="flex-1 text-center sm:text-left space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <span className="font-mono text-xs text-emerald-400 font-semibold">
+                  <span className="font-mono text-xs text-app-accent font-semibold">
                     {selectedPowiat.voivodeship} Voivodeship
                   </span>
                   {selectedPowiat.terc && (
-                    <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5 font-mono text-[11px] text-zinc-400">
+                    <span className="rounded bg-app-surface-muted border border-app-border px-2 py-0.5 font-mono text-[11px] text-app-text-secondary">
                       TERYT {selectedPowiat.terc}
                     </span>
                   )}
                   <span
                     className={`rounded px-2 py-0.5 font-mono text-[11px] ${
                       selectedPowiat.is_city_county
-                        ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                        : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-700/30'
+                        : 'bg-app-surface-muted text-app-accent border border-app-border'
                     }`}
                   >
                     {selectedPowiat.is_city_county ? 'City with county rights' : 'Land county'}
                   </span>
                 </div>
 
-                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-sand-100">
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-app-text">
                   {selectedPowiat.name}
                 </h2>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1">
                   {selectedPowiat.seat && (
-                    <span className="text-xs text-zinc-300">
+                    <span className="text-xs text-app-text-secondary">
                       {'County Seat:'}{' '}
-                      <strong className="text-sand-100">{selectedPowiat.seat}</strong>
+                      <strong className="text-app-text">{selectedPowiat.seat}</strong>
                     </span>
                   )}
                   {selectedPowiat.registration_plates && selectedPowiat.registration_plates.length > 0 && (
                     <div className="inline-flex items-center gap-1.5">
-                      <span className="text-xs text-zinc-400 font-mono">
+                      <span className="text-xs text-app-text-muted font-mono">
                         {'Plates:'}
                       </span>
                       <MiniLicensePlate plates={selectedPowiat.registration_plates} />
@@ -1781,29 +1595,29 @@ export default function ExplorePage() {
 
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-              <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{'Population'}</span>
-                <span className="font-bold text-sand-100 text-sm">
+              <div className="p-3 bg-app-surface-muted border border-app-border rounded">
+                <span className="text-app-text-muted block">{'Population'}</span>
+                <span className="font-bold text-app-text text-sm">
                   {selectedPowiat.population ? Number(selectedPowiat.population).toLocaleString('en-US') : '—'}
                 </span>
               </div>
-              <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{'Area'}</span>
-                <span className="font-bold text-sand-100 text-sm">
+              <div className="p-3 bg-app-surface-muted border border-app-border rounded">
+                <span className="text-app-text-muted block">{'Area'}</span>
+                <span className="font-bold text-app-text text-sm">
                   {selectedPowiat.area_km2 ? `${Number(selectedPowiat.area_km2).toLocaleString('en-US')} km²` : '—'}
                 </span>
               </div>
-              <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{'Density'}</span>
-                <span className="font-bold text-sand-100 text-sm">
+              <div className="p-3 bg-app-surface-muted border border-app-border rounded">
+                <span className="text-app-text-muted block">{'Density'}</span>
+                <span className="font-bold text-app-text text-sm">
                   {selectedPowiat.population_density
                     ? `${Math.round(Number(selectedPowiat.population_density)).toLocaleString('en-US')} people/km²`
                     : '—'}
                 </span>
               </div>
-              <div className="p-3 bg-white/5 border border-white/5 rounded">
-                <span className="text-zinc-500 block">{'Municipalities'}</span>
-                <span className="font-bold text-sand-100 text-sm">
+              <div className="p-3 bg-app-surface-muted border border-app-border rounded">
+                <span className="text-app-text-muted block">{'Municipalities'}</span>
+                <span className="font-bold text-app-text text-sm">
                   {selectedPowiat.gmina_count ?? '—'}
                   {selectedPowiat.urbanization_percent != null
                     ? ` • Urb. ${selectedPowiat.urbanization_percent}%`
@@ -1816,7 +1630,7 @@ export default function ExplorePage() {
             <div className="space-y-4 text-xs">
               {selectedPowiat.neighboring_powiats && selectedPowiat.neighboring_powiats.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {`Neighboring Counties (${selectedPowiat.neighboring_powiats.length}), click to inspect:`}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -1825,7 +1639,7 @@ export default function ExplorePage() {
                         key={np}
                         type="button"
                         onClick={() => openPowiatModal(np)}
-                        className="px-2.5 py-1 bg-white/5 hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-500/40 rounded text-zinc-200 hover:text-emerald-300 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 bg-app-surface-muted hover:bg-app-accent/10 border border-app-border hover:border-app-accent rounded text-app-text-secondary hover:text-app-accent transition-colors cursor-pointer"
                       >
                         {np}
                       </button>
@@ -1836,12 +1650,12 @@ export default function ExplorePage() {
 
               {selectedPowiat.neighboring_voivodeships && selectedPowiat.neighboring_voivodeships.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {'Borders with other Voivodeships:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.neighboring_voivodeships.map((nv: string) => (
-                      <span key={nv} className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/25 text-purple-300 rounded">
+                      <span key={nv} className="px-2 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 rounded">
                         Voivodeship {nv}
                       </span>
                     ))}
@@ -1851,12 +1665,12 @@ export default function ExplorePage() {
 
               {selectedPowiat.neighboring_countries && selectedPowiat.neighboring_countries.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {'International Border:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.neighboring_countries.map((nc: string) => (
-                      <span key={nc} className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded font-semibold">
+                      <span key={nc} className="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded font-semibold">
                         {regionalDisplay[nc] ?? nc}
                       </span>
                     ))}
@@ -1868,22 +1682,22 @@ export default function ExplorePage() {
                 (selectedPowiat.water_access && selectedPowiat.water_access.length > 0) ||
                 (selectedPowiat.lakes && selectedPowiat.lakes.length > 0)) && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {'Rivers, Lakes & Water Bodies:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(selectedPowiat.water_access || []).map((w: string) => (
-                      <span key={`w-${w}`} className="px-2 py-0.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 rounded">
+                      <span key={`w-${w}`} className="px-2 py-0.5 bg-cyan-50 border border-cyan-200 text-cyan-800 rounded">
                         {w}
                       </span>
                     ))}
                     {(selectedPowiat.major_rivers || []).map((r: string) => (
-                      <span key={`r-${r}`} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded">
+                      <span key={`r-${r}`} className="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded">
                         River {r}
                       </span>
                     ))}
                     {(selectedPowiat.lakes || []).map((l: string) => (
-                      <span key={`l-${l}`} className="px-2 py-0.5 bg-sky-500/10 border border-sky-500/20 text-sky-300 rounded">
+                      <span key={`l-${l}`} className="px-2 py-0.5 bg-sky-50 border border-sky-200 text-sky-800 rounded">
                         Lake {l}
                       </span>
                     ))}
@@ -1893,12 +1707,12 @@ export default function ExplorePage() {
 
               {selectedPowiat.major_roads && selectedPowiat.major_roads.length > 0 && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {'Major Highways & National Roads:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.major_roads.map((rd: string) => (
-                      <span key={rd} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 rounded font-mono">
+                      <span key={rd} className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded font-mono">
                         {rd}
                       </span>
                     ))}
@@ -1909,17 +1723,17 @@ export default function ExplorePage() {
               {((selectedPowiat.landform_regions && selectedPowiat.landform_regions.length > 0) ||
                 (selectedPowiat.historical_regions && selectedPowiat.historical_regions.length > 0)) && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {'Geographic & Historical Regions:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(selectedPowiat.landform_regions || []).map((reg: string) => (
-                      <span key={`lf-${reg}`} className="px-2 py-0.5 bg-white/5 border border-white/10 text-zinc-300 rounded">
+                      <span key={`lf-${reg}`} className="px-2 py-0.5 bg-app-surface-muted border border-app-border text-app-text-secondary rounded">
                         {reg}
                       </span>
                     ))}
                     {(selectedPowiat.historical_regions || []).map((hr: string) => (
-                      <span key={`hr-${hr}`} className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-200 rounded">
+                      <span key={`hr-${hr}`} className="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 rounded">
                         {hr}
                       </span>
                     ))}
@@ -1931,22 +1745,22 @@ export default function ExplorePage() {
                 (selectedPowiat.health_resorts && selectedPowiat.health_resorts.length > 0) ||
                 (selectedPowiat.unesco_sites && selectedPowiat.unesco_sites.length > 0)) && (
                 <div>
-                  <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
+                  <span className="font-semibold text-app-text-secondary block mb-1.5 font-mono">
                     {'National Parks, Health Resorts & UNESCO:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(selectedPowiat.national_parks || []).map((np: string) => (
-                      <span key={`np-${np}`} className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded">
+                      <span key={`np-${np}`} className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded">
                         {np}
                       </span>
                     ))}
                     {(selectedPowiat.health_resorts || []).map((hr: string) => (
-                      <span key={`res-${hr}`} className="px-2 py-0.5 bg-teal-500/15 border border-teal-500/30 text-teal-300 rounded">
+                      <span key={`res-${hr}`} className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-teal-800 rounded">
                         Health resort: {hr}
                       </span>
                     ))}
                     {(selectedPowiat.unesco_sites || []).map((u: string) => (
-                      <span key={`un-${u}`} className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 text-amber-200 rounded font-semibold">
+                      <span key={`un-${u}`} className="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded font-semibold">
                         UNESCO: {u}
                       </span>
                     ))}
@@ -1955,28 +1769,28 @@ export default function ExplorePage() {
               )}
             </div>
 
-            <div className="border-t border-white/10 pt-4 flex flex-wrap justify-between items-center gap-3">
+            <div className="border-t border-app-border pt-4 flex flex-wrap justify-between items-center gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   to="/herby-powiatow"
-                  className="inline-flex items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-sm bg-app-accent px-4 py-2 text-xs font-bold text-app-canvas hover:bg-app-accent-hover transition-colors"
                 >
                   <Shield size={13} />
                   <span>{'Play County Coats of Arms'}</span>
                 </Link>
-                <Link to="/flagi-powiatow" className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors">Play County Flags</Link>
+                <Link to="/flagi-powiatow" className="inline-flex items-center gap-2 rounded-sm border border-app-border bg-app-surface px-4 py-2 text-xs font-semibold text-app-text-secondary hover:bg-app-surface-muted transition-colors">Play County Flags</Link>
                 <Link
                   to="/powiaty"
-                  className="inline-flex items-center gap-2 rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-sm border border-app-border bg-app-surface px-4 py-2 text-xs font-semibold text-app-text-secondary hover:bg-app-surface-muted transition-colors"
                 >
                   <Play size={13} />
-                  <span>{'Play Powiatdle'}</span>
+                  <span>{'Play Powiatdle (Beta)'}</span>
                 </Link>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedPowiat(null)}
-                className="text-xs text-zinc-400 hover:text-white cursor-pointer"
+                className="text-xs text-app-text-secondary hover:text-app-text cursor-pointer"
               >
                 {'Close Fact Sheet'}
               </button>
@@ -1993,7 +1807,7 @@ export default function ExplorePage() {
           aria-modal="true"
           aria-label={inspectedAsset.title}
           onClick={() => setInspectedAsset(null)}
-          className="image-inspector fixed inset-0 z-[2200] flex h-[100dvh] flex-col overflow-hidden bg-obsidian-950/95 backdrop-blur-md select-none sm:h-auto"
+          className="image-inspector fixed inset-0 z-[2200] flex h-[100dvh] flex-col overflow-hidden bg-app-canvas text-app-text backdrop-blur-md select-none sm:h-auto"
         >
           <style>{`
             .explore-inspector-mobile { display: none; }
@@ -2006,7 +1820,7 @@ export default function ExplorePage() {
             type="button"
             aria-label="Close image"
             onClick={(e) => { e.stopPropagation(); setInspectedAsset(null); }}
-            className="explore-inspector-mobile absolute z-10 h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white"
+            className="explore-inspector-mobile absolute z-10 h-11 w-11 items-center justify-center rounded-sm bg-app-surface text-app-text shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus"
             style={{ top: 'max(1rem, env(safe-area-inset-top))', right: 'max(1rem, env(safe-area-inset-right))' }}
           >
             <X size={22} aria-hidden="true" />
@@ -2020,15 +1834,15 @@ export default function ExplorePage() {
           {/* Top Toolbar */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="explore-inspector-desktop flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-obsidian-900/90 px-4 py-3 sm:px-6 shrink-0"
+            className="explore-inspector-desktop flex flex-wrap items-center justify-between gap-3 border-b border-app-border bg-app-surface-raised px-4 py-3 sm:px-6 shrink-0"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <Shield size={16} className="text-emerald-400 shrink-0" />
-              <span className="font-serif text-sm font-bold text-sand-100 truncate">
+              <Shield size={16} className="text-app-accent shrink-0" />
+              <span className="font-serif text-sm font-bold text-app-text truncate">
                 {inspectedAsset.title}
               </span>
               {inspectedAsset.subtitle && (
-                <span className="hidden sm:inline font-mono text-xs text-zinc-400">
+                <span className="hidden sm:inline font-mono text-xs text-app-text-muted">
                   • {inspectedAsset.subtitle}
                 </span>
               )}
@@ -2039,14 +1853,14 @@ export default function ExplorePage() {
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
                 disabled={inspectZoom <= 1}
-                className="inline-flex items-center justify-center rounded border border-white/15 bg-obsidian-950 p-1.5 text-zinc-300 hover:text-white hover:border-white/30 disabled:opacity-40 cursor-pointer"
+                className="inline-flex items-center justify-center rounded border border-app-border bg-app-surface p-1.5 text-app-text-secondary hover:text-app-text hover:border-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus disabled:opacity-40 cursor-pointer"
               >
                 <ZoomOut size={15} />
               </button>
               <button
                 type="button"
                 onClick={() => setInspectZoom(1)}
-                className="rounded border border-white/15 bg-obsidian-950 px-2 py-1 font-mono text-xs text-sand-200 hover:border-emerald-400/50 cursor-pointer"
+                className="rounded border border-app-border bg-app-surface px-2 py-1 font-mono text-xs text-app-text-secondary hover:border-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus cursor-pointer"
               >
                 {Math.round(inspectZoom * 100)}%
               </button>
@@ -2054,7 +1868,7 @@ export default function ExplorePage() {
                 type="button"
                 onClick={() => setInspectZoom((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
                 disabled={inspectZoom >= 3}
-                className="inline-flex items-center justify-center rounded border border-white/15 bg-obsidian-950 p-1.5 text-zinc-300 hover:text-white hover:border-white/30 disabled:opacity-40 cursor-pointer"
+                className="inline-flex items-center justify-center rounded border border-app-border bg-app-surface p-1.5 text-app-text-secondary hover:text-app-text hover:border-app-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus disabled:opacity-40 cursor-pointer"
               >
                 <ZoomIn size={15} />
               </button>
@@ -2063,7 +1877,7 @@ export default function ExplorePage() {
                 onClick={() => setLightCoatsBackdrop((b) => !b)}
                 className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-mono transition-colors cursor-pointer ${
                   lightCoatsBackdrop
-                    ? 'border-amber-400/60 bg-sand-100 text-obsidian-950 font-semibold'
+                    ? 'border-app-border bg-app-surface-muted text-app-text font-semibold'
                     : 'border-white/15 bg-obsidian-950 text-zinc-300 hover:text-white'
                 }`}
               >
@@ -2076,7 +1890,7 @@ export default function ExplorePage() {
                 type="button"
                 onClick={() => setInspectedAsset(null)}
                 aria-label="Close image"
-                className="inline-flex items-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:border-rose-400/40 hover:text-rose-200 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 rounded border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-800 hover:bg-rose-100 hover:border-rose-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus transition-colors cursor-pointer"
               >
                 <X size={15} />
               </button>
@@ -2092,7 +1906,7 @@ export default function ExplorePage() {
               onClick={(e) => e.stopPropagation()}
               className={`relative flex items-center justify-center rounded-2xl border p-6 sm:p-10 shadow-2xl transition-colors duration-200 ${
                 lightCoatsBackdrop
-                  ? 'border-zinc-300 bg-stone-100 shadow-black/50'
+                  ? 'border-app-border bg-app-surface-raised shadow-black/20'
                   : 'border-white/15 bg-obsidian-900/95 shadow-black/80'
               }`}
             >

@@ -38,17 +38,19 @@ from schemas.powiatdle import (
 )
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import powiatdle.utils as putils
-from game_logic import GameConfig, GameRules, GameState, is_valid_synced_game_state
+from game_logic import GameConfig, GameRules, GameState, is_direct_name_win_plan, is_valid_synced_game_state
 from utils.geo import enhance_guess_with_hint
 
 
 router = APIRouter(prefix="/powiatdle")
 from powiatdle.heraldry import router as heraldry_router, flag_router
 from powiatdle.plates_quiz import router as plates_quiz_router
+from powiatdle.map_quiz import router as map_quiz_router
 
 router.include_router(heraldry_router)
 router.include_router(flag_router)
 router.include_router(plates_quiz_router)
+router.include_router(map_quiz_router)
 
 POWIATDLE_CONFIG = GameConfig(max_questions=15, max_guesses=3)
 game_rules = GameRules(POWIATDLE_CONFIG)
@@ -382,19 +384,36 @@ async def _do_ask_question(
         return unresolved_question(question_create, PowiatQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day_powiat.id
-    if user is None:
-        await record_guest_action(
-            session, request, response, "powiatdle", day_powiat.id,
-            question=True, max_questions=POWIATDLE_CONFIG.max_questions,
+    if is_direct_name_win_plan(question_create.valid, question_create.answer, planned_question):
+        new_question = await PowiatdleQuestionRepository(session).create_question(question_create)
+        guess_payload = PowiatGuessBase(
+            guess=day_powiat.powiat.nazwa if getattr(day_powiat, "powiat", None) else "",
+            powiat_id=day_powiat.powiat_id,
         )
+        auto_guess_display = await make_guess(
+            guess=guess_payload,
+            request=request,
+            response=response,
+            user=user,
+            session=session,
+        )
+        result = PowiatQuestionDisplay.model_validate(new_question)
+        result.auto_guess = auto_guess_display
+        await session.commit()
     else:
-        await consume_question(
-            session, PowiatdleState, user.id, day_powiat.id,
-            POWIATDLE_CONFIG.max_questions, POWIATDLE_CONFIG.max_guesses,
-        )
-    new_question = await PowiatdleQuestionRepository(session).create_question(question_create)
-    result = PowiatQuestionDisplay.model_validate(new_question)
-    await session.commit()
+        if user is None:
+            await record_guest_action(
+                session, request, response, "powiatdle", day_powiat.id,
+                question=True, max_questions=POWIATDLE_CONFIG.max_questions,
+            )
+        else:
+            await consume_question(
+                session, PowiatdleState, user.id, day_powiat.id,
+                POWIATDLE_CONFIG.max_questions, POWIATDLE_CONFIG.max_guesses,
+            )
+        new_question = await PowiatdleQuestionRepository(session).create_question(question_create)
+        result = PowiatQuestionDisplay.model_validate(new_question)
+        await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.
         try:

@@ -111,7 +111,7 @@ export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion:
       </div>
 
       <div className="admin-toolbar">
-        <label className="flex flex-col gap-1.5 text-sm text-slate-300">
+        <label className="flex flex-col gap-1.5 text-sm text-app-text-secondary">
           {t('status')}
           <select value={query.status} disabled={busyId !== null} onChange={(event) => changeQuery({ status: event.target.value as AnswerReportStatus, page: 1 })} className={controlClass}>
             <option value="open">{t('open')}</option>
@@ -119,7 +119,7 @@ export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion:
             <option value="all">{t('allStatuses')}</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1.5 text-sm text-slate-300">
+        <label className="flex flex-col gap-1.5 text-sm text-app-text-secondary">
           {t('mode')}
           <select value={query.mode} disabled={busyId !== null} onChange={(event) => changeQuery({ mode: event.target.value as AnswerReportMode | '', page: 1 })} className={controlClass}>
             <option value="">{t('allModes')}</option>
@@ -127,32 +127,32 @@ export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion:
           </select>
         </label>
       </div>
-      {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
-      {actionError && <p role="alert" className="text-sm text-rose-300">{actionError}</p>}
+      {notice && <p role="status" className="rounded-sm border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</p>}
+      {actionError && <p role="alert" className="rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{actionError}</p>}
 
       <div aria-busy={loading} className="space-y-4">
         {loading ? (
-          <p role="status" className="py-8 text-sm text-slate-300">{t('loading')}</p>
+          <p role="status" className="py-8 text-sm text-app-text-secondary">{t('loading')}</p>
         ) : currentResult?.error ? (
-          <div role="alert" className="admin-panel space-y-3 border border-rose-400/30 p-4 text-sm text-rose-300">
+          <div role="alert" className="admin-panel space-y-3 border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
             <p>{t(currentResult.error)}</p>
             <button type="button" onClick={() => changeQuery({ revision: query.revision + 1 })} className="admin-button">{t('retry')}</button>
           </div>
         ) : currentResult?.items.length === 0 ? (
-          <p role="status" className="admin-panel p-8 text-sm text-slate-300">{t('empty')}</p>
+          <p role="status" className="admin-panel p-8 text-sm text-app-text-secondary">{t('empty')}</p>
         ) : currentResult?.items.map((report) => (
           <article key={report.id} aria-labelledby={`report-${report.id}-title`} className="admin-panel min-w-0 space-y-5 p-4 sm:p-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 flex-1 space-y-1">
-                <h3 id={`report-${report.id}-title`} className="whitespace-pre-wrap break-words text-base font-semibold text-sand-100">{report.comment || t('noComment')}</h3>
-                <p className="whitespace-pre-wrap break-words text-base text-sand-100">{report.details.original_question}</p>
-                <p className="text-sm font-semibold"><span className={report.details.valid ? 'text-emerald-300' : 'text-amber-300'}>{report.details.valid ? t('valid') : t('invalid')}</span> · <span className={report.details.valid && report.details.answer === true ? 'text-emerald-300' : 'text-slate-300'}>{report.details.answer === null ? t('noAnswer') : report.details.answer ? t('yes') : t('no')}</span></p>
-                <p className="text-sm text-slate-300">{t('caseId', { id: report.id })}</p>
+                <h3 id={`report-${report.id}-title`} className="whitespace-pre-wrap break-words text-base font-semibold text-app-text">{report.comment || t('noComment')}</h3>
+                <p className="whitespace-pre-wrap break-words text-base text-app-text">{report.details.original_question}</p>
+                <p className="text-sm font-semibold"><span className={`inline-block rounded-sm border px-1 py-0.5 ${report.details.valid ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>{report.details.valid ? t('valid') : t('invalid')}</span> · <span className={report.details.valid && report.details.answer === true ? 'text-emerald-800' : 'text-app-text-secondary'}>{report.details.answer === null ? t('noAnswer') : report.details.answer ? t('yes') : t('no')}</span></p>
+                <p className="text-sm text-app-text-secondary">{t('caseId', { id: report.id })}</p>
                 <div className="flex flex-wrap gap-2">
                   <span className="admin-badge">{modesT(`adminModes.modes.${report.mode}`, { defaultValue: MODE_LABELS[report.mode] })}</span>
-                  <span className={`admin-badge ${report.reviewed_at ? '' : 'text-amber-300'}`}>{report.reviewed_at ? t('reviewedAt', { date: new Date(report.reviewed_at).toLocaleString('en-US') }) : t('open')}</span>
+                  <span className={`admin-badge ${report.reviewed_at ? '' : '!text-amber-900'}`}>{report.reviewed_at ? t('reviewedAt', { date: new Date(report.reviewed_at).toLocaleString('en-US') }) : t('open')}</span>
                 </div>
-                <p className="text-sm text-slate-300">{t('reporter')}: {report.reporter_username || t('guest')} · {t('submitted')}: {new Date(report.created_at).toLocaleString('en-US')}</p>
+                <p className="text-sm text-app-text-secondary">{t('reporter')}: {report.reporter_username || t('guest')} · {t('submitted')}: {new Date(report.created_at).toLocaleString('en-US')}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -179,43 +179,43 @@ export default function AnswerReportsPanel({ onTestQuestion }: { onTestQuestion:
 
             <dl className="grid min-w-0 grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               <div className="min-w-0">
-                <dt className="mb-1 text-sm text-slate-300">{t('improvedQuestion')}</dt>
-                <dd className="whitespace-pre-wrap break-words text-sand-100">{report.details.question ?? t('notAvailable')}</dd>
+                <dt className="mb-1 text-sm text-app-text-secondary">{t('improvedQuestion')}</dt>
+                <dd className="whitespace-pre-wrap break-words text-app-text">{report.details.question ?? t('notAvailable')}</dd>
               </div>
               <div className="min-w-0">
-                <dt className="mb-1 text-sm text-slate-300">{t('gameDateTarget')}</dt>
-                <dd className="break-words text-sand-100"><time dateTime={report.details.game_date}>{report.details.game_date}</time> · {report.details.target_name}</dd>
+                <dt className="mb-1 text-sm text-app-text-secondary">{t('gameDateTarget')}</dt>
+                <dd className="break-words text-app-text"><time dateTime={report.details.game_date}>{report.details.game_date}</time> · {report.details.target_name}</dd>
               </div>
               <div className="min-w-0 sm:col-span-2">
-                <dt className="mb-1 text-sm text-slate-300">{t('explanation')}</dt>
-                <dd className="whitespace-pre-wrap break-words leading-relaxed text-sand-100">{report.details.explanation || t('noExplanation')}</dd>
+                <dt className="mb-1 text-sm text-app-text-secondary">{t('explanation')}</dt>
+                <dd className="whitespace-pre-wrap break-words leading-relaxed text-app-text">{report.details.explanation || t('noExplanation')}</dd>
               </div>
               <div className="min-w-0 sm:col-span-2">
-                <details className="border-t border-white/10 pt-3">
-                  <summary className="cursor-pointer text-sm text-emerald-300">{t('recordDetails')}</summary>
+                <details className="border-t border-app-border pt-3">
+                  <summary className="cursor-pointer text-sm text-emerald-800">{t('recordDetails')}</summary>
                   <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div><dt className="text-sm text-slate-300">{t('reportId')}</dt><dd>{report.id}</dd></div>
-                    <div><dt className="text-sm text-slate-300">{t('questionId')}</dt><dd>{report.question_id}</dd></div>
-                    <div><dt className="text-sm text-slate-300">{t('serverVersion')}</dt><dd className="break-words font-mono text-sm">{report.details.server_version ?? t('notRecorded')}</dd></div>
-                    <div><dt className="text-sm text-slate-300">{t('dayId')}</dt><dd>{report.details.day_id}</dd></div>
+                    <div><dt className="text-sm text-app-text-secondary">{t('reportId')}</dt><dd>{report.id}</dd></div>
+                    <div><dt className="text-sm text-app-text-secondary">{t('questionId')}</dt><dd>{report.question_id}</dd></div>
+                    <div><dt className="text-sm text-app-text-secondary">{t('serverVersion')}</dt><dd className="break-words font-mono text-sm">{report.details.server_version ?? t('notRecorded')}</dd></div>
+                    <div><dt className="text-sm text-app-text-secondary">{t('dayId')}</dt><dd>{report.details.day_id}</dd></div>
                   </dl>
                 </details>
               </div>
               <div className="min-w-0 sm:col-span-2">
                 {report.details.context !== null && (
-                  <details className="border-t border-white/10 pt-4">
-                    <summary className="cursor-pointer text-sm text-emerald-300">{t('serverContext')}</summary>
+                  <details className="border-t border-app-border pt-4">
+                    <summary className="cursor-pointer text-sm text-emerald-800">{t('serverContext')}</summary>
                     <pre tabIndex={0} aria-label={t('serverContext')} className="admin-diagnostics mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words">{report.details.context || t('noContext')}</pre>
                   </details>
                 )}
               </div>
-            </dl>
-          </article>
+          </dl>
+        </article>
         ))}
       </div>
 
       {currentResult && !currentResult.error && (
-        <nav aria-label={t('pagination')} className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
+        <nav aria-label={t('pagination')} className="flex flex-wrap items-center justify-between gap-3 text-sm text-app-text-secondary">
           <p>{t('page', { page: query.page, pages: totalPages, count: currentResult.total })}</p>
           <div className="flex gap-2">
             <button type="button" disabled={busyId !== null || query.page <= 1} onClick={() => changeQuery({ page: query.page - 1 })} className="admin-button">{t('previous')}</button>

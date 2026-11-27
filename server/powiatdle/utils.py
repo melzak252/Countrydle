@@ -23,6 +23,7 @@ LOCAL_CONFIG = LocalModeConfig(
         "name": "name", "voivodeship": "voivodeship", "is_city_county": "is_city_county", "seat": "seat",
         "population": "population", "area": "area_km2", "population_density": "population_density",
         "urbanization": "urbanization_percent", "gmina_count": "gmina_count",
+        "urban_gmina_count": "urban_gmina_count", "rural_gmina_count": "rural_gmina_count",
         "urban_rural_gmina_count": "urban_rural_gmina_count",
         "latitude": "latitude", "longitude": "longitude",
     },
@@ -61,7 +62,8 @@ LOCAL_CONFIG = LocalModeConfig(
         "Historical lands/regions (Małopolska, Wielkopolska, Śląsk, Mazowsze, Pomorze, Warmia, Mazury, Kujawy, Podlasie, Galicja) "
         "use contains_exact on relation historical_regions (or regional_labels).\n"
         "Historical partitions (Zabór rosyjski, Zabór pruski, Zabór austriacki, Ziemie Odzyskane) "
-        "use contains_exact on relation historical_partitions.\n"
+        "use contains_exact on relation historical_partitions "
+        "(Congress Poland / Kongresówka / Królestwo Polskie / Russian Partition -> 'Zabór rosyjski').\n"
         "national_parks records national parks (e.g. 'Czy na terenie powiatu znajduje się park narodowy?' uses exists on national_parks; specific park uses contains_exact or contains_partial on national_parks).\n"
         "major_lakes / lakes records major lakes and reservoirs (e.g. Śniardwy, Mamry, Solina, Gopło, Hańcza, Morskie Oko; uses exists or contains_exact on major_lakes).\n"
         "unesco_sites records UNESCO World Heritage sites (e.g. 'Czy w powiecie znajduje się obiekt z listy UNESCO?' uses exists on unesco_sites; specific site uses contains_exact or contains_partial on unesco_sites).\n"
@@ -177,6 +179,7 @@ async def analyze_and_answer_locally(
         question=answer.question,
         valid=True,
         answer=answer.answer,
+        clarification=answer.clarification,
         explanation=clean_exp,
         context="local_kb:" + ",".join(answer.relations),
         intent=plan.explanation,
@@ -279,8 +282,8 @@ Context:
 
 Find facts that confirm or contradict the proposition; use general knowledge of
 Polish geography and administration when context lacks a fact. If the answer cannot
-be determined with high confidence, set answer to null. For this game a county
-borders itself. Treat "or" and lists as inclusive: any matching option is enough.
+be determined with high confidence, set answer to null. A county does not
+border itself. Treat "or" and lists as inclusive: any matching option is enough.
 Answer about the county in the third person, even for first-person questions.
 Provide an informative factual explanation supporting the answer, rather than
 starting with yes or no or simply repeating it.

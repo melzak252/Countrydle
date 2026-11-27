@@ -178,6 +178,7 @@ async def analyze_and_answer_locally(
         required_info=local_answer.relation,
         context=f"local_kb:{local_answer.relation}",
         fact_provenance=local_answer.fact_provenance,
+        map_highlight=local_answer.map_highlight,
     ), planned_question
 
 
@@ -205,7 +206,7 @@ Write all generated explanation and clarification text in English, regardless of
 2. **Compute the Predicate**: Resolve the requested entity, property, quantifier, comparison, and any arithmetic exactly. Use the resulting fact to select `true` or `false`, and ensure the explanation directly supports that same answer. Never let an explanation that establishes one result accompany the opposite boolean.
 3. **Preserve Geographic Scope**: Interpret quantifiers, qualifiers, and negation literally. An unqualified question about whether a country is in a region normally asks whether any of its territory lies there; “partly” or “any part” requires some territory there; “entirely,” “fully,” or “only” requires all of its territory there; “mostly” or “majority” requires more than half using the measure asked about. Apply negation exactly. Never let the general transcontinental rule override a more specific qualifier.
 4. **Handle Uncertainty**: If the exact answer cannot be determined with high confidence from reliable evidence or stable general knowledge, set `answer` to `null`. Use established broad counts and historical membership when they answer the question, even if retrieval is irrelevant. Null is only for genuinely undetermined facts, not facts omitted from context.
-5. **Special Rule (Self-Bordering)**: If the unnegated question asks whether the country borders/neighbors [X], and the target country IS [X], the answer is `true`. Treat a country as bordering itself for this game, while respecting explicit negation.
+5. **Self-Bordering**: A country does NOT border itself. If the unnegated question asks whether the country borders/neighbors [X], and the target country IS [X], the answer is `false` (while respecting explicit negation).
 6. **Temporal Questions**: Answer the period the question asks about. Do not impose an arbitrary date cutoff. If asked about a current fact and you cannot establish it reliably, abstain with `null`.
 7. **Focused Explanations**: Give only a concise fact directly relevant to the question that supports the answer. Do not add unrelated facts or claims about current officeholders unless they are needed to answer the question; avoid asserting that a potentially stale fact is current.
 8. **Handle Logical 'OR' and Lists**: Treat 'or' as inclusive, so an unnegated question is true if any branch is true. Apply negation and the exact qualifiers in each branch; do not let this rule override them.

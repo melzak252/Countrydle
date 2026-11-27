@@ -37,3 +37,20 @@ test('BorderHopPage renders title, mode selector, and navigation elements', () =
   expect(markup).toContain('World Countries');
   expect(markup).toContain('US States');
 });
+test('BorderHopPage exposes the Polish powiat mode and selects it from the URL', () => {
+  const markup = renderToStaticMarkup(
+    createElement(
+      MemoryRouter,
+      { initialEntries: ['/border-hop?mode=powiaty'] },
+      createElement(
+        I18nextProvider,
+        { i18n },
+        createElement(BorderHopPage)
+      )
+    )
+  );
+
+  expect(markup).toContain('Powiaty');
+  expect(markup).toContain('aria-label="Powiaty (Polish counties)"');
+  expect(markup).toContain('aria-pressed="true"');
+});

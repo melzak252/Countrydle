@@ -183,7 +183,6 @@ export default function CountydleGamePage() {
 
           <GameInstructions
             gameName={t('countydlePage.title')}
-            examples={t('countydlePage.examples', { returnObjects: true }) as string[]}
             scoring={{
               maxPoints: 3500,
               details: t('countydlePage.scoringDetails', { returnObjects: true }) as string[],

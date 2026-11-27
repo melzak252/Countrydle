@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sqlite3
+import unicodedata
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -45,6 +47,64 @@ _REGIONAL_DISPLAY = {
     "morze bałtyckie": "Baltic Sea",
 }
 
+POLISH_CITY_ALIASES = {
+    "warsaw": "Warszawa",
+    "cracow": "Kraków",
+    "krakow": "Kraków",
+    "lodz": "Łódź",
+    "wroclaw": "Wrocław",
+    "poznan": "Poznań",
+    "gdansk": "Gdańsk",
+    "szczecin": "Szczecin",
+    "bialystok": "Białystok",
+    "rzeszow": "Rzeszów",
+    "torun": "Toruń",
+    "zielona gora": "Zielona Góra",
+    "gorzow wielkopolski": "Gorzów Wielkopolski",
+}
+
+POLISH_REGION_ALIASES = {
+    "lesser poland": "Małopolska",
+    "greater poland": "Wielkopolska",
+    "silesia": "Śląsk",
+    "lower silesia": "Dolny Śląsk",
+    "upper silesia": "Górny Śląsk",
+    "masovia": "Mazowsze",
+    "mazovia": "Mazowsze",
+    "pomerania": "Pomorze",
+    "western pomerania": "Pomorze Zachodnie",
+    "west pomerania": "Pomorze Zachodnie",
+    "gdansk pomerania": "Pomorze Gdańskie",
+    "masuria": "Mazury",
+    "warmia": "Warmia",
+    "podlachia": "Podlasie",
+    "podlasie": "Podlasie",
+    "kuyavia": "Kujawy",
+    "galicia": "Galicja",
+    "carpathians": "Karpaty",
+    "carpathian mountains": "Karpaty",
+    "sudetes": "Sudety",
+    "sudeten": "Sudety",
+    "beskids": "Beskidy",
+    "bieszczady mountains": "Bieszczady",
+    "tatras": "Tatry",
+    "tatra mountains": "Tatry",
+    "kashubia": "Kaszuby",
+    "holy cross mountains": "Góry Świętokrzyskie",
+}
+
+POLISH_HISTORICAL_PARTITION_ALIASES = {
+    "congress poland": "Zabór rosyjski",
+    "kongresowka": "Zabór rosyjski",
+    "krolestwo polskie": "Zabór rosyjski",
+    "kingdom of poland": "Zabór rosyjski",
+    "krolestwo kongresowe": "Zabór rosyjski",
+    "russian partition": "Zabór rosyjski",
+    "prussian partition": "Zabór pruski",
+    "austrian partition": "Zabór austriacki",
+    "recovered territories": "Ziemie Odzyskane",
+}
+
 
 @dataclass(frozen=True)
 class LocalModeConfig:
@@ -80,6 +140,7 @@ class LocalAnswer:
     answer: bool | None
     explanation: str
     relations: list[str]
+    clarification: str | None = None
 
 
 def load_dotenv() -> None:
@@ -215,7 +276,7 @@ Self-neighbor rule:
   (Polish: "sąsiaduje z samym sobą"), this is a valid supported question.
 - Create a contains_exact plan on the relevant borders_* relation with right as
   the hidden entity name reference, e.g. {{"entity":"{config.target_entity}","relation":"name"}}.
-- The executor treats this special self-border/self-neighbor case as true.
+- The executor treats this self-border/self-neighbor case as false (an entity does not border itself).
 
 Allowed operators:
 - contains_exact: exact list membership or complete scalar equality, never a text substring
@@ -268,6 +329,8 @@ Mode-specific planning notes (apply these to positive predicates AND their negat
 User question: {question}
 """.strip()
     allowed_relations = config.scalar_relations.keys() | config.list_relations.keys() | {"name"}
+    if config.mode_name == "Powiatdle":
+        allowed_relations = allowed_relations | {"is_coastal", "mountain_ranges"}
     operators = (PLANNER_OPERATORS - {"contains"}) | {"contains_exact", "contains_partial", "any", "all"}
     allow_named_entities = config.mode_name in {"Countrydle", "Powiatdle", "USStatedle", "Wojewodztwodle", "Countydle"}
     schema = planner_response_schema(
@@ -301,6 +364,11 @@ User question: {question}
 
 def norm(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
+
+
+def fold_polish(value: Any) -> str:
+    text = norm(value).replace("ł", "l")
+    return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
 
 
 POLISH_NEIGHBORING_COUNTRIES_ALIASES: dict[str, str] = {
@@ -353,9 +421,28 @@ _VOIVODESHIP_LIST_RELATIONS: dict[str, tuple[str, str]] = {
     "major_roads": ("voivodeship_major_roads", "road_name"),
     "mountain_ranges": ("voivodeship_mountain_ranges", "range_name"),
     "historical_region": ("voivodeship_historical_regions", "region_name"),
+    "historical_regions": ("voivodeship_historical_regions", "region_name"),
     "landform_regions": ("voivodeship_landform_regions", "region_name"),
     "regional_labels": ("voivodeship_regional_labels", "label"),
 }
+_VOIVODESHIP_LIST_QUERIES: dict[str, str] = {
+    "borders_voivodeship": "SELECT border_voivodeship_name FROM voivodeship_borders_voivodeships WHERE voivodeship_id = ?",
+    "borders_country": "SELECT country_name FROM voivodeship_borders_countries WHERE voivodeship_id = ?",
+    "water_access": "SELECT water_body FROM voivodeship_water_access WHERE voivodeship_id = ?",
+    "major_rivers": "SELECT river_name FROM voivodeship_major_rivers WHERE voivodeship_id = ?",
+    "major_roads": "SELECT road_name FROM voivodeship_major_roads WHERE voivodeship_id = ?",
+    "mountain_ranges": "SELECT range_name FROM voivodeship_mountain_ranges WHERE voivodeship_id = ?",
+    "historical_region": "SELECT region_name FROM voivodeship_historical_regions WHERE voivodeship_id = ?",
+    "landform_regions": "SELECT region_name FROM voivodeship_landform_regions WHERE voivodeship_id = ?",
+    "regional_labels": "SELECT label FROM voivodeship_regional_labels WHERE voivodeship_id = ?",
+}
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _safe_identifier(name: str) -> str:
+    if not _SQL_IDENTIFIER_RE.fullmatch(name):
+        raise ValueError(f"Invalid SQL identifier: {name}")
+    return name
 _VOIVODESHIP_SCALAR_RELATIONS: dict[str, str] = {
     "name": "name",
     "seat": "seat",
@@ -386,12 +473,11 @@ def _get_parent_voivodeship_relation(row: sqlite3.Row, relation: str) -> Any:
             return None
         if relation in _VOIVODESHIP_SCALAR_RELATIONS:
             return v_row[_VOIVODESHIP_SCALAR_RELATIONS[relation]]
-        if relation in _VOIVODESHIP_LIST_RELATIONS:
-            table, column = _VOIVODESHIP_LIST_RELATIONS[relation]
+        if relation in _VOIVODESHIP_LIST_QUERIES:
             return [
                 r[0]
                 for r in v_conn.execute(
-                    f"SELECT {column} FROM {table} WHERE voivodeship_id = ?",
+                    _VOIVODESHIP_LIST_QUERIES[relation],
                     (v_row["id"],),
                 ).fetchall()
             ]
@@ -423,8 +509,10 @@ def _resolve_english_county_alias(value: Any) -> Any:
 
 def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_name: str) -> sqlite3.Row | None:
     conn.row_factory = sqlite3.Row
+    table = _safe_identifier(config.table)
+    name_col = _safe_identifier(config.name_column)
     row = conn.execute(
-        f"SELECT * FROM {config.table} WHERE {config.name_column} = ? COLLATE NOCASE",
+        " ".join(["SELECT * FROM", table, "WHERE", name_col, "= ? COLLATE NOCASE"]),
         (entity_name,),
     ).fetchone()
     if row:
@@ -432,7 +520,10 @@ def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_nam
     if config.mode_name == "Wojewodztwodle":
         resolved_v = resolve_voivodeship_name(entity_name)
         if resolved_v:
-            row = conn.execute(f"SELECT * FROM {config.table} WHERE {config.name_column} = ?", (resolved_v,)).fetchone()
+            row = conn.execute(
+                " ".join(["SELECT * FROM", table, "WHERE", name_col, "= ?"]),
+                (resolved_v,),
+            ).fetchone()
             if row:
                 return row
     if config.mode_name == "Countydle":
@@ -442,7 +533,7 @@ def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_nam
             if row:
                 return row
     target_norm = norm(entity_name)
-    all_rows = conn.execute(f"SELECT * FROM {config.table}").fetchall()
+    all_rows = conn.execute(" ".join(["SELECT * FROM", table])).fetchall()
     for r in all_rows:
         if norm(r[config.name_column]) == target_norm:
             return r
@@ -458,17 +549,26 @@ def get_relation_value(conn: sqlite3.Connection, config: LocalModeConfig, row: s
         col = config.scalar_relations[relation]
         return row[col]
     if relation in config.list_relations:
-        table, column = config.list_relations[relation]
-        fk_column = config.fk_column or f"{config.table[:-1]}_id"
+        raw_table, raw_column = config.list_relations[relation]
+        table = _safe_identifier(raw_table)
+        column = _safe_identifier(raw_column)
+        fk_column = _safe_identifier(config.fk_column or "".join([config.table[:-1], "_id"]))
         if config.mode_name == "Powiatdle" and relation in {"borders_powiat", "borders_voivodeship"}:
-            values = conn.execute(
-                f"SELECT facts.{column} FROM powiat_border_coverage AS coverage "
-                f"LEFT JOIN {table} AS facts ON facts.{fk_column} = coverage.powiat_id "
+            query = " ".join([
+                "SELECT", ".".join(["facts", column]),
+                "FROM powiat_border_coverage AS coverage LEFT JOIN", table,
+                "AS facts ON", ".".join(["facts", fk_column]), "= coverage.powiat_id",
                 "WHERE coverage.powiat_id = ?",
+            ])
+            values = conn.execute(query, (row["id"],)).fetchall()
+            return [value[0] for value in values if value[0] is not None] if values else None
+        waters = [
+            r[0]
+            for r in conn.execute(
+                " ".join(["SELECT", column, "FROM", table, "WHERE", fk_column, "= ?"]),
                 (row["id"],),
             ).fetchall()
-            return [value[0] for value in values if value[0] is not None] if values else None
-        waters = [r[0] for r in conn.execute(f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)).fetchall()]
+        ]
         if relation == "water_access":
             from utils.water_hierarchy import expand_water_bodies
             return list(expand_water_bodies(waters))
@@ -571,8 +671,8 @@ def evaluate(
         right_val = resolve_ref(conn, config, row, right_node, item_value)
         if isinstance(right_val, dict):
             right_val = right_val.get("value", right_val.get("entity"))
-        if is_self_reference(right_val, row, config):
-            return True
+        if rel_name.startswith("borders_") and is_self_reference(right_val, row, config):
+            return False
         if config.mode_name == "Powiatdle" and rel_name == "borders_powiat":
             right_val = resolve_powiat_name(conn, right_val)
         if rel_name == "borders_voivodeship" or (config.mode_name == "Powiatdle" and rel_name == "voivodeship"):
@@ -585,10 +685,10 @@ def evaluate(
                 rel_items = [_canonical_us_region(value) for value in rel_items]
         if right_val is None:
             return None
-        if is_self_reference(right_val, row, config):
-            return True
         if config.mode_name == "Countydle" and rel_name == "borders_county":
             right_val = _resolve_english_county_alias(right_val)
+        if rel_name.startswith("borders_") and is_self_reference(right_val, row, config):
+            return False
         if isinstance(rel_items, list):
             right_norm = norm(right_val)
             if rel_name == "borders_country" and config.mode_name == "Countydle" and right_norm in UK_NEIGHBORING_COUNTRIES_ALIASES:
@@ -612,10 +712,11 @@ def evaluate(
             return None
         item_rows = {}
         if items and isinstance(items_node, dict) and items_node.get("relation") in config.entity_list_relations:
-            placeholders = ",".join("?" for _ in items)
+            table = _safe_identifier(config.table)
+            name_col = _safe_identifier(config.name_column)
             neighbors = conn.execute(
-                f"SELECT * FROM {config.table} WHERE {config.name_column} IN ({placeholders})",
-                items,
+                " ".join(["SELECT * FROM", table, "WHERE", name_col, "IN (SELECT value FROM json_each(?))"]),
+                (json.dumps(items),),
             )
             item_rows = {neighbor[config.name_column]: neighbor for neighbor in neighbors}
         decisive = op == "any"
@@ -706,18 +807,21 @@ def evaluate(
         and isinstance(right, str)
     ):
         right = _resolve_english_county_alias(right)
+    left_row = _reference_row(conn, config, row, left_node, item_value)
     if config.mode_name in {"Wojewodztwodle", "Powiatdle"} and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
         if config.mode_name == "Wojewodztwodle":
             is_coast = bool(row["is_coastal"])
+        elif left_node.get("entity") == "target_voivodeship":
+            is_coast = bool(left)
         else:
-            is_coast = bool(conn.execute("SELECT 1 FROM powiat_water_access WHERE powiat_id = ? LIMIT 1", (row["id"],)).fetchone())
+            target_row_id = left_row["id"] if left_row is not None else row["id"]
+            is_coast = bool(conn.execute("SELECT 1 FROM powiat_water_access WHERE powiat_id = ? LIMIT 1", (target_row_id,)).fetchone())
         if op == "exists":
             return is_coast
         if right in {True, 1, "true", "True"} or norm(right) in {"morze", "baltyk", "morze baltyckie", "baltyckie", "sea", "baltic sea", "baltic"}:
             return is_coast
         if right in {False, 0, "false", "False"}:
             return not is_coast
-    left_row = _reference_row(conn, config, row, left_node, item_value)
     if (
         config.mode_name == "Powiatdle"
         and isinstance(left_node, dict)
@@ -726,12 +830,13 @@ def evaluate(
         and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
         if left_row is not None and is_self_reference(right, left_row, config):
-            return True
+            return False
         right = resolve_powiat_name(conn, right)
         if right is None:
             return None
         if left_row is not None and right == left_row[config.name_column]:
-            return True
+            return False
+    right_is_seat = isinstance(right_node, dict) and right_node.get("relation") == "seat"
     if (
         isinstance(left_node, dict)
         and (
@@ -740,25 +845,25 @@ def evaluate(
             or (config.mode_name == "Wojewodztwodle" and left_node.get("relation") == "name")
         )
         and op in {"contains", "contains_exact", "contains_partial", "equals"}
+        and not right_is_seat
         and not (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit()))
     ):
-        if left_row is not None and is_self_reference(right, left_row, config):
-            return True
+        is_border_voiv = left_node.get("relation") == "borders_voivodeship"
+        if is_border_voiv and left_row is not None and is_self_reference(right, left_row, config):
+            return False
         resolved_v = resolve_voivodeship_name(right)
         if resolved_v is not None:
             right = resolved_v
-        if left_row is not None and right == left_row[config.name_column]:
-            return True
+        if is_border_voiv and left_row is not None and right == left_row[config.name_column]:
+            return False
     if left is None or (op not in {"has_space", "has_hyphen", "exists"} and right is None):
         return None
 
-    # Game rule inherited from the old prompts: if the user asks whether the
-    # referenced entity borders/neighbors itself, answer true. We do not store
-    # self-edges in SQLite border tables, so handle it explicitly for all modes.
+    # An entity never borders/neighbors itself.
     if op in {"contains", "contains_exact", "equals"} and isinstance(left_node, dict):
         relation = str(left_node.get("relation") or "")
         if relation.startswith("borders_") and left_row is not None and is_self_reference(right, left_row, config):
-            return True
+            return False
     if op == "exists":
         # If right/value is provided, the planner intended membership check (e.g. water_access contains "Gulf of Mexico")
         if right is not None:
@@ -783,11 +888,48 @@ def evaluate(
             if rel_name == "major_rivers" and r_norm in POLISH_RIVER_ALIASES:
                 target_river = POLISH_RIVER_ALIASES[r_norm]
                 return any(norm(v) == norm(target_river) for v in left)
+            if rel_name == "historical_partitions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
+                target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
+                return any(norm(v) == norm(target_partition) for v in left)
+            if rel_name in {"historical_regions", "landform_regions", "regional_labels"}:
+                folded_r = fold_polish(right)
+                target_region = POLISH_REGION_ALIASES.get(r_norm) or POLISH_REGION_ALIASES.get(folded_r)
+                if target_region:
+                    return any(fold_polish(v) == fold_polish(target_region) for v in left)
+                if config.mode_name == "Powiatdle" and rel_name == "historical_regions" and r_norm in POLISH_HISTORICAL_PARTITION_ALIASES:
+                    target_partition = POLISH_HISTORICAL_PARTITION_ALIASES[r_norm]
+                    if left_row is not None:
+                        partitions = get_relation_value(conn, config, left_row, "historical_partitions") or []
+                        if any(norm(v) == norm(target_partition) for v in partitions):
+                            return True
+                return any(fold_polish(v) == folded_r for v in left)
+            if rel_name in {"national_parks", "major_lakes", "lakes", "health_resorts"} and config.mode_name in {"Powiatdle", "Wojewodztwodle"}:
+                folded_r = fold_polish(right)
+                return any(fold_polish(v) == folded_r for v in left)
             return any(norm(v) == r_norm for v in left)
+        if (
+            (type(left) is bool or (isinstance(left, int) and left in (0, 1)))
+            and (
+                type(right) is bool
+                or norm(right) in {"true", "false"}
+                or (
+                    isinstance(left_node, dict)
+                    and str(left_node.get("relation") or "").startswith("is_")
+                    and norm(right) in {"0", "1", "true", "false", "yes", "no", "tak", "nie"}
+                )
+            )
+        ):
+            right_bool = right if type(right) is bool else norm(right) in {"1", "true", "yes", "tak"}
+            return bool(left) is right_bool
         n_left = norm(left)
         n_right = norm(right)
         if n_left == n_right:
             return True
+        if isinstance(left_node, dict) and left_node.get("relation") == "seat":
+            l_alias = POLISH_CITY_ALIASES.get(n_left) or POLISH_CITY_ALIASES.get(fold_polish(left))
+            r_alias = POLISH_CITY_ALIASES.get(n_right) or POLISH_CITY_ALIASES.get(fold_polish(right))
+            if fold_polish(l_alias or left) == fold_polish(r_alias or right):
+                return True
         if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
             resolved_r = resolve_powiat_name(conn, right)
             if resolved_r and norm(resolved_r) == n_left:
@@ -802,9 +944,11 @@ def evaluate(
     if op == "contains_partial":
         rel_name = left_node.get("relation") if isinstance(left_node, dict) else ""
         r_val = POLISH_RIVER_ALIASES.get(norm(right), right) if rel_name == "major_rivers" else right
+        if rel_name in {"historical_regions", "landform_regions", "regional_labels"}:
+            r_val = POLISH_REGION_ALIASES.get(norm(right)) or POLISH_REGION_ALIASES.get(fold_polish(right)) or r_val
         if isinstance(left, list):
-            return any(norm(v) == norm(r_val) or norm(r_val) in norm(v) for v in left)
-        return norm(r_val) in norm(left)
+            return any(fold_polish(v) == fold_polish(r_val) or fold_polish(r_val) in fold_polish(v) for v in left)
+        return fold_polish(r_val) in fold_polish(left)
     if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "west_of", "east_of", "north_of", "south_of"}:
         if isinstance(left, list) and type(right) is not bool and (isinstance(right, (int, float)) or (isinstance(right, str) and right.isdigit())):
             lnum, rnum = float(len(left)), float(right)
@@ -827,10 +971,18 @@ def evaluate(
     r_effective = POLISH_RIVER_ALIASES.get(norm(right), right) if rel_name == "major_rivers" else right
     n_right = norm(r_effective)
     if op == "starts_with":
+        if isinstance(left, list):
+            return any(norm(v).startswith(n_right) for v in left)
         return n_txt.startswith(n_right)
     if op == "ends_with":
+        if isinstance(left, list):
+            return any(norm(v).endswith(n_right) for v in left)
         return n_txt.endswith(n_right)
     if op == "contains_text":
+        if config.mode_name == "Powiatdle" and isinstance(left_node, dict) and left_node.get("relation") == "name":
+            resolved_r = resolve_powiat_name(conn, right)
+            if resolved_r and norm(resolved_r) == norm(left):
+                return True
         return n_right in n_txt
     if op == "has_space":
         return " " in txt.strip()
@@ -1007,9 +1159,11 @@ def generate_mode_explanation(
         if isinstance(items, list):
             item_rows = {}
             if items and isinstance(items_node, dict) and items_node.get("relation") in config.entity_list_relations:
-                placeholders = ",".join("?" for _ in items)
+                table = _safe_identifier(config.table)
+                name_col = _safe_identifier(config.name_column)
                 neighbors = conn.execute(
-                    f"SELECT * FROM {config.table} WHERE {config.name_column} IN ({placeholders})", items,
+                    " ".join(["SELECT * FROM", table, "WHERE", name_col, "IN (SELECT value FROM json_each(?))"]),
+                    (json.dumps(items),),
                 )
                 item_rows = {neighbor[config.name_column]: neighbor for neighbor in neighbors}
             condition = node.get("condition") or {}
@@ -1106,10 +1260,12 @@ def generate_mode_explanation(
             if rel == "water_access" and parent:
                 values = _get_parent_voivodeship_relation(target_row, rel)
             elif rel == "water_access":
-                table, column = config.list_relations[rel]
-                fk_column = config.fk_column or f"{config.table[:-1]}_id"
+                raw_table, raw_column = config.list_relations[rel]
+                table = _safe_identifier(raw_table)
+                column = _safe_identifier(raw_column)
+                fk_column = _safe_identifier(config.fk_column or "".join([config.table[:-1], "_id"]))
                 values = [r[0] for r in conn.execute(
-                    f"SELECT {column} FROM {table} WHERE {fk_column} = ?", (row["id"],)
+                    " ".join(["SELECT", column, "FROM", table, "WHERE", fk_column, "= ?"]), (row["id"],)
                 )]
             else:
                 values = resolve_ref(conn, config, target_row, left, item_value)
@@ -1198,7 +1354,7 @@ def generate_mode_explanation(
             return f"{name} is a coastal state with ocean/gulf coastline." if row[config.scalar_relations[rel]] else f"{name} is an inland state with no ocean coastline."
         if rel == "water_access":
             from utils.water_hierarchy import WATER_BODY_PARENT_MAP, is_multi_ocean_question, get_distinct_oceans
-            direct_waters = [r[0] for r in conn.execute(f"SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
+            direct_waters = [r[0] for r in conn.execute("SELECT water_body FROM us_state_water_access WHERE state_id=?", (row["id"],))]
             if is_multi_ocean_question(plan.original_question):
                 oceans = sorted(get_distinct_oceans(direct_waters))
                 count = len(oceans)
@@ -1228,6 +1384,146 @@ def generate_mode_explanation(
         return factual_fallback()
 
 
+def _clarification_subject(config: LocalModeConfig, entity: Any) -> str:
+    if entity == "target_voivodeship":
+        return "The voivodeship"
+    return {
+        "Powiatdle": "The county",
+        "Wojewodztwodle": "The voivodeship",
+        "USStatedle": "The US state",
+    }.get(config.mode_name, f"The {config.entity_label}")
+
+
+def _is_false_literal(val: Any) -> bool:
+    return val is False or (isinstance(val, int) and type(val) is int and val == 0) or norm(val) in {"0", "false", "no", "nie"}
+
+
+def _build_local_kb_clarification(config: LocalModeConfig, plan: QuestionPlan, answer: bool) -> str | None:
+    """Return a short, spoiler-free confirmation of how a local KB question was interpreted."""
+    root_plan = plan.plan
+    node = root_plan[-1] if isinstance(root_plan, list) and root_plan else root_plan
+    if not isinstance(node, dict):
+        return None
+    op = str(node.get("operator") or "")
+    while op == "not":
+        inner = node.get("condition") or node.get("operand")
+        if isinstance(inner, int) and isinstance(root_plan, list) and 0 <= inner < len(root_plan):
+            inner = root_plan[inner]
+        if not isinstance(inner, dict):
+            return None
+        node = inner
+        op = str(node.get("operator") or "")
+        answer = not answer
+
+    if op == "any":
+        items = node.get("items")
+        args = node.get("args")
+        pred = node.get("condition") or (args[0] if isinstance(args, list) and args else None)
+        if isinstance(items, dict) and items.get("relation") == "borders_powiat" and pred is not None:
+            if isinstance(pred, int) and isinstance(root_plan, list) and 0 <= pred < len(root_plan):
+                pred = root_plan[pred]
+            if isinstance(pred, dict) and isinstance(pred.get("left"), dict) and pred["left"].get("relation") == "is_city_county":
+                pred_val = pred.get("right", pred.get("value"))
+                if isinstance(pred_val, dict):
+                    pred_val = pred_val.get("value")
+                is_city = not _is_false_literal(pred_val)
+                subject = _clarification_subject(config, items.get("entity"))
+                kind = "a city with county rights" if is_city else "a land county"
+                return f"{subject} borders {kind}." if answer else f"{subject} does not border {kind}."
+        return None
+
+    left = node.get("left")
+    right = node.get("right", node.get("value"))
+    val = right.get("value") if isinstance(right, dict) else right
+
+    if isinstance(left, dict):
+        rel = str(left.get("relation") or "")
+        subject = _clarification_subject(config, left.get("entity"))
+    elif op in config.list_relations or op.startswith("borders_"):
+        rel = op
+        subject = _clarification_subject(config, None)
+    else:
+        return None
+
+    if rel == "is_coastal":
+        eff = (not answer) if _is_false_literal(val) else answer
+        if config.mode_name == "USStatedle":
+            return f"{subject} has coastal access." if eff else f"{subject} is landlocked."
+        return f"{subject} has Baltic Sea coastline." if eff else f"{subject} does not have Baltic Sea coastline."
+    if rel == "is_city_county":
+        eff = (not answer) if _is_false_literal(val) else answer
+        return f"{subject} is a city with county rights." if eff else f"{subject} is a land county."
+    if rel == "water_access":
+        eff = (not answer) if _is_false_literal(val) else answer
+        if isinstance(val, str) and val.strip() and norm(val) not in {"true", "false", "1", "0"}:
+            return f"{subject} has access to {val}." if eff else f"{subject} does not have access to {val}."
+        return f"{subject} has coastline/water access." if eff else f"{subject} has no coastline/water access."
+
+    if rel == "name":
+        if op in {"equals", "contains_exact", "contains"} and isinstance(val, str) and val.strip():
+            return f"{subject} is {val}." if answer else f"{subject} is not {val}."
+        if op in {"contains_text", "contains_partial"} and isinstance(val, str) and val.strip():
+            return f"{subject}'s name contains \"{val}\"." if answer else f"{subject}'s name does not contain \"{val}\"."
+        if op in {"starts_with", "ends_with"} and isinstance(val, str) and val.strip():
+            verb = "starts" if op == "starts_with" else "ends"
+            neg = "start" if op == "starts_with" else "end"
+            return f"{subject}'s name {verb} with \"{val}\"." if answer else f"{subject}'s name does not {neg} with \"{val}\"."
+        if op == "has_space":
+            return f"{subject}'s name has more than one word." if answer else f"{subject}'s name is a single word."
+        if op == "has_hyphen":
+            return f"{subject}'s name contains a hyphen." if answer else f"{subject}'s name does not contain a hyphen."
+        if op in {"word_count_equals", "word_count_greater_than", "word_count_less_than", "char_count_equals", "char_count_greater_than", "char_count_less_than"} and val is not None:
+            unit = "words" if op.startswith("word_count") else "letters"
+            cmp_map = {"equals": "", "greater_than": "more than ", "less_than": "fewer than "}
+            cmp_key = op.split("count_", 1)[1]
+            phrase = f"{cmp_map.get(cmp_key, '')}{val} {unit}"
+            return f"{subject}'s name has {phrase}." if answer else f"{subject}'s name does not have {phrase}."
+
+    if rel == "seat" and isinstance(val, str) and val.strip():
+        return f"{subject}'s seat is {val}." if answer else f"{subject}'s seat is not {val}."
+    if rel in {"voivodeship", "region", "division", "macroregion", "historical_regions", "landform_regions", "regional_labels"} and isinstance(val, str) and val.strip():
+        return f"{subject} is in {val}." if answer else f"{subject} is not in {val}."
+    if rel == "historical_partitions" and isinstance(val, str) and val.strip():
+        return f"{subject} was part of {val}." if answer else f"{subject} was not part of {val}."
+    if rel.startswith("borders_"):
+        if op in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"} and (isinstance(val, (int, float)) or (isinstance(val, str) and val.isdigit())):
+            unit = {"borders_country": "countries", "borders_state": "states", "borders_voivodeship": "voivodeships", "borders_powiat": "counties"}.get(rel, "neighbors")
+            cmp_phrase = {"equals": "", "greater_than": "more than ", "less_than": "fewer than ", "greater_than_or_equal": "at least ", "less_than_or_equal": "at most "}[op]
+            return f"{subject} borders {cmp_phrase}{val} {unit}." if answer else f"{subject} does not border {cmp_phrase}{val} {unit}."
+        if isinstance(val, str) and val.strip():
+            return f"{subject} borders {val}." if answer else f"{subject} does not border {val}."
+    if rel == "registration_plates":
+        if op in {"char_count_equals", "char_count_greater_than", "char_count_less_than"} and val is not None:
+            cmp_phrase = {"char_count_equals": "", "char_count_greater_than": "more than ", "char_count_less_than": "fewer than "}[op]
+            return f"{subject}'s license plates have {cmp_phrase}{val} characters." if answer else f"{subject}'s license plates do not have {cmp_phrase}{val} characters."
+        if op in {"starts_with", "ends_with"} and isinstance(val, str) and val.strip():
+            verb = "start" if op == "starts_with" else "end"
+            return f"{subject}'s license plates {verb} with \"{val}\"." if answer else f"{subject}'s license plates do not {verb} with \"{val}\"."
+        if isinstance(val, str) and val.strip():
+            return f"{subject} uses plate code {val}." if answer else f"{subject} does not use plate code {val}."
+    if rel in {"major_rivers", "major_roads", "national_parks", "lakes", "major_lakes", "unesco_sites", "health_resorts", "mountain_ranges"}:
+        if op == "exists":
+            label = rel.replace("_", " ")
+            return f"{subject} has {label}." if answer else f"{subject} does not have {label}."
+        if isinstance(val, str) and val.strip():
+            return f"{subject} has {val}." if answer else f"{subject} does not have {val}."
+    if rel in {"latitude", "longitude"} and op in {"north_of", "south_of", "east_of", "west_of"}:
+        dir_label = op.replace("_", " ")
+        ref_name = right.get("entity") if isinstance(right, dict) and right.get("entity") else val
+        if isinstance(ref_name, str) and (ref_name.startswith("target_") or ref_name == "item"):
+            ref_name = None
+        if ref_name is not None:
+            return f"{subject} is {dir_label} {ref_name}." if answer else f"{subject} is not {dir_label} {ref_name}."
+    if op in {"greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "equals"} and val is not None:
+        label = rel.replace("_", " ")
+        cmp_phrase = {"greater_than": "greater than", "less_than": "less than", "greater_than_or_equal": "at least", "less_than_or_equal": "at most", "equals": "equal to"}[op]
+        return f"{subject}'s {label} is {cmp_phrase} {val}." if answer else f"{subject}'s {label} is not {cmp_phrase} {val}."
+    if op == "exists":
+        label = rel.replace("_", " ")
+        return f"{subject} has {label}." if answer else f"{subject} does not have {label}."
+    return None
+
+
 def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) -> LocalAnswer | None:
     if not plan.valid or not plan.supported or not plan.plan:
         return None
@@ -1241,9 +1537,11 @@ def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) 
         return None
     relations = collect_relations(plan.plan)
     explanation = generate_mode_explanation(config, row, plan, answer, conn)
+    clarification = _build_local_kb_clarification(config, plan, answer)
     return LocalAnswer(
         question=plan.improved_question or plan.original_question,
         answer=answer,
         explanation=explanation,
         relations=relations,
+        clarification=clarification,
     )

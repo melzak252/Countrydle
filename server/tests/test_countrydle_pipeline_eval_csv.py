@@ -149,7 +149,7 @@ PLAN_CASES = [
         "left": {"entity": "target_country", "relation": "name"},
         "right": {"value": "stan"},
     }),
-    ("Does the country border itself?", "Poland", True, contains_plan("borders_country", "Poland")),
+    ("Does the country border itself?", "Poland", False, contains_plan("borders_country", "Poland")),
     ("Is the country in NATO or the EU?", "Poland", True, {
         "operator": "or",
         "conditions": [contains_plan("membership", "NATO"), contains_plan("membership", "EU")],

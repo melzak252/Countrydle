@@ -68,21 +68,6 @@ app = FastAPI(lifespan=lifespan)
 logger = logging.getLogger("countrydle")
 logging.basicConfig(level=logging.INFO)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:80",
-        "http://localhost",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:80",
-        "http://127.0.0.1",
-    ],
-    allow_origin_regex="https?://.*",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 SOLO_STATE_PATHS = frozenset({
     "/countrydle/state",
@@ -161,6 +146,24 @@ async def log_question_requests_and_errors(request: Request, call_next):
             elapsed_ms,
         )
     return response
+
+# Register CORS last so it wraps HTTP middleware and decorates its error responses.
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:80",
+        "http://localhost",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:80",
+        "http://127.0.0.1",
+    ],
+    allow_origin_regex="https?://.*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

@@ -8,6 +8,7 @@ from typing import Union, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from utils.guest_session import (
     create_guest_game_token, read_guest_game_token, record_guest_action, link_guest_participation,
+    get_guest_identity,
 )
 from utils.question_rate_limit import enforce_question_attempt_limit
 
@@ -38,7 +39,7 @@ from schemas.us_statedle import (
 )
 from users.utils import get_current_or_guest_user, get_current_user, get_admin_user
 import us_statedle.utils as uutils
-from game_logic import GameConfig, GameRules, GameState, is_valid_synced_game_state
+from game_logic import GameConfig, GameRules, GameState, is_direct_name_win_plan, is_valid_synced_game_state
 from utils.geo import enhance_guess_with_hint
 
 
@@ -375,20 +376,38 @@ async def _do_ask_question(
     if not is_answered(question_create):
         return unresolved_question(question_create, USStateQuestionDisplay)
     question_create.user_id = user.id if user else None
+    question_create.guest_id = get_guest_identity(request, response) if user is None else None
     question_create.day_id = day_state.id
-    if user is None:
-        await record_guest_action(
-            session, request, response, "us_statedle", day_state.id,
-            question=True, max_questions=USSTATEDLE_CONFIG.max_questions,
+    if is_direct_name_win_plan(question_create.valid, question_create.answer, planned_question):
+        new_question = await USStatedleQuestionRepository(session).create_question(question_create)
+        guess_payload = USStateGuessBase(
+            guess=day_state.us_state.name if getattr(day_state, "us_state", None) else "",
+            us_state_id=day_state.us_state_id,
         )
+        auto_guess_display = await make_guess(
+            guess=guess_payload,
+            request=request,
+            response=response,
+            user=user,
+            session=session,
+        )
+        result = USStateQuestionDisplay.model_validate(new_question)
+        result.auto_guess = auto_guess_display
+        await session.commit()
     else:
-        await consume_question(
-            session, USStatedleState, user.id, day_state.id,
-            USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
-        )
-    new_question = await USStatedleQuestionRepository(session).create_question(question_create)
-    result = USStateQuestionDisplay.model_validate(new_question)
-    await session.commit()
+        if user is None:
+            await record_guest_action(
+                session, request, response, "us_statedle", day_state.id,
+                question=True, max_questions=USSTATEDLE_CONFIG.max_questions,
+            )
+        else:
+            await consume_question(
+                session, USStatedleState, user.id, day_state.id,
+                USSTATEDLE_CONFIG.max_questions, USSTATEDLE_CONFIG.max_guesses,
+            )
+        new_question = await USStatedleQuestionRepository(session).create_question(question_create)
+        result = USStateQuestionDisplay.model_validate(new_question)
+        await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.
         try:
@@ -468,11 +487,13 @@ async def make_guess(
         token = create_guest_game_token("us_statedle", day_state.id, guesses_count, is_game_over, won)
         response.set_cookie("guest_us_statedle", token, httponly=True, samesite="lax", max_age=86400 * 2)
 
+        guest_id = get_guest_identity(request, response)
         guess_create = USStateGuessCreate(
             guess=guess.guess,
             us_state_id=guess.us_state_id,
             day_id=day_state.id,
             user_id=None,
+            guest_id=guest_id,
             answer=is_correct,
             elapsed_seconds=guess.elapsed_seconds,
         )

@@ -48,54 +48,54 @@ export default function RegisterPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-md py-4 sm:py-8">
+    <div className="mx-auto w-full max-w-md py-4 text-app-text sm:py-8">
       <div className="w-full">
-        <header className="mb-8 border-b border-white/10 pb-7">
-          <p className="mb-4 font-mono text-xs text-emerald-400">Join the discovery</p>
-          <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">Create Account</h1>
-          <p className="mt-4 text-base leading-7 text-zinc-400">Save your progress, build your streak, and join the leaderboard.</p>
+        <header className="mb-8 border-b border-app-border pb-7">
+          <p className="mb-4 font-mono text-xs text-app-accent">Join the discovery</p>
+          <h1 className="font-serif text-4xl leading-tight tracking-tight text-app-text sm:text-5xl">Create Account</h1>
+          <p className="mt-4 text-base leading-7 text-app-text-secondary">Save your progress, build your streak, and join the leaderboard.</p>
         </header>
         
         {error && (
-          <div role="alert" className="mb-5 rounded-sm border border-red-400/30 bg-red-400/10 p-4 text-sm leading-6 text-red-300">
+          <div role="alert" className="mb-5 rounded-sm border border-red-300 bg-red-50 p-4 text-sm leading-6 text-red-800">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="register-username" className="mb-2 block text-sm font-medium text-sand-100">Username</label>
+            <label htmlFor="register-username" className="mb-2 block text-sm font-medium text-app-text">Username</label>
             <input
               id="register-username"
               autoComplete="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-sm border border-white/15 bg-obsidian-900 px-3 py-3 text-base text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="w-full rounded-sm border border-app-border bg-app-surface px-3 py-3 text-base text-app-text focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus"
               required
             />
           </div>
           <div>
-            <label htmlFor="register-email" className="mb-2 block text-sm font-medium text-sand-100">Email</label>
+            <label htmlFor="register-email" className="mb-2 block text-sm font-medium text-app-text">Email</label>
             <input
               id="register-email"
               autoComplete="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-sm border border-white/15 bg-obsidian-900 px-3 py-3 text-base text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="w-full rounded-sm border border-app-border bg-app-surface px-3 py-3 text-base text-app-text focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus"
               required
             />
           </div>
           <div>
-            <label htmlFor="register-password" className="mb-2 block text-sm font-medium text-sand-100">Password</label>
+            <label htmlFor="register-password" className="mb-2 block text-sm font-medium text-app-text">Password</label>
             <input
               id="register-password"
               autoComplete="new-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-sm border border-white/15 bg-obsidian-900 px-3 py-3 text-base text-sand-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="w-full rounded-sm border border-app-border bg-app-surface px-3 py-3 text-base text-app-text focus:border-app-focus focus:outline-none focus:ring-1 focus:ring-app-focus"
               required
             />
           </div>
@@ -103,23 +103,23 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-sm bg-emerald-400 px-5 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-sm bg-app-accent px-5 py-3 text-sm font-semibold text-app-canvas transition-colors hover:bg-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <><Loader2 aria-hidden="true" className="animate-spin" size={18} /><span>Creating account…</span></> : 'Sign Up'}
           </button>
         </form>
 
         <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-white/10"></div>
-            <span className="px-4 text-zinc-500 text-sm">OR</span>
-            <div className="flex-1 border-t border-white/10"></div>
+            <div className="flex-1 border-t border-app-border"></div>
+            <span className="px-4 text-app-text-muted text-sm">OR</span>
+            <div className="flex-1 border-t border-app-border"></div>
         </div>
 
         <div className="flex justify-center">
              <button
                 onClick={() => googleLogin()}
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-sm border border-white/15 bg-obsidian-900 px-5 py-3 text-sm font-medium text-sand-100 transition-colors hover:border-white/30 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-3 rounded-sm border border-app-border bg-app-surface px-5 py-3 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus disabled:cursor-not-allowed disabled:opacity-50"
              >
                 <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
                     <path
@@ -143,16 +143,16 @@ export default function RegisterPage() {
              </button>
         </div>
 
-        <p className="mt-5 text-center text-xs leading-6 text-zinc-400">
+        <p className="mt-5 text-center text-xs leading-6 text-app-text-secondary">
           By signing up, you agree to our{' '}
-          <Link to="/terms" className="underline underline-offset-4 transition-colors hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">Terms of Service</Link>
+          <Link to="/terms" className="underline underline-offset-4 transition-colors hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus">Terms of Service</Link>
           {' '}and{' '}
-          <Link to="/privacy-policy" className="underline underline-offset-4 transition-colors hover:text-sand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">Privacy Policy</Link>.
+          <Link to="/privacy-policy" className="underline underline-offset-4 transition-colors hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus">Privacy Policy</Link>.
         </p>
 
-        <p className="mt-7 border-t border-white/10 pt-6 text-center text-sm text-zinc-400">
+        <p className="mt-7 border-t border-app-border pt-6 text-center text-sm text-app-text-secondary">
           Already have an account?{' '}
-          <Link to="/login" className="text-emerald-300 underline decoration-emerald-400/30 underline-offset-4 hover:text-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400">
+          <Link to="/login" className="text-app-accent underline underline-offset-4 hover:text-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus">
             Login
           </Link>
         </p>

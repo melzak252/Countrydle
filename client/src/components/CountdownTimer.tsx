@@ -11,7 +11,7 @@ export interface CountdownTimerProps {
 export default function CountdownTimer(props: CountdownTimerProps) {
   if (isPrerenderCapture()) {
     return (
-      <span className={`text-xs text-zinc-400 ${props.className ?? ''}`}>
+      <span className={`text-xs text-app-text-muted ${props.className ?? ''}`}>
         New daily puzzles at 00:00 UTC
       </span>
     );
@@ -58,11 +58,11 @@ function LiveCountdownTimer({
 
   return (
     <div
-      className={`flex items-center gap-2 border border-white/10 bg-white/[0.02] px-2.5 py-1 sm:px-3 sm:py-1.5 rounded font-mono text-xs ${className}`}
+      className={`flex items-center gap-2 border border-app-border/15 bg-app-surface-muted px-2.5 py-1 sm:px-3 sm:py-1.5 rounded font-mono text-xs ${className}`}
       title={'Time until next daily puzzle (00:00 UTC)'}
     >
-      <span className="text-zinc-400 whitespace-nowrap">{displayLabel}:</span>
-      <span className="text-sand-50 font-bold tabular-nums text-sm sm:text-base tracking-wide whitespace-nowrap">
+      <span className="text-app-text-muted whitespace-nowrap">{displayLabel}:</span>
+      <span className="text-app-text font-semibold tabular-nums text-sm sm:text-base tracking-wide whitespace-nowrap">
         {timeLeft}
       </span>
     </div>

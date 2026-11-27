@@ -17,6 +17,9 @@ from schemas.countrydle import LeaderboardEntry
 from db.repositories.leaderboard import get_leaderboard as aggregate_leaderboard
 from game_logic import count_consecutive_daily_wins
 
+# Stable PostgreSQL advisory-lock key for daily US Statedle puzzle creation.
+_US_STATEDLE_DAY_GENERATION_LOCK_KEY = 0x55535344
+
 
 class USStatedleDayRepository:
     def __init__(self, session: AsyncSession):
@@ -25,7 +28,10 @@ class USStatedleDayRepository:
     async def get_today_us_state(self) -> Optional[USStatedleDay]:
         today = func.current_date()
         result = await self.session.execute(
-            select(USStatedleDay).where(USStatedleDay.date == today)
+            select(USStatedleDay)
+            .where(USStatedleDay.date == today)
+            .order_by(USStatedleDay.id.asc())
+            .limit(1)
         )
         return result.scalar_one_or_none()
 
@@ -37,6 +43,16 @@ class USStatedleDayRepository:
 
     async def generate_new_day_us_state(self, cooldown_days: int = 25) -> USStatedleDay:
         import random
+
+        # Serialize first-time generation across backend workers, then recheck
+        # because a request may have created today's row while this one waited.
+        await self.session.execute(
+            select(func.pg_advisory_xact_lock(_US_STATEDLE_DAY_GENERATION_LOCK_KEY))
+        )
+        existing_day = await self.get_today_us_state()
+        if existing_day is not None:
+            return existing_day
+
         recent_subq = (
             select(USStatedleDay.us_state_id)
             .where(USStatedleDay.us_state_id.isnot(None))

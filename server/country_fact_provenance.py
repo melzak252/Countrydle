@@ -7,6 +7,10 @@ RELATIONS = {
     "membership": ("country_memberships", "organization"),
     "hemisphere": ("country_hemispheres", "hemisphere"),
 }
+_RELATION_QUERIES = {
+    "membership": "SELECT organization FROM country_memberships WHERE country_id=?",
+    "hemisphere": "SELECT hemisphere FROM country_hemispheres WHERE country_id=?",
+}
 UNKNOWN = FactProvenance().model_dump(mode="json")
 SCHEMA = """CREATE TABLE IF NOT EXISTS country_fact_provenance (
     country_id INTEGER NOT NULL REFERENCES countries(id) ON DELETE CASCADE,
@@ -25,8 +29,8 @@ def key(value):
 
 
 def values(conn, country_id, relation):
-    table, column = RELATIONS[relation]
-    return {row[0] for row in conn.execute(f"SELECT {column} FROM {table} WHERE country_id=?", (country_id,))}
+    query = _RELATION_QUERIES[relation]
+    return {row[0] for row in conn.execute(query, (country_id,))}
 
 
 def read_record(conn, country_id, relation, value):

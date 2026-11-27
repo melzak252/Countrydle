@@ -21,13 +21,19 @@ async def main():
             
             for p in patterns:
                 # Count first
-                result = await conn.execute(text(f"SELECT COUNT(*) FROM users WHERE username LIKE '{p}'"))
+                result = await conn.execute(
+                    text("SELECT COUNT(*) FROM users WHERE username LIKE :pattern"),
+                    {"pattern": p},
+                )
                 count = result.scalar()
                 
                 if count > 0:
                     print(f"Found {count} users matching pattern '{p}'")
                     # Delete
-                    await conn.execute(text(f"DELETE FROM users WHERE username LIKE '{p}'"))
+                    await conn.execute(
+                        text("DELETE FROM users WHERE username LIKE :pattern"),
+                        {"pattern": p},
+                    )
                     await conn.commit()
                     print(f"Deleted users matching '{p}'")
                     total_deleted += count

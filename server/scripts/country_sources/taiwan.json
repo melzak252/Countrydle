@@ -1,0 +1,41 @@
+{
+  "sources": {
+    "geography_government_languages_religion_flag_history": "https://en.wikipedia.org/wiki/Taiwan",
+    "retrieved": "2026-11-27"
+  },
+  "country": {
+    "app_country_name": "Taiwan",
+    "official_name": "Republic of China",
+    "cca2": "TW",
+    "cca3": "TWN",
+    "region": "Asia",
+    "subregion": "Eastern Asia",
+    "capital": "Taipei",
+    "population": 23400000,
+    "area_km2": 36197.0,
+    "latitude": 23.5,
+    "longitude": 121.0,
+    "min_latitude": 21.9,
+    "max_latitude": 25.3,
+    "min_longitude": 119.5,
+    "max_longitude": 122.0,
+    "is_island": 1,
+    "driving_side": "right",
+    "government_type": "Republic",
+    "dominant_religion": "Buddhism",
+    "source": "Taiwan seed: Wikipedia & ROC official statistics; source URLs in scripts/country_sources/taiwan.json"
+  },
+  "continents": ["Asia"],
+  "regions": ["Asia"],
+  "subregions": ["East Asia", "Eastern Asia"],
+  "hemispheres": ["Eastern", "Northern"],
+  "borders": [],
+  "currencies": [["TWD", "New Taiwan dollar", "NT$"]],
+  "languages": [["zho", "Chinese"], ["cmn", "Mandarin"]],
+  "memberships": ["ADB", "APEC", "FIFA", "IOC", "WTO"],
+  "water_access": ["East China Sea", "Pacific Ocean", "Philippine Sea", "South China Sea", "Taiwan Strait"],
+  "major_rivers": ["Zhuoshui", "Gaoping", "Tamsui"],
+  "flag_colors": ["red", "blue", "white"],
+  "flag_symbols": ["sun"],
+  "historical_unions": []
+}

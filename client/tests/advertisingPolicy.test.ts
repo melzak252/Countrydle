@@ -290,30 +290,53 @@ async function createFixture(path: string, controlledTimers = false): Promise<Po
   }
 }
 
-test('analytics wait for a determinate grant and stop on withdrawal', async () => {
+test('analytics start with Consent Mode v2 defaults and update on grant/withdrawal', async () => {
   await withPolicy('/game', async fixture => {
     fixture.readyCMP();
     fixture.policy.initializeAdvertisingPolicy();
     const analytics = () => Array.from(fixture.dom.document.querySelectorAll('script[src]'))
       .filter(script => script.src.includes('googletagmanager.com/gtag/js') || script.src.startsWith('https://analytics.example.test/'));
-    expect(analytics()).toHaveLength(0);
-    await fixture.emitConsent({}, false);
-    expect(analytics()).toHaveLength(0);
-    await fixture.emitConsent({ gdprApplies: true, cmpStatus: 'loaded', eventStatus: 'useractioncomplete', tcString: 'denied' });
-    expect(analytics()).toHaveLength(0);
-    await fixture.emitConsent({ gdprApplies: false });
     expect(analytics().map(script => script.src).sort()).toEqual([
       'https://analytics.example.test/api/script.js',
       'https://www.googletagmanager.com/gtag/js?id=G-QQFSC14LRB',
     ]);
+    const consentCalls = () => (fixture.browser.dataLayer || [])
+      .map(args => Array.from(args))
+      .filter(args => args[0] === 'consent');
+    expect(consentCalls()).toEqual([
+      ['consent', 'default', {
+        analytics_storage: 'granted',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+      }],
+    ]);
+    await fixture.emitConsent({}, false);
+    expect(analytics()).toHaveLength(2);
+    expect(consentCalls()).toHaveLength(1);
+    await fixture.emitConsent({ gdprApplies: true, cmpStatus: 'loaded', eventStatus: 'useractioncomplete', tcString: 'denied' });
+    expect(consentCalls()).toHaveLength(1);
+    expect(fixture.navigation).toEqual([]);
     await fixture.emitConsent({ gdprApplies: false });
     expect(analytics()).toHaveLength(2);
+    expect(consentCalls().at(-1)).toEqual(['consent', 'update', {
+      analytics_storage: 'granted',
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+    }]);
     await fixture.emitConsent({ gdprApplies: true, cmpStatus: 'loaded', eventStatus: 'useractioncomplete', tcString: 'denied' });
+    expect(consentCalls().at(-1)).toEqual(['consent', 'update', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+    }]);
     expect(fixture.navigation).toEqual([{ method: 'reload', url: 'https://countrydle.test/game' }]);
   });
 });
 
-test('Google vendor consent does not authorize an unrelated analytics provider', async () => {
+test('GDPR Google vendor consent updates Google Consent Mode without duplicating analytics scripts', async () => {
   await withPolicy('/game', async fixture => {
     fixture.readyCMP();
     fixture.policy.initializeAdvertisingPolicy();
@@ -324,7 +347,16 @@ test('Google vendor consent does not authorize an unrelated analytics provider',
     });
     const sources = Array.from(fixture.dom.document.querySelectorAll('script[src]')).map(script => script.src);
     expect(sources).toContain('https://www.googletagmanager.com/gtag/js?id=G-QQFSC14LRB');
-    expect(sources).not.toContain('https://analytics.example.test/api/script.js');
+    expect(sources).toContain('https://analytics.example.test/api/script.js');
+    const consentCalls = (fixture.browser.dataLayer || [])
+      .map(args => Array.from(args))
+      .filter(args => args[0] === 'consent');
+    expect(consentCalls.at(-1)).toEqual(['consent', 'update', {
+      analytics_storage: 'granted',
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+    }]);
   });
 });
 

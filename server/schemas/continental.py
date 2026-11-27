@@ -69,6 +69,7 @@ class ContinentalQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     explanation: Optional[str] = None
     context: Optional[str] = Field(default=None, exclude=True)
     asked_at: datetime
+    auto_guess: Optional[ContinentalGuessDisplay] = None
 
     model_config = ConfigDict(from_attributes=True)
 

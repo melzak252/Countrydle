@@ -6,12 +6,16 @@ import argparse
 import hashlib
 import json
 import re
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+import defusedxml.ElementTree as ET
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.strtree import STRtree
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 
 NAMESPACES = {
@@ -27,7 +31,7 @@ SOURCE_URL = (
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "powiatdle/local_kb/borders.json"
 
 
-def _ring_coordinates(ring: ET.Element) -> list[tuple[float, float]]:
+def _ring_coordinates(ring: Element) -> list[tuple[float, float]]:
     positions = ring.find("gml:posList", NAMESPACES)
     if positions is None or positions.get("srsDimension", "2") != "2":
         raise ValueError("Expected two-dimensional GML posList")

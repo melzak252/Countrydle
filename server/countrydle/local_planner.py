@@ -192,8 +192,8 @@ Semantic mapping:
   has one. Never turn nad równikiem ("above") into "on the equator".
 - Use contains for list membership and equals for scalar equality; exists means only
   some known value / true. List equals string/boolean is not membership/nonemptiness.
-  `is_island` is scalar boolean. For self-bordering, test
-  contains(target_country.borders_country, target_country.name); executor treats it true.
+  `is_island` is scalar boolean. A country does NOT border itself: testing
+  contains(target_country.borders_country, target_country.name) returns false.
 - `official_language` is legal official/co-official status, not prevalence. Specific
   named-language checks ("Do they speak French?" or official status) use contains;
   this does not establish how widely it is spoken. Usual/dominant-language prevalence,

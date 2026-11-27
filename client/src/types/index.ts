@@ -110,6 +110,13 @@ export interface FactProvenanceRecord {
   provenance: FactProvenance;
 }
 
+export interface MapHighlight {
+  supported: boolean;
+  matched: string[];
+  eliminated: string[];
+  note?: string | null;
+}
+
 export interface Question {
   id: number;
   original_question: string;
@@ -123,6 +130,7 @@ export interface Question {
   explanation?: string;
   fact_provenance?: FactProvenanceRecord[];
   report_token?: string | null;
+  map_highlight?: MapHighlight | null;
 }
 
 export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'countydle' | 'continental';

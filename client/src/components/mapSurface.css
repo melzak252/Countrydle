@@ -1,0 +1,139 @@
+.antique-map-surface.leaflet-container {
+  background-color: var(--map-ocean, #e9dfca) !important;
+}
+
+/* Aged vellum edge vignette + double-rule cartographic frame */
+.antique-map-surface.leaflet-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 470;
+  box-shadow:
+    inset 0 0 0 1px rgba(107, 89, 59, 0.45),
+    inset 0 0 0 5px rgba(240, 231, 210, 0.42),
+    inset 0 0 0 6px rgba(107, 89, 59, 0.28),
+    inset 0 0 42px rgba(78, 62, 36, 0.22);
+}
+
+.map-fixed-neatline {
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  z-index: 460;
+  border: 1.5px solid rgba(70, 57, 38, 0.55);
+  box-shadow: inset 0 0 0 3px rgba(240, 231, 210, 0.45), inset 0 0 0 4px rgba(92, 75, 50, 0.35);
+}
+
+.map-fixed-neatline__compass {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  color: #5c4b32;
+  opacity: 0.38;
+}
+
+.antique-map-surface .leaflet-tile-pane {
+  background-color: transparent;
+  filter: var(--map-tile-filter, sepia(0.18) saturate(0.72));
+}
+
+.antique-map-surface .leaflet-tile {
+  background-color: transparent;
+}
+
+.map-cartographic-texture {
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  background-color: transparent !important;
+  pointer-events: none !important;
+  background-repeat: repeat;
+  background-size: 512px 512px;
+  opacity: 0.24;
+  mix-blend-mode: multiply;
+}
+
+
+.antique-map-surface .leaflet-interactive:focus {
+  outline: none;
+}
+
+.antique-map-surface .leaflet-tooltip {
+  pointer-events: none !important;
+  color: var(--map-control-ink);
+  background-color: var(--map-control-bg);
+  border-color: var(--map-control-border);
+  box-shadow: 0 2px 5px rgba(76, 61, 38, 0.2);
+}
+
+.antique-map-surface .leaflet-control-zoom a {
+  background-color: var(--map-control-bg);
+  border-color: var(--map-control-border);
+  color: var(--map-control-ink);
+}
+
+.antique-map-surface .leaflet-control-zoom a:hover,
+.antique-map-surface .leaflet-control-zoom a:focus {
+  background-color: var(--map-control-hover);
+  color: var(--map-control-strong-ink);
+}
+
+/* Dark Atlas mode for Leaflet map surfaces */
+[data-theme="dark"] .antique-map-surface.leaflet-container {
+  --map-ocean: #111a22;
+  --map-frame-border: #4c565e;
+  --map-control-bg: #161d24;
+  --map-control-active: #232d37;
+  --map-control-hover: #1d262f;
+  --map-control-ink: #ede8dc;
+  --map-control-strong-ink: #ffffff;
+  --map-control-muted-ink: #928e82;
+  --map-control-border: #4c565e;
+  --map-control-strong-border: #70b88e;
+  --map-control-focus: #70b88e;
+  --map-tile-filter: invert(0.9) hue-rotate(180deg) saturate(0.55) brightness(0.86) contrast(1.04);
+  background-color: #111a22 !important;
+}
+
+[data-theme="dark"] .antique-map-surface.leaflet-container::after {
+  box-shadow:
+    inset 0 0 0 1px rgba(146, 142, 130, 0.45),
+    inset 0 0 0 5px rgba(22, 29, 36, 0.7),
+    inset 0 0 0 6px rgba(146, 142, 130, 0.28),
+    inset 0 0 42px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .map-fixed-neatline {
+  border-color: rgba(194, 188, 174, 0.42);
+  box-shadow: inset 0 0 0 3px rgba(15, 20, 25, 0.65), inset 0 0 0 4px rgba(146, 142, 130, 0.3);
+}
+
+[data-theme="dark"] .map-fixed-neatline__compass {
+  color: #c2bcae;
+  opacity: 0.42;
+}
+
+[data-theme="dark"] .map-cartographic-texture {
+  mix-blend-mode: soft-light;
+  opacity: 0.16;
+}
+
+[data-theme="dark"] .antique-map-surface .leaflet-tooltip {
+  color: #ede8dc;
+  background-color: #161d24;
+  border-color: #4c565e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .antique-map-surface .leaflet-control-zoom a {
+  background-color: #161d24;
+  border-color: #4c565e;
+  color: #ede8dc;
+}
+
+[data-theme="dark"] .antique-map-surface .leaflet-control-zoom a:hover,
+[data-theme="dark"] .antique-map-surface .leaflet-control-zoom a:focus {
+  background-color: #232d37;
+  color: #ffffff;
+}

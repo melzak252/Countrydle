@@ -18,6 +18,7 @@ import sqlite3
 import time
 from pathlib import Path
 from urllib.error import HTTPError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 
@@ -192,11 +193,14 @@ Context:
 ---
 """.strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    if urlparse(url).scheme not in ("https", "http"):
+        raise ValueError(f"Unsupported URL scheme: {url}")
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0, "maxOutputTokens": 768, "responseMimeType": "application/json"},
     }
     request = Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urlopen(request, timeout=60) as response:
         data = json.loads(response.read().decode("utf-8"))
     raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")

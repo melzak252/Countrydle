@@ -101,7 +101,7 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
   return (
     <section aria-labelledby="admin-page-title" className="min-w-0 space-y-5">
       <div className="admin-toolbar">
-        <label className="flex min-w-0 flex-col gap-1.5 text-sm text-slate-300">
+        <label className="flex min-w-0 flex-col gap-1.5 text-sm text-app-text-secondary">
           {t('status')}
           <select value={query.status} disabled={busyId !== null} onChange={(event) => changeQuery({ status: event.target.value as TemplateDivergenceStatus, page: 1 })} className={controlClass}>
             <option value="open">{t('open')}</option>
@@ -109,7 +109,7 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
             <option value="all">{t('allStatuses')}</option>
           </select>
         </label>
-        <label className="flex min-w-0 flex-col gap-1.5 text-sm text-slate-300">
+        <label className="flex min-w-0 flex-col gap-1.5 text-sm text-app-text-secondary">
           {t('mode')}
           <select value={query.mode} disabled={busyId !== null} onChange={(event) => changeQuery({ mode: event.target.value, page: 1 })} className={controlClass}>
             <option value="">{t('allModes')}</option>
@@ -121,27 +121,27 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
         </button>
       </div>
 
-      {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
-      {actionError && <p role="alert" className="text-sm text-rose-300">{actionError}</p>}
+      {notice && <p role="status" className="rounded-sm border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</p>}
+      {actionError && <p role="alert" className="rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{actionError}</p>}
 
       <div aria-busy={loading} className="space-y-4">
-        {loading ? <p role="status" className="py-8 text-sm text-slate-300">{t('loading')}</p>
-          : currentResult?.error ? <div role="alert" className="space-y-3 rounded-sm border border-rose-400/30 p-4 text-sm text-rose-300">
+        {loading ? <p role="status" className="py-8 text-sm text-app-text-secondary">{t('loading')}</p>
+          : currentResult?.error ? <div role="alert" className="space-y-3 rounded-sm border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
             <p>{currentResult.error}</p>
             <button type="button" onClick={() => changeQuery({ revision: query.revision + 1 })} className="admin-button flex items-center gap-2"><RefreshCw size={16} aria-hidden="true" />{t('retry')}</button>
           </div>
-          : currentResult?.items.length === 0 ? <p role="status" className="admin-panel text-sm text-slate-300">{t('empty')}</p>
+          : currentResult?.items.length === 0 ? <p role="status" className="admin-panel text-sm text-app-text-secondary">{t('empty')}</p>
             : currentResult?.items.map((item) => (
               <article key={item.id} className="admin-panel min-w-0 space-y-4">
                 <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-base font-semibold text-sand-100">{t('record', { id: item.id, mode: modesT(`adminModes.modes.${item.mode}`, { defaultValue: MODE_LABELS[item.mode] || item.mode }) })}</h2>
+                      <h2 className="text-base font-semibold text-app-text">{t('record', { id: item.id, mode: modesT(`adminModes.modes.${item.mode}`, { defaultValue: MODE_LABELS[item.mode] || item.mode }) })}</h2>
                       <span className="admin-badge">{item.divergence_type}</span>
-                      <span className={`admin-badge ${item.reviewed_at ? '' : 'text-emerald-300'}`}>{item.reviewed_at ? t('reviewed') : t('open')}</span>
+                      <span className={`admin-badge ${item.reviewed_at ? '' : 'text-emerald-800'}`}>{item.reviewed_at ? t('reviewed') : t('open')}</span>
                     </div>
-                    <p className="text-sm text-slate-300">{t('captured')} <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('en-US')}</time></p>
-                    {item.reviewed_at && <p className="text-sm text-slate-300">{t('reviewedAt')} <time dateTime={item.reviewed_at}>{new Date(item.reviewed_at).toLocaleString('en-US')}</time></p>}
+                    <p className="text-sm text-app-text-secondary">{t('captured')} <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('en-US')}</time></p>
+                    {item.reviewed_at && <p className="text-sm text-app-text-secondary">{t('reviewedAt')} <time dateTime={item.reviewed_at}>{new Date(item.reviewed_at).toLocaleString('en-US')}</time></p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {onTestQuestion && <button type="button" disabled={busyId !== null} onClick={() => onTestQuestion(item.question, item.mode)} className="admin-button">{t('testInQa')}</button>}
@@ -152,21 +152,21 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-slate-400">{t('question')}</p>
+                  <p className="text-sm text-app-text-muted">{t('question')}</p>
                   <p className="admin-question break-words">{item.question}</p>
                 </div>
-                {item.details?.gemini_explanation && <p className="whitespace-pre-wrap break-words border-l-2 border-amber-400/50 pl-3 text-sm text-slate-300"><span className="font-medium text-sand-100">{t('modelExplanation')}</span> {item.details.gemini_explanation}</p>}
-                <details className="border-t border-white/10 pt-3">
-                  <summary className="cursor-pointer text-sm text-emerald-300">{t('comparePlans')}</summary>
+                {item.details?.gemini_explanation && <p className="whitespace-pre-wrap break-words border-l-2 border-amber-200 pl-3 text-sm text-app-text-secondary"><span className="font-medium text-app-text">{t('modelExplanation')}</span> {item.details.gemini_explanation}</p>}
+                <details className="border-t border-app-border pt-3">
+                  <summary className="cursor-pointer text-sm text-emerald-800">{t('comparePlans')}</summary>
                   <div className="mt-3 grid min-w-0 gap-4 xl:grid-cols-2">
                     <section className="min-w-0 space-y-3">
-                      <h3 className="text-base font-medium text-sand-100">{t('templatePlan')}</h3>
-                      {item.details?.template_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{item.details.template_improved_question}</p>}
+                      <h3 className="text-base font-medium text-app-text">{t('templatePlan')}</h3>
+                      {item.details?.template_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-app-text-secondary">{item.details.template_improved_question}</p>}
                       <pre tabIndex={0} aria-label={t('templatePlan')} className="admin-diagnostics max-h-96 overflow-auto whitespace-pre-wrap break-words">{JSON.stringify(item.template_plan, null, 2)}</pre>
                     </section>
                     <section className="min-w-0 space-y-3">
-                      <h3 className="text-base font-medium text-sand-100">{t('modelPlan')}</h3>
-                      {item.details?.gemini_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{item.details.gemini_improved_question}</p>}
+                      <h3 className="text-base font-medium text-app-text">{t('modelPlan')}</h3>
+                      {item.details?.gemini_improved_question && <p className="whitespace-pre-wrap break-words text-sm text-app-text-secondary">{item.details.gemini_improved_question}</p>}
                       <pre tabIndex={0} aria-label={t('modelPlan')} className="admin-diagnostics max-h-96 overflow-auto whitespace-pre-wrap break-words">{JSON.stringify(item.gemini_plan, null, 2)}</pre>
                     </section>
                   </div>
@@ -177,7 +177,7 @@ export default function TemplateDivergencesPanel({ onTestQuestion }: { onTestQue
 
       {currentResult && !currentResult.error && (
         <div className="admin-pager">
-          <p className="text-sm text-slate-300">{t('page', { page: query.page, pages: totalPages, count: currentResult?.total ?? 0 })}</p>
+          <p className="text-sm text-app-text-secondary">{t('page', { page: query.page, pages: totalPages, count: currentResult?.total ?? 0 })}</p>
           <div className="flex gap-2">
             <button type="button" disabled={query.page <= 1 || loading} onClick={() => changeQuery({ page: query.page - 1 })} className="admin-button">{t('previous')}</button>
             <button type="button" disabled={query.page >= totalPages || loading} onClick={() => changeQuery({ page: query.page + 1 })} className="admin-button">{t('next')}</button>

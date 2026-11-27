@@ -32,6 +32,7 @@ import sys
 import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 
@@ -191,10 +192,13 @@ def call_gemini(prompt: str, model: str, api_key: str, retries: int = 3) -> dict
     }
     body = json.dumps(payload).encode("utf-8")
     url = GEMINI_URL_TEMPLATE.format(model=model, key=api_key)
+    if urlparse(url).scheme not in ("https", "http"):
+        raise ValueError(f"Unsupported URL scheme: {url}")
 
     for attempt in range(1, retries + 1):
         request = Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
         try:
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             with urlopen(request, timeout=90) as response:
                 data = json.loads(response.read().decode("utf-8"))
             raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")

@@ -4,6 +4,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
 )
@@ -43,9 +44,11 @@ class USStatedleState(Base):
 
 class USStatedleGuess(Base):
     __tablename__ = "us_statedle_guesses"
+    __table_args__ = (Index("ix_us_statedle_guesses_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("us_statedle_days.id"))
     guess = Column(String, nullable=False)
     us_state_id = Column(Integer, ForeignKey("us_states.id"), nullable=True)
@@ -59,15 +62,18 @@ class USStatedleGuess(Base):
 
 class USStatedleQuestion(Base):
     __tablename__ = "us_statedle_questions"
+    __table_args__ = (Index("ix_us_statedle_questions_guest_day", "guest_id", "day_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    guest_id = Column(String(36), nullable=True)
     day_id = Column(Integer, ForeignKey("us_statedle_days.id"))
     context = Column(String)
     original_question = Column(String, nullable=False)
     question = Column(String)
     valid = Column(Boolean, nullable=False)
     answer = Column(Boolean)
+    clarification = Column(String)
     explanation = Column(String, nullable=False)
     asked_at = Column(DateTime, default=func.now())
 

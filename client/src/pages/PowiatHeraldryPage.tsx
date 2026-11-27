@@ -533,63 +533,63 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
   if (isLoading && !challenge) {
     return (
-      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-emerald-400">
+      <div role="status" className="flex h-[60vh] items-center justify-center gap-3 text-app-accent">
         <Loader2 className="animate-spin" size={24} aria-hidden="true" />
-        <span className="text-sm font-medium text-sand-300">
+        <span className="text-sm font-medium text-app-text-secondary">
           {`Loading ${label} ${flags ? 'Flags' : 'Coats of Arms'}...`}
         </span>
       </div>
     );
   }
   if (!challenge && !isPrerenderCapture()) {
-    return <div role="alert" className="p-8 text-rose-300">This {noun} {flags ? 'flag' : 'coat of arms'} challenge is unavailable. <button type="button" className="underline" onClick={() => void loadChallenge(mode)}>Retry</button></div>;
+    return <div role="alert" className="p-8 text-rose-700">This {noun} {flags ? 'flag' : 'coat of arms'} challenge is unavailable. <button type="button" className="underline" onClick={() => void loadChallenge(mode)}>Retry</button></div>;
   }
 
   return (
     <div className="mx-auto w-full max-w-4xl px-2.5 py-1.5 sm:px-6 sm:py-4">
       {/* Header Bar */}
-      <header className="mb-2 sm:mb-6 border-b border-sand-800/80 pb-2 sm:pb-4 space-y-2 sm:space-y-3">
+      <header className="mb-2 sm:mb-6 border-b border-app-border/30 pb-2 sm:pb-4 space-y-2 sm:space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div>
-            <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-xs font-mono font-semibold text-sand-400">
+            <div className="mb-0.5 sm:mb-1 flex items-center gap-1.5 sm:gap-2 text-xs font-mono font-semibold text-app-text-muted">
               <span className="flex items-center gap-1.5">
-                <Shield size={14} className="text-emerald-400" />
+                <Shield size={14} className="text-app-accent" />
                 {`${label} ${flags ? 'Flags' : 'Heraldry'}`}
               </span>
               <span>•</span>
               <span>{mode === 'daily' ? challenge?.date || 'Daily' : 'Challenge'}</span>
             </div>
-            <h1 className="text-lg font-bold tracking-tight text-sand-100 sm:text-3xl">
+            <h1 className="text-lg font-bold tracking-tight text-app-text sm:text-3xl">
               {`${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
             </h1>
-            <p className="mt-0.5 text-[11px] leading-tight text-sand-400 sm:text-sm sm:leading-normal">
+            <p className="mt-0.5 text-[11px] leading-tight text-app-text-secondary sm:text-sm sm:leading-normal">
               {scope ? `Identify the ${noun} by its ${flags ? 'flag' : 'coat of arms'}.` : `Identify the Polish county by its official ${flags ? 'flag' : 'coat of arms'}. Registration plates reveal after 5 wrong guesses.`}
             </p>
-            {scope === 'england_counties' && <p className="mt-1 text-xs text-sand-400">{flags ? 'Community flags with historic and cultural associations to present-day ceremonial counties; historic boundaries may differ. These are not flags of modern ceremonial authority.' : 'Council arms associated with these counties; not necessarily arms of the ceremonial county or a current authority.'}</p>}
-            {scope && targetCount !== null && <p className="mt-1 text-xs text-sand-400">{targetCount} eligible targets{counties.length > 0 && `; all ${counties.length} places can be guessed`}.</p>}
+            {scope === 'england_counties' && <p className="mt-1 text-xs text-app-text-secondary">{flags ? 'Community flags with historic and cultural associations to present-day ceremonial counties; historic boundaries may differ. These are not flags of modern ceremonial authority.' : 'Council arms associated with these counties; not necessarily arms of the ceremonial county or a current authority.'}</p>}
+            {scope && targetCount !== null && <p className="mt-1 text-xs text-app-text-secondary">{targetCount} eligible targets{counties.length > 0 && `; all ${counties.length} places can be guessed`}.</p>}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Guesses Remaining Pill */}
-            <div className="flex items-center rounded-sm border border-white/10 bg-obsidian-900 px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
-              <span className="mr-1.5 sm:mr-2 font-mono text-xs text-zinc-400">
+            <div className="flex items-center rounded-sm border border-app-border/25 bg-app-surface-raised px-2 py-1 shadow-sm sm:px-3.5 sm:py-2">
+              <span className="mr-1.5 sm:mr-2 font-mono text-xs text-app-text-muted">
                 {'Guesses:'}
               </span>
               <span
                 className={`font-mono text-sm sm:text-base font-bold ${
-                  guesses.length >= maxGuesses - 2 ? 'text-amber-400' : 'text-emerald-400'
+                  guesses.length >= maxGuesses - 2 ? 'text-amber-800' : 'text-app-accent'
                 }`}
               >
                 {guesses.length}
               </span>
-              <span className="font-mono text-[11px] sm:text-xs text-zinc-500"> / {maxGuesses}</span>
+              <span className="font-mono text-[11px] sm:text-xs text-app-text-muted"> / {maxGuesses}</span>
             </div>
 
             {/* Help Modal Button */}
             <button
               type="button"
               onClick={() => setShowInstructions(true)}
-              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-sand-800 bg-sand-900 text-sand-400 hover:border-sand-700 hover:text-sand-200 transition-colors cursor-pointer"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-raised text-app-text-secondary hover:border-app-accent/50 hover:text-app-accent transition-colors cursor-pointer"
               title={`How to play ${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
               aria-label={'Instructions'}
             >
@@ -601,7 +601,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               <button
                 type="button"
                 onClick={() => setShowResultsModal(true)}
-                className="flex h-8 sm:h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-sm border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 transition-colors text-xs font-semibold cursor-pointer"
+                className="flex h-8 sm:h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-sm border border-app-accent/30 bg-app-accent/10 text-app-accent hover:bg-app-accent/15 transition-colors text-xs font-semibold cursor-pointer"
                 title={'Show results'}
               >
                 <Trophy size={14} />
@@ -612,15 +612,15 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
         </div>
 
         {/* Mode Switcher Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 pt-1 border-t border-white/5">
-          <div className="grid grid-cols-2 sm:inline-flex rounded-sm border border-white/10 bg-obsidian-950 p-0.5 sm:p-1 text-xs font-medium w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 pt-1 border-t border-app-border/20">
+          <div className="grid grid-cols-2 sm:inline-flex rounded-sm border border-app-border/30 bg-app-surface-muted p-0.5 sm:p-1 text-xs font-medium w-full sm:w-auto">
             <button
               type="button"
               onClick={() => handleSwitchMode('daily')}
               className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xs transition-colors cursor-pointer text-center ${
                 mode === 'daily'
-                  ? 'bg-emerald-500/20 text-emerald-300 font-semibold shadow-xs'
-                  : 'text-zinc-400 hover:text-sand-200'
+                  ? 'bg-app-accent/10 text-app-accent font-semibold shadow-xs'
+                  : 'text-app-text-secondary hover:text-app-text'
               }`}
             >
               📅 {flags ? 'Daily Flag' : 'Daily Shield'}
@@ -630,15 +630,15 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               onClick={() => handleSwitchMode('challenge')}
               className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xs transition-colors cursor-pointer text-center ${
                 mode === 'challenge'
-                  ? 'bg-emerald-500/20 text-emerald-300 font-semibold shadow-xs'
-                  : 'text-zinc-400 hover:text-sand-200'
+                  ? 'bg-app-accent/10 text-app-accent font-semibold shadow-xs'
+                  : 'text-app-text-secondary hover:text-app-text'
               }`}
             >
               ⚡ {'Random Challenge'}
             </button>
             <Link
               to={regionalPath ? `${regionalPath}/quiz` : flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
-              className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xs text-zinc-400 hover:text-emerald-300 transition-colors"
+              className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-sm text-app-text-secondary hover:text-app-accent transition-colors"
             >
               {scope ? 'All Symbols Quiz' : flags ? 'County Flags Grid Quiz' : '380 Coats Grid Quiz'}
             </Link>
@@ -650,7 +650,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                 type="button"
                 onClick={() => loadChallenge('challenge', `challenge-${Date.now()}`)}
                 disabled={isLoading}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-sand-700 bg-sand-900/60 text-sand-200 hover:bg-sand-800 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-sm border border-app-border/30 bg-app-surface-raised text-app-text-secondary hover:bg-app-surface-muted text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
                 <span>{'New Challenge'}</span>
@@ -658,7 +658,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             )}
             <Link
               to={regionalPath ? `${regionalPath}/quiz` : flags ? '/quiz-flag-powiatow' : '/quiz-herbow'}
-              className="sm:hidden flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded-sm border border-white/10 bg-obsidian-950 text-zinc-400 hover:text-emerald-300 text-xs font-medium transition-colors text-center"
+              className="sm:hidden flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded-sm border border-app-border/25 bg-app-surface-raised text-app-text-secondary hover:text-app-accent text-xs font-medium transition-colors text-center"
             >
               <span className="truncate">{scope ? 'All Symbols Quiz' : flags ? 'Flags Quiz' : '380 Coats Quiz'}</span>
             </Link>
@@ -671,11 +671,11 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
         {/* 1. Coat of Arms Shield Display */}
         <section
           aria-label={`${label} ${flags ? 'Flag' : 'Coat of Arms Shield'}`}
-          className="relative flex flex-col items-center justify-center rounded-xl border border-sand-800/80 bg-obsidian-950/60 p-2 sm:p-6 shadow-inner"
+          className="relative flex flex-col items-center justify-center rounded-md border border-app-border/25 bg-app-surface-muted p-2 sm:p-6 shadow-sm"
         >
           {/* Decorative heraldic background glow */}
           <div
-            className="absolute inset-0 bg-radial-gradient from-emerald-500/5 via-transparent to-transparent pointer-events-none rounded-xl"
+            className="absolute inset-0 bg-radial-gradient from-app-accent/5 via-transparent to-transparent pointer-events-none rounded-md"
             aria-hidden="true"
           />
 
@@ -710,9 +710,9 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             aria-label={
               `Click to inspect ${flags ? 'flag' : 'coat of arms'} in fullscreen`
             }
-            className={`group relative h-48 sm:h-80 ${flags ? 'w-full max-w-xl' : 'aspect-[4/5]'} flex items-center justify-center p-2 sm:p-4 rounded-lg border border-sand-700/50 bg-obsidian-900/90 shadow-lg transition-colors ${
+            className={`group relative h-48 sm:h-80 ${flags ? 'w-full max-w-xl' : 'aspect-[4/5]'} flex items-center justify-center p-2 sm:p-4 rounded-sm border border-app-border/30 bg-app-surface-raised shadow-sm transition-colors ${
               resolvedCoatUrl && !imageError && !imageLoading
-                ? 'cursor-zoom-in hover:border-emerald-500/50'
+                ? 'cursor-zoom-in hover:border-app-accent/50'
                 : ''
             }`}
           >
@@ -741,7 +741,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             {resolvedCoatUrl && !imageError && !imageLoading && (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-85 group-hover:opacity-100 group-hover:border-emerald-400/50 group-hover:text-emerald-300 transition-colors shadow"
+                className="pointer-events-none absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-sm bg-app-surface-raised border border-app-border/30 text-app-text-secondary opacity-85 group-hover:opacity-100 group-hover:border-app-accent/50 group-hover:text-app-accent transition-colors shadow-sm"
               >
                 <Maximize2 size={13} />
               </span>
@@ -751,10 +751,10 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             {imageLoading && !imageError && (
               <div
                 role="status"
-                className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-emerald-400 bg-obsidian-950/70 backdrop-blur-xs rounded-lg"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-app-accent bg-app-surface-raised/90 backdrop-blur-xs rounded-sm"
               >
                 <Loader2 className="animate-spin" size={28} aria-hidden="true" />
-                <span className="text-[11px] sm:text-xs font-mono text-sand-300">
+                <span className="text-[11px] sm:text-xs font-mono text-app-text-secondary">
                   {flags ? 'Loading flag...' : 'Loading heraldic shield...'}
                 </span>
               </div>
@@ -764,14 +764,14 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             {imageError && (
               <div
                 role="alert"
-                className="flex flex-col items-center justify-center p-4 sm:p-6 text-center text-amber-300 gap-2.5 max-w-xs"
+                className="flex flex-col items-center justify-center p-4 sm:p-6 text-center text-amber-900 gap-2.5 max-w-xs"
               >
-                <AlertCircle size={30} className="text-amber-400" />
+                <AlertCircle size={30} className="text-amber-800" />
                 <div className="space-y-1">
-                  <p className="text-xs sm:text-sm font-semibold text-sand-100">
+                  <p className="text-xs sm:text-sm font-semibold text-app-text">
                     {`Failed to load ${flags ? 'flag' : 'coat of arms'}`}
                   </p>
-                  <p className="text-[11px] sm:text-xs text-sand-400 leading-snug">
+                  <p className="text-[11px] sm:text-xs text-app-text-secondary leading-snug">
                     {'The image service is unavailable or the network request failed.'}
                   </p>
                 </div>
@@ -782,7 +782,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                     setImageLoading(true);
                     setRetryNonce((n) => n + 1);
                   }}
-                  className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 text-xs font-medium transition-colors cursor-pointer"
+                  className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-medium transition-colors cursor-pointer"
                 >
                   <RefreshCw size={12} />
                   <span>{'Retry loading'}</span>
@@ -795,9 +795,9 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
         {/* 2. Automatic Full Registration Plate Hint After 5th Wrong Guess */}
         {!scope && <section aria-label={'Registration plate hint'}>
           {isPlatesUnlocked ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 rounded-lg border border-blue-500/30 bg-blue-950/30 p-2.5 sm:px-5 sm:py-4 shadow-sm">
-              <div className="flex items-center gap-2 text-blue-300 text-xs sm:text-sm font-medium">
-                <Car size={16} className="text-blue-400 shrink-0" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 rounded-sm border border-blue-300 bg-blue-50 p-2.5 sm:px-5 sm:py-4 shadow-sm">
+              <div className="flex items-center gap-2 text-blue-800 text-xs sm:text-sm font-medium">
+                <Car size={16} className="text-blue-700 shrink-0" />
                 <span>
                   {'Target county registration plate codes revealed:'}
                 </span>
@@ -805,14 +805,14 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               <PolishLicensePlateBadge plates={registrationPlates!} />
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-2.5 sm:gap-3 rounded-lg border border-amber-500/20 bg-obsidian-900/60 px-3 py-2 sm:px-4 sm:py-3 text-[11px] sm:text-sm text-sand-300">
+            <div className="flex items-center justify-between gap-2.5 sm:gap-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 sm:px-4 sm:py-3 text-[11px] sm:text-sm text-amber-900">
               <div className="flex items-center gap-2 min-w-0">
-                <Lock size={15} className="text-amber-400 shrink-0" />
+                <Lock size={15} className="text-amber-800 shrink-0" />
                 <span className="leading-snug">
                   {`Full registration plate ID reveals after 5th wrong guess (${guesses.length}/${hintUnlockThreshold})`}
                 </span>
               </div>
-              <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs text-amber-400 font-bold shrink-0">
+              <div className="flex items-center gap-1 font-mono text-[11px] sm:text-xs text-amber-900 font-bold shrink-0">
                 {guesses.length < hintUnlockThreshold ? (
                   <span>
                     {`${hintUnlockThreshold - guesses.length} left`}
@@ -851,7 +851,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                     disabled={isSubmitting}
                     autoComplete="off"
                     spellCheck="false"
-                    className="w-full rounded-sm border border-sand-700 bg-obsidian-950 px-3 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-sand-100 placeholder-sand-500 focus:border-emerald-500 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-sm border border-app-border/35 bg-app-surface-raised px-3 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-hidden focus:ring-1 focus:ring-app-focus"
                   />
                   {inputVal && (
                     <button
@@ -861,7 +861,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                         setSelectedCounty(null);
                         setShowSuggestions(false);
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-sand-500 hover:text-sand-300 p-1 cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-app-text-muted hover:text-app-text p-1 cursor-pointer"
                       aria-label={'Clear input'}
                     >
                       <X size={14} />
@@ -873,7 +873,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                   type="button"
                   onClick={handleSubmitGuess}
                   disabled={isSubmitting || !inputVal.trim()}
-                  className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-sm bg-emerald-600 px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                  className="flex items-center justify-center gap-1.5 sm:gap-2 rounded-sm bg-app-accent px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-app-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
                 >
                   {isSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
@@ -887,7 +887,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               {showSuggestions && filteredCounties.length > 0 && (
                 <div
                   ref={dropdownRef}
-                  className="absolute z-30 mt-1 w-full rounded-sm border border-sand-700 bg-obsidian-950 shadow-xl max-h-60 overflow-y-auto"
+                  className="absolute z-30 mt-1 w-full rounded-sm border border-app-border/30 bg-app-surface-raised shadow-sm max-h-60 overflow-y-auto"
                 >
                   <ul role="listbox" className="py-1">
                     {filteredCounties.map((item, index) => {
@@ -900,17 +900,17 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                           onMouseEnter={() => setHighlightedIndex(index)}
                           onClick={() => handleSelectCounty(item)}
                           className={`flex items-center justify-between px-3.5 py-2 text-sm cursor-pointer transition-colors ${
-                            isHighlighted ? 'bg-emerald-950/60 text-emerald-200' : 'text-sand-200 hover:bg-sand-900/60'
+                            isHighlighted ? 'bg-app-accent/10 text-app-accent' : 'text-app-text-secondary hover:bg-app-surface-muted'
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{item.name}</span>
                           </div>
                           {!scope && <div className="flex items-center gap-1.5">
-                            <span className="rounded-xs border border-white/10 bg-sand-900/80 px-1.5 py-0.5 text-[11px] font-mono text-sand-400">
+                            <span className="rounded-sm border border-app-border/25 bg-app-surface-muted px-1.5 py-0.5 text-[11px] font-mono text-app-text-muted">
                               woj. {item.voivodeship}
                             </span>
-                            <span className="rounded-xs border border-sand-800 bg-obsidian-900 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                            <span className="rounded-sm border border-app-border/25 bg-app-surface-muted px-1.5 py-0.5 text-[10px] text-app-text-muted">
                               {item.is_city_county
                                 ? 'City county'
                                 : 'Land county'}
@@ -930,28 +930,28 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
         {isGameOver && (
           <section
             aria-label={'Game summary'}
-            className="rounded-xl border border-sand-800 bg-obsidian-900/90 p-4 sm:p-6 shadow-xl space-y-4"
+            className="rounded-md border border-app-border/30 bg-app-surface-raised p-4 sm:p-6 shadow-sm space-y-4"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-app-border/25 pb-4">
               <div>
                 <div className="flex items-center gap-2">
                   {won ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-sm bg-app-accent/10 px-2.5 py-0.5 text-xs font-semibold text-app-accent">
                       <Trophy size={14} />
                       {'Victory!'}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-semibold text-red-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-sm bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-800">
                       <X size={14} />
                       {'Game Over'}
                     </span>
                   )}
                 </div>
-                <h2 className="mt-2 text-lg sm:text-xl font-bold text-sand-100">
+                <h2 className="mt-2 text-lg sm:text-xl font-bold text-app-text">
                   {targetPowiat ? (
                     <>
                       {targetPowiat.name}{' '}
-                      {!scope && <span className="font-normal text-sand-400 text-sm sm:text-base">
+                      {!scope && <span className="font-normal text-app-text-secondary text-sm sm:text-base">
                         (woj. {targetPowiat.voivodeship})
                       </span>}
                     </>
@@ -959,19 +959,19 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                     'Game Over'
                   )}
                 </h2>
-                <p className="mt-0.5 text-xs text-sand-400">
+                <p className="mt-0.5 text-xs text-app-text-secondary">
                   {won
                     ? `Solved in ${guesses.length} of ${maxGuesses} guesses!`
                     : `Out of guesses. Better luck next time!`}
                 </p>
-                <p className="mt-2 text-sm text-emerald-300">
+                <p className="mt-2 text-sm text-app-accent">
                   {challenge?.ranked ? challenge.points === null ? 'Points unavailable' : `${challenge.points} points` : 'Unranked legacy or practice game'}
                 </p>
-                {challenge?.ranked && !isAuthenticated && <p className="text-xs text-sand-400">Sign in to add your daily result to the leaderboard.</p>}
+                {challenge?.ranked && !isAuthenticated && <p className="text-xs text-app-text-secondary">Sign in to add your daily result to the leaderboard.</p>}
                 <button
                   type="button"
                   onClick={() => setShowResultsModal(true)}
-                  className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 hover:text-emerald-200 underline cursor-pointer"
+                  className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-app-accent hover:text-app-accent-hover underline cursor-pointer"
                 >
                   Open Results &amp; Leaderboard Dashboard
                 </button>
@@ -980,7 +980,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               {/* Registration Plates on Victory Card */}
               {!scope && registrationPlates && registrationPlates.length > 0 && (
                 <div className="flex flex-col sm:items-end gap-1">
-                  <span className="text-[11px] font-mono text-sand-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-mono text-app-text-secondary uppercase tracking-wider">
                     {'Registration plates:'}
                   </span>
                   <PolishLicensePlateBadge plates={registrationPlates} />
@@ -990,12 +990,12 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
             {/* Attribution */}
             {attribution && (
-              <div className="rounded-lg border border-white/5 bg-obsidian-950/60 p-3 text-xs text-sand-400 space-y-1">
-                <div className="font-semibold text-sand-300 flex items-center gap-1.5">
-                  <Shield size={13} className="text-emerald-400" />
+              <div className="rounded-sm border border-app-border/25 bg-app-surface-muted p-3 text-xs text-app-text-secondary space-y-1">
+                <div className="font-semibold text-app-text flex items-center gap-1.5">
+                  <Shield size={13} className="text-app-accent" />
                   <span>{flags ? 'Flag Source & Attribution:' : 'Heraldic Source & Attribution:'}</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-zinc-400">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-app-text-secondary">
                   {attribution.title && (
                     <span>
                       <strong>{attribution.title}</strong>
@@ -1009,15 +1009,15 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                   )}
                   {attribution.license && (
                     attribution.license_url
-                      ? <a href={attribution.license_url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline underline-offset-2">{attribution.license}</a>
-                      : <span className="rounded-xs border border-white/10 bg-sand-900/60 px-1.5 py-0.5 text-[10px] font-mono">{attribution.license}</span>
+                      ? <a href={attribution.license_url} target="_blank" rel="noopener noreferrer" className="text-app-accent underline underline-offset-2">{attribution.license}</a>
+                      : <span className="rounded-sm border border-app-border/25 bg-app-surface-raised px-1.5 py-0.5 text-[10px] font-mono text-app-text-secondary">{attribution.license}</span>
                   )}
                   {attribution.source_url && (
                     <a
                       href={attribution.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+                      className="inline-flex items-center gap-1 text-app-accent hover:text-app-accent-hover underline underline-offset-2 transition-colors"
                     >
                       <span>Wikimedia Commons</span>
                       <ExternalLink size={11} />
@@ -1035,7 +1035,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               <button
                 type="button"
                 onClick={handleShare}
-                className="inline-flex items-center gap-2 rounded-sm bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-sm bg-app-accent px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-app-accent-hover transition-colors cursor-pointer"
               >
                 {copied ? <Check size={15} /> : <Share2 size={15} />}
                 <span>{copied ? ('Copied!') : 'Share Results'}</span>
@@ -1051,7 +1051,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                     loadChallenge('challenge', `challenge-${Date.now()}`);
                   }
                 }}
-                className="inline-flex items-center gap-2 rounded-sm border border-sand-700 bg-sand-900/60 px-4 py-2 text-xs sm:text-sm font-semibold text-sand-200 hover:bg-sand-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-sm border border-app-border/30 bg-app-surface-raised px-4 py-2 text-xs sm:text-sm font-semibold text-app-text-secondary hover:bg-app-surface-muted transition-colors cursor-pointer"
               >
                 <RefreshCw size={15} />
                 <span>{'New Challenge'}</span>
@@ -1062,15 +1062,15 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
         {/* 5. Guess History List */}
         <section aria-label={'Guess history'} className="space-y-2">
-          <div className="flex items-center justify-between border-b border-sand-800/80 pb-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-sand-400 font-mono flex items-center gap-1.5">
+          <div className="flex items-center justify-between border-b border-app-border/25 pb-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-app-text-secondary font-mono flex items-center gap-1.5">
               <span>{'Guess History'}</span>
-              <span className="text-xs text-zinc-500">({guesses.length}/{maxGuesses})</span>
+              <span className="text-xs text-app-text-muted">({guesses.length}/{maxGuesses})</span>
             </h3>
           </div>
 
           {guesses.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-sand-800 p-6 text-center text-xs sm:text-sm text-sand-500">
+            <div className="rounded-sm border border-dashed border-app-border/30 p-6 text-center text-xs sm:text-sm text-app-text-secondary">
               {`Enter ${scope === 'england_counties' ? 'an' : 'a'} ${noun} name above to submit your first guess.`}
             </div>
           ) : (
@@ -1082,18 +1082,18 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                     key={`${g.powiat_id}-${originalNumber}`}
                     className={`flex flex-wrap items-center justify-between gap-2 rounded-sm border px-3 py-2 text-xs sm:text-sm transition-colors ${
                       g.answer
-                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-200'
-                        : 'border-white/10 bg-obsidian-950 text-sand-200'
+                        ? 'border-app-accent/35 bg-app-accent/10 text-app-accent'
+                        : 'border-app-border/25 bg-app-surface-raised text-app-text-secondary'
                     }`}
                   >
                     {/* Left: Number and Guess Name */}
                     <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-xs text-zinc-500 font-bold min-w-[20px]">
+                      <span className="font-mono text-xs text-app-text-muted font-bold min-w-[20px]">
                         #{originalNumber}
                       </span>
-                      <span className="font-medium text-sand-100">{g.guess}</span>
+                      <span className="font-medium text-app-text">{g.guess}</span>
                       {g.answer && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                        <span className="inline-flex items-center gap-1 rounded-sm bg-app-accent/10 px-2 py-0.5 text-[11px] font-semibold text-app-accent">
                           <Check size={12} />
                           {'Correct!'}
                         </span>
@@ -1106,8 +1106,8 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                       {!scope && <span
                         className={`rounded-xs px-2 py-0.5 text-[11px] font-mono border ${
                           g.same_voivodeship
-                            ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300'
-                            : 'border-zinc-800 bg-obsidian-900 text-zinc-400'
+                            ? 'border-app-accent/35 bg-app-accent/10 text-app-accent'
+                            : 'border-app-border/25 bg-app-surface-muted text-app-text-secondary'
                         }`}
                         title={
                           g.same_voivodeship
@@ -1130,7 +1130,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
                       {/* Compass Bearing */}
                       <span
-                        className="font-mono text-xs text-sand-300 flex items-center gap-1 min-w-[45px]"
+                        className="font-mono text-xs text-app-text-secondary flex items-center gap-1 min-w-[45px]"
                         title={
                           g.bearing_direction
                             ? `${'Direction:'} ${g.bearing_direction}`
@@ -1139,7 +1139,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                       >
                         {g.bearing_arrow && <span className="text-base leading-none">{g.bearing_arrow}</span>}
                         {g.bearing_direction && (
-                          <span className="text-[11px] text-zinc-400">{g.bearing_direction}</span>
+                          <span className="text-[11px] text-app-text-muted">{g.bearing_direction}</span>
                         )}
                       </span>
                     </div>
@@ -1197,11 +1197,11 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
           detailsTitle={flags ? 'Flag Source & Attribution' : 'Heraldic Source & Attribution'}
           detailsSlot={
             attribution ? (
-              <div className="space-y-1.5 text-xs text-zinc-300">
-                <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+              <div className="space-y-1.5 text-xs text-app-text-secondary">
+                <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-app-accent">
                   {flags ? 'Flag Source & Attribution' : 'Heraldic Source & Attribution'}
                 </div>
-                {attribution.title && <div className="font-medium text-sand-100">{attribution.title}</div>}
+                {attribution.title && <div className="font-medium text-app-text">{attribution.title}</div>}
                 {(attribution.artist || attribution.author) && (
                   <div className="text-zinc-400">
                     Author: {attribution.artist || attribution.author}{' '}
@@ -1223,7 +1223,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
         <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-6 sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+1.5rem)] overflow-y-auto md:z-50 md:max-h-none">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-app-canvas/85 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={handleCloseInstructions}
             aria-hidden="true"
           />
@@ -1232,23 +1232,23 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             role="dialog"
             aria-modal="true"
             aria-label={`How to Play ${label} ${flags ? 'Flags' : 'Coats of Arms'}`}
-            className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-xl border border-white/15 bg-obsidian-950 p-4 md:max-h-[92vh] sm:p-8 shadow-2xl space-y-4 sm:space-y-6 my-auto text-sand-100"
+            className="relative z-10 w-full max-w-3xl max-h-full overflow-y-auto rounded-md border border-app-border/30 bg-app-surface-raised p-4 md:max-h-[92vh] sm:p-8 shadow-sm space-y-4 sm:space-y-6 my-auto text-app-text"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between border-b border-white/10 pb-4 text-left gap-4">
+            <div className="flex items-start justify-between border-b border-app-border/25 pb-4 text-left gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-sand-100 flex items-center gap-2.5">
-                  <Shield className="text-emerald-400" size={26} />
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-app-text flex items-center gap-2.5">
+                  <Shield className="text-app-accent" size={26} />
                   <span>{`How to Play ${label} ${flags ? 'Flags' : 'Coats of Arms'}`}</span>
                 </h2>
-                <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed max-w-xl">
+                <p className="mt-1.5 text-sm text-app-text-secondary leading-relaxed max-w-xl">
                   {`Deduce the ${scope ? noun : 'Polish county'} from its ${flags ? 'flag' : 'coat of arms'} in 8 guesses or fewer.`}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-app-surface-muted text-app-text-secondary hover:bg-app-canvas hover:text-app-text transition-colors cursor-pointer"
                 aria-label={'Close'}
               >
                 <X size={16} />
@@ -1256,72 +1256,72 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-lg border border-emerald-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-app-accent/30 bg-app-surface-raised p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <Shield size={16} />
                     <span>1. {scope ? `Verified ${flags ? 'Flag' : 'Coat of Arms'}` : flags ? 'Official County Flag' : 'Official Heraldic Shield'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {scope ? `Each puzzle displays a verified ${flags ? 'flag' : 'coat of arms'} from the eligible ${noun} catalog.` : flags ? 'Each puzzle displays a verified official flag of a Polish land or city county. Only counties with verified flags are included.' : 'Each puzzle displays the authentic coat of arms of one of Poland\'s 380 counties (land or city counties), sourced from Wikimedia Commons and Wikidata.'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Vector SVG artwork'}
                 </div>
               </div>
 
-              {!scope && <div className="rounded-lg border border-blue-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              {!scope && <div className="rounded-sm border border-blue-300 bg-blue-50 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <Car size={16} />
                     <span>2. {'Plate Code Reveal after 5 Guesses'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {'After 5 wrong guesses, the target county\'s official registration plate prefix (e.g. PO for Poznań or KRA for Krakow land county) is automatically revealed.'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Automatic unlock'}
                 </div>
               </div>}
 
-              <div className="rounded-lg border border-amber-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              <div className="rounded-sm border border-amber-300 bg-amber-50 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <Compass size={16} />
                     <span>3. {'Distance & Direction'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {`Every missed attempt shows distance in kilometers between ${scope ? 'places' : 'county centroids'} along with a compass direction arrow.`}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'Geographic feedback'}
                 </div>
               </div>
 
-              {!scope && <div className="rounded-lg border border-purple-500/30 bg-obsidian-900/80 p-5 space-y-2 flex flex-col justify-between">
+              {!scope && <div className="rounded-sm border border-purple-300 bg-purple-50 p-5 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="font-mono text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                  <div className="font-mono text-xs font-semibold text-app-text flex items-center gap-2">
                     <Shield size={16} />
                     <span>4. {'Voivodeship Match'}</span>
                   </div>
-                  <p className="mt-2 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-app-text-secondary leading-relaxed">
                     {'A 🟩 tag shows that your guess is located in the same voivodeship as the mystery county. A ⬛ tag indicates a different province.'}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-500">
+                <div className="pt-2 border-t border-app-border/25 text-[11px] font-mono text-app-text-muted">
                   {'16 Polish provinces'}
                 </div>
               </div>}
             </div>
 
-            <div className="pt-3 border-t border-white/10 flex justify-end">
+            <div className="pt-3 border-t border-app-border/25 flex justify-end">
               <button
                 type="button"
                 onClick={handleCloseInstructions}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-sm bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-sm bg-app-accent text-white font-semibold text-sm hover:bg-app-accent-hover transition-colors cursor-pointer"
               >
                 {'Got it, let\'s play!'}
               </button>
@@ -1338,7 +1338,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
           role="dialog"
           aria-modal="true"
           aria-label={flags ? 'Fullscreen flag inspection' : 'Fullscreen coat of arms inspection'}
-          className="image-inspector fixed inset-0 z-[2100] flex flex-col bg-obsidian-950/95 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[2100] flex flex-col bg-app-canvas/90 backdrop-blur-sm animate-fade-in"
           onClick={() => setIsFullscreenOpen(false)}
         >
           <style>{`
@@ -1353,7 +1353,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setIsFullscreenOpen(false); }}
-              className="absolute z-10 top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white"
+              className="absolute z-10 top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] flex h-11 w-11 items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-raised text-app-text shadow-sm"
               aria-label="Close fullscreen"
             >
               <X size={22} aria-hidden="true" />
@@ -1372,11 +1372,11 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
           <div className="heraldry-desktop-inspector flex-1 min-h-0 flex-col">
           {/* Top Toolbar */}
           <div
-            className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 bg-obsidian-900/90 px-3 py-2 sm:px-6 sm:py-3"
+            className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-app-border/25 bg-app-surface-raised/95 px-3 py-2 sm:px-6 sm:py-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-sand-100">
-              <Shield size={16} className="text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-app-text">
+              <Shield size={16} className="text-app-accent shrink-0" />
               <span className="truncate">
                 {targetPowiat
                   ? targetPowiat.name
@@ -1386,12 +1386,12 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
 
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Zoom Controls */}
-              <div className="inline-flex items-center rounded-sm border border-white/15 bg-obsidian-950 p-0.5 text-xs font-mono">
+              <div className="inline-flex items-center rounded-sm border border-app-border/30 bg-app-surface-muted p-0.5 text-xs font-mono">
                 <button
                   type="button"
                   onClick={() => setZoomLevel((z) => Math.max(1, Number((z - 0.5).toFixed(1))))}
                   disabled={zoomLevel <= 1}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xs text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 cursor-pointer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-app-text-secondary hover:bg-app-canvas hover:text-app-text disabled:text-app-text-muted disabled:opacity-100 cursor-pointer"
                   aria-label={'Zoom out'}
                   title={'Zoom out'}
                 >
@@ -1400,7 +1400,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                 <button
                   type="button"
                   onClick={() => setZoomLevel(1)}
-                  className="px-2 h-8 text-sand-100 hover:bg-white/10 rounded-xs cursor-pointer text-xs"
+                  className="px-2 h-8 text-app-text hover:bg-app-canvas rounded-sm cursor-pointer text-xs"
                   title={'Reset zoom'}
                 >
                   {Math.round(zoomLevel * 100)}%
@@ -1409,7 +1409,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                   type="button"
                   onClick={() => setZoomLevel((z) => Math.min(3, Number((z + 0.5).toFixed(1))))}
                   disabled={zoomLevel >= 3}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xs text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40 cursor-pointer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-app-text-secondary hover:bg-app-canvas hover:text-app-text disabled:text-app-text-muted disabled:opacity-100 cursor-pointer"
                   aria-label={'Zoom in'}
                   title={'Zoom in'}
                 >
@@ -1421,18 +1421,18 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
               <button
                 type="button"
                 onClick={() => setLightBackdrop((prev) => !prev)}
-                className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-950 px-2 sm:px-3 text-xs font-medium text-zinc-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-sm border border-app-border/30 bg-app-surface-raised px-2 sm:px-3 text-xs font-medium text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text transition-colors cursor-pointer"
                 title={'Toggle background contrast'}
               >
-                {lightBackdrop ? <Moon size={13} className="text-sky-300" /> : <Sun size={13} className="text-amber-300" />}
-                <span className="hidden xs:inline">{lightBackdrop ? ('Dark bg') : ('Light bg')}</span>
+                {lightBackdrop ? <Moon size={13} className="text-app-text-muted" /> : <Sun size={13} className="text-amber-800" />}
+                <span className="hidden xs:inline">{lightBackdrop ? ('Muted bg') : ('Raised bg')}</span>
               </button>
 
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setIsFullscreenOpen(false)}
-                className="inline-flex h-8 sm:h-9 items-center gap-1 rounded-sm border border-white/15 bg-white/10 px-2 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-white/20 transition-colors cursor-pointer"
+                className="inline-flex h-8 sm:h-9 items-center gap-1 rounded-sm border border-app-border/30 bg-app-surface-muted px-2 sm:px-3 text-xs font-semibold text-app-text hover:bg-app-canvas transition-colors cursor-pointer"
                 aria-label={'Close fullscreen'}
               >
                 <X size={14} />
@@ -1445,10 +1445,10 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
           <div className="flex-1 overflow-auto flex items-center justify-center p-4 sm:p-8">
             <div
               onClick={(e) => e.stopPropagation()}
-              className={`relative flex items-center justify-center rounded-2xl border p-6 sm:p-10 shadow-2xl transition-colors duration-200 ${
+              className={`relative flex items-center justify-center rounded-md border p-6 sm:p-10 transition-colors duration-200 ${
                 lightBackdrop
-                  ? 'border-zinc-300 bg-stone-100 shadow-black/50'
-                  : 'border-white/15 bg-obsidian-900/95 shadow-black/80'
+                  ? 'border-app-border/30 bg-app-surface-raised shadow-sm'
+                  : 'border-app-border/30 bg-app-surface-muted shadow-sm'
               }`}
             >
               {!fullscreenLoaded && (
@@ -1457,10 +1457,10 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                   alt=""
                   aria-hidden="true"
                   style={{ height: `${Math.round(68 * zoomLevel)}vh`, maxHeight: `${Math.round(68 * zoomLevel)}vh`, width: 'auto' }}
-                  className="max-w-[88vw] object-contain select-none filter drop-shadow-2xl"
+                  className="max-w-[88vw] object-contain select-none filter drop-shadow-sm"
                 />
               )}
-              {fullscreenFailed && <p role="alert" className="absolute bottom-1 text-xs text-amber-300">
+              {fullscreenFailed && <p role="alert" className="absolute bottom-1 text-xs text-amber-800">
                 Full-resolution image unavailable; showing preview.
               </p>}
               <img
@@ -1477,7 +1477,7 @@ function CountyHeraldryGame({ flags, scope }: { flags: boolean; scope?: Regional
                   maxHeight: `${Math.round(68 * zoomLevel)}vh`,
                   width: 'auto',
                 }}
-                className={`max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-150 ${!fullscreenLoaded ? 'absolute opacity-0' : ''}`}
+                className={`max-w-[88vw] object-contain select-none filter drop-shadow-sm transition-opacity duration-150 ${!fullscreenLoaded ? 'absolute opacity-0' : ''}`}
               />
             </div>
           </div>

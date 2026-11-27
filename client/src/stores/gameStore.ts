@@ -14,11 +14,12 @@ import {
 } from '../services/api';
 import { useAuthStore } from './authStore';
 import { notifyGuestHistoryChanged, recordGuestCompletion } from '../lib/guestHistory';
-import { mapClickColor, toggleMapMarking } from '../lib/mapMarkings';
+import { computeAutoEntityMarkings, mapClickColor, toggleMapMarking } from '../lib/mapMarkings';
 import { gameplayFailure, type GameplayNotice, type GameplayNoticeInput } from '../lib/gameplayNotices';
 import toast from 'react-hot-toast';
+import type { MapHighlight } from '../types';
 
-export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange';
+export type MapMarkerColor = 'green' | 'red' | 'blue' | 'orange' | 'yellow';
 
 interface GameData {
   notices: GameplayNotice[];
@@ -29,6 +30,9 @@ interface GameData {
   correctEntity: any | null;
   dailyDate: string | null;
   entityMarkings: Record<string, MapMarkerColor>;
+  autoEntityMarkings: Record<string, MapMarkerColor>;
+  questionHighlights: Record<number, MapHighlight>;
+  showAutoMarkings: boolean;
   activeMarkerColor: MapMarkerColor;
   selectedEntityNames: string[];
   candidateEntities: string[];
@@ -53,6 +57,7 @@ interface GameActions {
   clearSelection: () => void;
   setActiveMarkerColor: (color: MapMarkerColor) => void;
   toggleEntityMarker: (name: string, color?: MapMarkerColor) => void;
+  toggleAutoMarkings: () => void;
   setMapInteractionMode: (mode: 'candidate' | 'eliminate') => void;
   toggleEntityCandidate: (name: string) => void;
   toggleEntityEliminated: (name: string) => void;
@@ -204,6 +209,9 @@ const createGameStore = (gameType: MapGameType) => {
     correctEntity: null,
     dailyDate: null,
     entityMarkings: {},
+    autoEntityMarkings: {},
+    questionHighlights: {},
+    showAutoMarkings: true,
     activeMarkerColor: 'green',
     selectedEntityNames: [],
     candidateEntities: [],
@@ -265,7 +273,7 @@ const createGameStore = (gameType: MapGameType) => {
                     }));
                     return;
                 } catch (syncError) {
-                    console.error(`[${gameType}] Failed to sync guest data during fetchGameState:`, syncError);
+                    console.error('[%s] Failed to sync guest data during fetchGameState:', gameType, syncError);
                 }
             } else {
                 removeGuestSnapshot(localKey, stored.raw);
@@ -317,17 +325,26 @@ const createGameStore = (gameType: MapGameType) => {
         const currentStartTime = get().gameStartTime;
         const newStartTime = currentStartTime || (!gameState?.is_game_over ? Date.now() : null);
 
-        set(state => ({
-          gameState,
-          questions,
-          guesses,
-          dailyDate: data.date,
-          notices: state.dailyDate === data.date ? state.notices : [],
-          isGuest: isActuallyGuest,
-          correctEntity,
-          isLoading: false,
-          gameStartTime: newStartTime,
-        }));
+        set(state => {
+          const sameDay = state.dailyDate === data.date;
+          const highlights = sameDay ? state.questionHighlights : {};
+          const mergedQuestions = questions.map((q: Question) => (
+            q.map_highlight ? q : (highlights[q.id] ? { ...q, map_highlight: highlights[q.id] } : q)
+          ));
+          return {
+            gameState,
+            questions: mergedQuestions,
+            guesses,
+            dailyDate: data.date,
+            notices: sameDay ? state.notices : [],
+            questionHighlights: highlights,
+            autoEntityMarkings: computeAutoEntityMarkings(mergedQuestions),
+            isGuest: isActuallyGuest,
+            correctEntity,
+            isLoading: false,
+            gameStartTime: newStartTime,
+          };
+        });
       } catch (e: any) {
         console.error(e);
         set({ error: e.message || 'Failed to load game state', isLoading: false });
@@ -383,7 +400,10 @@ const createGameStore = (gameType: MapGameType) => {
           set({ isLoading: false, pendingQuestion: null });
           return false;
         }
-        const { isGuest, dailyDate, gameState, questions, guesses, correctEntity } = get();
+        const { isGuest, dailyDate, gameState, questions, guesses, correctEntity, questionHighlights } = get();
+        const nextHighlights = question.map_highlight
+          ? { ...questionHighlights, [question.id]: question.map_highlight }
+          : questionHighlights;
         
         if (isGuest && dailyDate && gameState) {
           const newQuestions = [...questions, question];
@@ -430,6 +450,8 @@ const createGameStore = (gameType: MapGameType) => {
             guesses: newGuesses,
             gameState: newGameState,
             correctEntity: resolvedCorrectEntity,
+            questionHighlights: nextHighlights,
+            autoEntityMarkings: computeAutoEntityMarkings(newQuestions),
             isLoading: false,
             pendingQuestion: null,
           });
@@ -437,6 +459,7 @@ const createGameStore = (gameType: MapGameType) => {
             await get().fetchGameState();
           }
         } else {
+          set({ questionHighlights: nextHighlights });
           await get().fetchGameState();
           set({ isLoading: false, pendingQuestion: null });
         }
@@ -583,7 +606,7 @@ const createGameStore = (gameType: MapGameType) => {
                 }
             }
         } catch (e) {
-            console.error(`[${gameType}] Failed to sync guest data:`, e);
+            console.error('[%s] Failed to sync guest data:', gameType, e);
         }
     },
 
@@ -593,6 +616,8 @@ const createGameStore = (gameType: MapGameType) => {
         guesses: [],
         notices: [],
         entityMarkings: {},
+        autoEntityMarkings: {},
+        questionHighlights: {},
         activeMarkerColor: 'green',
         selectedEntityNames: [], 
         candidateEntities: [],
@@ -601,6 +626,10 @@ const createGameStore = (gameType: MapGameType) => {
         isGuest: false,
         error: null 
     }),
+
+    toggleAutoMarkings: () => set(state => ({
+      showAutoMarkings: !state.showAutoMarkings,
+    })),
 
     setActiveMarkerColor: (color: MapMarkerColor) => set({
       activeMarkerColor: color,

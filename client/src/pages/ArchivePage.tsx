@@ -127,26 +127,26 @@ export default function ArchivePage() {
   };
 
   return (
-    <div className="mx-auto min-w-0 max-w-4xl space-y-8 bg-obsidian-950 pb-8">
-      <header className="border-b border-white/10 pb-8">
-        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-emerald-400">
+    <div className="mx-auto min-w-0 max-w-4xl space-y-8 bg-app-canvas pb-8">
+      <header className="border-b border-app-border pb-8">
+        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-app-accent">
           <Calendar size={15} aria-hidden="true" />
           Past discoveries
         </div>
-        <h1 className="font-serif text-4xl leading-tight tracking-tight text-sand-100 sm:text-5xl">{t('archive.title')}</h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
+        <h1 className="font-serif text-4xl leading-tight tracking-tight text-app-text sm:text-5xl">{t('archive.title')}</h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-app-text-secondary">
           Revisit past answers across every game mode. Open a country to explore its daily recap.
         </p>
       </header>
 
       <label className="block md:hidden">
-        <span className="mb-2 block text-xs font-medium text-zinc-500">
+        <span className="mb-2 block text-xs font-medium text-app-text-muted">
           {t('archive.selectMode', 'Choose a game')}
         </span>
         <select
           value={gameType}
           onChange={(event) => setGameType(event.target.value as GameType)}
-          className="min-h-11 w-full appearance-none rounded-sm border border-white/15 bg-obsidian-900 px-3 py-2 text-base text-sand-100 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+          className="min-h-11 w-full appearance-none rounded-sm border border-app-border bg-app-surface-muted px-3 py-2 text-base text-app-text focus:border-app-accent focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-app-focus"
         >
           {groups.map((group) => (
             <optgroup key={group.name} label={group.name}>
@@ -161,7 +161,7 @@ export default function ArchivePage() {
       <div className="hidden space-y-4 md:block">
         {groups.map((group) => (
           <div key={group.name} className="space-y-1.5">
-            <span className="text-xs font-mono text-zinc-500">
+            <span className="text-xs font-mono text-app-text-muted">
               {group.name}
             </span>
             <div role="group" aria-label={group.name} className="flex flex-wrap gap-2">
@@ -172,10 +172,10 @@ export default function ArchivePage() {
                   aria-pressed={gameType === tab.id}
                   onClick={() => setGameType(tab.id)}
                   className={cn(
-                    "flex min-h-11 items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400",
+                    "flex min-h-11 items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus",
                     gameType === tab.id
-                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
-                      : "border-white/10 bg-obsidian-900 text-zinc-400 hover:border-white/20 hover:text-sand-100"
+                      ? "border-app-accent/40 bg-app-accent/10 text-app-accent"
+                      : "border-app-border bg-app-surface text-app-text-secondary hover:border-app-accent/40 hover:text-app-text"
                   )}
                 >
                   <tab.icon size={16} aria-hidden="true" />
@@ -192,27 +192,27 @@ export default function ArchivePage() {
           <Loader2 className="animate-spin text-emerald-400" size={28} aria-hidden="true" />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border border-white/10 bg-obsidian-900">
-          <div role="region" aria-label="Past answers" tabIndex={0} className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
+        <div className="overflow-hidden rounded-sm border border-app-border bg-app-surface">
+          <div role="region" aria-label="Past answers" tabIndex={0} className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-focus">
             <table className="w-full table-fixed text-left text-sm">
               <caption className="sr-only">Past answers: {allTabs.find((tab) => tab.id === gameType)?.label}</caption>
-              <thead className="border-b border-white/10 text-xs text-zinc-400">
+              <thead className="border-b border-app-border text-xs text-app-text-secondary">
                 <tr>
                   <th scope="col" className="w-24 px-2 py-4 font-medium sm:w-44 sm:px-6 md:w-32">{t('archive.date')}</th>
                   <th scope="col" className="px-2 py-4 text-left font-medium sm:px-6 md:text-right">{t('archive.answer')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-app-border">
                 {history.map((entry, index) => (
-                  <tr key={index} className="transition-colors hover:bg-white/[0.02]">
-                    <td className="whitespace-nowrap px-2 py-3.5 font-mono text-xs text-zinc-400 sm:px-6">
+                  <tr key={index} className="transition-colors hover:bg-app-surface-muted">
+                    <td className="whitespace-nowrap px-2 py-3.5 font-mono text-xs text-app-text-secondary sm:px-6">
                       {entry.date}
                     </td>
-                    <td className="break-words px-2 py-3.5 text-left font-medium text-sand-100 sm:px-6 md:text-right">
+                    <td className="break-words px-2 py-3.5 text-left font-medium text-app-text sm:px-6 md:text-right">
                       {gameType === 'country' ? (
                         <Link
                           to={`/blog/${entry.date}`}
-                          className="inline-flex max-w-full items-center gap-2 text-emerald-300 transition-colors hover:text-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-400"
+                          className="inline-flex max-w-full items-center gap-2 text-app-accent transition-colors hover:text-app-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-app-focus"
                           title="Read Wikipedia trivia and daily recap"
                         >
                           <span className="min-w-0 break-words">{getEntityName(entry)}</span>
@@ -228,7 +228,7 @@ export default function ArchivePage() {
             </table>
           </div>
           {history.length === 0 && (
-            <div className="p-8 text-center text-sm text-zinc-400">
+            <div className="p-8 text-center text-sm text-app-text-secondary">
               {t('archive.empty')}
             </div>
           )}

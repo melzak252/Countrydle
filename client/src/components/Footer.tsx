@@ -12,16 +12,16 @@ export default function Footer() {
     { path: '/terms', label: 'Terms of use' },
     { path: '/contact', label: 'Contact' },
   ];
-  const linkClass = 'flex min-h-11 min-w-0 items-center rounded-lg px-3 py-2 text-sm leading-relaxed text-zinc-400 transition-colors hover:bg-white/5 hover:text-white [overflow-wrap:anywhere]';
+  const linkClass = 'flex min-h-11 min-w-0 items-center rounded-lg px-3 py-2 text-sm leading-relaxed text-app-text-secondary transition-colors hover:bg-app-surface-muted hover:text-app-text [overflow-wrap:anywhere]';
 
   return (
-    <footer className="mt-8 border-t border-white/[0.06] bg-obsidian-950 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 text-zinc-400">
+    <footer className="mt-8 border-t border-app-border/10 bg-app-canvas pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 text-app-text-secondary">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 md:flex-row md:items-center md:justify-between md:gap-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-app-accent/20 bg-app-accent/10">
             <CountrydleLogo size={20} />
           </div>
-          <span className="text-sm font-bold tracking-tight text-zinc-300">Countrydle</span>
+          <span className="text-sm font-semibold tracking-tight text-app-text">Countrydle</span>
         </div>
 
         <nav aria-label={'Footer navigation'} className="grid w-full min-w-0 grid-cols-2 gap-x-2 md:flex md:w-auto md:flex-wrap md:gap-x-1">
@@ -31,7 +31,7 @@ export default function Footer() {
           <PrivacySettingsButton className={linkClass} />
         </nav>
 
-        <div className="shrink-0 text-xs text-zinc-500">
+        <div className="shrink-0 text-xs text-app-text-muted">
           &copy; {new Date().getFullYear()} Countrydle.
         </div>
       </div>

@@ -61,6 +61,7 @@ let consent: ConsentState = 'unknown';
 let scriptReady = false;
 let adsStarted = false;
 let googleAnalyticsStarted = false;
+let googleConsentGranted = false;
 let rybbitStarted = false;
 let adsDocument = '';
 let navigationPending = false;
@@ -127,23 +128,39 @@ function consentFromTCData(data: TCData, success: boolean): ConsentState {
   const vendorBasis = vendors?.consents?.[755] === true || vendors?.legitimateInterests?.[755] === true;
   return personalized && supporting && vendorBasis ? 'granted' : 'denied';
 }
-function startAnalytics(nonGdpr: boolean) {
+function pushGtag(..._args: unknown[]) {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(arguments);
+}
+function updateGoogleConsent(state: 'granted' | 'denied') {
+  if (!googleAnalyticsStarted) return;
+  pushGtag('consent', 'update', {
+    analytics_storage: state,
+    ad_storage: state,
+    ad_user_data: state,
+    ad_personalization: state,
+  });
+}
+function startAnalytics() {
   if (isPublisherCapture()) return;
-  if (consent === 'granted' && !googleAnalyticsStarted) {
+  if (!googleAnalyticsStarted) {
     googleAnalyticsStarted = true;
-    window.dataLayer = window.dataLayer || [];
-    function gtag(..._args: unknown[]) { window.dataLayer!.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-QQFSC14LRB');
+    pushGtag('consent', 'default', {
+      analytics_storage: 'granted',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+    });
+    pushGtag('js', new Date());
+    pushGtag('config', 'G-QQFSC14LRB');
     const script = document.createElement('script');
     script.async = true;
     script.src = 'https://www.googletagmanager.com/gtag/js?id=G-QQFSC14LRB';
     document.head.appendChild(script);
   }
-  // Google vendor consent does not authorize a different analytics provider.
   const analyticsUrl = import.meta.env.VITE_RYBBIT_SCRIPT_URL;
   const analyticsSite = import.meta.env.VITE_RYBBIT_SITE_ID;
-  if (nonGdpr && analyticsUrl && analyticsSite && !rybbitStarted) {
+  if (analyticsUrl && analyticsSite && !rybbitStarted) {
     rybbitStarted = true;
     const script = document.createElement('script');
     script.src = analyticsUrl;
@@ -160,12 +177,16 @@ function registerConsentListener() {
     window.__tcfapi('addEventListener', 2, (data, success) => {
       consent = consentFromTCData(data || {}, success);
       publish();
-      const nonGdpr = success === true && data?.gdprApplies === false;
-      if (!navigationPending && ((consent !== 'granted' && (adsStarted || googleAnalyticsStarted))
-        || (rybbitStarted && !nonGdpr))) {
+      if (!navigationPending && consent !== 'granted' && (adsStarted || googleConsentGranted)) {
+        googleConsentGranted = false;
+        updateGoogleConsent('denied');
         leaveAdDocument(data?.eventStatus === 'cmpuishown' ? '/cookie-policy#privacy-settings' : window.location.href, true);
-      } else if (!navigationPending) {
-        startAnalytics(nonGdpr);
+      } else if (!navigationPending && consent === 'granted') {
+        startAnalytics();
+        if (!googleConsentGranted) {
+          googleConsentGranted = true;
+          updateGoogleConsent('granted');
+        }
       }
     });
     return true;
@@ -259,7 +280,8 @@ export function usePrivacySettingsState(): PrivacySettingsState {
 export function initializeAdvertisingPolicy() {
   if (initialized || isPublisherCapture()) return;
   initialized = true;
-  // Analytics require a CMP decision even when advertising inventory is disabled.
+  startAnalytics();
+  // Advertising and Google Consent Mode updates require a CMP decision.
   void loadPrivacyMessaging().catch(() => { consent = 'unknown'; publish(); });
   // History interception runs before React Router. Once ads are active, every page change
   // uses a fresh document, including reviewed -> loading/unreviewed blog transitions.

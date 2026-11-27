@@ -34,12 +34,19 @@ ENV PUBLISHER_POLL_SECONDS=60
 ENV PUBLISHER_CAPTURE_TIMEOUT=45
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY scripts/prerender.py scripts/publisher-runtime.py scripts/publisher-capture.py /usr/local/lib/countrydle/
+RUN addgroup -S publisher && adduser -S -G publisher publisher \
+    && mkdir -p /var/run/countrydle-publisher \
+    && chown -R publisher:publisher /var/run/countrydle-publisher
+USER publisher
 ENTRYPOINT ["python3", "/usr/local/lib/countrydle/publisher-capture.py"]
 CMD ["--assets-dir", "/usr/share/nginx/html", "--output-dir", "/var/run/countrydle-publisher"]
 
 # Final/default target is a read-only snapshot reader, not a browser worker.
 FROM nginx:alpine AS serving
-RUN apk add --no-cache python3
+RUN apk add --no-cache python3 \
+    && sed -i '/^user /d' /etc/nginx/nginx.conf \
+    && sed -i 's|/var/run/nginx.pid|/tmp/nginx.pid|g; s|/run/nginx.pid|/tmp/nginx.pid|g' /etc/nginx/nginx.conf \
+    && chown -R nginx:nginx /etc/nginx/conf.d /var/cache/nginx /var/log/nginx
 ENV PUBLISHER_BACKEND_URL=http://backend:8080
 ENV PUBLISHER_ORIGIN=https://countrydle.online
 ENV PUBLISHER_POLL_SECONDS=60
@@ -49,6 +56,7 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY scripts/publisher-runtime.py /usr/local/lib/countrydle/
 COPY scripts/publisher-entrypoint.sh /usr/local/bin/publisher-entrypoint.sh
 
-EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1/healthz || exit 1
+USER nginx
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/publisher-entrypoint.sh"]

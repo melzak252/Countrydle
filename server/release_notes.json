@@ -1,5 +1,5 @@
 {
-  "version": "1.43.0",
-  "title": "Clearer player statistics and friend access",
-  "body": "- The admin overview now separates participating account and guest-browser identities from saved sessions, excluding inactive account states from participant counts.\n- Searchable game rows show larger per-mode counts and provide direct access to session details.\n- New Continental guest guesses are associated with the same browser identity as questions. Older anonymous guesses remain unidentified.\n- Fixed saving verified Flagdle questions so they contribute to gameplay history and participation.\n- Added a Play with friend button to the homepage and improved the loading experience on reload."
+  "version": "2.0.20",
+  "title": "Added Taiwan to Countrydle & Asia Mode",
+  "body": "- Added Taiwan (Republic of China) as a playable country across Countrydle, Asiadle, Flagdle, and Friend Duels.\n- Populated Taiwan's full local fact profile (capital Taipei, official languages Chinese/Mandarin, New Taiwan dollar, East Asia, Pacific Ocean/East & South China Sea access, island status, flag colors/sun symbol, coordinates, and hemispheres) and full RAG context fragments."
 }

@@ -1,52 +1,25 @@
 """Preserve legacy session totals and count only identified active participants."""
-from sqlalchemy import String, case, cast, func, literal, null, or_, select, union, union_all
+from collections import defaultdict
+from types import SimpleNamespace
+from sqlalchemy import String, case, cast, literal, null, or_, select, union_all
 
 from admin.resolver import ADMIN_MODE_CONFIGS
 from db.models.guest_participation import GuestParticipation
 from db.repositories.participation import _participants
 
 
-def _admin_identities(start=None, end=None):
-    # Existing active participation includes the new heraldry and quiz sessions.
-    active = _participants(start, end)
-    branches = [select(active.c.date, active.c.mode, active.c.day_id, active.c.identity)]
-    for key, cfg in ADMIN_MODE_CONFIGS.items():
-        day, state, question, guess = cfg.day_model, cfg.state_model, cfg.question_model, cfg.guess_model
-        mode = literal('continental:') + cast(day.continent, String) if key == 'continental' else literal(key)
-        day_id = cast(day.id, String)
-        filters = []
-        if start is not None:
-            filters.append(day.date >= start)
-        if end is not None:
-            filters.append(day.date <= end)
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'),
-                               (literal('user:') + cast(state.user_id, String)).label('identity'))
-                        .select_from(state).join(day, day.id == state.day_id).where(state.user_id.is_not(None), *filters))
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'),
-                               (literal('guest:') + GuestParticipation.guest_id).label('identity'))
-                        .select_from(GuestParticipation).join(day, day.id == GuestParticipation.day_id)
-                        .where(GuestParticipation.mode == mode, GuestParticipation.user_id.is_(None), *filters))
-        guest_identity = (literal('guest:') + question.guest_id) if hasattr(question, 'guest_id') else cast(null(), String)
-        author = case((question.user_id.is_not(None), literal('user:') + cast(question.user_id, String)),
-                      else_=guest_identity)
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'), author.label('identity'))
-                        .select_from(question).join(day, day.id == question.day_id).where(*filters))
-        # Legacy anonymous guesses with no guest attribution form one opaque
-        # session per puzzle, not an identified person.
-        anonymous = [guess.user_id.is_(None)]
-        if hasattr(guess, 'guest_id'):
-            anonymous.append(guess.guest_id.is_(None))
-        branches.append(select(day.date, mode.label('mode'), day_id.label('day_id'),
-                               cast(null(), String).label('identity'))
-                        .select_from(guess).join(day, day.id == guess.day_id).where(*anonymous, *filters))
-    rows = union_all(*branches).subquery()
-    return select(rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity).group_by(
-        rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity
-    ).subquery()
+async def _fetch_linked_guests(session):
+    rows = (await session.execute(
+        select(GuestParticipation.mode, GuestParticipation.day_id, GuestParticipation.guest_id).where(
+            GuestParticipation.user_id.is_not(None),
+            or_(GuestParticipation.questions_asked > 0, GuestParticipation.guesses_made > 0),
+        )
+    )).all()
+    return {(mode, str(day_id), guest_id) for mode, day_id, guest_id in rows if guest_id}
 
 
-def _admin_active_identities(start=None, end=None):
-    """Count active identified IDs, recovering saved daily actions without state rows."""
+def _build_identity_rows_query(start=None, end=None, include_anonymous=True):
+    """Build a single UNION ALL + GROUP BY query without correlated NOT EXISTS subplans."""
     active = _participants(start, end)
     branches = [
         select(active.c.date, active.c.mode, active.c.day_id, active.c.identity)
@@ -85,27 +58,11 @@ def _admin_active_identities(start=None, end=None):
             (question.user_id.is_not(None), literal('user:') + cast(question.user_id, String)),
             else_=guest_identity,
         )
-        question_filters = [
-            question.valid.is_(True),
-            question.answer.is_not(None),
-            question_identity.is_not(None),
-        ]
-        if hasattr(question, 'guest_id'):
-            linked_guest = select(GuestParticipation.id).where(
-                GuestParticipation.guest_id == question.guest_id,
-                GuestParticipation.mode == mode,
-                GuestParticipation.day_id == question.day_id,
-                GuestParticipation.user_id.is_not(None),
-                or_(GuestParticipation.questions_asked > 0, GuestParticipation.guesses_made > 0),
-            ).exists()
-            question_filters.append(
-                or_(question.user_id.is_not(None), question.guest_id.is_(None), ~linked_guest)
-            )
         branches.append(
             select(day.date, mode.label('mode'), day_id.label('day_id'), question_identity.label('identity'))
             .select_from(question)
             .join(day, day.id == question.day_id)
-            .where(*question_filters, *filters)
+            .where(question.valid.is_(True), question.answer.is_not(None), question_identity.is_not(None), *filters)
         )
 
         guest_guess_identity = (
@@ -116,18 +73,9 @@ def _admin_active_identities(start=None, end=None):
             (guess.user_id.is_not(None), literal('user:') + cast(guess.user_id, String)),
             else_=guest_guess_identity,
         )
-        guess_filters = [guess_identity.is_not(None), guess.answer.is_not(None)]
-        if hasattr(guess, 'guest_id'):
-            linked_guest = select(GuestParticipation.id).where(
-                GuestParticipation.guest_id == guess.guest_id,
-                GuestParticipation.mode == mode,
-                GuestParticipation.day_id == guess.day_id,
-                GuestParticipation.user_id.is_not(None),
-                or_(GuestParticipation.questions_asked > 0, GuestParticipation.guesses_made > 0),
-            ).exists()
-            guess_filters.append(
-                or_(guess.user_id.is_not(None), guess.guest_id.is_(None), ~linked_guest)
-            )
+        guess_filters = [guess.answer.is_not(None)]
+        if not include_anonymous:
+            guess_filters.append(guess_identity.is_not(None))
         branches.append(
             select(day.date, mode.label('mode'), day_id.label('day_id'), guess_identity.label('identity'))
             .select_from(guess)
@@ -138,63 +86,63 @@ def _admin_active_identities(start=None, end=None):
     rows = union_all(*branches).subquery()
     return select(rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity).group_by(
         rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity
-    ).subquery()
+    )
+
+
+def _summarize_rows(rows, include_breakdown=True):
+    total_sessions = len(rows)
+    total_players = len({ident for _, _, _, ident in rows if ident is not None})
+    totals = SimpleNamespace(sessions=total_sessions, players=total_players)
+    if not include_breakdown:
+        return totals, {}, {}
+
+    day_sessions = defaultdict(int)
+    day_players = defaultdict(set)
+    mode_sessions = defaultdict(int)
+    mode_players = defaultdict(set)
+    for d, m, _, ident in rows:
+        day_sessions[d] += 1
+        mode_sessions[(d, m)] += 1
+        if ident is not None:
+            day_players[d].add(ident)
+            mode_players[(d, m)].add(ident)
+
+    by_date = {
+        d: SimpleNamespace(date=d, sessions=day_sessions[d], players=len(day_players[d]))
+        for d in day_sessions
+    }
+    by_mode_date = {
+        (d, m): SimpleNamespace(date=d, mode=m, sessions=mode_sessions[(d, m)], players=len(mode_players[(d, m)]))
+        for (d, m) in mode_sessions
+    }
+    return totals, by_date, by_mode_date
+
+
+async def _load_filtered_rows(session, start=None, end=None, include_anonymous=True):
+    linked_guests = await _fetch_linked_guests(session)
+    raw_rows = (await session.execute(_build_identity_rows_query(start, end, include_anonymous=include_anonymous))).all()
+    filtered = []
+    for d, m, did, ident in raw_rows:
+        if ident is not None and ident.startswith('guest:') and (m, did, ident[6:]) in linked_guests:
+            continue
+        filtered.append((d, m, did, ident))
+    return filtered
 
 
 async def admin_counts(session, start=None, end=None, *, include_breakdown=True):
-    sessions = _admin_identities(start, end)
-    players = _admin_active_identities(start, end)
-    totals = (await session.execute(select(
-        select(func.count()).select_from(sessions).scalar_subquery().label('sessions'),
-        select(func.count(func.distinct(players.c.identity)))
-        .select_from(players).scalar_subquery().label('players'),
-    ))).one()
-    if not include_breakdown:
-        return totals, {}, {}
-    session_days = select(
-        sessions.c.date, func.count().label('sessions')
-    ).group_by(sessions.c.date).subquery()
-    player_days = select(
-        players.c.date, func.count(func.distinct(players.c.identity)).label('players')
-    ).group_by(players.c.date).subquery()
-    dates = union(select(session_days.c.date), select(player_days.c.date)).subquery()
-    by_date = (await session.execute(select(
-        dates.c.date, func.coalesce(session_days.c.sessions, 0).label('sessions'),
-        func.coalesce(player_days.c.players, 0).label('players'),
-    ).select_from(dates)
-      .outerjoin(session_days, session_days.c.date == dates.c.date)
-      .outerjoin(player_days, player_days.c.date == dates.c.date))).all()
-    session_modes = select(
-        sessions.c.date, sessions.c.mode, func.count().label('sessions')
-    ).group_by(sessions.c.date, sessions.c.mode).subquery()
-    player_modes = select(
-        players.c.date, players.c.mode,
-        func.count(func.distinct(players.c.identity)).label('players'),
-    ).group_by(players.c.date, players.c.mode).subquery()
-    mode_keys = union(
-        select(session_modes.c.date, session_modes.c.mode),
-        select(player_modes.c.date, player_modes.c.mode),
-    ).subquery()
-    by_mode_date = (await session.execute(select(
-        mode_keys.c.date, mode_keys.c.mode,
-        func.coalesce(session_modes.c.sessions, 0).label('sessions'),
-        func.coalesce(player_modes.c.players, 0).label('players'),
-    ).select_from(mode_keys).outerjoin(
-        session_modes,
-        (session_modes.c.date == mode_keys.c.date) & (session_modes.c.mode == mode_keys.c.mode),
-    ).outerjoin(
-        player_modes,
-        (player_modes.c.date == mode_keys.c.date) & (player_modes.c.mode == mode_keys.c.mode),
-    ))).all()
-    return totals, {row.date: row for row in by_date}, {
-        (row.date, row.mode): row for row in by_mode_date
-    }
+    rows = await _load_filtered_rows(session, start, end, include_anonymous=True)
+    return _summarize_rows(rows, include_breakdown=include_breakdown)
 
 
+async def admin_overview_counts(session, recent_start, recent_end):
+    """Compute both all-time totals and recent-window breakdown from a single DB scan."""
+    all_rows = await _load_filtered_rows(session, include_anonymous=True)
+    all_time, _, _ = _summarize_rows(all_rows, include_breakdown=False)
+    recent_rows = [row for row in all_rows if recent_start <= row[0] <= recent_end]
+    _, by_date, by_mode_date = _summarize_rows(recent_rows, include_breakdown=True)
+    return all_time, by_date, by_mode_date
 
 
 async def admin_mode_identities(session, day, mode):
-    identities = _admin_active_identities(day, day)
-    return set((await session.execute(select(identities.c.identity).where(
-        identities.c.date == day, identities.c.mode == mode, identities.c.identity.is_not(None)
-    ))).scalars().all())
+    rows = await _load_filtered_rows(session, day, day, include_anonymous=False)
+    return {ident for d, m, _, ident in rows if d == day and m == mode and ident is not None}

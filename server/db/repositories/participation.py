@@ -80,14 +80,38 @@ def _participants(start_date=None, end_date=None, mode=None):
             key = f"regional_symbols:{scope}:{symbol}"
             heraldry_modes.append((key, HeraldryDailySession, HeraldryDailySession.date, symbol, scope))
             heraldry_modes.append((key + ":quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), symbol, scope))
-    for key, model, day_value, symbol_mode, entity_scope in heraldry_modes:
-        if mode is not None and mode != key:
+
+    # Group by model so HeraldryDailySession and QuizRun are each scanned once instead of 8 times.
+    for model, day_value in (
+        (HeraldryDailySession, HeraldryDailySession.date),
+        (QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date)),
+    ):
+        matching = [entry for entry in heraldry_modes if entry[1] is model and (mode is None or entry[0] == mode)]
+        if not matching:
             continue
         identity = case(
             (model.user_id.is_not(None), literal("user:") + cast(model.user_id, String)),
             else_=literal("guest:") + model.guest_id,
         )
-        filters = [model.symbol_mode == symbol_mode, model.entity_scope == entity_scope]
+        filters = []
+        if len(matching) == 1:
+            key, _, _, symbol_mode, entity_scope = matching[0]
+            mode_expr = literal(key)
+            filters.extend([model.symbol_mode == symbol_mode, model.entity_scope == entity_scope])
+        else:
+            mode_expr = case(
+                *[
+                    ((model.entity_scope == entity_scope) & (model.symbol_mode == symbol_mode), literal(key))
+                    for key, _, _, symbol_mode, entity_scope in matching
+                ],
+                else_=literal("unknown"),
+            )
+            filters.append(
+                or_(*[
+                    (model.entity_scope == entity_scope) & (model.symbol_mode == symbol_mode)
+                    for _, _, _, symbol_mode, entity_scope in matching
+                ])
+            )
         if start_date is not None:
             filters.append(day_value >= start_date)
         if end_date is not None:
@@ -99,7 +123,7 @@ def _participants(start_date=None, end_date=None, mode=None):
             guesses = literal(0)
             won = case((model.status == "completed", 1), else_=0)
         branches.append(select(
-            day_value.label("date"), literal(key).label("mode"), model.id.label("day_id"),
+            day_value.label("date"), mode_expr.label("mode"), model.id.label("day_id"),
             identity.label("identity"), literal(0).label("questions"), guesses.label("guesses"),
             won.label("won"),
         ).where(*filters))

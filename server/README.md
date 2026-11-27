@@ -712,6 +712,35 @@ refuses downgrade before changing the schema if either table has non-coat
 history; coat-only databases can downgrade. Keep a symbol-aware application
 during rollback planning; do not delete game data as an implicit rollback.
 
+### Daily Powiat map quiz
+
+The map quiz is separate from Powiatdle scoring and has no public leaderboard.
+Dates and the shared 10-target set use UTC. The first session created for a date
+persists its 10-Powiat target snapshot; guest and account sessions for that date
+reuse it. `GET /powiatdle/map-quiz/daily` restores or creates the owner's session
+and exposes only the current target, never future targets.
+
+`POST /powiatdle/map-quiz/daily/answer` accepts only
+`{"guess_id": 123, "expected_round": 0}`. `guess_id` must be the database
+`Powiat.id` (available from `GET /powiatdle/powiaty`), not a GeoJSON or client
+catalog ID. The server checks correctness and updates score/progress; an
+identical retry is idempotent, while a conflicting replay or future round
+returns `409`.
+
+`GET /powiatdle/map-quiz/history` returns completed results only for the
+authenticated owner and/or the same signed guest identity; it exposes no other
+players' history or usernames. `GET /powiatdle/map-quiz/daily/stats` returns only
+aggregate `completed_count`, `average_score`, and `score_distribution` once at
+least five sessions have completed; all three values are null below that
+threshold. No identities are returned.
+`POST /powiatdle/map-quiz/daily/claim` transfers today's signed guest session
+to an account when the account has no answered session; existing account
+progress takes precedence.
+
+The API requires Alembic revision `2d4f6a8b0c1e` (after
+`1a2b3c4d5e6f`), which creates `powiat_map_quiz_sessions`. Apply it through the
+normal migration process before using these endpoints.
+
 ### Unreleased: scoped regional symbols
 
 Regional symbol APIs use `/regional-symbols/{scope}/{mode}`, where `scope` is

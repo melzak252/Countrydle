@@ -183,12 +183,12 @@ const ShieldCell = React.memo(function ShieldCell({
         className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-lg p-1.5 sm:p-2 cursor-zoom-in"
       >
         {!loaded && !error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-zinc-500 font-mono text-[10px]">
-            <Loader2 className="animate-spin text-emerald-400/60" size={20} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-app-text-muted font-mono text-[10px]">
+            <Loader2 className="animate-spin text-app-accent" size={20} />
             <span>{'Loading...'}</span>
           </div>
         )}
-        {error && <span role="alert" className="text-xs text-rose-300">Image unavailable</span>}
+        {error && <span role="alert" className="text-xs text-rose-700">Image unavailable</span>}
         <img
           src={usingOriginal ? (powiat.flag_asset_url ? flagUrl(powiat) : `/coats/${powiat.id}.png`) : thumbUrl}
           alt={isGuessed || isRevealedMissed ? powiat.name : flags ? regional ? 'Flag' : 'County flag' : 'Coat of arms'}
@@ -204,14 +204,14 @@ const ShieldCell = React.memo(function ShieldCell({
               setLoaded(true);
             }
           }}
-          className={`max-h-24 max-w-24 sm:max-h-32 sm:max-w-32 w-auto h-auto object-contain pointer-events-none select-none drop-shadow-md transition-opacity duration-200 ${
+          className={`max-h-24 max-w-24 sm:max-h-32 sm:max-w-32 w-auto h-auto object-contain pointer-events-none select-none drop-shadow-sm transition-opacity duration-200 ${
             loaded && !error ? 'opacity-100' : 'opacity-0'
           }`}
         />
 
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-1 right-1 inline-flex h-6 w-6 items-center justify-center rounded bg-obsidian-950/85 border border-white/15 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="pointer-events-none absolute bottom-1 right-1 inline-flex h-6 w-6 items-center justify-center rounded-sm bg-app-surface-raised border border-app-border/30 text-app-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Maximize2 size={12} />
         </span>
@@ -224,8 +224,8 @@ const ShieldCell = React.memo(function ShieldCell({
           <div
             className={`flex min-h-[38px] sm:min-h-[44px] items-center justify-center rounded border px-1.5 sm:px-2 py-1 text-center text-[11px] sm:text-xs font-semibold leading-tight ${
               isGuessed
-                ? 'border-emerald-500/60 bg-emerald-950/50 text-emerald-200'
-                : 'border-rose-500/50 bg-rose-950/40 text-rose-200'
+                ? 'border-app-accent/40 bg-app-accent/10 text-app-accent'
+                : 'border-rose-300 bg-rose-50 text-rose-800'
             }`}
             title={powiat.name}
           >
@@ -239,8 +239,8 @@ const ShieldCell = React.memo(function ShieldCell({
             aria-label={flags ? 'Select flag' : 'Select coat of arms'}
             className={`flex min-h-[44px] w-full items-center justify-center rounded border px-1.5 sm:px-2 text-center font-mono text-xs transition-colors cursor-pointer ${
               isTargeted
-                ? 'border-emerald-400 bg-emerald-500/15 ring-2 ring-emerald-400/40 shadow-md'
-                : 'border-white/15 bg-obsidian-950/80 hover:border-white/35'
+                ? 'border-app-accent bg-app-accent/10 ring-2 ring-app-accent/30 shadow-sm'
+                : 'border-app-border/30 bg-app-surface-raised hover:border-app-accent/50'
             }`}
           />
         )}
@@ -276,7 +276,7 @@ function CountyQuizLoader({ flags, scope }: { flags: boolean; scope?: RegionalSy
     }).catch(() => { if (active) setError(true); });
     return () => { active = false; };
   }, [flags, scope, attempt]);
-  if (error) return <p role="alert" className="p-8 text-rose-300">The verified {scope ? 'symbol' : 'county flag'} catalog is unavailable. <button type="button" className="underline" onClick={() => { setError(false); setAttempt((n) => n + 1); }}>Retry</button></p>;
+  if (error) return <p role="alert" className="p-8 text-rose-700">The verified {scope ? 'symbol' : 'county flag'} catalog is unavailable. <button type="button" className="underline" onClick={() => { setError(false); setAttempt((n) => n + 1); }}>Retry</button></p>;
   if (!catalog) return <p role="status" className="p-8">Loading verified {scope ? 'symbols' : 'county flags'}…</p>;
   return <CountyQuiz flags={flags} scope={scope} catalog={catalog} />;
 }
@@ -588,28 +588,28 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
   return (
     <div className="mx-auto w-full max-w-7xl px-2.5 py-3 sm:px-6 sm:py-4 space-y-4 sm:space-y-6">
       {/* Simple, Clean Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-white/10 pb-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-app-border/25 pb-4">
         <div>
-          <h1 className="font-serif text-xl sm:text-3xl font-bold tracking-tight text-sand-100">
+          <h1 className="font-serif text-xl sm:text-3xl font-bold tracking-tight text-app-text">
             {`${label} ${flags ? 'Flags' : 'Coats of Arms'} Quiz`}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-zinc-400">
+          <p className="mt-1 text-xs sm:text-sm text-app-text-secondary">
             {`Type ${noun} names in the top input. Click any ${flags ? 'flag' : 'coat of arms'} for fullscreen inspection. Click a box below to select (Tab = next, Shift+Tab = previous).`}
           </p>
-          {scope === 'england_counties' && <p className="mt-1 text-xs text-zinc-400">{flags ? 'Community flags with historic and cultural associations to present-day ceremonial counties; historic boundaries may differ. These are not flags of modern ceremonial authority.' : 'Council arms associated with these counties; not necessarily arms of the ceremonial county or a current authority.'}</p>}
+          {scope === 'england_counties' && <p className="mt-1 text-xs text-app-text-secondary">{flags ? 'Community flags with historic and cultural associations to present-day ceremonial counties; historic boundaries may differ. These are not flags of modern ceremonial authority.' : 'Council arms associated with these counties; not necessarily arms of the ceremonial county or a current authority.'}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
             to={regionalPath ?? (flags ? '/flagi-powiatow' : '/herby-powiatow')}
-            className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-xs font-medium text-sand-200 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-app-border/25 bg-app-surface-raised px-3 py-1.5 text-xs font-medium text-app-text-secondary hover:border-app-accent/50 hover:text-app-accent transition-colors"
           >
             <Shield size={13} />
             <span>{'Daily Puzzle'}</span>
           </Link>
           {!scope && <Link
             to="/explore#tab=powiats"
-            className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-obsidian-900 px-3 py-1.5 text-xs font-medium text-sand-200 hover:border-emerald-400/50 hover:text-emerald-300 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-app-border/25 bg-app-surface-raised px-3 py-1.5 text-xs font-medium text-app-text-secondary hover:border-app-accent/50 hover:text-app-accent transition-colors"
           >
             <Eye size={13} />
             <span>{'Atlas'}</span>
@@ -620,7 +620,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
       {/* FAST FIXED STICKY TOP CONTROLS & INPUT */}
       <section
         aria-label={'Input and Scoreboard'}
-        className="sticky top-14 xl:top-20 z-40 rounded-b-lg border border-white/10 bg-obsidian-950 px-2.5 py-1.5 sm:px-4 sm:py-3 space-y-1.5 sm:space-y-2.5"
+        className="sticky top-14 xl:top-20 z-40 rounded-md border border-app-border/25 bg-app-surface-raised px-2.5 py-1.5 sm:px-4 sm:py-3 space-y-1.5 sm:space-y-2.5 shadow-sm"
       >
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2.5 md:gap-3">
           {/* Main Top Input Field */}
@@ -640,7 +640,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                   ? scope ? `Type ${noun}...` : `Type: ${targetedPowiat.voivodeship}...`
                   : `Type ${noun}...`
               }
-              className="w-full min-h-[44px] rounded-md border border-emerald-500/50 bg-obsidian-900 pl-3 pr-11 py-2 text-xs sm:text-sm font-medium text-sand-100 placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 truncate placeholder:truncate"
+              className="w-full min-h-[44px] rounded-sm border border-app-border/35 bg-app-surface-raised pl-3 pr-11 py-2 text-xs sm:text-sm font-medium text-app-text placeholder:text-app-text-muted focus:border-app-focus focus:outline-none focus:ring-2 focus:ring-app-focus/20 truncate placeholder:truncate"
             />
             {inputVal && (
               <button
@@ -650,7 +650,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                   headerInputRef.current?.focus();
                 }}
                 aria-label={'Clear input'}
-                className="absolute right-0 top-0 bottom-0 flex min-h-[44px] min-w-[44px] items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                className="absolute right-0 top-0 bottom-0 flex min-h-[44px] min-w-[44px] items-center justify-center text-app-text-muted hover:text-app-text cursor-pointer"
               >
                 <X size={15} />
               </button>
@@ -661,28 +661,28 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           <div className="flex items-center justify-between md:justify-end gap-1 sm:gap-2 w-full md:w-auto min-w-0">
             <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
               {lastSolvedLabel && (
-                <span className="hidden xl:inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-xs font-mono text-emerald-300">
+                <span className="hidden xl:inline-flex items-center gap-1 rounded-sm bg-app-accent/10 border border-app-accent/25 px-2.5 py-1 text-xs font-mono text-app-accent">
                   <Check size={12} />
                   <span className="truncate max-w-[150px]">{lastSolvedLabel.replace(/\s*\([^)]*\)/g, '')}</span>
                 </span>
               )}
 
               <div
-                className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 sm:gap-2 rounded-md border border-white/15 bg-obsidian-900 px-1.5 sm:px-3 font-mono shrink-0"
+                className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 sm:gap-2 rounded-sm border border-app-border/25 bg-app-surface-raised px-1.5 sm:px-3 font-mono shrink-0"
                 title={`Guessed: ${guessedCount} of ${TOTAL_COUNT} (${pct}%)`}
               >
-                <Trophy size={13} className="hidden sm:block text-emerald-400 shrink-0 sm:w-[15px] sm:h-[15px]" />
-                <span className="text-xs sm:text-base font-extrabold text-emerald-400">
+                <Trophy size={13} className="hidden sm:block text-app-accent shrink-0 sm:w-[15px] sm:h-[15px]" />
+                <span className="text-xs sm:text-base font-extrabold text-app-accent">
                   {guessedCount}
                 </span>
-                <span className="text-[10px] sm:text-xs text-zinc-400">/{TOTAL_COUNT}</span>
-                <span className="hidden min-[380px]:inline-block rounded bg-emerald-500/15 px-1 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-300">
+                <span className="text-[10px] sm:text-xs text-app-text-muted">/{TOTAL_COUNT}</span>
+                <span className="hidden min-[380px]:inline-block rounded-sm bg-app-accent/10 px-1 py-0.5 text-[10px] sm:text-[11px] font-bold text-app-accent">
                   {pct}%
                 </span>
               </div>
 
               <div
-                className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 rounded-md border border-white/15 bg-obsidian-900 px-1.5 sm:px-3 font-mono text-xs sm:text-sm text-sand-100 shrink-0"
+                className="flex min-h-[38px] sm:min-h-[44px] items-center gap-1 rounded-sm border border-app-border/25 bg-app-surface-raised px-1.5 sm:px-3 font-mono text-xs sm:text-sm text-app-text shrink-0"
                 title={'Elapsed time'}
               >
                 <span className="hidden sm:inline text-[11px] sm:text-xs">⏱</span>
@@ -719,7 +719,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                       ? 'Resume'
                       : 'Pause'
                   }
-                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md bg-emerald-400 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-sm bg-app-accent px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-white hover:bg-app-accent-hover cursor-pointer"
                 >
                   {!isRunning || isPaused ? <Play size={14} className="shrink-0" /> : <Pause size={14} className="shrink-0" />}
                   <span className="hidden sm:inline">
@@ -743,7 +743,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                   }}
                   aria-label={'Give Up'}
                   title={'Give Up'}
-                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md border border-rose-500/35 bg-rose-950/40 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-rose-200 hover:bg-rose-900/50 cursor-pointer"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-sm border border-rose-300 bg-rose-50 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-rose-800 hover:bg-rose-100 cursor-pointer"
                 >
                   <Flag size={13} className="shrink-0" />
                   <span className="hidden sm:inline">
@@ -757,7 +757,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 onClick={handleResetQuiz}
                 aria-label={'Reset quiz'}
                 title={'Reset quiz'}
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-md border border-white/15 bg-obsidian-900 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-sand-200 hover:border-emerald-400/50 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-sm border border-app-border/30 bg-app-surface-raised px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold text-app-text-secondary hover:border-app-accent/50 cursor-pointer"
               >
                 <RotateCcw size={13} className="shrink-0" />
                 <span className="hidden sm:inline">Reset</span>
@@ -766,9 +766,9 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           </div>
         </div>
 
-        <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-obsidian-900">
+        <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-app-surface-muted">
           <div
-            className="h-full bg-emerald-500"
+            className="h-full bg-app-accent"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -820,9 +820,9 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           }}
         />
       )}
-      <section aria-label="Community quiz statistics" className="rounded-lg border border-white/10 bg-obsidian-900 p-3 text-xs text-zinc-300 space-y-2">
+      <section aria-label="Community quiz statistics" className="rounded-md border border-app-border/25 bg-app-surface-raised p-3 text-xs text-app-text-secondary space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-semibold text-sand-100">Community results</h2>
+          <h2 className="font-semibold text-app-text">Community results</h2>
           {communityState === 'loading' && <span role="status">Loading community results…</span>}
           {communityState === 'error' && <span role="alert">Community results could not be loaded.</span>}
           {communityState === 'ready' && community?.finished_runs === 0 && <span>No finished runs tracked yet.</span>}
@@ -840,11 +840,11 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           const voivSolved = items.filter((p) => guessedIds.has(p.id)).length;
           return (
             <section key={voiv} className="space-y-4">
-              <div className="flex items-center justify-between border-b border-white/15 pb-2">
-                <h2 className="font-serif text-xl sm:text-2xl font-bold capitalize text-sand-100">
+              <div className="flex items-center justify-between border-b border-app-border/25 pb-2">
+                <h2 className="font-serif text-xl sm:text-2xl font-bold capitalize text-app-text">
                   {scope ? voiv : `Voivodeship ${voiv}`}
                 </h2>
-                <span className="rounded bg-white/5 border border-white/10 px-2.5 py-0.5 font-mono text-xs text-emerald-400 font-bold">
+                <span className="rounded-sm bg-app-accent/10 border border-app-accent/25 px-2.5 py-0.5 font-mono text-xs text-app-accent font-bold">
                   {voivSolved} / {items.length}
                 </span>
               </div>
@@ -878,12 +878,12 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           aria-modal="true"
           aria-label={flags ? 'Flag preview' : 'Coat of arms preview'}
           onClick={handleCloseInspect}
-          className="image-inspector quiz-image-inspector fixed inset-0 z-[2200] flex flex-col bg-obsidian-950/95 backdrop-blur-md select-none"
+          className="quiz-image-inspector fixed inset-0 z-[2200] flex flex-col bg-app-canvas/90 backdrop-blur-sm select-none"
         >
           {/* Top Toolbar */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="quiz-image-toolbar flex items-center justify-end gap-2 border-b border-white/10 bg-obsidian-900/90 px-2 sm:px-6 py-2 shrink-0 min-h-[56px]"
+            className="quiz-image-toolbar flex items-center justify-end gap-2 border-b border-app-border/25 bg-app-surface-raised/95 px-2 sm:px-6 py-2 shrink-0 min-h-[56px]"
           >
             <div className="quiz-image-controls flex items-center gap-1 sm:gap-1.5 shrink-0">
               <button
@@ -892,7 +892,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 disabled={inspectZoom <= 1}
                 aria-label={'Zoom out'}
                 title={'Zoom out'}
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 p-2 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-muted p-2 text-app-text-secondary hover:bg-app-canvas hover:text-app-text disabled:text-app-text-muted disabled:opacity-100 cursor-pointer"
               >
                 <ZoomOut size={16} />
               </button>
@@ -901,7 +901,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 onClick={() => setInspectZoom(1)}
                 aria-label={'Reset zoom'}
                 title={'Reset zoom'}
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 px-2 font-mono text-[11px] sm:text-xs text-sand-200 hover:border-emerald-400/50 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-muted px-2 font-mono text-[11px] sm:text-xs text-app-text-secondary hover:border-app-accent/50 cursor-pointer"
               >
                 {Math.round(inspectZoom * 100)}%
               </button>
@@ -911,7 +911,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 disabled={inspectZoom >= 3}
                 aria-label={'Zoom in'}
                 title={'Zoom in'}
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-white/15 bg-obsidian-950 p-2 text-zinc-300 hover:text-white disabled:opacity-40 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm border border-app-border/30 bg-app-surface-muted p-2 text-app-text-secondary hover:bg-app-canvas hover:text-app-text disabled:text-app-text-muted disabled:opacity-100 cursor-pointer"
               >
                 <ZoomIn size={16} />
               </button>
@@ -920,7 +920,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 onClick={handleCloseInspect}
                 aria-label={'Minimize image'}
                 title={'Minimize image'}
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded border border-white/20 bg-white/10 px-2.5 sm:px-3 text-xs font-semibold text-sand-100 hover:bg-rose-500/20 hover:text-rose-200 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-sm border border-app-border/30 bg-app-surface-muted px-2.5 sm:px-3 text-xs font-semibold text-app-text hover:bg-rose-50 hover:text-rose-800 cursor-pointer"
               >
                 <X size={16} />
                 <span className="hidden sm:inline">{'Close'}</span>
@@ -935,16 +935,16 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="quiz-image-frame relative flex items-center justify-center rounded-2xl border border-white/15 bg-obsidian-900/95 shadow-2xl shadow-black/80 p-4 sm:p-10 transition-colors duration-200"
+              className="quiz-image-frame relative flex items-center justify-center rounded-md border border-app-border/30 bg-app-surface-raised shadow-sm p-4 sm:p-10 transition-colors duration-200"
             >
-              {modalImgError && <p role="alert" className="absolute text-rose-300">Full-resolution image unavailable; showing preview if available.</p>}
+              {modalImgError && <p role="alert" className="absolute text-rose-700">Full-resolution image unavailable; showing preview if available.</p>}
               {/* Show the quiz rendition while the original loads. */}
               <img
                 src={thumbnailUrl(inspectedPowiat)}
                 alt=""
                 aria-hidden="true"
                 style={{ '--inspect-height': `${Math.round(68 * inspectZoom)}vh` } as React.CSSProperties}
-                className={`quiz-inspected-image max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
+                className={`quiz-inspected-image max-w-[88vw] object-contain select-none filter drop-shadow-sm transition-opacity duration-200 ${
                   modalImgLoaded && !modalImgError ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
               />
@@ -960,7 +960,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
                 onLoad={() => setModalImgLoaded(true)}
                 onError={() => { setModalImgLoaded(true); setModalImgError(true); }}
                 style={{ '--inspect-height': `${Math.round(68 * inspectZoom)}vh` } as React.CSSProperties}
-                className={`quiz-inspected-image max-w-[88vw] object-contain select-none filter drop-shadow-2xl transition-opacity duration-200 ${
+                className={`quiz-inspected-image max-w-[88vw] object-contain select-none filter drop-shadow-sm transition-opacity duration-200 ${
                   modalImgLoaded && !modalImgError ? 'opacity-100' : 'opacity-0'
                 } absolute`}
               />
