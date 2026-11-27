@@ -56,9 +56,23 @@ function HorizontalAxisHistogram({
   const isDense = buckets.length > 8;
 
   return (
-    <div className="pt-2" role="list" aria-label={ariaLabel}>
+    <div className="relative pt-2" role="list" aria-label={ariaLabel}>
+      {/* Faint horizontal reference lines behind the vertical columns */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-[2.125rem] flex h-28 sm:h-32 flex-col justify-between"
+      >
+        <div className="w-full border-t border-dashed border-app-border/50" />
+        <div className="w-full border-t border-dashed border-app-border/50" />
+        <div className="w-full border-t border-dashed border-app-border/50" />
+        <div className="w-full border-t border-transparent" />
+      </div>
+
       {/* Columns arranged horizontally left-to-right along the X-axis */}
-      <div className="grid items-end gap-1.5 sm:gap-2" style={{ gridTemplateColumns: `repeat(${buckets.length}, minmax(0, 1fr))` }}>
+      <div
+        className="relative z-10 grid items-end gap-1.5 sm:gap-2"
+        style={{ gridTemplateColumns: `repeat(${buckets.length}, minmax(0, 1fr))` }}
+      >
         {buckets.map((bucket) => {
           const isPlayer = hasServerPlayerFlag
             ? bucket.is_player
@@ -79,14 +93,14 @@ function HorizontalAxisHistogram({
               {/* Top callout: YOU pill or percentage */}
               <div className="mb-1.5 flex h-5 items-end justify-center">
                 {isPlayer ? (
-                  <span className="rounded-full bg-emerald-400/20 border border-emerald-400/50 px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none tracking-wider text-emerald-300 uppercase">
+                  <span className="rounded-sm bg-[#2a5942] px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none tracking-wider text-app-canvas uppercase shadow-sm">
                     YOU
                   </span>
                 ) : bucket.pct > 0 ? (
                   <span
                     className={`font-mono leading-none tabular-nums ${
                       isDense ? 'text-[9px] sm:text-[10px]' : 'text-[10px] sm:text-[11px]'
-                    } text-zinc-400 group-hover:text-sand-100 transition-colors`}
+                    } text-app-text-muted group-hover:text-app-text transition-colors`}
                   >
                     {Math.round(bucket.pct)}%
                   </span>
@@ -94,41 +108,41 @@ function HorizontalAxisHistogram({
               </div>
 
               {/* Column track (vertical bar rising from horizontal baseline) */}
-              <div className="relative flex h-28 sm:h-32 w-full items-end justify-center rounded-t-md bg-white/[0.03] px-0.5 sm:px-1">
+              <div className="relative flex h-28 sm:h-32 w-full items-end justify-center px-0.5 sm:px-1">
                 {barHeightPct > 0 ? (
                   <div
-                    className={`w-full max-w-[2.5rem] rounded-t-md transition-all duration-500 ease-out ${
+                    className={`w-full max-w-[2.5rem] rounded-t-sm transition-all duration-500 ease-out ${
                       isPlayer
-                        ? 'bg-gradient-to-t from-emerald-600/90 to-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.3)]'
+                        ? 'bg-[#2a5942] group-hover:bg-[#224936] shadow-[0_2px_10px_rgba(42,89,66,0.22)]'
                         : isFailBucket
-                        ? 'bg-rose-500/35 group-hover:bg-rose-500/50'
-                        : 'bg-white/[0.15] group-hover:bg-white/[0.25]'
+                        ? 'bg-[#a84436]/30 group-hover:bg-[#a84436]/45'
+                        : 'bg-[#2c241b]/20 group-hover:bg-[#2c241b]/35'
                     }`}
                     style={{ height: `${barHeightPct}%` }}
                   />
                 ) : (
-                  <div className="h-[2px] w-full max-w-[2.5rem] rounded-full bg-white/[0.08]" />
+                  <div className="h-[2px] w-full max-w-[2.5rem] rounded-full bg-app-border/35" />
                 )}
               </div>
 
               {/* Baseline + X-axis bucket label */}
-              <div className="w-full border-t border-white/10 pt-2 flex flex-col items-center gap-1">
+              <div className="w-full border-t border-app-border/70 pt-2 flex flex-col items-center gap-1">
                 <span
                   className={`truncate max-w-full font-mono tabular-nums ${
                     isDense ? 'text-[10px] sm:text-[11px]' : 'text-[11px] sm:text-xs'
                   } ${
                     isPlayer
-                      ? 'font-bold text-emerald-300'
+                      ? 'font-bold text-[#2a5942]'
                       : isFailBucket
-                      ? 'text-rose-400/85'
-                      : 'text-zinc-400'
+                      ? 'font-semibold text-[#a84436]'
+                      : 'text-app-text-secondary'
                   }`}
                 >
                   {bucket.label}
                 </span>
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${
-                    isAvgBucket ? 'bg-amber-400/90' : 'bg-transparent'
+                    isAvgBucket ? 'bg-[#9a6b2f]' : 'bg-transparent'
                   }`}
                   title={isAvgBucket ? "Closest to today's average" : undefined}
                   aria-hidden={!isAvgBucket}
@@ -222,18 +236,18 @@ export default function DistributionChart({
   return (
     <section
       aria-label="Today's distribution"
-      className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6 space-y-5"
+      className="rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 space-y-5 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <BarChart3 size={15} className="text-emerald-400 shrink-0" aria-hidden="true" />
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-sand-100">
+          <BarChart3 size={15} className="text-[#2a5942] shrink-0" aria-hidden="true" />
+          <h3 className="font-serif text-base font-semibold tracking-tight text-app-text">
             {showDualToggle ? 'Distribution' : chartTitle}
           </h3>
           {activeAverage !== null && activeAverage !== undefined && Number.isFinite(activeAverage) && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.05] px-2.5 py-0.5 font-mono text-[11px] text-zinc-300 tabular-nums">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-[#9a6b2f] tabular-nums">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#9a6b2f]" aria-hidden="true" />
               avg {activeAverage.toFixed(1)}
               {activeAvgUnit ? ` ${activeAvgUnit}` : ''}
             </span>
@@ -245,17 +259,17 @@ export default function DistributionChart({
             <div
               role="tablist"
               aria-label="Distribution metric"
-              className="inline-flex items-center rounded-full bg-white/[0.05] p-0.5"
+              className="inline-flex items-center rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
             >
               <button
                 type="button"
                 role="tab"
                 aria-selected={activeMetric === 'questions'}
                 onClick={() => setActiveMetric('questions')}
-                className={`rounded-full px-3 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`rounded-sm px-3 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
                   activeMetric === 'questions'
-                    ? 'bg-emerald-400/20 text-emerald-300'
-                    : 'text-zinc-400 hover:text-sand-100'
+                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                    : 'text-app-text-secondary hover:text-app-text'
                 }`}
               >
                 Questions
@@ -265,10 +279,10 @@ export default function DistributionChart({
                 role="tab"
                 aria-selected={activeMetric === 'guesses'}
                 onClick={() => setActiveMetric('guesses')}
-                className={`rounded-full px-3 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`rounded-sm px-3 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
                   activeMetric === 'guesses'
-                    ? 'bg-emerald-400/20 text-emerald-300'
-                    : 'text-zinc-400 hover:text-sand-100'
+                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                    : 'text-app-text-secondary hover:text-app-text'
                 }`}
               >
                 Guesses
@@ -277,7 +291,7 @@ export default function DistributionChart({
           ) : (
             completedToday !== undefined &&
             completedToday > 0 && (
-              <span className="font-mono text-[11px] text-zinc-400 tabular-nums">
+              <span className="font-mono text-[11px] text-app-text-muted tabular-nums">
                 {completedToday.toLocaleString('en-US')} {completedToday === 1 ? 'finish' : 'finishes'}
               </span>
             )
@@ -290,15 +304,15 @@ export default function DistributionChart({
         <div className="grid grid-cols-6 items-end gap-2 pt-4" role="status" aria-label="Loading distribution">
           {[32, 68, 92, 54, 36, 20].map((h, idx) => (
             <div key={idx} className="flex flex-col items-center gap-2">
-              <div className="flex h-28 w-full items-end rounded-t-md bg-white/[0.03] px-1">
-                <div className="w-full rounded-t-md bg-white/10 animate-pulse" style={{ height: `${h}%` }} />
+              <div className="flex h-28 w-full items-end rounded-t-sm bg-app-surface-muted/60 px-1">
+                <div className="w-full rounded-t-sm bg-app-border/30 animate-pulse" style={{ height: `${h}%` }} />
               </div>
-              <div className="h-2.5 w-6 rounded bg-white/10 animate-pulse" />
+              <div className="h-2.5 w-6 rounded-sm bg-app-border/30 animate-pulse" />
             </div>
           ))}
         </div>
       ) : isUnavailable || !activeBuckets ? (
-        <p className="py-6 text-center text-xs text-zinc-400">
+        <p className="py-6 text-center text-xs text-app-text-muted">
           {isUnavailable
             ? 'Live community distributions are temporarily unavailable.'
             : 'Be one of the first players today. Distributions update as players finish.'}

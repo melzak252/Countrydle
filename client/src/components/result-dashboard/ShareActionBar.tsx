@@ -76,7 +76,7 @@ export default function ShareActionBar({
         <button
           type="button"
           onClick={handleNativeShare}
-          className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-400 px-5 py-2 text-sm font-bold text-obsidian-950 transition-colors hover:bg-emerald-300 cursor-pointer"
+          className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-app-accent px-5 py-2 text-sm font-semibold text-app-canvas shadow-[0_2px_8px_rgba(85,75,57,0.18)] transition-colors hover:bg-app-accent-hover cursor-pointer"
         >
           {copied ? <Check size={15} aria-hidden="true" /> : <Share2 size={15} aria-hidden="true" />}
           <span>{copied ? 'Copied!' : 'Share Result'}</span>
@@ -86,17 +86,17 @@ export default function ShareActionBar({
           <button
             type="button"
             onClick={handleCopy}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-zinc-300 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-sm border border-app-border bg-app-surface text-app-text-secondary transition-colors hover:border-app-accent hover:bg-app-surface-muted hover:text-app-text cursor-pointer"
             aria-label="Copy result"
             title="Copy result"
           >
-            {copied ? <Check size={15} className="text-emerald-400" aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+            {copied ? <Check size={15} className="text-[#2a5942]" aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
           </button>
 
           <button
             type="button"
             onClick={handleShareX}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-zinc-300 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-sm border border-app-border bg-app-surface text-app-text-secondary transition-colors hover:border-app-accent hover:bg-app-surface-muted hover:text-app-text cursor-pointer"
             aria-label="Share on X"
             title="Share on X"
           >
@@ -108,7 +108,7 @@ export default function ShareActionBar({
           <button
             type="button"
             onClick={handleShareWhatsApp}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-zinc-300 transition-colors hover:bg-white/10 hover:text-emerald-400 cursor-pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-sm border border-app-border bg-app-surface text-app-text-secondary transition-colors hover:border-app-accent hover:bg-app-surface-muted hover:text-[#2a5942] cursor-pointer"
             aria-label="Share on WhatsApp"
             title="Share on WhatsApp"
           >
@@ -126,7 +126,7 @@ export default function ShareActionBar({
             <button
               type="button"
               onClick={primaryAction.onClick}
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3.5 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-400/20 transition-colors cursor-pointer"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-sm border border-[#9a6b2f]/40 bg-[#9a6b2f]/10 px-3.5 py-1.5 text-xs font-semibold text-[#9a6b2f] hover:bg-[#9a6b2f]/20 transition-colors cursor-pointer"
             >
               {primaryAction.icon}
               <span>{primaryAction.label}</span>
@@ -138,10 +138,10 @@ export default function ShareActionBar({
 
       {/* Compact UTC countdown */}
       {isDaily && (
-        <div className="inline-flex items-center gap-2 text-xs text-zinc-400">
-          <Clock size={12} className="text-zinc-500 shrink-0" aria-hidden="true" />
+        <div className="inline-flex items-center gap-2 text-xs text-app-text-secondary">
+          <Clock size={12} className="text-app-text-muted shrink-0" aria-hidden="true" />
           <span className="font-mono text-[11px]">Next puzzle in</span>
-          <CountdownTimer variant="minimal" className="text-xs font-semibold text-zinc-200" />
+          <CountdownTimer variant="minimal" className="text-xs font-semibold text-app-text" />
         </div>
       )}
     </div>

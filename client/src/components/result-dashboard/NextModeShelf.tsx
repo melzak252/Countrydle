@@ -97,10 +97,10 @@ export default function NextModeShelf({ currentPath, duelMode }: NextModeShelfPr
   return (
     <nav
       aria-label="Up next"
-      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-white/[0.08] pt-5"
+      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-app-border/60 pt-5"
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+        <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-app-text-muted">
           Up next
         </span>
 
@@ -109,12 +109,12 @@ export default function NextModeShelf({ currentPath, duelMode }: NextModeShelfPr
             <Link
               key={item.path}
               to={item.path}
-              className="group shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-medium text-sand-100 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-200 transition-colors"
+              className="group shrink-0 inline-flex items-center gap-1.5 rounded-sm border border-app-border/70 bg-app-surface px-3.5 py-1.5 text-xs font-medium text-app-text hover:border-app-accent hover:bg-app-surface-muted hover:text-[#2a5942] transition-colors"
             >
               <span>{item.name}</span>
               <ArrowRight
                 size={12}
-                className="text-zinc-500 group-hover:text-emerald-300 transition-colors"
+                className="text-app-text-muted group-hover:text-[#2a5942] transition-colors"
                 aria-hidden="true"
               />
             </Link>
@@ -125,15 +125,15 @@ export default function NextModeShelf({ currentPath, duelMode }: NextModeShelfPr
       <div className="flex items-center gap-3 shrink-0">
         <Link
           to={`/friends?mode=${encodeURIComponent(resolvedDuelMode)}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/[0.08] px-3.5 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-400/15 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-sm border border-[#9a6b2f]/40 bg-[#9a6b2f]/10 px-3.5 py-1.5 text-xs font-semibold text-[#9a6b2f] hover:bg-[#9a6b2f]/20 transition-colors"
         >
-          <Swords size={13} className="text-amber-300 shrink-0" aria-hidden="true" />
+          <Swords size={13} className="text-[#9a6b2f] shrink-0" aria-hidden="true" />
           <span>1v1 Duel</span>
         </Link>
 
         <Link
           to="/#maps"
-          className="font-mono text-[11px] text-zinc-500 hover:text-zinc-200 transition-colors"
+          className="font-mono text-[11px] font-medium text-app-text-secondary underline decoration-app-border underline-offset-4 hover:text-app-accent transition-colors"
         >
           All modes
         </Link>

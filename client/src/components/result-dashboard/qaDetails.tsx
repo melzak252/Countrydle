@@ -33,7 +33,7 @@ export function buildQADetailTabs({
       icon: <MessageSquare size={15} className="shrink-0" aria-hidden="true" />,
       content: (
         <div className="space-y-3">
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-app-text-secondary">
             Select a question to review its explanation or report an issue.
           </p>
           <ResultsQuestionHistory

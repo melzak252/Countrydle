@@ -369,27 +369,27 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
   const dashboardBody = (
     <section
       aria-label={`${gameName} result dashboard`}
-      className={`relative w-full max-w-5xl xl:max-w-6xl mx-auto rounded-2xl border border-white/10 bg-obsidian-950 text-left text-sand-100 shadow-2xl ${
+      className={`relative w-full max-w-5xl xl:max-w-6xl mx-auto rounded-md border border-app-border border-t-2 border-t-[#2a5942] bg-app-canvas text-left text-app-text shadow-[0_24px_60px_rgba(44,36,27,0.28)] ${
         variant === 'modal'
-          ? 'max-h-[calc(var(--app-height,100dvh)-1rem)] sm:max-h-[calc(var(--app-height,100dvh)-2.5rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]'
+          ? 'max-h-[calc(var(--app-height,100dvh)-1rem)] sm:max-h-[calc(var(--app-height,100dvh)-2.5rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] custom-scrollbar'
           : ''
       }`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Calm Sticky Top Bar */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/[0.07] bg-obsidian-950/95 backdrop-blur-md px-5 py-3.5 sm:px-7">
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-app-border/60 bg-app-canvas/95 backdrop-blur-md px-5 py-3.5 sm:px-7">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="font-mono text-xs font-semibold text-emerald-400 uppercase tracking-wider shrink-0">
+          <span className="font-mono text-xs font-semibold text-[#2a5942] uppercase tracking-[0.14em] shrink-0">
             {gameName}
           </span>
-          <span className="text-zinc-700 select-none" aria-hidden="true">
+          <span className="text-app-border select-none" aria-hidden="true">
             ·
           </span>
-          <time dateTime={displayDate} className="font-mono text-xs text-zinc-400 shrink-0">
+          <time dateTime={displayDate} className="font-mono text-xs text-app-text-muted shrink-0">
             {isDaily ? displayDate : 'Challenge'}
           </time>
           {targetName && (
-            <span className="truncate text-xs text-zinc-500 sm:hidden">· {targetName}</span>
+            <span className="truncate text-xs text-app-text-secondary sm:hidden">· {targetName}</span>
           )}
         </div>
 
@@ -397,7 +397,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-sm border border-app-border/60 bg-app-surface text-app-text-secondary hover:border-app-accent hover:bg-app-surface-muted hover:text-app-text transition-colors cursor-pointer"
             aria-label={closeLabel}
             title={closeLabel}
           >
@@ -409,15 +409,15 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
       {/* Main Airy Content */}
       <div className="p-5 sm:p-7 space-y-6">
         {/* Clean Top Hero (no nested card border) */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 border-b border-white/[0.08] pb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 border-b border-app-border/60 pb-6">
           {/* Hero Left: Outcome + Target Reveal */}
           <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
             {resolvedImageSrc && (
-              <div className="shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-1.5 shadow-sm">
+              <div className="shrink-0 overflow-hidden rounded-sm border border-app-border/70 bg-app-surface p-1.5 shadow-[1px_2px_6px_rgba(85,75,57,0.08)]">
                 <img
                   src={resolvedImageSrc}
                   alt={targetImageAlt || targetName || gameName}
-                  className="h-14 w-20 sm:h-16 sm:w-24 object-contain rounded-lg"
+                  className="h-14 w-20 sm:h-16 sm:w-24 object-contain rounded-[2px]"
                 />
               </div>
             )}
@@ -425,10 +425,10 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold ${
+                  className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider ${
                     won
-                      ? 'bg-emerald-500/15 text-emerald-300'
-                      : 'bg-rose-500/15 text-rose-300'
+                      ? 'border-[#2a5942]/30 bg-[#2a5942]/10 text-[#2a5942]'
+                      : 'border-[#a84436]/30 bg-[#a84436]/10 text-[#a84436]'
                   }`}
                 >
                   {won ? (
@@ -440,26 +440,26 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                 </span>
 
                 {targetLabel && (
-                  <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-app-text-muted">
                     {targetLabel}
                   </span>
                 )}
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="break-words font-serif text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-sand-100">
+                <h2 className="break-words font-serif text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-app-text">
                   {targetName || (won ? 'Puzzle Solved' : 'Game Over')}
                 </h2>
                 {targetAccessory && <div className="shrink-0">{targetAccessory}</div>}
               </div>
 
               {(targetSubtitle || subtitle) && (
-                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-xl">
+                <p className="text-xs sm:text-sm text-app-text-secondary leading-relaxed max-w-xl">
                   {targetSubtitle || subtitle}
                 </p>
               )}
               {targetSubtitle && subtitle && (
-                <p className="text-xs text-zinc-500 leading-relaxed max-w-xl">{subtitle}</p>
+                <p className="text-xs text-app-text-muted leading-relaxed max-w-xl">{subtitle}</p>
               )}
             </div>
           </div>
@@ -469,14 +469,14 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             {(won && ((points !== null && points !== undefined && points > 0) || topPercentileDisplay !== null)) && (
               <div className="flex flex-wrap items-baseline lg:justify-end gap-2.5">
                 {points !== null && points !== undefined && points > 0 && (
-                  <div className="font-mono text-2xl sm:text-3xl font-bold text-emerald-300 tabular-nums">
+                  <div className="font-mono text-2xl sm:text-3xl font-bold text-[#2a5942] tabular-nums">
                     +{points.toLocaleString('en-US')}{' '}
-                    <span className="text-xs font-normal text-emerald-400/75">pts</span>
+                    <span className="text-xs font-normal text-app-text-secondary">pts</span>
                   </div>
                 )}
 
                 {topPercentileDisplay !== null && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/12 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-200">
+                  <span className="inline-flex items-center gap-1 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#9a6b2f]">
                     <Sparkles size={11} aria-hidden="true" />
                     Top {topPercentileDisplay}% today
                   </span>
@@ -503,30 +503,30 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             {statMetrics.length > 0 && (
               <dl
                 aria-label="Summary metrics"
-                className={`grid divide-x divide-white/[0.08] rounded-xl border border-white/[0.08] bg-white/[0.02] ${
+                className={`grid divide-x divide-app-border/45 rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)] ${
                   statMetrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
                 }`}
               >
                 {statMetrics.map((metric) => (
                   <div key={metric.label} className="px-4 py-3.5 sm:px-5 sm:py-4 min-w-0">
-                    <dt className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-zinc-500 truncate">
+                    <dt className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-app-text-muted truncate">
                       {metric.label}
                     </dt>
                     <dd
                       className={`mt-1 font-mono text-lg sm:text-xl font-bold tabular-nums truncate ${
                         metric.accent === 'emerald'
-                          ? 'text-emerald-300'
+                          ? 'text-[#2a5942]'
                           : metric.accent === 'amber'
-                          ? 'text-amber-300'
+                          ? 'text-[#9a6b2f]'
                           : metric.accent === 'rose'
-                          ? 'text-rose-300'
-                          : 'text-sand-100'
+                          ? 'text-[#a84436]'
+                          : 'text-app-text'
                       }`}
                     >
                       {metric.value}
                     </dd>
                     {metric.subtext && (
-                      <div className="mt-0.5 font-mono text-[11px] text-zinc-500 truncate">
+                      <div className="mt-0.5 font-mono text-[11px] text-app-text-secondary truncate">
                         {metric.subtext}
                       </div>
                     )}
@@ -556,27 +556,27 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             {hasDetails && (
               <section
                 aria-label={detailsTitle}
-                className="rounded-xl border border-white/[0.08] bg-white/[0.02]"
+                className="rounded-md border border-app-border/70 bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
               >
                 <button
                   type="button"
                   onClick={() => setDetailsOpen((prev) => !prev)}
                   aria-expanded={detailsOpen}
-                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-white/[0.02] transition-colors rounded-xl cursor-pointer"
+                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-app-surface-muted/60 transition-colors rounded-md cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="font-mono text-xs font-semibold uppercase tracking-wider text-zinc-300 truncate">
+                    <span className="font-serif text-sm font-semibold text-app-text truncate">
                       {detailsToggleLabel}
                     </span>
                     {detailsBadgeCount !== undefined && (
-                      <span className="rounded-full bg-white/[0.08] px-2 py-0.5 font-mono text-[10px] text-zinc-300 tabular-nums">
+                      <span className="rounded-sm border border-app-border/50 bg-app-surface-muted px-2 py-0.5 font-mono text-[10px] text-app-text-secondary tabular-nums">
                         {detailsBadgeCount}
                       </span>
                     )}
                   </div>
                   <ChevronDown
                     size={16}
-                    className={`shrink-0 text-zinc-500 transition-transform duration-200 ${
+                    className={`shrink-0 text-app-text-muted transition-transform duration-200 ${
                       detailsOpen ? 'rotate-180' : ''
                     }`}
                     aria-hidden="true"
@@ -584,14 +584,14 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                 </button>
 
                 {detailsOpen && (
-                  <div className="border-t border-white/[0.07] px-5 py-5 space-y-4">
+                  <div className="border-t border-app-border/50 px-5 py-5 space-y-4">
                     {detailTabs && detailTabs.length > 0 ? (
                       <>
                         {detailTabs.length > 1 && (
                           <div
                             role="tablist"
                             aria-label={detailsTitle}
-                            className="inline-flex flex-wrap items-center gap-1 rounded-full bg-white/[0.05] p-1"
+                            className="inline-flex flex-wrap items-center gap-1 rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
                           >
                             {detailTabs.map((tab) => {
                               const selected = tab.id === resolvedDetailTab;
@@ -604,16 +604,16 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                                   aria-selected={selected}
                                   aria-controls={`${tabListId}-${tab.id}-panel`}
                                   onClick={() => setActiveDetailTab(tab.id)}
-                                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                  className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
                                     selected
-                                      ? 'bg-emerald-400/20 text-emerald-300'
-                                      : 'text-zinc-400 hover:text-sand-100'
+                                      ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                                      : 'text-app-text-secondary hover:text-app-text'
                                   }`}
                                 >
                                   {tab.icon}
                                   <span>{tab.label}</span>
                                   {tab.badge !== undefined && (
-                                    <span className="rounded-full bg-white/10 px-1.5 py-0.25 font-mono text-[10px]">
+                                    <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.25 font-mono text-[10px] text-app-text-secondary">
                                       {tab.badge}
                                     </span>
                                   )}
@@ -675,7 +675,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
       aria-modal="true"
       aria-label={`${gameName} Daily Results`}
       onClick={onClose}
-      className="fixed inset-0 z-[1200] flex items-center justify-center p-2.5 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+      className="fixed inset-0 z-[1200] flex items-center justify-center p-2.5 sm:p-6 bg-[#1f1b16]/55 backdrop-blur-sm animate-in fade-in duration-150 cursor-pointer"
     >
       <div className="relative z-10 w-full cursor-default">{dashboardBody}</div>
     </div>

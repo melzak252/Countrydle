@@ -25,10 +25,10 @@ const PERIOD_TABS: { id: DashboardLeaderboardPeriod; label: string }[] = [
 ];
 
 function rankBadgeClass(rank: number): string {
-  if (rank === 1) return 'text-amber-300 font-bold';
-  if (rank === 2) return 'text-zinc-200 font-bold';
-  if (rank === 3) return 'text-amber-500 font-bold';
-  return 'text-zinc-500';
+  if (rank === 1) return 'text-[#9a6b2f] font-bold';
+  if (rank === 2) return 'text-[#355c7d] font-bold';
+  if (rank === 3) return 'text-[#a84436] font-bold';
+  return 'text-app-text-muted';
 }
 
 function formatEntryPrimaryMetric(
@@ -87,10 +87,10 @@ function LeaderboardRow({
 
   return (
     <div
-      className={`grid grid-cols-[2.25rem_1fr_auto] items-center gap-3 rounded-lg px-3 py-2.5 text-xs transition-colors ${
+      className={`grid grid-cols-[2.25rem_1fr_auto] items-center gap-3 rounded-sm border px-3 py-2.5 text-xs transition-colors ${
         isCurrentUser
-          ? 'bg-emerald-500/12 text-emerald-100 ring-1 ring-inset ring-emerald-400/30'
-          : 'hover:bg-white/[0.03] text-sand-100'
+          ? 'bg-[#2a5942]/10 border-[#2a5942]/30 text-app-text'
+          : 'border-transparent hover:bg-app-surface-muted/70 text-app-text'
       }`}
     >
       <span className={`font-mono text-xs tabular-nums ${rankBadgeClass(entry.rank)}`}>
@@ -103,8 +103,8 @@ function LeaderboardRow({
             to={`/profile/${encodeURIComponent(entry.username)}`}
             className={`truncate font-medium hover:underline ${
               isCurrentUser
-                ? 'text-emerald-200 font-semibold'
-                : 'text-sand-100 hover:text-emerald-300'
+                ? 'text-[#2a5942] font-semibold'
+                : 'text-app-text hover:text-[#2a5942]'
             }`}
           >
             {entry.username}
@@ -112,14 +112,14 @@ function LeaderboardRow({
         ) : (
           <span
             className={`truncate font-medium ${
-              isCurrentUser ? 'text-emerald-200 font-semibold' : 'text-zinc-300'
+              isCurrentUser ? 'text-[#2a5942] font-semibold' : 'text-app-text-secondary'
             }`}
           >
             {entry.username}
           </span>
         )}
         {isCurrentUser && (
-          <span className="shrink-0 rounded-full bg-emerald-400/20 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+          <span className="shrink-0 rounded-sm bg-[#2a5942] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-app-canvas">
             YOU
           </span>
         )}
@@ -128,12 +128,12 @@ function LeaderboardRow({
       <div className="text-right font-mono tabular-nums">
         <div
           className={`text-xs font-semibold ${
-            isCurrentUser ? 'text-emerald-300' : 'text-sand-100'
+            isCurrentUser ? 'text-[#2a5942]' : 'text-app-text'
           }`}
         >
           {formatEntryPrimaryMetric(entry, period)}
         </div>
-        {sub && <div className="text-[10px] text-zinc-500">{sub}</div>}
+        {sub && <div className="text-[10px] text-app-text-muted">{sub}</div>}
       </div>
     </div>
   );
@@ -170,13 +170,13 @@ export default function CompactLeaderboard({
   return (
     <section
       aria-label="Leaderboard"
-      className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6 space-y-4"
+      className="rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 space-y-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header + Segmented Pill Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Trophy size={15} className="text-amber-400 shrink-0" aria-hidden="true" />
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-sand-100">
+          <Trophy size={15} className="text-[#9a6b2f] shrink-0" aria-hidden="true" />
+          <h3 className="font-serif text-base font-semibold tracking-tight text-app-text">
             Leaderboard
           </h3>
         </div>
@@ -184,7 +184,7 @@ export default function CompactLeaderboard({
         <div
           role="tablist"
           aria-label="Leaderboard timeframe"
-          className="inline-flex items-center rounded-full bg-white/[0.05] p-0.5"
+          className="inline-flex items-center rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
         >
           {PERIOD_TABS.map((tab) => {
             const active = period === tab.id;
@@ -195,10 +195,10 @@ export default function CompactLeaderboard({
                 role="tab"
                 aria-selected={active}
                 onClick={() => onPeriodChange(tab.id)}
-                className={`rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`rounded-sm px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
                   active
-                    ? 'bg-emerald-400/20 text-emerald-300'
-                    : 'text-zinc-400 hover:text-sand-100'
+                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                    : 'text-app-text-secondary hover:text-app-text'
                 }`}
               >
                 {tab.label}
@@ -212,22 +212,22 @@ export default function CompactLeaderboard({
       {isLoading ? (
         <div className="space-y-2 py-1" role="status" aria-label="Loading leaderboard">
           {[0, 1, 2, 3, 4].map((idx) => (
-            <div key={idx} className="h-10 rounded-lg bg-white/[0.04] animate-pulse" />
+            <div key={idx} className="h-10 rounded-sm bg-app-surface-muted/80 animate-pulse" />
           ))}
         </div>
       ) : isUnavailable ? (
-        <p className="py-6 text-center text-xs text-zinc-400">
+        <p className="py-6 text-center text-xs text-app-text-muted">
           Rankings are temporarily unavailable. Your result is still saved.
         </p>
       ) : entries.length === 0 ? (
-        <p className="py-6 text-center text-xs text-zinc-400">
+        <p className="py-6 text-center text-xs text-app-text-muted">
           No ranked entries yet for this timeframe.
         </p>
       ) : (
         <div className="space-y-1">
           <div
             className={
-              isExpanded ? 'max-h-80 overflow-y-auto pr-1 space-y-1' : 'space-y-1'
+              isExpanded ? 'max-h-80 overflow-y-auto pr-1 space-y-1 custom-scrollbar' : 'space-y-1'
             }
           >
             {visibleEntries.map((entry, idx) => (
@@ -241,7 +241,7 @@ export default function CompactLeaderboard({
           </div>
 
           {showPinnedSelf && currentUserEntry && (
-            <div className="border-t border-dashed border-white/15 pt-2 mt-2">
+            <div className="border-t border-dashed border-app-border/60 pt-2 mt-2">
               <LeaderboardRow entry={currentUserEntry} period={period} isCurrentUser />
             </div>
           )}
@@ -252,7 +252,7 @@ export default function CompactLeaderboard({
                 type="button"
                 onClick={onToggleExpand}
                 disabled={isExpanding}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 font-mono text-[11px] font-medium text-zinc-400 hover:bg-white/[0.04] hover:text-sand-100 transition-colors cursor-pointer disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-sm border border-app-border/50 bg-app-surface-muted/50 py-2 font-mono text-[11px] font-medium text-app-text-secondary hover:border-app-accent/60 hover:bg-app-surface-muted hover:text-app-text transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isExpanding ? (
                   <span>Loading more...</span>
@@ -277,19 +277,19 @@ export default function CompactLeaderboard({
 
       {/* Subtle guest sign-in prompt */}
       {!isAuthenticated && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] pt-3.5 text-xs">
-          <span className="text-zinc-400">Sign in to claim your rank and streak.</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-app-border/50 pt-3.5 text-xs">
+          <span className="text-app-text-secondary">Sign in to claim your rank and streak.</span>
           <div className="flex items-center gap-3 shrink-0">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-emerald-300 hover:text-emerald-200 transition-colors"
+              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-[#2a5942] hover:text-app-accent-hover transition-colors"
             >
               <LogIn size={12} aria-hidden="true" />
               Log in
             </Link>
             <Link
               to="/register"
-              className="rounded-full bg-emerald-400/15 px-2.5 py-1 font-mono text-[11px] font-semibold text-emerald-300 hover:bg-emerald-400/25 transition-colors"
+              className="rounded-sm border border-[#2a5942]/35 bg-[#2a5942]/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-[#2a5942] hover:bg-[#2a5942]/20 transition-colors"
             >
               Sign up
             </Link>
