@@ -17,15 +17,51 @@ from schemas.powiat_map_quiz import (
     MapQuizDailyStats,
     MapQuizHistoryResponse,
 )
+from stats.service import record_mode_result
 from users.utils import get_current_or_guest_user, get_current_user
 from utils.guest_session import SECRET_KEY, get_guest_identity, read_guest_identity
 
 
 ROUND_COUNT = 10
+WIN_SCORE_THRESHOLD = 6
 MIN_PUBLIC_STATS_COMPLETIONS = 5
 DAILY_SET_VERSION = "v1"
 
 router = APIRouter(prefix="/map-quiz", tags=["powiat-map-quiz"])
+
+
+async def _record_powiat_map_quiz_result(
+    session: AsyncSession,
+    *,
+    record_date: date,
+    user_id: int | None,
+    guest_id: str | None,
+    score: int,
+    started_at: datetime | None,
+    completed_at: datetime | None,
+) -> None:
+    if completed_at is None:
+        return
+    elapsed_seconds: float | None = None
+    if started_at is not None:
+        elapsed_seconds = max(1.0, (completed_at - started_at).total_seconds())
+    try:
+        await record_mode_result(
+            session,
+            mode="map_quiz_powiaty",
+            record_date=record_date,
+            user_id=user_id,
+            guest_id=guest_id,
+            completed=True,
+            won=score >= WIN_SCORE_THRESHOLD,
+            points=score * 100,
+            score=score,
+            max_score=ROUND_COUNT,
+            elapsed_seconds=elapsed_seconds,
+            completed_at=completed_at,
+        )
+    except Exception:
+        await session.rollback()
 
 
 def utc_now() -> datetime:
@@ -230,11 +266,23 @@ async def submit_answer(
     answer = {"round": current_round, "guess_id": body.guess_id, "correct": correct}
     row.answers = [*row.answers, answer]
     row.score += int(correct)
-    if len(row.answers) == ROUND_COUNT:
+    completed_now = len(row.answers) == ROUND_COUNT
+    if completed_now:
         row.completed_at = utc_now()
 
     await session.commit()
-    return _daily_state(row, answer)
+    state_payload = _daily_state(row, answer)
+    if completed_now:
+        await _record_powiat_map_quiz_result(
+            session,
+            record_date=row.date,
+            user_id=row.user_id,
+            guest_id=row.guest_id,
+            score=row.score,
+            started_at=row.started_at,
+            completed_at=row.completed_at,
+        )
+    return state_payload
 
 
 @router.get("/history", response_model=MapQuizHistoryResponse)
@@ -368,6 +416,23 @@ async def _claim_guest_session(
     guest_row.user_id = user.id
     guest_row.guest_id = None
     await session.commit()
+    if guest_row.completed_at is not None:
+        record_date = guest_row.date
+        claimed_user_id = guest_row.user_id
+        claimed_score = guest_row.score
+        started_at = guest_row.started_at
+        completed_at = guest_row.completed_at
+        # Materialize attributes before optional stats write in case rollback expires ORM state
+        _ = (guest_row.targets, guest_row.answers)
+        await _record_powiat_map_quiz_result(
+            session,
+            record_date=record_date,
+            user_id=claimed_user_id,
+            guest_id=None,
+            score=claimed_score,
+            started_at=started_at,
+            completed_at=completed_at,
+        )
     return guest_row
 
 

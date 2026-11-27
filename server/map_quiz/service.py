@@ -5,7 +5,10 @@ from __future__ import annotations
 import hashlib
 import math
 import random
+import sqlite3
 from datetime import date, datetime, timezone
+from functools import lru_cache
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -16,14 +19,121 @@ from db.models.map_quiz import MapQuizDailySession
 from db.models.user import User, UserPoints
 from db.repositories.leaderboard import utc_month_bounds
 from game_logic import count_consecutive_daily_wins
-from regional_symbols.catalog import load_entities
+from regional_symbols.catalog import load_entities as _load_regional_entities
 from schemas.countrydle import LeaderboardEntry
 from stats.service import record_mode_result
 from utils.guest_session import get_guest_identity, read_guest_identity
 
-MAP_QUIZ_SCOPES = frozenset({"london_boroughs", "england_counties"})
+MAP_QUIZ_SCOPES = frozenset({"london_boroughs", "england_counties", "us_states"})
 DAILY_ROUND_COUNT = 10
 WIN_SCORE_THRESHOLD = 7
+
+_FALLBACK_US_STATES: tuple[tuple[int, str, float, float], ...] = (
+    (1, "Alabama", 32.5917, -86.675),
+    (2, "Alaska", 64.2008, -149.4937),
+    (3, "Arizona", 34.1667, -111.9333),
+    (4, "Arkansas", 34.7519, -92.1314),
+    (5, "California", 36.7783, -119.4179),
+    (6, "Colorado", 39.5501, -105.7821),
+    (7, "Connecticut", 41.6032, -73.0877),
+    (8, "Delaware", 38.9108, -75.5277),
+    (9, "Florida", 27.6648, -81.5158),
+    (10, "Georgia", 32.1656, -82.9001),
+    (11, "Hawaii", 19.8968, -155.5828),
+    (12, "Idaho", 44.0682, -114.742),
+    (13, "Illinois", 40.6331, -89.3985),
+    (14, "Indiana", 40.2672, -86.1349),
+    (15, "Iowa", 41.878, -93.0977),
+    (16, "Kansas", 39.0119, -98.4842),
+    (17, "Kentucky", 37.8393, -84.27),
+    (18, "Louisiana", 30.9843, -91.9623),
+    (19, "Maine", 45.2538, -69.4455),
+    (20, "Maryland", 39.0458, -76.6413),
+    (21, "Massachusetts", 42.4072, -71.3824),
+    (22, "Michigan", 44.3148, -85.6024),
+    (23, "Minnesota", 46.7296, -94.6859),
+    (24, "Mississippi", 32.3547, -89.3985),
+    (25, "Missouri", 37.9643, -91.8318),
+    (26, "Montana", 46.8797, -110.3626),
+    (27, "Nebraska", 41.4925, -99.9018),
+    (28, "Nevada", 38.8026, -116.4194),
+    (29, "New Hampshire", 43.1939, -71.5724),
+    (30, "New Jersey", 40.0583, -74.4057),
+    (31, "New Mexico", 34.5199, -105.8701),
+    (32, "New York", 43.2994, -74.2179),
+    (33, "North Carolina", 35.7596, -79.0193),
+    (34, "North Dakota", 47.5515, -101.002),
+    (35, "Ohio", 40.4173, -82.9071),
+    (36, "Oklahoma", 35.0078, -97.0929),
+    (37, "Oregon", 43.8041, -120.5542),
+    (38, "Pennsylvania", 41.2033, -77.1945),
+    (39, "Rhode Island", 41.5801, -71.4774),
+    (40, "South Carolina", 33.8361, -81.1637),
+    (41, "South Dakota", 43.9695, -99.9018),
+    (42, "Tennessee", 35.5175, -86.5804),
+    (43, "Texas", 31.9686, -99.9018),
+    (44, "Utah", 39.321, -111.0937),
+    (45, "Vermont", 44.5588, -72.5778),
+    (46, "Virginia", 37.4316, -78.6569),
+    (47, "Washington", 47.7511, -120.7401),
+    (48, "West Virginia", 38.5976, -80.4549),
+    (49, "Wisconsin", 43.7844, -88.7879),
+    (50, "Wyoming", 43.076, -107.2903),
+)
+
+
+@lru_cache(maxsize=1)
+def _load_us_state_entities() -> dict[int, dict]:
+    here = Path(__file__).resolve()
+    candidates = [
+        here.parents[1] / "data" / "us_state_facts.sqlite",
+        here.parents[2] / "data" / "us_state_facts.sqlite",
+    ]
+    for db_path in candidates:
+        if db_path.is_file():
+            try:
+                conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+                try:
+                    rows = conn.execute(
+                        "SELECT id, name, latitude, longitude FROM us_states ORDER BY id"
+                    ).fetchall()
+                finally:
+                    conn.close()
+                if len(rows) >= 50:
+                    return {
+                        int(row[0]): {
+                            "id": int(row[0]),
+                            "name": str(row[1]),
+                            "aliases": [],
+                            "latitude": float(row[2] if row[2] is not None else 0.0),
+                            "longitude": float(row[3] if row[3] is not None else 0.0),
+                        }
+                        for row in rows
+                    }
+            except sqlite3.Error:
+                pass
+
+    return {
+        state_id: {
+            "id": state_id,
+            "name": name,
+            "aliases": [],
+            "latitude": lat,
+            "longitude": lon,
+        }
+        for state_id, name, lat, lon in _FALLBACK_US_STATES
+    }
+
+
+def load_map_quiz_entities(scope: str) -> dict[int, dict]:
+    validate_scope(scope)
+    if scope == "us_states":
+        return _load_us_state_entities()
+    return _load_regional_entities(scope)
+
+
+def load_entities(scope: str) -> dict[int, dict]:
+    return load_map_quiz_entities(scope)
 
 
 def utcnow() -> datetime:

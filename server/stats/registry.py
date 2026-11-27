@@ -194,6 +194,22 @@ def _build_registry() -> Dict[str, ModeStatsSpec]:
             max_score=10,
             record_mode="map_quiz_england_counties",
         ),
+        "map_quiz_powiaty": ModeStatsSpec(
+            mode="map_quiz_powiaty",
+            adapter="mode_result",
+            mode_kind="quiz_run",
+            is_daily=True,
+            max_score=10,
+            record_mode="map_quiz_powiaty",
+        ),
+        "map_quiz_us_states": ModeStatsSpec(
+            mode="map_quiz_us_states",
+            adapter="mode_result",
+            mode_kind="quiz_run",
+            is_daily=True,
+            max_score=10,
+            record_mode="map_quiz_us_states",
+        ),
     }
 
     # 4 Continental modes
@@ -283,6 +299,8 @@ MODE_ALIASES: Dict[str, str] = {
     "powiat_plates_quiz": "plates_quiz",
     "london_boroughs_quiz": "map_quiz_london_boroughs",
     "historic_counties_quiz": "map_quiz_england_counties",
+    "powiat_map_quiz": "map_quiz_powiaty",
+    "us_state_map_quiz": "map_quiz_us_states",
     "english_countydle": "countydle",
 }
 

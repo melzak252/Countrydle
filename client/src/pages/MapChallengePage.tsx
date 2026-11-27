@@ -1,35 +1,34 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Info, Loader2, RotateCcw, X } from 'lucide-react';
+import { CheckCircle2, Info, Loader2, Trophy, X, XCircle } from 'lucide-react';
 import { ControlledPowiatyMap } from '../components/PowiatyMap';
 import { ControlledUSStatesMap } from '../components/USStatesMap';
+import { GameResultDashboard } from '../components/result-dashboard';
+import { useDailyClock } from '../hooks/useDailyClock';
 import { useMapData } from '../hooks/useMapData';
 import {
-  advanceMapChallenge,
-  answerMapChallenge,
   createIsolatedMapInteraction,
-  createMapChallengeState,
-  getMapChallengePool,
   MAP_CHALLENGE_FEEDBACK_DELAY_MS,
   type MapChallengeState,
 } from '../lib/mapChallenge';
 import { getMapChallengePowiatHint, getMapChallengeStateHint } from '../lib/mapChallengeHints';
 import { isRegionNameVisible } from '../lib/mapRegionTooltips';
-import { normalizeMapRegionName, type MapGameMode } from '../lib/mapGameMode';
+import { MAP_QUIZ_PATHS, normalizeMapRegionName, type MapGameMode } from '../lib/mapGameMode';
 import {
   exploreService,
   powiatMapQuizService,
   powiatService,
+  usStateMapQuizService,
   type PowiatMapQuizDailyState,
   type PowiatMapQuizDailyStats,
   type PowiatMapQuizHistoryItem,
 } from '../services/api';
+import type { MapQuizDailyState } from '../types';
 import { useAuthStore } from '../stores/authStore';
 
-const EMPTY_MARKINGS: MapChallengeState['markings'] = {};
 const EMPTY_REGION_HINTS: Readonly<Record<string, string>> = {};
 
-type PowiatFeedback = {
+type RoundFeedback = {
   targetName: string;
   clickedName: string;
   round: number;
@@ -44,34 +43,36 @@ function getHttpStatus(error: unknown): number | undefined {
 }
 
 export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
+  const { today } = useDailyClock();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
   const mapUrl = mode === 'powiaty' ? '/powiaty-min.geojson' : '/us-states.geojson';
   const { data: mapData, error: mapError, retry: retryMap } = useMapData(mapUrl);
   const [mapRetryRevision, setMapRetryRevision] = useState(0);
-  const promptPool = useMemo(() => getMapChallengePool(mapData, mode), [mapData, mode]);
 
-  const [stateRun, setStateRun] = useState<{ mode: MapGameMode; state: MapChallengeState } | null>(null);
-  const game = stateRun?.mode === mode ? stateRun.state : null;
-  const [dailyRun, setDailyRun] = useState<PowiatMapQuizDailyState | null>(null);
+  const [powiatDailyRun, setPowiatDailyRun] = useState<PowiatMapQuizDailyState | null>(null);
+  const [usDailyRun, setUsDailyRun] = useState<MapQuizDailyState | null>(null);
   const [powiatIds, setPowiatIds] = useState<ReadonlyMap<string, number>>(() => new Map());
+  const [usStateIds, setUsStateIds] = useState<ReadonlyMap<string, number>>(() => new Map());
   const [regionHints, setRegionHints] = useState<Readonly<Record<string, string>>>(EMPTY_REGION_HINTS);
   const [activeHintName, setActiveHintName] = useState<string | null>(null);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [dailyError, setDailyError] = useState<string | null>(null);
   const [answerError, setAnswerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [powiatFeedback, setPowiatFeedback] = useState<PowiatFeedback | null>(null);
-  const [lastClickedState, setLastClickedState] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<RoundFeedback | null>(null);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+
   const dailyLoadSequence = useRef(0);
   const authLoginLoadObserved = useRef(false);
+  const dashboardOpenedKeyRef = useRef<string | null>(null);
 
   const loadPowiatDaily = useCallback(async (claimFirst: boolean) => {
     const sequence = ++dailyLoadSequence.current;
     setDailyLoading(true);
     setDailyError(null);
     setAnswerError(null);
-    setPowiatFeedback(null);
+    setFeedback(null);
 
     try {
       if (claimFirst) {
@@ -100,7 +101,7 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
       }
       setPowiatIds(ids);
       setRegionHints(hints);
-      setDailyRun(state);
+      setPowiatDailyRun(state);
       setActiveHintName(null);
     } catch {
       if (sequence === dailyLoadSequence.current) {
@@ -111,165 +112,264 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
     }
   }, []);
 
+  const loadUSStateDaily = useCallback(async (claimFirst: boolean) => {
+    const sequence = ++dailyLoadSequence.current;
+    setDailyLoading(true);
+    setDailyError(null);
+    setAnswerError(null);
+    setFeedback(null);
+
+    try {
+      if (claimFirst) {
+        try {
+          await usStateMapQuizService.sync();
+        } catch (error) {
+          const status = getHttpStatus(error);
+          if (status !== 404 && status !== 409) throw error;
+        }
+      }
+
+      const [state, entities] = await Promise.all([
+        usStateMapQuizService.getDaily(),
+        usStateMapQuizService.getEntities(),
+      ]);
+      if (sequence !== dailyLoadSequence.current) return;
+
+      const ids = new Map<string, number>();
+      for (const entity of entities) {
+        ids.set(normalizeMapRegionName(entity.name), entity.id);
+      }
+      setUsStateIds(ids);
+      setRegionHints(EMPTY_REGION_HINTS);
+      setUsDailyRun(state);
+      setActiveHintName(null);
+    } catch {
+      if (sequence === dailyLoadSequence.current) {
+        setDailyError('The daily US State map quiz could not be loaded. Please try again.');
+      }
+    } finally {
+      if (sequence === dailyLoadSequence.current) setDailyLoading(false);
+    }
+  }, []);
+
+  const reloadCurrentMode = useCallback(
+    (claimFirst: boolean) => {
+      if (mode === 'powiaty') {
+        void loadPowiatDaily(claimFirst);
+      } else {
+        void loadUSStateDaily(claimFirst);
+      }
+    },
+    [mode, loadPowiatDaily, loadUSStateDaily],
+  );
+
   useEffect(() => {
-    if (mode !== 'powiaty') return;
     const handleAuthLogin = () => {
       authLoginLoadObserved.current = true;
-      void loadPowiatDaily(true);
+      reloadCurrentMode(true);
     };
     window.addEventListener('auth-login', handleAuthLogin);
     return () => window.removeEventListener('auth-login', handleAuthLogin);
-  }, [mode, loadPowiatDaily]);
+  }, [reloadCurrentMode]);
 
   useEffect(() => {
-    if (mode === 'powiaty') {
-      setStateRun(null);
-      if (authLoading) return;
-      if (authLoginLoadObserved.current && isAuthenticated) {
-        authLoginLoadObserved.current = false;
-        return;
-      }
-      void loadPowiatDaily(isAuthenticated);
+    setDashboardOpen(false);
+    dashboardOpenedKeyRef.current = null;
+    if (authLoading) return;
+    if (authLoginLoadObserved.current && isAuthenticated) {
+      authLoginLoadObserved.current = false;
       return;
     }
+    reloadCurrentMode(isAuthenticated);
+  }, [mode, authLoading, isAuthenticated, reloadCurrentMode]);
 
-    if (!promptPool.length) return;
-    setStateRun((current) => current?.mode === mode
-      ? current
-      : { mode, state: createMapChallengeState(promptPool) });
-  }, [mode, authLoading, isAuthenticated, promptPool, loadPowiatDaily]);
-
-  const hasAnsweredState = mode === 'us_states' && (game?.status === 'correct' || game?.status === 'incorrect');
   useEffect(() => {
-    if (!hasAnsweredState) return;
-    const timeoutId = window.setTimeout(() => {
-      setStateRun((current) => current?.mode === mode
-        ? { ...current, state: advanceMapChallenge(current.state) }
-        : current);
-    }, MAP_CHALLENGE_FEEDBACK_DELAY_MS);
+    if (!feedback) return;
+    const timeoutId = window.setTimeout(() => setFeedback(null), MAP_CHALLENGE_FEEDBACK_DELAY_MS);
     return () => window.clearTimeout(timeoutId);
-  }, [game?.currentPromptIndex, game?.status, hasAnsweredState, mode]);
+  }, [feedback]);
 
   useEffect(() => {
-    if (!powiatFeedback) return;
-    const timeoutId = window.setTimeout(() => setPowiatFeedback(null), MAP_CHALLENGE_FEEDBACK_DELAY_MS);
-    return () => window.clearTimeout(timeoutId);
-  }, [powiatFeedback]);
-
-  useEffect(() => {
-    if (mode !== 'powiaty' || !dailyRun) return;
+    if (mode !== 'powiaty' || !powiatDailyRun) return;
     const stateHints: Record<string, string> = {};
-    for (const answer of dailyRun.answers) {
+    for (const answer of powiatDailyRun.answers) {
       const hint = getMapChallengePowiatHint(answer.target_name);
       if (hint) stateHints[normalizeMapRegionName(answer.target_name).toUpperCase()] = hint;
     }
     setRegionHints(stateHints);
-  }, [dailyRun, mode]);
+  }, [powiatDailyRun, mode]);
+
+  const finished =
+    mode === 'powiaty' ? Boolean(powiatDailyRun?.is_complete) : Boolean(usDailyRun?.is_completed);
+
+  const runDate =
+    mode === 'powiaty' ? (powiatDailyRun?.date ?? today) : (usDailyRun?.date ?? today);
+
+  useEffect(() => {
+    if (!finished || feedback) return;
+    const storageKey =
+      mode === 'powiaty' ? `map_quiz_powiaty_${runDate}` : `map_quiz_us_states_${runDate}`;
+    try {
+      localStorage.setItem(storageKey, '1');
+    } catch {
+      // Ignore storage unavailability
+    }
+    if (dashboardOpenedKeyRef.current !== storageKey) {
+      dashboardOpenedKeyRef.current = storageKey;
+      setDashboardOpen(true);
+    }
+  }, [finished, feedback, mode, runDate]);
 
   const markings = useMemo<MapChallengeState['markings']>(() => {
-    if (mode !== 'powiaty') return game?.markings ?? EMPTY_MARKINGS;
     const result: MapChallengeState['markings'] = {};
-    for (const answer of dailyRun?.answers ?? []) {
+    if (mode === 'powiaty') {
+      for (const answer of powiatDailyRun?.answers ?? []) {
+        result[answer.target_name.toUpperCase()] = answer.correct ? 'green' : 'red';
+      }
+      return result;
+    }
+    for (const answer of usDailyRun?.answers ?? []) {
       result[answer.target_name.toUpperCase()] = answer.correct ? 'green' : 'red';
     }
     return result;
-  }, [dailyRun?.answers, game?.markings, mode]);
+  }, [powiatDailyRun?.answers, usDailyRun?.answers, mode]);
+
   const visibleRegionNames = useMemo(() => Object.keys(markings), [markings]);
   const interaction = useMemo(() => createIsolatedMapInteraction(markings), [markings]);
 
   const handleHintOpen = useCallback((name: string) => setActiveHintName(name), []);
   const handleHintClose = useCallback((name: string) => {
-    setActiveHintName((current) => current && normalizeMapRegionName(current) === normalizeMapRegionName(name)
-      ? null
-      : current);
+    setActiveHintName((current) =>
+      current && normalizeMapRegionName(current) === normalizeMapRegionName(name)
+        ? null
+        : current,
+    );
   }, []);
 
-  const handleRegionClick = useCallback((name: string) => {
-    if (isRegionNameVisible(name, visibleRegionNames)) {
-      setActiveHintName(name);
-      return;
-    }
-    setActiveHintName(null);
-
-    if (mode === 'powiaty') {
-      if (!dailyRun || dailyRun.is_complete || powiatFeedback || submitting || dailyLoading) return;
-      const guessId = powiatIds.get(normalizeMapRegionName(name));
-      if (guessId === undefined) {
-        setAnswerError('This map region could not be matched to the Powiat list.');
+  const handleRegionClick = useCallback(
+    (name: string) => {
+      if (isRegionNameVisible(name, visibleRegionNames)) {
+        setActiveHintName(name);
         return;
       }
-      const targetName = dailyRun.current_target;
-      if (!targetName) return;
+      setActiveHintName(null);
 
-      setSubmitting(true);
-      setAnswerError(null);
-      void powiatMapQuizService.submitAnswer({
-        guess_id: guessId,
-        expected_round: dailyRun.expected_round,
-      }).then((state) => {
-        setDailyRun(state);
-        if (state.last_answer) {
-          setPowiatFeedback({
-            targetName,
-            clickedName: name,
-            round: state.last_answer.round,
-            correct: state.last_answer.correct,
-          });
+      if (mode === 'powiaty') {
+        if (!powiatDailyRun || powiatDailyRun.is_complete || feedback || submitting || dailyLoading) return;
+        const guessId = powiatIds.get(normalizeMapRegionName(name));
+        if (guessId === undefined) {
+          setAnswerError('This map region could not be matched to the Powiat list.');
+          return;
         }
-      }).catch((error: unknown) => {
-        if (getHttpStatus(error) === 409) {
-          void loadPowiatDaily(isAuthenticated);
-          setAnswerError('Your daily run changed elsewhere and has been refreshed.');
-        } else {
-          setAnswerError('Your answer could not be saved. Please try again.');
-        }
-      }).finally(() => setSubmitting(false));
+        const targetName = powiatDailyRun.current_target;
+        if (!targetName) return;
 
-      const hint = getMapChallengePowiatHint(targetName);
-      if (hint) {
-        setRegionHints((current) => ({
-          ...current,
-          [normalizeMapRegionName(targetName).toUpperCase()]: hint,
-        }));
-      }
-      return;
-    }
+        setSubmitting(true);
+        setAnswerError(null);
+        void powiatMapQuizService
+          .submitAnswer({
+            guess_id: guessId,
+            expected_round: powiatDailyRun.expected_round,
+          })
+          .then((state) => {
+            setPowiatDailyRun(state);
+            if (state.last_answer) {
+              setFeedback({
+                targetName,
+                clickedName: name,
+                round: state.last_answer.round + 1,
+                correct: state.last_answer.correct,
+              });
+            }
+          })
+          .catch((error: unknown) => {
+            if (getHttpStatus(error) === 409) {
+              void loadPowiatDaily(isAuthenticated);
+              setAnswerError('Your daily run changed elsewhere and has been refreshed.');
+            } else {
+              setAnswerError('Your answer could not be saved. Please try again.');
+            }
+          })
+          .finally(() => setSubmitting(false));
 
-    if (!game || game.status !== 'playing') return;
-    const targetName = game.prompts[game.currentPromptIndex];
-    setLastClickedState(name);
-    setStateRun((current) => current?.mode === mode
-      ? { ...current, state: answerMapChallenge(current.state, name) }
-      : current);
-    if (targetName) {
-      void exploreService.getUSStateDetail(targetName).then((detail) => {
-        const hint = getMapChallengeStateHint(detail);
+        const hint = getMapChallengePowiatHint(targetName);
         if (hint) {
           setRegionHints((current) => ({
             ...current,
             [normalizeMapRegionName(targetName).toUpperCase()]: hint,
           }));
         }
-      }).catch(() => undefined);
-    }
-  }, [
-    dailyLoading,
-    dailyRun,
-    game,
-    isAuthenticated,
-    loadPowiatDaily,
-    mode,
-    powiatFeedback,
-    powiatIds,
-    submitting,
-    visibleRegionNames,
-  ]);
+        return;
+      }
 
-  const startNewRun = () => {
-    if (mode === 'us_states' && promptPool.length) {
-      setStateRun({ mode, state: createMapChallengeState(promptPool) });
-    }
-  };
+      if (!usDailyRun || usDailyRun.is_completed || feedback || submitting || dailyLoading) return;
+      const entityId = usStateIds.get(normalizeMapRegionName(name));
+      if (entityId === undefined) {
+        setAnswerError('This map region could not be matched to the US State list.');
+        return;
+      }
+      const targetName = usDailyRun.current_target?.name;
+      if (!targetName) return;
+
+      setSubmitting(true);
+      setAnswerError(null);
+      void usStateMapQuizService
+        .submitAnswer({
+          entity_id: entityId,
+          round: usDailyRun.current_round,
+        })
+        .then((resp) => {
+          setUsDailyRun(resp.state);
+          try {
+            localStorage.setItem(`map_quiz_us_states_${resp.state.date}`, '1');
+          } catch {
+            // Ignore storage unavailability
+          }
+          setFeedback({
+            targetName: resp.result.target_name,
+            clickedName: resp.result.clicked_name,
+            round: resp.result.round,
+            correct: resp.result.correct,
+          });
+        })
+        .catch((error: unknown) => {
+          if (getHttpStatus(error) === 409) {
+            void loadUSStateDaily(isAuthenticated);
+            setAnswerError('Your daily run changed elsewhere and has been refreshed.');
+          } else {
+            setAnswerError('Your answer could not be saved. Please try again.');
+          }
+        })
+        .finally(() => setSubmitting(false));
+
+      void exploreService
+        .getUSStateDetail(targetName)
+        .then((detail) => {
+          const hint = getMapChallengeStateHint(detail);
+          if (hint) {
+            setRegionHints((current) => ({
+              ...current,
+              [normalizeMapRegionName(targetName).toUpperCase()]: hint,
+            }));
+          }
+        })
+        .catch(() => undefined);
+    },
+    [
+      dailyLoading,
+      feedback,
+      isAuthenticated,
+      loadPowiatDaily,
+      loadUSStateDaily,
+      mode,
+      powiatDailyRun,
+      powiatIds,
+      submitting,
+      usDailyRun,
+      usStateIds,
+      visibleRegionNames,
+    ],
+  );
 
   const handleMapRetry = () => {
     retryMap();
@@ -296,20 +396,28 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
     setPrivateHistoryLoading(true);
     setDailyStatsError(false);
     setPrivateHistoryError(false);
-    void powiatMapQuizService.getDailyStats().then((stats) => {
-      if (active) setDailyStats(stats);
-    }).catch(() => {
-      if (active) setDailyStatsError(true);
-    }).finally(() => {
-      if (active) setDailyStatsLoading(false);
-    });
-    void powiatMapQuizService.getHistory().then((history) => {
-      if (active) setPrivateHistory(history.items);
-    }).catch(() => {
-      if (active) setPrivateHistoryError(true);
-    }).finally(() => {
-      if (active) setPrivateHistoryLoading(false);
-    });
+    void powiatMapQuizService
+      .getDailyStats()
+      .then((stats) => {
+        if (active) setDailyStats(stats);
+      })
+      .catch(() => {
+        if (active) setDailyStatsError(true);
+      })
+      .finally(() => {
+        if (active) setDailyStatsLoading(false);
+      });
+    void powiatMapQuizService
+      .getHistory()
+      .then((history) => {
+        if (active) setPrivateHistory(history.items);
+      })
+      .catch(() => {
+        if (active) setPrivateHistoryError(true);
+      })
+      .finally(() => {
+        if (active) setPrivateHistoryLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -329,20 +437,21 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
   }, [rulesOpen]);
 
   const title = mode === 'powiaty' ? 'Powiat Map Quiz' : 'US State Map Quiz';
-  const target = mode === 'powiaty'
-    ? powiatFeedback?.targetName ?? dailyRun?.current_target ?? undefined
-    : game && game.status !== 'finished' ? game.prompts[game.currentPromptIndex] : undefined;
-  const finished = mode === 'powiaty' ? Boolean(dailyRun?.is_complete) : game?.status === 'finished';
-  const isCorrectFeedback = Boolean(powiatFeedback?.correct || game?.status === 'correct');
-  const isIncorrectFeedback = Boolean((powiatFeedback && !powiatFeedback.correct) || game?.status === 'incorrect');
-  const wrongClickedName = mode === 'powiaty'
-    ? (powiatFeedback && !powiatFeedback.correct ? powiatFeedback.clickedName : null)
-    : (game?.status === 'incorrect' ? lastClickedState : null);
-  const score = mode === 'powiaty' ? dailyRun?.score ?? 0 : game?.score ?? 0;
-  const roundCount = mode === 'powiaty' ? dailyRun?.round_count ?? 10 : game?.prompts.length ?? 10;
-  const round = mode === 'powiaty'
-    ? (powiatFeedback?.round ?? dailyRun?.expected_round ?? 0) + 1
-    : (game?.currentPromptIndex ?? 0) + 1;
+  const target =
+    mode === 'powiaty'
+      ? feedback?.targetName ?? powiatDailyRun?.current_target ?? undefined
+      : feedback?.targetName ?? (!finished ? usDailyRun?.current_target?.name : undefined);
+  const isCorrectFeedback = Boolean(feedback?.correct);
+  const isIncorrectFeedback = Boolean(feedback && !feedback.correct);
+  const wrongClickedName = feedback && !feedback.correct ? feedback.clickedName : null;
+  const score = mode === 'powiaty' ? powiatDailyRun?.score ?? 0 : usDailyRun?.score ?? 0;
+  const roundCount =
+    mode === 'powiaty' ? powiatDailyRun?.round_count ?? 10 : usDailyRun?.total_rounds ?? 10;
+  const round =
+    mode === 'powiaty'
+      ? feedback?.round ?? (powiatDailyRun?.expected_round ?? 0) + 1
+      : feedback?.round ?? usDailyRun?.current_round ?? 1;
+
   const mapClassName = 'h-full w-full rounded-none border-0 shadow-none';
   const mapKey = `${mode}-${mapRetryRevision}`;
   const sharedMapProps = {
@@ -357,9 +466,21 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
     showMapToolbar: false,
     onRetryMap: handleMapRetry,
   };
-  const mapElement = mode === 'powiaty'
-    ? <ControlledPowiatyMap key={mapKey} {...sharedMapProps} onPowiatClick={handleRegionClick} />
-    : <ControlledUSStatesMap key={mapKey} {...sharedMapProps} onStateClick={handleRegionClick} />;
+  const mapElement =
+    mode === 'powiaty' ? (
+      <ControlledPowiatyMap key={mapKey} {...sharedMapProps} onPowiatClick={handleRegionClick} />
+    ) : (
+      <ControlledUSStatesMap key={mapKey} {...sharedMapProps} onStateClick={handleRegionClick} />
+    );
+
+  const shareText =
+    mode === 'powiaty' && powiatDailyRun
+      ? `${title} ${powiatDailyRun.date}\n${powiatDailyRun.score}/${powiatDailyRun.round_count}\n${powiatDailyRun.answers.map((a) => (a.correct ? '🟩' : '🟥')).join('')}\nhttps://countrydle.online${MAP_QUIZ_PATHS.powiaty}`
+      : usDailyRun
+        ? `${title} ${usDailyRun.date}\n${usDailyRun.score}/${usDailyRun.total_rounds}${
+            usDailyRun.points !== null ? ` · ${usDailyRun.points} pts` : ''
+          }\n${usDailyRun.answers.map((a) => (a.correct ? '🟩' : '🟥')).join('')}\nhttps://countrydle.online${MAP_QUIZ_PATHS.us_states}`
+        : undefined;
 
   return (
     <main className="relative flex h-full min-h-0 flex-1 w-full overflow-hidden bg-app-canvas text-app-text">
@@ -386,7 +507,9 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
                 : 'border-app-border/30'
           }`}
         >
-          <p className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-app-text-muted">{title}</p>
+          <p className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-app-text-muted">
+            {title}
+          </p>
           {target ? (
             <motion.h1
               key={target}
@@ -403,9 +526,14 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
               Run complete
             </h1>
           ) : (
-            <p role="status" className="col-span-2 row-start-2 flex items-center justify-center gap-2 text-sm text-app-text-secondary md:col-span-1 md:col-start-2 md:row-start-1">
+            <p
+              role="status"
+              className="col-span-2 row-start-2 flex items-center justify-center gap-2 text-sm text-app-text-secondary md:col-span-1 md:col-start-2 md:row-start-1"
+            >
               <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-              {mode === 'powiaty' ? 'Loading today’s Powiat run…' : 'Loading the first state…'}
+              {mode === 'powiaty'
+                ? 'Loading today’s Powiat run...'
+                : 'Loading today’s US State run...'}
             </p>
           )}
 
@@ -415,13 +543,19 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
               <span className="text-app-text-muted"> / {roundCount}</span>
               {!finished && (
                 <span className="text-app-text-secondary">
-                  {' · '}{mode === 'powiaty' ? 'Powiat' : 'State'} {round} of {roundCount}
+                  {' · '}
+                  {mode === 'powiaty' ? 'Powiat' : 'State'} {round} of {roundCount}
                 </span>
               )}
             </p>
-            {mode === 'us_states' && finished && (
-              <button type="button" onClick={startNewRun} className="inline-flex min-h-10 items-center gap-2 border border-app-accent/40 bg-app-accent/10 px-3 py-2 text-sm font-semibold text-app-accent hover:bg-app-accent/15">
-                <RotateCcw size={15} aria-hidden="true" /> Start another run
+            {finished && (
+              <button
+                type="button"
+                onClick={() => setDashboardOpen(true)}
+                className="inline-flex h-9 items-center gap-1.5 border border-app-accent/40 bg-app-accent/10 px-2.5 text-xs font-semibold text-app-accent hover:bg-app-accent/15 cursor-pointer"
+              >
+                <Trophy size={14} aria-hidden="true" />
+                <span className="hidden sm:inline">Results</span>
               </button>
             )}
             <button
@@ -431,36 +565,53 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
               aria-haspopup="dialog"
               aria-expanded={rulesOpen}
               onClick={() => setRulesOpen(true)}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-app-border/40 text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-app-border/40 text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent cursor-pointer"
             >
               <Info size={17} aria-hidden="true" />
             </button>
           </div>
 
-          {mode === 'powiaty' && dailyError && (
+          {dailyError && (
             <div className="col-span-full flex flex-wrap items-center justify-between gap-3 text-sm" role="alert">
               <p className="text-app-text-secondary">{dailyError}</p>
-              <button type="button" onClick={() => void loadPowiatDaily(isAuthenticated)} className="shrink-0 border border-app-border/35 bg-app-surface px-3 py-2 text-app-text hover:bg-app-surface-muted">
+              <button
+                type="button"
+                onClick={() => reloadCurrentMode(isAuthenticated)}
+                className="shrink-0 border border-app-border/35 bg-app-surface px-3 py-2 text-app-text hover:bg-app-surface-muted"
+              >
                 Retry daily run
               </button>
             </div>
           )}
-          {answerError && <p className="col-span-full text-sm text-rose-700 dark:text-rose-300" role="alert">{answerError}</p>}
-          {submitting && <p className="col-span-full text-sm text-app-text-secondary" role="status">Saving your answer…</p>}
+          {answerError && (
+            <p className="col-span-full text-sm text-rose-700 dark:text-rose-300" role="alert">
+              {answerError}
+            </p>
+          )}
+          {submitting && (
+            <p className="col-span-full text-sm text-app-text-secondary" role="status">
+              Saving your answer...
+            </p>
+          )}
           {isCorrectFeedback && (
             <p role="status" className="col-span-full text-sm font-medium text-app-accent">
-              Correct — one point added.{target ? ` (${target})` : ''} Advancing to next target…
+              Correct! One point added.{target ? ` (${target})` : ''} Advancing to next target...
             </p>
           )}
           {isIncorrectFeedback && (
             <p role="status" className="col-span-full text-sm font-medium text-rose-700 dark:text-rose-300">
-              Not quite. No point added{wrongClickedName ? ` (you clicked ${wrongClickedName})` : ''}; {target ? `${target} is highlighted red` : 'the correct region is highlighted red'} — advancing to next target…
+              Not quite. No point added{wrongClickedName ? ` (you clicked ${wrongClickedName})` : ''};{' '}
+              {target ? `${target} is highlighted red` : 'the correct region is highlighted red'}. Advancing to next target...
             </p>
           )}
           {mapError && !mapData && (
             <div className="col-span-full flex items-center justify-between gap-3 text-sm" role="alert">
               <p className="text-app-text-secondary">Map data could not be loaded.</p>
-              <button type="button" onClick={handleMapRetry} className="shrink-0 border border-app-border/35 bg-app-surface px-3 py-2 text-app-text hover:bg-app-surface-muted">
+              <button
+                type="button"
+                onClick={handleMapRetry}
+                className="shrink-0 border border-app-border/35 bg-app-surface px-3 py-2 text-app-text hover:bg-app-surface-muted"
+              >
                 Retry map loading
               </button>
             </div>
@@ -494,9 +645,11 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
           >
             <header className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-app-text-muted">{title}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-app-text-muted">
+                  {title}
+                </p>
                 <h2 id="map-quiz-rules-title" className="mt-1 text-xl font-bold">
-                  {mode === 'powiaty' ? 'Daily game rules' : 'How to play'}
+                  Daily game rules
                 </h2>
               </div>
               <button
@@ -521,25 +674,29 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
                   <section aria-label="Daily aggregate performance" className="border border-app-border/35 p-3">
                     <h3 className="font-semibold">All-player daily aggregate</h3>
                     {dailyStatsLoading ? (
-                      <p className="mt-2 text-sm text-app-text-secondary">Loading aggregate performance…</p>
+                      <p className="mt-2 text-sm text-app-text-secondary">Loading aggregate performance...</p>
                     ) : dailyStatsError ? (
                       <p className="mt-2 text-sm text-app-text-secondary">Aggregate performance is temporarily unavailable.</p>
                     ) : dailyStats ? (
                       <div className="mt-2 space-y-1 text-sm text-app-text-secondary">
-                        <p>{dailyStats.completed_count ?? '—'} completed</p>
+                        <p>{dailyStats.completed_count ?? '-'} completed</p>
                         <p>Average score: {dailyStats.average_score ?? 'Not enough completed runs yet'}</p>
-                        <p>Score distribution: {
-                          dailyStats.score_distribution
-                            ? Object.entries(dailyStats.score_distribution).sort(([a], [b]) => Number(a) - Number(b)).map(([scoreValue, count]) => `${scoreValue}: ${count}`).join(' · ') || 'Not available yet'
-                            : 'Not available yet'
-                        }</p>
+                        <p>
+                          Score distribution:{' '}
+                          {dailyStats.score_distribution
+                            ? Object.entries(dailyStats.score_distribution)
+                                .sort(([a], [b]) => Number(a) - Number(b))
+                                .map(([scoreValue, count]) => `${scoreValue}: ${count}`)
+                                .join(' · ') || 'Not available yet'
+                            : 'Not available yet'}
+                        </p>
                       </div>
                     ) : null}
                   </section>
                   <section aria-label="Your private score history" className="border border-app-border/35 p-3">
                     <h3 className="font-semibold">Your private score history</h3>
                     {privateHistoryLoading ? (
-                      <p className="mt-2 text-sm text-app-text-secondary">Loading your history…</p>
+                      <p className="mt-2 text-sm text-app-text-secondary">Loading your history...</p>
                     ) : privateHistoryError ? (
                       <p className="mt-2 text-sm text-app-text-secondary">Your history is temporarily unavailable.</p>
                     ) : privateHistory?.length ? (
@@ -558,13 +715,84 @@ export default function MapChallengePage({ mode }: { mode: MapGameMode }) {
               </>
             ) : (
               <ul className="mt-4 space-y-2 text-sm leading-relaxed text-app-text-secondary">
-                <li>Each run is a repeatable round of 10 US States.</li>
-                <li>Correct answers earn one point and turn green. Wrong answers add no point and reveal the correct State in red.</li>
-                <li>When a run is complete, choose Start another run to play again.</li>
+                <li>Find the 10 US States in today’s daily run. The current target state is shown in the HUD.</li>
+                <li>Correct answers earn one point and turn green. Wrong answers add no point and reveal the correct state in red.</li>
+                <li>Every player gets the same 10 states each day, with one attempt per UTC day resetting at 00:00 UTC.</li>
               </ul>
             )}
           </section>
         </div>
+      )}
+
+      {finished && dashboardOpen && (
+        <GameResultDashboard
+          variant="modal"
+          onClose={() => setDashboardOpen(false)}
+          closeLabel="Inspect map"
+          mode={mode === 'powiaty' ? 'map_quiz_powiaty' : 'map_quiz_us_states'}
+          modeKind="quiz"
+          isDaily={true}
+          gameName={title}
+          gamePath={MAP_QUIZ_PATHS[mode]}
+          date={runDate}
+          won={mode === 'powiaty' ? score >= 6 : score >= 7}
+          outcomeLabel={
+            mode === 'powiaty'
+              ? 'Daily Powiat Map Quiz Complete!'
+              : 'Daily US State Map Quiz Complete!'
+          }
+          targetLabel="Score"
+          targetName={`${score} / ${roundCount}`}
+          subtitle="Close this summary to hover any region on the map and inspect its details."
+          points={mode === 'powiaty' ? score * 100 : (usDailyRun?.points ?? 0)}
+          score={score}
+          maxScore={roundCount}
+          elapsedSeconds={mode === 'us_states' ? (usDailyRun?.elapsed_seconds ?? undefined) : undefined}
+          shareText={shareText}
+          detailsTitle="Round Breakdown"
+          detailsSlot={
+            <div className="grid sm:grid-cols-2 gap-2">
+              {mode === 'powiaty'
+                ? (powiatDailyRun?.answers ?? []).map((ans) => (
+                    <div
+                      key={ans.round}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-mono text-zinc-500 w-5">{ans.round + 1}.</span>
+                        {ans.correct ? (
+                          <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
+                        ) : (
+                          <XCircle size={15} className="shrink-0 text-rose-400" />
+                        )}
+                        <span className="font-medium text-sand-50 truncate">{ans.target_name}</span>
+                      </div>
+                    </div>
+                  ))
+                : (usDailyRun?.answers ?? []).map((ans) => (
+                    <div
+                      key={ans.round}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-mono text-zinc-500 w-5">{ans.round}.</span>
+                        {ans.correct ? (
+                          <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
+                        ) : (
+                          <XCircle size={15} className="shrink-0 text-rose-400" />
+                        )}
+                        <span className="font-medium text-sand-50 truncate">{ans.target_name}</span>
+                      </div>
+                      {!ans.correct && (
+                        <span className="text-xs text-rose-300 truncate shrink-0">
+                          clicked {ans.clicked_name}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+            </div>
+          }
+        />
       )}
     </main>
   );

@@ -46,12 +46,14 @@ export const DAILY_MODE_POOL: DailyModeCard[] = [
     name: 'US State Map Quiz',
     tag: 'Daily · 10 map picks',
     accent: 'border-t-[#355c7d]',
+    storageKey: (d) => `map_quiz_us_states_${d}`,
   },
   {
     path: MAP_QUIZ_PATHS.powiaty,
     name: 'Powiat Map Quiz',
     tag: 'Daily · 10 powiats',
     accent: 'border-t-app-accent',
+    storageKey: (d) => `map_quiz_powiaty_${d}`,
   },
   {
     path: '/herby-powiatow',

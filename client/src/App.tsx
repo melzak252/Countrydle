@@ -7,7 +7,7 @@ import { isPrerenderCapture } from './lib/pageMetadata';
 import HomePage from './pages/HomePage';
 import { MAP_QUIZ_PATHS } from './lib/mapGameMode';
 import { useAuthStore } from './stores/authStore';
-import { countyFlagsService, mapQuizScopes, mapQuizService, regionalSymbolGames, regionalSymbolPath, regionalSymbolsService } from './services/api';
+import { countyFlagsService, mapQuizScopes, mapQuizService, regionalSymbolGames, regionalSymbolPath, regionalSymbolsService, usStateMapQuizService } from './services/api';
 import {
   useCountryGameStore,
   usePowiatyGameStore,
@@ -106,6 +106,9 @@ function App() {
             if (localStorage.getItem(marker)) {
               void mapQuizService(scope).sync().catch((error) => console.error('Failed to claim map quiz guest progress:', error));
             }
+          }
+          if (localStorage.getItem(`map_quiz_us_states_${today}`)) {
+            void usStateMapQuizService.sync().catch((error) => console.error('Failed to claim US state map quiz guest progress:', error));
           }
         } catch {
           // Storage may be unavailable; the game page can still use its cookie.

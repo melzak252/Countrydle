@@ -162,12 +162,16 @@ def test_registry_covers_all_existing_and_new_modes():
         "plates_quiz",
         "map_quiz_london_boroughs",
         "map_quiz_england_counties",
+        "map_quiz_powiaty",
+        "map_quiz_us_states",
         "countydle",
     }
     assert expected_modes.issubset(set(MODE_STATS_REGISTRY.keys()))
     assert resolve_mode_spec("powiat_plates_quiz").mode == "plates_quiz"
     assert resolve_mode_spec("london_boroughs_quiz").mode == "map_quiz_london_boroughs"
     assert resolve_mode_spec("historic_counties_quiz").mode == "map_quiz_england_counties"
+    assert resolve_mode_spec("powiat_map_quiz").mode == "map_quiz_powiaty"
+    assert resolve_mode_spec("us_state_map_quiz").mode == "map_quiz_us_states"
     assert resolve_mode_spec("english_countydle").mode == "countydle"
     assert resolve_mode_spec("nonexistent_mode") is None
 
@@ -493,3 +497,117 @@ async def test_stats_error_handling_and_new_mode_placeholders(stats_db):
         res_county = await client.get(f"/stats/countydle/summary?date={TODAY.isoformat()}")
         assert res_county.status_code == 200
         assert res_county.json()["played_today"] == 0
+
+
+@pytest.mark.anyio
+async def test_powiat_and_us_state_map_quiz_stats(stats_db):
+    db, async_session = stats_db
+    today_utc = datetime.now(timezone.utc).date()
+
+    # 1. Powiat Map Quiz recorded results + alias resolution
+    await record_mode_result(
+        async_session,
+        mode="map_quiz_powiaty",
+        record_date=today_utc,
+        user_id=1,
+        guest_id=None,
+        completed=True,
+        won=True,
+        points=900,
+        score=9,
+        max_score=10,
+        elapsed_seconds=48.0,
+    )
+    await record_mode_result(
+        async_session,
+        mode="map_quiz_powiaty",
+        record_date=today_utc,
+        user_id=2,
+        guest_id=None,
+        completed=True,
+        won=False,
+        points=400,
+        score=4,
+        max_score=10,
+        elapsed_seconds=72.0,
+    )
+
+    alice = SimpleNamespace(id=1, username="alice")
+    app.dependency_overrides[get_current_or_guest_user] = lambda: alice
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res_powiat = await client.get(f"/stats/map_quiz_powiaty/summary?date={today_utc.isoformat()}")
+        assert res_powiat.status_code == 200
+        p_data = res_powiat.json()
+        assert p_data["mode"] == "map_quiz_powiaty"
+        assert p_data["played_today"] == 2
+        assert p_data["winners_today"] == 1
+        assert p_data["avg_score"] == 6.5
+        assert p_data["player"]["score"] == 9
+        assert p_data["player"]["won"] is True
+        assert [e["username"] for e in p_data["leaderboard"]["entries"]] == ["alice", "bob"]
+
+        res_powiat_alias = await client.get(f"/stats/powiat_map_quiz/summary?date={today_utc.isoformat()}")
+        assert res_powiat_alias.status_code == 200
+        assert res_powiat_alias.json()["mode"] == "map_quiz_powiaty"
+
+        # 2. US State Map Quiz server-authoritative scope entities & deterministic daily targets
+        res_entities = await client.get("/map-quiz/us_states/entities")
+        assert res_entities.status_code == 200
+        entities = res_entities.json()
+        assert len(entities) == 50
+        assert any(e["name"] == "California" for e in entities)
+
+    # 3. US State Map Quiz recorded results (authenticated + guest) & summary/alias resolution
+    guest_uuid = str(uuid4())
+    await record_mode_result(
+        async_session,
+        mode="map_quiz_us_states",
+        record_date=today_utc,
+        user_id=1,
+        guest_id=None,
+        completed=True,
+        won=True,
+        points=950,
+        score=8,
+        max_score=10,
+        elapsed_seconds=35.5,
+    )
+    await record_mode_result(
+        async_session,
+        mode="map_quiz_us_states",
+        record_date=today_utc,
+        user_id=None,
+        guest_id=guest_uuid,
+        completed=True,
+        won=False,
+        points=540,
+        score=5,
+        max_score=10,
+        elapsed_seconds=52.0,
+    )
+
+    app.dependency_overrides[get_current_or_guest_user] = lambda: alice
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res_us = await client.get(f"/stats/us_state_map_quiz/summary?date={today_utc.isoformat()}")
+        assert res_us.status_code == 200
+        u_data = res_us.json()
+        assert u_data["mode"] == "map_quiz_us_states"
+        assert u_data["played_today"] == 2
+        assert u_data["player"]["score"] == 8
+        assert u_data["leaderboard"]["entries"][0]["username"] == "alice"
+
+    app.dependency_overrides[get_current_or_guest_user] = lambda: None
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        cookies={GUEST_IDENTITY_COOKIE: _make_guest_cookie(guest_uuid)},
+    ) as client:
+        res_guest_summary = await client.get(f"/stats/map_quiz_us_states/summary?date={today_utc.isoformat()}")
+        assert res_guest_summary.status_code == 200
+        g_data = res_guest_summary.json()
+        assert g_data["played_today"] == 2
+        assert g_data["player"]["played"] is True
+        assert g_data["player"]["is_guest"] is True
+        assert g_data["player"]["score"] == 5
+        assert g_data["player"]["won"] is False

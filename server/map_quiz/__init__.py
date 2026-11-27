@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
 from db.models.user import User
-from regional_symbols.catalog import load_entities
 from schemas.countrydle import LeaderboardEntry
 from users.utils import get_current_or_guest_user, get_current_user
 
@@ -19,6 +18,7 @@ from .service import (
     claim_daily,
     get_or_create_daily,
     leaderboard,
+    load_map_quiz_entities,
     serialize_state,
     submit_answer,
     validate_scope,
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/map-quiz", tags=["map_quiz"])
 @router.get("/{scope}/entities", response_model=List[MapQuizEntity])
 async def get_map_quiz_entities(scope: str):
     validate_scope(scope)
-    entities = load_entities(scope)
+    entities = load_map_quiz_entities(scope)
     return sorted(
         (
             {

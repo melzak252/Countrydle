@@ -641,7 +641,7 @@ export function mapQuizPath(scope: MapQuizScope): string {
     : '/map-quiz/england-counties';
 }
 
-function createMapQuizService(scope: MapQuizScope) {
+function createMapQuizService(scope: MapQuizScope | 'us_states') {
   const base = `/map-quiz/${scope}`;
   return {
     getDaily: async (): Promise<MapQuizDailyState> =>
@@ -661,6 +661,8 @@ const mapQuizServices: Record<MapQuizScope, ReturnType<typeof createMapQuizServi
   london_boroughs: createMapQuizService('london_boroughs'),
   england_counties: createMapQuizService('england_counties'),
 };
+
+export const usStateMapQuizService = createMapQuizService('us_states');
 
 export function mapQuizService(scope: MapQuizScope) {
   return mapQuizServices[scope];
