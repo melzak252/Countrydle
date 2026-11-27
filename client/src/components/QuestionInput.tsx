@@ -17,6 +17,16 @@ interface QuestionInputProps {
 
 export function getQuickQuestions(currentMode: string, t: (key: string) => string) {
     const norm = currentMode.toLowerCase();
+    if (norm.includes('countydle') || norm === 'english_counties') {
+      return [
+        { icon: '🌊', label: t('inputs.quickCountyCoastal'), question: t('inputs.questionCountyCoastal') },
+        { icon: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', label: t('inputs.quickCountyScotland'), question: t('inputs.questionCountyScotland') },
+        { icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', label: t('inputs.quickCountyWales'), question: t('inputs.questionCountyWales') },
+        { icon: '🧭', label: t('inputs.quickCountyNorth'), question: t('inputs.questionCountyNorth') },
+        { icon: '🧭', label: t('inputs.quickCountySouthEast'), question: t('inputs.questionCountySouthEast') },
+        { icon: '🏙️', label: t('inputs.quickCountyMetro'), question: t('inputs.questionCountyMetro') },
+      ];
+    }
     if (norm.includes('wojewodztw')) {
       return [
         { icon: '🌊', label: t('inputs.quickWojCoastline'), question: t('inputs.questionWojCoastline') },
@@ -208,6 +218,11 @@ export default function QuestionInput({ onAsk, isLoading, remainingQuestions, pl
   const defaultPlaceholder = useMemo(() => {
     const norm = (mode || '').toLowerCase();
     if (isMobile) {
+      if (norm.includes('countydle') || norm === 'english_counties') {
+        return t('inputs.questionPlaceholderCountyMobile', {
+          defaultValue: 'Ask about county…',
+        });
+      }
       if (norm.includes('wojewodztw')) {
         return t('inputs.questionPlaceholderWojMobile', {
           defaultValue: 'Ask about voivodeship…',

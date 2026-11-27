@@ -1,4 +1,4 @@
-export type GuestGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'flagdle' | 'europe' | 'asia' | 'africa' | 'americas';
+export type GuestGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'countydle' | 'flagdle' | 'europe' | 'asia' | 'africa' | 'americas';
 
 export interface GuestHistory {
   currentStreak: number;
@@ -24,6 +24,7 @@ const limits: Record<GuestGameType, { questions: number; guesses: number }> = {
   powiaty: { questions: 15, guesses: 3 },
   us_states: { questions: 8, guesses: 3 },
   wojewodztwa: { questions: 5, guesses: 2 },
+  countydle: { questions: 8, guesses: 3 },
   europe: { questions: 8, guesses: 3 },
   asia: { questions: 8, guesses: 3 },
   africa: { questions: 8, guesses: 3 },

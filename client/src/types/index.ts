@@ -59,7 +59,7 @@ export interface Question {
   report_token?: string | null;
 }
 
-export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'continental';
+export type AnswerReportMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'countydle' | 'continental';
 export type AnswerReportStatus = 'open' | 'reviewed' | 'all';
 
 export interface AnswerReport {
@@ -109,7 +109,7 @@ export interface TemplateDivergence {
   reviewed_at: string | null;
 }
 
-export type QuestionTestMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'europe' | 'asia' | 'africa' | 'americas' | 'flagdle';
+export type QuestionTestMode = 'countrydle' | 'us_statedle' | 'powiatdle' | 'wojewodztwodle' | 'countydle' | 'europe' | 'asia' | 'africa' | 'americas' | 'flagdle';
 
 export interface QuestionTestEntity {
   id: number;
@@ -175,6 +175,7 @@ export interface Guess {
   us_state_id?: number;
   wojewodztwo_id?: number;
   powiat_id?: number;
+  county_id?: number;
   answer?: boolean;
   guessed_at: string;
   elapsed_seconds?: number;
@@ -204,6 +205,7 @@ export interface GameResponse {
   powiat?: any;
   us_state?: any;
   wojewodztwo?: any;
+  county?: any;
 }
 
 export interface CountryDisplay {

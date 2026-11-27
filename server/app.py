@@ -20,6 +20,7 @@ from powiatdle import router as powiatdle_router
 from powiatdle.heraldry import regional_router as regional_symbols_router
 from us_statedle import router as us_statedle_router
 from wojewodztwodle import router as wojewodztwodle_router
+from countydle import router as countydle_router
 from continental import router as continental_router
 from blog import router as blog_router
 from flagdle import router as flagdle_router
@@ -86,6 +87,7 @@ SOLO_STATE_PATHS = frozenset({
     "/us_statedle/state",
     "/powiatdle/state",
     "/wojewodztwodle/state",
+    "/countydle/state",
     "/flagdle/state",
     "/continental/europe/state",
     "/continental/asia/state",
@@ -189,6 +191,7 @@ app.include_router(powiatdle_router, tags=["powiatdle"])
 app.include_router(regional_symbols_router)
 app.include_router(us_statedle_router, tags=["us_statedle"])
 app.include_router(wojewodztwodle_router, tags=["wojewodztwodle"])
+app.include_router(countydle_router, tags=["countydle"])
 app.include_router(continental_router, tags=["continental"])
 app.include_router(flagdle_router, tags=["flagdle"])
 app.include_router(blog_router)

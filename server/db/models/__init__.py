@@ -6,6 +6,8 @@ from .wojewodztwo import Wojewodztwo
 from .wojewodztwodle import WojewodztwodleDay, WojewodztwodleState, WojewodztwodleGuess, WojewodztwodleQuestion
 from .us_state import USState
 from .us_statedle import USStatedleDay, USStatedleState, USStatedleGuess, USStatedleQuestion
+from .english_county import EnglishCounty
+from .countydle import CountydleDay, CountydleState, CountydleGuess, CountydleQuestion
 from .continental import (
     ContinentCode,
     ContinentalDay,

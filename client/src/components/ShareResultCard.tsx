@@ -87,6 +87,8 @@ export default function ShareResultCard({
       ? 'powiatdle'
       : gamePath.includes('wojewodztwa')
       ? 'wojewodztwodle'
+      : gamePath.includes('countydle')
+      ? 'countydle'
       : gamePath.includes('europe') || gamePath.includes('asia') || gamePath.includes('africa') || gamePath.includes('americas')
       ? 'continental'
       : 'countrydle'
@@ -98,6 +100,7 @@ export default function ShareResultCard({
     if (gamePath.includes('us-states')) emojiIcon = '🇺🇸';
     else if (gamePath.includes('powiaty')) emojiIcon = '📍';
     else if (gamePath.includes('wojewodztwa')) emojiIcon = '🗺️';
+    else if (gamePath.includes('countydle')) emojiIcon = '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
     else if (gamePath.includes('europe')) emojiIcon = '🧭';
     else if (gamePath.includes('asia')) emojiIcon = '🌏';
     else if (gamePath.includes('africa')) emojiIcon = '🌍';

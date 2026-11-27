@@ -13,6 +13,7 @@ import SetupProfilePage from './pages/SetupProfilePage';
 import PowiatyGamePage from './pages/PowiatyGamePage';
 import USStatesGamePage from './pages/USStatesGamePage';
 import WojewodztwaGamePage from './pages/WojewodztwaGamePage';
+import CountydleGamePage from './pages/CountydleGamePage';
 import ContinentalGamePage from './pages/ContinentalGamePage';
 import FlagdlePage from './pages/FlagdlePage';
 import FlagShadesPage from './pages/FlagShadesPage';
@@ -41,6 +42,7 @@ import {
   usePowiatyGameStore,
   useUSStatesGameStore,
   useWojewodztwaGameStore,
+  useCountydleGameStore,
   useEuropeGameStore,
   useAsiaGameStore,
   useAfricaGameStore,
@@ -73,6 +75,7 @@ function App() {
         usePowiatyGameStore.getState().syncGuestData();
         useUSStatesGameStore.getState().syncGuestData();
         useWojewodztwaGameStore.getState().syncGuestData();
+        useCountydleGameStore.getState().syncGuestData();
         useEuropeGameStore.getState().syncGuestData();
         useAsiaGameStore.getState().syncGuestData();
         useAfricaGameStore.getState().syncGuestData();
@@ -108,6 +111,7 @@ function App() {
       usePowiatyGameStore.getState().resetGame();
       useUSStatesGameStore.getState().resetGame();
       useWojewodztwaGameStore.getState().resetGame();
+      useCountydleGameStore.getState().resetGame();
       useEuropeGameStore.getState().resetGame();
       useAsiaGameStore.getState().resetGame();
       useAfricaGameStore.getState().resetGame();
@@ -119,6 +123,7 @@ function App() {
       usePowiatyGameStore.getState().fetchGameState();
       useUSStatesGameStore.getState().fetchGameState();
       useWojewodztwaGameStore.getState().fetchGameState();
+      useCountydleGameStore.getState().fetchGameState();
       useEuropeGameStore.getState().fetchGameState();
       useAsiaGameStore.getState().fetchGameState();
       useAfricaGameStore.getState().fetchGameState();
@@ -153,6 +158,7 @@ function App() {
           <Route path="powiaty" element={<PowiatyGamePage />} />
           <Route path="us-states" element={<USStatesGamePage />} />
           <Route path="wojewodztwa" element={<WojewodztwaGamePage />} />
+          <Route path="countydle" element={<CountydleGamePage />} />
           <Route path="europe" element={<ContinentalGamePage continent="europe" />} />
           <Route path="asia" element={<ContinentalGamePage continent="asia" />} />
           <Route path="africa" element={<ContinentalGamePage continent="africa" />} />
