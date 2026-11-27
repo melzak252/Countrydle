@@ -1,16 +1,16 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, Compass, MessageSquare, Play, Users } from 'lucide-react';
 import ExploreGameArtwork from '../components/ExploreGameArtwork';
 import GuestProgress from '../components/GuestProgress';
-import SpinningGlobe from '../components/SpinningGlobe';
 import { useDailyDate } from '../hooks/useDailyClock';
 import { useAuthStore } from '../stores/authStore';
 import { useCountryGameStore } from '../stores/gameStore';
 import { isPrerenderCapture } from '../lib/pageMetadata';
 import { primaryGames, type CatalogGeography } from '../lib/gameCatalog';
 import { MAP_QUIZ_PATHS } from '../lib/mapGameMode';
+
+const SpinningGlobe = lazy(() => import('../components/SpinningGlobe'));
 
 const FEATURED_EXTRA_GAMES: { path: string; name: string; geography: CatalogGeography }[] = [
   { path: MAP_QUIZ_PATHS.powiaty, name: 'Powiat Map Quiz', geography: 'poland' },
@@ -92,12 +92,7 @@ export default function HomePage() {
     <div className="mx-auto min-w-0 max-w-6xl space-y-10 pb-8 text-app-text md:space-y-12 md:pb-12">
       {/* Hero */}
       <section aria-labelledby="home-heading" className="grid min-w-0 items-center gap-6 border-b border-app-border pb-8 md:grid-cols-[1.15fr_1fr] md:gap-12 md:pb-10">
-        <motion.div
-          initial={capture ? false : { opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="min-w-0"
-        >
+        <div className="min-w-0">
           <div className="inline-flex items-center gap-2 rounded-sm border border-app-border/70 bg-app-surface-muted/70 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-app-accent">
             <Compass size={13} aria-hidden="true" />
             <span>Daily geography puzzle · 00:00 UTC</span>
@@ -141,18 +136,17 @@ export default function HomePage() {
               {progressNote}
             </p>
           )}
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={capture ? false : { opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mx-auto flex w-full max-w-[230px] items-center justify-center sm:max-w-[290px] md:max-w-[380px]"
-        >
+        <div className="relative mx-auto flex w-full max-w-[230px] items-center justify-center sm:max-w-[290px] md:max-w-[380px]">
           <div className="relative z-10 w-full">
-            {!capture && <SpinningGlobe size={380} />}
+            {!capture && (
+              <Suspense fallback={<div className="aspect-[10/9] w-full" aria-hidden="true" />}>
+                <SpinningGlobe size={380} />
+              </Suspense>
+            )}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Featured Daily Modes */}
@@ -174,20 +168,13 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURED_GAMES.map((game, idx) => {
+          {FEATURED_GAMES.map((game) => {
             const meta = MODE_SUMMARIES[game.path] ?? { tag: 'Daily puzzle', summary: 'Test your geography knowledge.', stripe: 'border-t-app-accent' };
             return (
-              <motion.div
-                key={game.path}
-                initial={capture ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={capture ? undefined : { y: -3 }}
-                transition={{ duration: 0.25, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className="h-full"
-              >
+              <div key={game.path} className="h-full">
                 <Link
                   to={game.path}
-                  className={`group relative flex h-full flex-col rounded-sm border border-app-border border-t-[3px] ${meta.stripe} bg-app-surface p-4 text-app-text shadow-[1px_3px_10px_rgba(85,75,57,0.08)] transition-all duration-200 hover:border-app-accent hover:bg-app-surface-raised hover:shadow-[2px_8px_20px_rgba(85,75,57,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus`}
+                  className={`group relative flex h-full flex-col rounded-sm border border-app-border border-t-[3px] ${meta.stripe} bg-app-surface p-4 text-app-text shadow-[1px_3px_10px_rgba(85,75,57,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-app-accent hover:bg-app-surface-raised hover:shadow-[2px_8px_20px_rgba(85,75,57,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-focus`}
                 >
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <ExploreGameArtwork game={game} />
@@ -202,7 +189,7 @@ export default function HomePage() {
                     <Play size={12} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
                   </span>
                 </Link>
-              </motion.div>
+              </div>
             );
           })}
         </div>

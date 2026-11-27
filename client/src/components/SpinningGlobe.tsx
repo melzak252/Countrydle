@@ -149,8 +149,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         const roundedTilt = Math.round(state.lat);
         const tiltString = `${roundedTilt >= 0 ? '+' : ''}${roundedTilt}°`;
         const isStopped = Math.abs(state.velLon) < 0.0002;
-
-        setHudCoords({ lon: lonString, tilt: tiltString, isStopped });
+        setHudCoords((prev) => (prev.isStopped === isStopped ? prev : { lon: lonString, tilt: tiltString, isStopped }));
       }
 
       const dpr = window.devicePixelRatio || 1;

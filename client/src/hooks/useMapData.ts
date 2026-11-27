@@ -8,20 +8,21 @@ interface MapDataState {
   error: boolean;
 }
 
-export function useMapData(url: string) {
+export function useMapData(url: string, enabled = true) {
   const [state, setState] = useState<MapDataState>(() => ({
     url, data: getCachedMapData(url) ?? null, error: false,
   }));
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
     loadMapData(url).then(
       data => { if (active) setState({ url, data, error: false }); },
       () => { if (active) setState({ url, data: null, error: true }); },
     );
     return () => { active = false; };
-  }, [url, attempt]);
+  }, [url, attempt, enabled]);
 
   // Never display geometry or an error from the previous URL while its replacement loads.
   const data = state.url === url ? state.data : getCachedMapData(url) ?? null;

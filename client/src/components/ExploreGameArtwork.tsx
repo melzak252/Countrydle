@@ -1,8 +1,10 @@
+import { useEffect, useRef, useState } from 'react';
 import type { FeatureCollection, Position } from 'geojson';
 import { MAP_QUIZ_PATHS } from '../lib/mapGameMode';
 import { MAP_THEME } from '../lib/mapTheme';
 import { useMapData } from '../hooks/useMapData';
 import type { CatalogGeography } from '../lib/gameCatalog';
+import { isPrerenderCapture } from '../lib/pageMetadata';
 
 type ExploreGame = { name: string; path: string; geography: CatalogGeography; artworkUrl?: string; artworkFallbackUrl?: string; artworkUrls?: readonly string[] };
 type MapUrl = '/countries_50m.geojson' | '/europe.geojson' | '/asia.geojson' | '/africa.geojson' | '/americas.geojson' | '/powiaty-min.geojson' | '/wojewodztwa.geojson' | '/us-states.geojson' | '/england-counties.geojson' | '/london-boroughs.geojson';
@@ -263,12 +265,34 @@ function mapArtworkVariantForGame(game: ExploreGame): MapArtworkVariant {
 }
 
 function MapArtwork({ url, frame, variant }: { url: MapUrl; frame: MapFrame; variant: MapArtworkVariant }) {
-  const { data } = useMapData(url);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [isVisible, setIsVisible] = useState<boolean>(
+    () => typeof IntersectionObserver === 'undefined' || isPrerenderCapture(),
+  );
+
+  useEffect(() => {
+    if (isVisible || typeof IntersectionObserver === 'undefined') return;
+    const el = svgRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  const { data } = useMapData(url, isVisible);
   const path = data && variant !== 'duel-map' ? createMapPath(data, frame) : '';
   const topWorld = data && variant === 'duel-map' ? createMapPath(data, duelMapFrame, duelTopViewport) : '';
   const bottomWorld = data && variant === 'duel-map' ? createMapPath(data, duelMapFrame, duelBottomViewport) : '';
   return (
-    <svg data-game-artwork={variant} data-map-frame={frame.id} aria-hidden="true" focusable="false" shapeRendering="optimizeSpeed" viewBox={`0 0 ${artworkSize.width} ${artworkSize.height}`} preserveAspectRatio="xMidYMid meet" className="h-full w-full">
+    <svg ref={svgRef} data-game-artwork={variant} data-map-frame={frame.id} aria-hidden="true" focusable="false" shapeRendering="optimizeSpeed" viewBox={`0 0 ${artworkSize.width} ${artworkSize.height}`} preserveAspectRatio="xMidYMid meet" className="h-full w-full">
       {topWorld && (
         <path
           d={topWorld}
@@ -324,7 +348,7 @@ export default function ExploreGameArtwork({ game, featured = false }: { game: E
   if (isCoatArtwork(game)) {
     return (
       <span data-game-artwork-frame className={`${frameClass} p-3`}>
-        <img data-game-artwork="coat" src={game.artworkUrl || '/coats/1.png'} alt="" width={imgSize} height={imgSize} loading={featured ? 'eager' : 'lazy'} decoding="async" className="block max-h-full max-w-full min-h-0 object-contain object-center" />
+        <img data-game-artwork="coat" src={game.artworkUrl || '/coats/1.png'} alt="" width={imgSize} height={imgSize} loading="lazy" decoding="async" className="block max-h-full max-w-full min-h-0 object-contain object-center" />
       </span>
     );
   }

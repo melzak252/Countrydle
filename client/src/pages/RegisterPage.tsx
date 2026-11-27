@@ -3,10 +3,20 @@ import { useAuthStore } from '../stores/authStore';
 import { authService } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useGoogleLogin } from '@react-oauth/google';
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import { toast } from 'react-hot-toast';
 
+const GOOGLE_CLIENT_ID = "624396927539-luhujtnrft1igdoug3bim8ac9nmvf3sk.apps.googleusercontent.com";
+
 export default function RegisterPage() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <RegisterPageContent />
+    </GoogleOAuthProvider>
+  );
+}
+
+function RegisterPageContent() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
