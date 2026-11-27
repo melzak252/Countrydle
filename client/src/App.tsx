@@ -18,6 +18,7 @@ import FlagdlePage from './pages/FlagdlePage';
 import FlagShadesPage from './pages/FlagShadesPage';
 import PowiatHeraldryPage from './pages/PowiatHeraldryPage';
 import PowiatCoatsQuizPage from './pages/PowiatCoatsQuizPage';
+import MapQuizPage from './pages/MapQuizPage';
 import BorderHopPage from './pages/BorderHopPage';
 import DuelPage from './pages/DuelPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -35,7 +36,7 @@ import PatchNotesPage from './pages/PatchNotesPage';
 import ExplorePage from './pages/ExplorePage';
 import ModeGuidePage from './pages/ModeGuidePage';
 import { useAuthStore } from './stores/authStore';
-import { countyFlagsService, regionalSymbolGames, regionalSymbolPath, regionalSymbolsService } from './services/api';
+import { countyFlagsService, mapQuizScopes, mapQuizService, regionalSymbolGames, regionalSymbolPath, regionalSymbolsService } from './services/api';
 import {
   useCountryGameStore,
   usePowiatyGameStore,
@@ -91,6 +92,12 @@ function App() {
               void regionalSymbolsService(scope, flags).sync().then((challenge) => {
                 if (challenge.date && challenge.token) localStorage.setItem(`${prefix}${challenge.date}`, challenge.token);
               }).catch((error) => console.error('Failed to claim regional symbol guest progress:', error));
+            }
+          }
+          for (const scope of mapQuizScopes) {
+            const marker = `map_quiz_${scope}_daily_${today}`;
+            if (localStorage.getItem(marker)) {
+              void mapQuizService(scope).sync().catch((error) => console.error('Failed to claim map quiz guest progress:', error));
             }
           }
         } catch {
@@ -171,6 +178,8 @@ function App() {
               <Route key={`${path}/quiz`} path={`${path}/quiz`} element={<PowiatCoatsQuizPage scope={scope} flags={flags} />} />,
             ];
           })}
+          <Route path="map-quiz/london-boroughs" element={<MapQuizPage scope="london_boroughs" />} />
+          <Route path="map-quiz/england-counties" element={<MapQuizPage scope="england_counties" />} />
           <Route path="border-hop" element={<BorderHopPage />} />
           <Route path="friends" element={<DuelPage />} />
           <Route path="duel/:code" element={<DuelPage />} />

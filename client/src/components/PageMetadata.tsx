@@ -96,6 +96,8 @@ const utilityPages: Record<string, [string, string]> = {
   '/coats-of-arms-quiz': ['All 380 Polish Coats of Arms Quiz — Quiz Herbów Powiatów', 'JetPunk-style visual grid quiz: identify all 380 Polish county coats of arms.'],
   '/flagi-powiatow': ['County Flags — Flagi Powiatów', 'Identify Polish counties from verified county flags in daily and random challenges.'],
   '/quiz-flag-powiatow': ['Polish County Flags Quiz', 'Identify the available verified Polish county flags in a visual grid quiz.'],
+  '/map-quiz/london-boroughs': ['London Boroughs Map Quiz', 'Find 10 daily London boroughs on an interactive label-free map.'],
+  '/map-quiz/england-counties': ['English Counties Map Quiz', 'Find 10 daily English ceremonial counties on an interactive label-free map.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
 const modeGuidePaths: Record<string, string> = {

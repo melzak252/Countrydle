@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Search, Users } from 'lucide-react';
 import type { LeaderboardEntry, LeaderboardPeriod, RegionalSymbolScope } from '../types';
-import { africaService, americasService, asiaService, europeService, flagdleService, gameService, countyFlagsService, powiatHeraldryService, powiatService, regionalSymbolLabels, regionalSymbolPath, regionalSymbolsService, usStateService, wojewodztwoService } from '../services/api';
+import { africaService, americasService, asiaService, europeService, flagdleService, gameService, countyFlagsService, mapQuizService, powiatHeraldryService, powiatService, regionalSymbolLabels, regionalSymbolPath, regionalSymbolsService, usStateService, wojewodztwoService } from '../services/api';
 import { useAvailableRegionalGames } from '../lib/gameCatalog';
 import { useAuthStore } from '../stores/authStore';
 
@@ -21,6 +21,8 @@ const GAME_MODES = [
   { id: 'powiat', label: 'Powiatdle', group: 'Regional' },
   { id: 'heraldry', label: 'County Coats of Arms', group: 'Regional' },
   { id: 'county_flags', label: 'County Flags', group: 'Regional' },
+  { id: 'map_quiz:london_boroughs', label: 'London Boroughs Map Quiz', group: 'Regional' },
+  { id: 'map_quiz:england_counties', label: 'English Counties Map Quiz', group: 'Regional' },
 ] as const;
 
 type GameType = typeof GAME_MODES[number]['id'] | `regional_symbols:${RegionalSymbolScope}:${'coat' | 'flag'}`;
@@ -43,6 +45,8 @@ async function loadLeaderboard(game: GameType, period: LeaderboardPeriod): Promi
     case 'flagdle': return flagdleService.getLeaderboard(period);
     case 'heraldry': return powiatHeraldryService.getLeaderboard(period);
     case 'county_flags': return countyFlagsService.getLeaderboard(period);
+    case 'map_quiz:london_boroughs': return mapQuizService('london_boroughs').getLeaderboard(period);
+    case 'map_quiz:england_counties': return mapQuizService('england_counties').getLeaderboard(period);
     default: throw new Error(`Unknown leaderboard: ${game}`);
   }
 }

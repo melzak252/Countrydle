@@ -31,3 +31,4 @@ from .template_divergence import TemplateDivergence
 from .fallback_answer import FallbackAnswer, FallbackAnswerBlock
 from .heraldry_daily import HeraldryDailySession
 from .heraldry_quiz import QuizRun, QuizSolve
+from .map_quiz import MapQuizDailySession
