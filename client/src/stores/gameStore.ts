@@ -5,6 +5,7 @@ import {
   powiatService,
   usStateService,
   wojewodztwoService,
+  countydleService,
   europeService,
   asiaService,
   africaService,
@@ -126,6 +127,7 @@ const gameLimits = {
     powiaty: { maxQuestions: 15, maxGuesses: 3 },
     us_states: { maxQuestions: 8, maxGuesses: 3 },
     wojewodztwa: { maxQuestions: 5, maxGuesses: 2 },
+    countydle: { maxQuestions: 8, maxGuesses: 3 },
     europe: { maxQuestions: 8, maxGuesses: 3 },
     asia: { maxQuestions: 8, maxGuesses: 3 },
     africa: { maxQuestions: 8, maxGuesses: 3 },
@@ -161,19 +163,20 @@ const normalizeGameState = (
     };
 };
 
-type SyncedGuess = Pick<Guess, 'guess' | 'country_id' | 'powiat_id' | 'us_state_id' | 'wojewodztwo_id' | 'elapsed_seconds'>;
+type SyncedGuess = Pick<Guess, 'guess' | 'country_id' | 'powiat_id' | 'us_state_id' | 'wojewodztwo_id' | 'county_id' | 'elapsed_seconds'>;
 const guessMapping: Record<MapGameType, (guess: Guess) => SyncedGuess> = {
     country: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
     powiaty: (g: Guess) => ({ guess: g.guess, powiat_id: g.powiat_id, elapsed_seconds: g.elapsed_seconds }),
     us_states: (g: Guess) => ({ guess: g.guess, us_state_id: g.us_state_id, elapsed_seconds: g.elapsed_seconds }),
     wojewodztwa: (g: Guess) => ({ guess: g.guess, wojewodztwo_id: g.wojewodztwo_id, elapsed_seconds: g.elapsed_seconds }),
+    countydle: (g: Guess) => ({ guess: g.guess, county_id: g.county_id, elapsed_seconds: g.elapsed_seconds }),
     europe: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
     asia: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
     africa: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
     americas: (g: Guess) => ({ guess: g.guess, country_id: g.country_id, elapsed_seconds: g.elapsed_seconds }),
 };
 
-type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'europe' | 'asia' | 'africa' | 'americas';
+type MapGameType = 'country' | 'powiaty' | 'us_states' | 'wojewodztwa' | 'countydle' | 'europe' | 'asia' | 'africa' | 'americas';
 
 // Factory to create stores for different game types
 const createGameStore = (gameType: MapGameType) => {
@@ -182,6 +185,7 @@ const createGameStore = (gameType: MapGameType) => {
     powiaty: powiatService,
     us_states: usStateService,
     wojewodztwa: wojewodztwoService,
+    countydle: countydleService,
     europe: europeService,
     asia: asiaService,
     africa: africaService,
@@ -256,7 +260,7 @@ const createGameStore = (gameType: MapGameType) => {
                         dailyDate: syncedData.date,
                         notices: state.dailyDate === syncedData.date ? state.notices : [],
                         isGuest: false,
-                        correctEntity: syncedData.country || syncedData.powiat || syncedData.us_state || syncedData.wojewodztwo || null,
+                        correctEntity: syncedData.country || syncedData.powiat || syncedData.us_state || syncedData.wojewodztwo || syncedData.county || null,
                         isLoading: false,
                     }));
                     return;
@@ -272,7 +276,7 @@ const createGameStore = (gameType: MapGameType) => {
         let gameState = data.state;
         let questions = data.questions.filter(isAnsweredQuestion);
         let guesses = data.guesses;
-        let correctEntity = data.country || data.powiat || data.us_state || data.wojewodztwo || null;
+        let correctEntity = data.country || data.powiat || data.us_state || data.wojewodztwo || data.county || null;
 
 
         if (isActuallyGuest) {
@@ -337,6 +341,7 @@ const createGameStore = (gameType: MapGameType) => {
         else if (gameType === 'powiaty') entities = await powiatService.getPowiaty();
         else if (gameType === 'us_states') entities = await usStateService.getStates();
         else if (gameType === 'wojewodztwa') entities = await wojewodztwoService.getWojewodztwa();
+        else if (gameType === 'countydle') entities = await countydleService.getCounties();
         else if (['europe', 'asia', 'africa', 'americas'].includes(gameType)) {
           entities = await service.getCountries();
         }
@@ -493,7 +498,7 @@ const createGameStore = (gameType: MapGameType) => {
             const gRatio = Math.max(0, (maxG - newGameState.guesses_made + 1) / maxG);
             const gBonus = Math.round(500 * gRatio);
             const speedBonus = elapsed_seconds !== undefined ? Math.max(0, Math.min(300, 300 - elapsed_seconds)) : 0;
-            const difficultyBonus = gameType === 'powiaty' ? 500 : gameType === 'us_states' ? 200 : 0;
+            const difficultyBonus = gameType === 'powiaty' ? 500 : (gameType === 'us_states' || gameType === 'countydle') ? 200 : 0;
             newGameState.points = 500 + qBonus + gBonus + speedBonus + 50 + difficultyBonus;
           } else if (newGameState.is_game_over && service.reveal) {
             try {
@@ -656,6 +661,7 @@ export const useCountryGameStore = createGameStore('country');
 export const usePowiatyGameStore = createGameStore('powiaty');
 export const useUSStatesGameStore = createGameStore('us_states');
 export const useWojewodztwaGameStore = createGameStore('wojewodztwa');
+export const useCountydleGameStore = createGameStore('countydle');
 
 
 export const useEuropeGameStore = createGameStore('europe');

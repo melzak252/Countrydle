@@ -128,7 +128,7 @@ def analyze_question(
         return replace(cached, original_question=question)
     from utils.water_hierarchy import is_multi_ocean_question, build_multi_ocean_plan
     if is_multi_ocean_question(question):
-        entity = {"USStatedle": "state", "Powiatdle": "county", "Wojewodztwodle": "voivodeship"}.get(
+        entity = {"USStatedle": "state", "Powiatdle": "county", "Wojewodztwodle": "voivodeship", "Countydle": "county"}.get(
             config.mode_name, "location",
         )
         improved = f"Does the {entity} have access to two or more oceans?"
@@ -269,7 +269,7 @@ User question: {question}
 """.strip()
     allowed_relations = config.scalar_relations.keys() | config.list_relations.keys() | {"name"}
     operators = (PLANNER_OPERATORS - {"contains"}) | {"contains_exact", "contains_partial", "any", "all"}
-    allow_named_entities = config.mode_name in {"Countrydle", "Powiatdle", "USStatedle", "Wojewodztwodle"}
+    allow_named_entities = config.mode_name in {"Countrydle", "Powiatdle", "USStatedle", "Wojewodztwodle", "Countydle"}
     schema = planner_response_schema(
         relations=allowed_relations, operators=operators, target_entity=config.target_entity,
         allow_named_entities=allow_named_entities,
@@ -396,6 +396,31 @@ def _get_parent_voivodeship_relation(row: sqlite3.Row, relation: str) -> Any:
                 ).fetchall()
             ]
     return None
+ENGLISH_COUNTY_ALIASES: dict[str, str] = {
+    "county durham": "Durham",
+    "east riding": "East Riding of Yorkshire",
+    "yorkshire east riding": "East Riding of Yorkshire",
+    "london city": "City of London",
+    "county of herefordshire": "Herefordshire",
+    "tyne & wear": "Tyne and Wear",
+    "londyn": "Greater London",
+    "kornwalia": "Cornwall",
+}
+
+UK_NEIGHBORING_COUNTRIES_ALIASES: dict[str, str] = {
+    "scotland": "Scotland",
+    "szkocja": "Scotland",
+    "wales": "Wales",
+    "walia": "Wales",
+}
+
+
+def _resolve_english_county_alias(value: Any) -> Any:
+    if isinstance(value, str):
+        return ENGLISH_COUNTY_ALIASES.get(norm(value), value)
+    return value
+
+
 def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_name: str) -> sqlite3.Row | None:
     conn.row_factory = sqlite3.Row
     row = conn.execute(
@@ -410,12 +435,20 @@ def get_entity_row(conn: sqlite3.Connection, config: LocalModeConfig, entity_nam
             row = conn.execute(f"SELECT * FROM {config.table} WHERE {config.name_column} = ?", (resolved_v,)).fetchone()
             if row:
                 return row
+    if config.mode_name == "Countydle":
+        resolved_c = _resolve_english_county_alias(entity_name)
+        if resolved_c != entity_name:
+            row = conn.execute(f"SELECT * FROM {config.table} WHERE {config.name_column} = ? COLLATE NOCASE", (resolved_c,)).fetchone()
+            if row:
+                return row
     target_norm = norm(entity_name)
     all_rows = conn.execute(f"SELECT * FROM {config.table}").fetchall()
     for r in all_rows:
         if norm(r[config.name_column]) == target_norm:
             return r
         if "seat" in r.keys() and r["seat"] and norm(r["seat"]) == target_norm:
+            return r
+        if "county_town" in r.keys() and r["county_town"] and norm(r["county_town"]) == target_norm:
             return r
     return None
 
@@ -522,7 +555,13 @@ def evaluate(
             unknown = unknown or value is None
         return None if unknown else not decisive
     if op in config.list_relations or (isinstance(op, str) and op.startswith("borders_")):
-        rel_name = op if op in config.list_relations else ("borders_state" if "state" in op else ("borders_country" if "country" in op else ("borders_voivodeship" if "voivodeship" in op else "borders_powiat")))
+        rel_name = op if op in config.list_relations else (
+            "borders_county" if "county" in op
+            else "borders_state" if "state" in op
+            else "borders_country" if "country" in op
+            else "borders_voivodeship" if "voivodeship" in op
+            else "borders_powiat"
+        )
         rel_items = get_relation_value(conn, config, row, rel_name)
         if not isinstance(rel_items, list) and not (
             config.mode_name == "Powiatdle" and rel_name == "borders_powiat"
@@ -548,8 +587,13 @@ def evaluate(
             return None
         if is_self_reference(right_val, row, config):
             return True
+        if config.mode_name == "Countydle" and rel_name == "borders_county":
+            right_val = _resolve_english_county_alias(right_val)
         if isinstance(rel_items, list):
             right_norm = norm(right_val)
+            if rel_name == "borders_country" and config.mode_name == "Countydle" and right_norm in UK_NEIGHBORING_COUNTRIES_ALIASES:
+                target_country = UK_NEIGHBORING_COUNTRIES_ALIASES[right_norm]
+                return any(norm(value) == norm(target_country) for value in rel_items)
             if rel_name == "borders_country" and right_norm in POLISH_NEIGHBORING_COUNTRIES_ALIASES:
                 target_country = POLISH_NEIGHBORING_COUNTRIES_ALIASES[right_norm]
                 return any(norm(value) == norm(target_country) for value in rel_items)
@@ -646,6 +690,22 @@ def evaluate(
         # with new deterministic plans without weakening exact membership.
         left = [_canonical_us_region(value) for value in left] if isinstance(left, list) else _canonical_us_region(left)
         right = _canonical_us_region(right)
+    if config.mode_name == "Countydle" and isinstance(left_node, dict) and left_node.get("relation") == "is_coastal":
+        is_coast = bool(row["is_coastal"])
+        if op == "exists":
+            return is_coast
+        if right in {True, 1, "true", "True"}:
+            return is_coast
+        if right in {False, 0, "false", "False"}:
+            return not is_coast
+    if (
+        config.mode_name == "Countydle"
+        and isinstance(left_node, dict)
+        and left_node.get("relation") in {"borders_county", "name"}
+        and op in {"contains", "contains_exact", "contains_partial", "equals"}
+        and isinstance(right, str)
+    ):
+        right = _resolve_english_county_alias(right)
     if config.mode_name in {"Wojewodztwodle", "Powiatdle"} and isinstance(left_node, dict) and left_node.get("relation") in {"water_access", "is_coastal"}:
         if config.mode_name == "Wojewodztwodle":
             is_coast = bool(row["is_coastal"])
@@ -714,6 +774,9 @@ def evaluate(
                 return float(len(left)) == float(right)
             rel_name = left_node.get("relation") if isinstance(left_node, dict) else ""
             r_norm = norm(right)
+            if rel_name == "borders_country" and config.mode_name == "Countydle" and r_norm in UK_NEIGHBORING_COUNTRIES_ALIASES:
+                target_country = UK_NEIGHBORING_COUNTRIES_ALIASES[r_norm]
+                return any(norm(v) == norm(target_country) for v in left)
             if rel_name == "borders_country" and r_norm in POLISH_NEIGHBORING_COUNTRIES_ALIASES:
                 target_country = POLISH_NEIGHBORING_COUNTRIES_ALIASES[r_norm]
                 return any(norm(v) == norm(target_country) for v in left)
@@ -835,8 +898,11 @@ def generate_mode_explanation(
     rel = left.get("relation") if isinstance(left, dict) else None
     if not rel and isinstance(op, str) and (op in config.list_relations or op.startswith("borders_")):
         rel = op if op in config.list_relations else (
-            "borders_state" if "state" in op else "borders_country" if "country" in op
-            else "borders_voivodeship" if "voivodeship" in op else "borders_powiat"
+            "borders_county" if "county" in op
+            else "borders_state" if "state" in op
+            else "borders_country" if "country" in op
+            else "borders_voivodeship" if "voivodeship" in op
+            else "borders_powiat"
         )
         left = {"entity": config.target_entity, "relation": rel}
     right_node = node.get("right", node.get("value")) if isinstance(node, dict) else None
@@ -961,7 +1027,7 @@ def generate_mode_explanation(
     if answer is None or (
         rel in config.list_relations and (
             op not in membership_ops or (op == "exists" and val is not None) or type(val) is bool
-            or (numeric_value and rel not in {"borders_state", "borders_voivodeship", "borders_powiat"})
+            or (numeric_value and rel not in {"borders_state", "borders_voivodeship", "borders_powiat", "borders_county"})
             or (val is not None and (val == "" or isinstance(val, (list, dict))))
         )
     ) or (
@@ -1082,6 +1148,48 @@ def generate_mode_explanation(
             if val is not None and not numeric_value and op != "exists":
                 fact += f"; the condition involving {display(val)} is {'true' if answer else 'false'}"
             return f"{verdict} - {fact}."
+        return factual_fallback()
+    elif config.mode_name == "Countydle":
+        if rel == "name" and op in {"equals", "contains_exact", "contains"} and val:
+            display_val = _resolve_english_county_alias(val)
+            return f"{verdict} - The county is {display_val}." if answer else f"{verdict} - The county is not {display_val}."
+        if rel == "is_coastal":
+            return f"{verdict} - {name} is a coastal county." if row["is_coastal"] else f"{verdict} - {name} is a landlocked county."
+        if rel == "is_metropolitan":
+            return f"{verdict} - {name} is a metropolitan county." if row["is_metropolitan"] else f"{verdict} - {name} is a non-metropolitan ceremonial county."
+        if rel == "county_town":
+            return f"{verdict} - {name}'s county town is {row['county_town']}."
+        if rel == "region":
+            return f"{verdict} - {name} is located in the {row['region']} region of England."
+        if rel == "borders_county":
+            borders = [r[0] for r in conn.execute("SELECT border_county_name FROM english_county_borders_counties WHERE county_id = ?", (row["id"],))]
+            if numeric_value:
+                b_str = f" ({', '.join(borders)})" if borders else ""
+                return f"{verdict} - {name} borders {len(borders)} English ceremonial counties{b_str}."
+            display_val = _resolve_english_county_alias(val) if val else ""
+            if display_val:
+                if answer:
+                    return f"{verdict} - {name} borders {display_val}."
+                return f"{verdict} - {name} does not border {display_val}. Bordering counties: {', '.join(borders) if borders else 'none'}."
+            return f"{verdict} - {name}'s bordering counties ({len(borders)}): {', '.join(borders) if borders else 'none'}."
+        if rel == "borders_country":
+            borders = [r[0] for r in conn.execute("SELECT country_name FROM english_county_borders_countries WHERE county_id = ?", (row["id"],))]
+            if val:
+                display_val = UK_NEIGHBORING_COUNTRIES_ALIASES.get(norm(val), val)
+                if answer:
+                    return f"{verdict} - {name} borders {display_val}."
+                return f"{verdict} - {name} does not border {display_val}. Bordering countries: {', '.join(borders) if borders else 'none'}."
+            return f"{verdict} - {name}'s bordering countries: {', '.join(borders) if borders else 'none'}."
+        if rel == "water_access":
+            waters = [r[0] for r in conn.execute("SELECT water_body FROM english_county_water_access WHERE county_id = ?", (row["id"],))]
+            if val:
+                if answer:
+                    return f"{verdict} - {name} has coastline access to {val}."
+                return f"{verdict} - {name} does not have access to {val}. Recorded water bodies: {', '.join(waters) if waters else 'none'}."
+            return f"{verdict} - {name}'s coastline water bodies: {', '.join(waters) if waters else 'none'}."
+        if rel == "regional_labels":
+            labels_list = [r[0] for r in conn.execute("SELECT label FROM english_county_regional_labels WHERE county_id = ?", (row["id"],))]
+            return f"{verdict} - {name}'s regional labels: {', '.join(labels_list) if labels_list else 'none'}."
         return factual_fallback()
     else:
         if rel == "name" and op in {"equals", "contains_exact", "contains"} and val:

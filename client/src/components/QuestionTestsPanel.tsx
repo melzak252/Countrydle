@@ -11,6 +11,7 @@ const MODE_LABELS: Record<QuestionTestMode | 'continental', string> = {
   us_statedle: 'US Statedle',
   powiatdle: 'Powiatdle',
   wojewodztwodle: 'Województwodle',
+  countydle: 'Countydle',
   continental: 'Europedle / Continental',
   europe: 'Europe',
   asia: 'Asia',

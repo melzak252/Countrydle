@@ -8,6 +8,7 @@ const modeNames: Record<GuestGameType, string> = {
   powiaty: 'Polish counties',
   us_states: 'US states',
   wojewodztwa: 'Polish voivodeships',
+  countydle: 'English counties',
   europe: 'Europe',
   asia: 'Asia',
   africa: 'Africa',

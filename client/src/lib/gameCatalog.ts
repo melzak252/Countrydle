@@ -54,6 +54,7 @@ export const gameCatalog: CatalogGroup[] = [
     { path: '/americas', name: 'Americadle', geography: 'continents' },
     { path: '/wojewodztwa', name: 'Województwodle', geography: 'poland' },
     { path: '/powiaty', name: 'Powiatdle', geography: 'poland' },
+    { path: '/countydle', name: 'Countydle', geography: 'uk' },
   ] },
   { id: 'daily', title: 'Daily guessing', games: [
     { path: '/flagdle', name: 'Flagdle', geography: 'worldwide', primary: 2 },

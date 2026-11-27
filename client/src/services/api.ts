@@ -264,6 +264,41 @@ export const wojewodztwoService = {
   },
 };
 
+export const countydleService = {
+  getState: async (): Promise<any> => {
+    const response = await api.get('/countydle/state');
+    return response.data;
+  },
+  getCounties: async (): Promise<any[]> => {
+    const response = await api.get('/countydle/counties');
+    return response.data;
+  },
+  askQuestion: async (question: string): Promise<any> => {
+    const response = await api.post('/countydle/question', { question });
+    return response.data;
+  },
+  makeGuess: async (guess: string, county_id?: number, elapsed_seconds?: number): Promise<any> => {
+    const response = await api.post('/countydle/guess', { guess, county_id, elapsed_seconds });
+    return response.data;
+  },
+  getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> => {
+    const response = await api.get<LeaderboardEntry[]>('/countydle/leaderboard', { params: { type } });
+    return response.data;
+  },
+  getHistory: async (): Promise<any[]> => {
+    const response = await api.get('/countydle/history');
+    return response.data;
+  },
+  syncGuestData: async (data: any): Promise<any> => {
+    const response = await api.post('/countydle/sync', data);
+    return response.data;
+  },
+  reveal: async (): Promise<any> => {
+    const response = await api.get('/countydle/reveal');
+    return response.data;
+  },
+};
+
 export const createContinentalService = (continent: string) => ({
   getState: async (): Promise<GameResponse> => {
     const response = await api.get(`/continental/${continent}/state`);
