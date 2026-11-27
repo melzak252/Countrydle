@@ -25,7 +25,7 @@ function ResultsGuessHistory({ guesses }: { guesses: Guess[] }) {
             key={g.id ?? `${g.guess}-${index}`}
             className={`flex items-center justify-between gap-3 rounded-sm border px-3 py-2 text-xs ${
               g.answer
-                ? 'border-[#2a5942]/35 bg-[#2a5942]/10'
+                ? 'border-app-accent/35 bg-app-accent/10'
                 : 'border-app-border/70 bg-app-canvas'
             }`}
           >
@@ -34,15 +34,15 @@ function ResultsGuessHistory({ guesses }: { guesses: Guess[] }) {
                 #{index + 1}
               </span>
               {g.answer ? (
-                <Check size={14} className="shrink-0 text-[#2a5942]" aria-hidden="true" />
+                <Check size={14} className="shrink-0 text-app-accent" aria-hidden="true" />
               ) : (
-                <X size={14} className="shrink-0 text-[#a84436]" aria-hidden="true" />
+                <X size={14} className="shrink-0 text-[#c85243]" aria-hidden="true" />
               )}
               <span className="truncate font-medium text-app-text">{g.guess}</span>
             </div>
 
             {g.answer ? (
-              <span className="shrink-0 font-mono text-[11px] font-semibold text-[#2a5942]">
+              <span className="shrink-0 font-mono text-[11px] font-semibold text-app-accent">
                 Correct
               </span>
             ) : hasDistance ? (
@@ -52,7 +52,7 @@ function ResultsGuessHistory({ guesses }: { guesses: Guess[] }) {
                 </span>
                 {hasBearing && (
                   <span
-                    className="inline-flex items-center gap-0.5 rounded-sm border border-[#2a5942]/30 bg-[#2a5942]/10 px-1.5 py-0.5 font-semibold text-[#2a5942]"
+                    className="inline-flex items-center gap-0.5 rounded-sm border border-app-accent/30 bg-app-accent/10 px-1.5 py-0.5 font-semibold text-app-accent"
                     title={`${g.bearing_direction}${g.bearing_degrees !== undefined ? ` (${g.bearing_degrees}°)` : ''}`}
                   >
                     <span>{g.bearing_arrow || '↗'}</span>
@@ -61,7 +61,7 @@ function ResultsGuessHistory({ guesses }: { guesses: Guess[] }) {
                 )}
               </div>
             ) : (
-              <span className="shrink-0 font-mono text-[11px] text-[#a84436]">
+              <span className="shrink-0 font-mono text-[11px] text-[#c85243]">
                 Incorrect
               </span>
             )}

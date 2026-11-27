@@ -95,7 +95,7 @@ function HorizontalAxisHistogram({
               {/* Top callout: YOU pill or percentage */}
               <div className="mb-1.5 flex h-5 items-end justify-center">
                 {isPlayer ? (
-                  <span className="rounded-sm bg-[#2a5942] px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none tracking-wider text-app-canvas uppercase shadow-sm">
+                  <span className="rounded-sm bg-app-accent px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none tracking-wider text-app-canvas uppercase shadow-sm">
                     YOU
                   </span>
                 ) : bucket.pct > 0 ? (
@@ -115,10 +115,10 @@ function HorizontalAxisHistogram({
                   <div
                     className={`w-full max-w-[2.5rem] rounded-t-sm transition-all duration-500 ease-out ${
                       isPlayer
-                        ? 'bg-[#2a5942] group-hover:bg-[#224936] shadow-[0_2px_10px_rgba(42,89,66,0.22)]'
+                        ? 'bg-app-accent group-hover:bg-app-accent-hover shadow-[0_2px_10px_rgb(var(--app-accent)/0.28)]'
                         : isFailBucket
-                        ? 'bg-[#a84436]/30 group-hover:bg-[#a84436]/45'
-                        : 'bg-[#2c241b]/20 group-hover:bg-[#2c241b]/35'
+                        ? 'bg-[#c85243]/45 group-hover:bg-[#c85243]/65'
+                        : 'bg-app-text/25 group-hover:bg-app-text/40'
                     }`}
                     style={{ height: `${barHeightPct}%` }}
                   />
@@ -134,9 +134,9 @@ function HorizontalAxisHistogram({
                     isDense ? 'text-[10px] sm:text-[11px]' : 'text-[11px] sm:text-xs'
                   } ${
                     isPlayer
-                      ? 'font-bold text-[#2a5942]'
+                      ? 'font-bold text-app-accent'
                       : isFailBucket
-                      ? 'font-semibold text-[#a84436]'
+                      ? 'font-semibold text-[#c85243]'
                       : 'text-app-text-secondary'
                   }`}
                 >
@@ -224,12 +224,12 @@ export default function DistributionChart({
   return (
     <section
       aria-label="Today's distribution"
-      className="flex flex-1 flex-col justify-between rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 gap-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+      className="flex flex-1 flex-col justify-between rounded-md border border-app-border/70 border-t-2 border-t-app-accent bg-app-surface p-5 sm:p-6 gap-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <BarChart3 size={15} className="text-[#2a5942] shrink-0" aria-hidden="true" />
+          <BarChart3 size={15} className="text-app-accent shrink-0" aria-hidden="true" />
           <h3 className="font-serif text-base font-semibold tracking-tight text-app-text">
             {showDualCharts ? "Today's Distributions" : chartTitle}
           </h3>

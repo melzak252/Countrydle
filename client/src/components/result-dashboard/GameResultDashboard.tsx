@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { Trophy, X, ChevronDown, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Trophy, X, ChevronDown, Sparkles } from 'lucide-react';
 import { useDailyClock } from '../../hooks/useDailyClock';
 import { statsService } from '../../services/api';
 import type {
@@ -10,7 +11,7 @@ import type {
 import DistributionChart from './DistributionChart';
 import CompactLeaderboard from './CompactLeaderboard';
 import ShareActionBar from './ShareActionBar';
-import NextModeShelf from './NextModeShelf';
+import NextModeShelf, { getNextDailyGame } from './NextModeShelf';
 import type { GameResultDashboardProps, ResultDashboardMetric } from './types';
 
 function formatDuration(seconds: number): string {
@@ -341,6 +342,11 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
     elapsedSeconds,
   ]);
 
+  const nextDailyGame = useMemo(
+    () => getNextDailyGame(gamePath, displayDate),
+    [gamePath, displayDate],
+  );
+
   const resolvedShareText = useMemo(
     () => customShareText ?? buildDefaultShareText(props, displayDate),
     [customShareText, props, displayDate],
@@ -369,7 +375,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
   const dashboardBody = (
     <section
       aria-label={`${gameName} result dashboard`}
-      className={`relative w-full max-w-5xl xl:max-w-6xl mx-auto rounded-md border border-app-border border-t-2 border-t-[#2a5942] bg-app-canvas text-left text-app-text shadow-[0_24px_60px_rgba(44,36,27,0.28)] ${
+      className={`relative w-full max-w-5xl xl:max-w-6xl mx-auto rounded-md border border-app-border border-t-2 border-t-app-accent bg-app-canvas text-left text-app-text shadow-[0_24px_60px_rgba(44,36,27,0.28)] ${
         variant === 'modal'
           ? 'max-h-[calc(var(--app-height,100dvh)-1rem)] sm:max-h-[calc(var(--app-height,100dvh)-2.5rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] custom-scrollbar'
           : ''
@@ -379,7 +385,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
       {/* Calm Sticky Top Bar */}
       <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-app-border/60 bg-app-canvas/95 backdrop-blur-md px-5 py-3.5 sm:px-7">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="font-mono text-xs font-semibold text-[#2a5942] uppercase tracking-[0.14em] shrink-0">
+          <span className="font-mono text-xs font-semibold text-app-accent uppercase tracking-[0.14em] shrink-0">
             {gameName}
           </span>
           <span className="text-app-border select-none" aria-hidden="true">
@@ -427,8 +433,8 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider ${
                     won
-                      ? 'border-[#2a5942]/30 bg-[#2a5942]/10 text-[#2a5942]'
-                      : 'border-[#a84436]/30 bg-[#a84436]/10 text-[#a84436]'
+                      ? 'border-app-accent/30 bg-app-accent/10 text-app-accent'
+                      : 'border-[#a84436]/30 bg-[#a84436]/10 text-[#c85243]'
                   }`}
                 >
                   {won ? (
@@ -469,19 +475,38 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             {(won && ((points !== null && points !== undefined && points > 0) || topPercentileDisplay !== null)) && (
               <div className="flex flex-wrap items-baseline lg:justify-end gap-2.5">
                 {points !== null && points !== undefined && points > 0 && (
-                  <div className="font-mono text-2xl sm:text-3xl font-bold text-[#2a5942] tabular-nums">
+                  <div className="font-mono text-2xl sm:text-3xl font-bold text-app-accent tabular-nums">
                     +{points.toLocaleString('en-US')}{' '}
                     <span className="text-xs font-normal text-app-text-secondary">pts</span>
                   </div>
                 )}
 
                 {topPercentileDisplay !== null && (
-                  <span className="inline-flex items-center gap-1 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#9a6b2f]">
+                  <span className="inline-flex items-center gap-1 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#c68f42]">
                     <Sparkles size={11} aria-hidden="true" />
                     Top {topPercentileDisplay}% today
                   </span>
                 )}
               </div>
+            )}
+
+            {nextDailyGame && (
+              <Link
+                to={nextDailyGame.path}
+                className="group inline-flex items-center justify-center lg:justify-end gap-2 rounded-sm border border-app-accent bg-app-accent px-4 py-2 text-xs font-semibold text-app-canvas shadow-[0_2px_8px_rgb(var(--app-accent)/0.25)] hover:bg-app-accent-hover transition-colors"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-app-canvas/85">
+                  Next daily:
+                </span>
+                <span className="font-serif text-sm font-semibold text-app-canvas">
+                  {nextDailyGame.name}
+                </span>
+                <ArrowRight
+                  size={14}
+                  className="shrink-0 text-app-canvas group-hover:translate-x-0.5 transition-transform"
+                  aria-hidden="true"
+                />
+              </Link>
             )}
 
             <ShareActionBar
@@ -499,7 +524,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
         {statMetrics.length > 0 && (
           <dl
             aria-label="Summary metrics"
-            className={`grid divide-x divide-app-border/45 rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)] ${
+            className={`grid divide-x divide-app-border/45 rounded-md border border-app-border/70 border-t-2 border-t-app-accent bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)] ${
               statMetrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
             }`}
           >
@@ -511,11 +536,11 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                 <dd
                   className={`mt-1 font-mono text-lg sm:text-xl font-bold tabular-nums truncate ${
                     metric.accent === 'emerald'
-                      ? 'text-[#2a5942]'
+                      ? 'text-app-accent'
                       : metric.accent === 'amber'
-                      ? 'text-[#9a6b2f]'
+                      ? 'text-[#c68f42]'
                       : metric.accent === 'rose'
-                      ? 'text-[#a84436]'
+                      ? 'text-[#c85243]'
                       : 'text-app-text'
                   }`}
                 >
@@ -621,7 +646,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                                 onClick={() => setActiveDetailTab(tab.id)}
                                 className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
                                   selected
-                                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                                    ? 'bg-app-surface text-app-accent shadow-sm'
                                     : 'text-app-text-secondary hover:text-app-text'
                                 }`}
                               >
@@ -662,7 +687,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                             }`}
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-[#2a5942]">{tab.icon}</span>
+                              <span className="text-app-accent">{tab.icon}</span>
                               <h4 className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-app-text">
                                 {tab.label}
                               </h4>
@@ -698,7 +723,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                                 onClick={() => setActiveDetailTab(tab.id)}
                                 className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
                                   selected
-                                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                                    ? 'bg-app-surface text-app-accent shadow-sm'
                                     : 'text-app-text-secondary hover:text-app-text'
                                 }`}
                               >

@@ -24,9 +24,9 @@ const PERIOD_TABS: { id: DashboardLeaderboardPeriod; label: string }[] = [
 ];
 
 function rankBadgeClass(rank: number): string {
-  if (rank === 1) return 'text-[#9a6b2f] font-bold';
+  if (rank === 1) return 'text-[#c68f42] font-bold';
   if (rank === 2) return 'text-[#355c7d] font-bold';
-  if (rank === 3) return 'text-[#a84436] font-bold';
+  if (rank === 3) return 'text-[#c85243] font-bold';
   return 'text-app-text-muted';
 }
 
@@ -88,7 +88,7 @@ function LeaderboardRow({
     <div
       className={`grid grid-cols-[2.25rem_1fr_auto] items-center gap-3 rounded-sm border px-3 py-2.5 text-xs transition-colors ${
         isCurrentUser
-          ? 'bg-[#2a5942]/10 border-[#2a5942]/30 text-app-text'
+          ? 'bg-app-accent/10 border-app-accent/30 text-app-text'
           : 'border-transparent hover:bg-app-surface-muted/70 text-app-text'
       }`}
     >
@@ -102,8 +102,8 @@ function LeaderboardRow({
             to={`/profile/${encodeURIComponent(entry.username)}`}
             className={`truncate font-medium hover:underline ${
               isCurrentUser
-                ? 'text-[#2a5942] font-semibold'
-                : 'text-app-text hover:text-[#2a5942]'
+                ? 'text-app-accent font-semibold'
+                : 'text-app-text hover:text-app-accent'
             }`}
           >
             {entry.username}
@@ -111,14 +111,14 @@ function LeaderboardRow({
         ) : (
           <span
             className={`truncate font-medium ${
-              isCurrentUser ? 'text-[#2a5942] font-semibold' : 'text-app-text-secondary'
+              isCurrentUser ? 'text-app-accent font-semibold' : 'text-app-text-secondary'
             }`}
           >
             {entry.username}
           </span>
         )}
         {isCurrentUser && (
-          <span className="shrink-0 rounded-sm bg-[#2a5942] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-app-canvas">
+          <span className="shrink-0 rounded-sm bg-app-accent px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-app-canvas">
             YOU
           </span>
         )}
@@ -127,7 +127,7 @@ function LeaderboardRow({
       <div className="text-right font-mono tabular-nums">
         <div
           className={`text-xs font-semibold ${
-            isCurrentUser ? 'text-[#2a5942]' : 'text-app-text'
+            isCurrentUser ? 'text-app-accent' : 'text-app-text'
           }`}
         >
           {formatEntryPrimaryMetric(entry, period)}
@@ -169,12 +169,12 @@ export default function CompactLeaderboard({
   return (
     <section
       aria-label="Leaderboard"
-      className="flex flex-1 flex-col rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 space-y-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+      className="flex flex-1 flex-col rounded-md border border-app-border/70 border-t-2 border-t-app-accent bg-app-surface p-5 sm:p-6 space-y-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header + Segmented Pill Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Trophy size={15} className="text-[#9a6b2f] shrink-0" aria-hidden="true" />
+          <Trophy size={15} className="text-[#c68f42] shrink-0" aria-hidden="true" />
           <h3 className="font-serif text-base font-semibold tracking-tight text-app-text">
             Leaderboard
           </h3>
@@ -196,7 +196,7 @@ export default function CompactLeaderboard({
                 onClick={() => onPeriodChange(tab.id)}
                 className={`rounded-sm px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
                   active
-                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                    ? 'bg-app-surface text-app-accent shadow-sm'
                     : 'text-app-text-secondary hover:text-app-text'
                 }`}
               >
@@ -281,14 +281,14 @@ export default function CompactLeaderboard({
           <div className="flex items-center gap-3 shrink-0">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-[#2a5942] hover:text-app-accent-hover transition-colors"
+              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-app-accent hover:text-app-accent-hover transition-colors"
             >
               <LogIn size={12} aria-hidden="true" />
               Log in
             </Link>
             <Link
               to="/register"
-              className="rounded-sm border border-[#2a5942]/35 bg-[#2a5942]/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-[#2a5942] hover:bg-[#2a5942]/20 transition-colors"
+              className="rounded-sm border border-app-accent/35 bg-app-accent/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-app-accent hover:bg-app-accent/20 transition-colors"
             >
               Sign up
             </Link>
