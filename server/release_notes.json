@@ -1,5 +1,5 @@
 {
-  "version": "2.1.3",
-  "title": "Mobile Performance & PageSpeed Optimizations",
-  "body": "- Enabled gzip compression and 24-hour browser caching for GeoJSON map files in Nginx, cutting map transfer sizes by ~75%.\n- Lazy-loaded below-the-fold map thumbnails via IntersectionObserver so the homepage no longer fetches 2.15 MB of GeoJSON on initial load.\n- Removed Framer Motion from the homepage hero, lazy-loaded the SpinningGlobe canvas, eliminated its 10x/sec React re-render loop, and scoped Google OAuth loading to `/login` and `/register` only."
+  "version": "2.1.4",
+  "title": "Faster Auto-Coloring & Expanded Local Question Templates",
+  "body": "- Bulk-preloaded SQLite list relations for Countrydle auto-coloring, cutting simple map highlight computation from ~100 ms to ~3 ms.\n- Skipped auto-coloring for overly complex quantified or deeply nested queries across Countrydle and regional modes so answers return promptly.\n- Expanded deterministic English templates for landlocked, continent, demonym, hemisphere, directional, and flag color questions so common queries answer in milliseconds without an LLM round-trip."
 }
