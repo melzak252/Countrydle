@@ -1,5 +1,5 @@
 {
-  "version": "2.0.19",
-  "title": "Higher-Contrast Bot Map Shading, Direct Elimination & Uncapped Globe Spin",
-  "body": "- Made the bot ruled-out orange shade more reddish and higher contrast against the parchment map.\n- Direct country questions like \"Is it X?\" that answer No now automatically shade those ruled-out countries orange.\n- Removed the rotation speed cap on the homepage spinning globe."
+  "version": "2.0.20",
+  "title": "Added Taiwan to Countrydle & Asia Mode",
+  "body": "- Added Taiwan (Republic of China) as a playable country across Countrydle, Asiadle, Flagdle, and Friend Duels.\n- Populated Taiwan's full local fact profile (capital Taipei, official languages Chinese/Mandarin, New Taiwan dollar, East Asia, Pacific Ocean/East & South China Sea access, island status, flag colors/sun symbol, coordinates, and hemispheres) and full RAG context fragments."
 }
