@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { Trophy, X, ChevronDown, Users, Sparkles } from 'lucide-react';
+import { Trophy, X, ChevronDown, Sparkles } from 'lucide-react';
 import { useDailyClock } from '../../hooks/useDailyClock';
 import { statsService } from '../../services/api';
 import type {
@@ -34,7 +34,10 @@ function buildDefaultShareText(props: GameResultDashboardProps, displayDate: str
 
   const lines: string[] = [`${props.gameName} · ${displayDate}`];
 
-  if (props.modeKind === 'qa' || (props.questionsAsked !== undefined && props.maxQuestions !== undefined)) {
+  if (
+    props.modeKind === 'qa' ||
+    (props.questionsAsked !== undefined && props.maxQuestions !== undefined)
+  ) {
     const qAsked = props.questionsAsked ?? 0;
     const maxQ = props.maxQuestions ?? 10;
     const gMade = props.guessesMade ?? 0;
@@ -51,7 +54,9 @@ function buildDefaultShareText(props: GameResultDashboardProps, displayDate: str
         lines.push(`Score: ${props.points.toLocaleString('en-US')} pts`);
       }
       lines.push('');
-      lines.push(`${'🟩'.repeat(Math.min(qAsked, maxQ))}${'⬜'.repeat(Math.max(0, maxQ - qAsked))} 🎯`);
+      lines.push(
+        `${'🟩'.repeat(Math.min(qAsked, maxQ))}${'⬜'.repeat(Math.max(0, maxQ - qAsked))} 🎯`,
+      );
     } else {
       lines.push(`X/${maxG} guesses (${qAsked}/${maxQ} questions) ${emoji}`);
       lines.push('');
@@ -127,17 +132,17 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
   // Stats & leaderboard state
   const [period, setPeriod] = useState<DashboardLeaderboardPeriod>('daily');
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [leaderboardOverride, setLeaderboardOverride] = useState<DashboardLeaderboardPayload | null>(null);
+  const [leaderboardOverride, setLeaderboardOverride] =
+    useState<DashboardLeaderboardPayload | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryUnavailable, setSummaryUnavailable] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isExpanding, setIsExpanding] = useState(false);
 
-  // Detail tabs & mobile collapsible state
+  // Collapsible details & active tab (collapsed by default on desktop and mobile)
   const [activeDetailTab, setActiveDetailTab] = useState<string>(detailTabs?.[0]?.id ?? '');
-  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
-  // Keep activeDetailTab synchronized if detailTabs change
   const resolvedDetailTab =
     detailTabs && detailTabs.length > 0
       ? detailTabs.some((t) => t.id === activeDetailTab)
@@ -205,7 +210,8 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
     }
     setIsExpanded(true);
     const currentEntries = leaderboardOverride?.entries ?? summary?.leaderboard?.entries ?? [];
-    const totalRanked = leaderboardOverride?.total_ranked ?? summary?.leaderboard?.total_ranked ?? 0;
+    const totalRanked =
+      leaderboardOverride?.total_ranked ?? summary?.leaderboard?.total_ranked ?? 0;
     if (currentEntries.length >= 25 || (totalRanked > 0 && currentEntries.length >= totalRanked)) {
       return;
     }
@@ -219,7 +225,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
       });
       setLeaderboardOverride(expanded);
     } catch {
-      // Keep existing 10 entries gracefully
+      // Keep existing entries gracefully
     } finally {
       setIsExpanding(false);
     }
@@ -227,73 +233,105 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
 
   const activeLeaderboard = leaderboardOverride ?? summary?.leaderboard ?? null;
 
-  // Derived KPI metrics
-  const kpiMetrics: ResultDashboardMetric[] = useMemo(() => {
-    if (customMetrics && customMetrics.length > 0) return customMetrics;
-    const list: ResultDashboardMetric[] = [];
+  const percentile = summary?.player?.percentile;
+  const topPercentileDisplay =
+    percentile !== null && percentile !== undefined && Number.isFinite(percentile)
+      ? Math.max(1, Math.min(99, Math.round(100 - percentile)))
+      : null;
 
-    if (questionsAsked !== undefined && maxQuestions !== undefined) {
-      list.push({
-        label: 'Questions',
-        value: `${questionsAsked} / ${maxQuestions}`,
-        subtext:
-          summary?.avg_questions_won != null
-            ? `Avg ${summary.avg_questions_won.toFixed(1)}`
-            : undefined,
-      });
+  // Minimal 3-metric stat row (or customMetrics when explicitly provided)
+  const statMetrics: ResultDashboardMetric[] = useMemo(() => {
+    if (customMetrics && customMetrics.length > 0) {
+      return customMetrics.slice(0, 3);
     }
 
-    if (guessesMade !== undefined && maxGuesses !== undefined) {
-      list.push({
-        label: modeKind === 'route' ? 'Hops' : 'Guesses',
+    const playedValue =
+      summary && summary.played_today > 0 ? summary.played_today.toLocaleString('en-US') : '--';
+    const playedSub =
+      summary && summary.completed_today > 0
+        ? `${summary.completed_today.toLocaleString('en-US')} finished`
+        : isDaily
+        ? 'Today'
+        : 'Challenge';
+
+    const winRateValue =
+      summary && summary.played_today > 0 ? `${Math.round(summary.win_rate_pct)}%` : '--';
+    let winRateSub: string | undefined;
+    if (summary?.avg_questions_won != null) {
+      winRateSub = `Avg ${summary.avg_questions_won.toFixed(1)} Q`;
+    } else if (summary?.avg_guesses_won != null) {
+      winRateSub = `Avg ${summary.avg_guesses_won.toFixed(1)} ${modeKind === 'route' ? 'hops' : 'G'}`;
+    } else if (summary?.avg_score != null) {
+      winRateSub = `Avg ${summary.avg_score.toFixed(1)}`;
+    } else if (summary?.avg_elapsed_seconds != null) {
+      winRateSub = `Avg ${formatDuration(summary.avg_elapsed_seconds)}`;
+    }
+
+    // Third metric: Your rank if available, otherwise player's run summary vs average
+    let thirdMetric: ResultDashboardMetric;
+    if (summary?.player?.daily_rank != null) {
+      thirdMetric = {
+        label: 'Your rank',
+        value: `#${summary.player.daily_rank}`,
+        subtext: topPercentileDisplay !== null ? `Top ${topPercentileDisplay}%` : 'Today',
+        accent: won ? 'emerald' : 'default',
+      };
+    } else if (questionsAsked !== undefined && maxQuestions !== undefined) {
+      thirdMetric = {
+        label: 'Your run',
+        value: `${questionsAsked}Q · ${guessesMade ?? 0}G`,
+        subtext:
+          summary?.avg_questions_won != null
+            ? `Avg ${summary.avg_questions_won.toFixed(1)} Q`
+            : `${maxQuestions}Q limit`,
+        accent: won ? 'emerald' : 'default',
+      };
+    } else if (score !== undefined && maxScore !== undefined) {
+      thirdMetric = {
+        label: 'Your score',
+        value: `${score} / ${maxScore}`,
+        subtext: elapsedSeconds !== undefined ? formatDuration(elapsedSeconds) : undefined,
+        accent: won ? 'emerald' : 'default',
+      };
+    } else if (guessesMade !== undefined && maxGuesses !== undefined) {
+      thirdMetric = {
+        label: modeKind === 'route' ? 'Your hops' : 'Your guesses',
         value: `${guessesMade} / ${maxGuesses}`,
         subtext:
           summary?.avg_guesses_won != null
             ? `Avg ${summary.avg_guesses_won.toFixed(1)}`
             : undefined,
-      });
-    }
-
-    if (score !== undefined && maxScore !== undefined) {
-      const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-      list.push({
-        label: 'Score',
-        value: `${score} / ${maxScore}`,
-        subtext: `${pct}% accuracy`,
         accent: won ? 'emerald' : 'default',
-      });
-    }
-
-    if (elapsedSeconds !== undefined) {
-      list.push({
-        label: 'Time',
+      };
+    } else if (elapsedSeconds !== undefined) {
+      thirdMetric = {
+        label: 'Your time',
         value: formatDuration(elapsedSeconds),
         subtext:
           summary?.avg_elapsed_seconds != null
             ? `Avg ${formatDuration(summary.avg_elapsed_seconds)}`
             : undefined,
-      });
+      };
+    } else {
+      thirdMetric = {
+        label: 'Your rank',
+        value: '--',
+        subtext: 'Unranked',
+      };
     }
 
-    if (points !== undefined && points !== null && list.length < 4) {
-      list.push({
-        label: 'Points',
-        value: points > 0 ? `+${points.toLocaleString('en-US')}` : '0',
-        accent: won && points > 0 ? 'emerald' : 'default',
-      });
-    }
-
-    if (summary && summary.played_today > 0 && list.length < 4) {
-      list.push({
-        label: 'Solve Rate',
-        value: `${Math.round(summary.win_rate_pct)}%`,
-        subtext: `${summary.played_today.toLocaleString('en-US')} played`,
-      });
-    }
-
-    return list.slice(0, 4);
+    return [
+      { label: 'Played today', value: playedValue, subtext: playedSub },
+      { label: 'Win rate', value: winRateValue, subtext: winRateSub },
+      thirdMetric,
+    ];
   }, [
     customMetrics,
+    summary,
+    isDaily,
+    modeKind,
+    topPercentileDisplay,
+    won,
     questionsAsked,
     maxQuestions,
     guessesMade,
@@ -301,10 +339,6 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
     score,
     maxScore,
     elapsedSeconds,
-    points,
-    won,
-    modeKind,
-    summary,
   ]);
 
   const resolvedShareText = useMemo(
@@ -317,98 +351,45 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
     targetImageUrl ||
     (flagCode && /^[a-z]{2}$/.test(flagCode) ? `https://flagcdn.com/w320/${flagCode}.png` : null);
 
-  const percentile = summary?.player?.percentile;
-  const topPercentileDisplay =
-    percentile !== null && percentile !== undefined && Number.isFinite(percentile)
-      ? Math.max(1, Math.min(99, Math.round(100 - percentile)))
-      : null;
-
   const hasDetails = Boolean(detailsSlot || (detailTabs && detailTabs.length > 0));
 
-  const detailsContent = (
-    <div className="space-y-3">
-      {detailTabs && detailTabs.length > 0 ? (
-        <>
-          <div
-            role="tablist"
-            aria-label={detailsTitle}
-            className="grid gap-1 rounded-sm border border-white/10 bg-obsidian-950/70 p-1"
-            style={{ gridTemplateColumns: `repeat(${detailTabs.length}, minmax(0, 1fr))` }}
-          >
-            {detailTabs.map((tab) => {
-              const selected = tab.id === resolvedDetailTab;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  id={`${tabListId}-${tab.id}-tab`}
-                  role="tab"
-                  aria-selected={selected}
-                  aria-controls={`${tabListId}-${tab.id}-panel`}
-                  onClick={() => setActiveDetailTab(tab.id)}
-                  className={`flex min-h-10 items-center justify-center gap-2 rounded-xs px-2.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                    selected
-                      ? 'bg-white/10 text-sand-100'
-                      : 'text-zinc-400 hover:text-sand-100'
-                  }`}
-                >
-                  {tab.icon}
-                  <span className="truncate">{tab.label}</span>
-                  {tab.badge !== undefined && (
-                    <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          {detailTabs.map((tab) => (
-            <div
-              key={tab.id}
-              id={`${tabListId}-${tab.id}-panel`}
-              role="tabpanel"
-              aria-labelledby={`${tabListId}-${tab.id}-tab`}
-              className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
-            >
-              {tab.content}
-            </div>
-          ))}
-        </>
-      ) : (
-        detailsSlot
-      )}
-    </div>
-  );
+  const detailsToggleLabel = useMemo(() => {
+    if (detailTabs && detailTabs.length > 0) {
+      return detailTabs.map((t) => t.label).join(' & ');
+    }
+    return detailsTitle;
+  }, [detailTabs, detailsTitle]);
+
+  const detailsBadgeCount = useMemo(() => {
+    if (!detailTabs) return undefined;
+    const withBadge = detailTabs.find((t) => t.badge !== undefined);
+    return withBadge?.badge;
+  }, [detailTabs]);
 
   const dashboardBody = (
     <section
       aria-label={`${gameName} result dashboard`}
-      className={`relative w-full max-w-6xl xl:max-w-7xl mx-auto rounded-sm border border-white/15 bg-obsidian-950 text-left text-sand-100 shadow-2xl ${
+      className={`relative w-full max-w-5xl xl:max-w-6xl mx-auto rounded-2xl border border-white/10 bg-obsidian-950 text-left text-sand-100 shadow-2xl ${
         variant === 'modal'
           ? 'max-h-[calc(var(--app-height,100dvh)-1rem)] sm:max-h-[calc(var(--app-height,100dvh)-2.5rem)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]'
           : ''
       }`}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Sticky Top Bar (crucial for mobile sheet ergonomics) */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/10 bg-obsidian-950/95 backdrop-blur-md px-4 py-3 sm:px-6">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-          <span className="font-mono text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+      {/* Calm Sticky Top Bar */}
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/[0.07] bg-obsidian-950/95 backdrop-blur-md px-5 py-3.5 sm:px-7">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="font-mono text-xs font-semibold text-emerald-400 uppercase tracking-wider shrink-0">
             {gameName}
           </span>
-          <span className="text-zinc-600 select-none" aria-hidden="true">·</span>
-          <time dateTime={displayDate} className="font-mono text-xs text-zinc-400">
-            {isDaily ? displayDate : 'Challenge Round'}
+          <span className="text-zinc-700 select-none" aria-hidden="true">
+            ·
+          </span>
+          <time dateTime={displayDate} className="font-mono text-xs text-zinc-400 shrink-0">
+            {isDaily ? displayDate : 'Challenge'}
           </time>
-          {summary && summary.played_today > 0 && (
-            <>
-              <span className="hidden sm:inline text-zinc-600 select-none" aria-hidden="true">·</span>
-              <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-xs text-zinc-300">
-                <Users size={12} className="text-emerald-400" aria-hidden="true" />
-                {summary.played_today.toLocaleString('en-US')} played today · {Math.round(summary.win_rate_pct)}% solved
-              </span>
-            </>
+          {targetName && (
+            <span className="truncate text-xs text-zinc-500 sm:hidden">· {targetName}</span>
           )}
         </div>
 
@@ -416,111 +397,119 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
             aria-label={closeLabel}
             title={closeLabel}
           >
-            <X size={17} />
+            <X size={16} />
           </button>
         )}
       </header>
 
-      {/* Main Dashboard Content */}
-      <div className="p-4 sm:p-6 space-y-5">
-        {/* 12-Col Hero Banner */}
-        <div className="rounded-sm border border-white/10 bg-gradient-to-br from-obsidian-900/90 via-obsidian-900/60 to-obsidian-950 p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+      {/* Main Airy Content */}
+      <div className="p-5 sm:p-7 space-y-6">
+        {/* Clean Top Hero (no nested card border) */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 border-b border-white/[0.08] pb-6">
+          {/* Hero Left: Outcome + Target Reveal */}
+          <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
             {resolvedImageSrc && (
-              <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950/90 p-1.5 shadow-md">
+              <div className="shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-1.5 shadow-sm">
                 <img
                   src={resolvedImageSrc}
                   alt={targetImageAlt || targetName || gameName}
-                  className="h-14 w-20 sm:h-18 sm:w-28 object-contain"
+                  className="h-14 w-20 sm:h-16 sm:w-24 object-contain rounded-lg"
                 />
               </div>
             )}
-            <div className="min-w-0">
-              {targetLabel && (
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
-                  {targetLabel}
+
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold ${
+                    won
+                      ? 'bg-emerald-500/15 text-emerald-300'
+                      : 'bg-rose-500/15 text-rose-300'
+                  }`}
+                >
+                  {won ? (
+                    <Trophy size={12} aria-hidden="true" />
+                  ) : (
+                    <X size={12} aria-hidden="true" />
+                  )}
+                  <span>{outcomeLabel ?? (won ? 'Solved' : 'Game Over')}</span>
                 </span>
-              )}
-              <h2 className="mt-0.5 break-words font-serif text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-sand-100">
-                {targetName || (won ? 'Puzzle Solved' : 'Game Over')}
-              </h2>
-              {targetSubtitle && (
-                <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">{targetSubtitle}</p>
-              )}
-              {subtitle && (
-                <p className="mt-1 text-xs sm:text-sm text-zinc-400 leading-relaxed">{subtitle}</p>
-              )}
-              {summary && summary.played_today > 0 && (
-                <p className="mt-1.5 flex sm:hidden items-center gap-1.5 font-mono text-[11px] text-zinc-400">
-                  <Users size={11} className="text-emerald-400" aria-hidden="true" />
-                  {summary.played_today.toLocaleString('en-US')} played today · {Math.round(summary.win_rate_pct)}% solved
+
+                {targetLabel && (
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+                    {targetLabel}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="break-words font-serif text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-sand-100">
+                  {targetName || (won ? 'Puzzle Solved' : 'Game Over')}
+                </h2>
+                {targetAccessory && <div className="shrink-0">{targetAccessory}</div>}
+              </div>
+
+              {(targetSubtitle || subtitle) && (
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-xl">
+                  {targetSubtitle || subtitle}
                 </p>
+              )}
+              {targetSubtitle && subtitle && (
+                <p className="text-xs text-zinc-500 leading-relaxed max-w-xl">{subtitle}</p>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap md:flex-col items-center md:items-end justify-between gap-2.5 shrink-0 border-t md:border-t-0 border-white/10 pt-3 md:pt-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs font-semibold ${
-                  won
-                    ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-300'
-                    : 'bg-rose-500/15 border border-rose-500/35 text-rose-300'
-                }`}
-              >
-                {won ? <Trophy size={13} aria-hidden="true" /> : <X size={13} aria-hidden="true" />}
-                <span>{outcomeLabel ?? (won ? 'Solved' : 'Game Over')}</span>
-              </span>
+          {/* Hero Right: Points + Top X% + Inline Share Controls + Countdown */}
+          <div className="flex flex-col lg:items-end gap-3 shrink-0">
+            {(won && ((points !== null && points !== undefined && points > 0) || topPercentileDisplay !== null)) && (
+              <div className="flex flex-wrap items-baseline lg:justify-end gap-2.5">
+                {points !== null && points !== undefined && points > 0 && (
+                  <div className="font-mono text-2xl sm:text-3xl font-bold text-emerald-300 tabular-nums">
+                    +{points.toLocaleString('en-US')}{' '}
+                    <span className="text-xs font-normal text-emerald-400/75">pts</span>
+                  </div>
+                )}
 
-              {won && topPercentileDisplay !== null && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/35 bg-amber-400/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-amber-200">
-                  <Sparkles size={11} aria-hidden="true" />
-                  Top {topPercentileDisplay}% today
-                </span>
-              )}
-            </div>
-
-            {won && points !== null && points !== undefined && points > 0 && (
-              <div className="font-mono text-2xl sm:text-3xl font-bold text-emerald-300 tabular-nums">
-                +{points.toLocaleString('en-US')} <span className="text-sm font-normal text-emerald-400/80">pts</span>
+                {topPercentileDisplay !== null && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/12 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-200">
+                    <Sparkles size={11} aria-hidden="true" />
+                    Top {topPercentileDisplay}% today
+                  </span>
+                )}
               </div>
             )}
 
-            {targetAccessory && <div className="mt-1">{targetAccessory}</div>}
+            <ShareActionBar
+              shareText={resolvedShareText}
+              shareTitle={shareTitle ?? `${gameName} Daily Result`}
+              isDaily={isDaily}
+              primaryAction={primaryAction}
+              secondaryActions={secondaryActions}
+              align="right"
+            />
           </div>
         </div>
 
-        {/* Mobile Share Bar right under Hero for instant sharing */}
-        <div className="lg:hidden">
-          <ShareActionBar
-            shareText={resolvedShareText}
-            shareTitle={shareTitle ?? `${gameName} Daily Result`}
-            isDaily={isDaily}
-            primaryAction={primaryAction}
-            secondaryActions={secondaryActions}
-          />
-        </div>
-
-        {/* 12-Col Desktop Bento Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* LEFT 7 COLS: KPI Strip + Distribution Chart + Details */}
-          <div className="lg:col-span-7 space-y-5 min-w-0">
-            {/* KPI Strip */}
-            {kpiMetrics.length > 0 && (
+        {/* 2-Column Main Body */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT 7 COLS: 3-Metric Row -> Horizontal Distribution -> Collapsed Details */}
+          <div className="lg:col-span-7 space-y-6 min-w-0">
+            {/* Minimal 3-Metric Row */}
+            {statMetrics.length > 0 && (
               <dl
-                className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
-                aria-label="Performance metrics"
+                aria-label="Summary metrics"
+                className={`grid divide-x divide-white/[0.08] rounded-xl border border-white/[0.08] bg-white/[0.02] ${
+                  statMetrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                }`}
               >
-                {kpiMetrics.map((metric) => (
-                  <div
-                    key={metric.label}
-                    className="rounded-sm border border-white/10 bg-obsidian-900/60 px-3.5 py-3 min-w-0"
-                  >
-                    <dt className="font-mono text-[10px] uppercase tracking-wider text-zinc-400 truncate">
+                {statMetrics.map((metric) => (
+                  <div key={metric.label} className="px-4 py-3.5 sm:px-5 sm:py-4 min-w-0">
+                    <dt className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-zinc-500 truncate">
                       {metric.label}
                     </dt>
                     <dd
@@ -537,7 +526,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
                       {metric.value}
                     </dd>
                     {metric.subtext && (
-                      <div className="mt-0.5 font-mono text-[10px] text-zinc-400 truncate">
+                      <div className="mt-0.5 font-mono text-[11px] text-zinc-500 truncate">
                         {metric.subtext}
                       </div>
                     )}
@@ -546,7 +535,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
               </dl>
             )}
 
-            {/* Distribution Chart */}
+            {/* Single Horizontal Distribution Card */}
             <DistributionChart
               modeKind={modeKind}
               questions={summary?.distributions?.questions}
@@ -563,36 +552,100 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
               completedToday={summary?.completed_today}
             />
 
-            {/* Details Slot (always open on lg+, collapsible on mobile) */}
+            {/* Collapsible Details / Question History (closed by default on desktop & mobile) */}
             {hasDetails && (
               <section
                 aria-label={detailsTitle}
-                className="rounded-sm border border-white/10 bg-obsidian-900/60 p-4 sm:p-5"
+                className="rounded-xl border border-white/[0.08] bg-white/[0.02]"
               >
                 <button
                   type="button"
-                  onClick={() => setMobileDetailsOpen((prev) => !prev)}
-                  aria-expanded={mobileDetailsOpen}
-                  className="flex lg:hidden w-full items-center justify-between gap-2 text-left cursor-pointer"
+                  onClick={() => setDetailsOpen((prev) => !prev)}
+                  aria-expanded={detailsOpen}
+                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-white/[0.02] transition-colors rounded-xl cursor-pointer"
                 >
-                  <span className="font-mono text-xs font-semibold uppercase tracking-wider text-sand-100">
-                    {detailsTitle}
-                  </span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="font-mono text-xs font-semibold uppercase tracking-wider text-zinc-300 truncate">
+                      {detailsToggleLabel}
+                    </span>
+                    {detailsBadgeCount !== undefined && (
+                      <span className="rounded-full bg-white/[0.08] px-2 py-0.5 font-mono text-[10px] text-zinc-300 tabular-nums">
+                        {detailsBadgeCount}
+                      </span>
+                    )}
+                  </div>
                   <ChevronDown
                     size={16}
-                    className={`text-zinc-400 transition-transform ${mobileDetailsOpen ? 'rotate-180' : ''}`}
+                    className={`shrink-0 text-zinc-500 transition-transform duration-200 ${
+                      detailsOpen ? 'rotate-180' : ''
+                    }`}
                     aria-hidden="true"
                   />
                 </button>
-                <div className={mobileDetailsOpen ? 'mt-3 block' : 'hidden lg:block'}>
-                  {detailsContent}
-                </div>
+
+                {detailsOpen && (
+                  <div className="border-t border-white/[0.07] px-5 py-5 space-y-4">
+                    {detailTabs && detailTabs.length > 0 ? (
+                      <>
+                        {detailTabs.length > 1 && (
+                          <div
+                            role="tablist"
+                            aria-label={detailsTitle}
+                            className="inline-flex flex-wrap items-center gap-1 rounded-full bg-white/[0.05] p-1"
+                          >
+                            {detailTabs.map((tab) => {
+                              const selected = tab.id === resolvedDetailTab;
+                              return (
+                                <button
+                                  key={tab.id}
+                                  type="button"
+                                  id={`${tabListId}-${tab.id}-tab`}
+                                  role="tab"
+                                  aria-selected={selected}
+                                  aria-controls={`${tabListId}-${tab.id}-panel`}
+                                  onClick={() => setActiveDetailTab(tab.id)}
+                                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                    selected
+                                      ? 'bg-emerald-400/20 text-emerald-300'
+                                      : 'text-zinc-400 hover:text-sand-100'
+                                  }`}
+                                >
+                                  {tab.icon}
+                                  <span>{tab.label}</span>
+                                  {tab.badge !== undefined && (
+                                    <span className="rounded-full bg-white/10 px-1.5 py-0.25 font-mono text-[10px]">
+                                      {tab.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {detailTabs.map((tab) => (
+                          <div
+                            key={tab.id}
+                            id={`${tabListId}-${tab.id}-panel`}
+                            role="tabpanel"
+                            aria-labelledby={`${tabListId}-${tab.id}-tab`}
+                            className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
+                          >
+                            {tab.content}
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      detailsSlot
+                    )}
+                  </div>
+                )}
               </section>
             )}
           </div>
 
-          {/* RIGHT 5 COLS: Compact Leaderboard + Share (desktop) + Next Mode Shelf */}
-          <div className="lg:col-span-5 space-y-5 min-w-0">
+          {/* RIGHT 5 COLS: Clean Top-5 Leaderboard */}
+          <div className="lg:col-span-5 min-w-0">
             <CompactLeaderboard
               period={period}
               onPeriodChange={setPeriod}
@@ -603,33 +656,11 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
               onToggleExpand={handleToggleExpand}
               isUnavailable={summaryUnavailable}
             />
-
-            <div className="hidden lg:block">
-              <ShareActionBar
-                shareText={resolvedShareText}
-                shareTitle={shareTitle ?? `${gameName} Daily Result`}
-                isDaily={isDaily}
-                primaryAction={primaryAction}
-                secondaryActions={secondaryActions}
-              />
-            </div>
-
-            <NextModeShelf currentPath={gamePath} duelMode={duelMode} />
           </div>
         </div>
 
-        {/* Footer close button for modal */}
-        {variant === 'modal' && onClose && (
-          <footer className="flex justify-end border-t border-white/10 pt-4 pb-[env(safe-area-inset-bottom)]">
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-11 w-full sm:w-auto px-5 py-2 rounded-sm border border-white/15 text-xs font-semibold text-zinc-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-            >
-              {closeLabel}
-            </button>
-          </footer>
-        )}
+        {/* Lightweight Bottom Strip */}
+        <NextModeShelf currentPath={gamePath} duelMode={duelMode} />
       </div>
     </section>
   );
@@ -644,7 +675,7 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
       aria-modal="true"
       aria-label={`${gameName} Daily Results`}
       onClick={onClose}
-      className="fixed inset-0 z-[1200] flex items-center justify-center p-2 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
+      className="fixed inset-0 z-[1200] flex items-center justify-center p-2.5 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
     >
       <div className="relative z-10 w-full cursor-default">{dashboardBody}</div>
     </div>
