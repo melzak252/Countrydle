@@ -105,6 +105,12 @@ export const DAILY_MODE_POOL: DailyModeCard[] = [
     storageKey: (d) => `guess_game_europe_${d}`,
   },
   {
+    path: '/map-border-hop?mode=powiaty',
+    name: 'Map Border Hop',
+    tag: 'Interactive border chain',
+    accent: 'border-t-[#355c7d]',
+  },
+  {
     path: '/border-hop',
     name: 'Border Hop',
     tag: 'Shortest land route',

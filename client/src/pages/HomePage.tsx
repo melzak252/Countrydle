@@ -34,9 +34,9 @@ const MODE_SUMMARIES: Record<string, { tag: string; summary: string; stripe: str
 
 const QUICK_OTHER_MODES: { path: string; name: string; tag: string; geography: CatalogGeography }[] = [
   { path: '/wojewodztwa', name: 'Województwodle', tag: '16 Polish regions', geography: 'poland' },
-  { path: '/border-hop', name: 'Border Hop', tag: 'Follow land borders', geography: 'worldwide' },
   { path: MAP_QUIZ_PATHS.us_states, name: 'US State Map Quiz', tag: 'Click US states', geography: 'united-states' },
   { path: '/map-border-hop?mode=us_states', name: 'Map Border Hop · US', tag: 'US state chains', geography: 'united-states' },
+  { path: '/border-hop', name: 'Border Hop', tag: 'Follow land borders', geography: 'worldwide' },
   { path: '/flagi-powiatow', name: 'County Flags', tag: 'Daily Polish flags', geography: 'poland' },
 ];
 

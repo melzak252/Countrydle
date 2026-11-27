@@ -96,6 +96,8 @@ export const gameCatalog: CatalogGroup[] = [
     { path: '/map-quiz/england-counties', name: 'English Counties Map Quiz', geography: 'uk' },
   ] },
   { id: 'more', title: 'More ways to play', games: [
+    { path: '/map-border-hop?mode=powiaty', name: 'Map Border Hop · Powiaty', geography: 'poland' },
+    { path: '/map-border-hop?mode=us_states', name: 'Map Border Hop · US', geography: 'united-states' },
     { path: '/border-hop', name: 'Border Hop', geography: 'worldwide' },
     { path: '/friends', name: 'Friend duels', geography: 'worldwide' },
   ] },
