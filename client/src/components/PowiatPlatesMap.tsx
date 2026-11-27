@@ -331,11 +331,11 @@ export default function PowiatPlatesMap({
           display: none !important;
         }
         .leaflet-top, .leaflet-bottom, .leaflet-control {
-          z-index: 1050 !important;
+          z-index: 500 !important;
         }
       `}</style>
 
-      <div className="absolute top-3 right-3 z-[1050]">
+      <div className="absolute top-3 right-3 z-[500]">
         <button
           type="button"
           onClick={() => {

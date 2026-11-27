@@ -440,7 +440,7 @@ export default function PowiatPlatesQuizPage() {
       {/* Floating Top-Center Input & Scoreboard HUD */}
       <section
         aria-label={t('platesQuiz.scoreboardAria', 'Plate input and scoreboard')}
-        className="absolute inset-x-0 top-3 z-[1050] mx-auto max-w-3xl pl-3 pr-14 lg:px-3 pointer-events-none"
+        className="absolute inset-x-0 top-3 z-[500] mx-auto max-w-3xl pl-3 pr-14 lg:px-3 pointer-events-none"
       >
         <div className="pointer-events-auto rounded-md border border-app-border bg-app-surface/95 backdrop-blur-md px-3 py-2.5 shadow-lg space-y-2">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2">
@@ -653,7 +653,7 @@ export default function PowiatPlatesQuizPage() {
       {/* Collapsible Floating Voivodeships Progress Panel */}
       <aside
         aria-label={t('platesQuiz.voivodeshipsAria', 'Progress by voivodeship')}
-        className="absolute bottom-4 left-4 z-[1050] max-w-[calc(100vw-2rem)] flex flex-col items-start gap-2 pointer-events-none"
+        className="absolute bottom-4 left-4 z-[500] max-w-[calc(100vw-2rem)] flex flex-col items-start gap-2 pointer-events-none"
       >
         {voivPanelOpen && (
           <div className="pointer-events-auto w-72 sm:w-80 max-h-[45vh] overflow-y-auto rounded-md border border-app-border bg-app-surface/95 backdrop-blur-md p-3 shadow-lg space-y-2">
