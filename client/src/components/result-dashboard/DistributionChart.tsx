@@ -57,14 +57,22 @@ function HorizontalAxisHistogram({
   const hasServerPlayerFlag = buckets.some((b) => b.is_player);
   const avgBucketLabel = getAverageBucketLabel(buckets, average);
   const isDense = buckets.length > 8;
-  const barTrackHeight = compact ? 'h-20 sm:h-24' : 'h-28 sm:h-32';
+  const barTrackClass = compact
+    ? 'h-20 sm:h-24'
+    : 'flex-1 min-h-[12rem] sm:min-h-[14rem]';
 
   return (
-    <div className="relative pt-2" role="list" aria-label={ariaLabel}>
+    <div
+      className={`relative pt-2 ${compact ? '' : 'flex flex-1 flex-col'}`}
+      role="list"
+      aria-label={ariaLabel}
+    >
       {/* Faint horizontal reference lines behind the vertical columns */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-[2.125rem] flex h-28 sm:h-32 flex-col justify-between"
+        className={`pointer-events-none absolute inset-x-0 top-[2.125rem] flex flex-col justify-between ${
+          compact ? 'h-20 sm:h-24' : 'bottom-[2.25rem]'
+        }`}
       >
         <div className="w-full border-t border-dashed border-app-border/50" />
         <div className="w-full border-t border-dashed border-app-border/50" />
@@ -74,7 +82,9 @@ function HorizontalAxisHistogram({
 
       {/* Columns arranged horizontally left-to-right along the X-axis */}
       <div
-        className="relative z-10 grid items-end gap-1.5 sm:gap-2"
+        className={`relative z-10 grid gap-1.5 sm:gap-2 ${
+          compact ? 'items-end' : 'flex-1 items-stretch'
+        }`}
         style={{ gridTemplateColumns: `repeat(${buckets.length}, minmax(0, 1fr))` }}
       >
         {buckets.map((bucket) => {
@@ -95,7 +105,7 @@ function HorizontalAxisHistogram({
               className="group flex flex-col items-center min-w-0"
             >
               {/* Top callout: YOU pill or percentage */}
-              <div className="mb-1.5 flex h-5 items-end justify-center">
+              <div className="mb-1.5 flex h-5 shrink-0 items-end justify-center">
                 {isPlayer ? (
                   <span className="rounded-sm bg-app-accent px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none tracking-wider text-app-canvas uppercase shadow-sm">
                     YOU
@@ -112,7 +122,7 @@ function HorizontalAxisHistogram({
               </div>
 
               {/* Column track (vertical bar rising from horizontal baseline) */}
-              <div className={`relative flex ${barTrackHeight} w-full items-end justify-center px-0.5 sm:px-1`}>
+              <div className={`relative flex ${barTrackClass} w-full items-end justify-center px-0.5 sm:px-1`}>
                 {barHeightPct > 0 ? (
                   <div
                     className={`w-full max-w-[2.5rem] rounded-t-sm transition-all duration-500 ease-out ${
@@ -229,7 +239,7 @@ export default function DistributionChart({
   return (
     <section
       aria-label="Today's distribution"
-      className="flex flex-1 flex-col justify-between rounded-md border border-app-border/70 border-t-2 border-t-app-accent bg-app-surface p-5 sm:p-6 gap-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+      className="flex flex-1 flex-col rounded-md border border-app-border/70 border-t-2 border-t-app-accent bg-app-surface p-5 sm:p-6 gap-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
