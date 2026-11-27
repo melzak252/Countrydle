@@ -495,16 +495,28 @@ def _build_distributions(
         ]
 
     if spec.mode_kind == "quiz_run":
-        labels = ["0-20%", "21-40%", "41-60%", "61-80%", "81-99%", "100%"]
-        counts = {label: 0 for label in labels}
-        for r in completed_rows:
-            max_s = r.max_score or spec.max_score or 100
-            lbl = _quiz_score_band(r.score or 0, max_s)
-            counts[lbl] += 1
-        player_lbl = None
-        if player_completed is not None:
-            max_s = player_completed.max_score or spec.max_score or 100
-            player_lbl = _quiz_score_band(player_completed.score or 0, max_s)
+        if spec.max_score is not None and spec.max_score <= 12:
+            labels = [str(i) for i in range(0, spec.max_score + 1)]
+            counts = {label: 0 for label in labels}
+            for r in completed_rows:
+                clamped = min(max(0, int(r.score or 0)), spec.max_score)
+                counts[str(clamped)] += 1
+            player_lbl = (
+                str(min(max(0, int(player_completed.score or 0)), spec.max_score))
+                if player_completed is not None
+                else None
+            )
+        else:
+            labels = ["0-20%", "21-40%", "41-60%", "61-80%", "81-99%", "100%"]
+            counts = {label: 0 for label in labels}
+            for r in completed_rows:
+                max_s = r.max_score or spec.max_score or 100
+                lbl = _quiz_score_band(r.score or 0, max_s)
+                counts[lbl] += 1
+            player_lbl = None
+            if player_completed is not None:
+                max_s = player_completed.max_score or spec.max_score or 100
+                player_lbl = _quiz_score_band(player_completed.score or 0, max_s)
         score_buckets = [
             DistributionBucket(
                 label=lbl,

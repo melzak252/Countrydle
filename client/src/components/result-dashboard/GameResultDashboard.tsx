@@ -569,6 +569,8 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
               avgScore={summary?.avg_score}
               playerQuestions={questionsAsked}
               playerGuesses={guessesMade}
+              playerScore={score}
+              maxScore={maxScore}
               playerWon={won}
               isLoading={summaryLoading}
               isUnavailable={summaryUnavailable}

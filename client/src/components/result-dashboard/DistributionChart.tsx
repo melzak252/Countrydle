@@ -12,6 +12,8 @@ interface DistributionChartProps {
   avgScore?: number | null;
   playerQuestions?: number | null;
   playerGuesses?: number | null;
+  playerScore?: number | null;
+  maxScore?: number | null;
   playerWon?: boolean;
   isLoading: boolean;
   isUnavailable: boolean;
@@ -168,6 +170,8 @@ export default function DistributionChart({
   avgScore,
   playerQuestions,
   playerGuesses,
+  playerScore,
+  maxScore,
   playerWon,
   isLoading,
   isUnavailable,
@@ -210,8 +214,9 @@ export default function DistributionChart({
       chartTitle = 'Score Distribution';
       activeBuckets = score!;
       activeAverage = avgScore;
-      activeAvgUnit = '';
-      activePlayerLabel = null;
+      activeAvgUnit = maxScore && maxScore <= 12 ? `/${maxScore}` : '';
+      activePlayerLabel =
+        playerScore !== null && playerScore !== undefined ? String(playerScore) : null;
     } else if (hasQuestions) {
       chartTitle = 'Questions Distribution';
       activeBuckets = questions!;
