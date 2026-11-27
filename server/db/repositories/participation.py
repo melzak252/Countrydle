@@ -72,6 +72,7 @@ def _participants(start_date=None, end_date=None, mode=None):
         ("county_flags", HeraldryDailySession, HeraldryDailySession.date, "flag", "county"),
         ("coats_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "coat", "county"),
         ("county_flags_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "flag", "county"),
+        ("plates_quiz", QuizRun, cast(func.timezone("UTC", QuizRun.started_at), Date), "plates", "county"),
     ]
     for scope in ("voivodeships", "london_boroughs", "england_counties"):
         for symbol in ("coat", "flag"):

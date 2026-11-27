@@ -431,6 +431,31 @@ export const countyFlagsQuizService = {
   },
 };
 
+export interface PlatesQuizSolve {
+  powiat_ids: number[];
+  answer: string;
+  elapsed_seconds: number;
+}
+
+export interface PlatesQuizStats {
+  finished_runs: number;
+  tracking_started_at: string | null;
+  powiats: { powiat_id: number; solved_count: number; average_active_seconds: number | null }[];
+}
+
+export const platesQuizService = {
+  start: async (): Promise<{ run_id: string }> =>
+    (await api.post<{ run_id: string }>('/powiatdle/plates/quiz/runs', {})).data,
+  finish: async (
+    runId: string,
+    result: { status: 'completed' | 'given_up'; elapsed_seconds: number; solves: PlatesQuizSolve[] },
+  ): Promise<void> => {
+    await api.post(`/powiatdle/plates/quiz/runs/${encodeURIComponent(runId)}/finish`, result);
+  },
+  stats: async (): Promise<PlatesQuizStats> =>
+    (await api.get<PlatesQuizStats>('/powiatdle/plates/quiz/stats')).data,
+};
+
 export const regionalSymbolLabels: Record<RegionalSymbolScope, string> = {
   voivodeships: 'Voivodeship',
   london_boroughs: 'London Borough',

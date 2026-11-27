@@ -64,6 +64,7 @@ export const gameCatalog: CatalogGroup[] = [
   { id: 'quizzes', title: 'Quizzes', games: [
     { path: '/quiz-herbow', name: 'Coats of Arms Quiz', geography: 'poland' },
     { path: '/quiz-flag-powiatow', name: 'County Flags Quiz', geography: 'poland' },
+    { path: '/quiz-tablic', name: 'License Plates Quiz', geography: 'poland' },
   ] },
   { id: 'more', title: 'More ways to play', games: [
     { path: '/border-hop', name: 'Border Hop', geography: 'worldwide' },

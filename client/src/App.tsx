@@ -18,6 +18,7 @@ import FlagdlePage from './pages/FlagdlePage';
 import FlagShadesPage from './pages/FlagShadesPage';
 import PowiatHeraldryPage from './pages/PowiatHeraldryPage';
 import PowiatCoatsQuizPage from './pages/PowiatCoatsQuizPage';
+import PowiatPlatesQuizPage from './pages/PowiatPlatesQuizPage';
 import BorderHopPage from './pages/BorderHopPage';
 import DuelPage from './pages/DuelPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -164,6 +165,8 @@ function App() {
           <Route path="coats-of-arms-quiz" element={<PowiatCoatsQuizPage />} />
           <Route path="flagi-powiatow" element={<PowiatHeraldryPage key="flags" flags />} />
           <Route path="quiz-flag-powiatow" element={<PowiatCoatsQuizPage key="flags" flags />} />
+          <Route path="quiz-tablic" element={<PowiatPlatesQuizPage />} />
+          <Route path="license-plates-quiz" element={<PowiatPlatesQuizPage />} />
           {regionalSymbolGames.flatMap(({ scope, flags }) => {
             const path = regionalSymbolPath(scope, flags).slice(1);
             return [
