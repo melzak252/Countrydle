@@ -13,6 +13,7 @@ from db.models.us_statedle import USStatedleDay, USStatedleState
 from db.models.wojewodztwodle import WojewodztwodleDay, WojewodztwodleState
 from db.models.heraldry_daily import HeraldryDailySession
 from db.models.heraldry_quiz import QuizRun
+from db.models.map_quiz import MapQuizDailySession
 
 
 MODE_MODELS = (
@@ -101,6 +102,31 @@ def _participants(start_date=None, end_date=None, mode=None):
             day_value.label("date"), literal(key).label("mode"), model.id.label("day_id"),
             identity.label("identity"), literal(0).label("questions"), guesses.label("guesses"),
             won.label("won"),
+        ).where(*filters))
+    for scope in ("london_boroughs", "england_counties"):
+        key = f"map_quiz:{scope}"
+        if mode is not None and mode != key:
+            continue
+        identity = case(
+            (MapQuizDailySession.user_id.is_not(None), literal("user:") + cast(MapQuizDailySession.user_id, String)),
+            else_=literal("guest:") + MapQuizDailySession.guest_id,
+        )
+        filters = [
+            MapQuizDailySession.scope == scope,
+            func.json_array_length(MapQuizDailySession.answers) > 0,
+        ]
+        if start_date is not None:
+            filters.append(MapQuizDailySession.date >= start_date)
+        if end_date is not None:
+            filters.append(MapQuizDailySession.date <= end_date)
+        branches.append(select(
+            MapQuizDailySession.date.label("date"),
+            literal(key).label("mode"),
+            MapQuizDailySession.id.label("day_id"),
+            identity.label("identity"),
+            literal(0).label("questions"),
+            func.json_array_length(MapQuizDailySession.answers).label("guesses"),
+            case((MapQuizDailySession.score >= 7, 1), else_=0).label("won"),
         ).where(*filters))
     if not branches:
         raise ValueError(f"Unsupported participation mode: {mode}")

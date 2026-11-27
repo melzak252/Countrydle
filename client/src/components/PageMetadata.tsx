@@ -97,6 +97,8 @@ const utilityPages: Record<string, [string, string]> = {
   '/quiz-flag-powiatow': ['Polish County Flags Quiz', 'Identify the available verified Polish county flags in a visual grid quiz.'],
   '/quiz-tablic': ['Polish License Plates Map Quiz — Quiz Tablic Rejestracyjnych', 'Fill all 380 Polish counties on the map by typing their 2- or 3-letter vehicle registration plate codes.'],
   '/license-plates-quiz': ['Polish License Plates Map Quiz — Quiz Tablic Rejestracyjnych', 'Fill all 380 Polish counties on the map by typing their 2- or 3-letter vehicle registration plate codes.'],
+  '/map-quiz/london-boroughs': ['London Boroughs Map Quiz', 'Find 10 daily London boroughs on an interactive label-free map.'],
+  '/map-quiz/england-counties': ['English Counties Map Quiz', 'Find 10 daily English ceremonial counties on an interactive label-free map.'],
   '/border-hop': ['Border Hop', 'Play the Countrydle border-route challenge.'],
 };
 const modeGuidePaths: Record<string, string> = {

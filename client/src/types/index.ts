@@ -371,6 +371,49 @@ export interface PowiatHeraldrySourceAttribution {
   component_credits?: RegionalSymbolComponentCredit[];
 }
 export type RegionalSymbolScope = 'voivodeships' | 'london_boroughs' | 'england_counties';
+export type MapQuizScope = 'london_boroughs' | 'england_counties';
+
+export interface MapQuizEntity {
+  id: number;
+  name: string;
+  aliases: string[];
+  latitude: number;
+  longitude: number;
+}
+
+export interface MapQuizTarget {
+  id: number;
+  name: string;
+}
+
+export interface MapQuizRoundAnswer {
+  round: number;
+  target_id: number;
+  target_name: string;
+  clicked_id: number;
+  clicked_name: string;
+  correct: boolean;
+}
+
+export interface MapQuizDailyState {
+  session_id: string;
+  scope: MapQuizScope;
+  date: string;
+  total_rounds: number;
+  current_round: number;
+  current_target: MapQuizTarget | null;
+  answers: MapQuizRoundAnswer[];
+  score: number;
+  is_completed: boolean;
+  points: number | null;
+  elapsed_seconds: number | null;
+  ranked: boolean;
+}
+
+export interface MapQuizAnswerResponse {
+  result: MapQuizRoundAnswer;
+  state: MapQuizDailyState;
+}
 
 export interface RegionalSymbolCatalogEntry {
   id: number;

@@ -32,3 +32,4 @@ from .fallback_answer import FallbackAnswer, FallbackAnswerBlock
 from .heraldry_daily import HeraldryDailySession
 from .heraldry_quiz import QuizRun, QuizSolve
 from .mode_result import ModeResultRecord
+from .map_quiz import MapQuizDailySession

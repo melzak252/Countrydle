@@ -30,6 +30,10 @@ import type {
   PowiatHeraldryItem,
   RegionalSymbolScope,
   RegionalSymbolCatalogEntry,
+  MapQuizScope,
+  MapQuizEntity,
+  MapQuizDailyState,
+  MapQuizAnswerResponse,
   Question,
   QuestionTestEntity,
   QuestionTestMode,
@@ -520,6 +524,42 @@ const regionalServices = {
 
 export function regionalSymbolsService(scope: RegionalSymbolScope, flags: boolean) {
   return regionalServices[scope][flags ? 'flag' : 'coat'];
+}
+
+export const mapQuizScopes: ReadonlyArray<MapQuizScope> = [
+  'london_boroughs',
+  'england_counties',
+];
+
+export function mapQuizPath(scope: MapQuizScope): string {
+  return scope === 'london_boroughs'
+    ? '/map-quiz/london-boroughs'
+    : '/map-quiz/england-counties';
+}
+
+function createMapQuizService(scope: MapQuizScope) {
+  const base = `/map-quiz/${scope}`;
+  return {
+    getDaily: async (): Promise<MapQuizDailyState> =>
+      (await api.get<MapQuizDailyState>(`${base}/daily`)).data,
+    submitAnswer: async (data: { entity_id: number; round?: number }): Promise<MapQuizAnswerResponse> =>
+      (await api.post<MapQuizAnswerResponse>(`${base}/answer`, data)).data,
+    sync: async (): Promise<MapQuizDailyState> =>
+      (await api.post<MapQuizDailyState>(`${base}/sync`, {})).data,
+    getLeaderboard: async (type: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> =>
+      (await api.get<LeaderboardEntry[]>(`${base}/leaderboard`, { params: { type } })).data,
+    getEntities: async (): Promise<MapQuizEntity[]> =>
+      (await api.get<MapQuizEntity[]>(`${base}/entities`)).data,
+  };
+}
+
+const mapQuizServices: Record<MapQuizScope, ReturnType<typeof createMapQuizService>> = {
+  london_boroughs: createMapQuizService('london_boroughs'),
+  england_counties: createMapQuizService('england_counties'),
+};
+
+export function mapQuizService(scope: MapQuizScope) {
+  return mapQuizServices[scope];
 }
 
 export interface BlogSourceLink {
