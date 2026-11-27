@@ -17,6 +17,8 @@ from db.base import Base
 from db.models.continental import ContinentCode, ContinentalDay, ContinentalState
 from db.models.country import Country
 from db.models.countrydle import CountrydleDay, CountrydleState
+from db.models.countydle import CountydleDay, CountydleState
+from db.models.english_county import EnglishCounty
 from db.models.flagdle import FlagdleDay, FlagdleState
 from db.models.guest_participation import GuestParticipation
 from db.models.heraldry_daily import HeraldryDailySession
@@ -83,6 +85,9 @@ def stats_db():
         Country.__table__,
         CountrydleDay.__table__,
         CountrydleState.__table__,
+        EnglishCounty.__table__,
+        CountydleDay.__table__,
+        CountydleState.__table__,
         ContinentalDay.__table__,
         ContinentalState.__table__,
         FlagdleDay.__table__,

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 import utils
 from friend_matches import start_workers, stop_workers
 from countrydle.local_answering import DEFAULT_DB_PATH
+from scripts.build_english_county_facts_sqlite import build as build_english_county_facts
 from scripts.country_additions import provision_country_additions
 from utils.ai_clients import close_ai_clients
 
@@ -44,6 +45,8 @@ async def lifespan(app: FastAPI):
     try:
         await init_models(engine)
         await asyncio.to_thread(provision_country_additions, DEFAULT_DB_PATH.parent)
+        if not (DEFAULT_DB_PATH.parent / "english_county_facts.sqlite").is_file():
+            await asyncio.to_thread(build_english_county_facts)
 
         async with AsyncSessionLocal() as session:
             await ucrud.add_base_permissions(session)

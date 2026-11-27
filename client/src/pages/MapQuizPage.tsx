@@ -1,21 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { CheckCircle2, Clock, MapPin, Share2, Trophy, XCircle } from 'lucide-react';
+import { CheckCircle2, MapPin, XCircle } from 'lucide-react';
 import type { MapQuizDailyState, MapQuizRoundAnswer, MapQuizScope } from '../types';
 import { mapQuizService } from '../services/api';
 import MapQuizBoard, { type MapQuizFeedback } from '../components/MapQuizBoard';
 import CountdownTimer from '../components/CountdownTimer';
+import { GameResultDashboard } from '../components/result-dashboard';
 
 const FEEDBACK_DURATION_MS = 1400;
-
-function formatElapsed(seconds: number | null): string {
-  if (seconds === null || !Number.isFinite(seconds)) return '—';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-}
 
 export default function MapQuizPage({ scope }: { scope: MapQuizScope }) {
   const { t } = useTranslation();
@@ -118,25 +111,16 @@ export default function MapQuizPage({ scope }: { scope: MapQuizScope }) {
     [state, submitting, feedback, scope, clearFeedbackTimer, loadDaily, t],
   );
 
-  const handleShare = useCallback(async () => {
-    if (!state) return;
-    const grid = state.answers.map((a) => (a.correct ? '🟩' : '🟥')).join('');
-    const url =
-      scope === 'london_boroughs'
-        ? 'https://countrydle.online/map-quiz/london-boroughs'
-        : 'https://countrydle.online/map-quiz/england-counties';
-    const text = `${scopeTitle} ${state.date}\n${state.score}/${state.total_rounds}${
-      state.points !== null ? ` · ${state.points} pts` : ''
-    }\n${grid}\n${url}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(t('mapQuiz.copied', 'Result copied to clipboard!'));
-    } catch {
-      toast.error(t('mapQuiz.copyError', 'Could not copy result.'));
-    }
-  }, [state, scope, scopeTitle, t]);
-
   const displayedState = state;
+  const gamePath =
+    scope === 'london_boroughs' ? '/map-quiz/london-boroughs' : '/map-quiz/england-counties';
+  const statsMode =
+    scope === 'london_boroughs' ? 'map_quiz_london_boroughs' : 'map_quiz_england_counties';
+  const shareText = displayedState
+    ? `${scopeTitle} ${displayedState.date}\n${displayedState.score}/${displayedState.total_rounds}${
+        displayedState.points !== null ? ` · ${displayedState.points} pts` : ''
+      }\n${displayedState.answers.map((a) => (a.correct ? '🟩' : '🟥')).join('')}\nhttps://countrydle.online${gamePath}`
+    : undefined;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-5">
@@ -272,85 +256,53 @@ export default function MapQuizPage({ scope }: { scope: MapQuizScope }) {
             onSelectEntity={handleSelectEntity}
           />
 
-          {/* Completion Summary Card */}
+          {/* Completion Result Dashboard */}
           {displayedState.is_completed && (
-            <div className="rounded-xl border border-emerald-800/50 bg-zinc-900/90 p-5 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-sand-50">
-                    {t('mapQuiz.completedTitle', 'Daily Map Quiz Complete!')}
-                  </h2>
-                  <p className="text-sm text-zinc-400 mt-0.5">
-                    {t('mapQuiz.exploreHint', 'Hover any region on the map above to inspect its name.')}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void handleShare()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors cursor-pointer"
-                  >
-                    <Share2 size={16} />
-                    {t('mapQuiz.shareResult', 'Share result')}
-                  </button>
-                  <Link
-                    to={`/leaderboard?mode=map_quiz:${scope}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-700 transition-colors"
-                  >
-                    <Trophy size={16} />
-                    {t('mapQuiz.viewLeaderboard', 'Leaderboard')}
-                  </Link>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 text-center">
-                  <div className="text-xs uppercase text-zinc-400">{t('mapQuiz.scoreLabel', 'Score')}</div>
-                  <div className="mt-1 text-2xl font-bold text-emerald-400">
-                    {displayedState.score}/{displayedState.total_rounds}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 text-center">
-                  <div className="text-xs uppercase text-zinc-400">{t('mapQuiz.pointsLabel', 'Points')}</div>
-                  <div className="mt-1 text-2xl font-bold text-sand-50">
-                    {displayedState.points ?? 0}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 text-center">
-                  <div className="flex items-center justify-center gap-1 text-xs uppercase text-zinc-400">
-                    <Clock size={12} />
-                    {t('mapQuiz.timeLabel', 'Time')}
-                  </div>
-                  <div className="mt-1 text-2xl font-bold text-sand-50">
-                    {formatElapsed(displayedState.elapsed_seconds)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-2">
-                {displayedState.answers.map((ans) => (
-                  <div
-                    key={ans.round}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-mono text-zinc-500 w-5">{ans.round}.</span>
-                      {ans.correct ? (
-                        <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
-                      ) : (
-                        <XCircle size={15} className="shrink-0 text-rose-400" />
+            <GameResultDashboard
+              variant="inline"
+              mode={statsMode}
+              modeKind="quiz"
+              isDaily={true}
+              gameName={scopeTitle}
+              gamePath={gamePath}
+              date={displayedState.date}
+              won={displayedState.score >= 7}
+              outcomeLabel={t('mapQuiz.completedTitle', 'Daily Map Quiz Complete!')}
+              targetLabel={t('mapQuiz.scoreLabel', 'Score')}
+              targetName={`${displayedState.score} / ${displayedState.total_rounds}`}
+              subtitle={t('mapQuiz.exploreHint', 'Hover any region on the map above to inspect its name.')}
+              points={displayedState.points ?? 0}
+              score={displayedState.score}
+              maxScore={displayedState.total_rounds}
+              elapsedSeconds={displayedState.elapsed_seconds ?? undefined}
+              shareText={shareText}
+              detailsTitle="Round Breakdown"
+              detailsSlot={
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {displayedState.answers.map((ans) => (
+                    <div
+                      key={ans.round}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-mono text-zinc-500 w-5">{ans.round}.</span>
+                        {ans.correct ? (
+                          <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
+                        ) : (
+                          <XCircle size={15} className="shrink-0 text-rose-400" />
+                        )}
+                        <span className="font-medium text-sand-50 truncate">{ans.target_name}</span>
+                      </div>
+                      {!ans.correct && (
+                        <span className="text-xs text-rose-300 truncate shrink-0">
+                          {t('mapQuiz.clickedShort', 'clicked {{name}}', { name: ans.clicked_name })}
+                        </span>
                       )}
-                      <span className="font-medium text-sand-50 truncate">{ans.target_name}</span>
                     </div>
-                    {!ans.correct && (
-                      <span className="text-xs text-rose-300 truncate shrink-0">
-                        {t('mapQuiz.clickedShort', 'clicked {{name}}', { name: ans.clicked_name })}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              }
+            />
           )}
         </>
       )}

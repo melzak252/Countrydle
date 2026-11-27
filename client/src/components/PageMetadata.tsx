@@ -83,6 +83,7 @@ const utilityPages: Record<string, [string, string]> = {
   '/game': ['Play Today’s Country', 'Play today’s world-country deduction puzzle.'],
   '/powiaty': ['Play Today’s Polish County', 'Play today’s Polish-county deduction puzzle.'],
   '/us-states': ['Play Today’s US State', 'Play today’s US-state deduction puzzle.'],
+  '/countydle': ['Play Today’s English County', 'Play today’s English ceremonial county deduction puzzle.'],
   '/wojewodztwa': ['Play Today’s Voivodeship', 'Play today’s Polish-voivodeship deduction puzzle.'],
   '/europe': ['Play Today’s European Country', 'Play today’s European-country deduction puzzle.'],
   '/asia': ['Play Today’s Asian Country', 'Play today’s Asian-country deduction puzzle.'],

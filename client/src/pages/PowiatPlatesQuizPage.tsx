@@ -16,6 +16,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import PowiatPlatesMap from '../components/PowiatPlatesMap';
+import { GameResultDashboard } from '../components/result-dashboard';
 import {
   buildPlatesIndex,
   formatQuizTime,
@@ -531,49 +532,43 @@ export default function PowiatPlatesQuizPage() {
         focusedPowiatName={focusedPowiatName}
       />
 
-      {/* Completion or Give-Up Recap Banner */}
+      {/* Completion or Give-Up Result Dashboard & Recap */}
       {(isCompleted || isGivenUp) && (
         <section
           aria-label={t('platesQuiz.recapAria', 'Quiz recap')}
           className="space-y-4"
         >
-          <div
-            className={`flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4 ${
+          <GameResultDashboard
+            variant="inline"
+            mode="plates_quiz"
+            modeKind="quiz"
+            isDaily={false}
+            gameName={t('platesQuiz.title', 'Polish License Plates Map Quiz')}
+            gamePath="/quiz-tablic"
+            won={isCompleted}
+            outcomeLabel={isCompleted ? 'Quiz Completed!' : 'Quiz Ended'}
+            targetLabel={t('platesQuiz.recapListTitle', 'Counties Filled')}
+            targetName={`${solvedCount} / ${totalCount} (${pct}%)`}
+            subtitle={
               isCompleted
-                ? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-200'
-                : 'border-amber-500/40 bg-amber-950/25 text-amber-200'
-            }`}
-          >
-            <div className="space-y-1">
-              <h2 className="font-serif text-lg font-bold">
-                {isCompleted
-                  ? t('platesQuiz.completedTitle', 'Congratulations! You filled all {{total}} counties in {{time}}!', {
-                      total: totalCount,
-                      time: formatQuizTime(elapsedSeconds),
-                    })
-                  : t('platesQuiz.givenUpTitle', 'Quiz ended — you filled {{solved}} of {{total}} counties ({{pct}}%) in {{time}}.', {
-                      solved: solvedCount,
-                      total: totalCount,
-                      pct,
-                      time: formatQuizTime(elapsedSeconds),
-                    })}
-              </h2>
-              <p className="text-xs text-zinc-300">
-                {t(
-                  'platesQuiz.recapSubtitle',
-                  'All missed counties are now highlighted in rose on the map. Hover any county or click an entry below to zoom to it.',
-                )}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-sm bg-emerald-400 px-4 py-2 text-xs font-bold text-obsidian-950 hover:bg-emerald-300 cursor-pointer"
-            >
-              <RotateCcw size={14} />
-              <span>{t('platesQuiz.playAgain', 'Play Again')}</span>
-            </button>
-          </div>
+                ? t('platesQuiz.completedTitle', 'Congratulations! You filled all {{total}} counties in {{time}}!', {
+                    total: totalCount,
+                    time: formatQuizTime(elapsedSeconds),
+                  })
+                : t(
+                    'platesQuiz.recapSubtitle',
+                    'All missed counties are now highlighted in rose on the map. Hover any county or click an entry below to zoom to it.',
+                  )
+            }
+            score={solvedCount}
+            maxScore={totalCount}
+            elapsedSeconds={elapsedSeconds}
+            primaryAction={{
+              label: t('platesQuiz.playAgain', 'Play Again'),
+              onClick: handleReset,
+              icon: <RotateCcw size={14} />,
+            }}
+          />
 
           {/* Filterable Post-Game Table */}
           <div className="rounded-lg border border-white/10 bg-obsidian-900 p-4 space-y-3">

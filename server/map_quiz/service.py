@@ -18,6 +18,7 @@ from db.repositories.leaderboard import utc_month_bounds
 from game_logic import count_consecutive_daily_wins
 from regional_symbols.catalog import load_entities
 from schemas.countrydle import LeaderboardEntry
+from stats.service import record_mode_result
 from utils.guest_session import get_guest_identity, read_guest_identity
 
 MAP_QUIZ_SCOPES = frozenset({"london_boroughs", "england_counties"})
@@ -240,14 +241,33 @@ async def submit_answer(
     if correct:
         row.score = (row.score or 0) + 1
 
+    completed_elapsed: int | None = None
     if len(row.answers) >= len(row.targets):
         row.completed_at = now
-        elapsed = scoring_elapsed(row.started_at, now)
+        completed_elapsed = scoring_elapsed(row.started_at, now)
         streak = await streak_for(session, row) if row.score >= WIN_SCORE_THRESHOLD else 0
-        row.points = calculate_map_quiz_points(row.score, elapsed, streak)
+        row.points = calculate_map_quiz_points(row.score, completed_elapsed, streak)
         await add_account_points(session, row.user_id, row.points)
 
     await session.commit()
+    if completed_elapsed is not None:
+        try:
+            await record_mode_result(
+                session,
+                mode=f"map_quiz_{row.scope}",
+                record_date=row.date,
+                user_id=row.user_id,
+                guest_id=row.guest_id,
+                completed=True,
+                won=row.score >= WIN_SCORE_THRESHOLD,
+                points=row.points or 0,
+                score=row.score,
+                max_score=len(row.targets),
+                elapsed_seconds=float(completed_elapsed),
+                completed_at=row.completed_at,
+            )
+        except Exception:
+            pass
     return entry, row
 
 
@@ -297,13 +317,32 @@ async def claim_daily(session, request, user, scope: str) -> MapQuizDailySession
         await session.flush()
 
     row.user_id = user.id
+    claimed_elapsed: int | None = None
     if row.completed_at is not None:
-        elapsed = scoring_elapsed(row.started_at, row.completed_at)
+        claimed_elapsed = scoring_elapsed(row.started_at, row.completed_at)
         streak = await streak_for(session, row) if row.score >= WIN_SCORE_THRESHOLD else 0
-        row.points = calculate_map_quiz_points(row.score, elapsed, streak)
+        row.points = calculate_map_quiz_points(row.score, claimed_elapsed, streak)
         await add_account_points(session, row.user_id, row.points)
 
     await session.commit()
+    if claimed_elapsed is not None:
+        try:
+            await record_mode_result(
+                session,
+                mode=f"map_quiz_{row.scope}",
+                record_date=row.date,
+                user_id=row.user_id,
+                guest_id=None,
+                completed=True,
+                won=row.score >= WIN_SCORE_THRESHOLD,
+                points=row.points or 0,
+                score=row.score,
+                max_score=len(row.targets),
+                elapsed_seconds=float(claimed_elapsed),
+                completed_at=row.completed_at,
+            )
+        except Exception:
+            pass
     return row
 
 
