@@ -44,7 +44,7 @@ function getAverageBucketLabel(buckets: DistributionBucket[], average?: number |
   return closestDiff <= 0.55 ? closestLabel : null;
 }
 
-function HorizontalBars({
+function HorizontalAxisHistogram({
   ariaLabel,
   buckets,
   average,
@@ -53,87 +53,91 @@ function HorizontalBars({
   const maxPct = Math.max(...buckets.map((b) => b.pct), 1);
   const hasServerPlayerFlag = buckets.some((b) => b.is_player);
   const avgBucketLabel = getAverageBucketLabel(buckets, average);
+  const isDense = buckets.length > 8;
 
   return (
-    <div className="space-y-2.5" role="list" aria-label={ariaLabel}>
-      {buckets.map((bucket) => {
-        const isPlayer = hasServerPlayerFlag
-          ? bucket.is_player
-          : Boolean(playerFallbackLabel && bucket.label === playerFallbackLabel);
-        const isFailBucket =
-          bucket.label.toUpperCase() === 'X' || bucket.label.toLowerCase() === 'fail';
-        const isAvgBucket = avgBucketLabel === bucket.label;
-        const barWidth =
-          bucket.pct > 0 ? Math.max(4, Math.round((bucket.pct / maxPct) * 100)) : 0;
+    <div className="pt-2" role="list" aria-label={ariaLabel}>
+      {/* Columns arranged horizontally left-to-right along the X-axis */}
+      <div className="grid items-end gap-1.5 sm:gap-2" style={{ gridTemplateColumns: `repeat(${buckets.length}, minmax(0, 1fr))` }}>
+        {buckets.map((bucket) => {
+          const isPlayer = hasServerPlayerFlag
+            ? bucket.is_player
+            : Boolean(playerFallbackLabel && bucket.label === playerFallbackLabel);
+          const isFailBucket =
+            bucket.label.toUpperCase() === 'X' || bucket.label.toLowerCase() === 'fail';
+          const isAvgBucket = avgBucketLabel === bucket.label;
+          const barHeightPct =
+            bucket.pct > 0 ? Math.max(8, Math.round((bucket.pct / maxPct) * 100)) : 0;
 
-        return (
-          <div
-            key={bucket.label}
-            role="listitem"
-            className="grid grid-cols-[2.75rem_1fr_4.75rem] items-center gap-3 text-xs"
-          >
-            {/* Left bucket label */}
-            <div className="flex items-center justify-end gap-1.5 min-w-0">
-              {isAvgBucket && (
-                <span
-                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400/90"
-                  title="Closest to today's average"
-                  aria-label="Average"
-                />
-              )}
-              <span
-                className={`truncate font-mono text-xs tabular-nums ${
-                  isPlayer
-                    ? 'font-semibold text-emerald-300'
-                    : isFailBucket
-                    ? 'text-rose-400/80'
-                    : 'text-zinc-400'
-                }`}
-                title={bucket.label}
-              >
-                {bucket.label}
-              </span>
-            </div>
-
-            {/* Horizontal bar track */}
-            <div className="relative h-7 overflow-hidden rounded-md bg-white/[0.04]">
-              {barWidth > 0 && (
-                <div
-                  className={`h-full rounded-md transition-all duration-500 ease-out ${
-                    isPlayer
-                      ? 'bg-gradient-to-r from-emerald-500/85 to-emerald-400'
-                      : isFailBucket
-                      ? 'bg-rose-500/30'
-                      : 'bg-white/[0.14]'
-                  }`}
-                  style={{ width: `${barWidth}%` }}
-                />
-              )}
-              {isPlayer && (
-                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-                  <span className="rounded-full bg-obsidian-950/90 border border-emerald-400/45 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-emerald-300 uppercase">
+          return (
+            <div
+              key={bucket.label}
+              role="listitem"
+              title={`${bucket.label}: ${Math.round(bucket.pct)}% (${bucket.count.toLocaleString('en-US')} players)`}
+              className="group flex flex-col items-center min-w-0"
+            >
+              {/* Top callout: YOU pill or percentage */}
+              <div className="mb-1.5 flex h-5 items-end justify-center">
+                {isPlayer ? (
+                  <span className="rounded-full bg-emerald-400/20 border border-emerald-400/50 px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none tracking-wider text-emerald-300 uppercase">
                     YOU
                   </span>
-                </div>
-              )}
-            </div>
+                ) : bucket.pct > 0 ? (
+                  <span
+                    className={`font-mono leading-none tabular-nums ${
+                      isDense ? 'text-[9px] sm:text-[10px]' : 'text-[10px] sm:text-[11px]'
+                    } text-zinc-400 group-hover:text-sand-100 transition-colors`}
+                  >
+                    {Math.round(bucket.pct)}%
+                  </span>
+                ) : null}
+              </div>
 
-            {/* Right percentage + count */}
-            <div className="flex items-baseline justify-end gap-1.5 font-mono tabular-nums">
-              <span
-                className={`text-xs ${
-                  isPlayer ? 'font-semibold text-emerald-300' : 'text-zinc-200'
-                }`}
-              >
-                {Math.round(bucket.pct)}%
-              </span>
-              <span className="text-[11px] text-zinc-500">
-                ({bucket.count.toLocaleString('en-US')})
-              </span>
+              {/* Column track (vertical bar rising from horizontal baseline) */}
+              <div className="relative flex h-28 sm:h-32 w-full items-end justify-center rounded-t-md bg-white/[0.03] px-0.5 sm:px-1">
+                {barHeightPct > 0 ? (
+                  <div
+                    className={`w-full max-w-[2.5rem] rounded-t-md transition-all duration-500 ease-out ${
+                      isPlayer
+                        ? 'bg-gradient-to-t from-emerald-600/90 to-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.3)]'
+                        : isFailBucket
+                        ? 'bg-rose-500/35 group-hover:bg-rose-500/50'
+                        : 'bg-white/[0.15] group-hover:bg-white/[0.25]'
+                    }`}
+                    style={{ height: `${barHeightPct}%` }}
+                  />
+                ) : (
+                  <div className="h-[2px] w-full max-w-[2.5rem] rounded-full bg-white/[0.08]" />
+                )}
+              </div>
+
+              {/* Baseline + X-axis bucket label */}
+              <div className="w-full border-t border-white/10 pt-2 flex flex-col items-center gap-1">
+                <span
+                  className={`truncate max-w-full font-mono tabular-nums ${
+                    isDense ? 'text-[10px] sm:text-[11px]' : 'text-[11px] sm:text-xs'
+                  } ${
+                    isPlayer
+                      ? 'font-bold text-emerald-300'
+                      : isFailBucket
+                      ? 'text-rose-400/85'
+                      : 'text-zinc-400'
+                  }`}
+                >
+                  {bucket.label}
+                </span>
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    isAvgBucket ? 'bg-amber-400/90' : 'bg-transparent'
+                  }`}
+                  title={isAvgBucket ? "Closest to today's average" : undefined}
+                  aria-hidden={!isAvgBucket}
+                />
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -283,14 +287,13 @@ export default function DistributionChart({
 
       {/* Body */}
       {isLoading ? (
-        <div className="space-y-2.5 py-1" role="status" aria-label="Loading distribution">
-          {[68, 92, 54, 36, 22].map((w, idx) => (
-            <div key={idx} className="grid grid-cols-[2.75rem_1fr_4.75rem] items-center gap-3">
-              <div className="h-3 rounded bg-white/10 animate-pulse" />
-              <div className="h-7 rounded-md bg-white/[0.04] overflow-hidden">
-                <div className="h-full rounded-md bg-white/10 animate-pulse" style={{ width: `${w}%` }} />
+        <div className="grid grid-cols-6 items-end gap-2 pt-4" role="status" aria-label="Loading distribution">
+          {[32, 68, 92, 54, 36, 20].map((h, idx) => (
+            <div key={idx} className="flex flex-col items-center gap-2">
+              <div className="flex h-28 w-full items-end rounded-t-md bg-white/[0.03] px-1">
+                <div className="w-full rounded-t-md bg-white/10 animate-pulse" style={{ height: `${h}%` }} />
               </div>
-              <div className="h-3 rounded bg-white/10 animate-pulse" />
+              <div className="h-2.5 w-6 rounded bg-white/10 animate-pulse" />
             </div>
           ))}
         </div>
@@ -301,7 +304,7 @@ export default function DistributionChart({
             : 'Be one of the first players today. Distributions update as players finish.'}
         </p>
       ) : (
-        <HorizontalBars
+        <HorizontalAxisHistogram
           ariaLabel={chartTitle}
           buckets={activeBuckets}
           average={activeAverage}
