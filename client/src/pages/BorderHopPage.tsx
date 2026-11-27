@@ -445,10 +445,10 @@ export default function BorderHopPage() {
               targetName={`${challenge.start} ➔ ${challenge.target}`}
               subtitle={
                 verification.rank === 'gold'
-                  ? '🥇 Gold Route — Shortest Possible Path!'
+                  ? '🥇 Gold Route: Shortest Possible Path!'
                   : verification.rank === 'silver'
-                  ? '🥈 Silver Route — Great Navigation!'
-                  : '🥉 Bronze Route — Scenic Detour!'
+                  ? '🥈 Silver Route: Great Navigation!'
+                  : '🥉 Bronze Route: Scenic Detour!'
               }
               guessesMade={verification.hops}
               maxGuesses={verification.optimal_hops ?? undefined}

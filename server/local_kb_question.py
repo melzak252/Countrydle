@@ -953,7 +953,7 @@ def generate_mode_explanation(
             text += "%"
         if isinstance(value, list):
             label += f" ({len(value)})"
-        prefix = f"{subject} — " if subject is not None else ""
+        prefix = f"{subject}: " if subject is not None else ""
         return f"{prefix}{label}: {text}" if label else text
 
     def factual_fallback() -> str:

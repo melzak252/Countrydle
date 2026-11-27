@@ -189,7 +189,7 @@ export default function DistributionChart({
         <p className="py-4 text-center text-xs text-zinc-400">
           {isUnavailable
             ? 'Live community distributions are temporarily unavailable.'
-            : 'Be one of the first players today — distributions update as players finish.'}
+            : 'Be one of the first players today. Distributions update as players finish.'}
         </p>
       ) : showDualQA ? (
         <>

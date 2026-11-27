@@ -635,7 +635,7 @@ function CountyQuiz({ flags, scope, catalog }: { flags: boolean; scope?: Regiona
               onKeyDown={handleHeaderKeyDown}
               placeholder={
                 isPaused
-                  ? 'Paused — click Resume'
+                  ? 'Paused. Click Resume to continue'
                   : targetedPowiat
                   ? scope ? `Type ${noun}...` : `Type: ${targetedPowiat.voivodeship}...`
                   : `Type ${noun}...`

@@ -639,10 +639,10 @@ export default function ExplorePage() {
                 <span>{'Daily Game Mechanics'}</span>
               </div>
               <h2 id="modes-comparative-overview" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-                {'Section A — Comparative Overview of All 9 Daily Geography Modes'}
+                {'Section A: Comparative Overview of All 9 Daily Geography Modes'}
               </h2>
               <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
-                {'Countrydle offers 9 specialized daily deductive challenges spanning diverse spatial scales — from global sovereign states down to subnational counties and flags. Each mode balances a tailored question budget against a strict guess limit, rewarding systematic elimination over unstructured guessing. The comparative reference table below summarizes pool dimensions, question constraints, guess allowances, primary geographic axes, and direct links to comprehensive strategy guides.'}
+                {'Countrydle offers 9 specialized daily deductive challenges spanning diverse spatial scales, from global sovereign states down to subnational counties and flags. Each mode balances a tailored question budget against a strict guess limit, rewarding systematic elimination over unstructured guessing. The comparative reference table below summarizes pool dimensions, question constraints, guess allowances, primary geographic axes, and direct links to comprehensive strategy guides.'}
               </p>
             </div>
 
@@ -661,7 +661,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/countrydle" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Countrydle — World Countries
+                        Countrydle: World Countries
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -675,7 +675,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/flagdle" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Flagdle — Daily Flag Reveal
+                        Flagdle: Daily Flag Reveal
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -689,7 +689,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/europe" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Europedle — Europe
+                        Europedle: Europe
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -703,7 +703,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/asia" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Asiadle — Asia
+                        Asiadle: Asia
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -717,7 +717,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/africa" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Africadle — Africa
+                        Africadle: Africa
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -731,7 +731,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/americas" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Americadle — The Americas
+                        Americadle: The Americas
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -745,7 +745,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/us-states" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        US Statedle — 50 States
+                        US Statedle: 50 States
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -759,7 +759,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/wojewodztwa" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Województwodle — 16 Voivodeships
+                        Województwodle: 16 Voivodeships
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -773,7 +773,7 @@ export default function ExplorePage() {
                   <tr className="hover:bg-white/[0.02] transition-colors">
                     <th scope="row" className="px-4 py-4 font-medium text-sand-100 whitespace-nowrap">
                       <Link to="/explore/modes/powiaty" className="group inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4">
-                        Powiatdle — 380 Counties
+                        Powiatdle: 380 Counties
                         <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                       </Link>
                     </th>
@@ -797,7 +797,7 @@ export default function ExplorePage() {
                 <span>{'Geographic Methodology & Theory'}</span>
               </div>
               <h2 id="modes-deductive-taxonomies" className="font-serif text-2xl font-bold tracking-tight text-sand-100 sm:text-3xl">
-                {'Section B — Core Geographic Taxonomies & Deductive Principles'}
+                {'Section B: Core Geographic Taxonomies & Deductive Principles'}
               </h2>
               <p className="max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
                 {'Mastering Countrydle requires treating the globe as an interconnected mathematical coordinate system and political-geographic hierarchy. Rather than expending precious questions on subjective traits ("Is it a major power?"), experienced players query well-defined taxonomic boundaries. The educational guides below elucidate three fundamental geographical principles that underpin Countrydle’s deductive engine.'}
@@ -856,7 +856,7 @@ export default function ExplorePage() {
                     Covering roughly 371,000 $km^2$, the <strong>Caspian Sea</strong> is the largest enclosed inland body of water on Earth. Despite its historical name and brackish salinity, it possesses no natural hydrological outlet to the World Ocean; it sits in a continental depression with its surface approximately 28 meters below global sea level. Consequently, the Caspian is an <em>endorheic lake basin</em>.
                   </p>
                   <p className="text-sm leading-relaxed text-zinc-300">
-                    In physical geography and Countrydle game rules, countries bordering solely the Caspian Sea — notably <strong>Azerbaijan</strong> and <strong>Turkmenistan</strong> — are classified as <strong>landlocked states</strong> (<em>państwa śródlądowe</em>). A query asking <em>"Is it landlocked?"</em> evaluates to affirmative for Azerbaijan, while asking <em>"Does it border the Caspian Sea?"</em> evaluates separately to affirmative. Shoreline on the Caspian Sea does not confer open marine access.
+                    In physical geography and Countrydle game rules, countries bordering solely the Caspian Sea (notably <strong>Azerbaijan</strong> and <strong>Turkmenistan</strong>) are classified as <strong>landlocked states</strong> (<em>państwa śródlądowe</em>). A query asking <em>"Is it landlocked?"</em> evaluates to affirmative for Azerbaijan, while asking <em>"Does it border the Caspian Sea?"</em> evaluates separately to affirmative. Shoreline on the Caspian Sea does not confer open marine access.
                   </p>
                 </div>
                 <p>
@@ -906,17 +906,17 @@ export default function ExplorePage() {
                   </p>
                   <ul className="list-disc space-y-2 pl-5 text-xs text-zinc-300 sm:text-sm">
                     <li>
-                      <strong>Tier 1 — 16 Województwa (Voivodeships):</strong> First-order regional administrative units governed by a dual executive: the state-appointed <em>wojewoda</em> (representing the central Council of Ministers) and the regional self-government headed by the <em>marszałek województwa</em> and provincial assembly (<em>sejmik województwa</em>).
+                      <strong>Tier 1 (16 Województwa / Voivodeships):</strong> First-order regional administrative units governed by a dual executive: the state-appointed <em>wojewoda</em> (representing the central Council of Ministers) and the regional self-government headed by the <em>marszałek województwa</em> and provincial assembly (<em>sejmik województwa</em>).
                     </li>
                     <li>
-                      <strong>Tier 2 — 380 Powiaty (Counties):</strong> The county level is strictly partitioned into two legal categories:
+                      <strong>Tier 2 (380 Powiaty / Counties):</strong> The county level is strictly partitioned into two legal categories:
                       <ul className="list-circle space-y-1 pl-5 pt-1 text-zinc-300">
                         <li><strong>314 Powiaty Ziemskie (Land Counties):</strong> Multi-communal districts comprising several urban and rural gminas, administered by a county council (<em>rada powiatu</em>) and an executive board headed by a <em>starosta</em>.</li>
                         <li><strong>66 Miasta na Prawach Powiatu (Cities with County Rights):</strong> Also known historically as <em>powiaty grodzkie</em>. Autonomous municipalities where the city president (<em>prezydent miasta</em>) and city council perform both municipal and county functions simultaneously (e.g., Warszawa, Kraków, Łódź, Wrocław, Poznań, Gdańsk, Szczecin, Katowice).</li>
                       </ul>
                     </li>
                     <li>
-                      <strong>Tier 3 — 2,477 Gminy:</strong> The primary local communal level, divided into urban (<em>gminy miejskie</em>), urban-rural (<em>gminy miejsko-wiejskie</em>), and rural (<em>gminy wiejskie</em>) units.
+                      <strong>Tier 3 (2,477 Gminy):</strong> The primary local communal level, divided into urban (<em>gminy miejskie</em>), urban-rural (<em>gminy miejsko-wiejskie</em>), and rural (<em>gminy wiejskie</em>) units.
                     </li>
                   </ul>
                 </div>
@@ -1817,7 +1817,7 @@ export default function ExplorePage() {
               {selectedPowiat.neighboring_powiats && selectedPowiat.neighboring_powiats.length > 0 && (
                 <div>
                   <span className="font-semibold text-zinc-300 block mb-1.5 font-mono">
-                    {`Neighboring Counties (${selectedPowiat.neighboring_powiats.length}) — click to inspect:`}
+                    {`Neighboring Counties (${selectedPowiat.neighboring_powiats.length}), click to inspect:`}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPowiat.neighboring_powiats.map((np: string) => (

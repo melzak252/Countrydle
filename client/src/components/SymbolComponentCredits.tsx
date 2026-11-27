@@ -9,7 +9,7 @@ export default function SymbolComponentCredits({ credits }: { credits?: Regional
         {credits.map((credit, index) => (
           <li key={`${credit.url}-${index}`}>
             <a href={credit.url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">{credit.title}</a>
-            {' — '}{credit.author}{' — '}
+            {' · '}{credit.author}{' · '}
             <a href={credit.license_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">{credit.license}</a>
           </li>
         ))}

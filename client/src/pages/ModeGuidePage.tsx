@@ -20,7 +20,7 @@ interface ModeData {
 
 const CONTINENTAL_MODES: Record<string, ModeData> = {
   europe: {
-    name: 'Europedle — Europe',
+    name: 'Europedle: Europe',
     path: '/europe',
     pool: '44 European countries (curated physical continent pool)',
     questions: '8',
@@ -47,7 +47,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
       paragraphs: [
         'The European continent encompasses approximately 10.18 million square kilometres, characterized by an exceptionally complex coastline indented by major marginal and semi-enclosed seas. Geographers partition the continent into six core macroregions: Northern Europe (Scandinavia, the Baltic states, and the British Isles), Western Europe (the Low Countries, France, and Monaco), Central Europe (the Alpine states and Visegrád Group), Southern and Mediterranean Europe (the Iberian, Italian, and Greek peninsulas), Southeastern Europe (the Balkan nations), and Eastern Europe (the expansive East European Plain stretching toward the Ural Mountains).',
         'European geography contrasts oceanic access with interior landlocked locations such as Austria, Switzerland and Kosovo. Coastal countries border distinctive marginal seas: the Baltic Sea in the north, the North Sea and Norwegian Sea along the Atlantic margin, the Mediterranean Sea to the south, and the Black Sea in the southeast. Counts depend on the geographic and political scope used.',
-        'Major orographic barriers and river arteries structure continental connectivity. The Alps, Carpathians, Pyrenees, Apennines, and Scandinavian Mountains divide climate zones and historical frontiers. Meanwhile, transnational river corridors — most notably the Danube (which flows through or borders 10 sovereign nations from the Black Forest to the Black Sea) and the Rhine (Europe’s primary commercial fluvial axis) — provide critical geographical reference lines for deductive puzzle solvers.',
+        'Major orographic barriers and river arteries structure continental connectivity. The Alps, Carpathians, Pyrenees, Apennines, and Scandinavian Mountains divide climate zones and historical frontiers. Meanwhile, transnational river corridors, most notably the Danube (which flows through or borders 10 sovereign nations from the Black Forest to the Black Sea) and the Rhine (Europe’s primary commercial fluvial axis), provide critical geographical reference lines for deductive puzzle solvers.',
       ],
       keyFacts: [
         { label: 'Geographic Macroregions', detail: 'Northern, Western, Central, Southern, Southeastern and Eastern Europe; regional definitions can overlap' },
@@ -58,7 +58,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
     },
   },
   asia: {
-    name: 'Asiadle — Asia',
+    name: 'Asiadle: Asia',
     path: '/asia',
     pool: '48 Asian countries (excludes Egypt and Israel)',
     questions: '8',
@@ -83,7 +83,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
     reference: {
       heading: 'Asian Macroregions, Mountain Barriers & Endorheic Basins',
       paragraphs: [
-        'Asia is Earth’s largest and most populous continent, covering roughly 44.58 million square kilometres — approximately 30% of the planet’s land area. Physical geographers divide Asia into five massive geographic realms: West Asia (the Middle East, encompassing the Anatolian plateau, Arabian Peninsula, Levant, and Iranian plateau), Central Asia (the five former Soviet steppe and mountain republics), South Asia (the Indian subcontinent bounded by the Himalayas), East Asia (the Chinese heartland, Korean Peninsula, and Japanese archipelago), and Southeast Asia (continental Indochina and the immense maritime Malay Archipelago).',
+        'Asia is Earth’s largest and most populous continent, covering roughly 44.58 million square kilometres (approximately 30% of the planet’s land area). Physical geographers divide Asia into five massive geographic realms: West Asia (the Middle East, encompassing the Anatolian plateau, Arabian Peninsula, Levant, and Iranian plateau), Central Asia (the five former Soviet steppe and mountain republics), South Asia (the Indian subcontinent bounded by the Himalayas), East Asia (the Chinese heartland, Korean Peninsula, and Japanese archipelago), and Southeast Asia (continental Indochina and the immense maritime Malay Archipelago).',
         'The continent’s hydrography is characterized by profound contrasts between vast external oceanic watersheds and massive interior endorheic basins. Peripheral rivers drain into the Arctic Ocean (Ob, Yenisey, Lena), Pacific Ocean (Amur, Yellow/Huang He, Yangtze/Chang Jiang, Mekong), and Indian Ocean (Brahmaputra, Ganges, Indus, Tigris, Euphrates). In stark contrast, Central Asia and the interior Middle East form the world’s largest endorheic drainage systems, where precipitation drains into terminal lakes like the Caspian Sea and the remnant Aral Sea, or evaporates in arid sinks without reaching the global ocean.',
         'Asia contains Earth’s most formidable orographic systems, generated by the ongoing tectonic collision between the Indian and Eurasian plates. The Himalayas and Karakoram ranges contain all 14 global peaks exceeding 8,000 metres (including Mount Everest at 8,848.86 m and K2 at 8,611 m). Coupled with the Hindu Kush, Pamir, and Tian Shan ranges, this "Roof of the World" forms a formidable climatic and geographic divide separating South and Central Asia from the northern plains.',
       ],
@@ -96,7 +96,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
     },
   },
   africa: {
-    name: 'Africadle — Africa',
+    name: 'Africadle: Africa',
     path: '/africa',
     pool: '54 sovereign African nations',
     questions: '8',
@@ -122,7 +122,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
       heading: 'African Bioclimatic Zones, Rift Systems & Hydrography',
       paragraphs: [
         'Africa is Earth’s second-largest continent, spanning approximately 30.37 million square kilometres. Uniquely among continents, it extends almost symmetrically across both the Northern and Southern Hemispheres, bisected by the Equator. Geographers classify Africa into five primary regions: North Africa (dominated by the Sahara Desert and Mediterranean coastline), West Africa (extending from the Sahel down to the forested Gulf of Guinea), Central or Middle Africa (the vast equatorial Congo River basin), East Africa (the tectonic Horn of Africa and Great Lakes plateau), and Southern Africa (the high veld, Kalahari Desert, and Cape region).',
-        'The continent’s physical structure is shaped by the East African Rift System, an active divergent tectonic plate boundary stretching over 6,000 kilometres from the Red Sea down to Mozambique. This geological trench has created Africa’s Great Lakes — including Lake Victoria (Earth’s second-largest freshwater lake by area), Lake Tanganyika (the world’s second-deepest lake at 1,470 m), and Lake Malawi — alongside dramatic volcanic massifs like Mount Kilimanjaro (5,895 m) and Mount Kenya.',
+        'The continent’s physical structure is shaped by the East African Rift System, an active divergent tectonic plate boundary stretching over 6,000 kilometres from the Red Sea down to Mozambique. This geological trench has created Africa’s Great Lakes, including Lake Victoria (Earth’s second-largest freshwater lake by area), Lake Tanganyika (the world’s second-deepest lake at 1,470 m), and Lake Malawi, alongside dramatic volcanic massifs like Mount Kilimanjaro (5,895 m) and Mount Kenya.',
         'Africa’s hydrological network features four colossal river systems: the Nile (flowing northward over 6,650 km to the Mediterranean), the Congo (Earth’s second-largest river by discharge and the deepest recorded at over 220 m), the Niger (forming a great crescent through West Africa), and the Zambezi (plunging over Victoria Falls into the Indian Ocean). Despite these waterways, 16 African states are completely landlocked: Botswana, Burkina Faso, Burundi, Central African Republic, Chad, Eswatini, Ethiopia, Lesotho, Malawi, Mali, Niger, Rwanda, South Sudan, Uganda, Zambia, and Zimbabwe.',
       ],
       keyFacts: [
@@ -134,7 +134,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
     },
   },
   americas: {
-    name: 'Americadle — The Americas',
+    name: 'Americadle: The Americas',
     path: '/americas',
     pool: '35 American nations (North and South America combined)',
     questions: '8',
@@ -175,7 +175,7 @@ const CONTINENTAL_MODES: Record<string, ModeData> = {
 
 const MODES: Record<string, ModeData> = {
   countrydle: {
-    name: 'Countrydle — World Countries',
+    name: 'Countrydle: World Countries',
     path: '/game',
     pool: '195 playable countries',
     questions: '10',
@@ -191,9 +191,9 @@ const MODES: Record<string, ModeData> = {
       title: 'Poland: Combining coastal and border clues',
       steps: [
         'For this practice example, suppose the hidden country is Poland.',
-        '“Is it in Europe?” — Yes. Keep European candidates, allowing for the game’s continent conventions.',
-        '“Is it landlocked?” — No. Poland has a Baltic Sea coast, so landlocked candidates can be ruled out.',
-        '“Does it border Germany?” — Yes. Poland shares a land border with Germany, but other coastal countries do too.',
+        '“Is it in Europe?” Yes. Keep European candidates, allowing for the game’s continent conventions.',
+        '“Is it landlocked?” No. Poland has a Baltic Sea coast, so landlocked candidates can be ruled out.',
+        '“Does it border Germany?” Yes. Poland shares a land border with Germany, but other coastal countries do too.',
       ],
       lesson: 'Combine independent clues before guessing. These three answers fit Poland but do not prove it is the only candidate; a further specific question can help.',
     },
@@ -213,7 +213,7 @@ const MODES: Record<string, ModeData> = {
     },
   },
   flagdle: {
-    name: 'Flagdle — Daily Flag Reveal',
+    name: 'Flagdle: Daily Flag Reveal',
     path: '/flagdle',
     pool: '195 national flags of playable countries',
     questions: 'Unlimited helper questions',
@@ -238,8 +238,8 @@ const MODES: Record<string, ModeData> = {
     reference: {
       heading: 'Vexillological Classifications & Heraldic Emblem Systems',
       paragraphs: [
-        'Vexillology — the scholarly study of flags — classifies national banners through precise geometric layouts, color heraldry (tinctures), and cultural symbol systems. The 195 national flags of the world reflect profound historical, political, and cultural movements. The most prevalent layout is the tricolor, which originated in Europe in two primary forms: the Dutch horizontal tricolor (inspiring Russia and the Pan-Slavic flags) and the French vertical Tricolore (which influenced Italy, Ireland, Romania, Chad, Mali, and Mexico).',
-        'Several distinct regional families dominate national flag design. The Nordic Cross — a cross whose vertical bar is shifted toward the hoist — unites Northern Europe (Denmark, Sweden, Norway, Finland, and Iceland). The Pan-African colors (green, yellow/gold, and red, derived from the historic Ethiopian empire) feature across dozens of sub-Saharan banners (Ghana, Senegal, Cameroon, Mali, Guinea). The Pan-Arab colors (black, white, green, and red, representing the historical Rashidun, Umayyad, Abbasid, and Fatimid caliphates) define the flags of Egypt, Jordan, Iraq, Syria, UAE, Kuwait, and Palestine. The Pan-Slavic colors (red, white, and blue) are shared by Russia, Serbia, Slovakia, the Czech Republic, Croatia, and Slovenia.',
+        'Vexillology, the scholarly study of flags, classifies national banners through precise geometric layouts, color heraldry (tinctures), and cultural symbol systems. The 195 national flags of the world reflect profound historical, political, and cultural movements. The most prevalent layout is the tricolor, which originated in Europe in two primary forms: the Dutch horizontal tricolor (inspiring Russia and the Pan-Slavic flags) and the French vertical Tricolore (which influenced Italy, Ireland, Romania, Chad, Mali, and Mexico).',
+        'Several distinct regional families dominate national flag design. The Nordic Cross (a cross whose vertical bar is shifted toward the hoist) unites Northern Europe (Denmark, Sweden, Norway, Finland, and Iceland). The Pan-African colors (green, yellow/gold, and red, derived from the historic Ethiopian empire) feature across dozens of sub-Saharan banners (Ghana, Senegal, Cameroon, Mali, Guinea). The Pan-Arab colors (black, white, green, and red, representing the historical Rashidun, Umayyad, Abbasid, and Fatimid caliphates) define the flags of Egypt, Jordan, Iraq, Syria, UAE, Kuwait, and Palestine. The Pan-Slavic colors (red, white, and blue) are shared by Russia, Serbia, Slovakia, the Czech Republic, Croatia, and Slovenia.',
         'Beyond simple stripes, national flags employ distinctive charges and emblems. Celestial motifs are widespread: 53 national flags incorporate stars, while crescents appear prominently across Islamic nations (Turkey, Pakistan, Algeria, Tunisia, Mauritania, Malaysia). Unique structural outliers also test player observation: Nepal possesses the world’s only non-quadrilateral sovereign flag (a double pennant), while Switzerland and Vatican City feature square flags (1:1 aspect ratio), and the United States, Malaysia, Greece, and Liberia utilize canton layouts with stripes.',
       ],
       keyFacts: [
@@ -252,7 +252,7 @@ const MODES: Record<string, ModeData> = {
   },
   ...CONTINENTAL_MODES,
   'us-states': {
-    name: 'US Statedle — 50 States',
+    name: 'US Statedle: 50 States',
     path: '/us-states',
     pool: '50 US states',
     questions: '8',
@@ -290,7 +290,7 @@ const MODES: Record<string, ModeData> = {
     },
   },
   wojewodztwa: {
-    name: 'Województwodle — 16 Voivodeships',
+    name: 'Województwodle: 16 Voivodeships',
     path: '/wojewodztwa',
     pool: '16 Polish voivodeships (Województwa)',
     questions: '5',
@@ -328,7 +328,7 @@ const MODES: Record<string, ModeData> = {
     },
   },
   powiaty: {
-    name: 'Powiatdle — 380 Counties',
+    name: 'Powiatdle: 380 Counties',
     path: '/powiaty',
     pool: '380 Polish counties (314 ziemskie + 66 grodzkie)',
     questions: '15',
@@ -426,7 +426,7 @@ export default function ModeGuidePage() {
             aria-current={id === normalizedId ? 'page' : undefined}
             className="text-emerald-300 underline underline-offset-4"
           >
-            {item.name.split(' — ')[0]}
+            {item.name.split(': ')[0]}
           </Link>
         ))}
       </nav>
@@ -549,7 +549,7 @@ export default function ModeGuidePage() {
         className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-emerald-400 px-5 py-3 font-semibold text-obsidian-950 hover:bg-emerald-300"
       >
         <Play size={16} aria-hidden="true" />
-        Play {mode.name.split(' — ')[0]}
+        Play {mode.name.split(': ')[0]}
       </Link>
       
       <AdSenseUnit slot="mode-guide-footer" className="mx-auto max-w-2xl pt-6" />

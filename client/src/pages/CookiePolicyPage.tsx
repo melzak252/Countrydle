@@ -25,38 +25,38 @@ export default function CookiePolicyPage() {
         </p>
         <ul>
           <li>
-            <strong>Login — <code>access_token</code> cookie:</strong> keeps you signed in. The default lifetime is
+            <strong>Login (<code>access_token</code> cookie):</strong> keeps you signed in. The default lifetime is
             60 minutes, or 90 days if you select Remember me. These durations are configurable, and authenticated
             requests can renew the selected lifetime. Logging out clears the login cookie on that browser.
           </li>
           <li>
-            <strong>Guest gameplay — <code>guest_identity</code> and game-state cookies:</strong> a pseudonymous
+            <strong>Guest gameplay (<code>guest_identity</code> and game-state cookies):</strong> a pseudonymous
             identifier associates accepted guest activity with server records; mode-specific cookies such as
             <code> guest_countrydle</code> and <code>guest_flagdle</code> preserve guest game state. These cookies
             have a two-day lifetime and may be set again during play.
           </li>
           <li>
-            <strong>Friend duels — <code>friend_duel_seat</code> cookie:</strong> preserves access to your guest
+            <strong>Friend duels (<code>friend_duel_seat</code> cookie):</strong> preserves access to your guest
             seats for up to 365 days. Removing it can prevent you from returning to those seats.
           </li>
           <li>
-            <strong>Daily guest progress — <code>guess_game_*</code> in localStorage:</strong> saves progress,
+            <strong>Daily guest progress (<code>guess_game_*</code> in localStorage):</strong> saves progress,
             questions and guesses by game mode and date. Supported guest progress is sent to your account when
             you sign in, and successfully synced snapshots are removed. Failed syncs retain the local snapshot.
           </li>
           <li>
-            <strong>Regional symbol games — <code>regional_symbols_&#123;scope&#125;_&#123;coat|flag&#125;_daily_token_&#123;date&#125;</code> in localStorage:</strong>{' '}
+            <strong>Regional symbol games (<code>regional_symbols_&#123;scope&#125;_&#123;coat|flag&#125;_daily_token_&#123;date&#125;</code> in localStorage):</strong>{' '}
             stores the date-keyed daily game token separately for each geography and symbol, so your browser can
             resume that game and its progress. These date-keyed values do not automatically expire or get deleted;
             they remain until you or your browser remove them.
           </li>
           <li>
-            <strong>Regional symbol instructions — <code>regional_symbols_&#123;scope&#125;_&#123;coat|flag&#125;_guide_seen</code> in localStorage:</strong>{' '}
+            <strong>Regional symbol instructions (<code>regional_symbols_&#123;scope&#125;_&#123;coat|flag&#125;_guide_seen</code> in localStorage):</strong>{' '}
             remembers that you dismissed that game's instructions. This preference persists until you or your
             browser remove it; it has no automatic expiry.
           </li>
           <li>
-            <strong>Guest result history — <code>countrydle_guest_result_v1_*</code> in localStorage:</strong> saves
+            <strong>Guest result history (<code>countrydle_guest_result_v1_*</code> in localStorage):</strong> saves
             completed-game summaries used for your local history and statistics. These summaries have no automatic
             expiry; a limited history display does not mean older records have been deleted.
           </li>

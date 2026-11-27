@@ -257,7 +257,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="mb-4">9. Contact Us</h2>
             <p>
               For privacy questions, complaints, or access, correction and deletion requests, contact:<br />
-              <strong>Jakub Melzacki — Countrydle</strong><br />
+              <strong>Jakub Melzacki, Countrydle</strong><br />
               Email: <a href="mailto:melzacki.jakub@gmail.com">melzacki.jakub@gmail.com</a>
             </p>
           </section>

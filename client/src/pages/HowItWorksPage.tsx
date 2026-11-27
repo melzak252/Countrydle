@@ -217,7 +217,7 @@ export default function HowItWorksPage() {
       </section>
 
       <section aria-labelledby="data-limits" className="space-y-4 border-t border-white/10 pt-8">
-        <h2 id="data-limits" className="font-serif text-2xl text-sand-100">What the facts do—and do not—represent</h2>
+        <h2 id="data-limits" className="font-serif text-2xl text-sand-100">What the facts do (and do not) represent</h2>
         <p className="text-base leading-7">Country facts combine REST Countries, CIA World Factbook profiles distributed through factbook.json, and curated additions. US and Polish regional facts combine local article text and infoboxes, classification tables, static lists and manual corrections. Some relationships are extracted from Wikipedia text using AI. They are not all direct government feeds.</p>
         <p className="text-base leading-7">Map boundaries and Natural Earth-derived globe data are separate from the answer tables. Seeing a boundary on the globe does not establish eligibility, a recorded border, or the answer to an ambiguous question. Population values are stored snapshots, not live counters; specify thresholds and units, and use square kilometres for area questions.</p>
         <p className="text-base leading-7">Ask about current membership separately from historical membership. Official language status is not the same as the most widely spoken language. Coordinate comparisons use stored reference coordinates, not a test of whether every point of one country lies east or north of another.</p>

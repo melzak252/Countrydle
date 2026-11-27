@@ -128,8 +128,40 @@ def _call_gemini_api(model: str, prompt: str, api_key: str, timeout: int = 25) -
         return json.loads(raw_text)
 
 
+def _strip_em_dashes_text(text: str, *, is_title: bool = False) -> str:
+    """Replace em/en dashes with natural punctuation so generated copy stays clean."""
+    if not text or ("—" not in text and "–" not in text):
+        return text
+    cleaned = text
+    # Paired parenthetical dashes: "foo — bar — baz" -> "foo (bar) baz"
+    cleaned = re.sub(r"\s*[—–]\s*([^—–\n]{2,120}?)\s*[—–]\s*", r" (\1) ", cleaned)
+    if is_title:
+        # In titles like "Countrydle Solution: France — City of Light" -> "...: France, City of Light"
+        # or if no colon yet, "France — City of Light" -> "France: City of Light"
+        def _replace_title_dash(match: re.Match[str]) -> str:
+            before = cleaned[: match.start()]
+            return ", " if ":" in before else ": "
+        cleaned = re.sub(r"\s*[—–]\s*", _replace_title_dash, cleaned)
+    else:
+        cleaned = re.sub(r"\s*[—–]\s*", ", ", cleaned)
+    cleaned = re.sub(r"\s+([,.;:!?])", r"\1", cleaned)
+    cleaned = re.sub(r" {2,}", " ", cleaned)
+    return cleaned.strip()
+
+
+def _sanitize_em_dashes(value: Any, *, key: Optional[str] = None) -> Any:
+    if isinstance(value, str):
+        return _strip_em_dashes_text(value, is_title=(key == "title"))
+    if isinstance(value, list):
+        return [_sanitize_em_dashes(item) for item in value]
+    if isinstance(value, dict):
+        return {k: _sanitize_em_dashes(v, key=k) for k, v in value.items()}
+    return value
+
+
 def _validate_generated_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Apply the same editable-content contract as an editor before accepting output."""
+    payload = _sanitize_em_dashes(payload)
     editable = {field: payload[field] for field in BlogPostUpdate.model_fields if field in payload}
     validated = BlogPostUpdate.model_validate(editable)
     return {**payload, **validated.model_dump(mode="json", exclude_unset=True)}
@@ -183,7 +215,7 @@ No human editorial review has taken place.
 
 TASK:
 Generate a JSON object with:
-1. "title": Catchy, exciting headline (e.g. "Countrydle Solution: {country_name} — [Evocative Description]").
+1. "title": Catchy, exciting headline (e.g. "Countrydle Solution: {country_name}, [Evocative Description]").
 2. "subtitle": Engaging 1-sentence teaser summarizing the country's unique deduction identity.
 3. "summary": 2-3 sentence overview of the country and its daily deduction challenge.
 4. "editorial_body": 2-3 substantive, well-crafted paragraphs exploring {country_name}'s geographical context, terrain or waterways, and strategic deduction clues. Do NOT repeat intro lines or bulleted fast facts.
@@ -198,6 +230,9 @@ Generate a JSON object with:
    - "correct_answer": Correct answer string.
    - "incorrect_distractor": Believable false answer string.
    - "explanation": 1 concise sentence explaining the correct answer.
+
+STYLE RULE:
+Never use em dashes (—) or en dashes (–) anywhere in the title, subtitle, summary, editorial_body, fun_facts, or trivia_quiz. Use commas, colons, periods, parentheses, or standard hyphens instead so the writing reads cleanly and naturally.
 
 Return ONLY the raw JSON object.
 """

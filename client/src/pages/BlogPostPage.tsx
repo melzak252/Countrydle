@@ -110,7 +110,7 @@ export default function BlogPostPage() {
     return () => setPageEditorialEligibility(false);
   }, [eligibleForAds, slug]);
   usePageMetadata(loadedPost ? {
-    title: `${loadedPost.title} — ${loadedPost.country_name}, ${loadedPost.date} | Countrydle`,
+    title: `${loadedPost.title} (${loadedPost.country_name}, ${loadedPost.date}) | Countrydle`,
     description: `Past-day recap for ${loadedPost.country_name} (${loadedPost.date}). ${loadedPost.summary || loadedPost.subtitle || 'Country-specific geography and deduction analysis.'}`,
     canonicalPath: `/blog/${encodeURIComponent(loadedPost.slug || loadedPost.date)}`,
     article: {
@@ -269,7 +269,7 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
         <section aria-label="Sources" className="min-w-0 rounded-lg border border-white/10 bg-obsidian-900/60 p-4 text-sm text-zinc-300 sm:p-5">
           <h2 className="font-semibold text-sand-100">Sources</h2>
           <ul className="mt-2 space-y-1">
-            {sourceLinks.map((source, index) => <li key={index}>{source.safeUrl ? <a href={source.safeUrl} target="_blank" rel="noopener noreferrer" className="break-words text-emerald-300 underline">{source.label}</a> : <span>{source.label} — source URL unavailable</span>}</li>)}
+            {sourceLinks.map((source, index) => <li key={index}>{source.safeUrl ? <a href={source.safeUrl} target="_blank" rel="noopener noreferrer" className="break-words text-emerald-300 underline">{source.label}</a> : <span>{source.label} (source URL unavailable)</span>}</li>)}
           </ul>
         </section>
       )}
@@ -690,7 +690,7 @@ export function BlogArticle({ post, eligibleForAds = false, preview = false }: {
 
       {post.deduction_masterclass?.quiz?.status === 'needs-editorial-repair' && (
         <section aria-label={'Quiz needs editorial repair'} className="min-w-0 space-y-3 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-100">
-          <h2 className="font-semibold">{'Quiz unavailable — needs editorial repair'}</h2>
+          <h2 className="font-semibold">{'Quiz unavailable (needs editorial repair)'}</h2>
           <p>{'The stored quiz is incomplete or invalid. We have not invented missing answers. The rest of this article remains available.'}</p>
           <details>
             <summary className="cursor-pointer">{'Stored quiz content (unchanged)'}</summary>

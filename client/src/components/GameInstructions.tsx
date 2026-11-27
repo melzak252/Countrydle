@@ -194,7 +194,7 @@ const GameInstructions = ({ gameName, examples, scoring, triggerClassName, compa
           <Flag size={15} className="text-amber-400 shrink-0 mt-0.5" />
           <p className="text-zinc-300 leading-relaxed">
             <strong className="text-amber-300">{'Spot a mistake?'}</strong>{' '}
-            {'After the game ends, click the flag icon on any answer card in your history to report it with notes — it helps us see mistakes and patch them quickly.'}
+            {'After the game ends, click the flag icon on any answer card in your history to report it with notes. It helps us spot mistakes and patch them quickly.'}
           </p>
         </div>
 

@@ -195,7 +195,7 @@ export default function ArchivePage() {
         <div className="overflow-hidden rounded-md border border-white/10 bg-obsidian-900">
           <div role="region" aria-label="Past answers" tabIndex={0} className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
             <table className="w-full table-fixed text-left text-sm">
-              <caption className="sr-only">Past answers — {allTabs.find((tab) => tab.id === gameType)?.label}</caption>
+              <caption className="sr-only">Past answers: {allTabs.find((tab) => tab.id === gameType)?.label}</caption>
               <thead className="border-b border-white/10 text-xs text-zinc-400">
                 <tr>
                   <th scope="col" className="w-24 px-2 py-4 font-medium sm:w-44 sm:px-6 md:w-32">{t('archive.date')}</th>

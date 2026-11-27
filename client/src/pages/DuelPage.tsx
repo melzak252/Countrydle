@@ -769,7 +769,7 @@ function DuelRoom({ code }: { code?: string }) {
                   <div ref={answerPanel} className="shrink-0 border-t border-white/10 bg-obsidian-950/80 px-4 py-3">
                     <div className="flex items-center gap-2 font-mono text-[11px] text-amber-300">
                       <Zap size={14} className="text-amber-400 animate-pulse" />
-                      <span>Question received — choose answer in modal</span>
+                      <span>Question received: choose answer in modal</span>
                     </div>
                   </div>
                 ) : myTurn ? (

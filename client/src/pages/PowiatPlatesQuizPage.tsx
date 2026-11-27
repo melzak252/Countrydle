@@ -356,7 +356,7 @@ export default function PowiatPlatesQuizPage() {
               onKeyDown={handleKeyDown}
               placeholder={
                 isPaused
-                  ? t('platesQuiz.placeholderPaused', 'Paused — click Resume')
+                  ? t('platesQuiz.placeholderPaused', 'Paused. Click Resume to continue')
                   : t('platesQuiz.placeholder', 'Type plate code (e.g. KR, WA, GDA)...')
               }
               className="w-full min-h-[44px] rounded-md border border-emerald-500/50 bg-obsidian-900 pl-3.5 pr-11 py-2 font-mono uppercase tracking-widest text-sm sm:text-base font-bold text-sand-100 placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder-zinc-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/25"
