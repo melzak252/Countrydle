@@ -4,8 +4,38 @@ from __future__ import annotations
 
 import sqlite3
 
-from countrydle.answering.db import find_country
+from countrydle.answering.db import find_country, preload_list_relations
 from countrydle.answering.evaluator import evaluate_plan_node, plan_relations
+
+_MAX_AUTO_COLOR_NODES = 8
+_MAX_AUTO_COLOR_DEPTH = 4
+
+
+def _is_simple_auto_color_plan(plan: dict) -> bool:
+    """Keep auto-coloring fast and predictable by skipping quantified or deeply nested ASTs."""
+    node_count = 0
+
+    def walk(node: object, depth: int) -> bool:
+        nonlocal node_count
+        if not isinstance(node, dict):
+            return True
+        node_count += 1
+        if node_count > _MAX_AUTO_COLOR_NODES or depth > _MAX_AUTO_COLOR_DEPTH:
+            return False
+        op = node.get("operator")
+        if op in {"any", "all"}:
+            return False
+        if isinstance(node.get("condition"), dict):
+            if not walk(node["condition"], depth + 1):
+                return False
+        conditions = node.get("conditions")
+        if isinstance(conditions, list):
+            for child in conditions:
+                if not walk(child, depth + 1):
+                    return False
+        return True
+
+    return walk(plan, 1)
 
 GEOGRAPHIC_AUTO_COLOR_RELATIONS = frozenset({
     # Geographic & spatial
@@ -94,10 +124,14 @@ def compute_geographic_map_highlight(
             "note": None,
         }
 
+    if not _is_simple_auto_color_plan(plan):
+        return None
     relations = plan_relations(plan)
     if not relations or not relations.issubset(GEOGRAPHIC_AUTO_COLOR_RELATIONS):
         return None
     country_rows = conn.execute("SELECT * FROM countries").fetchall()
+    country_ids = [row["id"] for row in country_rows if row["id"] is not None]
+    list_cache = preload_list_relations(conn, relations, country_ids)
     matched: list[str] = []
     eliminated: list[str] = []
     for row in country_rows:
@@ -105,7 +139,7 @@ def compute_geographic_map_highlight(
         if not name:
             continue
         try:
-            row_ans = evaluate_plan_node(conn, plan, row)
+            row_ans = evaluate_plan_node(conn, plan, row, list_cache=list_cache)
         except Exception:
             continue
         if row_ans is None:

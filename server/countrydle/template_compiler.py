@@ -530,6 +530,8 @@ def compile_template_plan(
     numeric = _compile_english_numeric_question(q)
     if numeric is not None:
         return numeric
+    if re.fullmatch(r"is (?:it|the country|this country) land[- ]?locked", q):
+        return [_node("exists", "marine_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
     if _UNHANDLED_ENGLISH.search(q):
         return None
     comparison = re.fullmatch(
@@ -547,7 +549,7 @@ def compile_template_plan(
             "right": {"entity": country, "relation": relation},
         }], f"Does the country have a {relation} {comparison['comparison']} than {country}?"
     direction = re.fullmatch(
-        r"is (?P<subject>[a-z0-9 '\u2019&.]+) (?:located )?(?:(?:farther|further) |to the )?"
+        r"is (?P<subject>[a-z0-9 '\u2019&.]+?) (?:located )?(?:(?:farther|further) |to the |in the )?"
         r"(?P<direction>north|south|east|west) (?:of|than) (?P<country>[a-z0-9 '\u2019&.]+)", q,
     )
     country = _english_reference_country(direction)
@@ -585,34 +587,63 @@ def compile_template_plan(
         country = _ENGLISH_COUNTRY_ALIASES.get(reference)
         if country is not None:
             return [_node("contains", "borders_country", country)], f"Does the country border {country}?"
-    if re.fullmatch(r"(?:is (?:it|the country) an island(?: country)?|is island)", q):
+    if re.fullmatch(r"(?:is (?:it|the country|this country) an island(?: country)?|is island)", q):
         return [_node("equals", "is_island", True)], "Is the country an island country?"
     if re.fullmatch(
-        r"(?:does (?:it|the country) have (?:a )?coastline|has coast|has sea|is (?:it )?coastal)", q,
+        r"(?:does (?:it|the country|this country) have (?:a )?coastline|has coast|has sea|is (?:it )?coastal)", q,
     ):
         return [_node("exists", "water_access")], "Does the country have a coastline?"
-    if re.fullmatch(r"is (?:it|the country) landlocked", q):
+    if re.fullmatch(r"is (?:it|the country|this country) land[- ]?locked", q):
         return [_node("exists", "marine_access"), {"operator": "not", "args": [0]}], "Is the country landlocked?"
+    continent_of = re.fullmatch(
+        r"is (?:it|the country|this country) (?:located )?(?:in|on) (?:the )?continent of (?P<continent>[a-z ]+)", q,
+    )
+    if continent_of is not None:
+        cont = _ENGLISH_CONTINENTS.get(continent_of["continent"])
+        if cont is not None:
+            return [_node("contains", "continent", cont)], f"Is the country in {cont}?"
+    demonym_continent = re.fullmatch(
+        r"is (?:it|the country|this country) an? (?P<demonym>asian|european|african|north american|south american|oceanian) country", q,
+    )
+    if demonym_continent is not None:
+        _DEMONYM_TO_CONTINENT = {
+            "asian": "Asia",
+            "european": "Europe",
+            "african": "Africa",
+            "north american": "North America",
+            "south american": "South America",
+            "oceanian": "Oceania",
+        }
+        cont = _DEMONYM_TO_CONTINENT[demonym_continent["demonym"]]
+        return [_node("contains", "continent", cont)], f"Is the country in {cont}?"
     hemisphere = re.fullmatch(
-        r"is (?:it|the country) in the (?P<hemi>northern|southern|eastern|western) hemisphere", q,
+        r"is (?:it|the country|this country) (?:located )?in the (?P<hemi>northern|southern|eastern|western) hemisphere", q,
     )
     if hemisphere is not None:
         hemi = hemisphere["hemi"].capitalize()
         return [_node("contains", "hemisphere", hemi)], f"Is the country in the {hemi} Hemisphere?"
-    if re.fullmatch(r"(?:does (?:it|the country) (?:cross|straddle)|is (?:it|the country) on) (?:the )?equator", q):
+    if re.fullmatch(r"(?:does (?:it|the country|this country) (?:cross|straddle)|is (?:it|the country|this country) on) (?:the )?equator", q):
         return [
             _node("contains", "hemisphere", "Northern"),
             _node("contains", "hemisphere", "Southern"),
             {"operator": "and", "args": [0, 1]},
         ], "Does the country cross the equator?"
-    equator = re.fullmatch(r"is (?:it|the country) (?P<direction>north|south) of (?:the )?equator", q)
+    equator = re.fullmatch(r"is (?:it|the country|this country) (?P<direction>north|south) of (?:the )?equator", q)
     if equator is not None:
         direction = equator["direction"]
         hemi = "Northern" if direction == "north" else "Southern"
         return [_node("contains", "hemisphere", hemi)], f"Is the country {direction} of the equator?"
+    flag_color = re.fullmatch(
+        r"(?:does (?:it|the country|this country) have (?:the color )?(?P<color>red|white|blue|green|yellow|black|orange) (?:on|in) (?:its|the) flag"
+        r"|does (?:its|the) flag (?:have|contain) (?:the color )?(?P<color2>red|white|blue|green|yellow|black|orange)"
+        r"|is (?:there )?(?P<color3>red|white|blue|green|yellow|black|orange) (?:on|in) (?:its|the) flag)", q,
+    )
+    if flag_color is not None:
+        color = flag_color["color"] or flag_color["color2"] or flag_color["color3"]
+        return [_node("contains", "flag_color", color)], f"Does the country's flag contain {color}?"
     water = re.fullmatch(
-        r"(?:does (?:it|the country) (?:border|have access to) (?:the )?(?P<water>[a-z\s]+)"
-        r"|is (?:it|the country) on the (?P<water2>[a-z\s]+))", q,
+        r"(?:does (?:it|the country|this country) (?:border|have access to) (?:the )?(?P<water>[a-z\s]+)"
+        r"|is (?:it|the country|this country) on the (?P<water2>[a-z\s]+))", q,
     )
     if water is not None:
         value = _WATER_ALIASES.get(water["water"] or water["water2"])

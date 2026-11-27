@@ -33,13 +33,14 @@ def evaluate_plan_node(
     target_country: sqlite3.Row,
     item_value: str | None = None,
     fact_provenance: list[dict] | None = None,
+    list_cache: dict[tuple[int, str], list] | None = None,
 ) -> bool | None:
     if not isinstance(node, dict):
         return None
     operator = node.get("operator")
 
     if operator == "not":
-        result = evaluate_plan_node(conn, node.get("condition"), target_country, item_value, fact_provenance)
+        result = evaluate_plan_node(conn, node.get("condition"), target_country, item_value, fact_provenance, list_cache=list_cache)
         return None if result is None else not result
 
     if operator in {"and", "or"}:
@@ -48,7 +49,7 @@ def evaluate_plan_node(
             return None
         branches = [[] for _ in conditions] if fact_provenance is not None else [None] * len(conditions)
         results = [
-            evaluate_plan_node(conn, condition, target_country, item_value, branch)
+            evaluate_plan_node(conn, condition, target_country, item_value, branch, list_cache=list_cache)
             for condition, branch in zip(conditions, branches)
         ]
         merge_used_evidence(fact_provenance, results, branches, decisive=operator == "or")
@@ -65,7 +66,7 @@ def evaluate_plan_node(
         return True
 
     if operator == "exists":
-        value = resolve_ref(conn, node.get("left", {}), target_country, item_value)
+        value = resolve_ref(conn, node.get("left", {}), target_country, item_value, list_cache=list_cache)
         if value is None:
             return None
         collect_ref_evidence(conn, node.get("left", {}), target_country, item_value, fact_provenance)
@@ -96,8 +97,8 @@ def evaluate_plan_node(
         "char_count_greater_than",
         "char_count_less_than",
     }:
-        left = resolve_ref(conn, node.get("left", {}), target_country, item_value)
-        right = resolve_ref(conn, node.get("right", {}), target_country, item_value)
+        left = resolve_ref(conn, node.get("left", {}), target_country, item_value, list_cache=list_cache)
+        right = resolve_ref(conn, node.get("right", {}), target_country, item_value, list_cache=list_cache)
         if left is None or (operator not in {"has_space", "has_hyphen"} and right is None):
             return None
         collect_ref_evidence(

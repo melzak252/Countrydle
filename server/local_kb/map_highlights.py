@@ -123,6 +123,41 @@ def _extract_direct_name_targets(plan: Any) -> list[str] | None:
     return None
 
 
+_MAX_AUTO_COLOR_NODES = 8
+_MAX_AUTO_COLOR_DEPTH = 4
+
+
+def _is_simple_auto_color_plan(plan: Any) -> bool:
+    """Skip quantified (any/all) or deeply nested ASTs so auto-coloring stays fast and simple."""
+    node_count = 0
+
+    def walk(node: Any, depth: int) -> bool:
+        nonlocal node_count
+        if not isinstance(node, dict):
+            return True
+        node_count += 1
+        if node_count > _MAX_AUTO_COLOR_NODES or depth > _MAX_AUTO_COLOR_DEPTH:
+            return False
+        if node.get("operator") in {"any", "all"}:
+            return False
+        if isinstance(node.get("condition"), dict):
+            if not walk(node["condition"], depth + 1):
+                return False
+        conditions = node.get("conditions")
+        if isinstance(conditions, list):
+            for child in conditions:
+                if not walk(child, depth + 1):
+                    return False
+        args = node.get("args")
+        if isinstance(args, list):
+            for child in args:
+                if isinstance(child, dict) and not walk(child, depth + 1):
+                    return False
+        return True
+
+    return walk(plan, 1)
+
+
 def compute_local_kb_map_highlight(
     conn: sqlite3.Connection,
     config: LocalModeConfig,
@@ -154,6 +189,8 @@ def compute_local_kb_map_highlight(
             "note": None,
         }
 
+    if not _is_simple_auto_color_plan(plan):
+        return None
     relations = _collect_effective_relations(plan, config)
     if not relations or not relations.issubset(GEOGRAPHIC_AUTO_COLOR_RELATIONS):
         return None

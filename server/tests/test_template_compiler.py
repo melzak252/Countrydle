@@ -279,3 +279,23 @@ def test_country_border_templates_cover_catalog_names(country):
     plan, _ = compiled
     assert plan[0]["left"]["relation"] == "borders_country"
     assert plan[0]["right"]["value"] == country
+
+
+@pytest.mark.parametrize("question,expected_relation,expected_value", [
+    ("is it land locked", "marine_access", None),
+    ("is this country land-locked?", "marine_access", None),
+    ("is this country on the continent of asia", "continent", "Asia"),
+    ("is it an asian country", "continent", "Asia"),
+    ("is this country a european country?", "continent", "Europe"),
+    ("is this country in the western hemisphere", "hemisphere", "Western"),
+    ("does this country have red on its flag", "flag_color", "red"),
+    ("is there yellow on its flag?", "flag_color", "yellow"),
+    ("is it in the east of india?", "coordinates.longitude", None),
+])
+def test_high_frequency_english_templates(question, expected_relation, expected_value):
+    compiled = compile_template_plan(question)
+    assert compiled is not None, f"Expected template match for: {question}"
+    nodes, _ = compiled
+    assert nodes[0]["left"]["relation"] == expected_relation
+    if expected_value is not None:
+        assert nodes[0]["right"]["value"] == expected_value

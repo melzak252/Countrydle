@@ -88,6 +88,60 @@ LIST_RELATION_QUERIES = {
     "hemisphere": "SELECT hemisphere FROM country_hemispheres WHERE country_id=?",
 }
 
+BULK_LIST_RELATION_QUERIES = {
+    "continent": "SELECT country_id, continent FROM country_continents",
+    "region": "SELECT country_id, region_name FROM country_regions",
+    "subregion": "SELECT country_id, subregion_name FROM country_subregions",
+    "geographic_area": "SELECT country_id, region_name FROM country_regions UNION SELECT country_id, subregion_name FROM country_subregions",
+    "borders_country": "SELECT country_id, border_country_name FROM country_borders UNION SELECT cb.country_id, c.app_country_name FROM country_borders cb JOIN countries c ON cb.border_cca3 = c.cca3",
+    "water_access": "SELECT country_id, water_body FROM country_water_access",
+    "marine_access": "SELECT country_id, water_body FROM country_water_access",
+    "currency": "SELECT country_id, currency_name FROM country_currencies UNION SELECT country_id, currency_code FROM country_currencies WHERE currency_code IS NOT NULL",
+    "official_language": "SELECT country_id, language_name FROM country_languages",
+    "membership": "SELECT country_id, organization FROM country_memberships",
+    "major_rivers": "SELECT country_id, river_name FROM country_major_rivers",
+    "flag_color": "SELECT country_id, color FROM country_flag_colors",
+    "flag_symbol": "SELECT country_id, symbol FROM country_flag_symbols",
+    "historical_union": "SELECT country_id, union_name FROM country_historical_unions",
+    "hemisphere": "SELECT country_id, hemisphere FROM country_hemispheres",
+}
+
+
+def _finalize_list_relation(relation: str, raw_values: list) -> list:
+    res = [v for v in raw_values if v is not None]
+    if relation == "marine_access":
+        res = [water for water in res if is_marine_water_body(water)]
+    if relation in {"water_access", "marine_access"}:
+        expanded = expand_water_bodies(res)
+        for w in list(expanded):
+            w_lower = normalize_value(w)
+            if "sea" in w_lower or "ocean" in w_lower or "gulf" in w_lower or "bay" in w_lower or "skagerrak" in w_lower:
+                expanded.add("Sea")
+        return list(expanded)
+    if relation in {"geographic_area", "subregion"}:
+        return list(expand_geographic_areas(res))
+    return res
+
+
+def preload_list_relations(
+    conn: sqlite3.Connection,
+    relations: set[str],
+    country_ids: list[int],
+) -> dict[tuple[int, str], list]:
+    """Bulk-load referenced list relations in one SQL query per relation (eliminates N+1 in map highlighting)."""
+    cache: dict[tuple[int, str], list] = {}
+    for relation in relations:
+        bulk_sql = BULK_LIST_RELATION_QUERIES.get(relation)
+        if not bulk_sql:
+            continue
+        grouped: dict[int, list] = {cid: [] for cid in country_ids}
+        for cid, val in conn.execute(bulk_sql):
+            if cid in grouped and val is not None:
+                grouped[cid].append(val)
+        for cid, raw_values in grouped.items():
+            cache[(cid, relation)] = _finalize_list_relation(relation, raw_values)
+    return cache
+
 
 def rows(conn: sqlite3.Connection, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
     return list(conn.execute(sql, params))
@@ -169,6 +223,7 @@ def resolve_ref(
     ref: dict,
     target_country: sqlite3.Row,
     item_value: str | None = None,
+    list_cache: dict[tuple[int, str], list] | None = None,
 ):
     if not isinstance(ref, dict):
         return None
@@ -184,21 +239,14 @@ def resolve_ref(
     if relation in SCALAR_RELATION_FIELDS:
         return entity[SCALAR_RELATION_FIELDS[relation]]
     if relation in LIST_RELATION_QUERIES:
+        if list_cache is not None:
+            cached = list_cache.get((entity["id"], relation))
+            if cached is not None:
+                return cached
         query = LIST_RELATION_QUERIES[relation]
         params = (entity["id"],) * query.count("?")
         res = [row[0] for row in conn.execute(query, params) if row[0] is not None]
-        if relation == "marine_access":
-            res = [water for water in res if is_marine_water_body(water)]
-        if relation in {"water_access", "marine_access"}:
-            expanded = expand_water_bodies(res)
-            for w in list(expanded):
-                w_lower = normalize_value(w)
-                if "sea" in w_lower or "ocean" in w_lower or "gulf" in w_lower or "bay" in w_lower or "skagerrak" in w_lower:
-                    expanded.add("Sea")
-            return list(expanded)
-        if relation in {"geographic_area", "subregion"}:
-            return list(expand_geographic_areas(res))
-        return res
+        return _finalize_list_relation(relation, res)
     return None
 
 

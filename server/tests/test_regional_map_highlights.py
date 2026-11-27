@@ -234,3 +234,40 @@ def test_countydle_geographic_and_direct_name_highlights():
         "eliminated": ["Cornwall"],
         "note": None,
     }
+
+
+def test_complex_quantified_plans_skip_auto_coloring():
+    from countrydle.local_answering import execute_local_plan
+
+    # Countrydle: quantified `any` over borders_country is skipped for auto-coloring (answer still succeeds)
+    complex_country_plan = {
+        "operator": "any",
+        "items": {"entity": "target_country", "relation": "borders_country"},
+        "condition": {
+            "operator": "contains",
+            "left": {"entity": "item", "relation": "membership"},
+            "right": {"value": "EU"},
+        },
+    }
+    res_country = execute_local_plan(complex_country_plan, "Poland", "Does it border an EU member?")
+    assert res_country is not None
+    assert res_country.answer is True
+    assert res_country.map_highlight is None
+
+    # Regional local KB: quantified `any` is also skipped for auto-coloring
+    complex_state_plan = {
+        "operator": "any",
+        "items": {"entity": "target_state", "relation": "borders_state"},
+        "condition": {
+            "operator": "equals",
+            "left": {"entity": "item", "relation": "is_coastal"},
+            "right": {"value": True},
+        },
+    }
+    res_state = execute_plan(
+        US_STATE_CONFIG,
+        "Nevada",
+        _plan(complex_state_plan, "Does it border a coastal state?"),
+    )
+    assert res_state is not None
+    assert res_state.map_highlight is None
