@@ -30,6 +30,7 @@ from db.models import (
     FlagdleGuess,
     FlagdleQuestion,
     FlagdleState,
+    MapQuizDailySession,
     Powiat,
     PowiatdleDay,
     PowiatdleGuess,
@@ -136,6 +137,7 @@ async def admin_fixture(monkeypatch):
         HeraldryDailySession.__table__,
         QuizRun.__table__,
         QuizSolve.__table__,
+        MapQuizDailySession.__table__,
     ]
     Base.metadata.create_all(engine, tables=tables)
 

@@ -146,7 +146,7 @@ class CountydleStateRepository:
         from game_logic import COUNTYDLE_CONFIG, calculate_points
 
         base = calculate_points(
-            config=COUNTYDLES_CONFIG if False else COUNTYDLE_CONFIG,
+            config=COUNTYDLE_CONFIG,
             won=state.won,
             questions_used=state.questions_asked,
             guesses_used=state.guesses_made,

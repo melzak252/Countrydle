@@ -14,6 +14,7 @@ from db.models.flagdle import FlagdleDay, FlagdleState
 from db.models.guest_participation import GuestParticipation
 from db.models.heraldry_daily import HeraldryDailySession
 from db.models.heraldry_quiz import QuizRun
+from db.models.map_quiz import MapQuizDailySession
 from db.models.powiatdle import PowiatdleDay, PowiatdleState
 from db.models.us_statedle import USStatedleDay, USStatedleState
 from db.models.user import User
@@ -48,7 +49,7 @@ def reporting_db():
         USStatedleDay, USStatedleState, PowiatdleDay, PowiatdleState,
         WojewodztwodleDay, WojewodztwodleState, FlagdleDay, FlagdleState,
         ContinentalDay, ContinentalState, GuestParticipation,
-        HeraldryDailySession, QuizRun,
+        HeraldryDailySession, QuizRun, MapQuizDailySession,
     )
     from admin.resolver import ADMIN_MODE_CONFIGS
     event_models = [model for cfg in ADMIN_MODE_CONFIGS.values() for model in (cfg.question_model, cfg.guess_model)]

@@ -51,7 +51,7 @@ from utils.question_rate_limit import enforce_question_attempt_limit
 
 router = APIRouter(prefix="/countydle")
 
-game_rules = GameRules(COUNTYDLES_CONFIG if False else COUNTYDLE_CONFIG)
+game_rules = GameRules(COUNTYDLE_CONFIG)
 
 
 def db_state_to_game_state(db_state) -> GameState:
@@ -72,7 +72,7 @@ def format_county_guesses(
             mode="countydle",
             guess_record=g,
             guess_number=idx + 1,
-            max_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+            max_guesses=COUNTYDLE_CONFIG.max_guesses,
             target_id=target_county_id,
             target_name=target_name,
         )
@@ -134,8 +134,8 @@ async def sync_guest_data(
         state = await CountydleStateRepository(session).create_state(
             user,
             day_state,
-            max_questions=COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
-            max_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+            max_questions=COUNTYDLE_CONFIG.max_questions,
+            max_guesses=COUNTYDLE_CONFIG.max_guesses,
         )
     state = await lock_question_state(session, CountydleState, user.id, day_state.id) or state
 
@@ -147,7 +147,7 @@ async def sync_guest_data(
 
     sync_state = getattr(sync_data, "state", None)
     if sync_state is not None and not is_valid_synced_game_state(
-        COUNTYDLES_CONFIG if False else COUNTYDLE_CONFIG,
+        COUNTYDLE_CONFIG,
         guesses_made=sync_state.guesses_made,
         remaining_guesses=sync_state.remaining_guesses,
         is_game_over=sync_state.is_game_over,
@@ -168,7 +168,7 @@ async def sync_guest_data(
         CountydleQuestion,
         state,
         sync_data.questions,
-        COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
+        COUNTYDLE_CONFIG.max_questions,
     )
 
     for guess in sync_data.guesses:
@@ -234,8 +234,8 @@ async def get_state(
                 id=0,
                 user_id=0,
                 day_id=day_state.id,
-                remaining_questions=COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
-                remaining_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+                remaining_questions=COUNTYDLE_CONFIG.max_questions,
+                remaining_guesses=COUNTYDLE_CONFIG.max_guesses,
                 questions_asked=0,
                 guesses_made=0,
                 is_game_over=False,
@@ -252,8 +252,8 @@ async def get_state(
         state = await CountydleStateRepository(session).create_state(
             user,
             day_state,
-            max_questions=COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
-            max_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+            max_questions=COUNTYDLE_CONFIG.max_questions,
+            max_guesses=COUNTYDLE_CONFIG.max_guesses,
         )
 
     state = await normalize_state_limits(state, session)
@@ -404,7 +404,7 @@ async def _do_ask_question(
             "countydle",
             day_state.id,
             question=True,
-            max_questions=COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
+            max_questions=COUNTYDLE_CONFIG.max_questions,
         )
     else:
         await consume_question(
@@ -412,8 +412,8 @@ async def _do_ask_question(
             CountydleState,
             user.id,
             day_state.id,
-            COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
-            COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+            COUNTYDLE_CONFIG.max_questions,
+            COUNTYDLE_CONFIG.max_guesses,
         )
     new_question = await CountydleQuestionRepository(session).create_question(question_create)
     result = EnglishCountyQuestionDisplay.model_validate(new_question)
@@ -505,7 +505,7 @@ async def make_guess(
             mode="countydle",
             guess_record=saved_guess,
             guess_number=guesses_count,
-            max_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+            max_guesses=COUNTYDLE_CONFIG.max_guesses,
             target_id=day_state.county_id,
             target_name=target_county.name if target_county else None,
         )
@@ -524,8 +524,8 @@ async def make_guess(
         state = await CountydleStateRepository(session).create_state(
             user,
             day_state,
-            max_questions=COUNTYDLES_CONFIG.max_questions if False else COUNTYDLE_CONFIG.max_questions,
-            max_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+            max_questions=COUNTYDLE_CONFIG.max_questions,
+            max_guesses=COUNTYDLE_CONFIG.max_guesses,
         )
 
     current_game_state = db_state_to_game_state(state)
@@ -563,7 +563,7 @@ async def make_guess(
         mode="countydle",
         guess_record=new_guess,
         guess_number=state.guesses_made,
-        max_guesses=COUNTYDLES_CONFIG.max_guesses if False else COUNTYDLE_CONFIG.max_guesses,
+        max_guesses=COUNTYDLE_CONFIG.max_guesses,
         target_id=day_state.county_id,
         target_name=target_county.name if target_county else None,
     )
