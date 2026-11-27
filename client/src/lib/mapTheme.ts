@@ -75,10 +75,10 @@ export const MAP_THEME = {
         fillOpacity: 0.84,
       },
       orange: {
-        fillColor: '#c79850',
+        fillColor: '#d96b43',
         weight: 1.8,
         opacity: 1,
-        color: '#835f2b',
+        color: '#9c3e20',
         fillOpacity: 0.84,
       },
       yellow: {
@@ -178,7 +178,7 @@ export function getCountryFeatureStyle(
       const base = MAP_THEME.countries.markers[autoMarker];
       return {
         ...base,
-        fillOpacity: autoMarker === 'orange' ? 0.45 : 0.68,
+        fillOpacity: autoMarker === 'orange' ? 0.72 : 0.74,
       };
     }
   }

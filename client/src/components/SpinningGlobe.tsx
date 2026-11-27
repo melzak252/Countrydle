@@ -512,10 +512,7 @@ export const SpinningGlobe: React.FC<SpinningGlobeProps> = ({
         if (totalDt > 0) {
           const pxPerMs = totalDx / totalDt;
           const rotScale = 0.0055;
-          let releaseVel = pxPerMs * 16.6 * rotScale;
-          // Clamp to smooth and enjoyable speed range [-0.035, 0.035]
-          releaseVel = Math.max(-0.035, Math.min(0.035, releaseVel));
-          state.velLon = releaseVel;
+          state.velLon = pxPerMs * 16.6 * rotScale;
         }
       }
     }

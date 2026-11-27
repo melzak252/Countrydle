@@ -1023,6 +1023,18 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     # Non-geographic trivia (currency) should NOT auto-color
     assert ans_curr.map_highlight is None
 
+    # Direct "Is it X?" -> No should rule out X (orange)
+    is_france_plan = scalar_plan("equals", "name", "France")
+    ans_is_france = execute_local_plan(is_france_plan, "Poland", "Is it France?")
+    assert ans_is_france is not None
+    assert ans_is_france.answer is False
+    assert ans_is_france.map_highlight == {
+        "supported": True,
+        "matched": [],
+        "eliminated": ["France"],
+        "note": None,
+    }
+
 
 @pytest.mark.parametrize("hemisphere, expected", [
     ("Northern", True),

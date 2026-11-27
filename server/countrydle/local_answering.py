@@ -2840,6 +2840,30 @@ def generate_plan_clarification(
             )
     return None
 
+def _extract_direct_name_targets(plan: dict) -> list[str] | None:
+    if not isinstance(plan, dict):
+        return None
+    op = plan.get("operator")
+    if op == "equals":
+        left = plan.get("left") or {}
+        right = plan.get("right") or {}
+        if isinstance(left, dict) and left.get("relation") == "name" and isinstance(right, dict) and right.get("value"):
+            return [str(right["value"])]
+        return None
+    if op in ("or", "any"):
+        args = plan.get("conditions") or plan.get("args") or []
+        if not args or not isinstance(args, list):
+            return None
+        names: list[str] = []
+        for child in args:
+            child_names = _extract_direct_name_targets(child)
+            if not child_names:
+                return None
+            names.extend(child_names)
+        return names
+    return None
+
+
 def compute_geographic_map_highlight(
     conn: sqlite3.Connection,
     plan: dict,
@@ -2847,9 +2871,27 @@ def compute_geographic_map_highlight(
 ) -> dict | None:
     """Evaluate a geographic AST plan across all countries to return matched/eliminated sets.
 
-    Only runs when every relation referenced by the plan is geographic/spatial so
-    non-geographic trivia (population, currency, language, etc.) is never auto-solved.
+    Only runs when every relation referenced by the plan is geographic/spatial (or a direct
+    "Is it X?" country-name check that answered False) so non-geographic trivia is never auto-solved.
     """
+    direct_names = _extract_direct_name_targets(plan)
+    if direct_names is not None:
+        if answer is not False:
+            return None
+        eliminated_direct: list[str] = []
+        for candidate in direct_names:
+            found = find_country(conn, candidate)
+            if found is not None and found["app_country_name"] not in eliminated_direct:
+                eliminated_direct.append(found["app_country_name"])
+        if not eliminated_direct:
+            return None
+        return {
+            "supported": True,
+            "matched": [],
+            "eliminated": eliminated_direct,
+            "note": None,
+        }
+
     relations = plan_relations(plan)
     if not relations or not relations.issubset(GEOGRAPHIC_AUTO_COLOR_RELATIONS):
         return None
