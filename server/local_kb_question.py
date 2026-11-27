@@ -1391,6 +1391,7 @@ def _clarification_subject(config: LocalModeConfig, entity: Any) -> str:
         "Powiatdle": "The county",
         "Wojewodztwodle": "The voivodeship",
         "USStatedle": "The US state",
+        "Countydle": "The county",
     }.get(config.mode_name, f"The {config.entity_label}")
 
 
@@ -1447,9 +1448,12 @@ def _build_local_kb_clarification(config: LocalModeConfig, plan: QuestionPlan, a
 
     if rel == "is_coastal":
         eff = (not answer) if _is_false_literal(val) else answer
-        if config.mode_name == "USStatedle":
+        if config.mode_name in {"USStatedle", "Countydle"}:
             return f"{subject} has coastal access." if eff else f"{subject} is landlocked."
         return f"{subject} has Baltic Sea coastline." if eff else f"{subject} does not have Baltic Sea coastline."
+    if rel == "is_metropolitan":
+        eff = (not answer) if _is_false_literal(val) else answer
+        return f"{subject} is a metropolitan county." if eff else f"{subject} is not a metropolitan county."
     if rel == "is_city_county":
         eff = (not answer) if _is_false_literal(val) else answer
         return f"{subject} is a city with county rights." if eff else f"{subject} is a land county."
@@ -1481,13 +1485,15 @@ def _build_local_kb_clarification(config: LocalModeConfig, plan: QuestionPlan, a
 
     if rel == "seat" and isinstance(val, str) and val.strip():
         return f"{subject}'s seat is {val}." if answer else f"{subject}'s seat is not {val}."
+    if rel == "county_town" and isinstance(val, str) and val.strip():
+        return f"{subject}'s county town is {val}." if answer else f"{subject}'s county town is not {val}."
     if rel in {"voivodeship", "region", "division", "macroregion", "historical_regions", "landform_regions", "regional_labels"} and isinstance(val, str) and val.strip():
         return f"{subject} is in {val}." if answer else f"{subject} is not in {val}."
     if rel == "historical_partitions" and isinstance(val, str) and val.strip():
         return f"{subject} was part of {val}." if answer else f"{subject} was not part of {val}."
     if rel.startswith("borders_"):
         if op in {"equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"} and (isinstance(val, (int, float)) or (isinstance(val, str) and val.isdigit())):
-            unit = {"borders_country": "countries", "borders_state": "states", "borders_voivodeship": "voivodeships", "borders_powiat": "counties"}.get(rel, "neighbors")
+            unit = {"borders_country": "countries", "borders_state": "states", "borders_voivodeship": "voivodeships", "borders_powiat": "counties", "borders_county": "counties"}.get(rel, "neighbors")
             cmp_phrase = {"equals": "", "greater_than": "more than ", "less_than": "fewer than ", "greater_than_or_equal": "at least ", "less_than_or_equal": "at most "}[op]
             return f"{subject} borders {cmp_phrase}{val} {unit}." if answer else f"{subject} does not border {cmp_phrase}{val} {unit}."
         if isinstance(val, str) and val.strip():
@@ -1501,7 +1507,7 @@ def _build_local_kb_clarification(config: LocalModeConfig, plan: QuestionPlan, a
             return f"{subject}'s license plates {verb} with \"{val}\"." if answer else f"{subject}'s license plates do not {verb} with \"{val}\"."
         if isinstance(val, str) and val.strip():
             return f"{subject} uses plate code {val}." if answer else f"{subject} does not use plate code {val}."
-    if rel in {"major_rivers", "major_roads", "national_parks", "lakes", "major_lakes", "unesco_sites", "health_resorts", "mountain_ranges"}:
+    if rel in {"major_rivers", "major_roads", "major_cities", "national_parks", "lakes", "major_lakes", "unesco_sites", "health_resorts", "mountain_ranges"}:
         if op == "exists":
             label = rel.replace("_", " ")
             return f"{subject} has {label}." if answer else f"{subject} does not have {label}."

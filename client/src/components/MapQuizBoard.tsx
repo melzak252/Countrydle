@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { GeoJSON, MapContainer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
-import { RotateCcw } from 'lucide-react';
 import type { MapQuizRoundAnswer, MapQuizScope } from '../types';
 import { useMapData } from '../hooks/useMapData';
 import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import { createMapRenderer } from '../lib/mapRenderer';
 import { trackMapZoom } from '../lib/mapView';
+import { bindRegionTooltip, restoreRegionTooltip } from '../lib/mapRegionTooltips';
+import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import { EARTH_PAN_BOUNDS, WORLD_SHEET_BOUNDS } from '../lib/mapBounds';
 import MapLoading from './MapLoading';
-import RegionalGeographyCredit from './RegionalGeographyCredit';
+import MapCartographicTexture from './MapCartographicTexture';
+import MapPaperEdge from './MapPaperEdge';
+import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
 
 type FeatureLayer = L.Path & { feature?: Feature };
 
@@ -27,7 +31,7 @@ const SCOPE_CONFIG: Record<MapQuizScope, ScopeMapConfig> = {
     geojsonUrl: '/london-boroughs.geojson',
     center: [51.505, -0.11],
     zoom: 10,
-    minZoom: 9,
+    minZoom: 8,
     maxZoom: 13,
   },
   england_counties: {
@@ -42,6 +46,8 @@ const SCOPE_CONFIG: Record<MapQuizScope, ScopeMapConfig> = {
 export interface MapQuizFeedback {
   targetId: number;
   clickedId: number;
+  targetName: string;
+  clickedName: string;
   correct: boolean;
 }
 
@@ -51,7 +57,9 @@ interface MapQuizBoardProps {
   feedback: MapQuizFeedback | null;
   isCompleted: boolean;
   disabled?: boolean;
+  resetSignal?: number;
   onSelectEntity: (entity: { id: number; name: string }) => void;
+  onRetryMap?: () => void;
   className?: string;
 }
 
@@ -72,7 +80,11 @@ function MapBoundsController({
     if (!geoJsonData) return;
     const bounds = L.geoJSON(geoJsonData).getBounds();
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [18, 18], animate: false });
+      map.fitBounds(bounds, {
+        paddingTopLeft: [24, 96],
+        paddingBottomRight: [24, 24],
+        animate: false,
+      });
     }
   }, [geoJsonData, map]);
 
@@ -136,87 +148,79 @@ export default function MapQuizBoard({
   feedback,
   isCompleted,
   disabled = false,
+  resetSignal = 0,
   onSelectEntity,
+  onRetryMap,
   className,
 }: MapQuizBoardProps) {
   const config = SCOPE_CONFIG[scope];
   const { data: geoJsonData, error: mapError, retry: retryMap } = useMapData(config.geojsonUrl);
+  const [map, setMap] = useState<L.Map | null>(null);
   const [renderer] = useState(createMapRenderer);
-  const [resetSignal, setResetSignal] = useState(0);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const hoverLayerRef = useRef<L.GeoJSON | null>(null);
   const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
 
-  const stateRef = useRef({ answers, feedback, isCompleted, disabled, onSelectEntity });
+  const visibleRegionNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const answer of answers) {
+      if (answer.target_name) names.add(answer.target_name);
+    }
+    if (feedback?.targetName) {
+      names.add(feedback.targetName);
+    }
+    return Array.from(names);
+  }, [answers, feedback]);
+
+  const hideUnlistedTooltips = !isCompleted;
+
+  const stateRef = useRef({
+    answers,
+    feedback,
+    isCompleted,
+    disabled,
+    onSelectEntity,
+    visibleRegionNames,
+    hideUnlistedTooltips,
+  });
   useLayoutEffect(() => {
-    stateRef.current = { answers, feedback, isCompleted, disabled, onSelectEntity };
-  }, [answers, feedback, isCompleted, disabled, onSelectEntity]);
+    stateRef.current = {
+      answers,
+      feedback,
+      isCompleted,
+      disabled,
+      onSelectEntity,
+      visibleRegionNames,
+      hideUnlistedTooltips,
+    };
+  }, [answers, feedback, isCompleted, disabled, onSelectEntity, visibleRegionNames, hideUnlistedTooltips]);
 
   const getStyleFromState = useCallback(
     (
       feature: Feature | undefined,
       currentAnswers: MapQuizRoundAnswer[],
       currentFeedback: MapQuizFeedback | null,
-      completed: boolean,
     ): PathOptions => {
       const entityId = Number(feature?.properties?.id);
-      if (!Number.isFinite(entityId)) return {};
+      if (!Number.isFinite(entityId)) return MAP_THEME.countries.available;
 
       if (currentFeedback) {
         if (entityId === currentFeedback.targetId) {
-          return currentFeedback.correct
-            ? {
-                fillColor: '#10b981',
-                color: '#6ee7b7',
-                weight: 2.5,
-                opacity: 1,
-                fillOpacity: 0.85,
-              }
-            : {
-                fillColor: '#f59e0b',
-                color: '#fde68a',
-                weight: 2.5,
-                opacity: 1,
-                fillOpacity: 0.85,
-              };
+          return MAP_THEME.countries.correct;
         }
         if (!currentFeedback.correct && entityId === currentFeedback.clickedId) {
-          return {
-            fillColor: '#dc2626',
-            color: '#fca5a5',
-            weight: 2.5,
-            opacity: 1,
-            fillOpacity: 0.8,
-          };
+          return MAP_THEME.countries.markers.red;
         }
       }
 
       const prevAnswer = currentAnswers.find((ans) => ans.target_id === entityId);
       if (prevAnswer) {
-        if (prevAnswer.correct) {
-          return {
-            fillColor: '#059669',
-            color: '#34d399',
-            weight: 1.5,
-            opacity: 1,
-            fillOpacity: completed ? 0.72 : 0.45,
-          };
-        }
-        return {
-          fillColor: '#b45309',
-          color: '#fbbf24',
-          weight: 1.5,
-          opacity: 1,
-          fillOpacity: completed ? 0.65 : 0.35,
-        };
+        return prevAnswer.correct
+          ? MAP_THEME.countries.markers.green
+          : MAP_THEME.countries.markers.red;
       }
 
-      return {
-        fillColor: '#27272a',
-        color: '#a1a1aa',
-        weight: 1.1,
-        opacity: 0.9,
-        fillOpacity: 0.82,
-      };
+      return MAP_THEME.countries.available;
     },
     [],
   );
@@ -227,11 +231,54 @@ export default function MapQuizBoard({
         feature,
         stateRef.current.answers,
         stateRef.current.feedback,
-        stateRef.current.isCompleted,
       ),
     [getStyleFromState],
   );
 
+  // Separate SVG hover overlay matching PowiatyMap and USStatesMap
+  useEffect(() => {
+    if (!map) return;
+    const hoverRenderer = L.svg({ padding: 0.5 });
+    const hoverLayer = L.geoJSON(undefined, {
+      renderer: hoverRenderer,
+      interactive: false,
+      style: {
+        weight: 2,
+        color: MAP_THEME.controls.strongInk,
+        fillColor: MAP_THEME.controls.ink,
+        fillOpacity: 0.12,
+      },
+    } as L.GeoJSONOptions & { renderer: L.Renderer }).addTo(map);
+    hoverLayerRef.current = hoverLayer;
+
+    const onMapMouseOut = () => {
+      hoverLayer.clearLayers();
+      if (activeHoverLayerRef.current) {
+        const prev = activeHoverLayerRef.current;
+        const name = prev.feature?.properties?.name;
+        if (typeof name === 'string') {
+          restoreRegionTooltip(
+            prev,
+            name,
+            currentVisibleNames(),
+          );
+        } else {
+          prev.closeTooltip?.();
+        }
+        activeHoverLayerRef.current = null;
+      }
+    };
+
+    const currentVisibleNames = () => stateRef.current.visibleRegionNames;
+    map.on('mouseout', onMapMouseOut);
+    return () => {
+      map.off('mouseout', onMapMouseOut);
+      hoverLayer.remove();
+      hoverLayerRef.current = null;
+    };
+  }, [map]);
+
+  // Update polygon styles on answer/feedback change
   useEffect(() => {
     const group = geoJsonLayerRef.current;
     if (!group) return;
@@ -240,24 +287,25 @@ export default function MapQuizBoard({
       const feature = layer.feature;
       if (!feature) return;
       const entityId = Number(feature.properties?.id);
-      const name = String(feature.properties?.name ?? '');
-      layer.setStyle(getStyleFromState(feature, answers, feedback, isCompleted));
+      layer.setStyle(getStyleFromState(feature, answers, feedback));
 
       if (feedback && (entityId === feedback.targetId || entityId === feedback.clickedId)) {
         layer.bringToFront();
       }
-
-      // Label-free during active rounds; show tooltips only once completed.
-      layer.unbindTooltip();
-      if (isCompleted && name) {
-        layer.bindTooltip(name, {
-          sticky: true,
-          direction: 'auto',
-          opacity: 0.95,
-        });
-      }
     });
-  }, [answers, feedback, isCompleted, geoJsonData, getStyleFromState]);
+  }, [answers, feedback, geoJsonData, getStyleFromState]);
+
+  // Update tooltips: label-free during active rounds, revealed on completed/answered polygons
+  useEffect(() => {
+    const group = geoJsonLayerRef.current;
+    if (!group) return;
+    group.eachLayer((item) => {
+      const layer = item as FeatureLayer;
+      const name = layer.feature?.properties?.name;
+      if (typeof name !== 'string' || !name) return;
+      bindRegionTooltip(layer, name, hideUnlistedTooltips, visibleRegionNames);
+    });
+  }, [geoJsonData, hideUnlistedTooltips, visibleRegionNames]);
 
   const onEachFeature = useCallback(
     (feature: Feature, layer: L.Layer) => {
@@ -273,102 +321,124 @@ export default function MapQuizBoard({
           }
         },
         mouseover: () => {
-          const l = layer as FeatureLayer;
-          if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
-            const prev = activeHoverLayerRef.current;
-            if (prev.feature) prev.setStyle(getStyle(prev.feature));
+          const activeLayer = layer as FeatureLayer;
+          if (activeHoverLayerRef.current && activeHoverLayerRef.current !== activeLayer) {
+            const previous = activeHoverLayerRef.current;
+            const previousName = previous.feature?.properties?.name;
+            if (typeof previousName === 'string') {
+              restoreRegionTooltip(previous, previousName, stateRef.current.visibleRegionNames);
+            } else {
+              previous.closeTooltip?.();
+            }
           }
-          activeHoverLayerRef.current = l;
-          if (!stateRef.current.disabled && !stateRef.current.isCompleted) {
-            l.setStyle({
-              weight: 2.2,
-              color: '#f4f4f5',
-              fillOpacity: 0.95,
-            });
-            l.bringToFront();
+          activeHoverLayerRef.current = activeLayer;
+          if (hoverLayerRef.current) {
+            hoverLayerRef.current.clearLayers();
+            hoverLayerRef.current.addData(feature);
           }
+          activeLayer.openTooltip?.();
         },
         mouseout: () => {
-          const l = layer as FeatureLayer;
-          l.setStyle(getStyle(feature));
-          if (activeHoverLayerRef.current === l) {
+          const activeLayer = layer as FeatureLayer;
+          if (name) {
+            restoreRegionTooltip(activeLayer, name, stateRef.current.visibleRegionNames);
+          } else {
+            activeLayer.closeTooltip?.();
+          }
+          if (activeHoverLayerRef.current === activeLayer) {
+            hoverLayerRef.current?.clearLayers();
             activeHoverLayerRef.current = null;
           }
         },
       });
+
+      if (name) {
+        bindRegionTooltip(
+          layer,
+          name,
+          stateRef.current.hideUnlistedTooltips,
+          stateRef.current.visibleRegionNames,
+        );
+      }
     },
-    [getStyle],
+    [],
   );
 
   if (!geoJsonData) {
     return (
-      <div className="space-y-2">
-        <MapLoading
-          className={className ?? 'border border-zinc-800 rounded-xl shadow-lg h-[420px] md:h-[560px]'}
-          error={mapError}
-          onRetry={retryMap}
-        />
-        <RegionalGeographyCredit scope={scope} />
-      </div>
+      <MapLoading
+        className={
+          className ??
+          'border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[400px] md:h-[600px]'
+        }
+        error={mapError}
+        onRetry={onRetryMap ?? retryMap}
+      />
     );
   }
 
   return (
-    <div className="space-y-2">
-      <div
-        className={`w-full overflow-hidden relative ${
-          className ?? 'bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg h-[420px] md:h-[560px]'
-        }`}
+    <div
+      className={`w-full overflow-hidden relative ${
+        className ??
+        'bg-[var(--map-ocean)] border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[400px] md:h-[600px]'
+      }`}
+      style={MAP_THEME_CSS_VARIABLES as CSSProperties}
+    >
+      <style>{`
+        .leaflet-interactive:focus {
+          outline: none;
+        }
+        .leaflet-interactive:focus-visible {
+          outline: 3px solid #f59e0b;
+          outline-offset: 2px;
+        }
+        .leaflet-tooltip {
+          pointer-events: none !important;
+        }
+        .leaflet-top, .leaflet-bottom, .leaflet-control {
+          z-index: 1050 !important;
+        }
+      `}</style>
+
+      <MapContainer
+        key={scope}
+        className="antique-map-surface"
+        center={config.center}
+        zoom={config.zoom}
+        minZoom={config.minZoom}
+        maxZoom={config.maxZoom}
+        maxBounds={EARTH_PAN_BOUNDS}
+        maxBoundsViscosity={0}
+        worldCopyJump={false}
+        style={{ height: '100%', width: '100%', background: MAP_THEME.map.backgroundColor }}
+        attributionControl={false}
+        wheelDebounceTime={40}
+        wheelPxPerZoomLevel={60}
+        zoomSnap={0}
+        zoomDelta={0.5}
+        doubleClickZoom={!L.Browser.mobile}
+        ref={setMap}
+        renderer={renderer}
       >
-        <style>{`
-          .leaflet-interactive:focus { outline: none; }
-          .leaflet-tooltip { pointer-events: none !important; }
-          .leaflet-top, .leaflet-bottom, .leaflet-control { z-index: 1050 !important; }
-        `}</style>
+        <ParchmentWorldBackdrop />
 
-        <div className="absolute top-3 right-3 z-[1050]">
-          <button
-            type="button"
-            onClick={() => setResetSignal((n) => n + 1)}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900/90 px-2.5 py-1.5 text-xs font-medium text-zinc-200 shadow hover:bg-zinc-800 transition-colors cursor-pointer"
-            title="Reset map view"
-            aria-label="Reset map view"
-          >
-            <RotateCcw size={14} />
-            <span className="hidden sm:inline">Reset</span>
-          </button>
-        </div>
+        <GeoJSON
+          key={`${scope}-layer`}
+          data={geoJsonData}
+          style={getStyle}
+          onEachFeature={onEachFeature}
+          ref={geoJsonLayerRef}
+        />
 
-        <MapContainer
-          key={scope}
-          center={config.center}
-          zoom={config.zoom}
-          minZoom={config.minZoom}
-          maxZoom={config.maxZoom}
-          style={{ height: '100%', width: '100%', background: '#14161a' }}
-          attributionControl={false}
-          wheelDebounceTime={40}
-          wheelPxPerZoomLevel={60}
-          zoomSnap={0.25}
-          zoomDelta={0.5}
-          doubleClickZoom={!L.Browser.mobile}
-          renderer={renderer}
-        >
-          <GeoJSON
-            key={`${scope}-layer`}
-            data={geoJsonData}
-            style={getStyle}
-            onEachFeature={onEachFeature}
-            ref={geoJsonLayerRef}
-          />
-          <MapBoundsController
-            geoJsonData={geoJsonData}
-            resetSignal={resetSignal}
-            highlightEntityId={feedback && !feedback.correct ? feedback.targetId : null}
-          />
-        </MapContainer>
-      </div>
-      <RegionalGeographyCredit scope={scope} />
+        <MapBoundsController
+          geoJsonData={geoJsonData}
+          resetSignal={resetSignal}
+          highlightEntityId={feedback && !feedback.correct ? feedback.targetId : null}
+        />
+        <MapCartographicTexture />
+        <MapPaperEdge bounds={WORLD_SHEET_BOUNDS} />
+      </MapContainer>
     </div>
   );
 }

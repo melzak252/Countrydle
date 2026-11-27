@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.answer_report import ReportableQuestion
 from schemas.countrydle import CountrydleStateSchema
+from schemas.fact_provenance import PublicFactEvidence
 from schemas.user import UserDisplay
 
 
@@ -74,7 +75,7 @@ class EnglishCountyQuestionCreate(BaseModel):
     required_info: Optional[str] = None
 
 
-class EnglishCountyQuestionDisplay(ReportableQuestion):
+class EnglishCountyQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     report_mode = "countydle"
 
     id: int
@@ -82,6 +83,7 @@ class EnglishCountyQuestionDisplay(ReportableQuestion):
     question: Optional[str]
     valid: bool
     answer: Optional[bool]
+    clarification: Optional[str] = None
     explanation: str
     asked_at: datetime
     user_id: Optional[int] = None

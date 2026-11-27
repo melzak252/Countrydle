@@ -47,6 +47,8 @@ export default function Layout() {
     '/americas',
     '/us-states',
     '/wojewodztwa',
+    '/countydle',
+    '/map-quiz',
     MAP_QUIZ_PATHS.powiaty,
     MAP_QUIZ_PATHS.us_states,
     '/map-border-hop',

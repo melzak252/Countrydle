@@ -1,5 +1,5 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties } from 'react';
+import { MapContainer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCountydleGameStore, type MapMarkerColor } from '../stores/gameStore';
 import L, { type PathOptions } from 'leaflet';
@@ -12,6 +12,11 @@ import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
 import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
 import { createMapRenderer } from '../lib/mapRenderer';
+import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import MapCartographicTexture from './MapCartographicTexture';
+import MapPaperEdge from './MapPaperEdge';
+import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
+import { EARTH_PAN_BOUNDS, WORLD_SHEET_BOUNDS } from '../lib/mapBounds';
 
 type FeatureLayer = L.Path & { feature?: Feature };
 
@@ -129,6 +134,7 @@ export function ControlledEnglandCountiesMap({
     isGameOver,
   } = interaction;
   const revealedName = isGameOver ? correctCountyName : undefined;
+  // Leaflet retains handlers from layer creation; refs keep them on the current props.
   const current = useRef({ interaction, revealedName, onCountyClick });
   useLayoutEffect(() => {
     current.current = { interaction, revealedName, onCountyClick };
@@ -149,65 +155,9 @@ export function ControlledEnglandCountiesMap({
       const isCorrect = currentCorrect ? name === currentCorrect.toUpperCase() : false;
       const marker = markings[name];
 
-      if (isCorrect) {
-        return {
-          fillColor: '#10b981',
-          weight: 2,
-          opacity: 1,
-          color: '#34d399',
-          fillOpacity: 0.85,
-        };
-      }
-
-      if (marker === 'green') {
-        return {
-          fillColor: '#059669',
-          weight: 1.5,
-          opacity: 0.8,
-          color: '#6ee7b7',
-          fillOpacity: 0.35,
-        };
-      }
-
-      if (marker === 'red') {
-        return {
-          fillColor: '#b91c1c',
-          weight: 2.5,
-          opacity: 1,
-          color: '#ef4444',
-          fillOpacity: 0.45,
-          dashArray: undefined,
-        };
-      }
-
-      if (marker === 'blue') {
-        return {
-          fillColor: '#1d4ed8',
-          weight: 2,
-          opacity: 1,
-          color: '#60a5fa',
-          fillOpacity: 0.6,
-        };
-      }
-
-      if (marker === 'orange') {
-        return {
-          fillColor: '#c2410c',
-          weight: 2,
-          opacity: 1,
-          color: '#fb923c',
-          fillOpacity: 0.6,
-        };
-      }
-
-      return {
-        fillColor: '#242424',
-        weight: 1,
-        opacity: 1,
-        color: 'white',
-        fillOpacity: 0.7,
-        dashArray: undefined,
-      };
+      if (isCorrect) return MAP_THEME.countries.correct;
+      if (marker) return MAP_THEME.countries.markers[marker];
+      return MAP_THEME.countries.available;
     },
     []
   );
@@ -222,23 +172,36 @@ export function ControlledEnglandCountiesMap({
     [getStyleFromState]
   );
 
+  const hoverLayerRef = useRef<L.GeoJSON | null>(null);
   useEffect(() => {
     if (!map) return;
+    const hoverRenderer = L.svg({ padding: 0.5 });
+    const hoverLayer = L.geoJSON(undefined, {
+      renderer: hoverRenderer,
+      interactive: false,
+      style: {
+        weight: 2,
+        color: MAP_THEME.controls.strongInk,
+        fillColor: MAP_THEME.controls.ink,
+        fillOpacity: 0.12,
+      },
+    } as L.GeoJSONOptions & { renderer: L.Renderer }).addTo(map);
+    hoverLayerRef.current = hoverLayer;
+
     const onMapMouseOut = () => {
+      hoverLayer.clearLayers();
       if (activeHoverLayerRef.current) {
-        const prev = activeHoverLayerRef.current;
-        prev.closeTooltip?.();
-        if (prev.feature) {
-          prev.setStyle?.(getStyle(prev.feature));
-        }
+        activeHoverLayerRef.current.closeTooltip?.();
         activeHoverLayerRef.current = null;
       }
     };
     map.on('mouseout', onMapMouseOut);
     return () => {
       map.off('mouseout', onMapMouseOut);
+      hoverLayer.remove();
+      hoverLayerRef.current = null;
     };
-  }, [map, getStyle]);
+  }, [map]);
 
   useEffect(() => {
     if (geoJsonLayerRef.current) {
@@ -276,26 +239,20 @@ export function ControlledEnglandCountiesMap({
       mouseover: () => {
         const l = layer as FeatureLayer;
         if (activeHoverLayerRef.current && activeHoverLayerRef.current !== l) {
-          const prev = activeHoverLayerRef.current;
-          prev.closeTooltip?.();
-          if (prev.feature) {
-            prev.setStyle?.(getStyle(prev.feature));
-          }
+          activeHoverLayerRef.current.closeTooltip?.();
         }
         activeHoverLayerRef.current = l;
-
-        l.setStyle({
-          weight: 2,
-          fillOpacity: 0.85,
-        });
+        if (hoverLayerRef.current) {
+          hoverLayerRef.current.clearLayers();
+          hoverLayerRef.current.addData(feature);
+        }
         l.openTooltip?.();
       },
       mouseout: () => {
         const l = layer as FeatureLayer;
-        const style = getStyle(feature);
-        l.setStyle(style);
         l.closeTooltip?.();
         if (activeHoverLayerRef.current === l) {
+          hoverLayerRef.current?.clearLayers();
           activeHoverLayerRef.current = null;
         }
       },
@@ -329,7 +286,7 @@ export function ControlledEnglandCountiesMap({
       <MapLoading
         className={
           className ??
-          'border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'
+          'border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[400px] md:h-[600px]'
         }
         error={mapError}
         onRetry={retryMap}
@@ -342,8 +299,9 @@ export function ControlledEnglandCountiesMap({
       className={`w-full overflow-hidden relative ${
         className
           ? className
-          : 'bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg h-[400px] md:h-[600px]'
+          : 'bg-[var(--map-ocean)] border border-[var(--map-frame-border)] rounded-xl shadow-lg h-[400px] md:h-[600px]'
       }`}
+      style={MAP_THEME_CSS_VARIABLES as CSSProperties}
     >
       <style>{`
         .leaflet-interactive:focus {
@@ -379,11 +337,15 @@ export function ControlledEnglandCountiesMap({
       )}
 
       <MapContainer
+        className="antique-map-surface"
         center={ENGLAND_CENTER}
         zoom={ENGLAND_ZOOM}
-        style={{ height: '100%', width: '100%', background: '#242424' }}
+        style={{ height: '100%', width: '100%', background: MAP_THEME.map.backgroundColor }}
         minZoom={5}
         maxZoom={11}
+        maxBounds={EARTH_PAN_BOUNDS}
+        maxBoundsViscosity={0}
+        worldCopyJump={false}
         attributionControl={false}
         wheelDebounceTime={40}
         wheelPxPerZoomLevel={60}
@@ -393,13 +355,7 @@ export function ControlledEnglandCountiesMap({
         ref={setMap}
         renderer={renderer}
       >
-        <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-          attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-          keepBuffer={2}
-          updateInterval={200}
-          updateWhenZooming={false}
-        />
+        <ParchmentWorldBackdrop />
 
         <GeoJSON
           data={geoJsonData}
@@ -413,6 +369,8 @@ export function ControlledEnglandCountiesMap({
           geoJsonData={geoJsonData}
           isGameOver={isGameOver}
         />
+        <MapCartographicTexture />
+        <MapPaperEdge bounds={WORLD_SHEET_BOUNDS} />
       </MapContainer>
     </div>
   );

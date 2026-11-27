@@ -23,6 +23,7 @@ from db.repositories.question_accounting import (
     unresolved_question,
 )
 from game_logic import COUNTYDLE_CONFIG, GameRules, GameState, is_valid_synced_game_state
+from local_kb_question import _build_local_kb_clarification
 from schemas.countrydle import LeaderboardEntry
 from schemas.countydle import (
     CountydleEndStateResponse,
@@ -60,6 +61,35 @@ def db_state_to_game_state(db_state) -> GameState:
         guesses_used=db_state.guesses_made,
         is_won=db_state.won,
         is_lost=db_state.is_game_over and not db_state.won,
+    )
+
+
+def _player_question_display(
+    question, *, terminal: bool = False, clarification: str | None = None
+) -> EnglishCountyQuestionDisplay:
+    # Serialize scalar fields only and redact factual explanations until game over.
+    payload = {
+        field: getattr(question, field, None)
+        for field in (
+            "id",
+            "original_question",
+            "question",
+            "valid",
+            "answer",
+            "clarification",
+            "user_id",
+            "day_id",
+            "asked_at",
+            "explanation",
+        )
+    }
+    if payload.get("asked_at") is None:
+        payload["asked_at"] = datetime.now()
+    if clarification is not None:
+        payload["clarification"] = clarification
+    return EnglishCountyQuestionDisplay.model_validate(
+        payload,
+        context={"terminal": terminal},
     )
 
 
@@ -270,12 +300,12 @@ async def get_state(
             guesses=format_county_guesses(
                 guesses, day_state.county_id, county_rec.name if county_rec else None
             ),
-            questions=questions,
+            questions=[_player_question_display(q, terminal=True) for q in questions],
             county=county_rec,
         )
 
     questions_display = [
-        EnglishCountyQuestionDisplay.model_validate(question) for question in questions
+        _player_question_display(question, terminal=False) for question in questions
     ]
 
     return CountydleStateResponse(
@@ -416,7 +446,17 @@ async def _do_ask_question(
             COUNTYDLE_CONFIG.max_guesses,
         )
     new_question = await CountydleQuestionRepository(session).create_question(question_create)
-    result = EnglishCountyQuestionDisplay.model_validate(new_question)
+    clarification = None
+    if (
+        planned_question is not None
+        and getattr(planned_question, "valid", False)
+        and getattr(planned_question, "supported", False)
+        and isinstance(question_create.answer, bool)
+    ):
+        clarification = _build_local_kb_clarification(
+            cutils.LOCAL_CONFIG, planned_question, question_create.answer
+        )
+    result = _player_question_display(new_question, terminal=False, clarification=clarification)
     await session.commit()
     return result
 

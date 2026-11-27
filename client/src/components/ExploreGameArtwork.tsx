@@ -5,8 +5,8 @@ import { useMapData } from '../hooks/useMapData';
 import type { CatalogGeography } from '../lib/gameCatalog';
 
 type ExploreGame = { name: string; path: string; geography: CatalogGeography; artworkUrl?: string; artworkFallbackUrl?: string; artworkUrls?: readonly string[] };
-type MapUrl = '/countries_50m.geojson' | '/europe.geojson' | '/asia.geojson' | '/africa.geojson' | '/americas.geojson' | '/powiaty-min.geojson' | '/wojewodztwa.geojson' | '/us-states.geojson';
-type MapFrameId = 'worldwide' | 'europe' | 'asia' | 'africa' | 'americas' | 'united-states' | 'poland';
+type MapUrl = '/countries_50m.geojson' | '/europe.geojson' | '/asia.geojson' | '/africa.geojson' | '/americas.geojson' | '/powiaty-min.geojson' | '/wojewodztwa.geojson' | '/us-states.geojson' | '/england-counties.geojson' | '/london-boroughs.geojson';
+type MapFrameId = 'worldwide' | 'europe' | 'asia' | 'africa' | 'americas' | 'united-states' | 'poland' | 'england' | 'london';
 type MapBounds = readonly [west: number, south: number, east: number, north: number];
 type MapFrame = { id: MapFrameId; bounds?: MapBounds; longitudeScale: number };
 type MapViewportId = 'full' | 'duel-top' | 'duel-bottom';
@@ -23,6 +23,8 @@ const mapFrames: Record<MapFrameId, MapFrame> = {
   americas: { id: 'americas', bounds: [-180, -58, -30, 85], longitudeScale: longitudeScaleAt(13.5) },
   'united-states': { id: 'united-states', bounds: [-190, 17, -65, 73], longitudeScale: longitudeScaleAt(45) },
   poland: { id: 'poland', longitudeScale: longitudeScaleAt(52) },
+  england: { id: 'england', longitudeScale: longitudeScaleAt(52.85) },
+  london: { id: 'london', longitudeScale: longitudeScaleAt(51.5) },
 };
 // Landscape duel panels use the equatorial parallel to keep world outlines wide.
 const duelMapFrame: MapFrame = { ...mapFrames.worldwide, longitudeScale: longitudeScaleAt(0) };
@@ -49,6 +51,12 @@ function mapUrlForGame(game: ExploreGame): MapUrl {
   if (route === MAP_QUIZ_PATHS.us_states || route === '/map-border-hop' && query.includes('mode=us_states') || game.geography === 'united-states') {
     return '/us-states.geojson';
   }
+  if (route === '/map-quiz/london-boroughs' || route.includes('london-boroughs') || route.includes('london_boroughs') || query.includes('mode=london_boroughs')) {
+    return '/london-boroughs.geojson';
+  }
+  if (route === '/countydle' || route === '/map-quiz/england-counties' || route.includes('england-counties') || route.includes('england_counties') || query.includes('mode=england_counties') || game.geography === 'uk') {
+    return '/england-counties.geojson';
+  }
   if (route === MAP_QUIZ_PATHS.powiaty || route.includes('powiat') || query.includes('mode=powiaty') || game.name.toLowerCase().includes('county')) {
     return '/powiaty-min.geojson';
   }
@@ -57,7 +65,6 @@ function mapUrlForGame(game: ExploreGame): MapUrl {
   if (route === '/asia') return '/asia.geojson';
   if (route === '/africa') return '/africa.geojson';
   if (route === '/americas') return '/americas.geojson';
-  if (game.geography === 'uk') return '/europe.geojson';
   return '/countries_50m.geojson';
 }
 
@@ -68,6 +75,8 @@ function mapFrameForGame(game: ExploreGame): MapFrame {
     case '/africa.geojson': return mapFrames.africa;
     case '/americas.geojson': return mapFrames.americas;
     case '/us-states.geojson': return mapFrames['united-states'];
+    case '/england-counties.geojson': return mapFrames.england;
+    case '/london-boroughs.geojson': return mapFrames.london;
     case '/powiaty-min.geojson':
     case '/wojewodztwa.geojson': return mapFrames.poland;
     default: return mapFrames.worldwide;
