@@ -611,3 +611,81 @@ async def test_powiat_and_us_state_map_quiz_stats(stats_db):
         assert g_data["player"]["is_guest"] is True
         assert g_data["player"]["score"] == 5
         assert g_data["player"]["won"] is False
+
+
+@pytest.mark.anyio
+async def test_in_progress_sessions_excluded_from_leaderboards_and_distributions(stats_db):
+    db, _ = stats_db
+    now = datetime(2026, 11, 20, 12, 0, tzinfo=timezone.utc)
+
+    # User 1 finished Countrydle; User 2 asked 2 questions but has NOT finished (is_game_over=False)
+    db.add_all(
+        [
+            CountrydleState(
+                user_id=1, day_id=1, questions_asked=3, guesses_made=1, is_game_over=True, won=True, points=1700
+            ),
+            CountrydleState(
+                user_id=2, day_id=1, questions_asked=2, guesses_made=0, is_game_over=False, won=False, points=0
+            ),
+            # Heraldry daily: User 1 finished; User 2 made 1 guess but has NOT finished (completed_at=None)
+            HeraldryDailySession(
+                id=str(uuid4()),
+                date=TODAY,
+                symbol_mode="coat",
+                entity_scope="county",
+                user_id=1,
+                target_id=10,
+                target_name="Powiat A",
+                guesses=[{"id": 10, "name": "Powiat A"}],
+                started_at=now - timedelta(seconds=20),
+                completed_at=now,
+                won=True,
+                points=2100,
+            ),
+            HeraldryDailySession(
+                id=str(uuid4()),
+                date=TODAY,
+                symbol_mode="coat",
+                entity_scope="county",
+                user_id=2,
+                target_id=10,
+                target_name="Powiat A",
+                guesses=[{"id": 99, "name": "Powiat X"}],
+                started_at=now - timedelta(seconds=10),
+                completed_at=None,
+                won=False,
+                points=0,
+            ),
+        ]
+    )
+    db.commit()
+
+    alice = SimpleNamespace(id=1, username="alice")
+    app.dependency_overrides[get_current_or_guest_user] = lambda: alice
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Countrydle daily + monthly leaderboards must only include alice (not in-progress bob)
+        res_c = await client.get(f"/stats/countrydle/summary?date={TODAY.isoformat()}&period=daily")
+        assert res_c.status_code == 200
+        c_data = res_c.json()
+        assert c_data["played_today"] == 2
+        assert c_data["completed_today"] == 1
+        assert [e["username"] for e in c_data["leaderboard"]["entries"]] == ["alice"]
+        assert c_data["leaderboard"]["total_ranked"] == 1
+
+        res_c_mo = await client.get(f"/stats/countrydle/leaderboard?date={TODAY.isoformat()}&period=monthly")
+        assert res_c_mo.status_code == 200
+        assert [e["username"] for e in res_c_mo.json()["entries"]] == ["alice"]
+
+        # Heraldry daily + monthly leaderboards must only include alice (not in-progress bob)
+        res_h = await client.get(f"/stats/heraldry/summary?date={TODAY.isoformat()}&period=daily")
+        assert res_h.status_code == 200
+        h_data = res_h.json()
+        assert h_data["played_today"] == 2
+        assert h_data["completed_today"] == 1
+        assert [e["username"] for e in h_data["leaderboard"]["entries"]] == ["alice"]
+        assert h_data["leaderboard"]["total_ranked"] == 1
+
+        res_h_mo = await client.get(f"/stats/heraldry/leaderboard?date={TODAY.isoformat()}&period=monthly")
+        assert res_h_mo.status_code == 200
+        assert [e["username"] for e in res_h_mo.json()["entries"]] == ["alice"]

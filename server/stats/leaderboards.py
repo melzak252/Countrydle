@@ -32,6 +32,7 @@ async def _rank_qa_or_guess_daily(
     day_model = spec.day_model
     filters = [
         state_model.user_id.is_not(None),
+        state_model.is_game_over.is_(True),
         or_(state_model.questions_asked > 0, state_model.guesses_made > 0),
         *_non_test_user_filters(),
     ]
@@ -119,6 +120,7 @@ async def _rank_heraldry_daily(
 ) -> List[DashboardLeaderboardEntry]:
     filters = [
         HeraldryDailySession.user_id.is_not(None),
+        HeraldryDailySession.completed_at.is_not(None),
         HeraldryDailySession.symbol_mode == spec.symbol_mode,
         HeraldryDailySession.entity_scope == spec.entity_scope,
         *_non_test_user_filters(),
