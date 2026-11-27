@@ -1,5 +1,5 @@
 {
-  "version": "2.1.1",
-  "title": "Fix Direct Links for New UK & Poland Game Modes",
-  "body": "- Fixed 404 Page Not Found errors when opening or pasting direct links to `/quiz-tablic`, `/license-plates-quiz`, `/countydle`, `/map-quiz/london-boroughs`, and `/map-quiz/england-counties`."
+  "version": "2.1.2",
+  "title": "Bot Auto-Coloring Across All Modes, Completed-Only Stats & New Admin Console",
+  "body": "- Extended automatic bot map coloring to Continental modes (Europe, Asia, Africa, Americas), US Statedle, Wojewodztwodle, Powiatdle, and English Countydle with a Hide/Show bot coloring toggle in the map toolbar.\n- Expanded local KB auto-coloring to cover most objective factual relations (population, area, currency, language, organizations, rivers, highways, flag colors/symbols, license plates, lakes, national parks, UNESCO sites) while keeping subjective/fuzzy fields excluded.\n- Excluded in-progress and abandoned games from daily player counts, results summaries, and admin views so only completed games are counted.\n- Rebuilt the Admin Dashboard from scratch with 5 clean sections, category-grouped daily mode views, and a fixed searchable Facts Editor that clearly displays all list and multi-value facts."
 }
