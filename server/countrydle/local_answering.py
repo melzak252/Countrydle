@@ -86,6 +86,8 @@ POLISH_COUNTRY_ALIASES = {
     "albania": "Albania", "albanii": "Albania", "albanię": "Albania", "albanią": "Albania",
     "macedonia": "North Macedonia", "macedonii": "North Macedonia", "macedonię": "North Macedonia", "macedonią": "North Macedonia", "macedonia północna": "North Macedonia", "macedonii północnej": "North Macedonia",
     "kosowo": "Kosovo", "kosowa": "Kosovo", "kosowem": "Kosovo",
+    "tajwan": "Taiwan", "tajwanu": "Taiwan", "tajwanem": "Taiwan", "tajwanie": "Taiwan",
+    "republika chinska": "Taiwan", "republic of china": "Taiwan",
     "serbia": "Serbia", "serbii": "Serbia", "serbię": "Serbia", "serbią": "Serbia",
     "czarnogóra": "Montenegro", "czarnogóry": "Montenegro", "czarnogórę": "Montenegro", "czarnogórą": "Montenegro", "czarnogora": "Montenegro",
     "bośnia": "Bosnia and Herzegovina", "bośni": "Bosnia and Herzegovina", "bośnię": "Bosnia and Herzegovina", "bośnią": "Bosnia and Herzegovina", "bośnia i hercegowina": "Bosnia and Herzegovina", "bośni i hercegowiny": "Bosnia and Herzegovina", "bosnia": "Bosnia and Herzegovina", "bosnia i hercegowina": "Bosnia and Herzegovina",

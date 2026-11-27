@@ -173,6 +173,7 @@ COUNTRY_CCA2_MAP = {
     "Switzerland": "ch",
     "Syria": "sy",
     "S\u00e3o Tom\u00e9 and Pr\u00edncipe": "st",
+    "Taiwan": "tw",
     "Tajikistan": "tj",
     "Tanzania": "tz",
     "Thailand": "th",
