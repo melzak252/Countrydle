@@ -1,5 +1,5 @@
 {
-  "version": "2.0.20",
-  "title": "Added Taiwan to Countrydle & Asia Mode",
-  "body": "- Added Taiwan (Republic of China) as a playable country across Countrydle, Asiadle, Flagdle, and Friend Duels.\n- Populated Taiwan's full local fact profile (capital Taipei, official languages Chinese/Mandarin, New Taiwan dollar, East Asia, Pacific Ocean/East & South China Sea access, island status, flag colors/sun symbol, coordinates, and hemispheres) and full RAG context fragments."
+  "version": "2.1.0",
+  "title": "UK & Poland Modes, Daily Map Quizzes, and Redesigned Result Dashboard",
+  "body": "- Added English Countydle (48 ceremonial counties of England) with an interactive antique map and deterministic local fact answering.\n- Added daily 10-round Map Quizzes for London Boroughs (32) and Historic Counties of England (48), and upgraded US State Map Quiz and Map Border Hop (Powiaty & US States) into server-authoritative daily challenges.\n- Added the Poland License Plates Quiz (fill-the-map challenge across all 380 Polish counties).\n- Redesigned the end-of-game Result Dashboard with distribution histograms, Today & Monthly leaderboards, Q&A recaps, and Next Daily navigation, excluding in-progress sessions from leaderboards.\n- Moved static RAG context fragments to a compact SQLite store and refactored backend gameplay, local KB, and stats services into focused modules."
 }
