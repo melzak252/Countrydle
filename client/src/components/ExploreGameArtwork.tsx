@@ -57,10 +57,10 @@ function mapUrlForGame(game: ExploreGame): MapUrl {
   if (route === '/countydle' || route === '/map-quiz/england-counties' || route.includes('england-counties') || route.includes('england_counties') || query.includes('mode=england_counties') || game.geography === 'uk') {
     return '/england-counties.geojson';
   }
-  if (route === MAP_QUIZ_PATHS.powiaty || route.includes('powiat') || query.includes('mode=powiaty') || game.name.toLowerCase().includes('county')) {
+  if (route === '/wojewodztwa' || route.includes('voivodeship')) return '/wojewodztwa.geojson';
+  if (route === MAP_QUIZ_PATHS.powiaty || route === '/quiz-tablic' || route === '/license-plates-quiz' || route.includes('powiat') || query.includes('mode=powiaty') || game.name.toLowerCase().includes('county') || game.geography === 'poland') {
     return '/powiaty-min.geojson';
   }
-  if (route === '/wojewodztwa' || route.includes('voivodeship')) return '/wojewodztwa.geojson';
   if (route === '/europe') return '/europe.geojson';
   if (route === '/asia') return '/asia.geojson';
   if (route === '/africa') return '/africa.geojson';
@@ -358,9 +358,26 @@ export default function ExploreGameArtwork({ game, featured = false }: { game: E
       </span>
     );
   }
+  const route = game.path.split('?')[0].toLowerCase();
+  const isPlatesArtwork = route === '/quiz-tablic' || route === '/license-plates-quiz';
+
   return (
-    <span data-game-artwork-frame className={frameClass}>
+    <span data-game-artwork-frame className={`${frameClass} relative`}>
       <MapArtwork url={mapUrlForGame(game)} frame={mapFrameForGame(game)} variant={mapArtworkVariantForGame(game)} />
+      {isPlatesArtwork && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-1.5 inset-x-1.5 flex h-5 items-stretch overflow-hidden rounded-[2px] border border-[#1a1a1a] bg-[#fcfbf7] shadow-[0_2px_5px_rgba(30,25,18,0.35)]"
+        >
+          <span className="flex w-3.5 shrink-0 flex-col items-center justify-center bg-[#003399] text-[6px] font-bold leading-none text-white">
+            <span className="mb-[1px] h-1.5 w-1.5 rounded-full border border-dotted border-[#ffcc00]" />
+            <span>PL</span>
+          </span>
+          <span className="flex flex-1 items-center justify-center font-mono text-[9px] font-extrabold tracking-[0.12em] text-[#141414]">
+            WA 380
+          </span>
+        </span>
+      )}
     </span>
   );
 }

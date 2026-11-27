@@ -1,5 +1,5 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties } from 'react';
+import { MapContainer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { type PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
@@ -7,8 +7,13 @@ import { RotateCcw } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
 import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
+import MapCartographicTexture from './MapCartographicTexture';
+import MapPaperEdge from './MapPaperEdge';
+import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
 import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
 import { createMapRenderer } from '../lib/mapRenderer';
+import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import { POLAND_PAN_BOUNDS, WORLD_SHEET_BOUNDS } from '../lib/mapBounds';
 import { normalizePowiatKey, type PlatesQuizPowiat } from '../lib/platesQuiz';
 
 type FeatureLayer = L.Path & { feature?: Feature };
@@ -142,50 +147,38 @@ export default function PowiatPlatesMap({
       const powiat = getPowiatForFeature(feature, byName);
       if (!powiat) {
         return {
-          fillColor: '#242424',
-          weight: 0.9,
-          opacity: 1,
-          color: '#52525b',
-          fillOpacity: 0.78,
+          ...MAP_THEME.countries.available,
+          weight: 0.6,
         };
       }
 
       if (recent.has(powiat.id)) {
         return {
-          fillColor: '#34d399',
-          weight: 2.5,
-          opacity: 1,
-          color: '#d1fae5',
-          fillOpacity: 0.92,
+          ...MAP_THEME.countries.correct,
+          weight: 1.4,
+          fillOpacity: 0.9,
         };
       }
 
       if (solved.has(powiat.id)) {
         return {
-          fillColor: '#10b981',
-          weight: 1.2,
-          opacity: 1,
-          color: '#6ee7b7',
-          fillOpacity: 0.72,
+          ...MAP_THEME.countries.correct,
+          weight: 0.65,
+          fillOpacity: 0.76,
         };
       }
 
       if (givenUp) {
         return {
-          fillColor: '#e11d48',
-          weight: 1.2,
-          opacity: 1,
-          color: '#fda4af',
-          fillOpacity: 0.58,
+          ...MAP_THEME.countries.markers.red,
+          weight: 0.65,
+          fillOpacity: 0.55,
         };
       }
 
       return {
-        fillColor: '#242424',
-        weight: 0.9,
-        opacity: 1,
-        color: '#52525b',
-        fillOpacity: 0.78,
+        ...MAP_THEME.countries.available,
+        weight: 0.6,
       };
     },
     [getPowiatForFeature],
@@ -350,18 +343,22 @@ export default function PowiatPlatesMap({
           }}
           title="Reset map view"
           aria-label="Reset map view"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/15 bg-obsidian-950/90 text-sand-200 shadow-md hover:border-emerald-400/50 hover:text-emerald-300 transition-colors cursor-pointer"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-app-border bg-app-surface/95 text-app-text shadow-md hover:border-app-accent hover:text-app-accent transition-colors cursor-pointer"
         >
           <RotateCcw size={15} />
         </button>
       </div>
 
       <MapContainer
+        className="antique-map-surface"
         center={POLAND_CENTER}
         zoom={POLAND_ZOOM}
-        style={{ height: '100%', width: '100%', background: '#18181b' }}
+        style={{ height: '100%', width: '100%', background: MAP_THEME.map.backgroundColor, ...(MAP_THEME_CSS_VARIABLES as CSSProperties) }}
         minZoom={5}
         maxZoom={11}
+        maxBounds={POLAND_PAN_BOUNDS}
+        maxBoundsViscosity={0}
+        worldCopyJump={false}
         attributionControl={false}
         wheelDebounceTime={40}
         wheelPxPerZoomLevel={60}
@@ -371,13 +368,7 @@ export default function PowiatPlatesMap({
         ref={setMap}
         renderer={renderer}
       >
-        <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-          attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-          keepBuffer={2}
-          updateInterval={200}
-          updateWhenZooming={false}
-        />
+        <ParchmentWorldBackdrop />
 
         <GeoJSON
           data={geoJsonData}
@@ -387,6 +378,8 @@ export default function PowiatPlatesMap({
         />
 
         <PlatesMapController geoJsonData={geoJsonData} focusedPowiatName={focusedPowiatName} />
+        <MapCartographicTexture />
+        <MapPaperEdge bounds={WORLD_SHEET_BOUNDS} />
       </MapContainer>
     </div>
   );

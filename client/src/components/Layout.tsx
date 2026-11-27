@@ -52,6 +52,8 @@ export default function Layout() {
     MAP_QUIZ_PATHS.powiaty,
     MAP_QUIZ_PATHS.us_states,
     '/map-border-hop',
+    '/quiz-tablic',
+    '/license-plates-quiz',
     '/powiaty',
     '/friends',
     '/duel',
