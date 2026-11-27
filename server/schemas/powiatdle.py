@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from schemas.user import UserDisplay
 from schemas.answer_report import ReportableQuestion
+from schemas.countrydle import MapHighlight
 from schemas.countrydle import CountrydleStateSchema
 
 
@@ -69,6 +70,7 @@ class PowiatQuestionCreate(BaseModel):
     context: Optional[str]
     intent: Optional[str] = None
     required_info: Optional[str] = None
+    map_highlight: Optional[MapHighlight] = Field(default=None, exclude=True)
 
 
 class PowiatQuestionDisplay(ReportableQuestion):
@@ -88,6 +90,7 @@ class PowiatQuestionDisplay(ReportableQuestion):
     user: Optional[UserDisplay] = None
     powiat: Optional[PowiatDisplay] = None
     auto_guess: Optional[PowiatGuessDisplay] = None
+    map_highlight: Optional[MapHighlight] = None
 
     model_config = ConfigDict(from_attributes=True)
 

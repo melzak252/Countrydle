@@ -8,6 +8,7 @@ from countrydle.answering.db import find_country
 from countrydle.answering.evaluator import evaluate_plan_node, plan_relations
 
 GEOGRAPHIC_AUTO_COLOR_RELATIONS = frozenset({
+    # Geographic & spatial
     "continent",
     "geographic_area",
     "region",
@@ -26,6 +27,18 @@ GEOGRAPHIC_AUTO_COLOR_RELATIONS = frozenset({
     "max_latitude",
     "min_longitude",
     "max_longitude",
+    # Reliable objective local KB facts (excluding fuzzy/subjective fields like government_type, dominant_religion)
+    "population",
+    "area",
+    "currency",
+    "official_language",
+    "membership",
+    "major_rivers",
+    "driving_side",
+    "flag_color",
+    "flag_symbol",
+    "historical_union",
+    "capital",
 })
 
 

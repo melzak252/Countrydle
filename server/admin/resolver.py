@@ -24,6 +24,8 @@ from db.models.answer_report import AnswerReport
 from db.models.continental import ContinentCode, ContinentalDay, ContinentalGuess, ContinentalQuestion, ContinentalState
 from db.models.country import Country
 from db.models.countrydle import CountrydleDay, CountrydleState
+from db.models.countydle import CountydleDay, CountydleGuess, CountydleQuestion, CountydleState
+from db.models.english_county import EnglishCounty
 from db.models.guess import CountrydleGuess
 from db.models.flagdle import FlagdleDay, FlagdleGuess, FlagdleQuestion, FlagdleState
 from db.models.guest_participation import GuestParticipation
@@ -106,6 +108,21 @@ ADMIN_MODE_CONFIGS: dict[str, AdminModeConfig] = {
         target_name_col=USState.name,
         target_subtitle_col=USState.code,
         default_subtitle="US State",
+        max_questions=8,
+        max_guesses=3,
+    ),
+    "countydle": AdminModeConfig(
+        mode_key="countydle",
+        display_name="English Counties",
+        question_model=CountydleQuestion,
+        guess_model=CountydleGuess,
+        day_model=CountydleDay,
+        state_model=CountydleState,
+        target_model=EnglishCounty,
+        target_fk_col=CountydleDay.county_id,
+        target_name_col=EnglishCounty.name,
+        target_subtitle_col=None,
+        default_subtitle="English County",
         max_questions=8,
         max_guesses=3,
     ),
@@ -571,7 +588,7 @@ async def query_admin_game_sessions(
                 gp_status = (
                     "won"
                     if gp.won
-                    else ("lost" if (gp.guesses_made >= cfg.max_guesses or (cfg.max_questions is not None and gp.questions_asked >= cfg.max_questions)) else "in_progress")
+                    else ("lost" if gp.guesses_made >= cfg.max_guesses else "in_progress")
                 )
                 candidates.append({
                     "is_guest": True,
@@ -725,7 +742,10 @@ async def query_admin_game_sessions(
             )
         )
 
-    if status_filter:
+    # Always exclude in-progress/abandoned sessions from admin sessions view
+    all_sessions = [s for s in all_sessions if s.status in ("won", "lost")]
+
+    if status_filter and status_filter.lower().strip() not in ("all", "completed"):
         stat_filter_lower = status_filter.lower().strip()
         all_sessions = [s for s in all_sessions if s.status == stat_filter_lower]
 

@@ -31,6 +31,7 @@ from .db import (
 )
 from .evaluator import collect_relations, evaluate, execute_plan
 from .explanations import generate_mode_explanation
+from .map_highlights import GEOGRAPHIC_AUTO_COLOR_RELATIONS, compute_local_kb_map_highlight
 from .models import (
     APP_DIR,
     ROOT_DIR,

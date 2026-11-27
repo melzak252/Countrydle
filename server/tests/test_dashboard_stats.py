@@ -668,7 +668,7 @@ async def test_in_progress_sessions_excluded_from_leaderboards_and_distributions
         res_c = await client.get(f"/stats/countrydle/summary?date={TODAY.isoformat()}&period=daily")
         assert res_c.status_code == 200
         c_data = res_c.json()
-        assert c_data["played_today"] == 2
+        assert c_data["played_today"] == 1
         assert c_data["completed_today"] == 1
         assert [e["username"] for e in c_data["leaderboard"]["entries"]] == ["alice"]
         assert c_data["leaderboard"]["total_ranked"] == 1
@@ -681,7 +681,7 @@ async def test_in_progress_sessions_excluded_from_leaderboards_and_distributions
         res_h = await client.get(f"/stats/heraldry/summary?date={TODAY.isoformat()}&period=daily")
         assert res_h.status_code == 200
         h_data = res_h.json()
-        assert h_data["played_today"] == 2
+        assert h_data["played_today"] == 1
         assert h_data["completed_today"] == 1
         assert [e["username"] for e in h_data["leaderboard"]["entries"]] == ["alice"]
         assert h_data["leaderboard"]["total_ranked"] == 1

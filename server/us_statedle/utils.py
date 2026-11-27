@@ -160,6 +160,7 @@ async def analyze_and_answer_locally(
         context="local_kb:" + ",".join(answer.relations),
         intent=plan.explanation,
         required_info=", ".join(answer.relations),
+        map_highlight=answer.map_highlight,
     ), plan
 
 

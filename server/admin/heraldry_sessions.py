@@ -65,10 +65,12 @@ def _scope(mode, day):
     if not is_quiz:
         return HeraldryDailySession, [HeraldryDailySession.date == day,
                                      HeraldryDailySession.symbol_mode == symbol_mode,
-                                     HeraldryDailySession.entity_scope == entity_scope]
+                                     HeraldryDailySession.entity_scope == entity_scope,
+                                     HeraldryDailySession.completed_at.is_not(None)]
     start = datetime.combine(day, time.min, tzinfo=timezone.utc)
     return QuizRun, [QuizRun.started_at >= start, QuizRun.started_at < start + timedelta(days=1),
-                     QuizRun.symbol_mode == symbol_mode, QuizRun.entity_scope == entity_scope]
+                     QuizRun.symbol_mode == symbol_mode, QuizRun.entity_scope == entity_scope,
+                     QuizRun.status.in_(("completed", "given_up"))]
 
 
 def _status_filter(mode, status):

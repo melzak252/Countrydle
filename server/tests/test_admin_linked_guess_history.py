@@ -46,15 +46,16 @@ async def test_linked_guest_events_belong_to_account_without_duplicate_guest(lin
 
     db, session = linked_history_db
     db.add_all([
-        ContinentalState(user_id=11, day_id=10, guesses_made=1, is_game_over=False, won=False),
+        ContinentalState(user_id=11, day_id=10, guesses_made=1, is_game_over=True, won=True),
+        ContinentalState(user_id=22, day_id=10, guesses_made=2, is_game_over=True, won=True),
         GuestParticipation(guest_id="linked-one", mode="continental:europe", day_id=10, user_id=11),
         GuestParticipation(guest_id="linked-two", mode="continental:europe", day_id=10, user_id=22),
         ContinentalQuestion(user_id=None, guest_id="linked-one", day_id=10, original_question="one q", question="one q", valid=True, answer=True),
-        ContinentalGuess(user_id=None, guest_id="linked-one", day_id=10, guess="one guess", country_id=1, answer=False),
+        ContinentalGuess(user_id=None, guest_id="linked-one", day_id=10, guess="one guess", country_id=1, answer=True),
         ContinentalGuess(user_id=None, guest_id="linked-two", day_id=10, guess="two guess", country_id=1, answer=False),
-        ContinentalGuess(user_id=None, guest_id=None, day_id=10, guess="historical anonymous", country_id=1, answer=False),
+        ContinentalGuess(user_id=None, guest_id=None, day_id=10, guess="historical anonymous", country_id=1, answer=True),
         # An event explicitly assigned to another account is never reassigned through a guest link.
-        ContinentalGuess(user_id=22, guest_id="linked-one", day_id=10, guess="account two", country_id=1, answer=False),
+        ContinentalGuess(user_id=22, guest_id="linked-one", day_id=10, guess="account two", country_id=1, answer=True),
     ])
     db.flush()
 

@@ -19,74 +19,12 @@ async def _fetch_linked_guests(session):
 
 
 def _build_identity_rows_query(start=None, end=None, include_anonymous=True):
-    """Build a single UNION ALL + GROUP BY query without correlated NOT EXISTS subplans."""
+    """Return completed game identities only (excludes in-progress/abandoned sessions)."""
     active = _participants(start, end)
-    branches = [
-        select(active.c.date, active.c.mode, active.c.day_id, active.c.identity)
-        .where(active.c.identity.is_not(None))
-    ]
-    for key, cfg in ADMIN_MODE_CONFIGS.items():
-        day = cfg.day_model
-        question = cfg.question_model
-        guess = cfg.guess_model
-        mode = literal('continental:') + cast(day.continent, String) if key == 'continental' else literal(key)
-        day_id = cast(day.id, String)
-        filters = []
-        if start is not None:
-            filters.append(day.date >= start)
-        if end is not None:
-            filters.append(day.date <= end)
-
-        linked_identity = literal('user:') + cast(GuestParticipation.user_id, String)
-        branches.append(
-            select(day.date, mode.label('mode'), day_id.label('day_id'), linked_identity.label('identity'))
-            .select_from(GuestParticipation)
-            .join(day, day.id == GuestParticipation.day_id)
-            .where(
-                GuestParticipation.mode == mode,
-                GuestParticipation.user_id.is_not(None),
-                or_(GuestParticipation.questions_asked > 0, GuestParticipation.guesses_made > 0),
-                *filters,
-            )
-        )
-
-        guest_identity = (
-            literal('guest:') + question.guest_id
-            if hasattr(question, 'guest_id') else cast(null(), String)
-        )
-        question_identity = case(
-            (question.user_id.is_not(None), literal('user:') + cast(question.user_id, String)),
-            else_=guest_identity,
-        )
-        branches.append(
-            select(day.date, mode.label('mode'), day_id.label('day_id'), question_identity.label('identity'))
-            .select_from(question)
-            .join(day, day.id == question.day_id)
-            .where(question.valid.is_(True), question.answer.is_not(None), question_identity.is_not(None), *filters)
-        )
-
-        guest_guess_identity = (
-            literal('guest:') + guess.guest_id
-            if hasattr(guess, 'guest_id') else cast(null(), String)
-        )
-        guess_identity = case(
-            (guess.user_id.is_not(None), literal('user:') + cast(guess.user_id, String)),
-            else_=guest_guess_identity,
-        )
-        guess_filters = [guess.answer.is_not(None)]
-        if not include_anonymous:
-            guess_filters.append(guess_identity.is_not(None))
-        branches.append(
-            select(day.date, mode.label('mode'), day_id.label('day_id'), guess_identity.label('identity'))
-            .select_from(guess)
-            .join(day, day.id == guess.day_id)
-            .where(*guess_filters, *filters)
-        )
-
-    rows = union_all(*branches).subquery()
-    return select(rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity).group_by(
-        rows.c.date, rows.c.mode, rows.c.day_id, rows.c.identity
-    )
+    stmt = select(active.c.date, active.c.mode, active.c.day_id, active.c.identity)
+    if not include_anonymous:
+        stmt = stmt.where(active.c.identity.is_not(None))
+    return stmt.group_by(active.c.date, active.c.mode, active.c.day_id, active.c.identity)
 
 
 def _summarize_rows(rows, include_breakdown=True):

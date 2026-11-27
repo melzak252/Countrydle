@@ -140,6 +140,9 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
     syncGuestData,
     dailyDate,
     entityMarkings,
+    autoEntityMarkings,
+    showAutoMarkings,
+    toggleAutoMarkings,
     activeMarkerColor,
     setActiveMarkerColor,
     handleEntityMapClick,
@@ -257,6 +260,9 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
           geoJsonUrl={meta.geoJsonUrl}
           interaction={{
             entityMarkings,
+            autoEntityMarkings,
+            showAutoMarkings,
+            onToggleAutoMarkings: toggleAutoMarkings,
             activeMarkerColor,
             setActiveMarkerColor,
             handleEntityMapClick,

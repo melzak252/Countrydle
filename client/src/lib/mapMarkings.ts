@@ -13,8 +13,13 @@ export interface MapInteractionState {
   isGameOver: boolean;
 }
 
-function normalizeAutoKey(name: string): string {
-  return name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+export function normalizeAutoKey(name: string): string {
+  return name
+    .trim()
+    .replace(/[łŁ]/g, 'L')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
 }
 
 export function computeAutoEntityMarkings(questions: readonly Question[]): Record<string, MapMarkerColor> {

@@ -1021,8 +1021,15 @@ def test_informative_explanations_for_currency_language_area_coords_capital():
     assert "Senegal" in ans_south.map_highlight["matched"]
     assert "Poland" in ans_south.map_highlight["eliminated"]
 
-    # Non-geographic trivia (currency) should NOT auto-color
-    assert ans_curr.map_highlight is None
+    # Objective factual relation (currency) now auto-colors
+    assert ans_curr.map_highlight is not None
+    assert ans_curr.map_highlight["supported"] is True
+
+    # Fuzzy/subjective relation (government_type) should NOT auto-color
+    gov_plan = scalar_plan("equals", "government_type", "Republic")
+    ans_gov = execute_local_plan(gov_plan, "Poland", "Is it a republic?")
+    assert ans_gov is not None
+    assert ans_gov.map_highlight is None
 
     # Direct "Is it X?" -> No should rule out X (orange)
     is_france_plan = scalar_plan("equals", "name", "France")

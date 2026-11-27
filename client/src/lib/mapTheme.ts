@@ -185,3 +185,38 @@ export function getCountryFeatureStyle(
 
   return MAP_THEME.countries.available;
 }
+
+export function getRegionFeatureStyle(
+  rawName: string | undefined,
+  markings: Record<string, MapMarkerColor>,
+  currentCorrect?: string,
+  autoMarkings?: Record<string, MapMarkerColor>,
+  showAutoMarkings = true,
+): PathOptions {
+  if (!rawName) return {};
+  const upper = rawName.toUpperCase();
+  const isCorrect = currentCorrect ? upper === currentCorrect.toUpperCase() : false;
+  if (isCorrect) return MAP_THEME.countries.correct;
+
+  const manualMarker = markings[upper];
+  if (manualMarker) return MAP_THEME.countries.markers[manualMarker];
+
+  if (showAutoMarkings && autoMarkings) {
+    const normKey = rawName
+      .trim()
+      .replace(/[łŁ]/g, 'L')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+    const autoMarker = autoMarkings[normKey] ?? autoMarkings[upper];
+    if (autoMarker) {
+      const base = MAP_THEME.countries.markers[autoMarker];
+      return {
+        ...base,
+        fillOpacity: autoMarker === 'orange' ? 0.72 : 0.74,
+      };
+    }
+  }
+
+  return MAP_THEME.countries.available;
+}

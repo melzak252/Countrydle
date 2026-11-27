@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field
 from db.models.continental import ContinentCode
 from schemas.country import CountryDisplay
-from schemas.countrydle import LeaderboardEntry
+from schemas.countrydle import LeaderboardEntry, MapHighlight
 from schemas.user import UserDisplay
 from schemas.answer_report import ReportableQuestion
 from schemas.fact_provenance import PublicFactEvidence
@@ -70,6 +70,7 @@ class ContinentalQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     context: Optional[str] = Field(default=None, exclude=True)
     asked_at: datetime
     auto_guess: Optional[ContinentalGuessDisplay] = None
+    map_highlight: Optional[MapHighlight] = None
 
     model_config = ConfigDict(from_attributes=True)
 

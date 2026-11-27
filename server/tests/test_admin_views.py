@@ -25,6 +25,11 @@ from db.models import (
     CountrydleGuess,
     CountrydleQuestion,
     CountrydleState,
+    CountydleDay,
+    CountydleGuess,
+    CountydleQuestion,
+    CountydleState,
+    EnglishCounty,
     GuestParticipation,
     FlagdleDay,
     FlagdleGuess,
@@ -106,6 +111,11 @@ async def admin_fixture(monkeypatch):
         CountrydleQuestion.__table__,
         CountrydleGuess.__table__,
         CountrydleState.__table__,
+        EnglishCounty.__table__,
+        CountydleDay.__table__,
+        CountydleQuestion.__table__,
+        CountydleGuess.__table__,
+        CountydleState.__table__,
         Powiat.__table__,
         PowiatdleDay.__table__,
         PowiatdleQuestion.__table__,
@@ -360,15 +370,15 @@ async def test_heraldry_admin_sessions_separate_symbol_modes_and_dates(admin_fix
     session = admin_fixture.session
     session.add_all([
         HeraldryDailySession(id="coat", date=day, guest_id="coat", symbol_mode="coat",
-                             target_id=1, target_name="Coat target", guesses=[], started_at=start, won=False),
+                             target_id=1, target_name="Coat target", guesses=[], started_at=start, completed_at=start, won=False),
         HeraldryDailySession(id="flag", date=day, guest_id="flag", symbol_mode="flag",
-                             target_id=1, target_name="Flag target", guesses=[], started_at=start, won=False),
+                             target_id=1, target_name="Flag target", guesses=[], started_at=start, completed_at=start, won=False),
         HeraldryDailySession(id="other", date=day - timedelta(days=1), guest_id="other", symbol_mode="flag",
-                             target_id=1, target_name="Old target", guesses=[], started_at=start, won=False),
-        QuizRun(id="coat-quiz", guest_id="coat", symbol_mode="coat", started_at=start, status="started"),
-        QuizRun(id="flag-quiz", guest_id="flag", symbol_mode="flag", started_at=start, status="started"),
+                             target_id=1, target_name="Old target", guesses=[], started_at=start, completed_at=start, won=False),
+        QuizRun(id="coat-quiz", guest_id="coat", symbol_mode="coat", started_at=start, finished_at=start, status="completed"),
+        QuizRun(id="flag-quiz", guest_id="flag", symbol_mode="flag", started_at=start, finished_at=start, status="completed"),
         QuizRun(id="old-quiz", guest_id="other", symbol_mode="flag",
-                started_at=start - timedelta(days=1), status="started"),
+                started_at=start - timedelta(days=1), finished_at=start - timedelta(days=1), status="completed"),
     ])
     await session.flush()
 
@@ -403,23 +413,23 @@ async def test_regional_admin_sessions_and_stats_keep_scopes_and_symbols_separat
     session.add_all([
         HeraldryDailySession(id="county", date=day, guest_id="county", entity_scope="county",
                              symbol_mode="coat", target_id=1, target_name="County", guesses=[],
-                             started_at=start, won=False),
+                             started_at=start, completed_at=start, won=False),
         HeraldryDailySession(id="london-coat", date=day, guest_id="london-coat", entity_scope="london_boroughs",
                              symbol_mode="coat", target_id=1, target_name="London", guesses=[],
-                             started_at=start, won=False),
+                             started_at=start, completed_at=start, won=False),
         HeraldryDailySession(id="london-flag", date=day, guest_id="london-flag", entity_scope="london_boroughs",
                              symbol_mode="flag", target_id=1, target_name="London flag", guesses=[],
-                             started_at=start, won=False),
+                             started_at=start, completed_at=start, won=False),
         HeraldryDailySession(id="england-coat", date=day, guest_id="england", entity_scope="england_counties",
                              symbol_mode="coat", target_id=1, target_name="England", guesses=[],
-                             started_at=start, won=False),
+                             started_at=start, completed_at=start, won=False),
         HeraldryDailySession(id="voivodeship-flag", date=day, guest_id="voivodeship", entity_scope="voivodeships",
                              symbol_mode="flag", target_id=1, target_name="Voivodeship", guesses=[],
-                             started_at=start, won=False),
+                             started_at=start, completed_at=start, won=False),
         QuizRun(id="london-quiz", guest_id="quiz", entity_scope="london_boroughs",
-                symbol_mode="flag", started_at=start, status="started"),
+                symbol_mode="flag", started_at=start, finished_at=start, status="given_up"),
         QuizRun(id="county-quiz", guest_id="county-quiz", entity_scope="county",
-                symbol_mode="flag", started_at=start, status="started"),
+                symbol_mode="flag", started_at=start, finished_at=start, status="given_up"),
     ])
     await session.flush()
     session.add(QuizSolve(run_id="london-quiz", powiat_id=1, elapsed_seconds=12))
@@ -611,14 +621,13 @@ async def test_admin_game_sessions_timeline(admin_fixture):
     assert res.status_code == 200
     data = res.json()
 
-    assert data["total"] == 2  # 1 registered user session + 1 guest session
+    # Only completed sessions are returned (the in-progress guest session is excluded)
+    assert data["total"] == 1
     sessions = data["items"]
-    # Sessions are ordered by completion / latest activity descending (guest at 10:04 before user at 10:03)
-    assert sessions[0]["is_guest"] is True
-    assert sessions[1]["is_guest"] is False
+    assert sessions[0]["is_guest"] is False
 
     # Find registered user session
-    user_sess = next(s for s in sessions if not s["is_guest"])
+    user_sess = sessions[0]
     assert user_sess["username"] == "player_bob"
     assert user_sess["target_name"] == "Poland"
     assert user_sess["status"] == "won"
@@ -643,23 +652,17 @@ async def test_admin_game_sessions_timeline(admin_fixture):
     assert tl[2]["guess"] == "Poland"
     assert tl[2]["correct"] is True
 
-    # Guest session check
-    guest_sess = next(s for s in sessions if s["is_guest"])
-    assert guest_sess["is_guest"] is True
-    assert "guest-uuid" in guest_sess["session_id"]
-    assert len(guest_sess["timeline"]) == 2
-
 
 async def test_admin_game_sessions_stats(admin_fixture):
-    """Verify deduction strategy stats aggregate questions and guesses for the daily target."""
+    """Verify deduction strategy stats aggregate completed players for the daily target."""
     client = admin_fixture.client
     res = await client.get(f"/admin/game-sessions/stats?mode=countrydle&date={admin_fixture.test_date.isoformat()}")
     assert res.status_code == 200
     stats = res.json()
 
     assert stats["target_name"] == "Poland"
-    assert stats["total_players"] == 2
-    assert stats["win_rate_pct"] == 50.0  # 1 winner out of 2 players
+    assert stats["total_players"] == 1
+    assert stats["win_rate_pct"] == 100.0  # 1 completed winner (in-progress guest excluded)
 
     # Top questions
     assert len(stats["top_questions"]) >= 1
@@ -697,7 +700,7 @@ async def test_overview_sessions_and_exact_mode_drilldowns(admin_fixture, monkey
         ))
         db.add(ContinentalState(
             user_id=admin_fixture.user.id, day_id=day_id, questions_asked=1,
-            guesses_made=0, won=False,
+            guesses_made=3, is_game_over=True, won=False,
         ))
         db.add(ContinentalQuestion(
             day_id=day_id, guest_id="regional-browser", original_question=f"Question {key}",
@@ -708,15 +711,17 @@ async def test_overview_sessions_and_exact_mode_drilldowns(admin_fixture, monkey
         guest_id="regional-browser", mode="flagdle", day_id=1,
         questions_asked=0, guesses_made=1, won=True,
     ))
-    db.add(FlagdleState(user_id=admin_fixture.user.id, day_id=1, guesses_made=1))
-    db.add(WojewodztwodleState(user_id=admin_fixture.user.id, day_id=1, questions_asked=1))
+    db.add(FlagdleState(user_id=admin_fixture.user.id, day_id=1, guesses_made=6, is_game_over=True, won=False))
+    db.add(WojewodztwodleState(user_id=admin_fixture.user.id, day_id=1, questions_asked=1, guesses_made=2, is_game_over=True, won=False))
+    db.add(USStatedleState(user_id=admin_fixture.user.id, day_id=1, questions_asked=1, guesses_made=1, is_game_over=True, won=True))
+    db.add(PowiatdleState(user_id=admin_fixture.user.id, day_id=1, questions_asked=1, guesses_made=1, is_game_over=True, won=True))
     db.commit()
 
     response = await admin_fixture.client.get("/admin/overview")
     assert response.status_code == 200
     overview = response.json()
     assert overview["date"] == today.isoformat()
-    assert overview["today"]["total_players"] == 3
+    assert overview["today"]["total_players"] == 2
     modes = {entry["mode_key"]: entry for entry in overview["modes_today"]}
     assert overview["today"]["total_sessions"] == sum(mode["sessions"] for mode in modes.values())
     country_sessions = await admin_fixture.client.get("/admin/game-sessions", params={
@@ -756,13 +761,13 @@ async def test_overview_sessions_and_exact_mode_drilldowns(admin_fixture, monkey
         assert stats.json()["target_name"] == modes[key]["target_name"]
 
 
-async def test_overview_and_drilldown_include_saved_recovered_and_unidentified_sessions(admin_fixture, monkeypatch):
+async def test_overview_and_drilldown_exclude_in_progress_and_abandoned_sessions(admin_fixture, monkeypatch):
     db = admin_fixture.session.session
     monkeypatch.setattr(admin, 'get_today_date', lambda: admin_fixture.test_date)
-    db.add(User(id=3, username='recovered', email='recovered@example.com'))
-    db.add(CountrydleState(user_id=3, day_id=1, questions_asked=0, guesses_made=0))
+    db.add(User(id=3, username='abandoned', email='abandoned@example.com'))
+    db.add(CountrydleState(user_id=3, day_id=1, questions_asked=3, guesses_made=0, is_game_over=False, won=False))
     db.add_all([
-        CountrydleQuestion(user_id=3, day_id=1, original_question='Recovered question',
+        CountrydleQuestion(user_id=3, day_id=1, original_question='Abandoned question',
                             valid=True, answer=True, explanation='Yes'),
         CountrydleQuestion(user_id=None, guest_id=None, day_id=1, original_question='Legacy question',
                             valid=True, answer=False, explanation='No'),
@@ -776,11 +781,9 @@ async def test_overview_and_drilldown_include_saved_recovered_and_unidentified_s
     assert response.status_code == 200
     data = response.json()
     assert summary['sessions'] == data['total']
-    recovered = [item for item in data['items'] if item['user_id'] == 3]
-    assert len(recovered) == 1 and recovered[0]['timeline'][0]['original_question'] == 'Recovered question'
-    assert sum(item['username'] == 'Guest (unidentified)' for item in data['items']) == 1
-    known = [item for item in data['items'] if item['username'] != 'Guest (unidentified)']
-    assert summary['players'] == len(known)
+    # Abandoned user (3 questions, 0 guesses, is_game_over=False) must NOT appear
+    assert not any(item['user_id'] == 3 for item in data['items'])
+    assert all(item['status'] in ('won', 'lost') for item in data['items'])
     stats = await admin_fixture.client.get('/admin/game-sessions/stats', params={
         'mode': 'countrydle', 'date': admin_fixture.test_date.isoformat(),
     })

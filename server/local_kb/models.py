@@ -105,6 +105,7 @@ class LocalAnswer:
     explanation: str
     relations: list[str]
     clarification: str | None = None
+    map_highlight: dict[str, Any] | None = None
 
 
 def load_dotenv() -> None:

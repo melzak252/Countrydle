@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import AnswerReportsPanel from '../components/AnswerReportsPanel';
@@ -18,111 +17,137 @@ import AdminSuggestionsTab from '../components/admin/AdminSuggestionsTab';
 import AdminBlogTab from '../components/admin/AdminBlogTab';
 import type { QuestionTestBridgeTarget } from '../components/QuestionTestsPanel';
 import type { AnswerReport, AnswerReportMode, LiveFeedData } from '../types';
-import { 
-  adminService, 
-  gameService, 
-  powiatService, 
-  usStateService, 
+import {
+  adminService,
+  gameService,
+  powiatService,
+  usStateService,
   wojewodztwoService,
-  type CountryFactsResponse 
+  type CountryFactsResponse,
 } from '../services/api';
-import { 
-  Users, 
-  HelpCircle, 
-  Calendar, 
-  Database, 
-  Activity, 
-  ShieldCheck, 
-  FileText, 
-  CheckSquare,
-  Cpu,
-  MessageSquare,
+import {
+  Activity,
+  Database,
   Play,
-  DollarSign
+  ShieldCheck,
+  Sliders,
 } from 'lucide-react';
 
-type AdminSection = 'gameplay' | 'qa' | 'system';
-type AdminTab = 'overview' | 'sessions' | 'liveFeed' | 'users' | 'suggestions' | 'blogs' | 'questions' | 'facts' | 'reports' | 'templateDivergences' | 'friendAnswers' | 'questionTests' | 'cache' | 'aiCosts';
+type AdminTab =
+  | 'overview'
+  | 'sessions'
+  | 'liveFeed'
+  | 'questions'
+  | 'facts'
+  | 'reports'
+  | 'questionTests'
+  | 'blogs'
+  | 'templateDivergences'
+  | 'friendAnswers'
+  | 'suggestions'
+  | 'users'
+  | 'aiCosts'
+  | 'cache';
 
-interface TabDefinition {
+type AdminGroupId = 'overview' | 'games' | 'facts' | 'quality' | 'system';
+
+interface SubTab {
   id: AdminTab;
-  labelKey: string;
-  descriptionKey: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  section: AdminSection;
+  label: string;
+  description: string;
 }
 
-const TABS: TabDefinition[] = [
-  { id: 'overview', labelKey: 'adminNavigation.pages.overview.label', descriptionKey: 'adminNavigation.pages.overview.description', icon: Activity, section: 'gameplay' },
-  { id: 'sessions', labelKey: 'adminNavigation.pages.sessions.label', descriptionKey: 'adminNavigation.pages.sessions.description', icon: Play, section: 'gameplay' },
-  { id: 'liveFeed', labelKey: 'adminNavigation.pages.liveFeed.label', descriptionKey: 'adminNavigation.pages.liveFeed.description', icon: Calendar, section: 'gameplay' },
-  { id: 'users', labelKey: 'adminNavigation.pages.users.label', descriptionKey: 'adminNavigation.pages.users.description', icon: Users, section: 'gameplay' },
-  { id: 'suggestions', labelKey: 'adminNavigation.pages.suggestions.label', descriptionKey: 'adminNavigation.pages.suggestions.description', icon: MessageSquare, section: 'gameplay' },
-  { id: 'friendAnswers', labelKey: 'adminNavigation.pages.friendAnswers.label', descriptionKey: 'adminNavigation.pages.friendAnswers.description', icon: HelpCircle, section: 'gameplay' },
-  { id: 'blogs', labelKey: 'Blogs', descriptionKey: 'Edit daily recaps, record source evidence, and explicitly review or revoke publication review.', icon: FileText, section: 'qa' },
-  { id: 'questions', labelKey: 'adminNavigation.pages.questions.label', descriptionKey: 'adminNavigation.pages.questions.description', icon: HelpCircle, section: 'qa' },
-  { id: 'reports', labelKey: 'adminNavigation.pages.reports.label', descriptionKey: 'adminNavigation.pages.reports.description', icon: FileText, section: 'qa' },
-  { id: 'questionTests', labelKey: 'adminNavigation.pages.questionTests.label', descriptionKey: 'adminNavigation.pages.questionTests.description', icon: CheckSquare, section: 'qa' },
-  { id: 'templateDivergences', labelKey: 'adminNavigation.pages.templateDivergences.label', descriptionKey: 'adminNavigation.pages.templateDivergences.description', icon: ShieldCheck, section: 'qa' },
-  { id: 'facts', labelKey: 'adminNavigation.pages.facts.label', descriptionKey: 'adminNavigation.pages.facts.description', icon: Database, section: 'qa' },
-  { id: 'cache', labelKey: 'adminNavigation.pages.cache.label', descriptionKey: 'adminNavigation.pages.cache.description', icon: Cpu, section: 'system' },
-  { id: 'aiCosts', labelKey: 'adminCosts.tab', descriptionKey: 'adminNavigation.pages.aiCosts.description', icon: DollarSign, section: 'system' },
-];
-const SECTIONS: AdminSection[] = ['gameplay', 'qa', 'system'];
-const ADMIN_LIGHT_THEME = [
-  '!text-app-text',
-  '[&_.admin-panel]:!rounded-sm [&_.admin-panel]:!border-app-border [&_.admin-panel]:!bg-app-surface [&_.admin-panel]:!text-app-text',
-  '[&_.admin-toolbar]:!rounded-sm [&_.admin-toolbar]:!border-app-border [&_.admin-toolbar]:!bg-app-surface [&_.admin-toolbar]:!text-app-text',
-  '[&_.admin-control]:!rounded-sm [&_.admin-control]:!border-app-border [&_.admin-control]:!bg-app-surface [&_.admin-control]:!text-app-text',
-  '[&_.admin-button]:!rounded-sm [&_.admin-button]:!border-app-border [&_.admin-button]:!bg-app-surface [&_.admin-button]:!text-app-text',
-  '[&_.admin-button:hover:not(:disabled)]:!bg-app-surface-muted',
-  '[&_.admin-button.admin-button-primary]:!border-emerald-300 [&_.admin-button.admin-button-primary]:!bg-emerald-50 [&_.admin-button.admin-button-primary]:!text-emerald-900',
-  '[&_.admin-button.admin-button-danger]:!border-rose-200 [&_.admin-button.admin-button-danger]:!bg-rose-50 [&_.admin-button.admin-button-danger]:!text-rose-900',
-  '[&_.admin-sidebar_button[aria-current="page"]]:!border-app-accent [&_.admin-sidebar_button[aria-current="page"]]:!bg-app-accent/10 [&_.admin-sidebar_button[aria-current="page"]]:!text-app-accent',
-  '[&_.admin-badge]:!rounded-sm [&_.admin-badge]:!border-app-border [&_.admin-badge]:!bg-app-surface-muted [&_.admin-badge]:!text-app-text-secondary',
-  '[&_.admin-badge.admin-answer-yes]:!text-emerald-800 [&_.admin-badge.admin-answer-invalid]:!text-amber-900 [&_.admin-badge.admin-outcome-error]:!text-rose-800',
-  '[&_.admin-meta]:!text-app-text-muted [&_.admin-muted]:!text-app-text-secondary [&_.admin-question]:!text-app-text [&_.admin-metric]:!text-app-text',
-  '[&_.admin-diagnostics]:!rounded-sm [&_.admin-diagnostics]:!border [&_.admin-diagnostics]:!border-app-border [&_.admin-diagnostics]:!bg-app-surface-muted [&_.admin-diagnostics]:!text-app-text-secondary',
-  '[&_.admin-table]:!rounded-sm [&_.admin-table]:!border [&_.admin-table]:!border-app-border [&_.admin-table_th]:!border-app-border [&_.admin-table_th]:!text-app-text-secondary [&_.admin-table_td]:!border-app-border',
-  '[&_.admin-overview-metric]:!rounded-sm [&_.admin-overview-mode]:!rounded-sm [&_.admin-overview-search]:!rounded-sm [&_.admin-overview-search]:!border-app-border [&_.admin-overview-search]:!bg-app-surface [&_.admin-overview-search]:!text-app-text',
-  '[&_.admin-overview-search_input]:!text-app-text [&_.admin-overview-coverage]:!text-app-text-secondary [&_.admin-overview-mode-stats_dt]:!text-app-text-muted [&_.admin-overview-mode-stats_dd]:!text-app-text [&_.admin-overview-mode-stats_dd_span]:!text-app-text-secondary [&_.admin-overview-session-link]:!text-app-accent',
-  '[&_:is(button,input,select,textarea)]:!rounded-sm [&_*:focus-visible]:!outline-app-focus',
-  '[&_[class~="rounded"]]:!rounded-sm [&_[class~="rounded-md"]]:!rounded-sm [&_[class~="rounded-lg"]]:!rounded-sm [&_[class~="rounded-xl"]]:!rounded-sm [&_[class~="rounded-2xl"]]:!rounded-sm',
-  '[&_[class~="text-sand-100"]]:!text-app-text [&_[class~="text-sand-200"]]:!text-app-text [&_[class*="text-sand-100/"]]:!text-app-text-secondary',
-  '[&_[class~="text-slate-200"]]:!text-app-text-secondary [&_[class~="text-slate-300"]]:!text-app-text-secondary [&_[class~="text-slate-400"]]:!text-app-text-muted',
-  '[&_[class~="text-zinc-300"]]:!text-app-text-secondary [&_[class~="text-zinc-400"]]:!text-app-text-muted [&_[class~="text-obsidian-950"]]:!text-emerald-950',
-  '[&_[class*="text-emerald-"]]:!text-emerald-800 [&_[class*="text-amber-"]]:!text-amber-900 [&_[class*="text-rose-"]]:!text-rose-800',
-  '[&_[class~="bg-obsidian-950"]]:!bg-app-surface [&_[class*="bg-obsidian-950/"]]:!bg-app-surface [&_[class~="bg-obsidian-900"]]:!bg-app-surface-muted [&_[class~="bg-obsidian-850"]]:!bg-app-surface-muted [&_[class~="bg-black/30"]]:!bg-app-surface-muted',
-  '[&_[class*="bg-emerald-400/"]]:!bg-emerald-50 [&_[class*="bg-amber-400/"]]:!bg-amber-50 [&_[class*="bg-rose-400/"]]:!bg-rose-50 [&_[class*="bg-rose-950/"]]:!bg-rose-50',
-  '[&_[class*="border-white/"]]:!border-app-border [&_[class*="border-slate-"]]:!border-app-border [&_[class*="divide-white/"]]:!divide-app-border',
-  '[&_[class*="border-emerald-"]]:!border-emerald-200 [&_[class*="border-amber-"]]:!border-amber-200 [&_[class*="border-rose-"]]:!border-rose-200',
-  '[&_[class*="border-amber-500/"]]:!bg-amber-50 [&_[class*="border-emerald-700"]]:!bg-emerald-50',
-  '[&_[class~="hover:bg-white/5"]:hover]:!bg-app-surface-muted',
-  '[&_[role="alert"]]:!rounded-sm [&_[role="alert"]]:!border-rose-200 [&_[role="alert"]]:!bg-rose-50 [&_[role="alert"]]:!text-rose-900',
-  '[&_.admin-panel[role="alert"]]:!border-rose-200 [&_.admin-panel[role="alert"]]:!bg-rose-50 [&_.admin-panel[role="alert"]]:!text-rose-900',
-  '[&_.admin-panel.admin-success-panel]:!border-emerald-200 [&_.admin-panel.admin-success-panel]:!bg-emerald-50 [&_.admin-panel.admin-success-panel]:!text-emerald-900',
-  '[&_.admin-badge[class*="text-emerald-"]]:!border-emerald-200 [&_.admin-badge[class*="text-emerald-"]]:!bg-emerald-50 [&_.admin-badge[class*="text-amber-"]]:!border-amber-200 [&_.admin-badge[class*="text-amber-"]]:!bg-amber-50 [&_.admin-badge[class*="text-rose-"]]:!border-rose-200 [&_.admin-badge[class*="text-rose-"]]:!bg-rose-50',
-  '[&_.admin-badge.admin-answer-yes]:!border-emerald-200 [&_.admin-badge.admin-answer-yes]:!bg-emerald-50 [&_.admin-badge.admin-answer-invalid]:!border-amber-200 [&_.admin-badge.admin-answer-invalid]:!bg-amber-50 [&_.admin-badge.admin-outcome-error]:!border-rose-200 [&_.admin-badge.admin-outcome-error]:!bg-rose-50',
-].join(' ');
+interface AdminGroup {
+  id: AdminGroupId;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  tabs: SubTab[];
+}
 
+const GROUPS: AdminGroup[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: Activity,
+    tabs: [
+      {
+        id: 'overview',
+        label: 'Overview',
+        description: 'Completed games, finishers, win rates, and daily targets across all modes.',
+      },
+    ],
+  },
+  {
+    id: 'games',
+    label: 'Games & Activity',
+    icon: Play,
+    tabs: [
+      { id: 'sessions', label: 'Sessions', description: 'Completed player sessions and full Q&A timelines.' },
+      { id: 'liveFeed', label: 'Live Feed', description: 'Most recent questions and guesses across modes.' },
+      { id: 'questions', label: 'Questions Log', description: 'Searchable archive of player questions and answers.' },
+    ],
+  },
+  {
+    id: 'facts',
+    label: 'Facts Editor',
+    icon: Database,
+    tabs: [
+      { id: 'facts', label: 'Facts Editor', description: 'Inspect and edit local SQLite facts for countries, counties, voivodeships, and US states.' },
+    ],
+  },
+  {
+    id: 'quality',
+    label: 'Quality & Content',
+    icon: ShieldCheck,
+    tabs: [
+      { id: 'reports', label: 'Answer Reports', description: 'Review player-flagged answers and test them in QA.' },
+      { id: 'questionTests', label: 'QA Tester', description: 'Run live question plans against any target entity.' },
+      { id: 'blogs', label: 'Daily Blogs', description: 'Edit daily recaps and manage publication review.' },
+      { id: 'templateDivergences', label: 'Divergences', description: 'Compare fast template answers against planner outputs.' },
+      { id: 'friendAnswers', label: 'Friend Answers', description: 'Review disputed answers in friend duels.' },
+      { id: 'suggestions', label: 'Suggestions', description: 'Player feedback and feature requests.' },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'Users & System',
+    icon: Sliders,
+    tabs: [
+      { id: 'users', label: 'Users', description: 'Search registered accounts and inspect activity.' },
+      { id: 'aiCosts', label: 'AI Costs', description: 'Measured daily Gemini and fallback spend for Countrydle.' },
+      { id: 'cache', label: 'Cache', description: 'Inspect and manage planner and answer caches.' },
+    ],
+  },
+];
+
+const ALL_TABS: SubTab[] = GROUPS.flatMap((g) => g.tabs);
+
+function groupForTab(tabId: AdminTab): AdminGroup {
+  return GROUPS.find((g) => g.tabs.some((t) => t.id === tabId)) ?? GROUPS[0];
+}
 
 function requestError(error: unknown): string {
   if (isAxiosError(error)) {
-    return typeof error.response?.data?.detail === 'string' ? error.response.data.detail : 'adminCommon.error';
+    return typeof error.response?.data?.detail === 'string'
+      ? error.response.data.detail
+      : 'Request failed. Please retry.';
   }
-  return error instanceof Error ? error.message : 'adminCommon.error';
+  return error instanceof Error ? error.message : 'Request failed. Please retry.';
 }
 
 export default function AdminDashboard() {
-  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
-  const activeTab = TABS.find((tab) => tab.id === requestedTab)?.id ?? 'overview';
+  const activeTab: AdminTab = ALL_TABS.find((t) => t.id === requestedTab)?.id ?? 'overview';
+  const activeGroup = groupForTab(activeTab);
+  const activeSubTab = ALL_TABS.find((t) => t.id === activeTab) ?? ALL_TABS[0];
+
   const setActiveTab = (tab: AdminTab) => {
     const next = new URLSearchParams(searchParams);
     next.set('tab', tab);
     setSearchParams(next);
   };
+
   const setSessionFilters = (mode: string, date: string) => {
     const next = new URLSearchParams(searchParams);
     next.set('tab', 'sessions');
@@ -130,6 +155,7 @@ export default function AdminDashboard() {
     next.set('date', date);
     setSearchParams(next);
   };
+
   const [questionTestReport, setQuestionTestReport] = useState<AnswerReport | null>(null);
   const [qaBridgeTarget, setQaBridgeTarget] = useState<QuestionTestBridgeTarget | null>(null);
   const focusQA = useRef(false);
@@ -140,6 +166,7 @@ export default function AdminDashboard() {
     focusQA.current = true;
     setActiveTab('questionTests');
   };
+
   const mounted = useRef(true);
   const currentTab = useRef(activeTab);
   currentTab.current = activeTab;
@@ -148,9 +175,11 @@ export default function AdminDashboard() {
   const feedRequest = useRef(0);
   const entitiesRequest = useRef(0);
   const factsRequest = useRef(0);
+
   const [overview, setOverview] = useState<AdminOverviewData | null>(null);
   const [isOverviewLoading, setIsOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState<string | null>(null);
+
   const [usersData, setUsersData] = useState<{ total: number; users: AdminUserRecord[] }>({ total: 0, users: [] });
   const [userSearch, setUserSearch] = useState('');
   const [userPage, setUserPage] = useState(1);
@@ -160,6 +189,7 @@ export default function AdminDashboard() {
   const currentUsersQuery = useRef(usersQuery);
   currentUsersQuery.current = usersQuery;
   const [loadedUsersQuery, setLoadedUsersQuery] = useState<string | null>(null);
+
   const [liveFeed, setLiveFeed] = useState<LiveFeedData>({ recent_questions: [], recent_guesses: [] });
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [feedError, setFeedError] = useState<string | null>(null);
@@ -167,6 +197,7 @@ export default function AdminDashboard() {
   const [feedUpdatedAt, setFeedUpdatedAt] = useState<string | null>(null);
   const feedMode = useRef<string | undefined>(undefined);
   const pendingFeed = useRef<{ mode: string | undefined; promise: Promise<void> } | null>(null);
+
   const [factMode, setFactMode] = useState<AnswerReportMode>('countrydle');
   const currentFactMode = useRef(factMode);
   currentFactMode.current = factMode;
@@ -200,13 +231,16 @@ export default function AdminDashboard() {
       focusQA.current = false;
     }
   }, [activeTab, qaBridgeTarget, questionTestReport]);
+
   const fetchOverview = useCallback(async () => {
     const request = ++overviewRequest.current;
     setIsOverviewLoading(true);
     setOverviewError(null);
     try {
       const data: AdminOverviewData = await adminService.getOverview();
-      if (mounted.current && request === overviewRequest.current && currentTab.current === 'overview') setOverview(data);
+      if (mounted.current && request === overviewRequest.current && currentTab.current === 'overview') {
+        setOverview(data);
+      }
     } catch (error) {
       if (mounted.current && request === overviewRequest.current && currentTab.current === 'overview') {
         setOverviewError(requestError(error));
@@ -219,7 +253,11 @@ export default function AdminDashboard() {
   const fetchUsers = useCallback(async () => {
     const request = ++usersRequest.current;
     const query = `${userPage}:${userSearch}`;
-    const applies = () => mounted.current && request === usersRequest.current && currentUsersQuery.current === query && currentTab.current === 'users';
+    const applies = () =>
+      mounted.current &&
+      request === usersRequest.current &&
+      currentUsersQuery.current === query &&
+      currentTab.current === 'users';
     setIsUsersLoading(true);
     setUsersError(null);
     try {
@@ -250,7 +288,8 @@ export default function AdminDashboard() {
     feedMode.current = mode;
     setIsFeedLoading(true);
     setFeedError(null);
-    const applies = () => mounted.current && request === feedRequest.current && currentTab.current === 'liveFeed';
+    const applies = () =>
+      mounted.current && request === feedRequest.current && currentTab.current === 'liveFeed';
     const promise = (async () => {
       try {
         const data = await adminService.getLiveFeed(mode);
@@ -270,35 +309,48 @@ export default function AdminDashboard() {
     return promise;
   }, []);
 
-  const fetchEntityFacts = useCallback(async (entityId: number): Promise<void> => {
-    const request = ++factsRequest.current;
-    const mode = factMode;
-    const applies = () => mounted.current && request === factsRequest.current && currentFactMode.current === mode && currentEntity.current === entityId && currentTab.current === 'facts';
-    setEntityFacts(null);
-    setFactInputs({});
-    setNewListValues({});
-    setIsFactsLoading(true);
-    setFactError(null);
-    try {
-      // Selector IDs belong to PostgreSQL; fact IDs belong to the local SQLite catalog.
-      const entityName = currentFactEntities.current.find((entity) => entity.id === entityId)?.name;
-      if (!entityName) return;
-      const data = await adminService.getCountryFacts(entityName, mode);
-      if (applies()) {
-        setEntityFacts(data);
-        setFactInputs(Object.fromEntries(data.scalar_facts.map((fact) => [fact.relation, fact.value == null ? '' : String(fact.value)])));
+  const fetchEntityFacts = useCallback(
+    async (entityId: number): Promise<void> => {
+      const request = ++factsRequest.current;
+      const mode = factMode;
+      const applies = () =>
+        mounted.current &&
+        request === factsRequest.current &&
+        currentFactMode.current === mode &&
+        currentEntity.current === entityId &&
+        currentTab.current === 'facts';
+      setEntityFacts(null);
+      setFactInputs({});
+      setNewListValues({});
+      setIsFactsLoading(true);
+      setFactError(null);
+      try {
+        const entityName = currentFactEntities.current.find((entity) => entity.id === entityId)?.name;
+        if (!entityName) return;
+        const data = await adminService.getCountryFacts(entityName, mode);
+        if (applies()) {
+          setEntityFacts(data);
+          setFactInputs(
+            Object.fromEntries(data.scalar_facts.map((fact) => [fact.relation, fact.value == null ? '' : String(fact.value)])),
+          );
+        }
+      } catch (error) {
+        if (applies()) setFactError(requestError(error));
+      } finally {
+        if (applies()) setIsFactsLoading(false);
       }
-    } catch (error) {
-      if (applies()) setFactError(requestError(error));
-    } finally {
-      if (applies()) setIsFactsLoading(false);
-    }
-  }, [factMode]);
+    },
+    [factMode],
+  );
 
   const fetchFactEntities = useCallback(async (): Promise<void> => {
     const request = ++entitiesRequest.current;
     const mode = factMode;
-    const applies = () => mounted.current && request === entitiesRequest.current && currentFactMode.current === mode && currentTab.current === 'facts';
+    const applies = () =>
+      mounted.current &&
+      request === entitiesRequest.current &&
+      currentFactMode.current === mode &&
+      currentTab.current === 'facts';
     factsRequest.current++;
     setIsEntitiesLoading(true);
     setIsFactsLoading(false);
@@ -325,6 +377,7 @@ export default function AdminDashboard() {
         const voivodeships: Array<{ id: number; nazwa: string }> = await wojewodztwoService.getWojewodztwa();
         data = voivodeships.map(({ id, nazwa }) => ({ id, name: nazwa }));
       }
+      data.sort((a, b) => a.name.localeCompare(b.name));
       if (applies()) {
         setFactEntities(data);
         currentFactEntities.current = data;
@@ -345,17 +398,16 @@ export default function AdminDashboard() {
     if (selectedEntityId !== null) await fetchEntityFacts(selectedEntityId);
     else await fetchFactEntities();
   };
+
   const handleSaveScalarFact = async (relation: string, value: string) => {
     if (!entityFacts || selectedEntityId === null || isFactsLoading || isEntitiesLoading) return;
-    const applies = () => mounted.current && currentTab.current === 'facts' && currentFactMode.current === factMode && currentEntity.current === selectedEntityId;
+    const applies = () =>
+      mounted.current &&
+      currentTab.current === 'facts' &&
+      currentFactMode.current === factMode &&
+      currentEntity.current === selectedEntityId;
     try {
-      await adminService.updateCountryScalarFact(
-        entityFacts.country.id,
-        relation,
-        value,
-        undefined,
-        factMode
-      );
+      await adminService.updateCountryScalarFact(entityFacts.country.id, relation, value, undefined, factMode);
       if (applies()) await fetchEntityFacts(selectedEntityId);
     } catch (error) {
       if (applies()) setFactError(requestError(error));
@@ -364,16 +416,13 @@ export default function AdminDashboard() {
 
   const handleAddListFact = async (relation: string, value: string) => {
     if (!entityFacts || selectedEntityId === null || isFactsLoading || isEntitiesLoading || !value.trim()) return;
-    const applies = () => mounted.current && currentTab.current === 'facts' && currentFactMode.current === factMode && currentEntity.current === selectedEntityId;
+    const applies = () =>
+      mounted.current &&
+      currentTab.current === 'facts' &&
+      currentFactMode.current === factMode &&
+      currentEntity.current === selectedEntityId;
     try {
-      await adminService.addCountryListFact(
-        entityFacts.country.id,
-        relation,
-        value.trim(),
-        {},
-        undefined,
-        factMode
-      );
+      await adminService.addCountryListFact(entityFacts.country.id, relation, value.trim(), {}, undefined, factMode);
       if (applies()) {
         setNewListValues((prev) => ({ ...prev, [relation]: '' }));
         await fetchEntityFacts(selectedEntityId);
@@ -385,15 +434,13 @@ export default function AdminDashboard() {
 
   const handleDeleteListFact = async (relation: string, value: string) => {
     if (!entityFacts || selectedEntityId === null || isFactsLoading || isEntitiesLoading) return;
-    const applies = () => mounted.current && currentTab.current === 'facts' && currentFactMode.current === factMode && currentEntity.current === selectedEntityId;
+    const applies = () =>
+      mounted.current &&
+      currentTab.current === 'facts' &&
+      currentFactMode.current === factMode &&
+      currentEntity.current === selectedEntityId;
     try {
-      await adminService.deleteCountryListFact(
-        entityFacts.country.id,
-        relation,
-        value,
-        undefined,
-        factMode
-      );
+      await adminService.deleteCountryListFact(entityFacts.country.id, relation, value, undefined, factMode);
       if (applies()) await fetchEntityFacts(selectedEntityId);
     } catch (error) {
       if (applies()) setFactError(requestError(error));
@@ -402,18 +449,25 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeTab === 'overview') void fetchOverview();
-    return () => { overviewRequest.current++; };
+    return () => {
+      overviewRequest.current++;
+    };
   }, [activeTab, fetchOverview]);
+
   useEffect(() => {
     if (activeTab === 'users') void fetchUsers();
-    return () => { usersRequest.current++; };
+    return () => {
+      usersRequest.current++;
+    };
   }, [activeTab, fetchUsers]);
+
   useEffect(() => {
     return () => {
       feedRequest.current++;
       pendingFeed.current = null;
     };
   }, [activeTab]);
+
   useEffect(() => {
     if (activeTab === 'facts') void fetchFactEntities();
     return () => {
@@ -422,145 +476,245 @@ export default function AdminDashboard() {
     };
   }, [activeTab, fetchFactEntities]);
 
-  const activeDefinition = TABS.find((tab) => tab.id === activeTab)!;
-
   return (
-    <div className={`admin-workspace ${ADMIN_LIGHT_THEME}`}>
-      <nav className="admin-sidebar" aria-label={t('adminNavigation.pageSelector')}>
-        {SECTIONS.map((section) => (
-          <div key={section} className="mb-6">
-            <p className="admin-meta mb-2 px-3">{t(`adminNavigation.sections.${section}`)}</p>
-            {TABS.filter((tab) => tab.section === section).map((tab) => {
-              const Icon = tab.icon;
-              return <button key={tab.id} type="button" className="admin-button" aria-current={activeTab === tab.id ? 'page' : undefined} onClick={() => setActiveTab(tab.id)}>
-                <Icon size={18} aria-hidden="true" /><span>{t(tab.labelKey)}</span>
-              </button>;
-            })}
+    <div className="min-h-screen bg-app-canvas text-app-text">
+      <div className="mx-auto flex max-w-[1440px] flex-col lg:flex-row">
+        {/* Desktop Sidebar: 5 clean top-level sections */}
+        <aside className="hidden lg:block lg:w-60 lg:shrink-0 border-r border-app-border bg-app-surface/70 p-4">
+          <div className="mb-5 px-2">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-app-text-muted">Countrydle</p>
+            <p className="font-serif text-lg font-bold text-app-text">Admin Console</p>
           </div>
-        ))}
-      </nav>
-      <div className="admin-content">
-        <label className="admin-field admin-mobile-navigation">
-          <span>{t('adminNavigation.pageSelector')}</span>
-          <select className="admin-control" value={activeTab} onChange={(event) => {
-            const destination = TABS.find((tab) => tab.id === event.target.value);
-            if (destination) setActiveTab(destination.id);
-          }}>
-            {SECTIONS.map((section) => <optgroup key={section} label={t(`adminNavigation.sections.${section}`)}>
-              {TABS.filter((tab) => tab.section === section).map((tab) => <option key={tab.id} value={tab.id}>{t(tab.labelKey)}</option>)}
-            </optgroup>)}
-          </select>
-        </label>
-        <header className="admin-page-header">
-          <p className="admin-meta">Countrydle / Admin</p>
-          <h1 id="admin-page-title" tabIndex={-1}>{t(activeDefinition.labelKey)}</h1>
-          <p className="admin-muted">{t(activeDefinition.descriptionKey)}</p>
-        </header>
-      {/* TAB CONTENT PANELS */}
-      {activeTab === 'overview' && (
-        <AdminOverviewTab overview={overview} isLoading={isOverviewLoading} error={overviewError} onRefresh={fetchOverview} onOpenCosts={() => setActiveTab('aiCosts')} onOpenSessions={(mode) => { if (overview) setSessionFilters(mode, overview.date); }} />
-      )}
+          <nav className="space-y-1" aria-label="Admin sections">
+            {GROUPS.map((group) => {
+              const Icon = group.icon;
+              const isCurrentGroup = group.id === activeGroup.id;
+              return (
+                <div key={group.id} className="space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(group.tabs[0].id)}
+                    aria-current={isCurrentGroup && group.tabs.length === 1 ? 'page' : undefined}
+                    className={`flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm font-medium transition-colors cursor-pointer ${
+                      isCurrentGroup
+                        ? 'bg-app-accent/10 text-app-accent font-semibold'
+                        : 'text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text'
+                    }`}
+                  >
+                    <Icon size={16} aria-hidden="true" />
+                    <span>{group.label}</span>
+                  </button>
+                  {isCurrentGroup && group.tabs.length > 1 && (
+                    <div className="ml-6 border-l border-app-border pl-2.5 py-0.5 space-y-0.5">
+                      {group.tabs.map((sub) => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => setActiveTab(sub.id)}
+                          aria-current={activeTab === sub.id ? 'page' : undefined}
+                          className={`block w-full rounded-sm px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer ${
+                            activeTab === sub.id
+                              ? 'bg-app-accent text-app-canvas font-medium'
+                              : 'text-app-text-secondary hover:bg-app-surface-muted hover:text-app-text'
+                          }`}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
 
-      {activeTab === 'sessions' && (
-        <AdminSessionsTab key={`${searchParams.get('mode') || 'countrydle'}:${searchParams.get('date') || ''}`} onTestInQA={handleTestInQA} selectedMode={searchParams.get('mode') || 'countrydle'} selectedDate={searchParams.get('date') || new Date().toISOString().slice(0, 10)} onFiltersChange={setSessionFilters} />
-      )}
+        {/* Main Content */}
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 space-y-5">
+          {/* Mobile Navigation Bar */}
+          <div className="lg:hidden space-y-2">
+            <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Admin sections">
+              {GROUPS.map((group) => {
+                const Icon = group.icon;
+                const active = group.id === activeGroup.id;
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setActiveTab(group.tabs[0].id)}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-sm border px-3 py-1.5 text-xs font-medium cursor-pointer ${
+                      active
+                        ? 'border-app-accent bg-app-accent text-app-canvas'
+                        : 'border-app-border bg-app-surface text-app-text-secondary'
+                    }`}
+                  >
+                    <Icon size={14} aria-hidden="true" />
+                    <span>{group.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {activeGroup.tabs.length > 1 && (
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {activeGroup.tabs.map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => setActiveTab(sub.id)}
+                    className={`shrink-0 rounded-sm border px-2.5 py-1 text-xs cursor-pointer ${
+                      activeTab === sub.id
+                        ? 'border-app-accent bg-app-accent/10 text-app-accent font-semibold'
+                        : 'border-app-border bg-app-surface text-app-text-secondary'
+                    }`}
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-      {activeTab === 'liveFeed' && (
-        <AdminLiveFeedTab data={liveFeed} isLoading={isFeedLoading} error={feedError} hasLoaded={feedHasLoaded} lastUpdatedAt={feedUpdatedAt} onRefresh={fetchLiveFeed} onTestInQA={handleTestInQA} />
-      )}
-      {activeTab === 'users' && (
-        <AdminUsersTab
-          users={loadedUsersQuery === usersQuery ? usersData.users : []}
-          totalUsers={loadedUsersQuery === usersQuery ? usersData.total : 0}
-          search={userSearch}
-          page={userPage}
-          isLoading={isUsersLoading || loadedUsersQuery !== usersQuery}
-          error={loadedUsersQuery === usersQuery ? usersError : null}
-          onRefresh={fetchUsers}
-          onSearchChange={(s) => {
-            setUserSearch(s);
-            setUserPage(1);
-          }}
-          onPageChange={setUserPage}
-        />
-      )}
+          {/* Page Header */}
+          <header className="border-b border-app-border pb-4">
+            <p className="font-mono text-[11px] uppercase tracking-wider text-app-text-muted">
+              Admin / {activeGroup.label}
+            </p>
+            <h1 id="admin-page-title" tabIndex={-1} className="mt-0.5 font-serif text-2xl font-bold text-app-text">
+              {activeSubTab.label}
+            </h1>
+            <p className="mt-1 text-sm text-app-text-secondary">{activeSubTab.description}</p>
+          </header>
 
-      {activeTab === 'suggestions' && <AdminSuggestionsTab />}
-      {activeTab === 'blogs' && <AdminBlogTab />}
-      {activeTab === 'questions' && (
-        <AdminQuestionsTab onTestInQA={handleTestInQA} />
-      )}
-      {activeTab === 'facts' && (
-        <AdminFactsTab
-          factMode={factMode}
-          factEntities={factEntities}
-          selectedEntityId={selectedEntityId}
-          entityFacts={entityFacts}
-          factInputs={factInputs}
-          newListValues={newListValues}
-          factError={factError}
-          isEntitiesLoading={isEntitiesLoading}
-          isFactsLoading={isFactsLoading}
-          onRefresh={handleRefreshFacts}
-          onFactModeChange={(mode) => {
-            if (mode === factMode) return;
-            currentFactMode.current = mode;
-            entitiesRequest.current++;
-            factsRequest.current++;
-            setFactEntities([]);
-            currentFactEntities.current = [];
-            setEntityFacts(null);
-            setSelectedEntityId(null);
-            currentEntity.current = null;
-            setFactError(null);
-            setIsEntitiesLoading(true);
-            setFactMode(mode);
-          }}
-          onEntitySelect={(id) => {
-            currentEntity.current = id;
-            setSelectedEntityId(id);
-            void fetchEntityFacts(id);
-          }}
-          onFactInputChange={(rel, val) => setFactInputs((prev) => ({ ...prev, [rel]: val }))}
-          onSaveScalarFact={handleSaveScalarFact}
-          onNewListValueChange={(rel, val) => setNewListValues((prev) => ({ ...prev, [rel]: val }))}
-          onAddListFact={handleAddListFact}
-          onDeleteListFact={handleDeleteListFact}
-        />
-      )}
+          {/* Active Panel */}
+          {activeTab === 'overview' && (
+            <AdminOverviewTab
+              overview={overview}
+              isLoading={isOverviewLoading}
+              error={overviewError}
+              onRefresh={fetchOverview}
+              onOpenCosts={() => setActiveTab('aiCosts')}
+              onOpenSessions={(mode) => {
+                if (overview) setSessionFilters(mode, overview.date);
+              }}
+            />
+          )}
 
-      {activeTab === 'reports' && (
-        <AnswerReportsPanel
-          onTestQuestion={(report) => {
-            setQaBridgeTarget(null);
-            setQuestionTestReport(report);
-            focusQA.current = true;
-            setActiveTab('questionTests');
-          }}
-        />
-      )}
-      {activeTab === 'templateDivergences' && (
-        <TemplateDivergencesPanel onTestQuestion={(questionText, mode) => handleTestInQA({ mode, questionText })} />
-      )}
+          {activeTab === 'sessions' && (
+            <AdminSessionsTab
+              key={`${searchParams.get('mode') || 'countrydle'}:${searchParams.get('date') || ''}`}
+              onTestInQA={handleTestInQA}
+              selectedMode={searchParams.get('mode') || 'countrydle'}
+              selectedDate={searchParams.get('date') || new Date().toISOString().slice(0, 10)}
+              onFiltersChange={setSessionFilters}
+            />
+          )}
 
+          {activeTab === 'liveFeed' && (
+            <AdminLiveFeedTab
+              data={liveFeed}
+              isLoading={isFeedLoading}
+              error={feedError}
+              hasLoaded={feedHasLoaded}
+              lastUpdatedAt={feedUpdatedAt}
+              onRefresh={fetchLiveFeed}
+              onTestInQA={handleTestInQA}
+            />
+          )}
 
-      {activeTab === 'questionTests' && (
-        <QuestionTestsPanel
-          report={questionTestReport}
-          onClearReport={() => setQuestionTestReport(null)}
-          initialTarget={qaBridgeTarget}
-          onClearInitialTarget={() => setQaBridgeTarget(null)}
-        />
-      )}
+          {activeTab === 'questions' && <AdminQuestionsTab onTestInQA={handleTestInQA} />}
 
-      {activeTab === 'friendAnswers' && (
-        <FriendAnswerReviewsPanel />
-      )}
+          {activeTab === 'facts' && (
+            <AdminFactsTab
+              factMode={factMode}
+              factEntities={factEntities}
+              selectedEntityId={selectedEntityId}
+              entityFacts={entityFacts}
+              factInputs={factInputs}
+              newListValues={newListValues}
+              factError={factError}
+              isEntitiesLoading={isEntitiesLoading}
+              isFactsLoading={isFactsLoading}
+              onRefresh={handleRefreshFacts}
+              onFactModeChange={(mode) => {
+                if (mode === factMode) return;
+                currentFactMode.current = mode;
+                entitiesRequest.current++;
+                factsRequest.current++;
+                setFactEntities([]);
+                currentFactEntities.current = [];
+                setEntityFacts(null);
+                setSelectedEntityId(null);
+                currentEntity.current = null;
+                setFactError(null);
+                setIsEntitiesLoading(true);
+                setFactMode(mode);
+              }}
+              onEntitySelect={(id) => {
+                currentEntity.current = id;
+                setSelectedEntityId(id);
+                void fetchEntityFacts(id);
+              }}
+              onFactInputChange={(rel, val) => setFactInputs((prev) => ({ ...prev, [rel]: val }))}
+              onSaveScalarFact={handleSaveScalarFact}
+              onNewListValueChange={(rel, val) => setNewListValues((prev) => ({ ...prev, [rel]: val }))}
+              onAddListFact={handleAddListFact}
+              onDeleteListFact={handleDeleteListFact}
+            />
+          )}
 
-      {activeTab === 'cache' && (
-        <CacheStatsPanel />
-      )}
-      {activeTab === 'aiCosts' && <AdminCountrydleCostsTab />}
+          {activeTab === 'reports' && (
+            <AnswerReportsPanel
+              onTestQuestion={(report) => {
+                setQaBridgeTarget(null);
+                setQuestionTestReport(report);
+                focusQA.current = true;
+                setActiveTab('questionTests');
+              }}
+            />
+          )}
+
+          {activeTab === 'questionTests' && (
+            <QuestionTestsPanel
+              report={questionTestReport}
+              onClearReport={() => setQuestionTestReport(null)}
+              initialTarget={qaBridgeTarget}
+              onClearInitialTarget={() => setQaBridgeTarget(null)}
+            />
+          )}
+
+          {activeTab === 'blogs' && <AdminBlogTab />}
+
+          {activeTab === 'templateDivergences' && (
+            <TemplateDivergencesPanel onTestQuestion={(questionText, mode) => handleTestInQA({ mode, questionText })} />
+          )}
+
+          {activeTab === 'friendAnswers' && <FriendAnswerReviewsPanel />}
+
+          {activeTab === 'suggestions' && <AdminSuggestionsTab />}
+
+          {activeTab === 'users' && (
+            <AdminUsersTab
+              users={loadedUsersQuery === usersQuery ? usersData.users : []}
+              totalUsers={loadedUsersQuery === usersQuery ? usersData.total : 0}
+              search={userSearch}
+              page={userPage}
+              isLoading={isUsersLoading || loadedUsersQuery !== usersQuery}
+              error={loadedUsersQuery === usersQuery ? usersError : null}
+              onRefresh={fetchUsers}
+              onSearchChange={(s) => {
+                setUserSearch(s);
+                setUserPage(1);
+              }}
+              onPageChange={setUserPage}
+            />
+          )}
+
+          {activeTab === 'aiCosts' && <AdminCountrydleCostsTab />}
+
+          {activeTab === 'cache' && <CacheStatsPanel />}
+        </main>
       </div>
     </div>
   );

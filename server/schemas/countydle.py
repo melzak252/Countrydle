@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.answer_report import ReportableQuestion
+from schemas.countrydle import MapHighlight
 from schemas.countrydle import CountrydleStateSchema
 from schemas.fact_provenance import PublicFactEvidence
 from schemas.user import UserDisplay
@@ -73,6 +74,7 @@ class EnglishCountyQuestionCreate(BaseModel):
     context: Optional[str]
     intent: Optional[str] = None
     required_info: Optional[str] = None
+    map_highlight: Optional[MapHighlight] = Field(default=None, exclude=True)
 
 
 class EnglishCountyQuestionDisplay(ReportableQuestion, PublicFactEvidence):
@@ -91,6 +93,7 @@ class EnglishCountyQuestionDisplay(ReportableQuestion, PublicFactEvidence):
     context: Optional[str] = Field(default=None, exclude=True)
     user: Optional[UserDisplay] = None
     county: Optional[EnglishCountyDisplay] = None
+    map_highlight: Optional[MapHighlight] = None
 
     model_config = ConfigDict(from_attributes=True)
 

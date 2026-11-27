@@ -1,5 +1,5 @@
 
-import { Eraser, RotateCcw } from 'lucide-react';
+import { Bot, Eraser, RotateCcw } from 'lucide-react';
 import type { MapMarkerColor } from '../stores/gameStore';
 import { MAP_THEME } from '../lib/mapTheme';
 
@@ -8,6 +8,8 @@ interface MapToolbarProps {
   onColorChange: (color: MapMarkerColor) => void;
   onClear: () => void;
   onReset?: () => void;
+  showAutoMarkings?: boolean;
+  onToggleAutoMarkings?: () => void;
   className?: string;
 }
 
@@ -23,6 +25,8 @@ export default function MapToolbar({
   onColorChange,
   onClear,
   onReset,
+  showAutoMarkings,
+  onToggleAutoMarkings,
   className = '',
 }: MapToolbarProps) {
   
@@ -69,6 +73,22 @@ export default function MapToolbar({
         <div className="mx-0.5 h-5 w-px bg-[var(--map-control-border)]" aria-hidden="true" />
       </div>
 
+      {onToggleAutoMarkings && (
+        <button
+          type="button"
+          onClick={onToggleAutoMarkings}
+          className={`flex h-9 w-9 md:h-8 md:w-8 items-center justify-center rounded-sm max-md:border transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--map-control-focus)] ${
+            showAutoMarkings !== false
+              ? 'bg-[var(--map-control-active)] text-[var(--map-control-strong-ink)] max-md:border-[var(--map-control-strong-border)] hover:bg-[var(--map-control-hover)]'
+              : 'max-md:border-[var(--map-control-border)] max-md:bg-[var(--map-control-bg)] text-[var(--map-control-muted-ink)] hover:bg-[var(--map-control-hover)] hover:text-[var(--map-control-ink)]'
+          }`}
+          title={showAutoMarkings !== false ? 'Hide bot coloring' : 'Show bot coloring'}
+          aria-label={showAutoMarkings !== false ? 'Hide bot coloring' : 'Show bot coloring'}
+          aria-pressed={showAutoMarkings !== false}
+        >
+          <Bot size={16} />
+        </button>
+      )}
       {onReset && (
         <button
           type="button"

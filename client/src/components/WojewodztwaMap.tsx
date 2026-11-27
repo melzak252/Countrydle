@@ -13,7 +13,7 @@ import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
 import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
 import { createMapRenderer } from '../lib/mapRenderer';
-import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import { getRegionFeatureStyle, MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
 import MapCartographicTexture from './MapCartographicTexture';
 import MapPaperEdge from './MapPaperEdge';
 import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
@@ -85,6 +85,9 @@ export default function WojewodztwaMap({ correctWojewodztwoName, className }: Wo
     correctWojewodztwoName={correctWojewodztwoName || state.correctEntity?.nazwa}
     interaction={{
       entityMarkings: state.entityMarkings,
+      autoEntityMarkings: state.autoEntityMarkings,
+      showAutoMarkings: state.showAutoMarkings,
+      onToggleAutoMarkings: state.toggleAutoMarkings,
       activeMarkerColor: state.activeMarkerColor,
       setActiveMarkerColor: state.setActiveMarkerColor,
       handleEntityMapClick: state.handleEntityMapClick,
@@ -104,7 +107,16 @@ export function ControlledWojewodztwaMap({
   const [renderer] = useState(createMapRenderer);
   
   
-  const { entityMarkings, activeMarkerColor, setActiveMarkerColor, clearMapMarkings, isGameOver } = interaction;
+  const {
+    entityMarkings,
+    autoEntityMarkings,
+    showAutoMarkings = true,
+    onToggleAutoMarkings,
+    activeMarkerColor,
+    setActiveMarkerColor,
+    clearMapMarkings,
+    isGameOver,
+  } = interaction;
   const revealedName = isGameOver ? correctWojewodztwoName : undefined;
   // Leaflet retains handlers from layer creation; refs keep them on the current props.
   const current = useRef({ interaction, revealedName, onWojewodztwoClick });
@@ -115,20 +127,24 @@ export function ControlledWojewodztwaMap({
   const activeHoverLayerRef = useRef<FeatureLayer | null>(null);
 
 
-  const getStyleFromState = useCallback((feature: Feature | undefined, markings: Record<string, MapMarkerColor>, currentCorrect?: string): PathOptions => {
-    if (!feature || !feature.properties || !feature.properties.nazwa) return {};
-
-    const name = feature.properties.nazwa.toUpperCase();
-    const isCorrect = currentCorrect ? name === currentCorrect.toUpperCase() : false;
-    const marker = markings[name];
-
-    if (isCorrect) return MAP_THEME.countries.correct;
-    if (marker) return MAP_THEME.countries.markers[marker];
-    return MAP_THEME.countries.available;
-  }, []);
+  const getStyleFromState = useCallback((
+    feature: Feature | undefined,
+    markings: Record<string, MapMarkerColor>,
+    currentCorrect?: string,
+    autoMarkings?: Record<string, MapMarkerColor>,
+    showAuto = true,
+  ): PathOptions => (
+    getRegionFeatureStyle(feature?.properties?.nazwa, markings, currentCorrect, autoMarkings, showAuto)
+  ), []);
 
   const getStyle = useCallback((feature: Feature | undefined) => (
-    getStyleFromState(feature, current.current.interaction.entityMarkings, current.current.revealedName)
+    getStyleFromState(
+      feature,
+      current.current.interaction.entityMarkings,
+      current.current.revealedName,
+      current.current.interaction.autoEntityMarkings,
+      current.current.interaction.showAutoMarkings !== false,
+    )
   ), [getStyleFromState]);
   const hoverLayerRef = useRef<L.GeoJSON | null>(null);
   useEffect(() => {
@@ -170,7 +186,9 @@ export function ControlledWojewodztwaMap({
           const newStyle = getStyleFromState(
             feature,
             entityMarkings,
-            revealedName
+            revealedName,
+            autoEntityMarkings,
+            showAutoMarkings,
           );
           layer.setStyle(newStyle);
 
@@ -180,7 +198,7 @@ export function ControlledWojewodztwaMap({
         }
       });
     }
-  }, [entityMarkings, revealedName, geoJsonData, getStyleFromState]);
+  }, [entityMarkings, autoEntityMarkings, showAutoMarkings, revealedName, geoJsonData, getStyleFromState]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.nazwa;
@@ -265,6 +283,8 @@ export function ControlledWojewodztwaMap({
         onColorChange={setActiveMarkerColor}
         onClear={clearMapMarkings}
         onReset={() => { if (map) resetMapView(map, [52.065, 19.48], 6); }}
+        showAutoMarkings={showAutoMarkings}
+        onToggleAutoMarkings={onToggleAutoMarkings}
         className={revealedName ? 'max-md:!top-[8.25rem]' : 'max-md:!top-[5.75rem]'}
       />
       {revealedName && (

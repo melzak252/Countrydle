@@ -116,6 +116,7 @@ async def get_admin_overview(
     us_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["us_statedle"], today, "us_statedle"))[1]
     p_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["powiatdle"], today, "powiatdle"))[1]
     w_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["wojewodztwodle"], today, "wojewodztwodle"))[1]
+    ec_target = (await _resolve_day_and_target(session, ADMIN_MODE_CONFIGS["countydle"], today, "countydle"))[1]
 
     flag_target = (await session.execute(
         select(Country.name).join(FlagdleDay, FlagdleDay.country_id == Country.id)
@@ -143,6 +144,7 @@ async def get_admin_overview(
         ("us_statedle", "US States", us_target),
         ("powiatdle", "Polish Counties", p_target),
         ("wojewodztwodle", "Polish Voivodeships", w_target),
+        ("countydle", "English Counties", ec_target),
         ("flagdle", "Flags", flag_target or "Unknown"),
         ("heraldry", "County Coats of Arms", heraldry_targets.get(("county", "coat")) or "Unknown"),
         ("coats_quiz", "All County Coats Quiz", "380 Polish counties"),

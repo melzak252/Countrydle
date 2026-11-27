@@ -246,17 +246,12 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
       return customMetrics.slice(0, 3);
     }
 
-    const playedValue =
-      summary && summary.played_today > 0 ? summary.played_today.toLocaleString('en-US') : '--';
-    const playedSub =
-      summary && summary.completed_today > 0
-        ? `${summary.completed_today.toLocaleString('en-US')} finished`
-        : isDaily
-        ? 'Today'
-        : 'Challenge';
+    const completedCount = summary ? summary.completed_today : 0;
+    const playedValue = completedCount > 0 ? completedCount.toLocaleString('en-US') : '--';
+    const playedSub = isDaily ? 'Today' : 'Challenge';
 
     const winRateValue =
-      summary && summary.played_today > 0 ? `${Math.round(summary.win_rate_pct)}%` : '--';
+      completedCount > 0 && summary ? `${Math.round(summary.win_rate_pct)}%` : '--';
     let winRateSub: string | undefined;
     if (summary?.avg_questions_won != null) {
       winRateSub = `Avg ${summary.avg_questions_won.toFixed(1)} Q`;

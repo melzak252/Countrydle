@@ -386,6 +386,13 @@ async def _do_ask_question(
         return unresolved_question(question_create, WojewodztwoQuestionDisplay)
     question_create.user_id = user.id if user else None
     question_create.day_id = day_state.id
+    map_highlight = question_create.map_highlight
+    if map_highlight is None and question_create.valid and question_create.answer in (True, False):
+        from schemas.countrydle import MapHighlight
+        map_highlight = MapHighlight(
+            supported=False,
+            note="Couldn't auto-color all matching voivodeships for this question; mark the map manually.",
+        )
     if is_direct_name_win_plan(question_create.valid, question_create.answer, planned_question):
         new_question = await WojewodztwodleQuestionRepository(session).create_question(question_create)
         guess_payload = WojewodztwoGuessBase(
@@ -401,6 +408,7 @@ async def _do_ask_question(
         )
         result = WojewodztwoQuestionDisplay.model_validate(new_question)
         result.auto_guess = auto_guess_display
+        result.map_highlight = map_highlight
         await session.commit()
     else:
         if user is None:
@@ -415,6 +423,7 @@ async def _do_ask_question(
             )
         new_question = await WojewodztwodleQuestionRepository(session).create_question(question_create)
         result = WojewodztwoQuestionDisplay.model_validate(new_question)
+        result.map_highlight = map_highlight
         await session.commit()
     if question_vector:
         # Indexing is auxiliary: an already committed answer remains successful.

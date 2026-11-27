@@ -34,21 +34,47 @@ const REGIONAL_LABELS = {
   england_counties: 'English ceremonial counties',
 } as const;
 
-const MODES = [
-  ['countrydle', 'World countries'], ['powiatdle', 'Polish counties'],
-  ['us_statedle', 'US states'], ['wojewodztwodle', 'Polish voivodeships'],
-  ['flagdle', 'Flags'], ['continental', 'Continental (all)'],
-  ['continental:europe', 'Europe'], ['continental:asia', 'Asia'],
-  ['continental:africa', 'Africa'], ['continental:americas', 'Americas'],
-  ['heraldry', 'County coats of arms'], ['coats_quiz', 'Coats quiz'],
-  ['county_flags', 'County flags'], ['county_flags_quiz', 'County flags quiz'],
-  ...(['voivodeships', 'london_boroughs', 'england_counties'] as const).flatMap((scope) =>
-    (['coat', 'flag'] as const).flatMap((symbol) =>
-      ([false, true] as const).map((quiz) => [
-        `regional_symbols:${scope}:${symbol}${quiz ? ':quiz' : ''}`,
-        `${REGIONAL_LABELS[scope]} ${symbol === 'coat' ? 'coats of arms' : 'flags'}${quiz ? ' quiz' : ''}`,
-      ] as const))),
-] as const;
+const MODE_GROUPS: { label: string; items: readonly (readonly [string, string])[] }[] = [
+  {
+    label: 'World & Continents',
+    items: [
+      ['countrydle', 'World countries'],
+      ['flagdle', 'Flags'],
+      ['continental', 'Continental (all)'],
+      ['continental:europe', 'Europe'],
+      ['continental:asia', 'Asia'],
+      ['continental:africa', 'Africa'],
+      ['continental:americas', 'Americas'],
+    ],
+  },
+  {
+    label: 'Poland',
+    items: [
+      ['powiatdle', 'Polish counties'],
+      ['wojewodztwodle', 'Polish voivodeships'],
+      ['heraldry', 'County coats of arms'],
+      ['coats_quiz', 'Coats quiz'],
+      ['county_flags', 'County flags'],
+      ['county_flags_quiz', 'County flags quiz'],
+    ],
+  },
+  {
+    label: 'UK & US',
+    items: [
+      ['us_statedle', 'US states'],
+      ['countydle', 'English counties'],
+    ],
+  },
+  {
+    label: 'Regional Symbols & Quizzes',
+    items: (['voivodeships', 'london_boroughs', 'england_counties'] as const).flatMap((scope) =>
+      (['coat', 'flag'] as const).flatMap((symbol) =>
+        ([false, true] as const).map((quiz) => [
+          `regional_symbols:${scope}:${symbol}${quiz ? ':quiz' : ''}`,
+          `${REGIONAL_LABELS[scope]} ${symbol === 'coat' ? 'coats of arms' : 'flags'}${quiz ? ' quiz' : ''}`,
+        ] as const))),
+  },
+];
 const PAGE_SIZE = 20;
 
 const isQuizMode = (mode: string) => ['coats_quiz', 'county_flags_quiz'].includes(mode) || (mode.startsWith('regional_symbols:') && mode.endsWith(':quiz'));
@@ -257,8 +283,12 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
               setPage(1);
             }}
           >
-            {MODES.map(([mode, label]) => (
-              <option key={mode} value={mode}>{label}</option>
+            {MODE_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.items.map(([mode, label]) => (
+                  <option key={mode} value={mode}>{label}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>
@@ -396,7 +426,6 @@ export const AdminSessionsTab: React.FC<AdminSessionsTabProps> = ({ onTestInQA, 
                 <option value="all">{t('adminSessions.statusAll')}</option>
                 <option value="won">{isQuizMode(selectedMode) ? 'Completed' : t('adminSessions.statusWon')}</option>
                 <option value="lost">{isQuizMode(selectedMode) ? 'Stopped' : t('adminSessions.statusLost')}</option>
-                <option value="in_progress">{t('adminSessions.statusInProgress')}</option>
               </select>
             </label>
             <label className="admin-field min-w-0">

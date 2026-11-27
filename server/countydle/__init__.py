@@ -457,6 +457,14 @@ async def _do_ask_question(
             cutils.LOCAL_CONFIG, planned_question, question_create.answer
         )
     result = _player_question_display(new_question, terminal=False, clarification=clarification)
+    map_highlight = question_create.map_highlight
+    if map_highlight is None and question_create.valid and question_create.answer in (True, False):
+        from schemas.countrydle import MapHighlight
+        map_highlight = MapHighlight(
+            supported=False,
+            note="Couldn't auto-color all matching counties for this question; mark the map manually.",
+        )
+    result.map_highlight = map_highlight
     await session.commit()
     return result
 

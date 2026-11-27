@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, Calendar, DollarSign, Search, Trophy, Users } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Activity, Calendar, ChevronRight, DollarSign, RefreshCw, Search, Trophy, Users } from 'lucide-react';
 import { adminService } from '../../services/api';
 import type { CountryCostDay } from '../../types/countryCostReport';
 
@@ -52,150 +51,346 @@ interface AdminOverviewTabProps {
   onRefresh: () => void;
 }
 
-export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ overview, isLoading, error, onRefresh, onOpenSessions, onOpenCosts }) => {
-  const { t } = useTranslation();
+type CategoryId = 'active' | 'all' | 'world' | 'poland' | 'uk_us' | 'symbols';
+
+const CATEGORIES: { id: CategoryId; label: string }[] = [
+  { id: 'active', label: 'Active Today' },
+  { id: 'all', label: 'All Modes' },
+  { id: 'world', label: 'World & Continents' },
+  { id: 'poland', label: 'Poland' },
+  { id: 'uk_us', label: 'UK & US' },
+  { id: 'symbols', label: 'Symbols & Quizzes' },
+];
+
+function classifyModeCategory(modeKey: string): Exclude<CategoryId, 'active' | 'all'> {
+  if (modeKey === 'countrydle' || modeKey === 'flagdle' || modeKey.startsWith('continental:')) {
+    return 'world';
+  }
+  if (modeKey === 'powiatdle' || modeKey === 'wojewodztwodle' || modeKey === 'plates_quiz') {
+    return 'poland';
+  }
+  if (modeKey === 'us_statedle' || modeKey === 'countydle' || modeKey.startsWith('map_quiz:')) {
+    return 'uk_us';
+  }
+  return 'symbols';
+}
+
+export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
+  overview,
+  isLoading,
+  error,
+  onRefresh,
+  onOpenSessions,
+  onOpenCosts,
+}) => {
   const hasOverview = overview !== null;
-  const locale = 'en-US';
-  const numberFormat = new Intl.NumberFormat(locale);
-  const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', dateStyle: 'medium' });
+  const num = new Intl.NumberFormat('en-US');
+  const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', dateStyle: 'medium' });
+
   const [cost, setCost] = useState<CountryCostDay | null>(null);
   const [costState, setCostState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [costRevision, setCostRevision] = useState(0);
+  const [category, setCategory] = useState<CategoryId>('active');
   const [modeSearch, setModeSearch] = useState('');
-  const filteredModes = useMemo(() => {
-    const query = modeSearch.trim().toLocaleLowerCase(locale);
-    const modes = overview?.modes_today ?? [];
-    return query
-      ? modes.filter((mode) => `${mode.mode_label} ${mode.target_name} ${mode.mode_key}`.toLocaleLowerCase(locale).includes(query))
-      : modes;
-  }, [locale, modeSearch, overview?.modes_today]);
+
   useEffect(() => {
     const controller = new AbortController();
-    adminService.getCountrydleCosts(1, controller.signal).then((report) => {
-      if (!controller.signal.aborted) { setCost(report.days[0] ?? null); setCostState('ready'); }
-    }).catch(() => { if (!controller.signal.aborted) setCostState('error'); });
+    adminService
+      .getCountrydleCosts(1, controller.signal)
+      .then((report) => {
+        if (!controller.signal.aborted) {
+          setCost(report.days[0] ?? null);
+          setCostState('ready');
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCostState('error');
+      });
     return () => controller.abort();
   }, [costRevision]);
-  const costValue = cost?.cost_lower_usd == null || cost.cost_upper_usd == null
-    ? '—'
-    : cost.cost_lower_usd === cost.cost_upper_usd
-      ? `$${cost.cost_lower_usd.toFixed(4)}`
-      : `$${cost.cost_lower_usd.toFixed(4)}–$${cost.cost_upper_usd.toFixed(4)}`;
-  const metrics = [
-    { label: 'Unique players today', value: overview?.today?.total_players, note: 'Distinct accounts + guest browsers who played', Icon: Users },
-    { label: 'Active sessions today', value: overview?.today?.total_sessions, note: 'Sum of played modes (excludes empty opens)', Icon: Activity },
-    { label: 'Countrydle AI cost', value: costState === 'loading' ? 'Loading…' : costState === 'error' || costValue === '—' ? 'Unavailable' : costValue, note: costState === 'error' ? 'Report unavailable · refresh to retry' : cost ? `${cost.day} UTC · ${cost.cost_status.replaceAll('_', ' ')}` : 'No completed-day data', Icon: DollarSign },
-    { label: 'Win rate today', value: overview?.today?.win_rate_pct === undefined ? undefined : `${numberFormat.format(overview.today.win_rate_pct)}%`, note: overview?.today ? t('adminOverview.metrics.winners', { count: overview.today.total_winners }) : '—', Icon: Trophy },
-  ];
+
+  const allModes = useMemo(() => {
+    const list = [...(overview?.modes_today ?? [])];
+    list.sort((a, b) => b.sessions - a.sessions || b.players - a.players || a.mode_label.localeCompare(b.mode_label));
+    return list;
+  }, [overview?.modes_today]);
+
+  const activeCount = useMemo(() => allModes.filter((m) => m.sessions > 0).length, [allModes]);
+
+  const filteredModes = useMemo(() => {
+    const q = modeSearch.trim().toLowerCase();
+    return allModes.filter((mode) => {
+      if (category === 'active' && mode.sessions === 0) return false;
+      if (category !== 'active' && category !== 'all' && classifyModeCategory(mode.mode_key) !== category) {
+        return false;
+      }
+      if (!q) return true;
+      return `${mode.mode_label} ${mode.target_name} ${mode.mode_key}`.toLowerCase().includes(q);
+    });
+  }, [allModes, category, modeSearch]);
+
+  const costValue =
+    cost?.cost_lower_usd == null || cost.cost_upper_usd == null
+      ? null
+      : cost.cost_lower_usd === cost.cost_upper_usd
+        ? `$${cost.cost_lower_usd.toFixed(4)}`
+        : `$${cost.cost_lower_usd.toFixed(4)}-$${cost.cost_upper_usd.toFixed(4)}`;
 
   return (
-    <section className="min-w-0 space-y-4" aria-labelledby="admin-page-title">
-      <div className="flex justify-end -mt-2">
-        <button type="button" className="admin-button" onClick={() => { onRefresh(); setCostState('loading'); setCostRevision((value) => value + 1); }} disabled={isLoading}>
-          {isLoading ? t('adminCommon.updating') : t('adminCommon.refresh')}
+    <section className="min-w-0 space-y-6" aria-labelledby="admin-page-title">
+      {/* Header Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-mono uppercase tracking-wider text-app-text-muted">
+            {overview?.date ? `${overview.date} UTC · Completed games only` : 'Completed games only'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            onRefresh();
+            setCostState('loading');
+            setCostRevision((v) => v + 1);
+          }}
+          disabled={isLoading}
+          className="inline-flex items-center gap-1.5 rounded-sm border border-app-border bg-app-surface px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-surface-muted cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />
+          {isLoading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
+
       {error && (
-        <div role="alert" className="admin-panel flex flex-wrap items-center justify-between gap-3 border-rose-200 bg-rose-50 text-rose-900">
-          <span>{t(error)}</span>
-          {hasOverview && <p className="admin-meta w-full">{t('adminCommon.stale')}</p>}
-          <button type="button" className="admin-button" onClick={onRefresh} disabled={isLoading}>
-            {t('adminCommon.retry')}
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+          <span>{error}</span>
+          <button type="button" onClick={onRefresh} disabled={isLoading} className="rounded-sm border border-rose-300 bg-white px-3 py-1 text-xs font-medium cursor-pointer">
+            Retry
           </button>
         </div>
       )}
-      {!hasOverview && isLoading && <p role="status" className="admin-panel">{t('adminCommon.loading')}</p>}
-      {!hasOverview && !isLoading && !error && <p className="admin-panel">{t('adminOverview.notLoaded')}</p>}
-      {hasOverview && isLoading && <p role="status" className="admin-meta">{t('adminCommon.updating')}</p>}
+
+      {!hasOverview && isLoading && (
+        <div role="status" className="rounded-md border border-app-border bg-app-surface p-8 text-center text-sm text-app-text-muted">
+          Loading dashboard...
+        </div>
+      )}
 
       {hasOverview && (
         <>
-          {!overview.today && <p className="admin-panel admin-muted">{t('adminOverview.noDailyStats')}</p>}
-          <div className="grid grid-cols-2 gap-3 min-[1280px]:grid-cols-4">
-            {metrics.map(({ label, value, note, Icon }) => (
-              <article key={label} className="admin-panel admin-overview-metric">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="admin-meta">{label}</h2>
-                  <Icon size={18} aria-hidden="true" className="text-app-accent" />
-                </div>
-                <p className={label === 'Countrydle AI cost' ? 'text-xl font-semibold text-app-text tabular-nums sm:text-2xl' : 'admin-metric tabular-nums'}>{value === undefined ? '—' : typeof value === 'number' ? numberFormat.format(value) : value}</p>
-                <p className="text-xs leading-4 text-app-text-muted">{note}</p>
-              </article>
-            ))}
+          {/* 4 KPI Cards */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <article className="rounded-md border border-app-border bg-app-surface p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-app-text-muted">
+                <span>Completed games</span>
+                <Activity size={15} className="text-app-accent" aria-hidden="true" />
+              </div>
+              <p className="text-2xl font-bold tabular-nums text-app-text">
+                {num.format(overview.today?.total_sessions ?? 0)}
+              </p>
+              <p className="text-[11px] text-app-text-muted">{activeCount} active modes today</p>
+            </article>
+
+            <article className="rounded-md border border-app-border bg-app-surface p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-app-text-muted">
+                <span>Unique finishers</span>
+                <Users size={15} className="text-app-accent" aria-hidden="true" />
+              </div>
+              <p className="text-2xl font-bold tabular-nums text-app-text">
+                {num.format(overview.today?.total_players ?? 0)}
+              </p>
+              <p className="text-[11px] text-app-text-muted">Accounts + guest browsers</p>
+            </article>
+
+            <article className="rounded-md border border-app-border bg-app-surface p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-app-text-muted">
+                <span>Win rate today</span>
+                <Trophy size={15} className="text-app-accent" aria-hidden="true" />
+              </div>
+              <p className="text-2xl font-bold tabular-nums text-app-text">
+                {num.format(overview.today?.win_rate_pct ?? 0)}%
+              </p>
+              <p className="text-[11px] text-app-text-muted">
+                {num.format(overview.today?.total_winners ?? 0)} solved
+              </p>
+            </article>
+
+            <button
+              type="button"
+              onClick={onOpenCosts}
+              className="rounded-md border border-app-border bg-app-surface p-4 space-y-1 text-left transition-colors hover:border-app-accent/60 cursor-pointer"
+            >
+              <div className="flex items-center justify-between text-xs text-app-text-muted">
+                <span>Countrydle AI cost</span>
+                <DollarSign size={15} className="text-app-accent" aria-hidden="true" />
+              </div>
+              <p className="text-xl font-bold tabular-nums text-app-text sm:text-2xl">
+                {costState === 'loading' ? '...' : costValue ?? 'N/A'}
+              </p>
+              <p className="text-[11px] text-app-text-muted">
+                {cost ? `${cost.day} UTC` : 'View cost report'}
+              </p>
+            </button>
           </div>
 
-          <section className="space-y-3" aria-labelledby="admin-overview-games">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 id="admin-overview-games" className="text-lg font-semibold text-app-text">{t('adminOverview.gamesTitle')}</h2>
-                <p className="admin-meta mt-1">{overview.date} UTC · {numberFormat.format(overview.modes_today?.length ?? 0)} modes</p>
+          {/* Games Today Table with Category Tabs + Search */}
+          <section className="rounded-md border border-app-border bg-app-surface overflow-hidden" aria-labelledby="admin-overview-games">
+            <div className="border-b border-app-border p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 id="admin-overview-games" className="text-base font-semibold text-app-text">
+                    Games Today
+                  </h2>
+                  <p className="text-xs text-app-text-muted">
+                    Click any mode to inspect its completed sessions.
+                  </p>
+                </div>
+                <div className="relative w-full sm:w-64">
+                  <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-app-text-muted" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={modeSearch}
+                    onChange={(e) => setModeSearch(e.target.value)}
+                    placeholder="Filter modes or targets..."
+                    aria-label="Filter modes or targets"
+                    className="w-full rounded-sm border border-app-border bg-app-canvas py-1.5 pl-9 pr-3 text-xs text-app-text placeholder:text-app-text-muted focus:border-app-accent focus:outline-none"
+                  />
+                </div>
               </div>
-              <label className="admin-overview-search">
-                <span className="sr-only">Search modes and targets</span>
-                <Search size={18} aria-hidden="true" />
-                <input type="search" value={modeSearch} onChange={(event) => setModeSearch(event.target.value)} placeholder="Search modes and targets" />
-              </label>
+
+              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Game categories">
+                {CATEGORIES.map((cat) => {
+                  const active = category === cat.id;
+                  const countBadge =
+                    cat.id === 'active'
+                      ? activeCount
+                      : cat.id === 'all'
+                        ? allModes.length
+                        : allModes.filter((m) => classifyModeCategory(m.mode_key) === cat.id).length;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setCategory(cat.id)}
+                      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                        active
+                          ? 'border-app-accent bg-app-accent text-app-canvas'
+                          : 'border-app-border bg-app-surface-muted text-app-text-secondary hover:text-app-text'
+                      }`}
+                    >
+                      <span>{cat.label}</span>
+                      <span className={`font-mono text-[10px] ${active ? 'opacity-85' : 'text-app-text-muted'}`}>
+                        {countBadge}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <p className="admin-overview-caveat">Participants are active accounts and guest browsers, not unique people. One person can use multiple browsers; guest play and a later login may not be linked.</p>
-            {(overview.modes_today?.length ?? 0) === 0 ? (
-              <p className="admin-panel admin-muted">{t('adminOverview.noModes')}</p>
-            ) : filteredModes.length === 0 ? (
-              <p className="admin-panel admin-muted" role="status">No modes or targets match “{modeSearch}”</p>
+
+            {filteredModes.length === 0 ? (
+              <div className="p-8 text-center text-sm text-app-text-muted space-y-2">
+                <p>
+                  {category === 'active' && !modeSearch
+                    ? 'No completed games yet today.'
+                    : 'No modes match your filter.'}
+                </p>
+                {category === 'active' && !modeSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCategory('all')}
+                    className="text-xs font-medium text-app-accent underline cursor-pointer"
+                  >
+                    Show all {allModes.length} modes
+                  </button>
+                )}
+              </div>
             ) : (
-              <div className="admin-overview-mode-list" role="list" aria-label="Modes today">
-                {filteredModes.map((mode) => (
-                  <article key={mode.mode_key} className="admin-panel admin-overview-mode" role="listitem">
-                    <div className="admin-overview-mode-title">
-                      <h3 className="break-words font-semibold text-app-text">{mode.mode_label}</h3>
-                      <p className="break-words text-sm text-app-text-secondary">{mode.target_name}</p>
-                    </div>
-                    <dl className="admin-overview-mode-stats">
-                      <div><dt>Accounts + browsers</dt><dd>{numberFormat.format(mode.players)}</dd></div>
-                      <div><dt>Sessions</dt><dd>{numberFormat.format(mode.sessions)}</dd></div>
-                      <div><dt>Solved</dt><dd>{numberFormat.format(mode.winners)} <span>({numberFormat.format(mode.win_rate_pct)}%)</span></dd></div>
-                      <div><dt>Questions / guesses</dt><dd>{numberFormat.format(mode.questions)} / {numberFormat.format(mode.guesses)}</dd></div>
-                    </dl>
-                    <button type="button" onClick={() => onOpenSessions(mode.mode_key)} className="admin-button admin-overview-session-link">View sessions</button>
-                  </article>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-app-border bg-app-surface-muted/60 text-left text-[11px] font-mono uppercase tracking-wider text-app-text-muted">
+                      <th className="px-4 py-2.5">Mode</th>
+                      <th className="px-4 py-2.5">Today&apos;s Target</th>
+                      <th className="px-4 py-2.5 text-right">Completed</th>
+                      <th className="px-4 py-2.5 text-right">Won</th>
+                      <th className="px-4 py-2.5 text-right">Q / G</th>
+                      <th className="px-3 py-2.5 w-10" aria-label="Action" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-app-border/60">
+                    {filteredModes.map((mode) => (
+                      <tr
+                        key={mode.mode_key}
+                        onClick={() => onOpenSessions(mode.mode_key)}
+                        className="group cursor-pointer transition-colors hover:bg-app-surface-muted/70"
+                      >
+                        <td className="px-4 py-2.5 font-medium text-app-text">
+                          {mode.mode_label}
+                        </td>
+                        <td className="px-4 py-2.5 text-app-text-secondary">
+                          {mode.target_name}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-app-text">
+                          {num.format(mode.sessions)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                          <span className="text-emerald-700 font-medium">{num.format(mode.winners)}</span>
+                          <span className="ml-1 text-xs text-app-text-muted">({num.format(mode.win_rate_pct)}%)</span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-xs text-app-text-secondary">
+                          {num.format(mode.questions)} / {num.format(mode.guesses)}
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-app-text-muted group-hover:text-app-accent">
+                          <ChevronRight size={15} className="inline" aria-hidden="true" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>
-          <details className="admin-overview-coverage text-sm text-app-text-secondary">
-            <summary className="cursor-pointer text-emerald-800">Coverage and cost basis</summary>
-            <p className="mt-2">Participant counts combine active accounts and guest browsers; the same person may use multiple browsers, and guest play may not be linked to a later login. Unidentifiable legacy sessions are excluded from player counts, not sessions. Saved sessions include zero-move games and recovered histories, not general site traffic or human views. AI cost covers measured Countrydle Gemini planner and fallback usage only, not platform spend; incomplete coverage is not total cost. The cost date is the completed UTC day shown, not today.</p>
-            <button type="button" className="mt-2 text-emerald-800 underline" onClick={onOpenCosts}>View cost details</button>
-          </details>
 
-          <section className="space-y-3" aria-labelledby="admin-overview-history">
-            <div className="flex items-center gap-2">
-              <Calendar size={18} aria-hidden="true" className="text-app-text-secondary" />
-              <h2 id="admin-overview-history" className="text-lg font-semibold text-app-text">{t('adminOverview.historyTitle')}</h2>
+          {/* 14-Day History */}
+          <section className="rounded-md border border-app-border bg-app-surface overflow-hidden" aria-labelledby="admin-overview-history">
+            <div className="flex items-center gap-2 border-b border-app-border px-4 py-3">
+              <Calendar size={15} className="text-app-accent" aria-hidden="true" />
+              <h2 id="admin-overview-history" className="text-sm font-semibold text-app-text">
+                Last 14 Days (Completed Games)
+              </h2>
             </div>
             {!overview.history_14d?.length ? (
-              <p className="admin-panel admin-muted">{t('adminOverview.noHistory')}</p>
+              <p className="p-6 text-center text-sm text-app-text-muted">No recent history.</p>
             ) : (
-              <div className="admin-table overflow-x-auto" role="region" aria-label={t('adminOverview.historyRegion')} tabIndex={0}>
-                <table className="w-full min-w-[840px] text-sm">
-                  <thead><tr>
-                    <th scope="col" className="sticky left-0 z-10 bg-app-surface-muted px-4 py-3 text-left">{t('adminOverview.columns.date')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.players')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.winners')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.winRate')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.averageQuestions')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.questions')}</th>
-                    <th scope="col" className="admin-number px-4 py-3">{t('adminOverview.columns.guesses')}</th>
-                  </tr></thead>
-                  <tbody>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-app-border bg-app-surface-muted/60 text-right font-mono text-[11px] uppercase tracking-wider text-app-text-muted">
+                      <th className="px-4 py-2.5 text-left">Date</th>
+                      <th className="px-4 py-2.5">Finishers</th>
+                      <th className="px-4 py-2.5">Winners</th>
+                      <th className="px-4 py-2.5">Win Rate</th>
+                      <th className="px-4 py-2.5">Avg Q (Won)</th>
+                      <th className="px-4 py-2.5">Q / G</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-app-border/60 font-mono tabular-nums">
                     {overview.history_14d.map((day) => (
-                      <tr key={day.date}>
-                        <th scope="row" className="sticky left-0 bg-app-surface px-4 py-3 text-left font-medium text-app-text">{dateFormat.format(new Date(`${day.date}T00:00:00Z`))}</th>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_players)}</td>
-                        <td className="admin-number px-4 py-3 text-right text-emerald-800">{numberFormat.format(day.total_winners)}</td>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.win_rate_pct)}%</td>
-                        <td className="admin-number px-4 py-3 text-right">{day.avg_questions_won ? numberFormat.format(day.avg_questions_won) : '—'}</td>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_questions)}</td>
-                        <td className="admin-number px-4 py-3 text-right">{numberFormat.format(day.total_guesses)}</td>
+                      <tr key={day.date} className="hover:bg-app-surface-muted/40">
+                        <th scope="row" className="px-4 py-2 text-left font-sans font-medium text-app-text">
+                          {dateFmt.format(new Date(`${day.date}T00:00:00Z`))}
+                        </th>
+                        <td className="px-4 py-2 text-right text-app-text">{num.format(day.total_players)}</td>
+                        <td className="px-4 py-2 text-right text-emerald-700 font-medium">{num.format(day.total_winners)}</td>
+                        <td className="px-4 py-2 text-right text-app-text">{num.format(day.win_rate_pct)}%</td>
+                        <td className="px-4 py-2 text-right text-app-text-secondary">
+                          {day.avg_questions_won ? num.format(day.avg_questions_won) : '-'}
+                        </td>
+                        <td className="px-4 py-2 text-right text-app-text-secondary">
+                          {num.format(day.total_questions)} / {num.format(day.total_guesses)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

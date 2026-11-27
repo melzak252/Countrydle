@@ -233,8 +233,8 @@ def _compute_summary_metrics(
     dist_rows: List[_PlayRow],
     player_row: Optional[_PlayRow],
 ) -> SummaryMetrics:
-    played_today = len({r.identity for r in today_rows})
     today_completed = [r for r in today_rows if r.completed]
+    played_today = len({r.identity for r in today_completed})
     completed_today = len(today_completed)
     winners_today = sum(1 for r in today_completed if r.won)
     win_rate_pct = round((winners_today / completed_today) * 100.0, 1) if completed_today > 0 else 0.0

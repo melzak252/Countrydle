@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models.continental import ContinentalDay, ContinentalState
 from db.models.countrydle import CountrydleDay, CountrydleState
+from db.models.countydle import CountydleDay, CountydleState
 from db.models.flagdle import FlagdleDay, FlagdleState
 from db.models.guest_participation import GuestParticipation
 from db.models.powiatdle import PowiatdleDay, PowiatdleState
@@ -17,19 +18,20 @@ from db.models.map_quiz import MapQuizDailySession
 
 
 MODE_MODELS = (
-    ("countrydle", CountrydleState, CountrydleDay),
-    ("us_statedle", USStatedleState, USStatedleDay),
-    ("powiatdle", PowiatdleState, PowiatdleDay),
-    ("wojewodztwodle", WojewodztwodleState, WojewodztwodleDay),
-    ("flagdle", FlagdleState, FlagdleDay),
-    ("continental", ContinentalState, ContinentalDay),
+    ("countrydle", CountrydleState, CountrydleDay, 3),
+    ("us_statedle", USStatedleState, USStatedleDay, 3),
+    ("powiatdle", PowiatdleState, PowiatdleDay, 3),
+    ("wojewodztwodle", WojewodztwodleState, WojewodztwodleDay, 2),
+    ("countydle", CountydleState, CountydleDay, 3),
+    ("flagdle", FlagdleState, FlagdleDay, 6),
+    ("continental", ContinentalState, ContinentalDay, 3),
 )
 
 
 def _participants(start_date=None, end_date=None, mode=None):
-    """One active account/browser per puzzle; anonymous legacy events cannot identify people."""
+    """One completed account/browser play per puzzle; in-progress/abandoned sessions are excluded."""
     branches = []
-    for key, state, day in MODE_MODELS:
+    for key, state, day, max_guesses in MODE_MODELS:
         if mode is not None and key != mode and not (key == "continental" and mode.startswith("continental:")):
             continue
         mode_value = (
@@ -52,7 +54,12 @@ def _participants(start_date=None, end_date=None, mode=None):
                 case((state.won.is_(True), 1), else_=0).label("won"),
             )
             .join(day, day.id == state.day_id)
-            .where(state.user_id.is_not(None), or_(state.questions_asked > 0, state.guesses_made > 0), *day_filters)
+            .where(
+                state.user_id.is_not(None),
+                state.is_game_over.is_(True),
+                or_(state.questions_asked > 0, state.guesses_made > 0),
+                *day_filters,
+            )
         )
         guest = GuestParticipation
         branches.append(
@@ -65,7 +72,8 @@ def _participants(start_date=None, end_date=None, mode=None):
             .join(day, day.id == guest.day_id)
             .where(
                 guest.mode == mode_value, guest.user_id.is_(None),
-                or_(guest.questions_asked > 0, guest.guesses_made > 0), *day_filters,
+                or_(guest.won.is_(True), guest.guesses_made >= max_guesses),
+                *day_filters,
             )
         )
     heraldry_modes = [
@@ -117,9 +125,11 @@ def _participants(start_date=None, end_date=None, mode=None):
         if end_date is not None:
             filters.append(day_value <= end_date)
         if model is HeraldryDailySession:
+            filters.append(HeraldryDailySession.completed_at.is_not(None))
             guesses = func.json_array_length(model.guesses)
             won = case((model.won.is_(True), 1), else_=0)
         else:
+            filters.append(QuizRun.status.in_(("completed", "given_up")))
             guesses = literal(0)
             won = case((model.status == "completed", 1), else_=0)
         branches.append(select(
@@ -127,7 +137,7 @@ def _participants(start_date=None, end_date=None, mode=None):
             identity.label("identity"), literal(0).label("questions"), guesses.label("guesses"),
             won.label("won"),
         ).where(*filters))
-    for scope in ("london_boroughs", "england_counties"):
+    for scope in ("london_boroughs", "england_counties", "us_states"):
         key = f"map_quiz:{scope}"
         if mode is not None and mode != key:
             continue
@@ -137,7 +147,7 @@ def _participants(start_date=None, end_date=None, mode=None):
         )
         filters = [
             MapQuizDailySession.scope == scope,
-            func.json_array_length(MapQuizDailySession.answers) > 0,
+            MapQuizDailySession.completed_at.is_not(None),
         ]
         if start_date is not None:
             filters.append(MapQuizDailySession.date >= start_date)

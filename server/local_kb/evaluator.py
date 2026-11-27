@@ -436,24 +436,27 @@ def collect_relations(node: Any) -> list[str]:
 def execute_plan(config: LocalModeConfig, entity_name: str, plan: QuestionPlan) -> LocalAnswer | None:
     if not plan.valid or not plan.supported or not plan.plan:
         return None
+    from .clarification import build_clarification
+    from .explanations import generate_mode_explanation
+    from .map_highlights import compute_local_kb_map_highlight
+
     with sqlite3.connect(config.db_path) as conn:
         conn.row_factory = sqlite3.Row
         row = get_entity_row(conn, config, entity_name)
         if row is None:
             return None
         answer = evaluate(conn, config, row, plan.plan)
-    if answer is None:
-        return None
-    from .clarification import build_clarification
-    from .explanations import generate_mode_explanation
-
-    relations = collect_relations(plan.plan)
-    explanation = generate_mode_explanation(config, row, plan, answer, conn)
-    clarification = build_clarification(config, plan, answer)
+        if answer is None:
+            return None
+        relations = collect_relations(plan.plan)
+        explanation = generate_mode_explanation(config, row, plan, answer, conn)
+        clarification = build_clarification(config, plan, answer)
+        map_highlight = compute_local_kb_map_highlight(conn, config, plan.plan, answer)
     return LocalAnswer(
         question=plan.improved_question or plan.original_question,
         answer=answer,
         explanation=explanation,
         relations=relations,
         clarification=clarification,
+        map_highlight=map_highlight,
     )

@@ -12,7 +12,7 @@ import { useMapZoomSync } from '../hooks/useMapZoomSync';
 import MapLoading from './MapLoading';
 import { focusMapBounds, resetMapView, trackMapZoom } from '../lib/mapView';
 import { createMapRenderer } from '../lib/mapRenderer';
-import { MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
+import { getRegionFeatureStyle, MAP_THEME, MAP_THEME_CSS_VARIABLES } from '../lib/mapTheme';
 import MapCartographicTexture from './MapCartographicTexture';
 import MapPaperEdge from './MapPaperEdge';
 import ParchmentWorldBackdrop from './ParchmentWorldBackdrop';
@@ -104,6 +104,9 @@ export default function EnglandCountiesMap({
       correctCountyName={correctCountyName || state.correctEntity?.name}
       interaction={{
         entityMarkings: state.entityMarkings,
+        autoEntityMarkings: state.autoEntityMarkings,
+        showAutoMarkings: state.showAutoMarkings,
+        onToggleAutoMarkings: state.toggleAutoMarkings,
         activeMarkerColor: state.activeMarkerColor,
         setActiveMarkerColor: state.setActiveMarkerColor,
         handleEntityMapClick: state.handleEntityMapClick,
@@ -128,6 +131,9 @@ export function ControlledEnglandCountiesMap({
 
   const {
     entityMarkings,
+    autoEntityMarkings,
+    showAutoMarkings = true,
+    onToggleAutoMarkings,
     activeMarkerColor,
     setActiveMarkerColor,
     clearMapMarkings,
@@ -146,19 +152,11 @@ export function ControlledEnglandCountiesMap({
     (
       feature: Feature | undefined,
       markings: Record<string, MapMarkerColor>,
-      currentCorrect?: string
-    ): PathOptions => {
-      const rawName = getCountyName(feature);
-      if (!rawName) return {};
-
-      const name = rawName.toUpperCase();
-      const isCorrect = currentCorrect ? name === currentCorrect.toUpperCase() : false;
-      const marker = markings[name];
-
-      if (isCorrect) return MAP_THEME.countries.correct;
-      if (marker) return MAP_THEME.countries.markers[marker];
-      return MAP_THEME.countries.available;
-    },
+      currentCorrect?: string,
+      autoMarkings?: Record<string, MapMarkerColor>,
+      showAuto = true,
+    ): PathOptions =>
+      getRegionFeatureStyle(getCountyName(feature), markings, currentCorrect, autoMarkings, showAuto),
     []
   );
 
@@ -167,7 +165,9 @@ export function ControlledEnglandCountiesMap({
       getStyleFromState(
         feature,
         current.current.interaction.entityMarkings,
-        current.current.revealedName
+        current.current.revealedName,
+        current.current.interaction.autoEntityMarkings,
+        current.current.interaction.showAutoMarkings !== false,
       ),
     [getStyleFromState]
   );
@@ -209,7 +209,13 @@ export function ControlledEnglandCountiesMap({
         const layer = item as FeatureLayer;
         const feature = layer.feature;
         if (feature) {
-          const newStyle = getStyleFromState(feature, entityMarkings, revealedName);
+          const newStyle = getStyleFromState(
+            feature,
+            entityMarkings,
+            revealedName,
+            autoEntityMarkings,
+            showAutoMarkings,
+          );
           layer.setStyle(newStyle);
 
           if (
@@ -221,7 +227,7 @@ export function ControlledEnglandCountiesMap({
         }
       });
     }
-  }, [entityMarkings, revealedName, geoJsonData, getStyleFromState]);
+  }, [entityMarkings, autoEntityMarkings, showAutoMarkings, revealedName, geoJsonData, getStyleFromState]);
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = getCountyName(feature);
@@ -321,6 +327,8 @@ export function ControlledEnglandCountiesMap({
         onReset={() => {
           if (map) resetMapView(map, ENGLAND_CENTER, ENGLAND_ZOOM);
         }}
+        showAutoMarkings={showAutoMarkings}
+        onToggleAutoMarkings={onToggleAutoMarkings}
         className={revealedName ? 'max-md:!top-[8.25rem]' : 'max-md:!top-[5.75rem]'}
       />
       {revealedName && (
