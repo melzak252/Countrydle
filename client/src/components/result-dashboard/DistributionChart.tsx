@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import type { DistributionBucket } from '../../types';
 import type { ResultDashboardModeKind } from './types';
@@ -24,6 +23,7 @@ interface HorizontalDistributionProps {
   buckets: DistributionBucket[];
   average?: number | null;
   playerFallbackLabel?: string | null;
+  compact?: boolean;
 }
 
 function getAverageBucketLabel(buckets: DistributionBucket[], average?: number | null): string | null {
@@ -49,11 +49,13 @@ function HorizontalAxisHistogram({
   buckets,
   average,
   playerFallbackLabel,
+  compact = false,
 }: HorizontalDistributionProps) {
   const maxPct = Math.max(...buckets.map((b) => b.pct), 1);
   const hasServerPlayerFlag = buckets.some((b) => b.is_player);
   const avgBucketLabel = getAverageBucketLabel(buckets, average);
   const isDense = buckets.length > 8;
+  const barTrackHeight = compact ? 'h-20 sm:h-24' : 'h-28 sm:h-32';
 
   return (
     <div className="relative pt-2" role="list" aria-label={ariaLabel}>
@@ -108,7 +110,7 @@ function HorizontalAxisHistogram({
               </div>
 
               {/* Column track (vertical bar rising from horizontal baseline) */}
-              <div className="relative flex h-28 sm:h-32 w-full items-end justify-center px-0.5 sm:px-1">
+              <div className={`relative flex ${barTrackHeight} w-full items-end justify-center px-0.5 sm:px-1`}>
                 {barHeightPct > 0 ? (
                   <div
                     className={`w-full max-w-[2.5rem] rounded-t-sm transition-all duration-500 ease-out ${
@@ -171,12 +173,10 @@ export default function DistributionChart({
   isUnavailable,
   completedToday,
 }: DistributionChartProps) {
-  const [activeMetric, setActiveMetric] = useState<'questions' | 'guesses'>('questions');
-
   const hasQuestions = Boolean(questions && questions.length > 0);
   const hasGuesses = Boolean(guesses && guesses.length > 0);
   const hasScore = Boolean(score && score.length > 0);
-  const showDualToggle = modeKind === 'qa' && hasQuestions && hasGuesses;
+  const showDualCharts = modeKind === 'qa' && hasQuestions && hasGuesses;
 
   const playerQLabel =
     playerWon === false
@@ -192,111 +192,64 @@ export default function DistributionChart({
       ? String(playerGuesses)
       : null;
 
-  // Determine the single active chart configuration
+  // Single-chart fallback configuration for non-QA modes
   let chartTitle = "Today's Distribution";
   let activeBuckets: DistributionBucket[] | null = null;
   let activeAverage: number | null | undefined = null;
   let activeAvgUnit = '';
   let activePlayerLabel: string | null = null;
 
-  if (showDualToggle) {
-    if (activeMetric === 'questions') {
-      chartTitle = 'Questions Used';
+  if (!showDualCharts) {
+    if (hasGuesses) {
+      chartTitle = modeKind === 'route' ? 'Hops Distribution' : 'Guesses Distribution';
+      activeBuckets = guesses!;
+      activeAverage = avgGuesses;
+      activeAvgUnit = modeKind === 'route' ? 'hops' : 'G';
+      activePlayerLabel = playerGLabel;
+    } else if (hasScore) {
+      chartTitle = 'Score Distribution';
+      activeBuckets = score!;
+      activeAverage = avgScore;
+      activeAvgUnit = '';
+      activePlayerLabel = null;
+    } else if (hasQuestions) {
+      chartTitle = 'Questions Distribution';
       activeBuckets = questions!;
       activeAverage = avgQuestions;
       activeAvgUnit = 'Q';
       activePlayerLabel = playerQLabel;
-    } else {
-      chartTitle = 'Guesses Used';
-      activeBuckets = guesses!;
-      activeAverage = avgGuesses;
-      activeAvgUnit = 'G';
-      activePlayerLabel = playerGLabel;
     }
-  } else if (hasGuesses) {
-    chartTitle = modeKind === 'route' ? 'Hops Distribution' : 'Guesses Distribution';
-    activeBuckets = guesses!;
-    activeAverage = avgGuesses;
-    activeAvgUnit = modeKind === 'route' ? 'hops' : 'G';
-    activePlayerLabel = playerGLabel;
-  } else if (hasScore) {
-    chartTitle = 'Score Distribution';
-    activeBuckets = score!;
-    activeAverage = avgScore;
-    activeAvgUnit = '';
-    activePlayerLabel = null;
-  } else if (hasQuestions) {
-    chartTitle = 'Questions Distribution';
-    activeBuckets = questions!;
-    activeAverage = avgQuestions;
-    activeAvgUnit = 'Q';
-    activePlayerLabel = playerQLabel;
   }
 
   return (
     <section
       aria-label="Today's distribution"
-      className="flex flex-1 flex-col justify-between rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 gap-5 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+      className="flex flex-1 flex-col justify-between rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 gap-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <BarChart3 size={15} className="text-[#2a5942] shrink-0" aria-hidden="true" />
           <h3 className="font-serif text-base font-semibold tracking-tight text-app-text">
-            {showDualToggle ? 'Distribution' : chartTitle}
+            {showDualCharts ? "Today's Distributions" : chartTitle}
           </h3>
-          {activeAverage !== null && activeAverage !== undefined && Number.isFinite(activeAverage) && (
-            <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-[#9a6b2f] tabular-nums">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#9a6b2f]" aria-hidden="true" />
-              avg {activeAverage.toFixed(1)}
-              {activeAvgUnit ? ` ${activeAvgUnit}` : ''}
-            </span>
-          )}
+          {!showDualCharts &&
+            activeAverage !== null &&
+            activeAverage !== undefined &&
+            Number.isFinite(activeAverage) && (
+              <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-[#9a6b2f] tabular-nums">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#9a6b2f]" aria-hidden="true" />
+                avg {activeAverage.toFixed(1)}
+                {activeAvgUnit ? ` ${activeAvgUnit}` : ''}
+              </span>
+            )}
         </div>
 
-        <div className="flex items-center gap-3">
-          {showDualToggle ? (
-            <div
-              role="tablist"
-              aria-label="Distribution metric"
-              className="inline-flex items-center rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeMetric === 'questions'}
-                onClick={() => setActiveMetric('questions')}
-                className={`rounded-sm px-3 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
-                  activeMetric === 'questions'
-                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
-                    : 'text-app-text-secondary hover:text-app-text'
-                }`}
-              >
-                Questions
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeMetric === 'guesses'}
-                onClick={() => setActiveMetric('guesses')}
-                className={`rounded-sm px-3 py-1 font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
-                  activeMetric === 'guesses'
-                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
-                    : 'text-app-text-secondary hover:text-app-text'
-                }`}
-              >
-                Guesses
-              </button>
-            </div>
-          ) : (
-            completedToday !== undefined &&
-            completedToday > 0 && (
-              <span className="font-mono text-[11px] text-app-text-muted tabular-nums">
-                {completedToday.toLocaleString('en-US')} {completedToday === 1 ? 'finish' : 'finishes'}
-              </span>
-            )
-          )}
-        </div>
+        {completedToday !== undefined && completedToday > 0 && (
+          <span className="font-mono text-[11px] text-app-text-muted tabular-nums">
+            {completedToday.toLocaleString('en-US')} {completedToday === 1 ? 'finish' : 'finishes'}
+          </span>
+        )}
       </div>
 
       {/* Body */}
@@ -311,16 +264,62 @@ export default function DistributionChart({
             </div>
           ))}
         </div>
-      ) : isUnavailable || !activeBuckets ? (
+      ) : isUnavailable || (!showDualCharts && !activeBuckets) ? (
         <p className="py-6 text-center text-xs text-app-text-muted">
           {isUnavailable
             ? 'Live community distributions are temporarily unavailable.'
             : 'Be one of the first players today. Distributions update as players finish.'}
         </p>
+      ) : showDualCharts ? (
+        <div className="flex flex-1 flex-col justify-between gap-5">
+          {/* Chart 1: Questions Used */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-app-text-secondary">
+                Questions Used
+              </span>
+              {avgQuestions !== null && avgQuestions !== undefined && Number.isFinite(avgQuestions) && (
+                <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2 py-0.5 font-mono text-[10px] font-medium text-[#9a6b2f] tabular-nums">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#9a6b2f]" aria-hidden="true" />
+                  avg {avgQuestions.toFixed(1)} Q
+                </span>
+              )}
+            </div>
+            <HorizontalAxisHistogram
+              ariaLabel="Questions Used"
+              buckets={questions!}
+              average={avgQuestions}
+              playerFallbackLabel={playerQLabel}
+              compact
+            />
+          </div>
+
+          {/* Chart 2: Guesses Used */}
+          <div className="border-t border-app-border/45 pt-4 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-app-text-secondary">
+                Guesses Used
+              </span>
+              {avgGuesses !== null && avgGuesses !== undefined && Number.isFinite(avgGuesses) && (
+                <span className="inline-flex items-center gap-1.5 rounded-sm border border-[#9a6b2f]/35 bg-[#9a6b2f]/10 px-2 py-0.5 font-mono text-[10px] font-medium text-[#9a6b2f] tabular-nums">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#9a6b2f]" aria-hidden="true" />
+                  avg {avgGuesses.toFixed(1)} G
+                </span>
+              )}
+            </div>
+            <HorizontalAxisHistogram
+              ariaLabel="Guesses Used"
+              buckets={guesses!}
+              average={avgGuesses}
+              playerFallbackLabel={playerGLabel}
+              compact
+            />
+          </div>
+        </div>
       ) : (
         <HorizontalAxisHistogram
           ariaLabel={chartTitle}
-          buckets={activeBuckets}
+          buckets={activeBuckets!}
           average={activeAverage}
           playerFallbackLabel={activePlayerLabel}
         />
