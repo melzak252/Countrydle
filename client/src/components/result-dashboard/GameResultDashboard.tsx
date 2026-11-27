@@ -599,55 +599,135 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             {detailsOpen && (
               <div className="border-t border-app-border/50 px-5 py-5 space-y-4">
                 {detailTabs && detailTabs.length > 0 ? (
-                  <>
-                    {detailTabs.length > 1 && (
-                      <div
-                        role="tablist"
-                        aria-label={detailsTitle}
-                        className="inline-flex flex-wrap items-center gap-1 rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
-                      >
-                        {detailTabs.map((tab) => {
-                          const selected = tab.id === resolvedDetailTab;
-                          return (
-                            <button
-                              key={tab.id}
-                              type="button"
-                              id={`${tabListId}-${tab.id}-tab`}
-                              role="tab"
-                              aria-selected={selected}
-                              aria-controls={`${tabListId}-${tab.id}-panel`}
-                              onClick={() => setActiveDetailTab(tab.id)}
-                              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                                selected
-                                  ? 'bg-app-surface text-[#2a5942] shadow-sm'
-                                  : 'text-app-text-secondary hover:text-app-text'
-                              }`}
-                            >
-                              {tab.icon}
-                              <span>{tab.label}</span>
+                  detailTabs.length === 2 ? (
+                    <>
+                      {/* Mobile (< lg): compact tabs */}
+                      <div className="space-y-4 lg:hidden">
+                        <div
+                          role="tablist"
+                          aria-label={detailsTitle}
+                          className="inline-flex flex-wrap items-center gap-1 rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
+                        >
+                          {detailTabs.map((tab) => {
+                            const selected = tab.id === resolvedDetailTab;
+                            return (
+                              <button
+                                key={tab.id}
+                                type="button"
+                                id={`${tabListId}-${tab.id}-tab`}
+                                role="tab"
+                                aria-selected={selected}
+                                aria-controls={`${tabListId}-${tab.id}-panel`}
+                                onClick={() => setActiveDetailTab(tab.id)}
+                                className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                  selected
+                                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                                    : 'text-app-text-secondary hover:text-app-text'
+                                }`}
+                              >
+                                {tab.icon}
+                                <span>{tab.label}</span>
+                                {tab.badge !== undefined && (
+                                  <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.25 font-mono text-[10px] text-app-text-secondary">
+                                    {tab.badge}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {detailTabs.map((tab) => (
+                          <div
+                            key={tab.id}
+                            id={`${tabListId}-${tab.id}-panel`}
+                            role="tabpanel"
+                            aria-labelledby={`${tabListId}-${tab.id}-tab`}
+                            className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
+                          >
+                            {tab.content}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Desktop (lg+): side-by-side 2-column split (Questions left, Guesses right) */}
+                      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6 items-start">
+                        {detailTabs.map((tab, idx) => (
+                          <div
+                            key={tab.id}
+                            className={`min-w-0 space-y-3 ${
+                              idx === 0
+                                ? 'lg:col-span-7'
+                                : 'lg:col-span-5 lg:border-l lg:border-app-border/45 lg:pl-6'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-[#2a5942]">{tab.icon}</span>
+                              <h4 className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-app-text">
+                                {tab.label}
+                              </h4>
                               {tab.badge !== undefined && (
-                                <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.25 font-mono text-[10px] text-app-text-secondary">
+                                <span className="rounded-sm border border-app-border/50 bg-app-surface-muted px-1.5 py-0.5 font-mono text-[10px] text-app-text-secondary tabular-nums">
                                   {tab.badge}
                                 </span>
                               )}
-                            </button>
-                          );
-                        })}
+                            </div>
+                            {tab.content}
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </>
+                  ) : (
+                    <>
+                      {detailTabs.length > 1 && (
+                        <div
+                          role="tablist"
+                          aria-label={detailsTitle}
+                          className="inline-flex flex-wrap items-center gap-1 rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
+                        >
+                          {detailTabs.map((tab) => {
+                            const selected = tab.id === resolvedDetailTab;
+                            return (
+                              <button
+                                key={tab.id}
+                                type="button"
+                                id={`${tabListId}-${tab.id}-tab`}
+                                role="tab"
+                                aria-selected={selected}
+                                aria-controls={`${tabListId}-${tab.id}-panel`}
+                                onClick={() => setActiveDetailTab(tab.id)}
+                                className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                  selected
+                                    ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                                    : 'text-app-text-secondary hover:text-app-text'
+                                }`}
+                              >
+                                {tab.icon}
+                                <span>{tab.label}</span>
+                                {tab.badge !== undefined && (
+                                  <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.25 font-mono text-[10px] text-app-text-secondary">
+                                    {tab.badge}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
 
-                    {detailTabs.map((tab) => (
-                      <div
-                        key={tab.id}
-                        id={`${tabListId}-${tab.id}-panel`}
-                        role="tabpanel"
-                        aria-labelledby={`${tabListId}-${tab.id}-tab`}
-                        className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
-                      >
-                        {tab.content}
-                      </div>
-                    ))}
-                  </>
+                      {detailTabs.map((tab) => (
+                        <div
+                          key={tab.id}
+                          id={`${tabListId}-${tab.id}-panel`}
+                          role="tabpanel"
+                          aria-labelledby={`${tabListId}-${tab.id}-tab`}
+                          className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
+                        >
+                          {tab.content}
+                        </div>
+                      ))}
+                    </>
+                  )
                 ) : (
                   detailsSlot
                 )}
