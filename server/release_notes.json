@@ -1,5 +1,5 @@
 {
-  "version": "2.0.18",
-  "title": "Focused Bot Map Coloring & Smooth Fade-In Animation",
-  "body": "- Refined bot map coloring so only the countries specified by each geographic question are shaded (blue on Yes, orange on No), leaving unrelated regions untouched.\n- Added a smooth fade-in animation when bot map shading updates."
+  "version": "2.0.19",
+  "title": "Higher-Contrast Bot Map Shading, Direct Elimination & Uncapped Globe Spin",
+  "body": "- Made the bot ruled-out orange shade more reddish and higher contrast against the parchment map.\n- Direct country questions like \"Is it X?\" that answer No now automatically shade those ruled-out countries orange.\n- Removed the rotation speed cap on the homepage spinning globe."
 }
