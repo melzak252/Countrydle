@@ -19,7 +19,8 @@ import {
   Target,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import ShareResultCard from '../components/ShareResultCard';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
+import { buildQADetailTabs } from '../components/result-dashboard/qaDetails';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 export type ContinentKey = 'europe' | 'asia' | 'africa' | 'americas';
@@ -519,38 +520,38 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
       </div>
 
 
-      {/* 5. Game Over Modal Overlay */}
+      {/* 5. Game Over Dashboard Overlay */}
       {isGameOver && showResultModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Daily Results"
-          onClick={() => setIsResultDismissed(true)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
-        >
-          <div
-            className="relative z-10 w-full max-w-2xl sm:max-w-3xl rounded-sm shadow-2xl cursor-default"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ShareResultCard
-              gameName={title}
-              gamePath={meta.path}
-              date={dailyDate}
-              won={gameState.won}
-              points={gameState.points}
-              questionsAsked={gameState.questions_asked}
-              maxQuestions={8}
-              guessesMade={gameState.guesses_made}
-              maxGuesses={3}
-              targetName={correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess}
-              targetCountryCode={correctCountry?.iso2}
-              onClose={() => setIsResultDismissed(true)}
-              questions={sortedQuestions}
-              notices={notices}
-              mode="continental"
-            />
-          </div>
-        </div>
+        <GameResultDashboard
+          mode={`continental:${meta.key}`}
+          modeKind="qa"
+          gameName={title}
+          gamePath={meta.path}
+          date={dailyDate}
+          won={gameState.won}
+          points={gameState.points}
+          questionsAsked={gameState.questions_asked}
+          maxQuestions={8}
+          guessesMade={gameState.guesses_made}
+          maxGuesses={3}
+          targetLabel="The Mystery Location"
+          targetName={correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess}
+          targetCountryCode={correctCountry?.iso2}
+          subtitle={
+            gameState.won
+              ? 'Outstanding deduction! You uncovered the location.'
+              : 'Better luck tomorrow! Study the clues and try again.'
+          }
+          detailTabs={buildQADetailTabs({
+            targetName: correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess,
+            reportMode: 'continental',
+            questions: sortedQuestions,
+            notices,
+          })}
+          detailsTitle="Field Notes & Question History"
+          onClose={() => setIsResultDismissed(true)}
+          closeLabel="Close and View Map"
+        />
       )}
     </div>
   );

@@ -18,7 +18,8 @@ import {
   Target,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import ShareResultCard from '../components/ShareResultCard';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
+import { buildQADetailTabs } from '../components/result-dashboard/qaDetails';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 function getDistanceColor(distanceKm: number): string {
@@ -385,36 +386,36 @@ export default function USStatesGamePage() {
       </div>
 
 
-      {/* 5. Game Over Modal Overlay */}
+      {/* 5. Game Over Dashboard Overlay */}
       {isGameOver && showResultModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Daily Results"
-          onClick={() => setIsResultDismissed(true)}
-          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 cursor-pointer"
-        >
-          <div
-            className="relative z-10 w-full max-w-2xl sm:max-w-3xl rounded-sm shadow-2xl cursor-default"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ShareResultCard
-              gameName="US Statedle"
-              gamePath="/us-states"
-              date={dailyDate}
-              won={gameState.won}
-              points={gameState.points}
-              questionsAsked={gameState.questions_asked}
-              maxQuestions={8}
-              guessesMade={gameState.guesses_made}
-              maxGuesses={3}
-              targetName={correctState?.name || guesses.find((g) => g.answer)?.guess}
-              onClose={() => setIsResultDismissed(true)}
-              questions={sortedQuestions}
-              mode="us_statedle"
-            />
-          </div>
-        </div>
+        <GameResultDashboard
+          mode="us_statedle"
+          modeKind="qa"
+          gameName="US Statedle"
+          gamePath="/us-states"
+          date={dailyDate}
+          won={gameState.won}
+          points={gameState.points}
+          questionsAsked={gameState.questions_asked}
+          maxQuestions={8}
+          guessesMade={gameState.guesses_made}
+          maxGuesses={3}
+          targetLabel="The Mystery State"
+          targetName={correctState?.name || guesses.find((g) => g.answer)?.guess}
+          subtitle={
+            gameState.won
+              ? 'Outstanding deduction! You uncovered the state.'
+              : 'Better luck tomorrow! Study the clues and try again.'
+          }
+          detailTabs={buildQADetailTabs({
+            targetName: correctState?.name || guesses.find((g) => g.answer)?.guess,
+            reportMode: 'us_statedle',
+            questions: sortedQuestions,
+          })}
+          detailsTitle="Field Notes & Question History"
+          onClose={() => setIsResultDismissed(true)}
+          closeLabel="Close and View Map"
+        />
       )}
     </div>
   );

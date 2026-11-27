@@ -11,6 +11,9 @@ import type {
   AnswerReportStatus,
   CacheStats,
   CountryDisplay,
+  DashboardLeaderboardPayload,
+  DashboardLeaderboardPeriod,
+  DashboardSummary,
   FlagdleCountry,
   FlagdleGuess,
   FlagdleStateResponse,
@@ -919,6 +922,49 @@ export const patchNotesService = {
   ): Promise<PatchNotesResponse> => {
     const response = await api.get<PatchNotesResponse>('/patch-notes', {
       params: { page, limit },
+      signal,
+    });
+    return response.data;
+  },
+};
+
+export const statsService = {
+  getSummary: async (
+    mode: string,
+    params?: {
+      date?: string | null;
+      period?: DashboardLeaderboardPeriod;
+      limit?: number;
+    },
+    signal?: AbortSignal,
+  ): Promise<DashboardSummary> => {
+    const query: Record<string, string | number> = {};
+    if (params?.date) query.date = params.date;
+    if (params?.period) query.period = params.period;
+    if (params?.limit) query.limit = params.limit;
+    const response = await api.get<DashboardSummary>(`/stats/${encodeURIComponent(mode)}/summary`, {
+      params: query,
+      signal,
+    });
+    return response.data;
+  },
+  getLeaderboard: async (
+    mode: string,
+    params?: {
+      date?: string | null;
+      period?: DashboardLeaderboardPeriod;
+      limit?: number;
+      offset?: number;
+    },
+    signal?: AbortSignal,
+  ): Promise<DashboardLeaderboardPayload> => {
+    const query: Record<string, string | number> = {};
+    if (params?.date) query.date = params.date;
+    if (params?.period) query.period = params.period;
+    if (params?.limit) query.limit = params.limit;
+    if (params?.offset !== undefined) query.offset = params.offset;
+    const response = await api.get<DashboardLeaderboardPayload>(`/stats/${encodeURIComponent(mode)}/leaderboard`, {
+      params: query,
       signal,
     });
     return response.data;

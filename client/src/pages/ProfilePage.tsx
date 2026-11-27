@@ -106,7 +106,7 @@ export default function ProfilePage() {
       <h1 className="font-serif text-3xl text-sand-100">{t(error?.notFound || !username ? 'profile.userNotFound' : 'profile.loadError')}</h1>
       <div className="mt-6 flex justify-center gap-6 text-sm">
         {error && !error.notFound && <button type="button" onClick={() => setReload(value => value + 1)} className={`text-emerald-300 ${focusStyle}`}>{t('profile.retry')}</button>}
-        <Link to="/leaderboard" className={`text-zinc-400 hover:text-sand-100 ${focusStyle}`}>{t('leaderboard.title')}</Link>
+        <Link to="/" className={`text-zinc-400 hover:text-sand-100 ${focusStyle}`}>{t('common.backHome', 'Back to Countrydle')}</Link>
       </div>
     </section>
   );
@@ -142,8 +142,8 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto min-w-0 max-w-5xl pb-12">
-      <Link to="/leaderboard" className={`mb-8 inline-flex min-h-10 items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-emerald-300 ${focusStyle}`}>
-        <ArrowLeft size={15} aria-hidden="true" />{t('leaderboard.title')}
+      <Link to="/" className={`mb-8 inline-flex min-h-10 items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-emerald-300 ${focusStyle}`}>
+        <ArrowLeft size={15} aria-hidden="true" />{t('common.backHome', 'Back to Countrydle')}
       </Link>
 
       <header className="border-b border-white/10 pb-8 sm:pb-10">

@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlagdleGameStore } from '../stores/gameStore';
 import { FlagTiles } from '../components/FlagTiles';
-import CountdownTimer from '../components/CountdownTimer';
-import { Loader2, HelpCircle, Share2, Check, X, Sparkles, AlertCircle, Trophy, ArrowRight, Flag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import GameResultDashboard from '../components/result-dashboard/GameResultDashboard';
+import { Loader2, HelpCircle, Check, X, Trophy, ArrowRight, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { FlagdleCountry, FlagdleGuess } from '../types';
 
@@ -45,7 +44,6 @@ export default function FlagdlePage() {
       // ignore
     }
   };
-  const [copied, setCopied] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -176,8 +174,8 @@ export default function FlagdlePage() {
     setShowSuggestions(false);
   };
 
-  const handleShare = () => {
-    if (!dailyDate || !gameState) return;
+  const buildShareText = () => {
+    if (!dailyDate || !gameState) return '';
     const isWon = gameState.won;
     const scoreText = isWon ? `${guesses.length}/12` : 'X/12';
     const lines: string[] = [];
@@ -206,12 +204,7 @@ export default function FlagdlePage() {
     lines.push('');
     lines.push('https://countrydle.online/flagdle');
 
-    const text = lines.join('\n');
-
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast.success('Results copied to clipboard!');
-    setTimeout(() => setCopied(false), 2500);
+    return lines.join('\n');
   };
 
 
@@ -425,164 +418,37 @@ export default function FlagdlePage() {
           </section>
         )}
 
-        {/* Results Modal */}
+        {/* Results Dashboard */}
         {isGameOver && showResultsModal && (
-          <div className="fixed inset-0 z-[2000] flex max-h-[var(--app-height,100dvh)] items-center justify-center p-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-y-auto md:z-50 md:max-h-none">
-            {/* Backdrop: clicking background closes modal */}
-            <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
-              onClick={() => setShowResultsModal(false)}
-              aria-hidden="true"
-            />
-
-            {/* Modal Dialog Card */}
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-label="Game Result"
-              className="relative z-10 mx-auto w-full max-w-2xl sm:max-w-3xl max-h-full overflow-y-auto rounded-sm border border-white/15 bg-obsidian-950 p-3 md:max-h-[92vh] sm:p-8 shadow-2xl text-left space-y-4 sm:space-y-6 my-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header Bar */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3.5 -mt-1 text-left">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-emerald-400 font-semibold">
-                    Flagdle Result
-                  </span>
-                  <span className="text-zinc-600">·</span>
-                  <span className="font-mono text-xs text-zinc-400">
-                    {dailyDate}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowResultsModal(false)}
-                  className="flex h-11 w-11 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-zinc-400 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                  aria-label="Close"
-                  title="Close"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Hero Reveal Banner */}
-              <div className="rounded-sm border border-white/10 bg-obsidian-900/70 p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5">
-                <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-                  {correctCountry && (
-                    <div className="shrink-0 overflow-hidden rounded-sm border border-white/15 bg-obsidian-950 p-1 shadow-md">
-                      {resolvedFlagUrl ? (
-                        <img
-                          src={resolvedFlagUrl}
-                          alt={correctCountry.name}
-                          className="h-14 w-22 sm:h-18 sm:w-28 object-contain"
-                        />
-                      ) : correctCountry?.iso2 ? (
-                        <img
-                          src={`https://flagcdn.com/w320/${correctCountry.iso2.toLowerCase()}.png`}
-                          alt={correctCountry.name}
-                          className="h-14 w-22 sm:h-18 sm:w-28 object-contain"
-                        />
-                      ) : null}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <span className="font-mono text-xs text-emerald-400 font-semibold">
-                      Secret National Flag
-                    </span>
-                    <h2 className="mt-0.5 break-words font-serif text-3xl sm:text-4xl text-sand-100">
-                      {correctCountry?.name || 'Mystery Country'}
-                    </h2>
-                    {correctCountry?.official_name && correctCountry.official_name !== correctCountry.name && (
-                      <p className="mt-0.5 text-xs text-zinc-400 truncate">{correctCountry.official_name}</p>
-                    )}
-                    <p className="mt-1 text-xs text-zinc-400">
-                      {isWon
-                        ? `Identified in ${guesses.length} of 12 guesses.`
-                        : 'Used all 12 guesses. Study the flag and try tomorrow!'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Outcome Badge & Points */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
-                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-mono ${
-                    isWon ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
-                  }`}>
-                    {isWon ? <Sparkles size={14} /> : <AlertCircle size={14} />}
-                    <span>{isWon ? 'Solved' : 'Game Over'}</span>
-                  </div>
-                  {isWon && gameState?.points ? (
-                    <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-300">
-                      +{gameState.points.toLocaleString('en-US')} pts
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Performance Metrics Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
-                    Guesses Used
-                  </span>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-bold text-sand-100">{guesses.length}</span>
-                    <span className="text-xs text-zinc-500 font-mono">/ 12</span>
-                  </div>
-                </div>
-
-                <div className="rounded-sm border border-white/10 bg-obsidian-900/40 p-4">
-                  <span className="text-xs font-mono text-zinc-400 block">
-                    Points Earned
-                  </span>
-                  <div className="mt-1 font-mono text-2xl sm:text-3xl font-bold text-emerald-300">
-                    {isWon && gameState?.points ? `+${gameState.points.toLocaleString('en-US')}` : '0 pts'}
-                  </div>
-                </div>
-
-                <div className="col-span-2 sm:col-span-1 rounded-sm border border-white/10 bg-obsidian-900/40 p-4 flex flex-col justify-between">
-                  <span className="text-xs font-mono text-zinc-400 block">
-                    Next Flagdle
-                  </span>
-                  <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-emerald-400">
-                    <CountdownTimer variant="minimal" className="text-lg sm:text-xl text-emerald-400 font-semibold" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-1">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    className="flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-sm bg-emerald-400 hover:bg-emerald-300 px-5 py-3 text-sm font-bold text-obsidian-950 transition-colors shadow-md cursor-pointer"
-                  >
-                    {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-                    <span>{copied ? 'Copied to clipboard' : 'Share Flagdle Result'}</span>
-                  </button>
-                  <Link
-                    to="/friends?mode=countrydle"
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-sm border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-400/10 transition-colors"
-                  >
-                    <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-[10px] uppercase font-bold text-amber-300">
-                      1v1 Duel
-                    </span>
-                    <span>Challenge a friend</span>
-                    <ArrowRight size={15} />
-                  </Link>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowResultsModal(false)}
-                  className="w-full min-h-11 rounded-sm border border-white/20 py-2.5 text-xs font-semibold text-sand-100 hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  Close & View Flag
-                </button>
-              </div>
-            </section>
-          </div>
+          <GameResultDashboard
+            mode="flagdle"
+            modeKind="visual"
+            gameName="Flagdle"
+            gamePath="/flagdle"
+            date={dailyDate}
+            won={isWon}
+            points={gameState?.points}
+            guessesMade={guesses.length}
+            maxGuesses={12}
+            targetLabel="Secret National Flag"
+            targetName={correctCountry?.name || 'Mystery Country'}
+            targetSubtitle={
+              correctCountry?.official_name && correctCountry.official_name !== correctCountry.name
+                ? correctCountry.official_name
+                : undefined
+            }
+            targetImageUrl={resolvedFlagUrl}
+            targetCountryCode={correctCountry?.iso2}
+            subtitle={
+              isWon
+                ? `Identified in ${guesses.length} of 12 guesses.`
+                : 'Used all 12 guesses. Study the flag and try tomorrow!'
+            }
+            shareText={buildShareText()}
+            duelMode="countrydle"
+            onClose={() => setShowResultsModal(false)}
+            closeLabel="Close & View Flag"
+          />
         )}
 
       </main>
