@@ -1,5 +1,5 @@
 {
-  "version": "2.1.2",
-  "title": "Bot Auto-Coloring Across All Modes, Completed-Only Stats & New Admin Console",
-  "body": "- Extended automatic bot map coloring to Continental modes (Europe, Asia, Africa, Americas), US Statedle, Wojewodztwodle, Powiatdle, and English Countydle with a Hide/Show bot coloring toggle in the map toolbar.\n- Expanded local KB auto-coloring to cover most objective factual relations (population, area, currency, language, organizations, rivers, highways, flag colors/symbols, license plates, lakes, national parks, UNESCO sites) while keeping subjective/fuzzy fields excluded.\n- Excluded in-progress and abandoned games from daily player counts, results summaries, and admin views so only completed games are counted.\n- Rebuilt the Admin Dashboard from scratch with 5 clean sections, category-grouped daily mode views, and a fixed searchable Facts Editor that clearly displays all list and multi-value facts."
+  "version": "2.1.3",
+  "title": "Mobile Performance & PageSpeed Optimizations",
+  "body": "- Enabled gzip compression and 24-hour browser caching for GeoJSON map files in Nginx, cutting map transfer sizes by ~75%.\n- Lazy-loaded below-the-fold map thumbnails via IntersectionObserver so the homepage no longer fetches 2.15 MB of GeoJSON on initial load.\n- Removed Framer Motion from the homepage hero, lazy-loaded the SpinningGlobe canvas, eliminated its 10x/sec React re-render loop, and scoped Google OAuth loading to `/login` and `/register` only."
 }
