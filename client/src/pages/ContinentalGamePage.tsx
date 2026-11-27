@@ -538,12 +538,12 @@ export default function ContinentalGamePage({ continent: continentProp }: Contin
               : 'Better luck tomorrow! Study the clues and try again.'
           }
           detailTabs={buildQADetailTabs({
-            targetName: correctCountry?.name || guesses.find((g: { answer?: boolean; guess: string }) => g.answer)?.guess,
             reportMode: 'continental',
             questions: sortedQuestions,
+            guesses,
             notices,
           })}
-          detailsTitle="Field Notes & Question History"
+          detailsTitle="Questions & Guesses"
           onClose={() => setIsResultDismissed(true)}
           closeLabel="Close and View Map"
         />

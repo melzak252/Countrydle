@@ -407,11 +407,11 @@ export default function USStatesGamePage() {
               : 'Better luck tomorrow! Study the clues and try again.'
           }
           detailTabs={buildQADetailTabs({
-            targetName: correctState?.name || guesses.find((g) => g.answer)?.guess,
             reportMode: 'us_statedle',
             questions: sortedQuestions,
+            guesses,
           })}
-          detailsTitle="Field Notes & Question History"
+          detailsTitle="Questions & Guesses"
           onClose={() => setIsResultDismissed(true)}
           closeLabel="Close and View Map"
         />

@@ -408,12 +408,12 @@ export default function WojewodztwaGamePage() {
               : 'Better luck tomorrow! Study the clues and try again.'
           }
           detailTabs={buildQADetailTabs({
-            targetName: correctWojewodztwo?.nazwa || guesses.find((g) => g.answer)?.guess,
             reportMode: 'wojewodztwodle',
             questions: sortedQuestions,
+            guesses,
             notices,
           })}
-          detailsTitle="Field Notes & Question History"
+          detailsTitle="Questions & Guesses"
           onClose={() => setIsResultDismissed(true)}
           closeLabel="Close and View Map"
         />

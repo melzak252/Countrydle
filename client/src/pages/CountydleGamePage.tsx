@@ -481,12 +481,12 @@ export default function CountydleGamePage() {
               : 'Better luck tomorrow! Study the clues and try again.'
           }
           detailTabs={buildQADetailTabs({
-            targetName: correctCounty?.name || guesses.find((g) => g.answer)?.guess,
             reportMode: 'countydle',
             questions: sortedQuestions,
+            guesses,
             notices,
           })}
-          detailsTitle="Field Notes & Question History"
+          detailsTitle="Questions & Guesses"
           onClose={() => setIsResultDismissed(true)}
           closeLabel="Close and View Map"
         />

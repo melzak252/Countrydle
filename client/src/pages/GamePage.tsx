@@ -469,12 +469,12 @@ export default function GamePage() {
               : 'Better luck tomorrow! Study the clues and try again.'
           }
           detailTabs={buildQADetailTabs({
-            targetName: correctCountry?.name || guesses.find((g) => g.answer)?.guess,
             reportMode: 'countrydle',
             questions: sortedQuestions,
+            guesses,
             notices,
           })}
-          detailsTitle="Field Notes & Question History"
+          detailsTitle="Questions & Guesses"
           onClose={() => setIsResultDismissed(true)}
           closeLabel="Close and View Map"
         />
