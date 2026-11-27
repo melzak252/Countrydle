@@ -236,7 +236,7 @@ export default function DistributionChart({
   return (
     <section
       aria-label="Today's distribution"
-      className="rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 space-y-5 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+      className="flex flex-1 flex-col justify-between rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 gap-5 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">

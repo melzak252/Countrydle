@@ -169,7 +169,7 @@ export default function CompactLeaderboard({
   return (
     <section
       aria-label="Leaderboard"
-      className="rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 space-y-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+      className="flex flex-1 flex-col rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface p-5 sm:p-6 space-y-4 shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
     >
       {/* Header + Segmented Pill Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3">

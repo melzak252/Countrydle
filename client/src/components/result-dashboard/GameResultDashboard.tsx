@@ -495,47 +495,45 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
           </div>
         </div>
 
-        {/* 2-Column Main Body */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT 7 COLS: 3-Metric Row -> Horizontal Distribution -> Collapsed Details */}
-          <div className="lg:col-span-7 space-y-6 min-w-0">
-            {/* Minimal 3-Metric Row */}
-            {statMetrics.length > 0 && (
-              <dl
-                aria-label="Summary metrics"
-                className={`grid divide-x divide-app-border/45 rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)] ${
-                  statMetrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-                }`}
-              >
-                {statMetrics.map((metric) => (
-                  <div key={metric.label} className="px-4 py-3.5 sm:px-5 sm:py-4 min-w-0">
-                    <dt className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-app-text-muted truncate">
-                      {metric.label}
-                    </dt>
-                    <dd
-                      className={`mt-1 font-mono text-lg sm:text-xl font-bold tabular-nums truncate ${
-                        metric.accent === 'emerald'
-                          ? 'text-[#2a5942]'
-                          : metric.accent === 'amber'
-                          ? 'text-[#9a6b2f]'
-                          : metric.accent === 'rose'
-                          ? 'text-[#a84436]'
-                          : 'text-app-text'
-                      }`}
-                    >
-                      {metric.value}
-                    </dd>
-                    {metric.subtext && (
-                      <div className="mt-0.5 font-mono text-[11px] text-app-text-secondary truncate">
-                        {metric.subtext}
-                      </div>
-                    )}
+        {/* Row 2: Full-Width Summary Metrics Strip */}
+        {statMetrics.length > 0 && (
+          <dl
+            aria-label="Summary metrics"
+            className={`grid divide-x divide-app-border/45 rounded-md border border-app-border/70 border-t-2 border-t-[#2a5942] bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)] ${
+              statMetrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+            }`}
+          >
+            {statMetrics.map((metric) => (
+              <div key={metric.label} className="px-4 py-3 sm:px-5 sm:py-3.5 min-w-0">
+                <dt className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-app-text-muted truncate">
+                  {metric.label}
+                </dt>
+                <dd
+                  className={`mt-1 font-mono text-lg sm:text-xl font-bold tabular-nums truncate ${
+                    metric.accent === 'emerald'
+                      ? 'text-[#2a5942]'
+                      : metric.accent === 'amber'
+                      ? 'text-[#9a6b2f]'
+                      : metric.accent === 'rose'
+                      ? 'text-[#a84436]'
+                      : 'text-app-text'
+                  }`}
+                >
+                  {metric.value}
+                </dd>
+                {metric.subtext && (
+                  <div className="mt-0.5 font-mono text-[11px] text-app-text-secondary truncate">
+                    {metric.subtext}
                   </div>
-                ))}
-              </dl>
-            )}
+                )}
+              </div>
+            ))}
+          </dl>
+        )}
 
-            {/* Single Horizontal Distribution Card */}
+        {/* Row 3: Equal-Height 2-Column Grid (Distribution + Leaderboard aligned flush top & bottom) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          <div className="lg:col-span-7 min-w-0 flex flex-col">
             <DistributionChart
               modeKind={modeKind}
               questions={summary?.distributions?.questions}
@@ -551,101 +549,9 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
               isUnavailable={summaryUnavailable}
               completedToday={summary?.completed_today}
             />
-
-            {/* Collapsible Details / Question History (closed by default on desktop & mobile) */}
-            {hasDetails && (
-              <section
-                aria-label={detailsTitle}
-                className="rounded-md border border-app-border/70 bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
-              >
-                <button
-                  type="button"
-                  onClick={() => setDetailsOpen((prev) => !prev)}
-                  aria-expanded={detailsOpen}
-                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-app-surface-muted/60 transition-colors rounded-md cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="font-serif text-sm font-semibold text-app-text truncate">
-                      {detailsToggleLabel}
-                    </span>
-                    {detailsBadgeCount !== undefined && (
-                      <span className="rounded-sm border border-app-border/50 bg-app-surface-muted px-2 py-0.5 font-mono text-[10px] text-app-text-secondary tabular-nums">
-                        {detailsBadgeCount}
-                      </span>
-                    )}
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className={`shrink-0 text-app-text-muted transition-transform duration-200 ${
-                      detailsOpen ? 'rotate-180' : ''
-                    }`}
-                    aria-hidden="true"
-                  />
-                </button>
-
-                {detailsOpen && (
-                  <div className="border-t border-app-border/50 px-5 py-5 space-y-4">
-                    {detailTabs && detailTabs.length > 0 ? (
-                      <>
-                        {detailTabs.length > 1 && (
-                          <div
-                            role="tablist"
-                            aria-label={detailsTitle}
-                            className="inline-flex flex-wrap items-center gap-1 rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
-                          >
-                            {detailTabs.map((tab) => {
-                              const selected = tab.id === resolvedDetailTab;
-                              return (
-                                <button
-                                  key={tab.id}
-                                  type="button"
-                                  id={`${tabListId}-${tab.id}-tab`}
-                                  role="tab"
-                                  aria-selected={selected}
-                                  aria-controls={`${tabListId}-${tab.id}-panel`}
-                                  onClick={() => setActiveDetailTab(tab.id)}
-                                  className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                                    selected
-                                      ? 'bg-app-surface text-[#2a5942] shadow-sm'
-                                      : 'text-app-text-secondary hover:text-app-text'
-                                  }`}
-                                >
-                                  {tab.icon}
-                                  <span>{tab.label}</span>
-                                  {tab.badge !== undefined && (
-                                    <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.25 font-mono text-[10px] text-app-text-secondary">
-                                      {tab.badge}
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {detailTabs.map((tab) => (
-                          <div
-                            key={tab.id}
-                            id={`${tabListId}-${tab.id}-panel`}
-                            role="tabpanel"
-                            aria-labelledby={`${tabListId}-${tab.id}-tab`}
-                            className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
-                          >
-                            {tab.content}
-                          </div>
-                        ))}
-                      </>
-                    ) : (
-                      detailsSlot
-                    )}
-                  </div>
-                )}
-              </section>
-            )}
           </div>
 
-          {/* RIGHT 5 COLS: Clean Top-5 Leaderboard */}
-          <div className="lg:col-span-5 min-w-0">
+          <div className="lg:col-span-5 min-w-0 flex flex-col">
             <CompactLeaderboard
               period={period}
               onPeriodChange={setPeriod}
@@ -658,6 +564,97 @@ export default function GameResultDashboard(props: GameResultDashboardProps) {
             />
           </div>
         </div>
+
+        {/* Row 4: Full-Width Collapsible Questions & Guesses Card (never stretches one column) */}
+        {hasDetails && (
+          <section
+            aria-label={detailsTitle}
+            className="rounded-md border border-app-border/70 bg-app-surface shadow-[1px_2px_8px_rgba(85,75,57,0.06)]"
+          >
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((prev) => !prev)}
+              aria-expanded={detailsOpen}
+              className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left hover:bg-app-surface-muted/60 transition-colors rounded-md cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="font-serif text-base font-semibold text-app-text truncate">
+                  {detailsToggleLabel}
+                </span>
+                {detailsBadgeCount !== undefined && (
+                  <span className="rounded-sm border border-app-border/50 bg-app-surface-muted px-2 py-0.5 font-mono text-[10px] text-app-text-secondary tabular-nums">
+                    {detailsBadgeCount}
+                  </span>
+                )}
+              </div>
+              <ChevronDown
+                size={16}
+                className={`shrink-0 text-app-text-muted transition-transform duration-200 ${
+                  detailsOpen ? 'rotate-180' : ''
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            {detailsOpen && (
+              <div className="border-t border-app-border/50 px-5 py-5 space-y-4">
+                {detailTabs && detailTabs.length > 0 ? (
+                  <>
+                    {detailTabs.length > 1 && (
+                      <div
+                        role="tablist"
+                        aria-label={detailsTitle}
+                        className="inline-flex flex-wrap items-center gap-1 rounded-sm border border-app-border/50 bg-app-surface-muted p-0.5"
+                      >
+                        {detailTabs.map((tab) => {
+                          const selected = tab.id === resolvedDetailTab;
+                          return (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              id={`${tabListId}-${tab.id}-tab`}
+                              role="tab"
+                              aria-selected={selected}
+                              aria-controls={`${tabListId}-${tab.id}-panel`}
+                              onClick={() => setActiveDetailTab(tab.id)}
+                              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                selected
+                                  ? 'bg-app-surface text-[#2a5942] shadow-sm'
+                                  : 'text-app-text-secondary hover:text-app-text'
+                              }`}
+                            >
+                              {tab.icon}
+                              <span>{tab.label}</span>
+                              {tab.badge !== undefined && (
+                                <span className="rounded-sm bg-app-surface-muted px-1.5 py-0.25 font-mono text-[10px] text-app-text-secondary">
+                                  {tab.badge}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {detailTabs.map((tab) => (
+                      <div
+                        key={tab.id}
+                        id={`${tabListId}-${tab.id}-panel`}
+                        role="tabpanel"
+                        aria-labelledby={`${tabListId}-${tab.id}-tab`}
+                        className={tab.id === resolvedDetailTab ? 'block' : 'hidden'}
+                      >
+                        {tab.content}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  detailsSlot
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Lightweight Bottom Strip */}
         <NextModeShelf currentPath={gamePath} duelMode={duelMode} />
