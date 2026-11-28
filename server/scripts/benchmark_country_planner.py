@@ -79,8 +79,8 @@ def validate_output_path(output: Path, protected_paths: list[Path]) -> None:
 def connect_readonly(path: Path):
     return sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-SERVER_DIR = ROOT_DIR / "server"
+SERVER_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = SERVER_DIR.parent
 DEFAULT_CORPUS = SERVER_DIR / "tests" / "country_planner_benchmark.json"
 DEFAULT_DB = SERVER_DIR / "data" / "country_facts.sqlite"
 INPUT_RATE = 0.10

@@ -56,6 +56,7 @@ async def lifespan(app: FastAPI):
         utils.scheduler.start()
         asyncio.create_task(utils.generate_yesterday_blog_post())
         asyncio.create_task(utils.run_generate_continental_days())
+        asyncio.create_task(asyncio.to_thread(__import__, "slot_template_engine"))
         await start_workers()
 
         yield

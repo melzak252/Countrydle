@@ -193,6 +193,9 @@ async def sync_guest_data(
             status_code=400, detail="Guest game state does not match its saved progress."
         )
 
+    from db.models import CountydleGuess
+    from db.repositories.question_accounting import claim_guest_guesses
+    from utils.guest_session import read_guest_identity
     await claim_guest_questions(
         session,
         CountydleQuestion,
@@ -201,7 +204,10 @@ async def sync_guest_data(
         COUNTYDLE_CONFIG.max_questions,
     )
 
-    for guess in sync_data.guesses:
+    claimed_guess_ids = await claim_guest_guesses(
+        session, CountydleGuess, user.id, day_state.id, read_guest_identity(request), COUNTYDLE_CONFIG.max_guesses,
+    )
+    for guess in sync_data.guesses[len(claimed_guess_ids):]:
         is_correct = False
         if guess.county_id:
             is_correct = guess.county_id == day_state.county_id

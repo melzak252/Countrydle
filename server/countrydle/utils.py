@@ -232,7 +232,7 @@ Write all generated explanation and clarification text in English, regardless of
 Always evaluate and generate the explanation and clarification FIRST before determining the answer boolean. The answer must strictly follow from your reasoning.
 {{
     "explanation": "Step 1: One concise, specific fact directly relevant to the question from the context or general knowledge, for post-game review.",
-    "clarification": "Step 2: One short, spoiler-free sentence for the active player confirming how the question was interpreted (e.g. 'Yes, the country has direct coastline access to the sea/ocean.' or 'No, this country did not participate in the War of the Pacific.'). NEVER state the target country's name or reveal specific unasked geographic clues.",
+    "clarification": "Step 2: One short, spoiler-free sentence for the active player confirming how the question was interpreted (e.g. 'Yes, the country has direct coastline access to the sea/ocean.' or 'No, this country did not participate in the War of the Pacific.'). NEVER state the target country's name, exact counts/measurements/values not in the question (e.g. for '3 or more borders', NEVER say 'four borders' — only confirm '3 or more borders'), or reveal specific unasked geographic clues.",
     "answer": true | false | null
 }}
 For a well-defined historical question, use available historical knowledge rather than abstaining solely because of its date.
@@ -301,6 +301,22 @@ def _normalize_clarification_prefix(text: str | None) -> str | None:
     return cleaned[0].upper() + cleaned[1:]
 
 
+_NUMBER_WORDS = {
+    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+    "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
+    "eleven": "11", "twelve": "12", "thirteen": "13", "fourteen": "14", "fifteen": "15",
+    "sixteen": "16", "seventeen": "17", "eighteen": "18", "nineteen": "19", "twenty": "20",
+}
+
+
+def _extract_numeric_tokens(text: str) -> set[str]:
+    tokens = set(re.findall(r"\b\d+(?:[.,]\d+)?\b", text))
+    for word in re.findall(r"\b[a-z]+\b", text.lower()):
+        if word in _NUMBER_WORDS:
+            tokens.add(_NUMBER_WORDS[word])
+    return tokens
+
+
 def _is_leaky_clarification(
     raw_clarification: str | None,
     target_names: set[str],
@@ -316,6 +332,13 @@ def _is_leaky_clarification(
         r"\b(?:shares?|shared|bordered|bordering)\b", question_text, flags=re.IGNORECASE
     ):
         return True
+    # Reject clarifications that leak an exact number/count not present in the player's question
+    # (e.g. player asked "3 or more borders", LLM replies "four neighboring countries").
+    clar_nums = _extract_numeric_tokens(raw_clarification)
+    if clar_nums:
+        q_nums = _extract_numeric_tokens(question_text)
+        if clar_nums - q_nums:
+            return True
     return False
 
 

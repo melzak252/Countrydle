@@ -150,12 +150,17 @@ async def sync_guest_data(
     ):
         raise HTTPException(status_code=400, detail="Guest game state does not match its saved progress.")
 
-    from db.models import WojewodztwodleQuestion
+    from db.models import WojewodztwodleQuestion, WojewodztwodleGuess
+    from db.repositories.question_accounting import claim_guest_guesses
+    from utils.guest_session import read_guest_identity
     await claim_guest_questions(
         session, WojewodztwodleQuestion, state, sync_data.questions, WOJEWODZTWDLE_CONFIG.max_questions,
     )
 
-    for guess in sync_data.guesses:
+    claimed_guess_ids = await claim_guest_guesses(
+        session, WojewodztwodleGuess, user.id, day_state.id, read_guest_identity(request), WOJEWODZTWDLE_CONFIG.max_guesses,
+    )
+    for guess in sync_data.guesses[len(claimed_guess_ids):]:
         is_correct = False
         if guess.wojewodztwo_id:
             is_correct = guess.wojewodztwo_id == day_state.wojewodztwo_id

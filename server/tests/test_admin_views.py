@@ -864,3 +864,42 @@ async def test_admin_endpoints_permission_guard(admin_fixture):
         json={"mode": "countrydle", "question_id": 1},
     )
     assert res_forbidden_post.status_code == 403
+
+
+async def test_admin_game_sessions_deduplicates_linked_guest_and_synced_user_guesses(admin_fixture):
+    """When a guest played and then logged in (linking guest_id to user_id), Admin must not show duplicate guesses."""
+    from db.models import CountrydleGuess, GuestParticipation
+    from db.repositories.question_accounting import claim_guest_guesses
+
+    session = admin_fixture.session
+    user = admin_fixture.user
+    day_id = 1
+    guest_id = "6d1ade44-aaaa-4bbb-8ccc-1234567890ab"
+
+    # Simulate legacy duplicate state: guest row + linked GuestParticipation + synced user row
+    session.add(GuestParticipation(
+        guest_id=guest_id, mode="countrydle", day_id=day_id,
+        user_id=user.id, questions_asked=0, guesses_made=1, won=True,
+    ))
+    session.add(CountrydleGuess(
+        id=9001, day_id=day_id, user_id=None, guest_id=guest_id,
+        guess="Poland", answer=True,
+    ))
+    await session.flush()
+
+    res = await admin_fixture.client.get(
+        f"/admin/game-sessions?mode=countrydle&date={admin_fixture.test_date.isoformat()}"
+    )
+    assert res.status_code == 200
+    items = res.json()["items"]
+    user_sess = next(i for i in items if i["user_id"] == user.id)
+    # Must NOT have added the linked guest guess (9001) on top of the user's own 2 seeded guess rows
+    guess_events = [e for e in user_sess["timeline"] if e["event_type"] == "guess"]
+    assert len(guess_events) == 2
+    assert 9001 not in [e["id"] for e in guess_events]
+
+    # Also verify claim_guest_guesses claims existing guest rows instead of duplicating
+    claimed = await claim_guest_guesses(session, CountrydleGuess, user.id, day_id, guest_id, 3)
+    assert claimed == [9001]
+    claimed_again = await claim_guest_guesses(session, CountrydleGuess, user.id, day_id, guest_id, 3)
+    assert claimed_again == []

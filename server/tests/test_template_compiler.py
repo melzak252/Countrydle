@@ -196,6 +196,16 @@ def test_open_ended_driving_side_questions_reject_with_clarification():
         "ile ma mieszkańców",
         "why is this country famous",
         "dlaczego ten kraj",
+        "What colors does flag in this country haveave?",
+        "What continent is it in?",
+        "Which countries does it border?",
+        "What language do they speak?",
+        "What's the capital?",
+        "How big is this country?",
+        "Tell me the capital",
+        "Jakie kolory ma flaga?",
+        "Na jakim kontynencie leży?",
+        "Podaj stolicę",
     ]
     for q in queries:
         res = check_open_ended_question(q)
@@ -299,3 +309,25 @@ def test_high_frequency_english_templates(question, expected_relation, expected_
     assert nodes[0]["left"]["relation"] == expected_relation
     if expected_value is not None:
         assert nodes[0]["right"]["value"] == expected_value
+
+
+def test_fallback_clarification_blocks_exact_number_leaks():
+    from countrydle.utils import _select_clarification
+    from schemas.countrydle import QuestionEnhanced
+
+    q = QuestionEnhanced(
+        original_question="does it border 3 or more countries?",
+        question="Does the country border 3 or more countries?",
+        valid=True,
+        explanation=None,
+    )
+    sanitized = _select_clarification(
+        "Yes, the country has land borders with four neighboring countries.",
+        {"Pakistan"},
+        q,
+        True,
+    )
+    assert sanitized is not None
+    assert "four" not in sanitized.lower()
+    assert "4" not in sanitized
+    assert "3 or more" in sanitized.lower()

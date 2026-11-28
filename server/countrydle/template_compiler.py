@@ -1413,11 +1413,33 @@ def check_open_ended_question(question: str) -> str | None:
     if re.search(r"\b(?:jaki|jaki\s+to|co\s+to\s+za)\s+(?:kraj|panstwo)\b", q):
         return "Please ask a yes/no question rather than an open-ended question (for example: 'Is it Poland?')."
 
-    # General "what is / what are"
-    if re.search(r"^(?:what|which)\s+(?:is|are|was|were)\b", q):
+    # Flag colors / symbols open-ended
+    if re.search(r"\b(?:what|which)\s+colou?rs?\b.*\bflag\b|\bflag\b.*\b(?:what|which)\s+colou?rs?\b", q):
+        return "Please ask a yes/no question about a specific flag color (for example: 'Does the flag have red?')."
+    if re.search(r"\b(?:jaki|jakie|jakich)\s+kolor\w*\b.*\bflag\w*\b|\bflag\w*\b.*\b(?:jaki|jakie|jakich)\s+kolor\w*\b", q):
+        return "Please ask a yes/no question about a specific flag color (for example: 'Does the flag have red?')."
+
+    # General "what / which ..." open-ended questions (including "what colors does...", "what continent is...", "what's...")
+    if re.search(
+        r"^(?:what|which)(?:'s|\s+(?:is|are|was|were|does|do|did|has|have|had|can|could|would|will"
+        r"|[a-z]+(?:\s+[a-z]+){0,3}\s+(?:is|are|was|were|does|do|did|has|have|had|can|could|would|will)))\b",
+        q,
+    ):
         return "Please ask a yes/no question rather than an open-ended question."
-    if re.search(r"^(?:jaki|jaka|jakie|jacy|jakich|jakim)\s+(?:jest|sa|to|bylo|byl)\b", q):
+    if re.search(
+        r"^(?:jaki|jaka|jakie|jacy|jakich|jakim|jakiego|ktory|ktora|ktore|ktorych|ktorym"
+        r"|na\s+jakim|w\s+jakim|w\s+jakiej|z\s+jakimi|z\s+jakim|co\s+to)\b",
+        q,
+    ):
         return "Please ask a yes/no question rather than an open-ended question."
+
+    # General "how + adjective" open-ended questions ("how big is it", "how old is it", "how populated...")
+    if re.search(r"^how\s+(?:big|large|small|old|long|tall|high|populated|far|close|warm|cold|rich|poor|famous)\b", q):
+        return "Please ask a yes/no comparison question (for example: 'Is it larger than France?' or 'Does it have more than 10 million people?')."
+
+    # Imperative open-ended requests ("tell me...", "name a...", "list...", "podaj...", "wymien...")
+    if re.search(r"^(?:tell\s+me|name\s+(?:a|an|the|some|all|one)|list|give\s+me|show\s+me|podaj|wymien|powiedz)\b", q):
+        return "Please ask a yes/no question rather than an open-ended request."
 
     # Why / Dlaczego
     if q.startswith("why ") or re.search(r"\bwhy\s+(?:is|does|did|was|are)\b", q):

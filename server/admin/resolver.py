@@ -642,12 +642,15 @@ async def query_admin_game_sessions(
         questions_by_identity.setdefault(ident, []).append(q)
 
     has_g_guest_id = hasattr(cfg.guess_model, "guest_id")
+    users_with_owned_guesses = {g.user_id for g in all_g_rows if g.user_id is not None}
     guesses_by_identity: Dict[Tuple[str, Any], List[Any]] = {}
     for g in all_g_rows:
         if g.user_id is not None:
             ident = ("user", g.user_id)
         elif has_g_guest_id and getattr(g, "guest_id", None):
             linked_user_id = linked_guest_users.get(g.guest_id)
+            if linked_user_id is not None and linked_user_id in users_with_owned_guesses:
+                continue
             ident = ("user", linked_user_id) if linked_user_id is not None else ("guest", g.guest_id)
         else:
             ident = ("guest", "anonymous")

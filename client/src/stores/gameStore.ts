@@ -64,15 +64,6 @@ interface GameActions {
   handleEntityMapClick: (name: string, isSecondary?: boolean) => void;
   clearMapMarkings: () => void;
 }
-function promiseWithResolvers<T = void>() {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
 
 const getLocalStateKey = (gameType: string, date: string) => `guess_game_${gameType}_${date}`;
 
@@ -374,18 +365,8 @@ const createGameStore = (gameType: MapGameType) => {
         || current.gameState.remaining_questions <= 0) return;
       const trimmed = questionText.trim();
       set({ isLoading: true, error: null, pendingQuestion: trimmed });
-      const startTime = Date.now();
       try {
         const question = await service.askQuestion(trimmed);
-
-        // Keep fast answers readable without adding a delay to slower requests.
-        const elapsed = Date.now() - startTime;
-        const minDisplayTime = 1000;
-        if (elapsed < minDisplayTime) {
-          const { promise, resolve } = promiseWithResolvers<void>();
-          setTimeout(resolve, minDisplayTime - elapsed);
-          await promise;
-        }
         
         if (!isAnsweredQuestion(question)) {
           get().addNotice({

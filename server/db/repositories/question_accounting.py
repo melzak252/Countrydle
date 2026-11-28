@@ -73,7 +73,7 @@ async def claim_guest_questions(session, model, state, question_ids, max_questio
             model.valid.is_(True), model.answer.is_not(None),
         ).order_by(model.id).limit(max_questions).with_for_update()
     )
-    ids = list((await session.scalars(candidates)).all())
+    ids = list((await session.execute(candidates)).scalars().all())
     if ids:
         # Recheck ownership after waiting for another account claiming a row.
         result = await session.execute(
@@ -84,3 +84,25 @@ async def claim_guest_questions(session, model, state, question_ids, max_questio
     state.questions_asked = len(ids)
     state.remaining_questions = max_questions - len(ids)
     await session.flush()
+
+
+async def claim_guest_guesses(session, model, user_id, day_id, guest_id, max_guesses):
+    """Claim existing guest guess rows for this browser/day instead of inserting duplicates on sync."""
+    if not guest_id or not hasattr(model, "guest_id"):
+        return []
+    candidates = (
+        select(model.id).where(
+            model.user_id.is_(None),
+            model.guest_id == guest_id,
+            model.day_id == day_id,
+        ).order_by(model.id).limit(max_guesses).with_for_update()
+    )
+    ids = list((await session.execute(candidates)).scalars().all())
+    if ids:
+        result = await session.execute(
+            update(model).where(model.id.in_(ids), model.user_id.is_(None))
+            .values(user_id=user_id).returning(model.id)
+        )
+        ids = list(result.scalars())
+    await session.flush()
+    return ids

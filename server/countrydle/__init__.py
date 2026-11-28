@@ -203,13 +203,18 @@ async def sync_guest_data(
     for guess in sync_data.guesses:
         await country_repo.validate_guess(guess.country_id, guess.guess)
 
-    from db.models import CountrydleQuestion
+    from db.models import CountrydleQuestion, CountrydleGuess
+    from db.repositories.question_accounting import claim_guest_guesses
+    from utils.guest_session import read_guest_identity
     await claim_guest_questions(
         session, CountrydleQuestion, state, sync_data.questions, COUNTRYDLE_CONFIG.max_questions,
     )
 
-    # 4. Create guesses
-    for guess in sync_data.guesses:
+    # 4. Claim existing guest guesses or create missing ones
+    claimed_guess_ids = await claim_guest_guesses(
+        session, CountrydleGuess, user.id, day_country.id, read_guest_identity(request), COUNTRYDLE_CONFIG.max_guesses,
+    )
+    for guess in sync_data.guesses[len(claimed_guess_ids):]:
         is_correct = False
         if guess.country_id is not None:
             is_correct = guess.country_id == day_country.country_id

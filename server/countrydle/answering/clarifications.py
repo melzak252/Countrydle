@@ -87,6 +87,19 @@ def generate_plan_clarification(
 
     # Borders
     if rel == "borders_country":
+        if op in ("equals", "greater_than", "greater_than_or_equal", "less_than", "less_than_or_equal") and isinstance(val, (int, float)):
+            n = int(val) if float(val).is_integer() else val
+            unit = "country" if n == 1 else "countries"
+            if op == "equals":
+                return f"The country borders exactly {n} {unit}." if answer else f"The country does not border exactly {n} {unit}."
+            if op == "greater_than":
+                return f"The country borders more than {n} {unit}." if answer else f"The country does not border more than {n} {unit}."
+            if op == "greater_than_or_equal":
+                return f"The country borders at least {n} {unit}." if answer else f"The country borders fewer than {n} {unit}."
+            if op == "less_than":
+                return f"The country borders fewer than {n} {unit}." if answer else f"The country does not border fewer than {n} {unit}."
+            if op == "less_than_or_equal":
+                return f"The country borders at most {n} {unit}." if answer else f"The country borders more than {n} {unit}."
         target = val or entity or "that country"
         return f"The country borders {target}." if answer else f"The country does not border {target}."
 
