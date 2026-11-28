@@ -1,5 +1,5 @@
 {
-  "version": "2.1.4",
-  "title": "Faster Auto-Coloring & Expanded Local Question Templates",
-  "body": "- Bulk-preloaded SQLite list relations for Countrydle auto-coloring, cutting simple map highlight computation from ~100 ms to ~3 ms.\n- Skipped auto-coloring for overly complex quantified or deeply nested queries across Countrydle and regional modes so answers return promptly.\n- Expanded deterministic English templates for landlocked, continent, demonym, hemisphere, directional, and flag color questions so common queries answer in milliseconds without an LLM round-trip."
+  "version": "2.1.5",
+  "title": "Instant Answer Rendering, Sync Deduplication & Spoiler Guards",
+  "body": "- Removed the artificial 1-second minimum display delay on the client so fast local-KB and cached answers appear immediately, and pre-warmed template engines on backend startup.\n- Fixed duplicate guest and user guesses appearing after login by claiming existing guest guess rows in `/sync` across all modes and deduplicating linked guest rows in Admin sessions.\n- Expanded deterministic open-ended question detection across Countrydle and regional modes so non-yes/no questions are caught without deducting a turn.\n- Added numeric leak filtering to fallback and border-count clarifications so threshold questions never reveal exact counts."
 }
